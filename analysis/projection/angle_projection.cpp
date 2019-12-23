@@ -386,6 +386,7 @@ void add_cell_emission_to_ray(
   if (MP->Tr("N1p") > 0)  n_N1p = MP->get_n_ion("N1p", P);
   else                    n_N1p = fNp * n_Hp;
   ans[PROJ_NII] += integral * n_e * n_N1p * XR.NII6584_emissivity(T);
+  ans[PROJ_BREMS20CM] += integral * n_e * n_Hp * XR.Brems20cm_emissivity(T);
 
   return;
 }
@@ -409,6 +410,7 @@ int generate_angle_image(
     int npix[],       ///< Number of pixels in each direction
     size_t num_pix,     ///< total number of pixels
     int n_extra,       ///< number of extra pixels w.r.t. cells.
+    size_t NIMG,      ///< number of images to make
     double **img_array ///< pointer to the image arrays.
     )
 {

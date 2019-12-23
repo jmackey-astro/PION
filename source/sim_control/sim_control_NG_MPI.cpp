@@ -37,8 +37,6 @@ using namespace std;
 #ifdef PARALLEL
 
 #define BC89_FULLSTEP
-
-//#define TEST_BC89FLUX        // debugging info for BC89 flux correction
 //#define TEST_INT
 
 // ##################################################################
@@ -174,7 +172,7 @@ int sim_control_NG_MPI::Init(
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 #ifdef TESTING
     cout <<"NG_MPI updating external boundaries for level "<<l<<"\n";
-    cout <<"@@@@@@@@@@@@  UPDATING EXTERNAL BOUNDARIES FOR LEVEL ";
+    cout <<"UPDATING EXTERNAL BOUNDARIES FOR LEVEL ";
     cout <<l<<"\n";
 #endif
     err += TimeUpdateExternalBCs(SimPM,l,grid[l], spatial_solver,
@@ -187,7 +185,7 @@ int sim_control_NG_MPI::Init(
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 #ifdef TESTING
     cout <<"NG_MPI updating C2F boundaries for level "<<l<<"\n";
-    cout <<"@@@@@@@@@@@@  UPDATING C2F BOUNDARIES FOR LEVEL ";
+    cout <<"UPDATING C2F BOUNDARIES FOR LEVEL ";
     cout <<l<<"\n";
 #endif
     if (l<SimPM.grid_nlevels-1) {
@@ -200,6 +198,9 @@ int sim_control_NG_MPI::Init(
     }
     if (l>0) {
       for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+#ifdef TESTING
+        cout <<"Init: l="<<l<<", C2F recv i="<<i<<", type="<<grid[l]->BC_bd[i]->type<<endl;
+#endif
         if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
           err += BC_update_COARSE_TO_FINE_RECV(SimPM,spatial_solver,
                       l,grid[l]->BC_bd[i],SimPM.levels[l].step);
@@ -625,7 +626,6 @@ double sim_control_NG_MPI::advance_step_OA1(
   double dt2_fine=0.0; // timestep for two finer level steps.
   double dt2_this=0.0; // two timesteps for this level.
   class GridBaseClass *grid = SimPM.levels[l].grid;
-  class GridBaseClass *child = SimPM.levels[l].child;
   bool finest_level = (l<(SimPM.grid_nlevels-1)) ? false : true;
 
   err = update_evolving_RT_sources(
@@ -735,6 +735,8 @@ double sim_control_NG_MPI::advance_step_OA1(
   err += calc_thermal_conduction_dU(dt2_this,OA1,grid);
 #endif // THERMAL_CONDUCTION
   rep.errorTest("NG-MPI scn::advance_step_OA1: calc_x_dU",0,err);
+  if (l>0)                    save_fine_fluxes(SimPM, l);
+  if (l<SimPM.grid_nlevels-1) save_coarse_fluxes(SimPM, l);
   // --------------------------------------------------------
 
 
@@ -773,6 +775,10 @@ double sim_control_NG_MPI::advance_step_OA1(
   cout <<"advance_step_OA1: l="<<l<<" update state vec\n";
 #endif
   spatial_solver->Setdt(dt2_this);
+  if (l < SimPM.grid_nlevels-1) {
+    err += recv_BC89_fluxes_F2C(spatial_solver,SimPM,l,OA1,OA1);
+    rep.errorTest("scn::advance_step_OA1: recv_BC89_flux",0,err);
+  }
   err += grid_update_state_vector(SimPM.levels[l].dt,OA1,OA1, grid);
   rep.errorTest("scn::advance_step_OA1: state-vec update",0,err);
 #ifndef SKIP_BC89_FLUX
@@ -839,7 +845,7 @@ double sim_control_NG_MPI::advance_step_OA1(
 #ifdef TEST_INT
     cout <<"advance_step_OA1: l="<<l<<" \n";
 #endif
-    err += send_BC89_fluxes_F2C(l,OA1,OA1);
+    err += send_BC89_fluxes_F2C(SimPM,l,OA1,OA1);
 #endif
 #ifdef TEST_INT
     cout <<"advance_step_OA1: l="<<l<<" F2C SEND at tend of step\n";
@@ -861,7 +867,6 @@ double sim_control_NG_MPI::advance_step_OA1(
 
 
 
-
 // ##################################################################
 // ##################################################################
 
@@ -872,14 +877,14 @@ double sim_control_NG_MPI::advance_step_OA2(
       )
 {
 #ifdef TEST_INT
-  cout <<"NG-MPI advance_step_OA2, level="<<l<<", starting.\n";
+  cout.flush();
+  cout <<"NG-MPI advance_step_OA2, level="<<l<<", starting."<<endl;
 #endif
   int err=0;
   double dt2_fine=0.0; // timestep for two finer level steps.
   double dt2_this=0.0; // two timesteps for this level.
   double ctime = SimPM.levels[l].simtime; // current time
   class GridBaseClass *grid = SimPM.levels[l].grid;
-  class GridBaseClass *child = SimPM.levels[l].child;
   bool finest_level = (l<SimPM.grid_nlevels-1) ? false : true;
 
   err = update_evolving_RT_sources(
@@ -887,7 +892,7 @@ double sim_control_NG_MPI::advance_step_OA2(
   rep.errorTest("NG TIME_INT::update_RT_sources error",0,err);
 
 #ifdef TEST_INT
-  cout <<"advance_step_OA2: child="<<child<<"\n";
+  cout <<"advance_step_OA2: child="<<child<<endl;
 #endif
 
   // --------------------------------------------------------
@@ -911,14 +916,14 @@ double sim_control_NG_MPI::advance_step_OA2(
     // them later in a loop.
   }
 #ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l<<" c2f = "<<c2f<<"\n";
+  cout <<"advance_step_OA2: l="<<l<<" c2f = "<<c2f<<endl;
 #endif
   // --------------------------------------------------------
 
   // --------------------------------------------------------
   // 0. Coarse to fine recv:
 #ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l<<" recv C2F BCs\n";
+  cout <<"advance_step_OA2: l="<<l<<" recv C2F BCs"<<endl;
 #endif
   for (size_t i=0;i<grid->BC_bd.size();i++) {
     if (grid->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
@@ -927,7 +932,7 @@ double sim_control_NG_MPI::advance_step_OA2(
     }
   }
 #ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l<<" C2F CLEAR SEND\n";
+  cout <<"advance_step_OA2: l="<<l<<" C2F CLEAR SEND"<<endl;
 #endif
   BC_COARSE_TO_FINE_SEND_clear_sends();
   // --------------------------------------------------------
@@ -936,7 +941,7 @@ double sim_control_NG_MPI::advance_step_OA2(
   // 1. Update external boundary conditions on level l
   // --------------------------------------------------------
 #ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l<<" update external BCs\n";
+  cout <<"advance_step_OA2: l="<<l<<" update external BCs"<<endl;
 #endif
   err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver,
                                 ctime, OA2, OA2);
@@ -950,7 +955,7 @@ double sim_control_NG_MPI::advance_step_OA2(
   // --------------------------------------------------------
   if (c2f>=0) { // && SimPM.levels[l].step%2==0) {
 #ifdef TEST_INT
-    cout <<"advance_step_OA2: l="<<l<<" C2F SEND\n";
+    cout <<"advance_step_OA2: l="<<l<<" C2F SEND"<<endl;
 #endif
     err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid,spatial_solver,
                                          l, grid->BC_bd[c2f], 2,2);
@@ -962,13 +967,13 @@ double sim_control_NG_MPI::advance_step_OA2(
   // --------------------------------------------------------
   if (!finest_level) {
 #ifdef TEST_INT
-    cout <<"advance_step_OA2: l="<<l<<" first fine step\n";
+    cout <<"advance_step_OA2: l="<<l<<" first fine step"<<endl;
 #endif
     dt2_fine = advance_step_OA2(l+1);
   }
   dt2_this = SimPM.levels[l].dt;
 #ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l<<" dt="<<dt2_this<<"\n";
+  cout <<"advance_step_OA2: l="<<l<<" dt="<<dt2_this<<endl;
 #endif
   // --------------------------------------------------------
 
@@ -978,7 +983,7 @@ double sim_control_NG_MPI::advance_step_OA2(
   //    and advance to time-centred state at 0.5*dt
   // --------------------------------------------------------
 #ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l<<" calc DU half step\n";
+  cout <<"advance_step_OA2: l="<<l<<" calc DU half step"<<endl;
 #endif
   double dt_now = dt2_this*0.5;       // half of the timestep
   spatial_solver->Setdt(dt_now);
@@ -991,7 +996,7 @@ double sim_control_NG_MPI::advance_step_OA2(
 
   // update state vector Ph to half-step values
 #ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l<<" update cell half step\n";
+  cout <<"advance_step_OA2: l="<<l<<" update cell half step"<<endl;
 #endif
   err += grid_update_state_vector(dt_now, OA1,OA2, grid);
   rep.errorTest("scn::advance_step_OA2: state-vec update OA2",0,err);
@@ -1005,7 +1010,7 @@ double sim_control_NG_MPI::advance_step_OA2(
   // - don't update C2F (b/c it is 1/4 step on l-1 level)
   // --------------------------------------------------------
 #ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l<<" update boundaries\n";
+  cout <<"advance_step_OA2: l="<<l<<" update boundaries"<<endl;
 #endif
   err += TimeUpdateInternalBCs(SimPM, l, grid, spatial_solver,
                                     ctime+dt_now, OA1, OA2);
@@ -1028,14 +1033,14 @@ double sim_control_NG_MPI::advance_step_OA2(
   dt_now = dt2_this;  // full step
   spatial_solver->Setdt(dt_now);
 #ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l<<" raytracing\n";
+  cout <<"advance_step_OA2: l="<<l<<" raytracing"<<endl;
 #endif
   if (grid->RT) {
     err += do_ongrid_raytracing(SimPM,grid,l);
     rep.errorTest("scn::advance_time: calc_rt_cols() OA2",0,err);
   }
 #ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l<<" full step calc dU\n";
+  cout <<"advance_step_OA2: l="<<l<<" full step calc dU"<<endl;
 #endif
   err += calc_microphysics_dU(dt_now, grid);
   err += calc_dynamics_dU(dt_now, OA2, grid);
@@ -1043,6 +1048,8 @@ double sim_control_NG_MPI::advance_step_OA2(
   err += calc_thermal_conduction_dU(dt_now,OA2, grid);
 #endif // THERMAL_CONDUCTION
   rep.errorTest("scn::advance_step_OA2: calc_x_dU OA2",0,err);
+  if (l>0)                    save_fine_fluxes(SimPM, l);
+  if (l<SimPM.grid_nlevels-1) save_coarse_fluxes(SimPM, l);
   // --------------------------------------------------------
 
   // --------------------------------------------------------
@@ -1062,7 +1069,7 @@ double sim_control_NG_MPI::advance_step_OA2(
   // --------------------------------------------------------
   if (!finest_level) {
 #ifdef TEST_INT
-    cout <<"advance_step_OA2: l="<<l<<" second fine step\n";
+    cout <<"advance_step_OA2: l="<<l<<" second fine step"<<endl;
 #endif
     dt2_fine = advance_step_OA2(l+1);
   }
@@ -1075,13 +1082,20 @@ double sim_control_NG_MPI::advance_step_OA2(
   //  - update grid on level l to new time
   // --------------------------------------------------------
 #ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l<<" full step update\n";
+  cout <<"advance_step_OA2: l="<<l<<" full step update"<<endl;
 #endif
   spatial_solver->Setdt(dt_now);
+  if (l < SimPM.grid_nlevels-1) {
+    err += recv_BC89_fluxes_F2C(spatial_solver,SimPM,l,OA2,OA2);
+    rep.errorTest("scn::advance_step_OA1: recv_BC89_flux",0,err);
+  }
   err += grid_update_state_vector(SimPM.levels[l].dt,OA2,OA2, grid);
   rep.errorTest("scn::advance_step_OA2: state-vec update",0,err);
 #ifndef SKIP_BC89_FLUX
   clear_sends_BC89_fluxes();
+#endif
+#ifdef TEST_INT
+  cout <<"advance_step_OA2: l="<<l<<" updated, sends cleared"<<endl;
 #endif
   // --------------------------------------------------------
 
@@ -1102,14 +1116,23 @@ double sim_control_NG_MPI::advance_step_OA2(
   // --------------------------------------------------------
   // 11. update internal boundary conditions on level l
   // --------------------------------------------------------
+#ifdef TEST_INT
+  cout <<"advance_step_OA2: l="<<l<<" update internal BCs"<<endl;
+#endif
   err += TimeUpdateInternalBCs(SimPM, l, grid, spatial_solver,
                               ctime+dt_now, OA2, OA2);
   //  - Recv F2C data from l+1
   if (!finest_level && f2cr>=0) {
+#ifdef TEST_INT
+    cout <<"advance_step_OA2: l="<<l<<" F2C recv start"<<endl;
+#endif
     err += BC_update_FINE_TO_COARSE_RECV(
                 SimPM,spatial_solver,l,grid->BC_bd[f2cr],OA2,OA2);
     //  - Clear F2C sends
     BC_FINE_TO_COARSE_SEND_clear_sends();
+#ifdef TEST_INT
+    cout <<"advance_step_OA2: l="<<l<<" F2C recv done"<<endl;
+#endif
   }
 
   // --------------------------------------------------------
@@ -1127,23 +1150,35 @@ double sim_control_NG_MPI::advance_step_OA2(
   // --------------------------------------------------------
   if (l>0) {
 #ifdef TEST_INT
-    cout <<"step="<<SimPM.levels[l].step<<"\n";
+    cout <<"step="<<SimPM.levels[l].step<<endl;
 #endif
 
+#ifdef TEST_INT
+    cout <<"advance_step_OA2: l="<<l<<" send BC89 fluxes"<<endl;
+#endif
 #ifdef BC89_FULLSTEP
     if (SimPM.levels[l].step%2==0) {
 #endif
       // only send level fluxes every 2nd step (coarse grid is only
       // updated at the full-step, not at the half-step).
 #ifndef SKIP_BC89_FLUX
-      err += send_BC89_fluxes_F2C(l,OA2,OA2);
+      err += send_BC89_fluxes_F2C(SimPM,l,OA2,OA2);
 #endif
 #ifdef BC89_FULLSTEP
     }
 #endif
+#ifdef TEST_INT
+    cout <<"advance_step_OA2: l="<<l<<" sent BC89 fluxes"<<endl;
+#endif
 
+#ifdef TEST_INT
+    cout <<"advance_step_OA2: l="<<l<<" update F2C"<<endl;
+#endif
     err += BC_update_FINE_TO_COARSE_SEND(
               SimPM,spatial_solver,l,grid->BC_bd[f2cs],OA2,OA2);
+#ifdef TEST_INT
+    cout <<"advance_step_OA2: l="<<l<<" updated F2C"<<endl;
+#endif
   }
   // --------------------------------------------------------
 
@@ -1152,330 +1187,9 @@ double sim_control_NG_MPI::advance_step_OA2(
   cout <<"NG-MPI advance_step_OA2, level="<<l<<", returning. t=";
   cout <<SimPM.levels[l].simtime<<", step="<<SimPM.levels[l].step;
   cout <<", next dt="<<SimPM.levels[l].dt<<" next time=";
-  cout << SimPM.levels[l].simtime + SimPM.levels[l].dt <<"\n";
+  cout << SimPM.levels[l].simtime + SimPM.levels[l].dt <<endl;
 #endif
   return dt2_this + SimPM.levels[l].dt;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-void sim_control_NG_MPI::clear_sends_BC89_fluxes()
-{
-  for (unsigned int ib=0; ib<BC89_flux_send_list.size(); ib++) {
-    COMM->wait_for_send_to_finish(BC89_flux_send_list[ib]);
-  }
-  BC89_flux_send_list.clear();
-  return;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int sim_control_NG_MPI::send_BC89_fluxes_F2C(
-      const int l,      ///< My level in grid hierarchy.
-      const int step,   ///< OA1 or OA2
-      const int ooa     ///< Full order of accuracy of simulation
-      )
-{
-#ifdef SKIP_BC89_FLUX
-  return 0;
-#endif
-  if (step != ooa) {
-    cout <<"l="<<l<<": don't send fluxes on half step\n";
-    return 1;
-  }
-#ifdef BC89_FULLSTEP
-  if (SimPM.levels[l].step%2 !=0 ) {
-    rep.error("Don't call BC89 Flux-SEND on odd steps",1);
-  }
-#endif
-  if (l==0) {
-    rep.error("Coarsest level trying to send flux data",l);
-  }
-  int err=0;
-
-  // else we have to send data to at least one other MPI process:
-  class GridBaseClass *grid = SimPM.levels[l].grid;
-  class MCMDcontrol *MCMD = &(SimPM.levels[l].MCMD);
-  int n_send = grid->flux_update_send.size();
-  for (int isend=0;isend<n_send;isend++) {
-    // loop over boundaries (some send to more than one process)
-    struct flux_update *fup = &(grid->flux_update_send[isend]);
-    // some sends may be null, so we skip them:
-    if (fup->fi[0]==0) {
-#ifdef TEST_BC89FLUX
-      cout <<"BC89_FLUX send "<<isend<<" is null, continuing..."<<endl;
-#endif
-      continue;
-    }
-    else {
-#ifdef TEST_BC89FLUX
-      cout <<"l="<<l<<": send "<<isend<<" is not null: sending data."<<endl;
-#endif
-    }
-    size_t n_el = fup->fi.size();
-    size_t n_data = n_el * SimPM.nvar;
-    pion_flt *data = 0; // buffer for sending by MPI
-    data = mem.myalloc(data,n_data);
-    size_t iel=0;
-    for (size_t ii=0;ii<n_el;ii++) {
-      for (int v=0;v<SimPM.nvar;v++) {
-        data[iel] = fup->fi[ii]->flux[v];
-        iel++;
-      }
-    }
-    //
-    // Send data using a non-blocking MPI send
-    //
-    string id;
-
-    // loop over procs on level l-1 to send to.
-    for (unsigned int ii=0; ii<fup->rank.size();ii++) {
-#ifdef TEST_BC89FLUX
-      cout <<"l="<<l<<": isend="<<isend<<", send "<<ii<<" of ";
-      cout <<fup->rank.size()<<" to rank "<<fup->rank[ii]<<endl;
-#endif
-      if (fup->rank[ii] == MCMD->get_myrank()) {
-#ifdef TEST_BC89FLUX
-        cout <<"l="<<l<<": ignoring BC89 for isend="<<isend<<" (to myrank)."<<endl;
-#endif
-        continue;
-      }
-      // unique as long as isend<30, l<100.
-      int comm_tag = BC_MPI_FLUX_tag +100*isend +l;
-#ifdef TEST_BC89FLUX
-      cout <<"l="<<l<<": BC89 FLUX: Sending "<<n_data;
-      cout <<" doubles from proc "<<MCMD->get_myrank();
-      cout <<" to parent proc "<<fup->rank[ii]<<endl;
-#endif
-      err += COMM->send_double_data(
-            fup->rank[ii],n_data,data,id,comm_tag);
-      if (err) rep.error("FLUX_F2C send_data failed.",err);
-#ifdef TEST_BC89FLUX
-      cout <<"l="<<l<<": BC89 FLUX: returned with id="<<id;
-      cout <<endl;
-#endif
-      // store ID to clear the send later
-      BC89_flux_send_list.push_back(id);
-    } // loop over ranks
-    data = mem.myfree(data);
-  } // loop over send boundaries.
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
-      const int l,      ///< My level in grid hierarchy.
-      const double dt,  ///< timestep
-      const int step,   ///< OA1 or OA2 
-      const int ooa     ///< Full order of accuracy of simulation
-      )
-{
-#ifdef SKIP_BC89_FLUX
-  return 0;
-#endif
-#ifdef BC89_FULLSTEP
-  if (step != ooa) {
-    cout <<"don't receive fluxes on half step\n";
-    return 1;
-  }
-#endif
-  if (l==SimPM.grid_nlevels-1) {
-    rep.error("finest level trying to receive data from l+1",l);
-  }
-  int err=0;
-
-  // loop over all boundaries that we need to receive
-  double ftmp[SimPM.nvar], utmp[SimPM.nvar];
-  for (int v=0;v<SimPM.nvar;v++) ftmp[v]=0.0;
-  class GridBaseClass *grid = SimPM.levels[l].grid;
-  class MCMDcontrol *MCMD = &(SimPM.levels[l].MCMD);
-  int n_bd = grid->flux_update_recv.size();
-  
-  for (int irecv=0;irecv<n_bd;irecv++) {
-    struct flux_update *fup = &(grid->flux_update_recv[irecv]);
-    // some recvs may be null, so we skip them:
-    if (fup->fi[0]==0) {
-#ifdef TEST_BC89FLUX
-      cout <<"l="<<l<<": recv "<<irecv<<" is null, continuing...\n";
-#endif
-      continue;
-    }
-    else if (fup->rank[0] == MCMD->get_myrank()) {
-#ifdef TEST_BC89FLUX
-      cout <<"l="<<l<<": calling serial BC89 for irecv="<<irecv;
-      cout <<" (same rank). dir="<<fup->dir<<endl;
-#endif
-      int d = fup->dir;
-      struct flux_update *fsend = 
-                  &(SimPM.levels[l].child->flux_update_send[d]);
-      err = recv_BC89_flux_boundary(grid,dt,*fsend,*fup,d,
-                              static_cast<axes>(fup->ax));
-      rep.errorTest("serial BC89 call",0,err);
-      continue;
-    }
-    else {
-#ifdef TEST_BC89FLUX
-      cout <<"l="<<l<<": recv "<<irecv<<" is not null: ";
-      cout <<"recving data from "<<fup->rank[0]<<endl;
-#endif
-    }
-
-
-    // Normally we have nchild*2*ndim boundaries, so the direction
-    // associated with a given "irecv" is irecv%(2*ndim).
-    // But if only the grid boundary is in common with level l+1, 
-    // then there are only 2^(ndim-1) elements, one for each l+1
-    // grid that is adjacent to the level l grid.
-    int dir = -1;
-    //if (n_bd >= 2*SimPM.ndim) dir = irecv % 2*SimPM.ndim;
-    //else                      dir = irecv;
-    dir = fup->dir;
-
-    struct flux_interface *fi=0;
-    size_t n_el = fup->fi.size();
-    size_t n_data = n_el * SimPM.nvar;
-    pion_flt *buf = 0;
-    buf = mem.myalloc(buf,n_data);
-
-    // receive data: comm_tag ensures that we select the data
-    // relating to this value of "irecv".
-    string recv_id;
-    int recv_tag=-1;
-    int from_rank=fup->rank[0];
-    // unique as long as isend<30, l<10, rank<10000.
-    int comm_tag = BC_MPI_FLUX_tag +100*dir +(l+1);
-#ifdef TEST_BC89FLUX
-    cout <<"looking for data with tag: "<<comm_tag<<endl;
-#endif
-    err = COMM->look_for_data_to_receive(
-          &from_rank, // rank of sender (output)
-          recv_id,    // identifier for receive (output).
-          &recv_tag,  // comm_tag associated with data (output)
-          comm_tag,
-          COMM_DOUBLEDATA // type of data we want.
-          );
-    if (err) rep.error("FLUX look for double data failed",err);
-#ifdef TEST_BC89FLUX
-    cout <<"l="<<l<<": BC89 FLUX: found data from rank ";
-    cout <<from_rank<<", and ID "<<recv_id<<endl;
-#endif
-
-    //
-    // Receive data into buffer.  Data stored for each fine cell:
-    // flux[nv]
-    //
-    err = COMM->receive_double_data(
-                          from_rank, recv_tag, recv_id, n_data, buf);
-    if (err) rep.error("(flux BC89) getdata failed",err);
-
-    size_t iel=0;
-    for (size_t ii=0;ii<n_el;ii++) {
-      fi = fup->fi[ii];
-      // construct error in flux:
-      for (int v=0;v<SimPM.nvar;v++) {
-        // make flux[v] be the difference of coarse and fine.
-        fi->flux[v] += buf[iel+v];
-#ifdef TEST_BC89FLUX
-        if (!isfinite(buf[iel])) {
-          cout <<"l="<<l<<": element "<<ii<<" of FLUX C2F RECV: ";
-          cout <<" var "<<iel<<" is "<<buf[iel]<<endl;
-          rep.error("infinite",buf[ii]);
-        }
-#endif
-      }
-      iel += SimPM.nvar;
-
-      // divide by face area so that it is a flux.
-      for (int v=0;v<SimPM.nvar;v++) fi->flux[v] /=  fi->area[0];
-      for (int v=0;v<SimPM.nvar;v++) ftmp[v]=0.0;
-      // re-calculate dU based on error in flux.
-      if (fup->dir%2 ==0) {
-        spatial_solver->DivStateVectorComponent(fi->c[0], grid,
-          static_cast<axes>(fup->ax), SimPM.nvar,ftmp,fi->flux,utmp);
-      }
-      else {
-        spatial_solver->DivStateVectorComponent(fi->c[0], grid,
-          static_cast<axes>(fup->ax), SimPM.nvar,fi->flux,ftmp,utmp);
-      }
-#ifdef TEST_BC89FLUX
-      rep.printVec("**********  Error",utmp, SimPM.nvar);
-      int q=SimPM.nvar-1;
-      cout <<"Flux colour: "<<fi->flux[q]<<": "<<fi->c[0]->dU[q];
-      cout <<", "<<utmp[q]<<"\n";
-#endif
-      // correct dU so that coarse level is consistent with fine.
-      for (int v=0;v<SimPM.nvar;v++) fi->c[0]->dU[v] += utmp[v];
-
-    } // loop over elements
-    if (iel !=n_data) rep.error("ndata",iel-n_data);
-    buf = mem.myfree(buf);
-  } // loop over faces in this direction.
-
-    
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-
-int sim_control_NG_MPI::grid_update_state_vector(
-      const double dt,  ///< timestep
-      const int step, ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
-      const int ooa,   ///< Full order of accuracy of simulation
-      class GridBaseClass *grid ///< Computational grid.
-      )
-{
-  // get current level of grid in hierarchy.
-  int level=0;
-  int err=0;
-  for (int v=0;v<SimPM.grid_nlevels;v++) {
-    if (grid == SimPM.levels[v].grid) level = v;
-  }
-
-  //
-  // loop through the faces, and compare the fine with coarse level
-  // fluxes.  Subtract the flux difference from the cells adjacent to
-  // the face.
-  //
-  if (
-#ifdef BC89_FULLSTEP
-      step==ooa && 
-#endif
-      level < SimPM.grid_nlevels-1) {
-#ifdef DEBUG_NG
-    cout <<"level "<<level<<": correcting fluxes from finer grid\n";
-#endif
-#ifndef SKIP_BC89_FLUX
-    err = recv_BC89_fluxes_F2C(level,dt,step,ooa);
-    rep.errorTest("return from recv_fluxes_F2C",0,err);
-#endif
-  }
-
-  err = time_integrator::grid_update_state_vector(dt,step,
-                                                   ooa,grid);
-  rep.errorTest("return from grid_update_state_vec",0,err);
-  return err;
 }
 
 

@@ -766,7 +766,7 @@ int stellar_wind_angle::add_evolving_source(
   // Optional time offset between simulation time and evolutionary
   // time.  Also optional scaling.
   //
-  for (size_t i=0; i<temp->Npt; i++) {
+  for (int i=0; i<temp->Npt; i++) {
     temp->time_evo[i] += time_offset;
     temp->time_evo[i] /= t_scalefactor;
     //cout <<"t="<<temp->time_evo[i]<<"\n";

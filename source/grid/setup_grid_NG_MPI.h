@@ -19,6 +19,7 @@
 #include "spatial_solvers/solver_eqn_base.h"
 #include "decomposition/MCMD_control.h"
 #include "boundaries/assign_update_bcs_NG_MPI.h"
+#include "boundaries/NG_MPI_BC89flux.h"
 #include "grid/setup_NG_grid.h"
 #include "grid/setup_fixed_grid_MPI.h"
 
@@ -39,7 +40,8 @@
 class setup_grid_NG_MPI :
   virtual public assign_update_bcs_NG_MPI,
   virtual public setup_NG_grid,
-  virtual public setup_fixed_grid_pllel
+  virtual public setup_fixed_grid_pllel,
+  virtual public NG_MPI_BC89flux
 {
   public:
   setup_grid_NG_MPI();

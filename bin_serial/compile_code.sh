@@ -31,7 +31,7 @@ export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
 export PION_OPTIMISE=HIGH
 NCORES=8
 #export PION_OPTIMISE=LOW
-#NCORES=1
+NCORES=1
 export CXX=g++
 
 #################################
@@ -49,6 +49,7 @@ if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
   export CC=gcc
   export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DCVODE5"
   export PION_OPTIMISE=HIGH
+  #export PION_OPTIMISE=LOW
   NCORES=$nc
 elif [  "$id" == "Ubuntu" ] && [ "$ver" == "16.04" ]; then
   echo "Detected Ubuntu 16.04 (xenial): compiling extra libraries"

@@ -22,6 +22,7 @@
 #include "spatial_solvers/solver_eqn_base.h"
 #include "decomposition/MCMD_control.h"
 #include "boundaries/assign_update_bcs_NG.h"
+#include "boundaries/NG_BC89flux.h"
 
 ///
 /// Set up a static NG grid structure.  Serial code, so each
@@ -29,7 +30,8 @@
 ///
 class setup_NG_grid :
   virtual public setup_fixed_grid,
-  virtual public assign_update_bcs_NG
+  virtual public assign_update_bcs_NG,
+  virtual public NG_BC89flux
 {
   public:
   setup_NG_grid();
@@ -56,7 +58,7 @@ class setup_NG_grid :
   /// raytracer associated with each grid.
   ///
   virtual int setup_raytracing(
-      class SimParams &,    ///< pointer to simulation parameters
+      class SimParams &,    ///< simulation parameters
       vector<class GridBaseClass *> &  ///< grid pointers.
       );
 

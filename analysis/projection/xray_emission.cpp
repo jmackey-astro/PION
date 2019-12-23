@@ -298,5 +298,19 @@ double Xray_emission::NII6584_emissivity(
 // ##################################################################
 
 
+double Xray_emission::Brems20cm_emissivity(
+        const double T ///< Temperature (K)
+        )
+{
+  // returned value has units cm^5*MJy/ster
+  // multiply by path length, n(e), n(H+) to get intensity.
+  return 4.44e-21 * sqrt(T);
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 

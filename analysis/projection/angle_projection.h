@@ -108,6 +108,7 @@ int generate_angle_image(
     int [],   ///< Number of pixels in each direction
     size_t,   ///< total number of pixels
     int,       ///< number of extra pixels w.r.t. cells.
+    size_t,      ///< number of images to make
     double ** ///< pointer to the image arrays.
     );
 

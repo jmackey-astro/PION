@@ -73,6 +73,7 @@ void interpolate_arrays::spline(
   gsl_spline *data = gsl_spline_alloc(gsl_interp_cspline, len);
   
   err = gsl_spline_init(data,x,y,len);
+  if (err) rep.error("gsl spline setup",err);
 
   id = slist.size();
   slist.push_back(data);
@@ -95,11 +96,12 @@ void interpolate_arrays::splint(
       double *y
       )
 {
-  if (id>=slist.size())
+  if (id>=static_cast<int>(slist.size()))
     rep.error("bad splint request",id);
 
   // gsl_interp_accel *temp =  gsl_interp_accel_alloc();
   int err = gsl_spline_eval_e(slist[id],x,0,y);
+  if (err) rep.error("gsl splint lookup",err);
   // gsl_interp_accel_free(temp);
   return;
 }

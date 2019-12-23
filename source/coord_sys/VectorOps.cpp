@@ -590,6 +590,7 @@ int VectorOps_Cart::SetSlope(
   } // 1st order.
   
   else if (OA==OA2) { // second order spatial accuracy.
+    bool nopos=false, noneg=false;
     pion_flt slpn[nv], slpp[nv];
     cell *cn=0,*cp=0;
     enum direction dp=NO,dn=NO;
@@ -601,9 +602,9 @@ int VectorOps_Cart::SetSlope(
      default: rep.error("Bad direction in SetSlope",d);
     }
     cp = grid->NextPt(c,dp); cn=grid->NextPt(c,dn);
-//#ifdef TESTING
-    if (cp==0 || cn==0) rep.error("No left or right cell in SetSlope",cp);
-//#endif //TESTING
+    if (cp==0 && cn==0) rep.error("No left or right cell in SetSlope",cp);
+    if (!cp) {cp = grid->NextPt(cn,dp); nopos=true;}
+    if (!cn) {cn = grid->NextPt(cp,dn); noneg=true;}
     for (int v=0;v<nv;v++) {
       slpn[v] = (c->Ph[v] -cn->Ph[v])/dx;
       slpp[v] = (cp->Ph[v]- c->Ph[v])/dx;
@@ -1119,6 +1120,7 @@ int VectorOps_Cyl::SetSlope(
 {
   double dR = grid->DX();
   double dZ = dR;
+  bool nopos=false, noneg=false;
   if (OA==OA1){ // first order accurate so zero slope.
     for(int v=0;v<nv;v++) dpdx[v]=0.;
   } // 1st order.
@@ -1134,9 +1136,9 @@ int VectorOps_Cyl::SetSlope(
      default: rep.error("Bad direction in SetSlope",d);
     }
     cp = grid->NextPt(c,dp); cn=grid->NextPt(c,dn);
-//#ifdef TESTING
-    if (cp==0 || cn==0) rep.error("No left or right cell in SetSlope",cp);
-//#endif //TESTING
+    if (cp==0 && cn==0) rep.error("No left or right cell in SetSlope",cp);
+    if (!cp) {cp = grid->NextPt(cn,dp); nopos=true;}
+    if (!cn) {cn = grid->NextPt(cp,dn); noneg=true;}
     switch (d) {
      case Zcyl: 
       for (int v=0;v<nv;v++) {
@@ -1144,34 +1146,58 @@ int VectorOps_Cyl::SetSlope(
 	slpp[v] = (cp->Ph[v]- c->Ph[v])/dZ;
 	dpdx[v] = AvgFalle(slpn[v],slpp[v]);
       }
-#ifdef TESTING
+#ifdef DEBUG3
       rep.printVec("Z slpn",slpn,nv);
       rep.printVec("Z slpp",slpp,nv);
       rep.printVec("Z dpdx",dpdx,nv);
       cout <<"R_com(c) = "<<R_com(c,dR)<<" vodz="<<dR<<"\n";
-#endif //TESTING
+#endif
       break;
      case Rcyl:
-      for (int v=0;v<nv;v++) {
-	slpn[v] = (c->Ph[v] -cn->Ph[v])/ (R_com(c,dR) - R_com(cn,dR));
-	slpp[v] = (cp->Ph[v]- c->Ph[v])/ (R_com(cp,dR)- R_com(c,dR) );
-	dpdx[v] = AvgFalle(slpn[v],slpp[v]);
+      if (noneg) {
+        for (int v=0;v<nv;v++) slpn[v] = 0.0;
       }
-#ifdef TESTING
+      else {
+        for (int v=0;v<nv;v++) {
+          slpn[v] = (c->Ph[v] -cn->Ph[v])/ (R_com(c,dR) - R_com(cn,dR));
+        }
+      }
+      if (nopos) {
+        for (int v=0;v<nv;v++) slpp[v] = 0.0;
+      }
+      else {
+        for (int v=0;v<nv;v++) {
+          slpp[v] = (cp->Ph[v]- c->Ph[v])/ (R_com(cp,dR)- R_com(c,dR) );
+        }
+      }
+      for (int v=0;v<nv;v++) dpdx[v] = AvgFalle(slpn[v],slpp[v]);
+#ifdef DEBUG3
       rep.printVec("R slpn",slpn,nv);
       rep.printVec("R slpp",slpp,nv);
       rep.printVec("R dpdx",dpdx,nv);
       cout <<"R_com(c) = "<<R_com(c,dR)<<"\n";
-#endif //TESTING
+#endif
       break;
      case Tcyl: // Need extra scale factor in denominator to get R*dtheta
-      for (int v=0;v<nv;v++) {
-	slpn[v] = (c->Ph[v] -cn->Ph[v])/ R_com(c,dR)/
-                  (CI.get_dpos(c,Tcyl)  - CI.get_dpos(cn,Tcyl));
-	slpp[v] = (cp->Ph[v]- c->Ph[v])/ R_com(c,dR)/
-                  (CI.get_dpos(cp,Tcyl) - CI.get_dpos(c,Tcyl));
-	dpdx[v] = AvgFalle(slpn[v],slpp[v]);
+      if (noneg) {
+        for (int v=0;v<nv;v++) slpn[v] = 0.0;
       }
+      else {
+        for (int v=0;v<nv;v++) {
+  	  slpn[v] = (c->Ph[v] -cn->Ph[v])/ R_com(c,dR)/
+                  (CI.get_dpos(c,Tcyl)  - CI.get_dpos(cn,Tcyl));
+        }
+      }
+      if (nopos) {
+        for (int v=0;v<nv;v++) slpp[v] = 0.0;
+      }
+      else {
+        for (int v=0;v<nv;v++) {
+          slpp[v] = (cp->Ph[v]- c->Ph[v])/ R_com(c,dR)/
+                  (CI.get_dpos(cp,Tcyl) - CI.get_dpos(c,Tcyl));
+        }
+      }
+      for (int v=0;v<nv;v++) dpdx[v] = AvgFalle(slpn[v],slpp[v]);
       break;
      default:
       rep.error("Bad axis in SetSlope",d);

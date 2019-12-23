@@ -53,6 +53,9 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
   }
 #endif // C2F_TAU
 
+#ifdef TEST_C2F
+  cout <<"assigning C2F boundary for dir "<<b->dir<<"\n";
+#endif
   list<cell*>::iterator bpt=b->data.begin();
   int gidx = grid->idx();
   cell *pc = parent->FirstPt_All(); // parent cell.
@@ -65,18 +68,16 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
     for (int d=0;d<par.ndim;d++) {
       // Find parent cell that covers this boundary cell.  It should be
       // G_idx/2 away from the boundary cell in each direction.
-#ifdef TEST_MPI_NG
-      rep.printVec("bpt pos",(*bpt)->pos,par.ndim);
-#endif
       enum axes ax = static_cast<axes>(d);
       enum direction pos = static_cast<direction>(2*d+1);
       while (fabs(distance = grid->idifference_cell2cell((*bpt),pc,ax)) > gidx)
         pc = parent->NextPt(pc,pos);
       if (!pc) rep.error("C2F boundaries setup",distance);
     }
-#ifdef TEST_MPI_NG
-    cout <<"found parent: ";
-    rep.printVec("pc->pos",pc->pos,par.ndim);
+#ifdef TEST_C2F
+    //rep.printVec("bpt pos",(*bpt)->pos,par.ndim);
+    //cout <<"found parent: ";
+    //rep.printVec("pc->pos",pc->pos,par.ndim);
 #endif
     // set boundary cell's 'npt' pointer to point to the parent cell.
     (*bpt)->npt = pc;
@@ -369,13 +370,9 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       cell *c;      // coarse-level cell.
       for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
         c = (*f_iter)->npt;
-        c_vol = coarse->CellVolume(c,0);
-        solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
-        solver->SetSlope(c,YY,par.nvar,sy,OA2,coarse);
-        solver->SetSlope(c,ZZ,par.nvar,sz,OA2,coarse);
 
-        // only do this on every second row because we update 4
-        // cells at a time.  Also skip odd z-planes.
+        // only do this on every second plane/row because we update 8
+        // cells at a time.
         if (!fine->NextPt((*f_iter),YP) ||
              fine->NextPt((*f_iter),YP)->npt != c) {
           continue;
@@ -384,6 +381,11 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
              fine->NextPt((*f_iter),ZP)->npt != c) {
           continue;
         }
+
+        c_vol = coarse->CellVolume(c,0);
+        solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
+        solver->SetSlope(c,YY,par.nvar,sy,OA2,coarse);
+        solver->SetSlope(c,ZZ,par.nvar,sz,OA2,coarse);
 
         // get list of 8 fine cells.
         fch[0] = (*f_iter);

@@ -37,13 +37,14 @@ OPT += -D$(IOMODE)
 OPT += -DSILO
 
 #MAKE_UNAME=JUROPA
-MAKE_UNAME=standard
+#MAKE_UNAME=standard
+MAKE_UNAME=ubuntu18
 #MAKE_UNAME=aibn129
 #MAKE_UNAME=epona
 #MAKE_UNAME=stokes
 
 # All machines and options need readline and maths
-LDFLAGS = -lreadline
+#LDFLAGS = -lreadline
 # display all warnings
 CXXFLAGS = -O3 
 CXXFLAGS += -g -Wall
@@ -75,6 +76,39 @@ ifeq ($(MAKE_UNAME), standard)
   LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
 endif
 ################### --- STANDARD WORKSTATION ---######################
+
+######################################################################
+# Options for an Ubuntu 18 workstation with locally installed libraries.
+######################################################################
+ifeq ($(MAKE_UNAME), ubuntu18)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3 -Wno-unused-function
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  else
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  endif
+  
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+    CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+    CXX = mpicxx
+  endif
+
+  OPT += -DCVODE5
+  MYLIB = $(CURDIR)/../../extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -Wl,-rpath,${MYLIB}/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lm
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl -lgslcblas
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+endif
+################### --- UBUNTU 18 ---######################
 
 ###########################################
 # Specific Options for OS-X
@@ -160,18 +194,15 @@ OBJECTS = file_status.o  \
         comm_files.o \
         VectorOps.o \
         VectorOps_spherical.o \
-	integrator.o \
-        cooling.o \
-        microphysics_base.o \
-	mp_only_cooling.o \
-	cooling_SD93_cie.o \
-	hydrogen_recomb_Hummer94.o  \
-        hydrogen_mp.o \
-	hydrogen_photoion.o \
-	cvode_integrator.o \
-        MPv3.o MPv5.o MPv6.o MPv7.o MPv10.o \
 	raytracer_SC_pllel.o \
-        raytracer_SC.o
+        raytracer_SC.o \
+  setup_grid_NG_MPI.o setup_NG_grid.o
+
+
+OBJ_CHEM=integrator.o cvode_integrator.o cooling.o cooling_SD93_cie.o \
+  hydrogen_mp.o hydrogen_photoion.o hydrogen_recomb_Hummer94.o \
+  microphysics_base.o mp_only_cooling.o \
+  MPv3.o MPv5.o MPv6.o MPv7.o MPv10.o photo_xsections.o
 
 OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
           outflow_boundaries.o inflow_boundaries.o \
@@ -182,6 +213,14 @@ OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
           periodic_boundaries_MPI.o assign_update_bcs_MPI.o \
           RT_MPI_boundaries.o
 
+OBJ_NG_BCS = assign_update_bcs_NG_MPI.o assign_update_bcs_NG.o \
+  NG_coarse_to_fine_boundaries.o \
+  NG_fine_to_coarse_boundaries.o \
+  NG_MPI_coarse_to_fine_boundaries.o \
+  NG_MPI_fine_to_coarse_boundaries.o \
+  NG_BC89flux.o \
+  NG_MPI_BC89flux.o
+
 OBJ_EQNS =  eqns_base.o eqns_hydro_adiabatic.o eqns_mhd_adiabatic.o 
 
 OBJ_SOLVE = riemannMHD.o HLLD_MHD.o Roe_MHD_ConservedVar_solver.o \
@@ -190,7 +229,7 @@ OBJ_SOLVE = riemannMHD.o HLLD_MHD.o Roe_MHD_ConservedVar_solver.o \
             solver_eqn_base.o solver_eqn_hydro_adi.o solver_eqn_mhd_adi.o
 
 
-OBJECTS += $(OBJ_BCS) $(OBJ_EQNS) $(OBJ_SOLVE)
+OBJECTS += $(OBJ_BCS) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CHEM) $(OBJ_NG_BCS) 
 
 
 ##########################
@@ -227,12 +266,27 @@ VectorOps_spherical.o: VectorOps_spherical.cpp VectorOps_spherical.h VectorOps.h
 
 MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
 
-setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
-    grid_base_class.h uniform_grid.h
-
 setup_fixed_grid_MPI.o: setup_fixed_grid_MPI.cpp setup_fixed_grid_MPI.h \
-    setup_fixed_grid.h ${GLOBAL} \
-    grid_base_class.h uniform_grid.h
+  setup_fixed_grid.h ${GLOBAL} uniform_grid_pllel.h \
+  grid_base_class.h uniform_grid.h assign_update_bcs.h \
+  periodic_boundaries_MPI.h assign_update_bcs_MPI.h \
+  RT_MPI_boundaries.h VectorOps.h solver_eqn_base.h  eqns_base.h \
+  solver_eqn_hydro_adi.h solver_eqn_hydro_adi.cpp
+
+setup_grid_NG_MPI.o: setup_grid_NG_MPI.cpp setup_grid_NG_MPI.h \
+  setup_fixed_grid_MPI.h setup_fixed_grid.h setup_NG_grid.h \
+  ${GLOBAL} uniform_grid_pllel.h \
+  grid_base_class.h uniform_grid.h assign_update_bcs.h \
+  periodic_boundaries_MPI.h assign_update_bcs_MPI.h \
+  RT_MPI_boundaries.h VectorOps.h solver_eqn_base.h  eqns_base.h \
+  solver_eqn_hydro_adi.h solver_eqn_hydro_adi.cpp \
+  assign_update_bcs_NG_MPI.h assign_update_bcs_MPI.h \
+  assign_update_bcs_NG.h NG_coarse_to_fine_boundaries.h \
+  NG_MPI_fine_to_coarse_boundaries.h \
+  NG_MPI_coarse_to_fine_boundaries.h \
+  NG_fine_to_coarse_boundaries.h periodic_boundaries_MPI.h \
+  MCMD_boundaries.h boundaries.h \
+  grid_base_class.h solver_eqn_base.h MCMD_control.h
 
 ######################
 # MICROPHYSICS STUFF #

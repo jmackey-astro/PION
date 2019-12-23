@@ -16,6 +16,7 @@
 #include "tools/reporting.h"
 #include "constants.h"
 #include "tools/command_line_interface.h"
+#include <algorithm>
 using namespace std;
 
 //------------------------------------------------
@@ -200,21 +201,23 @@ int MCMDcontrol::decomposeDomain(
   
   else rep.error("Bad NDIM in DecomposeDomain",SimPM.ndim);
 
+#ifdef TESTING
   // Display some debugging info.
-  //  if (myrank==0) {
-  //    for (int i=0;i<SimPM.ndim;i++) {
-  //     cout <<"Sim: idim="<<i<<"  \tRange="<<level.Range[i];
-  //     cout <<",\t  xmin,xmax = "<<level.Xmin[i]<<", "<<level.Xmax[i];
-  //     cout <<"    \t Ncell = "<<level.Ncell<<"\n";
-  //   }
-  // }
-  // for (int i=0;i<SimPM.ndim;i++) {
-  //   cout <<"Proc "<<myrank<<": idim="<<i<<"  \tRange="<<LocalRange[i];
-  //   cout <<",\t  xmin,xmax = "<<LocalXmin[i]<<", "<<LocalXmax[i];
-  //   cout <<"    \t Ncell = "<<LocalNcell;
-  //   cout <<"\t neighbours : "<<ngbprocs[2*i]<<", "<<ngbprocs[2*i+1]<<"\n";
-  // }
-  // cout << "---MCMDcontrol::decomposeDomain() Domain decomposition done.\n\n";
+  if (myrank==0) {
+    for (int i=0;i<SimPM.ndim;i++) {
+      cout <<"Sim: idim="<<i<<"  \tRange="<<level.Range[i];
+      cout <<",\t  xmin,xmax = "<<level.Xmin[i]<<", "<<level.Xmax[i];
+      cout <<"    \t Ncell = "<<level.Ncell<<"\n";
+    }
+  }
+  for (int i=0;i<SimPM.ndim;i++) {
+    cout <<"Proc "<<myrank<<": idim="<<i<<"  \tRange="<<LocalRange[i];
+    cout <<",\t  xmin,xmax = "<<LocalXmin[i]<<", "<<LocalXmax[i];
+    cout <<"    \t Ncell = "<<LocalNcell;
+    cout <<"\t neighbours : "<<ngbprocs[2*i]<<", "<<ngbprocs[2*i+1]<<"\n";
+  }
+  cout << "---MCMDcontrol::decomposeDomain() Domain decomposition done.\n\n";
+#endif
   return(0);
 }
 
@@ -358,9 +361,9 @@ int MCMDcontrol::pointToNeighbours(
     if (pconst.equalD(LocalXmin[ZZ],level.Xmin[ZZ])) ngbprocs[ZN] = -999;
     if (pconst.equalD(LocalXmax[ZZ],level.Xmax[ZZ])) ngbprocs[ZP] = -999;
   }
-  #ifdef TESTING
+#ifdef TESTING
   rep.printVec("ngbprocs",ngbprocs,2*SimPM.ndim);
-  #endif
+#endif
 
   return(0);
 }
@@ -560,19 +563,16 @@ void MCMDcontrol::set_NG_hierarchy(
       const int l  ///< level to work on
       )
 {
+#ifdef TEST_BC89FLUX
+  cout <<"Setting up NG hierarchy (MCMDcontrol)\n";
+#endif
   double centre[MAX_DIM];
-  int child_rank=-1;
-  bool ongrid=false;
-  child_procs.resize(0);
-  double px[8] = {0.25,0.75,0.25,0.75,0.25,0.75,0.25,0.75};
-  double py[8] = {0.25,0.25,0.75,0.75,0.25,0.25,0.75,0.75};
-  double pz[8] = {0.25,0.25,0.25,0.25,0.75,0.75,0.75,0.75};
-  double xn[8] = {0.0,0.5,0.0,0.5,0.0,0.5,0.0,0.5};
-  double yn[8] = {0.0,0.0,0.5,0.5,0.0,0.0,0.5,0.5};
-  double zn[8] = {0.0,0.0,0.0,0.0,0.5,0.5,0.5,0.5};
-  struct cgrid child;
+  child_procs.clear();
+  int ix[MAX_DIM];
 
   // set rank of parent for each grid except root level 0
+  // Every child grid must have a parent because the nested grid is
+  // entirely within the coarser level.
   if (l>0) {
     // centre[] is centre of local grid on level l.
     for (int i=0;i<par.ndim;i++)
@@ -580,12 +580,72 @@ void MCMDcontrol::set_NG_hierarchy(
     // get rank of parent grid in each direction.
     parent_proc = get_grid_rank(par, centre,l-1);
     //cout <<"level "<<l<<", parent process is "<<parent_proc<<"\n";
+
+    pgrid.rank = parent_proc;
+    get_domain_ix(par.ndim, parent_proc, ix);
+    for (int i=0;i<par.ndim;i++) {
+      // parent level has range 2x my range in each direction
+      pgrid.Xmin[i] = par.levels[l-1].Xmin[i] + ix[i]*2.0*LocalRange[i];
+      pgrid.Xmax[i] = pgrid.Xmin[i] + 2.0*LocalRange[i];
+    }
+    
+    // now find neighbouring grids, if they exist.  First set ranks.
+    pgrid_ngb.resize(2*par.ndim);
+    pgrid_ngb[XN].rank = parent_proc -1;
+    pgrid_ngb[XP].rank = parent_proc +1;
+    if (pconst.equalD(pgrid.Xmin[XX],par.levels[l-1].Xmin[XX])) pgrid_ngb[XN].rank = -999;
+    if (pconst.equalD(pgrid.Xmax[XX],par.levels[l-1].Xmax[XX])) pgrid_ngb[XP].rank = -999;
+    if (par.ndim >1) {
+      pgrid_ngb[YN].rank = parent_proc -nx[XX];
+      pgrid_ngb[YP].rank = parent_proc +nx[XX];
+      if (pconst.equalD(pgrid.Xmin[YY],par.levels[l-1].Xmin[YY])) pgrid_ngb[YN].rank = -999;
+      if (pconst.equalD(pgrid.Xmax[YY],par.levels[l-1].Xmax[YY])) pgrid_ngb[YP].rank = -999;
+    }
+    if (par.ndim >2) {
+      pgrid_ngb[ZN].rank = parent_proc -nx[XX]*nx[YY];
+      pgrid_ngb[ZP].rank = parent_proc +nx[XX]*nx[YY];
+      if (pconst.equalD(pgrid.Xmin[ZZ],par.levels[l-1].Xmin[ZZ])) pgrid_ngb[ZN].rank = -999;
+      if (pconst.equalD(pgrid.Xmax[ZZ],par.levels[l-1].Xmax[ZZ])) pgrid_ngb[ZP].rank = -999;
+    }
+    // Now set Xmin, Xmax:
+    for (int d=0;d<2*par.ndim;d++) {
+      if (pgrid_ngb[d].rank>=0) {
+        get_domain_ix(par.ndim, pgrid_ngb[d].rank, ix);
+        for (int i=0;i<par.ndim;i++)
+          pgrid_ngb[d].Xmin[i] = par.levels[l-1].Xmin[i] + ix[i]*2.0*LocalRange[i];
+        for (int i=0;i<par.ndim;i++)
+          pgrid_ngb[d].Xmax[i] = pgrid_ngb[d].Xmin[i] + 2.0*LocalRange[i];
+      }
+    }
+
+#ifdef TEST_BC89FLUX
+    // *** debugging info ***
+    cout <<"level "<<l<<", parent proc = "<<parent_proc<<", parent grid xmin/xmax:\n";
+    rep.printVec("Xmin",pgrid.Xmin,par.ndim);
+    rep.printVec("Xmax",pgrid.Xmax,par.ndim);
+    for (int d=0;d<2*par.ndim;d++) {
+      if (pgrid_ngb[d].rank<0)
+        cout <<"pproc ngb in direction "<<d<<" has no neighbour.\n";
+      else {
+        cout <<"pproc ngb in direction "<<d<<" has neighbour proc ";
+        cout <<pgrid_ngb[d].rank<<"\n";
+        rep.printVec("Xmin",pgrid_ngb[d].Xmin,par.ndim);
+        rep.printVec("Xmax",pgrid_ngb[d].Xmax,par.ndim);
+      }
+    }
+    cout.flush();
+    // *** debugging info ***
+#endif
   }
 
   // set rank of child grids, if they exist.
   // Domain is intersection of child full grid and this local grid.
   // Must be split in half/quadrant/octant of this grid, unless
   // nproc==1, for which there is only one child so it is trivial.
+  struct cgrid child;
+  int child_rank=-1;
+  vector<int> children;
+
   if (l<par.grid_nlevels-1 && nproc==1) {
     child.rank = myrank;
     for (int v=0;v<par.ndim;v++)
@@ -593,174 +653,262 @@ void MCMDcontrol::set_NG_hierarchy(
     for (int v=0;v<par.ndim;v++)
       child.Xmax[v] = par.levels[l+1].Xmax[v];
     child_procs.push_back(child);
-    //cout <<"v="<<0<<": only child has rank="<<child_rank<<"\n";
+#ifdef TEST_BC89FLUX
+    cout <<"v="<<0<<": only child has rank="<<child_rank;
+    cout <<", child_procs_size="<<child_procs.size()<<"\n";
+#endif
   }
   else if (l<par.grid_nlevels-1) {
-
+    // split domain in 4 in each dimension, and get ranks of all 
+    // grids in these sub-patches.  Eliminate duplicates, and then
+    // set up child vector.
     if (par.ndim==1) {
-      for (int v=0;v<2;v++) {
-        // centre[] is centre of this child grid.
-        centre[XX] = LocalXmin[XX] + px[v]*LocalRange[XX];
-        
-        // check if child grid exists, and get its rank.
-        ongrid=true;
+      for (int i=0;i<4;i++) {
+        centre[XX] = LocalXmin[XX] + 0.25*i*LocalRange[XX];
         child_rank = get_grid_rank(par, centre,l+1);
-        if (child_rank<0) ongrid=false;
-
-        if (ongrid) {
-          child.rank = child_rank;
-          child.Xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
-          child.Xmax[XX] = child.Xmin[XX] + 0.5*LocalRange[XX];
-          child.Xmin[YY] = 0.0;
-          child.Xmax[YY] = 0.0;
-          child.Xmin[ZZ] = 0.0;
-          child.Xmax[ZZ] = 0.0;
-          child_procs.push_back(child);
-          cout <<"v="<<v<<": child rank="<<child_rank<<"\n";
-        }
+        if (child_rank>=0) children.push_back(child_rank);
       }
-
-    } // if 1D
-
+    }
     else if (par.ndim==2) {
-
-      for (int v=0;v<4;v++) {
-
-        // centre[] is centre of this child grid.
-        centre[XX] = LocalXmin[XX] + px[v]*LocalRange[XX];
-        centre[YY] = LocalXmin[YY] + py[v]*LocalRange[YY];
-        //cout <<"v="<<v<<", "; rep.printVec("centre",centre,2);
-
-        // check if child grid exists, and get its rank.
-        ongrid=true;
-        child_rank = get_grid_rank(par, centre,l+1);
-        if (child_rank<0) ongrid=false;
-
-        if (ongrid) {
-          child.rank = child_rank;
-          child.Xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
-          child.Xmin[YY] = LocalXmin[YY] +yn[v]*LocalRange[YY];
-          child.Xmin[ZZ] = 0.0;
-          child.Xmax[XX] = child.Xmin[XX] + 0.5*LocalRange[XX];
-          child.Xmax[YY] = child.Xmin[YY] + 0.5*LocalRange[YY];
-          child.Xmax[ZZ] = 0.0;
-          child_procs.push_back(child);
-          //cout <<"v="<<v<<": child rank="<<child_rank<<"\n";
+      // find all ranks in 4x4 grid of sub-patches.
+      for (int i=0;i<4;i++) {
+        for (int j=0; j<4; j++) {
+          centre[XX] = LocalXmin[XX] + 0.25*i*LocalRange[XX];
+          centre[YY] = LocalXmin[YY] + 0.25*j*LocalRange[YY];
+          child_rank = get_grid_rank(par, centre,l+1);
+          if (child_rank>=0) children.push_back(child_rank);
         }
       }
-
-    } // if 2D
-
-    else {
-      // 3D
-      // first check if my domain is equal to the full level domain
-      // in any direction.
-      bool full_dom[3] = {false,false,false};
-      for (int d=0;d<par.ndim;d++)
-        if (pconst.equalD(LocalXmin[d], par.levels[l].Xmin[d]) &&
-            pconst.equalD(LocalXmax[d], par.levels[l].Xmax[d]) )
-          full_dom[d]=true;
-
-      int nchild = 1;
-      for (int d=0;d<par.ndim;d++) if (!full_dom[d]) nchild*=2;
-
-      if (nchild==8) {
-        // this is the standard case, where we can set up an oct-tree
-        // decomposition.
-        for (int v=0;v<8;v++) {
-          // centre[] is centre of this child grid.
-          centre[XX] = LocalXmin[XX] + px[v]*LocalRange[XX];
-          centre[YY] = LocalXmin[YY] + py[v]*LocalRange[YY];
-          centre[ZZ] = LocalXmin[ZZ] + pz[v]*LocalRange[ZZ];
-          //cout <<"v="<<v<<", "; rep.printVec("centre",centre,3);
-
-          // check if child grid exists, and get its rank.
-          ongrid=true;
-          child_rank = get_grid_rank(par, centre,l+1);
-          if (child_rank<0) ongrid=false;
-          //cout <<"v="<<v<<", rank="<<child_rank<<"\n";
-
-          if (ongrid) {
-            child.rank = child_rank;
-            child.Xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
-            child.Xmin[YY] = LocalXmin[YY] +yn[v]*LocalRange[YY];
-            child.Xmin[ZZ] = LocalXmin[ZZ] +zn[v]*LocalRange[ZZ];
-            child.Xmax[XX] = child.Xmin[XX] + 0.5*LocalRange[XX];
-            child.Xmax[YY] = child.Xmin[YY] + 0.5*LocalRange[YY];
-            child.Xmax[ZZ] = child.Xmin[ZZ] + 0.5*LocalRange[ZZ];
-            child_procs.push_back(child);
-            //rep.printVec("Child Xmin",child.Xmin,3);
-            //rep.printVec("Child Xmax",child.Xmax,3);
+    }
+    else if (par.ndim==3) {
+      // find all ranks in 4x4x4 grid of sub-patches.
+      for (int i=0;i<4;i++) {
+        for (int j=0; j<4; j++) {
+          for (int k=0; k<4; k++) {
+            centre[XX] = LocalXmin[XX] + 0.25*i*LocalRange[XX];
+            centre[YY] = LocalXmin[YY] + 0.25*j*LocalRange[YY];
+            centre[ZZ] = LocalXmin[ZZ] + 0.25*k*LocalRange[ZZ];
+            child_rank = get_grid_rank(par, centre,l+1);
+#ifdef TEST_BC89FLUX
+    // *** debugging info ***
+            //cout <<"child_rank = "<<child_rank<<", pos=";
+            //rep.printVec("",centre,par.ndim);
+            //cout.flush();
+    // *** debugging info ***
+#endif
+            if (child_rank>=0) children.push_back(child_rank);
           }
         }
-      } // if nchild==8
+      }
+    }
+    
+    if (children.size()>0) {
+      sort(children.begin(),children.end());
+      children.erase( unique( children.begin(), children.end() ), children.end() );
+    }
+#ifdef TEST_BC89FLUX
+    // *** debugging info ***
+    for (size_t v=0;v<children.size();v++)
+      cout <<"children["<<v<<"] = "<<children[v]<<"\n";
+    // *** debugging info ***
+#endif
+    // set rank and xmin/xmax of child grid
+    for (size_t v=0;v<children.size();v++) {
+      child.rank = children[v];
+      get_domain_ix(par.ndim, child.rank, ix);
+      for (int i=0;i<par.ndim;i++) {
+        // child level has range 0.5x my range in each direction
+        child.Xmin[i] = par.levels[l+1].Xmin[i] + ix[i]*0.5*LocalRange[i];
+        child.Xmax[i] = child.Xmin[i] + 0.5*LocalRange[i];
+      }
+      child_procs.push_back(child);
+    }
 
-      else if (nchild==4) {
-        // only decomposed in the x and y directions.
-        for (int v=0;v<4;v++) {
-          // centre[] is centre of this child grid.
-          centre[XX] = LocalXmin[XX] + px[v]*LocalRange[XX];
-          centre[YY] = LocalXmin[YY] + py[v]*LocalRange[YY];
-          centre[ZZ] =  par.levels[l+1].Xmin[ZZ] + 0.25*LocalRange[ZZ];
-          //cout <<"v="<<v<<", "; rep.printVec("centre",centre,3);
+#ifdef TEST_BC89FLUX
+    // *** debugging info ***
+    for (size_t v=0;v<child_procs.size();v++) {
+      cout <<"child procs on level "<<l+1<<": rank="<<child_procs[v].rank<<"\n";
+      rep.printVec("Xmin",child_procs[v].Xmin,par.ndim);
+      rep.printVec("Xmax",child_procs[v].Xmax,par.ndim);
+      cout.flush();
+    }
+    // *** debugging info ***
+#endif
 
-          // check if child grid exists, and get its rank.
-          ongrid=true;
-          child_rank = get_grid_rank(par, centre,l+1);
-          if (child_rank<0) ongrid=false;
-          //cout <<"v="<<v<<", rank="<<child_rank<<"\n";
-
-          if (ongrid) {
-            child.rank = child_rank;
-            child.Xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
-            child.Xmin[YY] = LocalXmin[YY] +yn[v]*LocalRange[YY];
-            child.Xmin[ZZ] = par.levels[l+1].Xmin[ZZ];
-            child.Xmax[XX] = child.Xmin[XX] + 0.5*LocalRange[XX];
-            child.Xmax[YY] = child.Xmin[YY] + 0.5*LocalRange[YY];
-            child.Xmax[ZZ] = par.levels[l+1].Xmax[ZZ];
-            child_procs.push_back(child);
-            //rep.printVec("Child Xmin",child.Xmin,3);
-            //rep.printVec("Child Xmax",child.Xmax,3);
-          }
-        }
-      } // if nchild==4
-
-      else if (nchild==2) {
-        // only decomposed in the x direction.
-        for (int v=0;v<2;v++) {
-          // centre[] is centre of this child grid.
-          centre[XX] = LocalXmin[XX] + px[v]*LocalRange[XX];
-          centre[YY] = par.levels[l+1].Xmin[YY] + 0.25*LocalRange[YY];
-          centre[ZZ] = par.levels[l+1].Xmin[ZZ] + 0.25*LocalRange[ZZ];
-          //cout <<"v="<<v<<", "; rep.printVec("centre",centre,3);
-
-          // check if child grid exists, and get its rank.
-          ongrid=true;
-          child_rank = get_grid_rank(par, centre,l+1);
-          if (child_rank<0) ongrid=false;
-          //cout <<"v="<<v<<", rank="<<child_rank<<"\n";
-
-          if (ongrid) {
-            child.rank = child_rank;
-            child.Xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
-            child.Xmin[YY] = par.levels[l+1].Xmin[YY];
-            child.Xmin[ZZ] = par.levels[l+1].Xmin[ZZ];
-            child.Xmax[XX] = child.Xmin[XX] + 0.5*LocalRange[XX];
-            child.Xmax[YY] = par.levels[l+1].Xmax[YY];
-            child.Xmax[ZZ] = par.levels[l+1].Xmax[ZZ];
-            child_procs.push_back(child);
-            //rep.printVec("Child Xmin",child.Xmin,3);
-            //rep.printVec("Child Xmax",child.Xmax,3);
-          }
-        }
-      } // if nchild==2
-      else rep.error("only one proc?",nchild);
-
-
-
-    } // if 3D
   } // if not on finest level grid (set children)
   
+  // set rank of grids sharing a boundary with child grids, if they
+  // exist.
+  cgrid_ngb.resize(2*par.ndim);
+  for (int d=0;d<2*par.ndim;d++) cgrid_ngb[d].resize(0);
+  if (l==par.grid_nlevels-1 || nproc==1) {
+    // do nothing
+  }
+  else {
+    // for each outward normal direction on this grid, find the
+    // level l+1 grids (if any) that do not intersect the grid, but
+    // share a face.
+    double dx=LocalRange[XX]/LocalNG[XX];
+    int pdir[2];
+
+    //
+    // First get ranks of level l+1 grids into the cgrid_ngb[] vectors
+    //
+    if (par.ndim==1) {
+      // max. one l+1 grid in each direction
+      // negative direction
+      centre[XX] = LocalXmin[XX] -dx;
+      child_rank = get_grid_rank(par, centre,l+1);
+      child.rank = child_rank;
+      cgrid_ngb[XN].push_back(child);
+      // positive direction
+      centre[XX] = LocalXmax[XX] +dx;
+      child_rank = get_grid_rank(par, centre,l+1);
+      child.rank = child_rank;
+      cgrid_ngb[XP].push_back(child);
+    }
+    else if (par.ndim==2) {
+#ifdef TEST_BC89FLUX
+      cout <<"2D: getting ranks for l+1 grids that share a face with my grid.\n";
+      cout.flush();
+#endif
+      for (int i=0;i<par.ndim;i++) {
+        int nd = 2*i;
+        int pd = 2*i+1;
+        pdir[0] = (i+1)%par.ndim;
+#ifdef TEST_BC89FLUX
+        cout <<"2D: axis = "<<i<<", perp dir = "<<pdir[0]<<"\n";
+        cout.flush();
+#endif
+        // negative direction
+        children.clear();
+        centre[i] = LocalXmin[i] -dx;
+        for (int p=0;p<4;p++) {
+          centre[pdir[0]] = LocalXmin[pdir[0]] + 0.25*p*LocalRange[pdir[0]];
+          child_rank = get_grid_rank(par, centre,l+1);
+          if (child_rank>=0) children.push_back(child_rank);
+        }
+        sort(children.begin(),children.end());
+        children.erase( unique( children.begin(), children.end() ), children.end() );
+        for (size_t v=0;v<children.size();v++) {
+          child.rank = children[v];
+#ifdef TEST_BC89FLUX
+          cout <<" found neighbour on l+1 (neg-dir) with rank "<<child.rank<<endl;
+#endif
+          cgrid_ngb[nd].push_back(child);
+        }
+        // positive direction
+        children.clear();
+        centre[i] = LocalXmax[i] +dx;
+        for (int p=0;p<4;p++) {
+          centre[pdir[0]] = LocalXmin[pdir[0]] + 0.25*p*LocalRange[pdir[0]];
+          child_rank = get_grid_rank(par, centre,l+1);
+          if (child_rank>=0) children.push_back(child_rank);
+        }
+        sort(children.begin(),children.end());
+        children.erase( unique( children.begin(), children.end() ), children.end() );
+        for (size_t v=0;v<children.size();v++) {
+          child.rank = children[v];
+#ifdef TEST_BC89FLUX
+          cout <<" found neighbour on l+1 (pos-dir) with rank "<<child.rank<<endl;
+#endif
+          cgrid_ngb[pd].push_back(child);
+        }
+      } // dims
+    } // 2D
+    else {
+#ifdef TEST_BC89FLUX
+    // *** debugging info ***
+      cout <<"3D: getting ranks for l+1 grids that share a face with my grid.\n";
+      cout.flush();
+    // *** debugging info ***
+#endif
+      for (int i=0;i<par.ndim;i++) {
+        int nd = 2*i;
+        int pd = 2*i+1;
+        pdir[0] = (i+1)%par.ndim;
+        pdir[1] = (i+2)%par.ndim;
+#ifdef TEST_BC89FLUX
+      // *** debugging info ***
+        cout <<"3D: axis = "<<i<<", perp dirs = "<<pdir[0]<<", "<<pdir[1]<<"\n";
+        cout.flush();
+      // *** debugging info ***
+#endif
+        // negative direction
+        children.clear();
+        centre[i] = LocalXmin[i] -dx;
+        for (int p=0;p<4;p++) {
+          for (int q=0;q<4;q++) {
+            centre[pdir[0]] = LocalXmin[pdir[0]] + 0.25*p*LocalRange[pdir[0]];
+            centre[pdir[1]] = LocalXmin[pdir[1]] + 0.25*q*LocalRange[pdir[1]];
+            child_rank = get_grid_rank(par, centre,l+1);
+            if (child_rank>=0) children.push_back(child_rank);
+          }
+        }
+        if (children.size()>0) {
+          sort(children.begin(),children.end());
+          children.erase( unique( children.begin(), children.end() ), children.end() );
+        }
+        for (size_t v=0;v<children.size();v++) {
+          child.rank = children[v];
+          cgrid_ngb[nd].push_back(child);
+        }
+        // positive direction
+        children.clear();
+        centre[i] = LocalXmax[i] +dx;
+        for (int p=0;p<4;p++) {
+          for (int q=0;q<4;q++) {
+            centre[pdir[0]] = LocalXmin[pdir[0]] + 0.25*p*LocalRange[pdir[0]];
+            centre[pdir[1]] = LocalXmin[pdir[1]] + 0.25*q*LocalRange[pdir[1]];
+            child_rank = get_grid_rank(par, centre,l+1);
+#ifdef TEST_BC89FLUX
+    // *** debugging info ***
+            //cout <<"+ve direction, facing child rank = "<<child_rank<<" : ";
+            //rep.printVec("+ve dir, centre",centre,par.ndim);
+    // *** debugging info ***
+#endif
+            if (child_rank>=0) children.push_back(child_rank);
+          }
+        }
+        if (children.size()>0) {
+          sort(children.begin(),children.end());
+          children.erase( unique( children.begin(), children.end() ), children.end() );
+        }
+        for (size_t v=0;v<children.size();v++) {
+          child.rank = children[v];
+          cgrid_ngb[pd].push_back(child);
+        }
+      } // dims
+    } // 3D
+
+    // Now we have ranks in each direction, so we set xmin/xmax too
+    for (int d=0;d<2*par.ndim;d++) {
+      for (size_t cg=0; cg<cgrid_ngb[d].size(); cg++) {
+        get_domain_ix(par.ndim, cgrid_ngb[d][cg].rank, ix);
+        for (int i=0;i<par.ndim;i++) {
+          // child level has range 0.5x my range in each direction
+          cgrid_ngb[d][cg].Xmin[i] = par.levels[l+1].Xmin[i] + ix[i]*0.5*LocalRange[i];
+          cgrid_ngb[d][cg].Xmax[i] = cgrid_ngb[d][cg].Xmin[i] + 0.5*LocalRange[i];
+        }
+      } // loop over grids
+    } // loop over dims
+
+#ifdef TEST_BC89FLUX
+    // *** debugging info ***
+    for (int d=0;d<2*par.ndim;d++) {
+      for (size_t cg=0; cg<cgrid_ngb[d].size(); cg++) {
+        cout <<"dir="<<d<<", cg="<<cg<<", l+1 ngb grid rank="<<cgrid_ngb[d][cg].rank<<"\n";
+        rep.printVec("Xmin",cgrid_ngb[d][cg].Xmin,par.ndim);
+        rep.printVec("Xmax",cgrid_ngb[d][cg].Xmax,par.ndim);
+        cout.flush();
+      }
+    }
+    // *** debugging info ***
+#endif
+
+
+  } // if there are child grids
+
   return;
 }
 
@@ -768,6 +916,92 @@ void MCMDcontrol::set_NG_hierarchy(
 
 // ##################################################################
 // ##################################################################
+
+
+
+void MCMDcontrol::get_parent_grid_info(
+      struct cgrid *cg
+      )
+{
+  cg->rank = pgrid.rank;
+  for (int i=0;i<MAX_DIM;i++) cg->Xmin[i] = pgrid.Xmin[i];
+  for (int i=0;i<MAX_DIM;i++) cg->Xmax[i] = pgrid.Xmax[i];
+  //std::cout <<"pgrid rank = "<<pgrid.rank<<"  "<<cg->rank<<std::endl;
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void MCMDcontrol::get_parent_ngb_grid_info(
+      vector<struct cgrid>  &pgngb
+      )
+{
+  pgngb.resize(pgrid_ngb.size());
+  for (size_t iter=0; iter<pgrid_ngb.size(); iter++) {
+    pgngb[iter].rank = pgrid_ngb[iter].rank;
+    for (int i=0;i<MAX_DIM;i++)
+      pgngb[iter].Xmin[i] = pgrid_ngb[iter].Xmin[i];
+    for (int i=0;i<MAX_DIM;i++)
+      pgngb[iter].Xmax[i] = pgrid_ngb[iter].Xmax[i];
+  }
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void MCMDcontrol::get_child_grid_info(
+      vector<struct cgrid>  &cg
+      )
+{
+  cg.resize(child_procs.size());
+  for (size_t iter=0; iter<child_procs.size(); iter++) {
+    cg[iter].rank = child_procs[iter].rank;
+    for (int i=0;i<MAX_DIM;i++)
+      cg[iter].Xmin[i] = child_procs[iter].Xmin[i];
+    for (int i=0;i<MAX_DIM;i++)
+      cg[iter].Xmax[i] = child_procs[iter].Xmax[i];
+  }
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void MCMDcontrol::get_level_lp1_ngb_info(
+    vector< vector<struct cgrid> >  &cgngb
+    )
+{
+  cgngb.resize(cgrid_ngb.size());
+  for (size_t p=0; p<cgrid_ngb.size(); p++) {
+    cgngb[p].resize(cgrid_ngb[p].size());
+    for (size_t q=0; q<cgrid_ngb[p].size(); q++) {
+      cgngb[p][q].rank = cgrid_ngb[p][q].rank;
+      for (int i=0;i<MAX_DIM;i++) cgngb[p][q].Xmin[i] = cgrid_ngb[p][q].Xmin[i];
+      for (int i=0;i<MAX_DIM;i++) cgngb[p][q].Xmax[i] = cgrid_ngb[p][q].Xmax[i];
+    }
+  }
+
+  return;
+}
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 //------------------------------------------------

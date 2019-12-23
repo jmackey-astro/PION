@@ -38,12 +38,12 @@ smooth -1
 noise -1
 
 ## Grid Parameters
-NGridX  32
+NGridX  16
 NGridY  16
-NGridZ  32
+NGridZ  16
 
 Xmin -30.86e18
-Ymin   0.00e18
+Ymin -30.86e18
 Zmin -30.86e18
 
 Xmax  30.86e18

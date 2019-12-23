@@ -732,7 +732,6 @@ int setup_fixed_grid::update_evolving_RT_sources(
       class RayTracingBase *RT  ///< pointer to raytracing class
       )
 {
-  int err=0;
   bool updated=false;
   //
   // Loop over all sources with Evolution files.

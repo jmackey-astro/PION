@@ -215,7 +215,7 @@ int MCMD_bc::BC_update_BCMPI(
     for (c=b->data.begin(); c!=b->data.end(); ++c) {
       for (int v=0;v<par.nvar;v++) (*c)->P[v] = (*c)->Ph[v];
 #ifdef TEST_COMMS
-      rep.printVec("P",(*c)->P,par.nvar);
+      //rep.printVec("P",(*c)->P,par.nvar);
 #endif
     } // all cells.
   } // if full timestep.
