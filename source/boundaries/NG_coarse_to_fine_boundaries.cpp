@@ -329,6 +329,9 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         //rep.printVec("f4 pos",f4->pos,2);
         //rep.printVec("c  pos",c->pos,2);
 #endif
+
+        // HACK
+        /*
         if (level==2 && c->pos[YY]<150) {
           rep.printVec("f1 pos",f1->pos,2);
           rep.printVec("f2 pos",f2->pos,2);
@@ -342,6 +345,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
           //CI.get_cell_col(f1,0,&col);
           //cout <<", cell-col = "<<col<<endl;
         }
+        */
+        // HACK
 
 #ifdef TEST_C2F
         //cout <<"BEFORE interpolating coarse to fine 2d: coarse="<<c->id;
@@ -722,10 +727,10 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   //cout <<f2->P[d]<<", "<<f3->P[d]<<", "<<f4->P[d]<<"\n";
   
   // HACK: get rid of slopes:
-  for (int v=0;v<par.nvar;v++) f1->P[v] = f1->Ph[v] = P[v];
-  for (int v=0;v<par.nvar;v++) f2->P[v] = f2->Ph[v] = P[v];
-  for (int v=0;v<par.nvar;v++) f3->P[v] = f3->Ph[v] = P[v];
-  for (int v=0;v<par.nvar;v++) f4->P[v] = f4->Ph[v] = P[v];
+  //for (int v=0;v<par.nvar;v++) f1->P[v] = f1->Ph[v] = P[v];
+  //for (int v=0;v<par.nvar;v++) f2->P[v] = f2->Ph[v] = P[v];
+  //for (int v=0;v<par.nvar;v++) f3->P[v] = f3->Ph[v] = P[v];
+  //for (int v=0;v<par.nvar;v++) f4->P[v] = f4->Ph[v] = P[v];
   // HACK 
 
   for (int v=0;v<par.nvar;v++) f1->dU[v] = 0.0;

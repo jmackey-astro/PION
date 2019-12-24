@@ -354,6 +354,7 @@ cell * cell_interface::new_cell()
   c->isbd=false;
   c->isgd=false;
   c->isdomain=false;
+  c->rt=false;
   c->isbd_ref = mem.myalloc(c->isbd_ref, 2*MAX_DIM);
   for (int v=0; v<2*MAX_DIM; v++) c->isbd_ref[v]=false;
 
@@ -641,6 +642,7 @@ void cell_interface::print_cell(const cell *c)
   cout <<"\tisedge:"<<c->isedge<<"\tisbd:"<<c->isbd<<"\tisgd:"<<c->isgd<<"\n";
   cout <<"\tisdomain:"<<c->isdomain;
   cout <<"\tisleaf:"<<c->isleaf<<"\n";
+  cout <<"\trt:"<<c->rt<<"\n";
   cout<<"\tnpt: "<<c->npt;
   if (c->npt!=0) cout <<"\tnpt[id]: "<<c->npt->id<<"\n";
   else cout <<"\tnpt is not addressed (last point?).\n";

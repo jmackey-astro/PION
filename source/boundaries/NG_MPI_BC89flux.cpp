@@ -87,9 +87,9 @@ int NG_MPI_BC89flux::setup_flux_recv(
   for (int v=0;v<par.ndim;v++)
     cg_ixmax[v] = grid->iXmax(static_cast<axes>(v));
 
-//#ifdef TEST_BC89FLUX
+#ifdef TEST_BC89FLUX
   cout <<"NG_MPI_BC89flux::setup_flux_recv: "<<nchild<<" child grids\n";
-//#endif
+#endif
 
   // Two cases: if there are children, then part or all of grid is
   // within l+1 level.  If there are no children, then at most one
@@ -160,10 +160,10 @@ int NG_MPI_BC89flux::setup_flux_recv(
     // initialize arrays
     flux_update_recv[l].resize(nchild*2*par.ndim);
     for (int ic=0;ic<nchild;ic++) {
-//#ifdef TEST_BC89FLUX
+#ifdef TEST_BC89FLUX
       cout <<"NG_MPI_BC89flux::setup_flux_recv: ";
       cout <<ic<<" has "<< 2*par.ndim <<"boundaries,\n";
-//#endif
+#endif
       int off = ic*2*par.ndim;
       for (int d=0; d<2*par.ndim; d++) {
         int el = off+d;
@@ -216,9 +216,9 @@ int NG_MPI_BC89flux::setup_flux_recv(
   } // if there are child grids.
 
   else  {
-//#ifdef TEST_BC89FLUX
+#ifdef TEST_BC89FLUX
     cout <<"parallel setup_flux_recv(): no child grids, looking for neighbours.\n";
-//#endif
+#endif
     // There are no children, but my grid might have a boundary in 
     // common with the l+1 level's outer boundary.  There is at most
     // one of these.  Use MCMD functions to test this.

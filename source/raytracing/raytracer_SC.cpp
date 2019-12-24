@@ -880,12 +880,14 @@ int raytracer_USC_infinity::ProcessCell(
   }
 
   // HACK
-  if (c->pos[XX]==23 && c->pos[YY]==129) {
-    cout <<"Pre-Process Cell 23,129: ";
+  /*
+  if (c->pos[XX]==129) {
+    cout <<"Pre-Process Cell, x=129: ";
     CI.print_cell(c);
   }
+  */
   // HACK
-  
+ 
   // 2 special cases: cell is not part of domain, so nothing is set,
   // or else cell is not a leaf, in which case col2cell/cell_col are
   // received from finer grid.
@@ -930,10 +932,11 @@ int raytracer_USC_infinity::ProcessCell(
     return 0;
   }
 
+  if (!c->rt) return 0;
+  
   // Now cell is a leaf (or boundary data), so we have to set the
   // optical depth to and through the cell.
-  //
-  // set cell_col based on opacity flag.
+  // Set cell_col based on opacity flag.
   switch (source->s->opacity_src) {
 
   case RT_OPACITY_MP:
@@ -1041,12 +1044,20 @@ int raytracer_USC_infinity::ProcessCell(
   cout <<", c2c="<<*col2cell<<", cc="<<*cell_col<<"  ";
   rep.printVec("pos",c->pos,ndim);
 #endif
-  
   // HACK
-  if (c->pos[XX]==23 && c->pos[YY]==129) {
-    cout <<"Post-Process Cell 23,129: ";
+  /*
+  if (c->pos[XX]==129) {
+    cout <<"Pre-Process Cell, x=129: ";
     CI.print_cell(c);
   }
+  */
+  // HACK
+  
+  // HACK
+  //if (c->pos[XX]==23 && c->pos[YY]==129) {
+  //  cout <<"Post-Process Cell 23,129: ";
+  //  CI.print_cell(c);
+  //}
   // HACK
   
   return 0;
@@ -1406,6 +1417,16 @@ void raytracer_USC::set_Vshell_for_source(
 
   this_src->s->opacity_src = temp; // revert opacity type
   this_src->s->update      = upd;  // revert update type.
+
+  // set flag to see if cells should be updated or if the data comes
+  // from other grids
+  c = gridptr->FirstPt_All();
+  do {
+    c->rt = true;
+    if (!c->isdomain)          c->rt = false;
+    if (!c->isleaf && c->isgd) c->rt = false;
+  } while ((c=gridptr->NextPt_All(c))!=0);
+
   return;
 }
 
@@ -1862,7 +1883,6 @@ cell * raytracer_USC::find_source_cell(
 #endif
   cell *sc=gridptr->FirstPt();
   int ipos[ndim];
-
   //rep.printVec("First-cell POS",sc->pos,ndim);
 
   // move onto boundary cells, to near the edge.
@@ -1871,23 +1891,20 @@ cell * raytracer_USC::find_source_cell(
     enum axes           a = static_cast<axes>     (i);
     enum direction posdir = static_cast<direction>(2*static_cast<int>(a)+1);
     enum direction negdir = gridptr->OppDir(posdir);
+
     t = gridptr->NextPt(sc,negdir);
     while (t!=0 && t->isdomain && (gridptr->NextPt(t,negdir)!=0)) {
-      //cout <<"moving one cell in negative direction, axis="<<a<<endl;
       sc = t;
-      t = gridptr->NextPt(sc,negdir);
+      t = gridptr->NextPt(t,negdir);
     }
   }
   //rep.printVec("Second-cell POS",sc->pos,ndim);
-
 
   // now move to domain cell closest to source, as long as cell has
   // neighbouring cells in all directions.
   for (int i=0;i<ndim;i++) {
     enum axes           a = static_cast<axes>     (i);
     enum direction posdir = static_cast<direction>(2*static_cast<int>(a)+1);
-    //enum direction negdir = gridptr->OppDir(posdir);
-
     // First move the source to a cell vertex.
     centre_source_on_cell(pos,a);
     CI.get_ipos_vec(pos,ipos);
@@ -1900,40 +1917,6 @@ cell * raytracer_USC::find_source_cell(
              gridptr->NextPt(gridptr->NextPt(sc,posdir),posdir)!=0)
         sc=gridptr->NextPt(sc,posdir);
     }
-/*
-#ifdef RT_TESTING
-    cout <<"have centred source on vertex, move on grid to it.\n";
-#endif
-    if      (pos[a]<gridptr->Xmin(a) ||
-             pconst.equalD(pos[a],gridptr->Xmin(a))) {
-      // If source is off grid in negative direction, then set
-      // source cell to be the 1st grid cell in this dir.
-#ifdef RT_TESTING
-      cout <<"don't need to do anything as we are already at";
-      cout <<" most negative cell in this axis.\n";
-#endif
-    }
-    else if (pos[a]>gridptr->Xmax(a) ||
-             pconst.equalD(pos[a],gridptr->Xmax(a))) {
-      // If source is off grid in positive direction, then set
-      // source cell to be the last grid cell in this dir.
-#ifdef RT_TESTING
-      cout <<"source off/at the positive end of grid, so go to";
-      cout <<" last cell.\n";
-#endif
-      // source off the positive end of grid, so go to last cell.
-      while (gridptr->NextPt(sc,posdir)->isgd) {
-	sc=gridptr->NextPt(sc,posdir);
-      }
-    }
-    else {
-#ifdef RT_TESTING
-      cout <<"source is on grid, so go in posdir to find it.\n";
-#endif
-      // source is on grid, so go in posdir until we find it.
-      sc = find_src_on_grid(pos, sc, a);
-    }
-    */
   } // loop over ndim axes.
   
   rep.printVec("SOURCE-CELL POS",sc->pos,ndim);
@@ -2015,47 +1998,6 @@ void raytracer_USC::centre_source_on_cell(
   return;
 }
 
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-cell * raytracer_USC::find_src_on_grid(
-      double *pos,   ///< position of source.
-      cell *sc,      ///< starting cell.
-      enum axes axis ///< axis to find source along.
-      )
-{
-#ifdef RT_TESTING
-  cout <<"finding source on grid!\n";
-#endif
-  if (!sc) rep.error("No starting cell for find_src_on_grid()",sc);
-  enum direction posdir; //,negdir;
-  posdir = static_cast<direction>(2*axis+1);
-  //negdir = static_cast<direction>(2*axis);
-  double dist = pos[axis]-CI.get_dpos(sc,axis);
-  //    cout <<"dist="<<dist<<" and dx/2 = "<<halfdx<<"\n";
-
-  //
-  // Assume we always start at a X/Y/ZN boundary, so pos should be
-  // greater than sc->pos.
-  //
-  if (dist <0.0) rep.error("Logic error in find_src_on_grid()",axis);
-
-  while (dist>0.0 && gridptr->NextPt(sc,posdir)!=0) {
-    sc=gridptr->NextPt(sc,posdir);
-    dist = pos[axis]-CI.get_dpos(sc,axis);
-  }
-#ifdef RT_TESTING
-  cout <<"dist="<<dist<<", finding source on grid! done!\n";
-#endif
-
-  dist = fabs(pos[axis]-CI.get_dpos(sc,axis));
-  return sc;
-}
- 
 
 
 // ##################################################################
@@ -2187,6 +2129,7 @@ int raytracer_USC::get_cell_columns(
 
 // ##################################################################
 // ##################################################################
+
 
 
 int raytracer_USC::cell_cols_2d(

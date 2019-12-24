@@ -371,6 +371,17 @@ int RT_MPI_bc::Receive_RT_Boundaries(
         }
         CI.set_cell_col(*c, src_id, tau);
 
+        (*c)->rt=false;
+        // HACK
+        /*
+        cell *p=*c;
+        if (p->pos[XX]==129) {
+          cout <<"RT MPI BC RECV: idx="<<grid->idx()<<": ";
+          CI.print_cell(p);
+        }
+        */
+        // HACK
+
       } // loop over boundary cells.
       if (count != ct) rep.error("BIG ERROR!",count-ct);
       
@@ -392,10 +403,8 @@ int RT_MPI_bc::Receive_RT_Boundaries(
 
 
 
-
 // ##################################################################
 // ##################################################################
-
 
 
 
@@ -499,11 +508,13 @@ int RT_MPI_bc::Send_RT_Boundaries(
         if (count>=nc) rep.error("too many cells!!!",count-nc);
 
         // HACK
-        //cell *p=*c;
-        //if (p->pos[XX]==66 && p->pos[YY]==126) {
-        //  cout <<"RT MPI BC SEND: idx="<<grid->idx()<<": ";
-        //  CI.print_cell(p);
-        //}
+        /*
+        cell *p=*c;
+        if (p->pos[XX]==129) {
+          cout <<"RT MPI BC SEND: idx="<<grid->idx()<<": ";
+          CI.print_cell(p);
+        }
+        */
         // HACK
 
 #ifdef RT_TESTING

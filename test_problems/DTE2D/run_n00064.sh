@@ -1,5 +1,45 @@
 #!/bin/bash
 
+# -------------------------------------------------------------------
+
+
+mpirun -np  1 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np01 cfl=0.3 redirect=log_np01 finishtime=1.578e12 &
+mpirun -np  2 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np02 cfl=0.3 redirect=log_np02 finishtime=1.578e12 &
+wait
+mpirun -np  4 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np04 cfl=0.3 redirect=log_np04 finishtime=1.578e12
+mpirun -np  8 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np08 cfl=0.3 redirect=log_np08 finishtime=1.578e12
+mpirun -np 16 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np16 cfl=0.3 redirect=log_np16 finishtime=1.578e12
+mpirun -np 32 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np32 cfl=0.3 redirect=log_np32 finishtime=1.578e12
+mpirun -np 64 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np64 cfl=0.3 redirect=log_np64 finishtime=1.578e12
+exit
+
+# -------------------------------------------------------------------
+
+mpirun -np  1 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np01oa1 cfl=0.3 redirect=log_np01oa1 finishtime=1.578e12 ooa=1 &
+mpirun -np  2 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np02oa1 cfl=0.3 redirect=log_np02oa1 finishtime=1.578e12 ooa=1 &
+wait
+mpirun -np  4 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np04oa1 cfl=0.3 redirect=log_np04oa1 finishtime=1.578e12 ooa=1
+mpirun -np  8 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np08oa1 cfl=0.3 redirect=log_np08oa1 finishtime=1.578e12 ooa=1
+mpirun -np 16 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np16oa1 cfl=0.3 redirect=log_np16oa1 finishtime=1.578e12 ooa=1
+mpirun -np 32 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np32oa1 cfl=0.3 redirect=log_np32oa1 finishtime=1.578e12 ooa=1
+mpirun -np 64 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np64oa1 cfl=0.3 redirect=log_np64oa1 finishtime=1.578e12 ooa=1
+exit
+
+
+# -------------------------------------------------------------------
+
+
+mpirun -np  1 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np01noBC cfl=0.3 redirect=log_np01 finishtime=1.578e12 &
+mpirun -np  2 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np02noBC cfl=0.3 redirect=log_np02 finishtime=1.578e12 &
+wait
+mpirun -np  4 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np04noBC cfl=0.3 redirect=log_np04 finishtime=1.578e12
+mpirun -np  8 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np08noBC cfl=0.3 redirect=log_np08 finishtime=1.578e12
+mpirun -np 16 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo outfile=np16noBC cfl=0.3 redirect=log_np16 finishtime=1.578e12
+exit
+
+
+# -------------------------------------------------------------------
+
 
 mpirun -np  1 ../../pion_NG_parallel DTE_NG_D2_TTI_n00064_level00_0000.00000000.silo \
  outfile=OA2_np01 redirect=logOA2_np01 &
@@ -37,6 +77,10 @@ cd -
  . OA2_np64_level00_0000.00 0 cmp_OA2_np01np64 2
 
 exit
+
+
+# -------------------------------------------------------------------
+
 
 mpirun -np  1 ../../icgen_NG_parallel params_DTE_NG_D2_TTI_n00064.txt silo redirect=iclog
 
@@ -76,4 +120,7 @@ cd -
  . OA1_np64_level00_0000.00 0 cmp_OA1_np01np64 2
 
 exit
+
+# -------------------------------------------------------------------
+
 

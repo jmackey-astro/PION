@@ -384,19 +384,6 @@ class raytracer_USC : public raytracer_USC_infinity {
       enum axes              ///< axis to find source along.
       );
 
-  /// This goes along an axis until it gets to the source location. 
-  ///
-  /// This is called by findSourceCell() if the source is definitely on the
-  /// grid along a certain coordinate axis, and it just goes along the axis until
-  /// it finds the cell the source is in, and moves the source to the cell centre, if
-  /// it is not there already.
-  ///
-  virtual class cell * find_src_on_grid(
-      double *, ///< position of source.
-      cell *,                ///< starting cell.
-      enum axes              ///< axis to find source along.
-      );
-
   /// This will return a pointer to the source cell, or the on-grid
   /// cell nearest the off-grid source.  Works for 2D and 3D.
   void find_closest_cell(

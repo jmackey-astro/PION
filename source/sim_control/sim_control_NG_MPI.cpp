@@ -957,7 +957,7 @@ double sim_control_NG_MPI::advance_step_OA2(
   //    The (2,2) tells it that we are on a full step at the
   //    coarse-level.
   // --------------------------------------------------------
-  if (c2f>=0) { // && SimPM.levels[l].step%2==0) {
+  if (c2f>=0) {
 #ifdef TEST_INT
     cout <<"advance_step_OA2: l="<<l<<" C2F SEND"<<endl;
 #endif
