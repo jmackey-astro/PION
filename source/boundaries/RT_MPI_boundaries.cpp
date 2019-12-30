@@ -375,8 +375,8 @@ int RT_MPI_bc::Receive_RT_Boundaries(
         // HACK
         /*
         cell *p=*c;
-        if (p->pos[XX]==129) {
-          cout <<"RT MPI BC RECV: idx="<<grid->idx()<<": ";
+        if (grid->idx()==2 && (p->pos[XX]==127 || p->pos[XX]==129 || p->pos[XX]==131 || p->pos[XX]==133)) {
+          cout <<"RT MPI BC RECV: dir="<<b->dir<<": ";
           CI.print_cell(p);
         }
         */
@@ -510,8 +510,8 @@ int RT_MPI_bc::Send_RT_Boundaries(
         // HACK
         /*
         cell *p=*c;
-        if (p->pos[XX]==129) {
-          cout <<"RT MPI BC SEND: idx="<<grid->idx()<<": ";
+        if (grid->idx()==2 && (p->pos[XX]==127 || p->pos[XX]==129)) {
+          cout <<"RT MPI BC SEND: dir="<<b->dir<<": ";
           CI.print_cell(p);
         }
         */
