@@ -649,10 +649,12 @@ int sim_init::override_params(int narg, string *args)
       if (SWP.Nsources <1) {
         rep.error("reset wind radius without a source",SWP.Nsources);
       }
+      string q=(args[i].substr(11,1));
+      if (q=="=")
+        rep.error("must ID wind source, e.g. wind_radius_0",args[i]);
       int src = atoi((args[i].substr(12)).c_str());
       if (src<0 || src>9 || !isfinite(src))
         rep.error("expect format wind_radius_0=1.2e17",src);
-
       cout <<"\tOVERRIDE PARAMS: resetting radius of wind src "<<src;
       cout <<" from ";
       cout <<SWP.params[src]->radius<<" cm to ";
