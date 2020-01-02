@@ -1,5 +1,4 @@
-This document is the licence to use the astrophysics simulation code PION.
-Usage of this software implies acceptance of the licence.
+BSD 3-Clause License
 
 Copyright (c) 2006-2020 by Jonathan Mackey.
 
