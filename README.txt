@@ -10,7 +10,7 @@ PION is open source software primarily for simulation of nebulae around stars, b
 
  * Python routines and libraries for visualising results are at [https://git.dias.ie/compastro/pion_python](https://git.dias.ie/compastro/pion_python)
 
- *  Mailing lists.  [Need to set this up]
+ *  Contact [info@pion.ie](mailto:info@pion.ie) for help and information
 
 ## Developers ##
 
@@ -25,6 +25,6 @@ The following people have contributed to the development of PION over the years
 
 ## Licence ##
 
-PION is distributed under a [TBD] License.  Downloading, using, modifying and/or re-distributing the software implies acceptance of the License.
+PION is distributed under a BSD3 License.  Downloading, using, modifying and/or re-distributing the software implies acceptance of the License.
 
 
