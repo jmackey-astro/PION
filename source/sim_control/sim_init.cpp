@@ -140,10 +140,9 @@ void sim_init::print_command_line_options(
   cout <<"\t\t\t WARNING -- AVtype=2 IS NOT WORKING WELL.  ONLY USE FKJ98/H-corr.";
   cout <<"\t EtaVisc=D     : modify viscosity parameter to the given double precision value.\n";
 
-  //cout <<"\t coordsys=NAME : override coordinate system to [cartesian,cylindrical]. !DANGEROUS!\n";
   cout <<"\t cfl=D         : change the CFL no. for the simulation, in range (0,1).\n";
   cout <<"\t cooling=N     : cooling=0 for no cooling, 1 for Sutherland&Dopita1993.\n";
-  cout <<"\t\t\t For other cooling functions see cooling.cc/cooling.h.\n";
+  cout <<"\t\t\t For other cooling functions see microphysics/cooling.cpp\n";
 
   cout <<"\t solver=N      :\n";
   cout <<"\t\t 0 = Lax-Friedrichs Flux, TESTING ONLY!\n";

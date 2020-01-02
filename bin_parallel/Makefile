@@ -385,7 +385,7 @@ OBJ_GRID =  cell_interface.o uniform_grid.o setup_fixed_grid.o \
 OBJ_EQNS =  eqns_base.o eqns_hydro_adiabatic.o eqns_mhd_adiabatic.o 
 
 OBJ_SOLVE = riemannMHD.o HLLD_MHD.o Roe_MHD_ConservedVar_solver.o \
-            riemann.o findroot.o Riemann_FVS_hydro.o \
+            riemann.o findroot.o Riemann_FVS_hydro.o HLL_hydro.o \
             Roe_Hydro_ConservedVar_solver.o Roe_Hydro_PrimitiveVar_solver.o \
             solver_eqn_base.o solver_eqn_hydro_adi.o solver_eqn_mhd_adi.o
 
@@ -740,6 +740,9 @@ riemann.o: riemann.cpp riemann.h findroot.h ${GLOBAL} \
 
 findroot.o: findroot.cpp findroot.h ${GLOBAL}
 
+HLL_hydro.o: HLL_hydro.cpp HLL_hydro.h \
+ ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
+
 Riemann_FVS_hydro.o: Riemann_FVS_hydro.cpp Riemann_FVS_hydro.h \
  ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
 
@@ -771,12 +774,15 @@ solver_eqn_base.o: VectorOps.h solver_eqn_base.h  \
 solver_eqn_hydro_adi.o:	VectorOps.h VectorOps_spherical.h \
    solver_eqn_base.h  eqns_base.h ${GLOBAL} cell_interface.h \
    solver_eqn_hydro_adi.h   eqns_hydro_adiabatic.h \
-   solver_eqn_hydro_adi.cpp grid_base_class.h
+   solver_eqn_hydro_adi.cpp grid_base_class.h \
+   HLL_hydro.h Riemann_FVS_hydro.h Roe_Hydro_PrimitiveVar_solver.h \
+   riemann.h
 
 solver_eqn_mhd_adi.o: VectorOps.h grid_base_class.h \
    solver_eqn_base.h  eqns_base.h ${GLOBAL} cell_interface.h \
    solver_eqn_mhd_adi.h   eqns_mhd_adiabatic.h \
-   solver_eqn_mhd_adi.cpp
+   solver_eqn_mhd_adi.cpp riemann.h riemannMHD.h \
+   Roe_MHD_ConservedVar_solver.h HLLD_MHD.h
 
 ######################
 # MICROPHYSICS STUFF #

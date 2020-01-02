@@ -61,6 +61,7 @@ FV_solver_Hydro_Euler::FV_solver_Hydro_Euler(
     Riemann_FVS_Euler(nv,gam),
     Riemann_Roe_Hydro_PV(nv,gam),
     Riemann_Roe_Hydro_CV(nv,gam),
+    HLL_hydro(nv,gam),
     VectorOps_Cart(nd)
 {
 #ifdef TESTING
@@ -189,6 +190,12 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     //
     PtoFlux(pstar, flux, eq_gamma);
   }
+
+  // HLL solver, very diffusive 2 wave solver (Migone et al. 2011 )
+  else if (solve_flag==FLUX_RS_HLL) {
+    err += hydro_HLL_flux_solver(Pl, Pr, eq_gamma, flux, pstar);
+  }
+
 
   else {
     rep.error("what sort of flux solver do you mean???",solve_flag);
@@ -520,6 +527,7 @@ cyl_FV_solver_Hydro_Euler::cyl_FV_solver_Hydro_Euler(
     Riemann_FVS_Euler(nv,gam),
     Riemann_Roe_Hydro_PV(nv,gam),
     Riemann_Roe_Hydro_CV(nv,gam),
+    HLL_hydro(nv,gam),
     VectorOps_Cart(nd),
     FV_solver_Hydro_Euler(nv,nd,cflno,gam,state,avcoeff,ntr),
     VectorOps_Cyl(nd)
@@ -606,6 +614,7 @@ sph_FV_solver_Hydro_Euler::sph_FV_solver_Hydro_Euler(
     Riemann_FVS_Euler(nv,gam),
     Riemann_Roe_Hydro_PV(nv,gam),
     Riemann_Roe_Hydro_CV(nv,gam),
+    HLL_hydro(nv,gam),
     VectorOps_Cart(nd),
     FV_solver_Hydro_Euler(nv,nd,cflno,gam,state,avcoeff,ntr),
     VectorOps_Cyl(nd),

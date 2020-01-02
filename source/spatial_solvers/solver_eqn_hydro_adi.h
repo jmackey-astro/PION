@@ -37,6 +37,7 @@
 #include "Riemann_solvers/Riemann_FVS_hydro.h"
 #include "Riemann_solvers/Roe_Hydro_PrimitiveVar_solver.h"
 #include "Riemann_solvers/Roe_Hydro_ConservedVar_solver.h"
+#include "Riemann_solvers/HLL_hydro.h"
 #include "coord_sys/VectorOps_spherical.h"
 
 
@@ -57,6 +58,7 @@ class FV_solver_Hydro_Euler :
   virtual public Riemann_FVS_Euler,
   virtual public Riemann_Roe_Hydro_PV,
   virtual public Riemann_Roe_Hydro_CV,
+  virtual public HLL_hydro,
   virtual public VectorOps_Cart
 {
  public:
