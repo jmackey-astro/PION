@@ -1,13 +1,73 @@
-If you use PION for your research, please cite it appropriately.
+
+If you use PION for your research, please cite it appropriately as follows:
 
 + A code-release paper is in preparation (for 2020).  In the meantime please cite one or more of the following papers, depending on which physical processes you use:
     + Radiative Transfer: "Accuracy and efficiency of raytracing photoionisation algorithms," Mackey, 2012, A&A, 539, A147.
     + MHD: "Effects of magnetic fields on photoionized pillars and globules," Mackey & Lim, 2011, MNRAS, 412, Issue 3, pp. 2079-2094.
     + Hydrodynamics: "Dynamical Models for the Formation of Elephant Trunks in H II Regions," Mackey & Lim, 2010, MNRAS, 403, 714-730.
 
-
 + Please add a footnote to the text, linking to [https://www.pion.ie](https://www.pion.ie)
 
 + Please add an acknowledgement as follows:
   "Computations for this work used the \texttt{PION} simulation code, publicly available at https://www.pion.ie/ and developed with support from research funding by Ireland and Germany."
+
+
+LaTeX/bibtex source for the citations:
+========================================
+
+@ARTICLE{2011MNRAS.412.2079M,
+       author = {{Mackey}, Jonathan and {Lim}, Andrew J.},
+        title = "{Effects of magnetic fields on photoionized pillars and globules}",
+      journal = {\mnras},
+     keywords = {MHD, radiative transfer, methods: numerical, H II regions, ISM: magnetic fields, Astrophysics - Galaxy Astrophysics},
+         year = "2011",
+        month = "Apr",
+       volume = {412},
+       number = {3},
+        pages = {2079-2094},
+          doi = {10.1111/j.1365-2966.2010.18043.x},
+archivePrefix = {arXiv},
+       eprint = {1012.1500},
+ primaryClass = {astro-ph.GA},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2011MNRAS.412.2079M},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+
+@ARTICLE{2010MNRAS.403..714M,
+       author = {{Mackey}, Jonathan and {Lim}, Andrew J.},
+        title = "{Dynamical models for the formation of elephant trunks in HII regions}",
+      journal = {\mnras},
+     keywords = {hydrodynamics, radiative transfer, methods: numerical, HII regions, Astrophysics - Astrophysics of Galaxies},
+         year = "2010",
+        month = "Apr",
+       volume = {403},
+       number = {2},
+        pages = {714-730},
+          doi = {10.1111/j.1365-2966.2009.16181.x},
+archivePrefix = {arXiv},
+       eprint = {0912.1499},
+ primaryClass = {astro-ph.GA},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2010MNRAS.403..714M},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+
+@ARTICLE{2012A&A...539A.147M,
+       author = {{Mackey}, J.},
+        title = "{Accuracy and efficiency of raytracing photoionisation algorithms}",
+      journal = {\aap},
+     keywords = {radiative transfer, methods: numerical, Hii regions, Astrophysics - Galaxy Astrophysics, Physics - Computational Physics},
+         year = "2012",
+        month = "Mar",
+       volume = {539},
+          eid = {A147},
+        pages = {A147},
+          doi = {10.1051/0004-6361/201117984},
+archivePrefix = {arXiv},
+       eprint = {1201.5651},
+ primaryClass = {astro-ph.GA},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2012A&A...539A.147M},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+
+
 
