@@ -159,18 +159,12 @@ void sim_init::print_command_line_options(
   cout <<"\t\t 7 = HLLD solver : MHD only () \n";
   cout <<"\t\t 8 = HLL  solver : MHD only () \n";
 
-  cout <<"\t timestep_limit=N:\n";
-  cout <<"\t\t 0 = only dynamical Courant condition.\n";
-  cout <<"\t\t 1 = dynamical + cooling time limits\n";
-  cout <<"\t\t 2 = dyn +cool +recombination time limits\n";
-  cout <<"\t\t 3 = dyn +cool +recomb +ionisation time limits\n";
-  cout <<"\t\t 4 = dyn +recomb (NO cool, NO ion)\n";
-
   cout <<"\n*********** PARALLEL CODE ONLY *************\n";
   cout <<"\t maxwalltime=D : change the max. runtime to D in hours.\n";
   cout <<"\n";
   cout <<"\n*********** NESTED GRID CODE ONLY *************\n";
-  cout <<"\t nlevels=N     : modify number of levels in NG grid.";
+  cout <<"\t nlevels=N     : modify number of levels in NG grid.\n";
+  cout <<"\t wind_radius_N=D : change radius of boundary for wind source N to value D (in cm)\n";
   cout <<"\n";
   cout <<"********* DEPRECATED -- STILL HERE FOR LEGACY SCRIPTS... ******\n";
   cout <<"\t artvisc=D : modify artificial viscosity, 0=none, Otherwise FalleAV with eta=D,\n";
