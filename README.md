@@ -1,8 +1,13 @@
-# PION #
+
+PION
+-------
 
 PION is open source software primarily for simulation of nebulae around stars, but also for other astrophysical applications.  It has an open development model, where anyone can download and use the software, change it to suit their needs, and contribute changes back to the user community.
 
-## Information ##
+
+
+Information
+=============
 
  * The PION homepage is at [https://www.pion.ie](https://www.pion.ie)
 
@@ -12,7 +17,10 @@ PION is open source software primarily for simulation of nebulae around stars, b
 
  *  Contact [info@pion.ie](mailto:info@pion.ie) for help and information
 
-## Developers ##
+
+
+Developers
+==============
 
 The following people have contributed to the development of PION over the years
 
@@ -23,7 +31,9 @@ The following people have contributed to the development of PION over the years
   * Jonathan Mackey       <jmackey@cp.dias.ie>
   * Maria Moutzouri    
 
-## Licence ##
+
+Licence
+===========
 
 PION is distributed under a BSD3 License.  Downloading, using, modifying and/or re-distributing the software implies acceptance of the License.
 
