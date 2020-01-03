@@ -590,7 +590,6 @@ int VectorOps_Cart::SetSlope(
   } // 1st order.
   
   else if (OA==OA2) { // second order spatial accuracy.
-    bool nopos=false, noneg=false;
     pion_flt slpn[nv], slpp[nv];
     cell *cn=0,*cp=0;
     enum direction dp=NO,dn=NO;
@@ -603,8 +602,8 @@ int VectorOps_Cart::SetSlope(
     }
     cp = grid->NextPt(c,dp); cn=grid->NextPt(c,dn);
     if (cp==0 && cn==0) rep.error("No left or right cell in SetSlope",cp);
-    if (!cp) {cp = grid->NextPt(cn,dp); nopos=true;}
-    if (!cn) {cn = grid->NextPt(cp,dn); noneg=true;}
+    if (!cp) {cp = grid->NextPt(cn,dp);}
+    if (!cn) {cn = grid->NextPt(cp,dn);}
     for (int v=0;v<nv;v++) {
       slpn[v] = (c->Ph[v] -cn->Ph[v])/dx;
       slpp[v] = (cp->Ph[v]- c->Ph[v])/dx;

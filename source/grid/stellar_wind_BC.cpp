@@ -192,11 +192,14 @@ int stellar_wind::add_source(
   }
 
   // if using microphysics, find H+ tracer variable, if it exists.
+  ws->Hplus = -1;
+  ws->iHplus = -1;
   int hplus=-1;
   if (MP) {
     hplus = MP->Tr("H1+");
   }
   ws->Hplus = hplus;
+  if (hplus >=0) ws->iHplus = hplus - nvar + ntracer; 
 
   ws->cells_added = false;
   if (!ws->wcells.empty())
@@ -524,6 +527,15 @@ void stellar_wind::set_wind_cell_reference_state(
   // update tracers: should be set already.
   for (int v=0;v<ntracer;v++)
     wc->p[ftr+v] = WS->tracers[v];
+
+  if (WS->Hplus>=0) {
+    cout <<"WS->Hplus = "<<WS->Hplus;
+    cout <<" itr = "<<WS->iHplus<<endl;
+    if      (WS->Tw < 1.0e4) WS->tracers[WS->iHplus] = 1.0e-20;
+    else if (WS->Tw > 1.5e4) WS->tracers[WS->iHplus] = 0.99999;
+    else    WS->tracers[WS->iHplus] = 1.0e-20 + (WS->Tw-1.0e4)*(0.99999-1.0e-20)/0.5e4;
+  }
+
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   //
@@ -1196,21 +1208,35 @@ void stellar_wind_evolution::update_source(
   wd->ws->Rstar = rstar;
 
   // get tracer values for elements.
-  interpolate.root_find_linear_vec(wd->time_evo, wd->X_H_evo, t_now, xh);
-  interpolate.root_find_linear_vec(wd->time_evo, wd->X_He_evo, t_now, xhe);
-  interpolate.root_find_linear_vec(wd->time_evo, wd->X_C_evo, t_now, xc);
-  interpolate.root_find_linear_vec(wd->time_evo, wd->X_N_evo, t_now, xn);
-  interpolate.root_find_linear_vec(wd->time_evo, wd->X_O_evo, t_now, xo);
-  interpolate.root_find_linear_vec(wd->time_evo, wd->X_Z_evo, t_now, xz);
-  interpolate.root_find_linear_vec(wd->time_evo, wd->X_D_evo, t_now, xd);
+  if (wd->i_XH>=0) {
+    interpolate.root_find_linear_vec(wd->time_evo, wd->X_H_evo, t_now, xh);
+    wd->ws->tracers[wd->i_XH] = xh;
+  }
+  if (wd->i_XHe>=0) {
+    interpolate.root_find_linear_vec(wd->time_evo, wd->X_He_evo, t_now, xhe);
+    wd->ws->tracers[wd->i_XHe]= xhe;
+  }
+  if (wd->i_XC>=0) {
+    interpolate.root_find_linear_vec(wd->time_evo, wd->X_C_evo, t_now, xc);
+    wd->ws->tracers[wd->i_XC] = xc;
+  }
+  if (wd->i_XN>=0) {
+    interpolate.root_find_linear_vec(wd->time_evo, wd->X_N_evo, t_now, xn);
+    wd->ws->tracers[wd->i_XN] = xn;
+  }
+  if (wd->i_XO>=0) {
+    interpolate.root_find_linear_vec(wd->time_evo, wd->X_O_evo, t_now, xo);
+    wd->ws->tracers[wd->i_XO] = xo;
+  }
+  if (wd->i_XZ>=0) {
+    interpolate.root_find_linear_vec(wd->time_evo, wd->X_Z_evo, t_now, xz);
+    wd->ws->tracers[wd->i_XZ] = xz;
+  }
+  if (wd->i_XD>=0) {
+    interpolate.root_find_linear_vec(wd->time_evo, wd->X_D_evo, t_now, xd);
+    wd->ws->tracers[wd->i_XD] = xd;
+  }
 
-  wd->ws->tracers[wd->i_XH] = xh;
-  wd->ws->tracers[wd->i_XHe]= xhe;
-  wd->ws->tracers[wd->i_XC] = xc;
-  wd->ws->tracers[wd->i_XN] = xn;
-  wd->ws->tracers[wd->i_XO] = xo;
-  wd->ws->tracers[wd->i_XZ] = xz;
-  wd->ws->tracers[wd->i_XD] = xd;
 
   // Set B-field of star
   // TODO: Decide how to set this better!  For now pick B=10G at

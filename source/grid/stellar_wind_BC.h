@@ -81,7 +81,8 @@ struct wind_source {
     id,    ///< id of source.
     ncell, ///< number of cells in the artificially fixed region.
     type,  ///< type of wind source (0=constant,1=evolving,2=lat-dep.).
-    Hplus; ///< index of H+ tracer variable, if present.
+    Hplus, ///< index of H+ tracer variable, if present.
+    iHplus; ///< index of H+ tracer variable, offset from 1st tracer.
   double
     dpos[MAX_DIM], ///< physical position of source
     radius, ///< radius of fixed region (in cm).

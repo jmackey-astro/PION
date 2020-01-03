@@ -392,6 +392,9 @@ int sim_control_NG_MPI::Time_Int(
 #ifdef TEST_INT
     cout <<"NG_MPI raytracing level "<<l<<"\n";
 #endif
+    err = update_evolving_RT_sources(
+              SimPM,SimPM.levels[l].simtime,grid[l]->RT);
+    rep.errorTest("NG TIME_INT::update_RT_sources error",0,err);
     do_ongrid_raytracing(SimPM,grid[l],l);
         
     if (l>0) {
@@ -628,10 +631,6 @@ double sim_control_NG_MPI::advance_step_OA1(
   class GridBaseClass *grid = SimPM.levels[l].grid;
   bool finest_level = (l<(SimPM.grid_nlevels-1)) ? false : true;
 
-  err = update_evolving_RT_sources(
-            SimPM,SimPM.levels[l].simtime,grid->RT);
-  rep.errorTest("NG TIME_INT::update_RT_sources error",0,err);
-
 #ifdef TEST_INT
   cout <<"advance_step_OA1: child="<<child<<"\n";
   cout <<"finest_level="<<finest_level<<", l="<<l<<", max="<<SimPM.grid_nlevels<<"\n";
@@ -833,6 +832,9 @@ double sim_control_NG_MPI::advance_step_OA1(
 #ifdef TEST_INT
     cout <<"advance_step_OA1: l="<<l<<" RT at end of step\n";
 #endif
+    update_evolving_RT_sources(
+            SimPM,SimPM.levels[l].simtime,grid->RT);
+    rep.errorTest("NG TIME_INT::update_RT_sources error",0,err);
     err += do_ongrid_raytracing(SimPM,grid,l);
     rep.errorTest("NG-MPI::advance_step_OA1: calc_rt_cols()",0,err);
   }
@@ -888,10 +890,6 @@ double sim_control_NG_MPI::advance_step_OA2(
   double ctime = SimPM.levels[l].simtime; // current time
   class GridBaseClass *grid = SimPM.levels[l].grid;
   bool finest_level = (l<SimPM.grid_nlevels-1) ? false : true;
-
-  err = update_evolving_RT_sources(
-            SimPM,SimPM.levels[l].simtime,grid->RT);
-  rep.errorTest("NG TIME_INT::update_RT_sources error",0,err);
 
 #ifdef TEST_INT
   cout <<"advance_step_OA2: child="<<child<<endl;
@@ -1040,6 +1038,9 @@ double sim_control_NG_MPI::advance_step_OA2(
   cout <<"advance_step_OA2: l="<<l<<" raytracing"<<endl;
 #endif
   if (grid->RT) {
+    update_evolving_RT_sources(
+            SimPM,SimPM.levels[l].simtime+0.5*dt_now,grid->RT);
+    rep.errorTest("NG TIME_INT::update_RT_sources error",0,err);
     err += do_ongrid_raytracing(SimPM,grid,l);
     rep.errorTest("scn::advance_time: calc_rt_cols() OA2",0,err);
   }
@@ -1145,6 +1146,9 @@ double sim_control_NG_MPI::advance_step_OA2(
   // 12. Do raytracing for next step, to send with F2C BCs.
   // --------------------------------------------------------
   if (grid->RT) {
+    update_evolving_RT_sources(
+            SimPM,SimPM.levels[l].simtime,grid->RT);
+    rep.errorTest("NG TIME_INT::update_RT_sources error",0,err);
     err += do_ongrid_raytracing(SimPM,grid,l);
     rep.errorTest("NG-MPI::advance_step_OA2: raytracing()",0,err);
   }

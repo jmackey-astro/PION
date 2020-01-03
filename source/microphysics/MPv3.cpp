@@ -673,13 +673,20 @@ int MPv3::set_multifreq_source_properties(
     // for T<33979.25687 K.
     //
     Lcorr = 6.50359577123e-43 * pow(rsi->Tstar,9.31027482);
-    Rcorr = sqrt(rsi->strength/
-      (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*pow(rsi->Tstar, 4.0))
-      ) /pconst.Rsun();
-    Rcorr /= rsi->Rstar;
+    Rcorr = sqrt(Lcorr);
+    //Rcorr = sqrt(rsi->strength*Lcorr/
+    //  (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*pow(rsi->Tstar, 4.0))
+    //  ) /pconst.Rsun();
+    //cout <<"Rstar="<<Rcorr<<", rsi->Rstar="<<rsi->Rstar<<", sqrt(Lcorr)="<<sqrt(Lcorr)<<"\t";
+    //Rcorr /= rsi->Rstar;
+    //cout <<"Lcorr="<<Lcorr<<", Rcorr="<<Rcorr<<"\n";
+    //
     // Now need to multiply rsi->strength and rsi->Rstar by the two
     // correction factors when setting up the tables.
   }
+  //cout <<"MPv3: Updating Source: T="<<rsi->Tstar<<", L=";
+  //cout <<rsi->strength*Lcorr<<", R=";
+  //cout <<rsi->Rstar*pconst.Rsun()*Rcorr<<"\n";
 
   //
   // Call the function in hydrogen_photoion.
