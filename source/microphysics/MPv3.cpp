@@ -663,6 +663,7 @@ int MPv3::set_multifreq_source_properties(
   // The radius is fitted vs. ionizing photon luminosity, the scaling
   // is then applied to the luminosity of the star.
   //
+  double Lcorr=1.0, Rcorr=1.0;
   if (rsi->Tstar < 33979.25687) {
     // Luminosity is in erg/s (rsi->strength); the fit is logspace
     // in solar units.  Converted to linear units, the relation is:
@@ -671,10 +672,13 @@ int MPv3::set_multifreq_source_properties(
     //   L(corrected) = 6.50359577123e-43 * L * T**9.31027482
     // for T<33979.25687 K.
     //
-    rsi->strength *= 6.50359577123e-43 * pow(rsi->Tstar,9.31027482);
-    rsi->Rstar = sqrt(rsi->strength/
+    Lcorr = 6.50359577123e-43 * pow(rsi->Tstar,9.31027482);
+    Rcorr = sqrt(rsi->strength/
       (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*pow(rsi->Tstar, 4.0))
       ) /pconst.Rsun();
+    Rcorr /= rsi->Rstar;
+    // Now need to multiply rsi->strength and rsi->Rstar by the two
+    // correction factors when setting up the tables.
   }
 
   //
@@ -682,8 +686,8 @@ int MPv3::set_multifreq_source_properties(
   //
   Setup_photoionisation_rate_table(
               rsi->Tstar,
-              rsi->Rstar*pconst.Rsun(),
-              rsi->strength,
+              rsi->Rstar*pconst.Rsun()*Rcorr,
+              rsi->strength*Lcorr,
               mincol,  maxcol, Emax,  Nsub, Nspl);
   
   *str = rsi->strength; // this doesn't do much.
