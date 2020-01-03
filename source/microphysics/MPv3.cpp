@@ -650,12 +650,39 @@ int MPv3::set_multifreq_source_properties(
   Emax = 54.41778*1.602e-12;  // assume nothing doubly-ionized He.
   //Emax = 100.0*1.602e-12;  // This is better for cosmology RT tests.
 #endif // HE_INERT
+
+  //
+  // JMackey (2019):
+  // For ionisation rate, we need to rescale the Blackbody luminosity so
+  // that it is much smaller for T<30000K, b/c the actual ionising photon
+  // luminosity of these stars is much less than indicated by BB curve.
+  // I took data from Table 1 of Diaz-Miller, Franco, & Shore,
+  // (1998,ApJ,501,192), compared them to the ionising photon luminosity
+  // of a BB with the same radius and Teff, and got the following scaling
+  // factor, using file conversion.py in code_misc/testing/planck_fn/
+  // The radius is fitted vs. ionizing photon luminosity, the scaling
+  // is then applied to the luminosity of the star.
+  //
+  if (rsi->Tstar < 33979.25687) {
+    // Luminosity is in erg/s (rsi->strength); the fit is logspace
+    // in solar units.  Converted to linear units, the relation is:
+    //   L(corrected) = L * 10**(-2*21.09342323) * T**(2.0*4.65513741)
+    // or
+    //   L(corrected) = 6.50359577123e-43 * L * T**9.31027482
+    // for T<33979.25687 K.
+    //
+    rsi->strength *= 6.50359577123e-43 * pow(rsi->Tstar,9.31027482);
+    rsi->Rstar = sqrt(rsi->strength/
+      (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*pow(rsi->Tstar, 4.0))
+      ) /pconst.Rsun();
+  }
+
   //
   // Call the function in hydrogen_photoion.
   //
   Setup_photoionisation_rate_table(
               rsi->Tstar,
-              rsi->Rstar*6.96e10,
+              rsi->Rstar*pconst.Rsun(),
               rsi->strength,
               mincol,  maxcol, Emax,  Nsub, Nspl);
   

@@ -668,30 +668,6 @@ int setup_fixed_grid::setup_evolving_RT_sources(
       istar->time.push_back(t1);
       istar->Log_L.push_back( log10(t3/pconst.Lsun()) );
       istar->Log_T.push_back( log10(t4) );
-      //
-      // For ionisation rate, we need to rescale the Blackbody luminosity so
-      // that it is much smaller for T<30000K, b/c the actual ionising photon
-      // luminosity of these stars is much less than indicated by BB curve.
-      // I took data from Table 1 of Diaz-Miller, Franco, & Shore,
-      // (1998,ApJ,501,192), compared them to the ionising photon luminosity
-      // of a BB with the same radius and Teff, and got the following scaling
-      // factor, using file conversion.py in code_misc/testing/planck_fn/
-      // The radius is fitted vs. ionizing photon luminosity, the scaling
-      // is then applied to the luminosity of the star.
-      // PROBABLY NOT A GOOD IDEA TO DO THIS HERE -- BETTER TO DO IT
-      // WHEN CALCULATING THE FLUX IN THE LYMAN CONTINUUM...
-      //
-      if (istar->Log_T[iline]<4.53121387658 &&
-          SimPM.RS.sources[isrc].effect == RT_EFFECT_MFION) {
-        //cout <<"L(BB) ="<<exp(pconst.ln10()*istar->Log_L[i])<<", T=";
-        //cout <<exp(pconst.ln10()*istar->Log_T[i])<<", scale-factor=";
-        double beta = -4.65513741*istar->Log_T[iline] + 21.09342323;
-        istar->Log_L[iline] -= 2.0*beta;
-        // NEXT LINE IS A HACK!!! REDUCES FLUX BY LESS THAN IT SHOULD...
-        //istar->Log_L[iline] -= 0.4*beta;
-        //cout <<", new L = "<<exp(pconst.ln10()*istar->Log_L[i])<<"\n";
-      }
-
       istar->Log_V.push_back( log10(t6/1.0e5) );
 
       // Stellar radius, from Stefan Boltzmann Law.
@@ -779,8 +755,8 @@ int setup_fixed_grid::update_evolving_RT_sources(
 
     // If L or T change by more than 1% then update them; otherwise
     // leave as they are.
-    if ( fabs(Lnow-istar->Lnow)/istar->Lnow >0.001 ||
-         fabs(Tnow-istar->Tnow)/istar->Tnow >0.001 ) {
+    if ( fabs(Lnow-istar->Lnow)/istar->Lnow >0.01 ||
+         fabs(Tnow-istar->Tnow)/istar->Tnow >0.01 ) {
       cout <<"update_evolving_RT_sources() NOW: t="<<istar->t_now;
       cout <<"\tL="<< Lnow;
       cout <<"\tT="<< Tnow;
