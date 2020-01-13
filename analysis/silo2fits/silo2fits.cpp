@@ -160,7 +160,6 @@ int main(int argc, char **argv)
   // set up dataio_utility class and fits-writer class.
   //
   class dataio_silo_utility dataio (SimPM, "DOUBLE", &(SimPM.levels[0].MCMD));
-  class DataIOFits_pllel writer (SimPM, &(SimPM.levels[0].MCMD));
 
   //
   // Get list of files to read:
@@ -277,6 +276,7 @@ int main(int argc, char **argv)
   cout <<"-------------------------------------------------------\n";
 
   size_t ifile=0;
+  class DataIOFits_pllel writer (SimPM, &(SimPM.levels[0].MCMD));
 
   cout <<"-------------------------------------------------------\n";
   cout <<"--------------- Starting Loop over all input files ----\n";
@@ -293,6 +293,7 @@ int main(int argc, char **argv)
     cout <<clk.time_so_far("analyse_data")<<" ----\n";
     //cout <<"-------------------------------------------------------\n";
     //cout <<"--------------- Reading Simulation data to grid -------\n";
+    cout <<" reading file "<<*ff<<"\n";
     cout.flush();
 
     // *******************
@@ -305,6 +306,7 @@ int main(int argc, char **argv)
     temp <<input_path<<"/"<<*ff;
     string infile = temp.str();
     temp.str("");
+    ff++;
     for (size_t skip=0; skip<Nskip; skip++) ff++;
 
     // Read header to get timestep info.

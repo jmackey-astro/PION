@@ -164,41 +164,71 @@ int DataIOFits::OutputData(
     }
   }
 #endif // RT_TESTING_OUTPUTCOL
+
   if (SimPM.eqntype==EQEUL || SimPM.eqntype==EQEUL_ISO || SimPM.eqntype==EQEUL_EINT) {
     extname=mem.myalloc(extname,nvar+1);
-    string pvar[10] = {"GasDens","GasPres","GasVX","GasVY","GasVZ","TR0","TR1","TR2","TR3","TR4"};
+    string pvar[10] = {"GasDens","GasPres","GasVX","GasVY","GasVZ",
+                       "TR0","TR1","TR2","TR3","TR4"};
     for (int i=0;i<SimPM.nvar;i++) extname[i] = pvar[i];
-    extname[nvar  ] = "Eint";
-    if (DataIOFits::eqn!=0 || MP!=0) { // only write eint/divb,ptot if eqn is there to calculate it!
+    if (DataIOFits::eqn!=0 && MP==0) {
+      extname[nvar  ] = "Eint";
+      nvar +=1;
+    }
+    else if (MP!=0) {
+      extname[nvar  ] = "Temp";
       nvar +=1;
     }
   }
   else if (SimPM.eqntype==EQMHD || SimPM.eqntype==EQFCD) {
     extname=mem.myalloc(extname,nvar+3);
-    string pvar[13] = {"GasDens","GasPres","GasVX","GasVY","GasVZ","Bx","By","Bz","TR0","TR1","TR2","TR3","TR4"};
+    string pvar[13] = {"GasDens","GasPres","GasVX","GasVY","GasVZ",
+                      "Bx","By","Bz","TR0","TR1","TR2","TR3","TR4"};
     for (int i=0;i<SimPM.nvar;i++) extname[i] = pvar[i];
-    extname[nvar  ] = "Eint";
-    extname[nvar+1] = "divB";
-    extname[nvar+2] = "Ptot";
-    if (DataIOFits::eqn!=0) {
+    if (DataIOFits::eqn!=0 && MP==0) {
+      extname[nvar  ] = "Eint";
+      extname[nvar+1] = "divB";
+      extname[nvar+2] = "Ptot";
       nvar +=3;
+    }
+    else if (DataIOFits::eqn!=0 && MP!=0) {
+      extname[nvar  ] = "Temp";
+      extname[nvar+1] = "divB";
+      extname[nvar+2] = "Ptot";
+      nvar +=3;
+    }
+    else if (MP!=0) {
+      extname[nvar  ] = "Temp";
+      nvar +=1;
     }
   }
   else if (SimPM.eqntype==EQGLM) {
     extname=mem.myalloc(extname,nvar+3);
-    string pvar[14] = {"GasDens","GasPres","GasVX","GasVY","GasVZ","Bx","By","Bz","psi","TR0","TR1","TR2","TR3","TR4"};
+    string pvar[14] = {"GasDens","GasPres","GasVX","GasVY","GasVZ",
+                "Bx","By","Bz","psi","TR0","TR1","TR2","TR3","TR4"};
     for (int i=0;i<SimPM.nvar;i++) extname[i] = pvar[i];
-    extname[nvar  ] = "Eint";
-    extname[nvar+1] = "divB";
-    extname[nvar+2] = "Ptot";
-    if (DataIOFits::eqn!=0) {
+    cout <<"EQN="<<DataIOFits::eqn<<", MP="<<MP<<"\n";
+    if (DataIOFits::eqn!=0 && MP==0) {
+      extname[nvar  ] = "Eint";
+      extname[nvar+1] = "divB";
+      extname[nvar+2] = "Ptot";
       nvar +=3;
+    }
+    else if (DataIOFits::eqn!=0 && MP!=0) {
+      extname[nvar  ] = "Temp";
+      extname[nvar+1] = "divB";
+      extname[nvar+2] = "Ptot";
+      nvar +=3;
+    }
+    else if (MP!=0) {
+      extname[nvar  ] = "Temp";
+      nvar +=1;
     }
   } 
   else {
     extname=mem.myalloc(extname,10);
     rep.error("What equations?!",SimPM.eqntype);
   }
+  
 #ifdef RT_TESTING_OUTPUTCOL
   // save column densities
   if (SimPM.RS.Nsources>0) {
@@ -745,8 +775,11 @@ int DataIOFits::put_variable_into_data_array(
   else if (name=="Eint")     v=-1;
   else if (name=="divB")     v=-2;
   else if (name=="Ptot")     v=-3;
+  else if (name=="Temp")     v=-5;
   else if (name.find("Col_Src") !=string::npos) v=-4;
   else rep.error("Bad variable index in fits write routine",name);
+
+  //cout <<"saving data variable "<<name<<"\n";
 
   long int ct=0;
   double norm = sqrt(4.0*M_PI);
@@ -762,12 +795,17 @@ int DataIOFits::put_variable_into_data_array(
     }
     while ( (c=gp->NextPt(c))!=0 );
   }
-  else if (v==-1) { // internal energy (or temperature if we have microphysics)
+
+  else if (v==-1) { // internal energy
     do {
-      if (MP) {
-	(*data)[ct] = MP->Temperature(c->P,SimPM.gamma);
-      }
-      else    (*data)[ct] = eqn->eint(c->P,SimPM.gamma);
+      (*data)[ct] = eqn->eint(c->P,SimPM.gamma);
+      ct++;
+    } while ( (c=gp->NextPt(c))!=0 );
+  }
+
+  else if (v==-5) { // temperature
+    do {
+      (*data)[ct] = MP->Temperature(c->P,SimPM.gamma);
       ct++;
     } while ( (c=gp->NextPt(c))!=0 );
   }

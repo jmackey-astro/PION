@@ -427,7 +427,6 @@ int setup_fixed_grid::setup_microphysics(
     }
 #endif
 
-
     if (!MP) rep.error("microphysics init",MP);
     if (!have_set_MP) rep.error("HUH? have_set_MP",have_set_MP);
   }
