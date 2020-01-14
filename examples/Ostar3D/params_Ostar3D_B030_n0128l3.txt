@@ -49,12 +49,12 @@ NGridY  128
 NGridZ  128
 
 # Boundaries of Simulation box:
-Xmin  -8.192e18
-Ymin  -8.192e18
-Zmin -12.288e18
-Xmax   4.096e18
-Ymax   8.192e18
-Zmax   8.192e18
+Xmin  -1.28e18
+Ymin  -1.28e18
+Zmin  -1.28e18
+Xmax   1.28e18
+Ymax   1.28e18
+Zmax   1.28e18
 
 # Nested grid
 grid_nlevels 3
@@ -75,7 +75,7 @@ StartTime  0.000e11
 FinishTime 7.0e10
 
 OutputPath ./
-OutputFile Ostar3D_B010_n0128l3
+OutputFile Ostar3D_B030_n0128l3
 OutputFileType silo
 OutputCriterion 0
 OutputFrequency 256
@@ -111,9 +111,9 @@ UNIFORM_core_centre_XX 1.1e200
 UNIFORM_core_centre_YY 1.1e200
 UNIFORM_core_centre_ZZ 1.1e200
 
-UNIFORM_ambRO 2.0e-24
-UNIFORM_ambPG 2.9e-12
-UNIFORM_ambVX -25.0e5
+UNIFORM_ambRO 2.2e-24
+UNIFORM_ambPG 2.2e-12
+UNIFORM_ambVX -20.0e5
 UNIFORM_ambVY 0.0
 UNIFORM_ambVZ 0.0
 UNIFORM_ambBX 4.0e-6
@@ -144,14 +144,14 @@ WIND_NSRC 1
 WIND_0_pos0  0.0e18
 WIND_0_pos1  0.0e18
 WIND_0_pos2  0.0e18
-WIND_0_radius 6.4e17  # 20 cells for 128^2 and 3 levels
+WIND_0_radius 1.0e17  # 20 cells for 128^2 and 3 levels
 WIND_0_type   0
 WIND_0_mdot   1.0e-7     # 10^(-7) solar masses per year mass-loss rate
 WIND_0_vinf   1500.0     # 1500 km/s wind terminal velocity
 WIND_0_vrot   100.0      # 100 km/s surface equatorial rotation velocity
 WIND_0_temp   3.5e4      # 35 kK effective temperature
 WIND_0_Rstr   6.96e11    # 10 solar radii
-WIND_0_Bsrf   10.0        # 100 Gauss surface field
+WIND_0_Bsrf   30.0        # 100 Gauss surface field
 WIND_0_TR0    1.0
 WIND_0_evofile NOFILE
 WIND_0_t_offset   0.0000    # in (unscaled) years
