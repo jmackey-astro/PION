@@ -49,9 +49,9 @@ NGridY  128
 NGridZ  128
 
 # Boundaries of Simulation box:
-Xmin  -8.192e18
+Xmin -12.288e18
 Ymin  -8.192e18
-Zmin -12.288e18
+Zmin  -8.192e18
 Xmax   4.096e18
 Ymax   8.192e18
 Zmax   8.192e18
