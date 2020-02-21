@@ -297,7 +297,7 @@ OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
           reflecting_boundaries.o oneway_out_boundaries.o \
           fixed_boundaries.o jet_boundaries.o \
           jetreflect_boundaries.o double_Mach_ref_boundaries.o \
-          stellar_wind_boundaries.o
+          stellar_wind_boundaries.o axisymmetric_boundaries.o
 
 OBJ_NG_BCS = assign_update_bcs_NG.o     \
           NG_coarse_to_fine_boundaries.o \
@@ -444,6 +444,10 @@ reflecting_boundaries.o: reflecting_boundaries.cpp \
   reflecting_boundaries.h \
   boundaries.h ${GLOBAL} grid_base_class.h
 
+axisymmetric_boundaries.o: axisymmetric_boundaries.cpp \
+  axisymmetric_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
 fixed_boundaries.o: fixed_boundaries.cpp fixed_boundaries.h \
   boundaries.h ${GLOBAL} grid_base_class.h
 
@@ -465,7 +469,7 @@ stellar_wind_boundaries.o: stellar_wind_boundaries.cpp \
 assign_update_bcs.o: assign_update_bcs.cpp assign_update_bcs.h \
   periodic_boundaries.h outflow_boundaries.h \
   oneway_out_boundaries.h inflow_boundaries.h \
-  reflecting_boundaries.h \
+  reflecting_boundaries.h axisymmetric_boundaries.h \
   boundaries.h ${GLOBAL} grid_base_class.h
 
 assign_update_bcs_NG.o: assign_update_bcs_NG.cpp \

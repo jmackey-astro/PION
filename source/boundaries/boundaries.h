@@ -66,9 +66,12 @@ enum BoundaryTypes {
     COARSE_TO_FINE_SEND = 20,
     ///< boundary for sending data from this grid to external
     ///< boundary of finer-level grid on another MPI process.
-    COARSE_TO_FINE_RECV = 21
+    COARSE_TO_FINE_RECV = 21,
     ///< boundary for receiving data onto the external boundary of
     ///< this grid from a coarser-level grid on another MPI process.
+    AXISYMMETRIC = 22
+    ///< reflecting about R=0 symmetry axis, but assumes rotational
+    ///< symmetry for theta-component of V and B.
 };
 
 

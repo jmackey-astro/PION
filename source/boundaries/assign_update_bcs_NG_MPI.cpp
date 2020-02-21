@@ -87,6 +87,14 @@ int assign_update_bcs_NG_MPI::assign_boundary_data(
 #endif
       err += BC_assign_REFLECTING(par,grid,b);
       break;
+    case AXISYMMETRIC:
+#ifdef TEST_MPI_NG
+      cout <<"LEVEL "<<level<<": NG_MPI_Assign: assigning bc "<<i;
+      cout <<" with type "<<b->type<<"\n";
+      cout.flush();
+#endif
+      err += BC_assign_AXISYMMETRIC(par,grid,b);
+      break;
     case FIXED:
 #ifdef TEST_MPI_NG
       cout <<"LEVEL "<<level<<": NG_MPI_Assign: assigning bc "<<i;
@@ -276,6 +284,13 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
       cout <<map[i]<<" with type "<<b->type<<"\n";
 #endif
       err += BC_update_REFLECTING( par,grid, b, cstep, maxstep);
+      break;
+    case AXISYMMETRIC:
+#ifdef TEST_MPI_NG
+      cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc ";
+      cout <<map[i]<<" with type "<<b->type<<"\n";
+#endif
+      err += BC_update_AXISYMMETRIC( par,grid, b, cstep, maxstep);
       break;
     case FIXED:
 #ifdef TEST_MPI_NG

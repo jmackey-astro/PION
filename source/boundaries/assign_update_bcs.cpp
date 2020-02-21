@@ -65,6 +65,12 @@ int assign_update_bcs::assign_boundary_data(
 #endif
       err += BC_assign_REFLECTING(par,grid,b);
       break;
+    case AXISYMMETRIC:
+#ifdef TEST_MPI_NG
+      cout <<"assign_bcs: assigning bc "<<i<<" with type "<<b->type<<"\n";
+#endif
+      err += BC_assign_AXISYMMETRIC(par,grid,b);
+      break;
     case FIXED:
 #ifdef TEST_MPI_NG
       cout <<"assign_bcs: assigning bc "<<i<<" with type "<<b->type<<"\n";
@@ -148,6 +154,7 @@ int assign_update_bcs::TimeUpdateInternalBCs(
     case ONEWAY_OUT:
     case INFLOW:
     case REFLECTING:
+    case AXISYMMETRIC:
     case FIXED:
     case JETBC:
     case JETREFLECT:
@@ -207,6 +214,9 @@ int assign_update_bcs::TimeUpdateExternalBCs(
       break;
     case REFLECTING:
       err += BC_update_REFLECTING( par,grid, b, cstep, maxstep);
+      break;
+    case AXISYMMETRIC:
+      err += BC_update_AXISYMMETRIC( par,grid, b, cstep, maxstep);
       break;
     case FIXED:
       err += BC_update_FIXED(      par,grid, b, cstep, maxstep);

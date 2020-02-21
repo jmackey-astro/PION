@@ -14,6 +14,7 @@
 #include "boundaries/oneway_out_boundaries.h"
 #include "boundaries/inflow_boundaries.h"
 #include "boundaries/reflecting_boundaries.h"
+#include "boundaries/axisymmetric_boundaries.h"
 #include "boundaries/fixed_boundaries.h"
 #include "boundaries/jet_boundaries.h"
 #include "boundaries/jetreflect_boundaries.h"
@@ -26,6 +27,7 @@ class assign_update_bcs :
   virtual public oneway_out_bc,
   virtual public inflow_bc,
   virtual public reflecting_bc,
+  virtual public axisymmetric_bc,
   virtual public fixed_bc,
   virtual public jet_bc,
   virtual public jetreflect_bc,
