@@ -280,7 +280,7 @@ OBJ_GRID =  cell_interface.o uniform_grid.o setup_fixed_grid.o \
 OBJ_EQNS =  eqns_base.o eqns_hydro_adiabatic.o eqns_mhd_adiabatic.o 
 
 OBJ_SOLVE = riemannMHD.o HLLD_MHD.o Roe_MHD_ConservedVar_solver.o \
-            riemann.o findroot.o Riemann_FVS_hydro.o \
+            riemann.o findroot.o Riemann_FVS_hydro.o HLL_hydro.o \
             Roe_Hydro_ConservedVar_solver.o Roe_Hydro_PrimitiveVar_solver.o \
             solver_eqn_base.o solver_eqn_hydro_adi.o solver_eqn_mhd_adi.o
 
@@ -538,6 +538,9 @@ riemann.o: riemann.cpp riemann.h findroot.h ${GLOBAL} \
 	   eqns_hydro_adiabatic.h  eqns_base.h
 
 findroot.o: findroot.cpp findroot.h ${GLOBAL}
+
+HLL_hydro.o: HLL_hydro.cpp HLL_hydro.h \
+ ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
 
 Riemann_FVS_hydro.o: Riemann_FVS_hydro.cpp Riemann_FVS_hydro.h \
    ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h

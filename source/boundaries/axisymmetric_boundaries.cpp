@@ -29,8 +29,8 @@ int axisymmetric_bc::BC_assign_AXISYMMETRIC(
     rep.error("BC_assign_AXISYMMETRIC empty boundary data",b->itype);
   }
 
-  if (b->dir != RN_cyl) {
-    rep.error("Axisymmetric boundary not at R=0",b->dir)
+  if (b->dir != RNcyl) {
+    rep.error("Axisymmetric boundary not at R=0",b->dir);
   }
 
   //
