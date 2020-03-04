@@ -426,9 +426,7 @@ void stellar_wind::set_wind_cell_reference_state(
 
   // Velocities: cell-average values, i.e. values at the
   // centre-of-volume.
-  // TODO: for general J vector, what is rotational component.
-  // TODO: Add axi-symmetric BC so that VZ,BZ not reflected at 
-  //       symmetry axis.  Otherwise 2D with rotation won't work.
+  // TODO: for general J vector in 3D, what is rotational component.
   switch (ndim) {
   case 1:
     wc->p[VX] = WS->Vinf * x / wc->dist;
@@ -439,7 +437,8 @@ void stellar_wind::set_wind_cell_reference_state(
   case 2:
     wc->p[VX] = WS->Vinf * x / wc->dist;
     wc->p[VY] = WS->Vinf * y / wc->dist;
-    wc->p[VZ] = 0.0;
+    // J is hardcoded to be parallel to positive z-axis
+    wc->p[VZ] = WS->v_rot *  WS->Rstar * y / pow_fast(wc->dist,2);
     break;
 
   case 3:
@@ -464,8 +463,6 @@ void stellar_wind::set_wind_cell_reference_state(
   // Use a split monopole plus a rotational term adding toroidal
   // component.
   // TODO: for general J vector, what is rotational component.
-  // TODO: Add axi-symmetric BC so that VZ,BZ not reflected at 
-  //       symmetry axis.  Otherwise 2D with rotation won't work.
   if (eqntype==EQMHD || eqntype==EQGLM) {
     //double t=0.0;
     double B_s = WS->Bstar/sqrt(4.0*M_PI); // code units for B_surf

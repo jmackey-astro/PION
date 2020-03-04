@@ -937,6 +937,10 @@ int setup_fixed_grid::setup_boundary_structs(
       grid->BC_bd[i]->itype=REFLECTING;
       grid->BC_bd[i]->type="REFLECTING";
     }
+    else if (grid->BC_bd[i]->type=="axisymmetric") {
+      grid->BC_bd[i]->itype=AXISYMMETRIC;
+      grid->BC_bd[i]->type="AXISYMMETRIC";
+    }
     else if (grid->BC_bd[i]->type=="equator-reflect") {
       grid->BC_bd[i]->itype=JETREFLECT;
       grid->BC_bd[i]->type="JETREFLECT";
