@@ -59,7 +59,7 @@ Ymax   8.196e16
 Zmax   8.196e16
 
 # Nested grid
-grid_nlevels 5
+grid_nlevels 4
 grid_aspect_ratio_XX 1
 grid_aspect_ratio_YY 1
 grid_aspect_ratio_ZZ 1
@@ -77,7 +77,7 @@ StartTime  0.000e11
 FinishTime 3.156e12
 
 OutputPath ./
-OutputFile WRwind2starsREF_HD_d2l5n512
+OutputFile WR_REF_HD_s16e15_d2l5n512
 OutputFileType silo
 OutputCriterion 0
 OutputFrequency 512
@@ -143,10 +143,10 @@ RT_Nsources 0
 WIND_NSRC 2
 
 # locate the source at the origin.
-WIND_0_pos0  4.84e15
+WIND_0_pos0  8.192e15
 WIND_0_pos1  0.0e15
 WIND_0_pos2  0.0e15
-WIND_0_radius 3.0e14  # 15 cells
+WIND_0_radius 6.0e14  # 15 cells
 WIND_0_type   0
 WIND_0_mdot   1.0e-5
 WIND_0_vinf   1500.0
@@ -164,10 +164,10 @@ WIND_0_enhance_mdot 0
 WIND_0_xi 0.0
 
 # locate the source at the origin.
-WIND_1_pos0 -4.84e15
+WIND_1_pos0 -8.192e15
 WIND_1_pos1  0.0e15
 WIND_1_pos2  0.0e15
-WIND_1_radius 3.0e14  # 15 cells
+WIND_1_radius 6.0e14  # 15 cells
 WIND_1_type   0
 WIND_1_mdot   2.0e-5
 WIND_1_vinf   1500.0

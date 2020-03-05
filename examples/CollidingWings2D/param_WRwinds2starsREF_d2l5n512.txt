@@ -23,7 +23,7 @@ EtaViscosity 0.15
 ntracer 2
 chem_code none
 Tracer000 WIND1
-Tracer000 WIND2
+Tracer001 WIND2
 InitIons LEAVE
 
 EP_dynamics     1
