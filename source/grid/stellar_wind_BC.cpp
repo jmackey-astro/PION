@@ -526,8 +526,8 @@ void stellar_wind::set_wind_cell_reference_state(
     wc->p[ftr+v] = WS->tracers[v];
 
   if (WS->Hplus>=0) {
-    cout <<"WS->Hplus = "<<WS->Hplus;
-    cout <<" itr = "<<WS->iHplus<<endl;
+    //cout <<"WS->Hplus = "<<WS->Hplus;
+    //cout <<" itr = "<<WS->iHplus<<endl;
     if      (WS->Tw < 1.0e4) WS->tracers[WS->iHplus] = 1.0e-20;
     else if (WS->Tw > 1.5e4) WS->tracers[WS->iHplus] = 0.99999;
     else    WS->tracers[WS->iHplus] = 1.0e-20 + (WS->Tw-1.0e4)*(0.99999-1.0e-20)/0.5e4;
