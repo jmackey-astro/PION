@@ -352,20 +352,11 @@ void stellar_wind::set_wind_cell_reference_state(
   // for the reference state of the cell.  Every timestep the cell-values will
   // be reset to this reference state.
   //
-  if (wc-dist < 0.75*WC->radius) {
+  bool set_rho=true;
+  if (wc->dist < 0.75*WS->radius) {
     wc->p[RO] = 1.0e-31;
     wc->p[PG] = 1.0e-31;
-    wc->p[VX] = 0.0;
-    wc->p[VY] = 0.0;
-    wc->p[VZ] = 0.0;
-    if (eqntype==EQMHD || eqntype==EQGLM) {
-      wc->p[BX] = 0.0;
-      wc->p[BY] = 0.0;
-      wc->p[BZ] = 0.0;
-    }
-    if (eqntype==EQGLM) {
-      wc->p[SI] = 0.0;
-    }
+    set_rho=false;
   }
 
 
@@ -398,22 +389,24 @@ void stellar_wind::set_wind_cell_reference_state(
     // 3D geometry, so either 3D-cartesian, 2D-axisymmetry, or 1D-spherical.
     // rho = Mdot/(4.pi.R^2.v_inf) 
     //
-    wc->p[RO] = 1.0/(wc->dist);
-    wc->p[RO] *= wc->p[RO];
-    wc->p[RO] *= WS->Mdot/(WS->Vinf*4.0*M_PI);
-    //
-    // Set pressure based on wind density/temperature at the stellar radius,
-    // assuming adiabatic expansion outside Rstar, and that we don't care what
-    // the temperature is inside Rstar (because this function will make it 
-    // hotter than Teff, which is not realistic):
-    //
-    // rho_star = Mdot/(4.pi.R_star^2.v_inf),
-    //   p_star = rho_star.k.T_star/(mu.m_p)
-    // So then p(r) = p_star (rho(r)/rho_star)^gamma
-    //
-    wc->p[PG] = pconst.kB()*WS->Tw/pconst.m_p();
-    wc->p[PG]*= exp((gamma-1.0)*log(4.0*M_PI*WS->Rstar*WS->Rstar*WS->Vinf/WS->Mdot));
-    wc->p[PG]*= exp((gamma)*log(wc->p[RO]));
+    if (set_rho) {
+      wc->p[RO] = 1.0/(wc->dist);
+      wc->p[RO] *= wc->p[RO];
+      wc->p[RO] *= WS->Mdot/(WS->Vinf*4.0*M_PI);
+      //
+      // Set pressure based on wind density/temperature at the stellar radius,
+      // assuming adiabatic expansion outside Rstar, and that we don't care what
+      // the temperature is inside Rstar (because this function will make it 
+      // hotter than Teff, which is not realistic):
+      //
+      // rho_star = Mdot/(4.pi.R_star^2.v_inf),
+      //   p_star = rho_star.k.T_star/(mu.m_p)
+      // So then p(r) = p_star (rho(r)/rho_star)^gamma
+      //
+      wc->p[PG] = pconst.kB()*WS->Tw/pconst.m_p();
+      wc->p[PG]*= exp((gamma-1.0)*log(4.0*M_PI*WS->Rstar*WS->Rstar*WS->Vinf/WS->Mdot));
+      wc->p[PG]*= exp((gamma)*log(wc->p[RO]));
+    }
   }
 
   // Velocities and magnetic fields: get coordinates relative to star
