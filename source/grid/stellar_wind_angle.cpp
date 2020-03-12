@@ -812,6 +812,7 @@ int stellar_wind_angle::add_evolving_source(
   }
 
   // set tracer values for elements
+  set_element_indices(temp);
   if (temp->i_XH>=0)  trv[temp->i_XH] = xh;
   if (temp->i_XHe>=0) trv[temp->i_XHe]= xhe;
   if (temp->i_XC>=0)  trv[temp->i_XC] = xc;
@@ -898,13 +899,16 @@ int stellar_wind_angle::add_rotating_source(
     ws->tracers[v] = trv[v];
     cout <<"ws->tracers[v] = "<<ws->tracers[v]<<"\n";
   }
-  
+
   // if using microphysics, find H+ tracer variable, if it exists.
+  ws->Hplus = -1;
+  ws->iHplus = -1;
   int hplus=-1;
   if (MP) {
     hplus = MP->Tr("H1+");
   }
   ws->Hplus = hplus;
+  if (hplus >=0) ws->iHplus = hplus - nvar + ntracer; 
 
   ws->cells_added = false;
   if (!ws->wcells.empty())
@@ -998,13 +1002,13 @@ void stellar_wind_angle::update_source(
   interpolate.root_find_linear_vec(wd->time_evo, wd->X_Z_evo, t_now, xz);
   interpolate.root_find_linear_vec(wd->time_evo, wd->X_D_evo, t_now, xd);
 
-  wd->ws->tracers[wd->i_XH] = xh;
-  wd->ws->tracers[wd->i_XHe]= xhe;
-  wd->ws->tracers[wd->i_XC] = xc;
-  wd->ws->tracers[wd->i_XN] = xn;
-  wd->ws->tracers[wd->i_XO] = xo;
-  wd->ws->tracers[wd->i_XZ] = xz;
-  wd->ws->tracers[wd->i_XD] = xd;
+  if (wd->i_XH>=0)  wd->ws->tracers[wd->i_XH] = xh;
+  if (wd->i_XHe>=0) wd->ws->tracers[wd->i_XHe]= xhe;
+  if (wd->i_XC>=0)  wd->ws->tracers[wd->i_XC] = xc;
+  if (wd->i_XN>=0)  wd->ws->tracers[wd->i_XN] = xn;
+  if (wd->i_XO>=0)  wd->ws->tracers[wd->i_XO] = xo;
+  if (wd->i_XZ>=0)  wd->ws->tracers[wd->i_XZ] = xz;
+  if (wd->i_XD>=0)  wd->ws->tracers[wd->i_XD] = xd;
 
   // Set B-field of star
   // TODO: Decide how to set this better!  For now pick B=10G at

@@ -186,6 +186,7 @@ endif
 ifeq ($(MAKE_UNAME), debian9)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
   else
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif
@@ -321,7 +322,7 @@ endif
 ifeq ($(MAKE_UNAME), OSX)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
-    CXXFLAGS = -Wall -g -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
   else
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif

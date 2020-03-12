@@ -61,6 +61,7 @@ CXXFLAGS = $(OPT)
 
 MAKE_UNAME=standard
 MAKE_UNAME=ubuntu18
+MAKE_UNAME=debian9
 
 IOMODE = USE_MPI
 
