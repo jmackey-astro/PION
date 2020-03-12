@@ -352,6 +352,23 @@ void stellar_wind::set_wind_cell_reference_state(
   // for the reference state of the cell.  Every timestep the cell-values will
   // be reset to this reference state.
   //
+  if (wc-dist < 0.75*WC->radius) {
+    wc->p[RO] = 1.0e-31;
+    wc->p[PG] = 1.0e-31;
+    wc->p[VX] = 0.0;
+    wc->p[VY] = 0.0;
+    wc->p[VZ] = 0.0;
+    if (eqntype==EQMHD || eqntype==EQGLM) {
+      wc->p[BX] = 0.0;
+      wc->p[BY] = 0.0;
+      wc->p[BZ] = 0.0;
+    }
+    if (eqntype==EQGLM) {
+      wc->p[SI] = 0.0;
+    }
+  }
+
+
   double pp[ndim];
   CI.get_dpos(wc->c,pp);
   //
@@ -528,9 +545,9 @@ void stellar_wind::set_wind_cell_reference_state(
   if (WS->Hplus>=0) {
     //cout <<"WS->Hplus = "<<WS->Hplus;
     //cout <<" itr = "<<WS->iHplus<<endl;
-    if      (WS->Tw < 1.0e4) WS->tracers[WS->iHplus] = 1.0e-20;
-    else if (WS->Tw > 1.5e4) WS->tracers[WS->iHplus] = 0.99999;
-    else    WS->tracers[WS->iHplus] = 1.0e-20 + (WS->Tw-1.0e4)*(0.99999-1.0e-20)/0.5e4;
+    if      (WS->Tw < 1.0e4) WS->tracers[WS->iHplus] = 1.0e-10;
+    else if (WS->Tw > 1.5e4) WS->tracers[WS->iHplus] = 1.0;
+    else    WS->tracers[WS->iHplus] = 1.0e-10 + (WS->Tw-1.0e4)*(1.0-1.0e-10)/0.5e4;
   }
 
 
