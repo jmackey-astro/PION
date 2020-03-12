@@ -879,19 +879,10 @@ int raytracer_USC_infinity::ProcessCell(
     return 0;
   }
 
-  // HACK
-  /*
-  if (c->pos[XX]==129) {
-    cout <<"Pre-Process Cell, x=129: ";
-    CI.print_cell(c);
-  }
-  */
-  // HACK
- 
   // 2 special cases: cell is not part of domain, so nothing is set,
   // or else cell is not a leaf, in which case col2cell/cell_col are
   // received from finer grid.
-  if (!c->isdomain) {
+  if (!c->isdomain && !c->isgd) {
     // if cell is not in the domain, set its column to be zero,
 #ifdef RT_TESTING
     cout <<"off domain: "<<c->id<<", "; double dpos[ndim];
@@ -1423,8 +1414,8 @@ void raytracer_USC::set_Vshell_for_source(
   c = gridptr->FirstPt_All();
   do {
     c->rt = true;
-    if (!c->isdomain)          c->rt = false;
-    if (!c->isleaf && c->isgd) c->rt = false;
+    if (!c->isdomain && !c->isgd) c->rt = false;
+    if (!c->isleaf && c->isgd)    c->rt = false;
   } while ((c=gridptr->NextPt_All(c))!=0);
 
   return;
