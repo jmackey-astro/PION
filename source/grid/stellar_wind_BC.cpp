@@ -982,7 +982,7 @@ int stellar_wind_evolution::read_evolution_file(
   rval = fgets(line,512,wf);
   if (!rval) rep.error("stwind_angle: failed to get line 1",line);
   //printf("Star Calculation Source: %s",line);
-  cout <<"Star Calculation Source: "<<string(line)<<"\n";
+  //cout <<"Star Calculation Source: "<<string(line)<<"\n";
   rval = fgets(line,512,wf);
   if (!rval) rep.error("stwind_angle: failed to get line 2",line);
   //printf("%s",line);

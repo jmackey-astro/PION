@@ -444,7 +444,8 @@ int setup_fixed_grid::setup_microphysics(
   for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
     if (SimPM.RS.sources[isrc].type==RT_SRC_SINGLE &&
         SimPM.RS.sources[isrc].effect==RT_EFFECT_MFION &&
-        MP!=0
+        MP!=0 &&
+        SimPM.RS.sources[isrc].EvoFile=="NONE"
         ) {
       err = MP->set_multifreq_source_properties(&SimPM.RS.sources[isrc],data);
     }
@@ -614,10 +615,10 @@ int setup_fixed_grid::setup_evolving_RT_sources(
     else {
       Nevo++;
       struct star istar;
-#ifdef TESTING
+//#ifdef TESTING
       cout <<"setup_evolving_RT_sources() Source "<<isrc;
       cout <<" has EvoFile "<<istar.file_name<<"\n";
-#endif
+//#endif
       istar.file_name = SimPM.RS.sources[isrc].EvoFile;
       istar.src_id    = isrc;
       SimPM.STAR.push_back(istar);
@@ -653,7 +654,7 @@ int setup_fixed_grid::setup_evolving_RT_sources(
     if (!rval) rep.error("setup_fixed_grid, RS, file read 2",line);
     //printf("%s",line);
     // Temporary variables for column values
-    // Columns are time, M, L, Teff, Mdot, vrot
+    // Columns are time, M, L, Teff, Mdot, vrot, vcrit, vinf
     double t1=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0, t6=0.0, t7=0.0;
     size_t iline=0;
     while ( (rval = fgets(line,512,infile))  != 0 ) {
@@ -678,13 +679,19 @@ int setup_fixed_grid::setup_evolving_RT_sources(
     }
     fclose(infile);
 
+    //for (size_t i=0; i< istar->time.size(); i++) {
+    //  cout <<"t="<< istar->time[i] <<", logL="<<istar->Log_L[i];
+    //  cout <<", logT="<<istar->Log_T[i] <<", logR="<<istar->Log_R[i]<<"\n";
+    //}
+
     //
     // Finally set the last_line counter to be the array index
     // nearest to (but less than) the current time.
     //
     iline=0;
     while (istar->time[iline] < SimPM.simtime) iline++;
-    istar->last_line = iline;
+    istar->last_line = iline-1;
+    //cout <<"last line="<<iline-1<<"\n";
 
     // initialise to zero.
     istar->Lnow = istar->Tnow = istar->Rnow = istar->Vnow = 0.0;

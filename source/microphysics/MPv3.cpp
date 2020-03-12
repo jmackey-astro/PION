@@ -409,7 +409,8 @@ MPv3::MPv3(
     //
     for (int isrc=0; isrc<RS->Nsources; isrc++) {
       if (  (RS->sources[isrc].type  ==RT_SRC_SINGLE) &&
-            (RS->sources[isrc].effect==RT_EFFECT_MFION) ) {
+            (RS->sources[isrc].effect==RT_EFFECT_MFION) &&
+            (RS->sources[isrc].EvoFile=="NONE") ) {
         int err=set_multifreq_source_properties(&RS->sources[isrc],
                                                 &mpv_NIdot);
         if (err)
