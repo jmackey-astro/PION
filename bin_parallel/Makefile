@@ -183,7 +183,7 @@ endif
 ######################################################################
 # Options for a debian 10 (buster) workstation with system libs
 ######################################################################
-ifeq ($(MAKE_UNAME), debian9)
+ifeq ($(MAKE_UNAME), debian10)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
     #CXXFLAGS = -Wall -g -Wno-unused-function
