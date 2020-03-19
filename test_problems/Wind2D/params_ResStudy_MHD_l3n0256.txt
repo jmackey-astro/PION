@@ -35,7 +35,7 @@ EP_rad_recombination 0
 EP_update_erg 1
 EP_MP_timestep_limit 1 
 EP_Min_Temperature 5.0e3
-EP_Max_Temperature 5.0e8
+EP_Max_Temperature 1.0e8
 EP_Hydrogen_MassFrac 0.714  # n(He)/n(H)=1/10
 EP_Helium_MassFrac 0.286    # n(He)/n(H)=1/10
 EP_Metal_MassFrac  0.0142   # solar metallicity

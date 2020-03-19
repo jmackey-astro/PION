@@ -147,9 +147,9 @@ WIND_0_radius 2.0e17  # about 20 cells for 128x128 and 3 levels
 WIND_0_type   0
 WIND_0_mdot   1.0e-8
 WIND_0_vinf   1500.0
-WIND_0_vrot   0.0
+WIND_0_vrot   200.0
 WIND_0_temp   3.0e4
-WIND_0_Rstr   2.0e17
+WIND_0_Rstr   1.0e12
 WIND_0_Bsrf   0.0
 WIND_0_TR0    1.0
 WIND_0_evofile NOFILE
