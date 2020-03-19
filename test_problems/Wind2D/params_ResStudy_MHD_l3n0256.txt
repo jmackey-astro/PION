@@ -79,7 +79,7 @@ OutputPath ./
 OutputFile ResStudy_MHD_l3n0256
 OutputFileType silo
 OutputCriterion 0
-OutputFrequency 1024
+OutputFrequency 2048
 OPfreqTime 1.578e10
 ########################
 

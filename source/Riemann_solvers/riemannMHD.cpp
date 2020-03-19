@@ -75,10 +75,12 @@ riemann_MHD::riemann_MHD(
       )
   : eqns_base(nv), eqns_mhd_ideal(nv)
 {
+#ifdef RS_TESTING
   cout <<"(riemann_MHD::riemann_MHD) Initialising Riemann Solver Class.\n";
   if(eq_nvar<8) {
     rep.error("\tProblem with MHD Riemann Solver... Nelements!=8.  Quitting!!!",eq_nvar);
   }
+#endif
 
   RS_nvar = 7;  // Local state vector has length 7, because BX is not included.
   eq_gamma = g; // gamma is passed to solve() function, which assigns it each time.
@@ -102,7 +104,9 @@ riemann_MHD::riemann_MHD(
   for (int v=0;v<eq_nvar;v++)
     eq_refvec[v] = RS_pstar[v] = RS_left[v] = RS_right[v]
       = RS_meanp[v] = 0.0;
+#ifdef RS_TESTING
   cout << " Done." << "\n";
+#endif
 
 
   onaxis=offaxis=0;
@@ -115,7 +119,9 @@ riemann_MHD::riemann_MHD(
   
   SetAvgState(state,eq_gamma);
   
+#ifdef RS_TESTING
   cout <<"(riemann_MHD::riemann_MHD) Finished Setup.\n";
+#endif
 }
 
 
@@ -127,8 +133,8 @@ riemann_MHD::riemann_MHD(
 // Destructor.
 riemann_MHD::~riemann_MHD()
 {
-  cout << "(riemann_MHD::riemann_MHD) Class Destructing!!!" << "\n";
 #ifdef RS_TESTING
+  cout << "(riemann_MHD::riemann_MHD) Class Destructing!!!" << "\n";
   cout <<"\t Failed Tests: OnAxis: "<<onaxis<<" and OffAxis: "<<offaxis<<"\n";
 #endif //TESTING
   RS_evalue   = mem.myfree(RS_evalue);
