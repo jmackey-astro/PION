@@ -355,6 +355,7 @@ cell * cell_interface::new_cell()
   c->isgd=false;
   c->isdomain=false;
   c->rt=false;
+  c->timestep=false;
   c->isbd_ref = mem.myalloc(c->isbd_ref, 2*MAX_DIM);
   for (int v=0; v<2*MAX_DIM; v++) c->isbd_ref[v]=false;
 

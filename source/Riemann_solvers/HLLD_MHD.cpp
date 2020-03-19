@@ -333,29 +333,31 @@ void HLLD_MHD::HLLD_signal_speeds(
     double &Sr
     )
 {
-    //
-    // compute wave speeds (m05 eq 3)
-    //
+  //
+  // compute wave speeds (m05 eq 3)
+  //
 
-    // Bx is constant (Should be mean of left and right state)
-    double BX = 0.5*(Pl[eqBX]+Pr[eqBX]);
-    double cf_l = cfast_components(Pl[eqRO],Pl[eqPG],
-                                   BX,Pl[eqBY],Pl[eqBZ],eq_gamma);
-    
-    double cf_r = cfast_components(Pr[eqRO],Pr[eqPG],
-                                   BX,Pr[eqBY],Pr[eqBZ],eq_gamma);
-    
-    double cf_max = max(cf_l,cf_r);
-    
-    Sl = min(Pl[eqVX],Pr[eqVX]) - cf_max; // (m05 eq 67)
-    Sr = max(Pl[eqVX],Pr[eqVX]) + cf_max; //
+  // Bx is constant (Should be mean of left and right state)
+  double BX = 0.5*(Pl[eqBX]+Pr[eqBX]);
+  double cf_l = cfast_components(Pl[eqRO],Pl[eqPG],
+                                 BX,Pl[eqBY],Pl[eqBZ],eq_gamma);
+  
+  double cf_r = cfast_components(Pr[eqRO],Pr[eqPG],
+                                 BX,Pr[eqBY],Pr[eqBZ],eq_gamma);
+  
+  double cf_max = max(cf_l,cf_r);
+  
+  Sl = min(Pl[eqVX],Pr[eqVX]) - cf_max; // (m05 eq 67)
+  Sr = max(Pl[eqVX],Pr[eqVX]) + cf_max; //
 
-    return;
+  return;
 }
 
 
+
 // ###################################################################
 // ###################################################################
+
 
 
 int HLLD_MHD::MHD_HLL_flux_solver(
@@ -363,38 +365,33 @@ int HLLD_MHD::MHD_HLL_flux_solver(
     const pion_flt *Pr, ///< input right state
     const double eq_gamma,    ///< input gamma
     pion_flt *out_flux       ///< output flux
-)
+    )
 {
-    
-    //
-    // compute conserved U and Flux (m05 eq 3)
-    //
-    
-    PtoU(Pl,HD_UL,eq_gamma);
-    PtoU(Pr,HD_UR,eq_gamma);
-    
-    PUtoFlux(Pl,HD_UL,HD_FL);
-    PUtoFlux(Pr,HD_UR,HD_FR);
-    
-    //
-    // compute wave speeds (m05 eq 3)
-    //
-    HLLD_signal_speeds(Pl,Pr,eq_gamma,HD_lambda[0],HD_lambda[1]); // Pl,Pr,g,Sl,Sr
-    if (HD_lambda[0]>0){
-        for (int v=0; v<eq_nvar; v++)
-            out_flux[v] = HD_FL[v];
-    }
-    else if (HD_lambda[1]<0){
-        for (int v=0; v<eq_nvar; v++)
-            out_flux[v] = HD_FR[v];
-    }
-    else {
-        for (int v=0; v<eq_nvar; v++)
-            out_flux[v] = (HD_lambda[1]*HD_FL[v] - HD_lambda[0]*HD_FR[v] 
-              + HD_lambda[1]*HD_lambda[0]*(HD_UR[v]-HD_UL[v]))/(HD_lambda[1]-HD_lambda[0]);
-    }
-    
-    
+  //
+  // compute conserved U and Flux (m05 eq 3)
+  //
+  PtoU(Pl,HD_UL,eq_gamma);
+  PtoU(Pr,HD_UR,eq_gamma);
+  PUtoFlux(Pl,HD_UL,HD_FL);
+  PUtoFlux(Pr,HD_UR,HD_FR);
+  
+  //
+  // compute wave speeds (m05 eq 3)
+  //
+  HLLD_signal_speeds(Pl,Pr,eq_gamma,HD_lambda[0],HD_lambda[1]); // Pl,Pr,g,Sl,Sr
 
-    return 0;
+  if (HD_lambda[0]>0.0){
+      for (int v=0; v<eq_nvar; v++)
+          out_flux[v] = HD_FL[v];
+  }
+  else if (HD_lambda[1]<0.0){
+      for (int v=0; v<eq_nvar; v++)
+          out_flux[v] = HD_FR[v];
+  }
+  else {
+      for (int v=0; v<eq_nvar; v++)
+          out_flux[v] = (HD_lambda[1]*HD_FL[v] - HD_lambda[0]*HD_FR[v] 
+            + HD_lambda[1]*HD_lambda[0]*(HD_UR[v]-HD_UL[v]))/(HD_lambda[1]-HD_lambda[0]);
+  }
+  return 0;
 }

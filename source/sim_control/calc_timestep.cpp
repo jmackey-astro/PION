@@ -285,20 +285,21 @@ double calc_timestep::calc_dynamics_dt(
 #ifdef TESTING
     dp.c = c;
 #endif
-    tempdt = sp_solver->CellTimeStep(
-              c, ///< pointer to cell
-              par.gamma, ///< gas EOS gamma.
-              dx  ///< Cell size dx.
-              );
-    if(tempdt<=0.0) {
-      CI.print_cell(c);
-      cout <<"celltimestep="<<tempdt<<", gamma="<<par.gamma<<", dx="<<dx<<"\n";
-      rep.error("CellTimeStep function returned failing value",c->id);
+    if (c->timestep) {
+      tempdt = sp_solver->CellTimeStep(
+                c, ///< pointer to cell
+                par.gamma, ///< gas EOS gamma.
+                dx  ///< Cell size dx.
+                );
+      if(tempdt<=0.0) {
+        CI.print_cell(c);
+        cout <<"celltimestep="<<tempdt<<", gamma="<<par.gamma<<", dx="<<dx<<"\n";
+        rep.error("CellTimeStep function returned failing value",c->id);
+      }
+      //    commandline.console("timestep -> ");
+      dt = min(dt, tempdt);
+      //cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<mindt<<"\n";
     }
-    //    commandline.console("timestep -> ");
-    dt = min(dt, tempdt);
-    //cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<mindt<<"\n";
-
     c = grid->NextPt(c);
   } while (c != 0);
 

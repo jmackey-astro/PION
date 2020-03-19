@@ -278,6 +278,10 @@ int stellar_wind::add_cell(
   //
   c->isbd=true;
   c->isdomain=false;
+  if (wc->dist < 0.8*WS->radius)
+    c->timestep = false;
+  else 
+    c->timestep = true;
   wc->c = c;
 
   //

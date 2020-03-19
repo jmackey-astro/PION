@@ -110,6 +110,7 @@ class cell {
   bool isdomain; ///< True if cell is part of the domain.
   bool isleaf; ///< True if no more refined cell is at this position.
   bool rt; ///< True if cell needs optical depths to be calculated
+  bool timestep; ///< True if cell used for setting timestep
   /// True if needed for ensuring flux consistency between different
   /// refinement levels.  Array of length 2*MAX_DIM
   bool *isbd_ref;

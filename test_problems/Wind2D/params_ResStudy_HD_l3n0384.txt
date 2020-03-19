@@ -4,10 +4,10 @@
 # 
 
 ########################
-ndim 3
-coordinates cartesian
-eqn glm-mhd
-GAMMA 1.6666666666666667
+ndim 2
+coordinates cylindrical
+eqn euler
+GAMMA 1.6666666666666666666
 ########################
 
 ########################
@@ -22,7 +22,7 @@ EtaViscosity 0.15
 ########################
 ntracer 1
 chem_code none
-Tracer000 colour
+Tracer000 WIND
 InitIons LEAVE
 
 EP_dynamics     1
@@ -35,7 +35,7 @@ EP_rad_recombination 0
 EP_update_erg 1
 EP_MP_timestep_limit 1 
 EP_Min_Temperature 5.0e3
-EP_Max_Temperature 1.0e10
+EP_Max_Temperature 1.0e8
 EP_Hydrogen_MassFrac 0.714  # n(He)/n(H)=1/10
 EP_Helium_MassFrac 0.286    # n(He)/n(H)=1/10
 EP_Metal_MassFrac  0.0142   # solar metallicity
@@ -44,51 +44,50 @@ EP_Metal_MassFrac  0.0142   # solar metallicity
 
 ########################
 ## Grid Parameters
-NGridX  128
-NGridY  128
-NGridZ  128
+NGridX  384
+NGridY  384
+NGridZ  1
 
 # Boundaries of Simulation box:
-Xmin -19.432e18
-Ymin -12.288e18
-Zmin -12.288e18
-Xmax   5.144e18
-Ymax  12.288e18
-Zmax  12.288e18
+Xmin  -4.0e18
+Ymin   0.000e18
+Zmin   0.000e18
+# Max values of x,y,z
+Xmax   1.000000e18
+Ymax   5.0e18
+Zmax   0.000000e8
 
 # Nested grid
 grid_nlevels 3
 grid_aspect_ratio_XX 1
 grid_aspect_ratio_YY 1
 grid_aspect_ratio_ZZ 1
-NG_centre_XX 5.144e18
+NG_centre_XX 1.0e18
 NG_centre_YY 0.0e18
 NG_centre_ZZ 0.0e18
 NG_refine_XX 1
 NG_refine_YY 1
-NG_refine_ZZ 1
+NG_refine_ZZ 0
 ########################
 
 
 ########################
 StartTime  0.000e11
-FinishTime 1e13
+FinishTime 3.156e12
 
 OutputPath ./
-OutputFile Ostar3D_B010_n0128l3
+OutputFile ResStudy_HD_l3n0384
 OutputFileType silo
 OutputCriterion 0
-OutputFrequency 256
+OutputFrequency 3072
 OPfreqTime 1.578e10
 ########################
 
 ########################
 BC_XN one-way-outflow
 BC_XP inflow
-BC_YN one-way-outflow
+BC_YN axisymmetric
 BC_YP one-way-outflow
-BC_ZN one-way-outflow
-BC_ZP one-way-outflow
 BC_Ninternal 1
 BC_INTERNAL_000 stellar-wind
 ########################
@@ -111,14 +110,14 @@ UNIFORM_core_centre_XX 1.1e200
 UNIFORM_core_centre_YY 1.1e200
 UNIFORM_core_centre_ZZ 1.1e200
 
-UNIFORM_ambRO 2.0e-24
-UNIFORM_ambPG 2.9e-12
+UNIFORM_ambRO 7.0e-24
+UNIFORM_ambPG 7.0e-12
 UNIFORM_ambVX -25.0e5
 UNIFORM_ambVY 0.0
 UNIFORM_ambVZ 0.0
-UNIFORM_ambBX 4.0e-6
-UNIFORM_ambBY 1.0e-6
-UNIFORM_ambBZ 1.0e-6
+UNIFORM_ambBX 0.0
+UNIFORM_ambBY 0.0
+UNIFORM_ambBZ 0.0
 UNIFORM_ambTR0 0.0
 UNIFORM_ambTR1 0.0
 UNIFORM_ambTR2 0.0
@@ -144,23 +143,25 @@ WIND_NSRC 1
 WIND_0_pos0  0.0e18
 WIND_0_pos1  0.0e18
 WIND_0_pos2  0.0e18
-WIND_0_radius 0.96e18  # 20 cells for 128^2 and 3 levels
+WIND_0_radius 0.7e17  # about 20 cells for 384x384 and 3 levels
 WIND_0_type   0
-WIND_0_mdot   1.0e-7     # 10^(-7) solar masses per year mass-loss rate
-WIND_0_vinf   1500.0     # 1500 km/s wind terminal velocity
-WIND_0_vrot   100.0      # 100 km/s surface equatorial rotation velocity
-WIND_0_temp   3.5e4      # 35 kK effective temperature
-WIND_0_Rstr   6.96e11    # 10 solar radii
-WIND_0_Bsrf   10.0        # 100 Gauss surface field
+WIND_0_mdot   1.0e-8
+WIND_0_vinf   1500.0
+WIND_0_vrot   0.0
+WIND_0_temp   3.0e4
+WIND_0_Rstr   1.0e17
+WIND_0_Bsrf   0.0
 WIND_0_TR0    1.0
 WIND_0_evofile NOFILE
 WIND_0_t_offset   0.0000    # in (unscaled) years
 WIND_0_t_scalefac 1.0  # Accelerates evolution by this factor (for MS phase).
 WIND_0_updatefreq 1.0   # in (unscaled) years
 WIND_0_enhance_mdot 0
-WIND_0_xi 0.0
+WIND_0_xi 1.0
+
 
 N_JET 0
+
 
 ########################
 # Reference Vector.
