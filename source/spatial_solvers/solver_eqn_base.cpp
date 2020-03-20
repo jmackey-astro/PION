@@ -341,21 +341,21 @@ void FV_solver_base::set_interface_tracer_flux(
       rep.printVec("inf flux",flux,eq_nvar);
     }
 #endif
-
     if (flux[eqRHO]>0.0) {
-      MP->sCMA(corrector, left);
-      for (int t=0;t<FV_ntr;t++)
-        {flux[eqTR[t]] =  left[eqTR[t]]*flux[eqRHO]*corrector[eqTR[t]];}
-        /*if (corrector[eqTR[t]] > 1.0 + 1e-12 or corrector[eqTR[t]] < -2*1e-12 ) 
-          { cout << "flux correction: " << corrector[eqTR[t]] << "\n";}}*/
+      if (MP) MP->sCMA(corrector, left);
+      for (int t=0;t<FV_ntr;t++) {
+        flux[eqTR[t]] =  left[eqTR[t]]*flux[eqRHO]*corrector[eqTR[t]];
+      }
     }
     else if (flux[eqRHO]<0.0) {
-      MP->sCMA(corrector, right);
-      for (int t=0;t<FV_ntr;t++)
+      if (MP) MP->sCMA(corrector, right);
+      for (int t=0;t<FV_ntr;t++) {
         flux[eqTR[t]] = right[eqTR[t]]*flux[eqRHO]*corrector[eqTR[t]];
-    } else 
+      }
+    }
+    else {
       for (int t=0;t<FV_ntr;t++) flux[eqTR[t]] = 0.0;
-
+    }
   }
 #endif
 
