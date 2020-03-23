@@ -50,7 +50,8 @@ int jetreflect_bc::BC_assign_JETREFLECT(
     rep.error("BAD DIRECTION",offdir);
   } // Set Normal velocity direction.
   //
-  // Set normal B-field multiplier to -1 for reflection.
+  // Set tangential B-field multiplier to -1 for this boundary, to
+  // allow a dipole to exist
   //
   if (par.eqntype==EQMHD || par.eqntype==EQGLM || par.eqntype==EQFCD) {
     switch (offdir) {

@@ -1057,8 +1057,7 @@ int IC_photevap_multi_clumps::get_strategic_clump_params(
     scd->cl[c].mass = ambdens*(1.0+scd->cl[c].overdensity);
     if (scd->profile==0) {
       // top hat profile: M=Volume*density
-      if      (ndim==2) scd->cl[c].mass *= M_PI*scd->cl[c].size[XX]*scd->cl[c].size[XX];
-      else if (ndim==3) scd->cl[c].mass *= 4.0*M_PI*scd->cl[c].size[XX]*scd->cl[c].size[XX]*scd->cl[c].size[XX]/3.0;
+      scd->cl[c].mass *= 4.0*M_PI*scd->cl[c].size[XX]*scd->cl[c].size[XX]*scd->cl[c].size[XX]/3.0;
       else rep.error("bad ndim get_strategic_clump_params()",ndim);
     }
     else if (scd->profile==1) {
