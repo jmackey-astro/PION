@@ -1058,7 +1058,6 @@ int IC_photevap_multi_clumps::get_strategic_clump_params(
     if (scd->profile==0) {
       // top hat profile: M=Volume*density
       scd->cl[c].mass *= 4.0*M_PI*scd->cl[c].size[XX]*scd->cl[c].size[XX]*scd->cl[c].size[XX]/3.0;
-      else rep.error("bad ndim get_strategic_clump_params()",ndim);
     }
     else if (scd->profile==1) {
       // Gaussian profile

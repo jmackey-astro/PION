@@ -101,7 +101,12 @@ void interpolate_arrays::splint(
 
   // gsl_interp_accel *temp =  gsl_interp_accel_alloc();
   int err = gsl_spline_eval_e(slist[id],x,0,y);
-  if (err) rep.error("gsl splint lookup",err);
+  if (err) {
+    rep.printVec("xa",xa,n);
+    rep.printVec("ya",ya,n);
+    cout <<"id="<<id<<", n="<<n<<", x="<<x<<"\n";
+    rep.error("gsl splint lookup",err);
+  }
   // gsl_interp_accel_free(temp);
   return;
 }

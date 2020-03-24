@@ -410,7 +410,7 @@ MPv3::MPv3(
     for (int isrc=0; isrc<RS->Nsources; isrc++) {
       if (  (RS->sources[isrc].type  ==RT_SRC_SINGLE) &&
             (RS->sources[isrc].effect==RT_EFFECT_MFION) &&
-            (RS->sources[isrc].EvoFile=="NONE") ) {
+            (RS->sources[isrc].EvoFile=="NOFILE") ) {
         int err=set_multifreq_source_properties(&RS->sources[isrc],
                                                 &mpv_NIdot);
         if (err)
@@ -1131,6 +1131,7 @@ int MPv3::TimeUpdateMP_RTnew(
       for (int v=0;v<nvl;v++) P[v] = NV_Ith_S(y_out,v);
       rep.printVec("Pfinal",P,nvl);
       cout <<"ds="<<mpv_delta_S<<", vs="<<mpv_Vshell<<", tao0="<<mpv_Tau0<<", dtau="<<mpv_dTau0<<"\n";
+      cout.flush();
       rep.error("integration failed again: MPv3::TimeUpdateMP_RTnew()",err);
     }
   }
