@@ -16,10 +16,10 @@ EtaViscosity 0.15
 
 ics StarBench_ContactDiscontinuity3
 
-OutputFile advection_v020_t30
+OutputFile advection_v020_t30_l1n512
 OutputPath ./
 OutputFileType silo
-OutputFrequency 128
+OutputFrequency 4096
 OutputCriterion 0
 OPfreqTime 1.0
 StartTime 0.0
@@ -50,8 +50,8 @@ noise  -1
 
 # GRID PROPERTIES #
 
-NGridX 256
-NGridY 256
+NGridX 512
+NGridY 512
 NGridZ 1
 
 Xmin 0.0
