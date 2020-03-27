@@ -15,7 +15,8 @@ for file in ["advection_v020_t30_l1n128_0000.00001847.silo",
              "advection_v020_t30_l1n256_0000.00003694.silo", 
              "advection_v020_t30_l1n512_0000.00007388.silo", 
              "advection_v020_t30_l2n128_level00_0000.00003700.silo",
-             "advection_v020_t30_l2n256_level00_0000.00007394.silo"]:
+             "advection_v020_t30_l2n256_level00_0000.00007394.silo",
+             "advection_v020_t30_l2n512_level00_0000.00014782.silo"]:
   plt.figure()
   plotting=ppion.Plotting2d(file)
   n = plotting.nlevels()
@@ -50,8 +51,8 @@ for file in ["advection_v020_t30_l1n128_0000.00001847.silo",
     if (ilev==0):
       plt.xlim(level_min[0].value, level_max[0].value)
       plt.ylim(level_min[1].value, level_max[1].value)
-      plt.xlim(0.5,1.5)
-      plt.ylim(0.5,1.5)
+      plt.xlim(0.4,1.6)
+      plt.ylim(0.4,1.6)
     
       #plt.pcolormesh(x, y, d, cmap="viridis",linewidth=0,rasterized=True)
       #clev = MaxNLocator(nbins=7).tick_values(d.min(), d.max())
@@ -62,7 +63,7 @@ for file in ["advection_v020_t30_l1n128_0000.00001847.silo",
     clev = MaxNLocator(nbins=11).tick_values(0.5,10.5)
     clev = [0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5]
     #print(clev)
-    plt.contourf(x, y, d, cmap="viridis",levels=clev,linewidths=0,rasterized=True)
+    plt.contourf(x, y, d, cmap="viridis",levels=clev)
 
     #extents = [level_min[0].value, level_max[0].value, \
     #           level_min[1].value,level_max[1].value]
@@ -74,16 +75,18 @@ for file in ["advection_v020_t30_l1n128_0000.00001847.silo",
     del plotting
 
   plt.colorbar()
-  plt.xlabel("x")
-  plt.ylabel("y")
-#plt.grid()
-  dmax=str("%.6f" % (d.max()-10.0))
-  dmin=str("%.6f" % (d.min()-1.0))
+  plt.xlabel("x",fontsize=16, fontweight='bold')
+  plt.ylabel("y",fontsize=16, fontweight='bold')
+  #plt.grid()
+  dmax=str("%.6f" % (d.max()))
+  dmin=str("%.6f" % (d.min()))
   tm = str("%.5f" % t)
-  st = "Density, t=2, max=" +dmax + " min=" + dmin
-  st = "Density, t="+tm
-  plt.text(0.51,1.43,st,color="white")
-#plt.show()
+  st = "Density, max=" +dmax + " min=" + dmin
+  #st = "Density, t="+tm
+  plt.text(0.41,1.53,st,color="white")
+  #plt.show()
   fn = "advection2D_l"+str(n)+"n"+str(level_ng[0])+"c"+str(c)+".png"
+  plt.savefig(fn,bbox_inches="tight",dpi=300)
+  fn = "advection2D_l"+str(n)+"n"+str(level_ng[0])+"c"+str(c)+".pdf"
   plt.savefig(fn,bbox_inches="tight",dpi=300)
 quit()
