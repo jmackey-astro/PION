@@ -121,6 +121,10 @@ int IC_basic_tests::setup_data(
     //cout <<"\t\tSetting up Stone's Kelvin-Helmholz Instability problem.\n";
     err += setup_KelvinHelmholz_Stone();
   }
+  else if (ics=="LiskaWendroffImplosion"){
+    cout <<"Setting up Liska & Wendroff (2003) implosion test\n";
+    err += setup_LWImplosion();
+  }
   else rep.error("Don't know what Initial Condition is!",ics);
    
   // Add noise to data?  Smooth data?
@@ -907,6 +911,45 @@ int IC_basic_tests::setup_KelvinHelmholz()
   //cout <<"Got through data successfully.\n";
   // Data done.
 
+  return err;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int IC_basic_tests::setup_LWImplosion()
+{
+  // See Liska & Wendroff (2003,SIAM Journal on Scientific Computing,
+  // 2003, Vol. 25, No. 3 : pp. 995-1017
+  // Preprint at:
+  // http://kfe.fjfi.cvut.cz/~liska/ps.gz/compare_euler_SISC_03.pdf
+  //
+  int err=0;
+  int ndim=gg->Ndim();
+  if (ndim!=2) rep.error("LWI needs 2D problem domain",ndim);
+
+
+  SimPM->gamma=1.4;
+  double pressure= 1.0;
+  double rho = 1.0;
+
+  class cell *c=gg->FirstPt();
+  double dpos[ndim];
+  do {
+    CI.get_dpos(c,dpos);
+    c->P[RO] = rho;
+    c->P[PG] = pressure;
+    c->P[VX] = 0.0;
+    c->P[VY] = 0.0;
+    c->P[VZ] = 0.0;
+    if (dpos[XX]<0.15 && dpos[YY]<(0.15-dpos[XX])) {
+      c->P[RO] = 0.125;
+      c->P[PG] = 0.140;
+    }
+  } while ( (c=gg->NextPt(c))!=0);
   return err;
 }
 

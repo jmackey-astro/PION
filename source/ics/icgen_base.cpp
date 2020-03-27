@@ -46,7 +46,8 @@ void setup_ics_type(
      ics=="Uniform" ||
      ics=="Advection" || ics=="AdvectSineWave" ||
      ics=="KelvinHelmholz" || ics=="KelvinHelmholzStone" ||
-     ics=="FieldLoop" || ics=="FieldLoopVz" || ics=="FieldLoopStatic"
+     ics=="FieldLoop" || ics=="FieldLoopVz" ||
+     ics=="FieldLoopStatic" || ics=="LiskaWendroffImplosion" 
      )
     *ic = new IC_basic_tests();
 

@@ -5,7 +5,7 @@
 ndim 2
 coordinates cartesian
 eqn euler
-solver 3
+solver 4
 OrderOfAccSpace 2
 OrderOfAccTime  2
 GAMMA 1.0001

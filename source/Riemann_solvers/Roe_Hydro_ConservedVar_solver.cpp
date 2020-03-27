@@ -317,7 +317,7 @@ void Riemann_Roe_Hydro_CV::set_Roe_mean_state(
   RCV_v2_mean = RCV_meanp[eqVX]*RCV_meanp[eqVX] 
     +RCV_meanp[eqVY]*RCV_meanp[eqVY] 
     +RCV_meanp[eqVZ]*RCV_meanp[eqVZ];
-  RCV_a_mean = sqrt((eq_gamma-1.0)*(RCV_meanp[eqHH]-0.5*RCV_v2_mean));
+  RCV_a_mean = sqrt((eq_gamma-1.0)*max(RCV_meanp[eqHH]-0.5*RCV_v2_mean,TINYVALUE));
 
 #ifdef FUNCTION_ID
   cout <<"Riemann_Roe_Hydro_CV::set_Roe_mean_state ...returning.\n";
@@ -513,7 +513,6 @@ void Riemann_Roe_Hydro_CV::calculate_symmetric_flux(
   // state in pstar[] using the mean state vector for pstar, since
   // it has positive-definite pressure and density (this is actually a
   // better idea than using the actual pstar obtained from ustar).
-  //
   //
   // Flux = 0.5(F(left)+F(right)
   //            -sum_{waves}[strength_i*|evalue_i|*right_evec_i])

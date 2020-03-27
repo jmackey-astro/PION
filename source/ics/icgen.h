@@ -76,10 +76,13 @@ class IC_basic_tests : public ICsetup_base {
    /** \brief Set up Kelvin Helmholz Instability, params from Stone's
     * Code Test page. */
    int setup_KelvinHelmholz_Stone();
-   /** \brief Setup Kelvin Helmholz Instability, params from Frank et al. 1996,
-    * ApJ, 460, 777.
-    */
+   
+   /// Setup Kelvin Helmholz Instability, params from Frank et al. 1996,
+   /// ApJ, 460, 777.
    int setup_KelvinHelmholz();
+
+   /// Setup Liska & Wendroff (2003) implosion test problem.
+   int setup_LWImplosion();
 };
 
 ///
