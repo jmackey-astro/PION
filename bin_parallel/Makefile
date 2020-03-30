@@ -186,7 +186,7 @@ endif
 ifeq ($(MAKE_UNAME), debian10)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
-    #CXXFLAGS = -Wall -g -Wno-unused-function
+    CXXFLAGS = -Wall -g -Wno-unused-function
   else
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif
@@ -923,8 +923,6 @@ icgen_base.o: icgen_base.cpp icgen_base.h ${GLOBAL}
 get_sim_info.o: get_sim_info.h get_sim_info.cpp ${GLOBAL} readparams.h stellar_wind_BC.h
 
 inside_sphere.o: inside_sphere.cpp inside_sphere.h ${GLOBAL}
-
-########################
 
 shock_tube.o: shock_tube.cpp icgen_base.h icgen.h ${GLOBAL}
 

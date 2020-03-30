@@ -551,7 +551,7 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
       const pion_flt *Pin, // Initial State Vector.
       pion_flt *dU, // Update vector dU
       pion_flt *Pf, // Final state vector (can be same as initial vec.).
-      pion_flt *dE, // Tracks change of energy if I have to correct for negative pressure
+      pion_flt *dE, // Tracks dE (to correct for negative pressure)
       const double, // gas EOS gamma.
       const double MinTemp, ///< Min Temperature allowed on grid.
       const double  // Cell timestep dt.
@@ -560,22 +560,27 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
   pion_flt u1[eq_nvar], u2[eq_nvar];
   pion_flt Pintermediate[eq_nvar];
   pion_flt corrector[eq_nvar];
-  //for (int v=0;v<eq_nvar;v++) corrector[v]=1.0;
-  MP->sCMA(corrector, Pin);
-  for (int t=0;t<eq_nvar;t++)
-    Pintermediate[t] =  Pin[t]* corrector[t];
-  PtoU(Pintermediate, u1, eq_gamma);
   //
   // First convert from Primitive to Conserved Variables
   //
-  PtoU(Pin,u1, eq_gamma);
+  //for (int v=0;v<eq_nvar;v++) corrector[v]=1.0;
+  if (MP) {
+    MP->sCMA(corrector, Pin);
+    for (int t=0;t<eq_nvar;t++)
+      Pintermediate[t] =  Pin[t]* corrector[t];
+    PtoU(Pintermediate, u1, eq_gamma);
+  }
+  else {
+    PtoU(Pin,u1, eq_gamma);
+  }
 
   // Now add dU[] to U[], and change back to primitive variables.
   // This can give negative pressures, so check for that and fix it
   // if needed.
   for (int v=0;v<eq_nvar;v++) u1[v] += dU[v];
   if(UtoP(u1,Pf,MinTemp, eq_gamma)!=0) {
-    cout<<"(FV_solver_mhd_ideal_adi::CellAdvanceTime) UtoP complained (maybe about negative pressure...) fixing\n";
+    cout <<"(FV_solver_mhd_ideal_adi::CellAdvanceTime) UtoP ";
+    cout <<"complained (maybe about negative pressure...) fixing\n";
     PtoU(Pf, u2, eq_gamma);
     *dE += (u2[ERG]-u1[ERG]);
     UtoP(u2,Pf,MinTemp, eq_gamma);
@@ -584,9 +589,10 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
   // Reset the dU array for the next timestep.
   for (int v=0;v<eq_nvar;v++) dU[v] = 0.;
   //for (int v=0;v<eq_nvar;v++) corrector[v]=1.0;
-  MP->sCMA(corrector, Pf);
-  for (int t=0;t<eq_nvar;t++) Pf[t] =  Pf[t]* corrector[t];
-
+  if (MP) {
+    MP->sCMA(corrector, Pf);
+    for (int t=0;t<eq_nvar;t++) Pf[t] =  Pf[t]* corrector[t];
+  }
   return 0;
 }
 
