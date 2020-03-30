@@ -280,13 +280,50 @@ int IC_photevap_multi_clumps::get_ambient_params(
   str = rparams->find_parameter(seek);
   if (str!="") {
     amb->cloudradius = atof(str.c_str());
-    if (ndim>1) amb->cloudradius *= SimPM->Range[YY];  // radius is given in units of y-dir range.
+    // radius is given in units of y-dir range.
+    if (ndim>1) amb->cloudradius *= SimPM->Range[YY];
     else        amb->cloudradius *= SimPM->Range[XX];
     cout <<"Cloud Radius in cm is "<<amb->cloudradius<<endl;
   }
   else          amb->cloudradius = 0.0;
   cout <<"\t\tcloudradius="<<amb->cloudradius<<"\n";
 
+  //
+  // power-law slope in x-direction:
+  //  rho(x) = rho_0 * [(x-x_0)/l_0)]^alpha
+  //
+  temp.str("");
+  temp << "PERC_amb_xscale";
+  seek = temp.str();
+  str = rparams->find_parameter(seek);
+  if (str=="true") {
+    amb->xscale=true;
+    //cout <<"Getting X0, L0, A0 for x-scale: ";
+    
+    // get parameters rho_0, x_0, l_0, alpha (rho_0 = PERC_ambRO
+    // all in cgs units.
+    temp.str(""); temp << "PERC_xscale_x0"; seek = temp.str();
+    str = rparams->find_parameter(seek);
+    if (str!="")  amb->xscale_x0 = atof(str.c_str());
+    else          amb->xscale_x0 = 1.0;
+
+    temp.str(""); temp << "PERC_xscale_l0"; seek = temp.str();
+    str = rparams->find_parameter(seek);
+    if (str!="")  amb->xscale_l0 = atof(str.c_str());
+    else          amb->xscale_l0 = 1.0;
+
+    temp.str(""); temp << "PERC_xscale_alpha"; seek = temp.str();
+    str = rparams->find_parameter(seek);
+    if (str!="")  amb->xscale_alpha = atof(str.c_str());
+    else          amb->xscale_alpha = 1.0;
+    
+    //cout <<amb->xscale_x0<<", ";
+    //cout <<amb->xscale_l0<<", ";
+    //cout <<amb->xscale_alpha<<"\n";
+  }
+  else {
+    amb->xscale = false;
+  }
 
   cout <<"\tGot Ambient Params. ****\n";
   return err;
@@ -449,6 +486,7 @@ int IC_photevap_multi_clumps::add_ambient_data_to_grid(
   class cell *c = ggg->FirstPt();
   double cloudcentre[MAX_DIM]; for (int v=0;v<MAX_DIM;v++) cloudcentre[v]=0.0;
   double dist=0.0;
+  double dpos[ggg->Ndim()];
 
   do {
     // Set values of primitive variables.
@@ -471,6 +509,19 @@ int IC_photevap_multi_clumps::add_ambient_data_to_grid(
 	c->P[PG] *= exp(amb->radial_profile*log(amb->cloudradius/dist));
       }
     }
+
+    if (amb->xscale=true) {
+      //cout <<"*#*#*#*#*#*# adding scaled X-data: ";
+      //cout <<amb->xscale_x0<<", "<<amb->xscale_l0<<", "<<amb->xscale_alpha<<": ";
+      CI.get_dpos(c,dpos);
+      // scale factor:
+      dist =  exp(-pow(fabs(dpos[XX]-amb->xscale_x0)/amb->xscale_l0,
+                  amb->xscale_alpha));
+      //cout <<"     x="<<dpos[XX]<<", and scale factor="<<dist<<"\n";
+      c->P[RO] = amb->ambient[RO] * dist;
+      c->P[PG] = amb->ambient[PG] * dist;
+    }
+
   } while ( (c=ggg->NextPt(c))!=0);
   
   return err;

@@ -36,6 +36,10 @@
 #endif // PARALLEL
 
 
+// ##################################################################
+// ##################################################################
+
+
 class IC_basic_tests : public ICsetup_base {
   public:
    IC_basic_tests();
@@ -85,6 +89,10 @@ class IC_basic_tests : public ICsetup_base {
    int setup_LWImplosion();
 };
 
+// ##################################################################
+// ##################################################################
+
+
 ///
 /// Set up one of a number of blast wave test problems.
 /// 
@@ -130,6 +138,10 @@ class IC_blastwave : public ICsetup_base {
               );
 };
 
+// ##################################################################
+// ##################################################################
+
+
 
 class IC_shock_cloud : public ICsetup_base {
   public:
@@ -158,6 +170,10 @@ class IC_shock_cloud : public ICsetup_base {
      *postshock; ///< postshock state vector.
    int setup_shockcloud(); ///< setup data now that we have all infor from file.
 };
+
+// ##################################################################
+// ##################################################################
+
 
 
 class IC_shocktube : public ICsetup_base {
@@ -193,6 +209,10 @@ class IC_shocktube : public ICsetup_base {
 		       double *  ///< shock position
 		       ); ///< get appropriate test from a list.
 };
+
+
+// ##################################################################
+// ##################################################################
 
 
 class IC_jet : public ICsetup_base {
@@ -242,6 +262,10 @@ class IC_radiative_shock : public ICsetup_base {
    /** \brief Set up a radiative shock problem with outflow BC (cgs units). */
    int setup_OutflowRadiativeShock();
 };
+
+// ##################################################################
+// ##################################################################
+
 
 ///
 /// Laser ablation problem (for Turlough).
@@ -311,9 +335,8 @@ class IC_photoevaporatingclump : public ICsetup_base {
    int setup_cloud_clump();
 };
 
-/*********************************************************************************/
-/******************** Larger Simulations (Hopefully!) ****************************/
-/*********************************************************************************/
+// ##################################################################
+// ##################################################################
 
 // RANDOM CLUMPS BEING PHOTO-EVAPORATED BY A SOURCE
 
@@ -329,6 +352,10 @@ struct clump {
   double Vel[MAX_DIM];    ///< Optional velocity of clumps w.r.t. grid.
 };
 
+
+
+// ##################################################################
+// ##################################################################
 
 /** \brief Setup a 2D or 3D cartesian domain with a number of random clumps
  * (random in position, size, orientation, overdensity), with a radiation source
@@ -390,12 +417,24 @@ struct random_clump_data {
   struct clump *cl;///< pointer to info for each of the N random clumps.
 };
 
+
+// ##################################################################
+// ##################################################################
+
 struct ambient_data {
   bool used;          ///< set to true so destructor knows to delete dynamic memory.
   double *ambient;    ///< Ambient gas state vector
   int radial_profile; ///< Optional radial profile for ambient gas (radial out from star).
   double cloudradius; ///< Radius of core of cloud with given radial profile.
+  bool xscale; ///< if scale density in x-direction via power law?
+  double xscale_x0; ///< rho(x) = rho_0 * [(x-x_0)/l_0)]^alpha
+  double xscale_l0; ///< rho(x) = rho_0 * [(x-x_0)/l_0)]^alpha
+  double xscale_alpha; ///< rho(x) = rho_0 * [(x-x_0)/l_0)]^alpha
 };
+
+
+// ##################################################################
+// ##################################################################
 
 struct strategic_clump_data {
   bool used;        ///< set to true so destructor knows to delete dynamic memory.
@@ -403,6 +442,10 @@ struct strategic_clump_data {
   struct clump *cl; ///< Pointer to list of clumps.
   int profile;      ///< What kind of radial density profile to use (0=top-hat, 1=Gaussian)
 };
+
+
+// ##################################################################
+// ##################################################################
 
 
 /** \brief Setup a 2D or 3D cartesian domain with a number of random clumps
@@ -491,6 +534,10 @@ class IC_photevap_multi_clumps : public ICsetup_base {
 				   struct strategic_clump_data *
 				   );
 };
+
+
+// ##################################################################
+// ##################################################################
 
 class IC_spherical_clump : public ICsetup_base {
   public:
