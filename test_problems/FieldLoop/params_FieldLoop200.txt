@@ -4,7 +4,7 @@
 ndim 2
 eqn glm-mhd
 coordinates cartesian
-solver RS_Roe
+solver 4
 
 # Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
 # MHDShockCloud ShockTube...}
@@ -25,9 +25,6 @@ EP_Max_Temperature 1.0e99
 EP_Hydrogen_MassFrac 1.0
 EP_Helium_MassFrac   0.0
 EP_Metal_MassFrac    0.0
-
-# IC filename
-ICfilename IC_FieldLoop200
 
 # Output FileName Base
 OutputFile FieldLoop200
@@ -101,6 +98,7 @@ magval 1.0
 
 RT_Nsources 0
 WIND_NSRC   0
+N_JET 0
 
 # Reference Vector
 refvec0 1.0

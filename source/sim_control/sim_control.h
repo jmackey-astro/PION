@@ -104,7 +104,7 @@ class sim_control :
   /// This is only for a test problem -- it checks the magnetic
   /// pressure on the full domain and outputs it to screen
   ///
-  void calculate_magnetic_pressure(
+  virtual void calculate_magnetic_pressure(
       class GridBaseClass *  ///< address of grid pointer.
       );
 #endif // CHECK_MAGP

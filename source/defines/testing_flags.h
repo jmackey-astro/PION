@@ -25,7 +25,7 @@
 //#define TEST_COMMS           // debugging info for MPI
 //#define TEST_CONSERVATION    // test mass/mom/energy conservation
 //#define TEST_INF             // test for infinity/nan
-#define TEST_SYMMETRY // dangerous for real simulations (assumes units for rho,v)
+//#define TEST_SYMMETRY // dangerous for real simulations (assumes units for rho,v)
 //#define RT_TESTING ///< Enable this for debugging info on raytracing.
 //#define DERIGS
 

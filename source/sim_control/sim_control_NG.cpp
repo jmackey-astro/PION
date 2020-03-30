@@ -311,7 +311,7 @@ int sim_control_NG::Time_Int(
   while (SimPM.maxtime==false) {
 
 #if defined (CHECK_MAGP)
-    calculate_magnetic_pressure(grid[0]);
+    calculate_magnetic_pressure(grid);
 #elif defined (BLAST_WAVE_CHECK)
     calculate_blastwave_radius(grid);
 #endif
@@ -437,8 +437,6 @@ int sim_control_NG::Time_Int(
 
 
 
-
-
 #ifdef CHECK_MAGP
 ///
 /// This is only for a test problem -- it checks the magnetic
@@ -449,20 +447,22 @@ void sim_control_NG::calculate_magnetic_pressure(
       )
 {
   //
-  // Calculate the total magnetic pressure on the domain, normalised
-  // to the initial value.
+  // Calculate the total magnetic pressure on the domain, normalised to the
+  // initial value.
   //
   double magp=0.0, cellvol=0.0;
   static double init_magp=-1.0;
-  for (int l=0; l<SimPM.grid_nlevels; l++) {
     
+  for (int l=SimPM.grid_nlevels-1; l>=0; l++) {
+
     cell *c=grid[l]->FirstPt();
     do {
-      if (!c->isbd) 
-        magp += (spatial_solver->Ptot(c->P,0.0) - c->P[PG])
-                * spatial_solver->CellVolume(c);
+      if (!c->isbd && c->isleaf) 
+        magp += (spatial_solver->Ptot(c->P,0.0) - c->P[PG]) *
+                  spatial_solver->CellVolume(c,grid[l]->DX());
     } while ( (c =grid[l]->NextPt(c)) !=0);
   }
+
   if (init_magp<0) init_magp = magp;
   cout <<SimPM.simtime<<"\t"<<magp/init_magp<<"\t"<<magp<<"\n";
   return;

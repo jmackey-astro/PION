@@ -84,6 +84,16 @@ class sim_control_NG :
       vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
+#ifdef CHECK_MAGP
+  ///
+  /// This is only for a test problem -- it checks the magnetic
+  /// pressure on the full domain and outputs it to screen
+  ///
+  void calculate_magnetic_pressure(
+      vector<class GridBaseClass *> &  ///< grid pointers.
+      );
+#endif // CHECK_MAGP
+
 #ifdef BLAST_WAVE_CHECK
   ///
   /// If running a spherical blast wave, calculate the shock
