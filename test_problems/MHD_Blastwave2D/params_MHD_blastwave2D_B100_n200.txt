@@ -8,12 +8,8 @@ eqn glm-mhd
 coordinates cartesian
 solver 7
 
-# Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
-# MHDShockCloud ShockTube...}
 ics BlastWave
-
-# Output FileName Base
-OutputFile    BW2d_StoneMHD_n200_B0.1
+OutputFile    BW2d_StoneMHD_B100_n200
 
 # Number and type of tracers.
 ntracer 0
@@ -47,13 +43,16 @@ BC_YN periodic
 BC_YP periodic
 BC_Ninternal 0
 
-grid_nlevels 1
-grid_aspect_ratio_XX 2
+grid_nlevels 2
+grid_aspect_ratio_XX 1
 grid_aspect_ratio_YY 2
-grid_aspect_ratio_ZZ 2
+grid_aspect_ratio_ZZ 1
 NG_centre_XX 0.0
 NG_centre_YY 0.0
 NG_centre_ZZ 0.0
+NG_refine_XX 1
+NG_refine_YY 1
+NG_refine_ZZ 1
 
 # Number of gridpoints in each direction (note cells must be cubic!)
 # INT
@@ -72,7 +71,7 @@ Zmax 0.5
 
 OutputPath ./
 OutputFileType silo
-OutputFrequency 100
+OutputFrequency 64
 OutputCriterion 0
 OPfreqTime 1000.0 
 
@@ -84,8 +83,6 @@ OrderOfAccTime  2
 
 GAMMA 1.6666666666666666666666
 CFL 0.3
-
-# Artificial Viscosity 0=None, 1=Falle's linear viscosity.
 ArtificialViscosity 1
 EtaViscosity 0.10
 
@@ -102,12 +99,12 @@ magval 1.0
 BWradius   0.1    # fraction of x-range
 BWpressure 0.1    # ambient pressure
 BWdensity  1.0    # ambient density
-BWmagfieldX 0.07071   # Magnetic field strength
-BWmagfieldY 0.07071   # Magnetic field strength
+BWmagfieldX 25.066282746310002   # Magnetic field strength
+BWmagfieldY 25.066282746310002   # Magnetic field strength
 BWmagfieldZ 0.0      # Magnetic field strength
 
 BW_energy 0.471238898038
-BW_nzones 20
+BW_nzones 40
 BW_blast_dens 1.0 
 
 RT_Nsources 0

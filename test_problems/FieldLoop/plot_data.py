@@ -95,7 +95,7 @@ for file in files:
       ax2.set_ylim(-0.5,0.5)
       ax2.set_xlabel("x",fontsize=14, fontweight='bold')
       ax2.set_ylabel("y",fontsize=14, fontweight='bold')
-    else:
+    if (ilev>0) || (n==1):
       #plt.pcolormesh(x, y, d, cmap="viridis",linewidth=0,rasterized=True)
       clev = MaxNLocator(nbins=7).tick_values(B.min(), B.max())
       #plt.contour(x, y, B, colors="white",levels=clev,linewidths=0.5,aspect=1)

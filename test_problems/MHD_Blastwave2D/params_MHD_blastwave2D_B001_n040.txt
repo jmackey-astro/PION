@@ -8,12 +8,8 @@ eqn glm-mhd
 coordinates cartesian
 solver 7
 
-# Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
-# MHDShockCloud ShockTube...}
 ics BlastWave
-
-# Output FileName Base
-OutputFile    BW2d_StoneMHD_n200_B10
+OutputFile    BW2d_StoneMHD_B001_n040
 
 # Number and type of tracers.
 ntracer 0
@@ -47,18 +43,22 @@ BC_YN periodic
 BC_YP periodic
 BC_Ninternal 0
 
-grid_nlevels 1
-grid_aspect_ratio_XX 2
+grid_nlevels 2
+grid_aspect_ratio_XX 1
 grid_aspect_ratio_YY 2
-grid_aspect_ratio_ZZ 2
+grid_aspect_ratio_ZZ 1
 NG_centre_XX 0.0
 NG_centre_YY 0.0
 NG_centre_ZZ 0.0
+NG_refine_XX 1
+NG_refine_YY 1
+NG_refine_ZZ 1
+
 
 # Number of gridpoints in each direction (note cells must be cubic!)
 # INT
-NGridX  200
-NGridY  300
+NGridX  40
+NGridY  60
 NGridZ  200
 # Boundaries of Simulation box:
 Xmin -0.5
@@ -72,12 +72,12 @@ Zmax 0.5
 
 OutputPath ./
 OutputFileType silo
-OutputFrequency 100
+OutputFrequency 16
 OutputCriterion 0
 OPfreqTime 1000.0 
 
 StartTime 0.0
-FinishTime 0.2
+FinishTime 0.3
 OrderOfAccSpace 2
 OrderOfAccTime  2
 
@@ -102,12 +102,12 @@ magval 1.0
 BWradius   0.1    # fraction of x-range
 BWpressure 0.1    # ambient pressure
 BWdensity  1.0    # ambient density
-BWmagfieldX 7.071   # Magnetic field strength
-BWmagfieldY 7.071   # Magnetic field strength
+BWmagfieldX 0.25066282746310002   # Magnetic field strength
+BWmagfieldY 0.25066282746310002   # Magnetic field strength
 BWmagfieldZ 0.0      # Magnetic field strength
 
 BW_energy 0.471238898038
-BW_nzones 20
+BW_nzones 8
 BW_blast_dens 1.0 
 
 RT_Nsources 0

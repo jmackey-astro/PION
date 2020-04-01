@@ -202,7 +202,7 @@ ifeq ($(MAKE_UNAME), debian10)
   LDFLAGS += -Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
 
 endif
-################### ---  DEBIAN 9 (STRETCH)  ---######################
+################### ---  DEBIAN 10 (buster)  ---######################
 
 ######################################################################
 # Options for an Ubuntu 18 workstation with locally installed libraries.

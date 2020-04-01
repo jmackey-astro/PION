@@ -143,7 +143,7 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
           f = grid->NextPt(f,YP);
           iy++;
 #ifdef TEST_MPI_NG
-          cout <<"moving to next plane, iy="<<iy<<"\n";
+          cout <<"moving to next row, iy="<<iy<<"\n";
 #endif
         }
         else {

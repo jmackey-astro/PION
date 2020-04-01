@@ -665,15 +665,15 @@ int IC_blastwave::setup_cart_bw()
       cpt->P[BZ] = bw_BZ;
     }
     for (int i=0;i<SimPM->ntracer;i++) {
-      cpt->P[SimPM->ftr+i] = 1.;
+      cpt->P[SimPM->ftr+i] = 1.0;
     }
     // This is where I set the state inside the blast radius.
     if( (vfrac=stest.volumeFraction(cpt)) >0) {
-      cpt->P[PG] = vfrac*(Pin)        + (1.-vfrac)*cpt->P[PG];
-      cpt->P[RO] = vfrac*(bw_blastRO) + (1.-vfrac)*cpt->P[RO];
+      cpt->P[PG] = vfrac*(Pin)        + (1.0-vfrac)*cpt->P[PG];
+      cpt->P[RO] = vfrac*(bw_blastRO) + (1.0-vfrac)*cpt->P[RO];
       //cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
       for (int i=0;i<SimPM->ntracer;i++) {
-	cpt->P[SimPM->ftr+i] = -vfrac + (1.-vfrac);
+	cpt->P[SimPM->ftr+i] = -vfrac + (1.0-vfrac);
       }
     }
   } while ( (cpt=gg->NextPt(cpt))!=NULL);
