@@ -27,15 +27,15 @@ font.set_name('stixsans')
 font.set_style('italic')
 font.set_weight('light')
 
-solver="HLL"
+#solver="HLL"
 solver="HLLD"
 #solver="Roe"
 #solver="RCV"
-#solver="NG"
+solver="NG"
 if solver=="HLL":
   files=["HLL_n100_0000.00000000.silo","HLL_n100_0000.00000412.silo","HLL_n100_0000.00000825.silo"]
 elif solver=="HLLD":
-  files=["HLLD_n100_0000.00000000.silo","HLLD_n100_0000.00000412.silo","HLLD_n100_0000.00000825.silo","HLLD_n200_0000.00000000.silo","HLLD_n200_0000.00000823.silo","HLLD_n200_0000.00001646.silo","HLLD_oa1_n200_0000.00000000.silo","HLLD_oa1_n200_0000.00000823.silo","HLLD_oa1_n200_0000.00001646.silo"]
+  files=["HLLD_n100_0000.00000000.silo","HLLD_n100_0000.00000825.silo","HLLD_n200_0000.00000000.silo","HLLD_n200_0000.00001646.silo"]
 elif solver=="RCV":
   files=["RCV_n100_0000.00000000.silo","RCV_n100_0000.00000412.silo","RCV_n100_0000.00000825.silo","RCV_n200_0000.00000000.silo","RCV_n200_0000.00000823.silo","RCV_n200_0000.00001646.silo","FieldLoop200l2_level00.00000000.silo"]
 elif solver=="NG":
@@ -95,7 +95,7 @@ for file in files:
       ax2.set_ylim(-0.5,0.5)
       ax2.set_xlabel("x",fontsize=14, fontweight='bold')
       ax2.set_ylabel("y",fontsize=14, fontweight='bold')
-
+    else:
       #plt.pcolormesh(x, y, d, cmap="viridis",linewidth=0,rasterized=True)
       clev = MaxNLocator(nbins=7).tick_values(B.min(), B.max())
       #plt.contour(x, y, B, colors="white",levels=clev,linewidths=0.5,aspect=1)
