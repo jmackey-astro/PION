@@ -309,7 +309,16 @@ int dataio_silo::OutputData(
     // then write each variable in turn to the mesh.
     //
     DBSetDir(*db_ptr,"/");
-    string meshname="UniformGrid";
+    
+    dim1[0]=1;
+    int cycle=SimPM.timestep;
+    err += DBWrite(*db_ptr,"cycle",   &cycle, dim1,1,DB_INT);
+    double dtime=SimPM.levels[0].simtime;
+    err += DBWrite(*db_ptr,"dtime",  &dtime, dim1,1,DB_DOUBLE);
+
+    DBMkDir(*db_ptr,"rank_0000_domain_0000");
+    DBSetDir(*db_ptr,"/rank_0000_domain_0000");
+    string meshname="unigrid0000";
     err = dataio_silo::generate_quadmesh(*db_ptr, meshname,SimPM);
     if (err)
       rep.error("dataio_silo::OutputData() writing quadmesh",err);
@@ -434,8 +443,8 @@ int dataio_silo::ReadData(
     err = setup_grid_properties(gp, SimPM);
     rep.errorTest("dataio_silo::ReadData() setup_grid_properties",0, err);
 
-    DBSetDir(*db_ptr,"/");
-    string meshname="UniformGrid";
+    DBSetDir(*db_ptr,"/rank_0000_domain_0000");
+    string meshname="unigrid0000";
 
     // now read each variable in turn from the mesh
     for (std::vector<string>::iterator i=readvars.begin();

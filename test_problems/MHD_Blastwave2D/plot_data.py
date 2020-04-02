@@ -36,8 +36,10 @@ solver="HLLD_NG"
 if solver=="HLL":
   files=[""]
 elif solver=="HLLD_NG":
-  files=glob.glob("HLLD_B001_n040_l2_level00_0000.*.silo")
-  files=glob.glob("HLLD_B001_n200_l2_level00_0000.*.silo")
+  #files=glob.glob("HLLD_B001_n040_l2_level00_0000.*.silo")
+  files=glob.glob("HLLD_B010_n040_l2_level00_0000.*.silo")
+  #files=glob.glob("HLLD_B001_n200_l2_level00_0000.*.silo")
+  files=sorted(glob.glob("BW2d_StoneMHD_B010_n200_level00.000*.silo"))
 elif solver=="HLLD_UG":
   files=glob.glob("HLLD_n200_B1_ug_0000.*.silo")
 elif solver=="RCV":
@@ -47,6 +49,7 @@ else:
   #files=["FieldLoop032_0000.00000000.silo", "FieldLoop032_0000.00000132.silo", "FieldLoop032_0000.00000264.silo"]
 
 for file in files:
+  print file
   fig, (ax1,ax2,ax3) = plt.subplots(1,3)
   
   dataio=ppion.Plotting2d(file)
@@ -74,7 +77,7 @@ for file in files:
 
     dataio=ppion.Plotting2d(file)
     d = dataio.reshaped_parameter2d("Density")
-    d = dataio.reshaped_parameter2d("Pressure")
+    #d = dataio.reshaped_parameter2d("Pressure")
     vx = dataio.reshaped_parameter2d("VelocityX")
     vy = dataio.reshaped_parameter2d("VelocityY")
     vz = dataio.reshaped_parameter2d("VelocityZ")
@@ -195,17 +198,19 @@ for file in files:
     del dataio
 
 
-  dmax=str("%.4f" % (B.max()))
-  dmin=str("%.4f" % (B.min()))
-  tm = str("%.5f" % t)
+  dmax=str("%.2f" % (d.max()))
+  dmin=str("%.2f" % (d.min()))
+  tm = str("%.3f" % t)
   #st = "$P_\mathrm{mag}$, max=" +dmax + " min=" + dmin
-  st = "$\left| B \\right|$, max=" +dmax + " min=" + dmin
+  st = "(a) $\\rho$, t=" + tm + "\nmax=" +dmax + " min=" + dmin
   #st = "Density, t="+tm
   #ax1.text(-0.75,0.42,st,color="white",fontsize=10)
   #if c==0:
-  #  ax1.text(-0.95,0.42,"(a)",color="white",fontsize=10,weight='bold')
+  ax1.text(-0.475,0.55,st,color="white",fontsize=8,weight='bold')
   #else:
   #  ax1.text(-0.95,0.42,"(c)",color="white",fontsize=10,weight='bold')
+
+  st = "$\left| B \\right|$, max=" +dmax + " min=" + dmin
 
   dmax=str("%.4f" % (V2.max()))
   dmin=str("%.4f" % (V2.min()))
