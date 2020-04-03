@@ -1787,6 +1787,10 @@ int MPv3::ydot(
   temp2 = cooling_rate_SD93CIE(T) *x_in*x_in*mpv_nH*METALLICITY;
   Edot -= max(temp1,temp2);
 
+#define DUSTCOOL
+#ifdef DUSTCOOL
+  //double track=max(temp1,temp2);
+#endif
 
   //
   // Instead of the PDR cooling from Henney, use Wolfire's eq.C1,C3 for
@@ -1798,13 +1802,20 @@ int MPv3::ydot(
   Edot -= 3.15e-27*METALLICITY*exp(-92.0/T)*mpv_nH*OneMinusX*exp(-mpv_nH/1.0e4);
   Edot -= 3.96e-28*METALLICITY*exp(0.4*log(T)-228.0/T)*mpv_nH*OneMinusX;
 
+#ifdef DUSTCOOL
+  //track+=3.15e-27*METALLICITY*exp(-92.0/T)*mpv_nH*OneMinusX
+  //                *exp(-mpv_nH/1.0e4);
+  //track+=3.96e-28*METALLICITY*exp(0.4*log(T)-228.0/T)*mpv_nH*OneMinusX;
+#endif
+
   //
   // This is the CII cooling by electron collisions, cutoff at high density
-  // again, for consistency, again with sqrt(100K) absorbed into the prefactor.
+  // again, for consistency, again with sqrt(100K) absorbed into the
+  // prefactor.
   // This rate has a very low critical density (Goldsmith, Langer et al.,
   // 2012ApJS..203...13G), at n_c=20 cm^{-3} at 1000K, so we use their
-  // temperature scaling and divide by density according to rate = rate/(1.0 +
-  // 0.05*nH*(T/2000K)^(-0.37))
+  // temperature scaling and divide by density according to
+  // rate = rate/(1.0 + 0.05*nH*(T/2000K)^(-0.37))
   //
   Edot -= 1.4e-23*METALLICITY*exp(-0.5*log(T)-92.0/T)*ne
           *exp(-mpv_nH/1.0e4)
@@ -1812,6 +1823,10 @@ int MPv3::ydot(
        //   /(1.0 + 0.05*mpv_nH*pow(T/2000.0,-0.37))
 #endif // BETELGEUSE
           ;
+#ifdef DUSTCOOL
+  //track+=1.4e-23*METALLICITY*exp(-0.5*log(T)-92.0/T)*ne
+  //        *exp(-mpv_nH/1.0e4);
+#endif
 
   //
   // PAH cooling: eq. 21 in Wolfire+,2003.  I think they should have multiplied
@@ -1823,13 +1838,21 @@ int MPv3::ydot(
 #endif // BETELGEUSE
 //#endif // BETELGEUSE
 
+#ifdef DUSTCOOL
+  //track+=3.02e-30*METALLICITY*exp(0.94*log(T) +0.74*pow(T,-0.068)*log(3.4*sqrt(T)/ne))*ne;
+#endif
+
   //
   // Dust cooling in hot gas (following Everett & Churchwell (2010)
   // figure 9, which is calculated from CLOUDY).
   //
 #ifdef DUSTCOOL
-  if (pv_WIND>0)
-    Edot -= ne*f_dust*1.0e-17 * exp(1.5*log(T/2.5e8));
+  if (pv_WIND>0) {
+    //double dc=ne*f_dust*1.0e-17 * exp(1.5*log(T/2.5e8));
+    //if (dc > track && T<2.0e5)
+    //  cout <<"T="<<T<<", yH+="<<x_in<<" ne="<<ne<<" dc="<<dc<<", PIE="<<max(temp1,temp2)<<"\n";
+    Edot -= ne*x_in*f_dust*1.0e-17 * exp(1.5*log(T/2.5e8));
+  }
 #endif
 
   //
