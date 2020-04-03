@@ -288,13 +288,18 @@ MPv3::MPv3(
   // Find H+ fraction in tracer variable list.
   //
   int ftr = nv_prim -ntracer; // first tracer variable.
-  string s; pv_Hp=-1;
+  string s; pv_Hp=-1; pv_WIND=-1;
 
   for (int i=0;i<len;i++) {
     s = tracers[i]; // Get 'i'th tracer variable.
     if (s=="H1+___" || s=="HII__" || s=="H1+" || s=="HII") {
       pv_Hp = ftr+i;
       cout <<"\t\tGot H+ as the "<<pv_Hp<<"th element of P[] (zero offset).\n";
+    }
+    if (s=="WIND") {
+      pv_WIND = ftr+i;
+      cout <<"\t\tGot WIND tracer as the "<<pv_WIND;
+      cout <<"th element of P[] (zero offset).\n";
     }
   }
   if (pv_Hp<0)
@@ -603,6 +608,9 @@ int MPv3::Tr(const string s)
   if (s=="H1+___" || s=="HII__" || s=="H1+" || s=="HII") {
     return pv_Hp;
   }
+  if (s=="WIND") {
+    return pv_WIND;
+  }
   else {
     return -1;
   }
@@ -824,6 +832,7 @@ int MPv3::convert_prim2local(
   //
   p_local[lv_eint] = p_in[PG]/(gamma_minus_one);
   p_local[lv_H0]   = 1.0-p_in[pv_Hp];
+  f_dust = max(0.0, min(1.0,1-0-p_in[pv_WIND]));
   mpv_nH = p_in[RO]/mean_mass_per_H;
 
 
@@ -1815,8 +1824,17 @@ int MPv3::ydot(
 //#endif // BETELGEUSE
 
   //
-  // now multiply Edot by nH to get units of energy loss/gain per unit volume
-  // per second.
+  // Dust cooling in hot gas (following Everett & Churchwell (2010)
+  // figure 9, which is calculated from CLOUDY).
+  //
+#ifdef DUSTCOOL
+  if (pv_WIND>0)
+    Edot -= ne*f_dust*1.0e-17 * exp(1.5*log(T/2.5e8));
+#endif
+
+  //
+  // Multiply Edot by nH to get units of energy loss/gain per unit
+  // volume per second.
   //
   Edot *= mpv_nH;
 #ifdef HIGHDENS_CUTOFF

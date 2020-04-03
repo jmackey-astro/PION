@@ -432,24 +432,26 @@ class MPv3
   double gamma_minus_one; ///< as named.
   double Min_NeutralFrac; ///< minimum H0 fraction allowed (eps=1.0e-12)
   double Max_NeutralFrac; ///< Maximum H0 fraction allowed (1-eps)
-  double mean_mass_per_H; ///< mean mass per hydrogen nucleon, should be about 2.34e-24;
+  double mean_mass_per_H; ///< mean mass per hydrogen nucleon (g);
   double JM_NELEC; ///< Number of electrons per ionised H atom.
   double JM_NION;  ///< Number of ions per ionised H atom.
   double METALLICITY; ///< Metallicity of gas, in units of solar.
+  double f_dust; ///< dust fraction 1.0=Solar ISM value, 0.0=none.
 
   int nvl;     ///< number of variables in local state vector.
   int lv_eint; ///< internal energy local variable index. 
   int lv_H0;   ///< neutral hydrogeen local variable index.
-  int pv_Hp;   ///< index for element of Primitive vector that holds ionisation pot.
+  int pv_Hp;   ///< index for Primitive vector for H+ fraction
+  int pv_WIND; ///< index for Primitive vector for wind mass-fraction.
 
   int
     N_diff_srcs, ///< No diffuse sources --> 0, otherwise --> 1
     N_ion_srcs,  ///< No ionising sources --> 0, otherwise --> 1
     ion_src_type; ///< Either RT_EFFECT_MFION or RT_EFFECT_PION_MONO.
 
-  //---------------------------------------------------------------------------
-  //-------------- FUNCTIONS DERIVED FROM BASE CLASS FOLLOW -------------------
-  //---------------------------------------------------------------------------
+  //-----------------------------------------------------------------
+  //-------------- FUNCTIONS DERIVED FROM BASE CLASS FOLLOW ---------
+  //-----------------------------------------------------------------
   public:
   ///
   /// calculate dy/dt for the vector of y-values.
@@ -458,7 +460,7 @@ class MPv3
       double,         ///< current time (probably not needed for rate equations)
       const N_Vector, ///< current Y-value
       N_Vector,       ///< vector for Y-dot values
-      const double *  ///< extra user-data vector, P, for evaluating ydot(y,t,p)
+      const double *  ///< extra vector, P, to evaluate ydot(y,t,p)
       );
 
   ///
