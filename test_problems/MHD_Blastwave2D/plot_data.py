@@ -36,14 +36,15 @@ solver="HLLD_NG"
 if solver=="HLL":
   files=[""]
 elif solver=="HLLD_NG":
-  #files=glob.glob("HLLD_B001_n040_l2_level00_0000.*.silo")
-  files=glob.glob("HLLD_B010_n040_l2_level00_0000.*.silo")
-  #files=glob.glob("HLLD_B001_n200_l2_level00_0000.*.silo")
-  files=sorted(glob.glob("BW2d_StoneMHD_B010_n200_level00.000*.silo"))
+  #files=sorted(glob.glob("HLLD_B001_n040_l2_level00_0000.*.silo"))
+  files=sorted(glob.glob("HLLD_B010_n040_l2_level00_0000.*.silo"))
+  #files=sorted(glob.glob("HLLD_B001_n200_l2_level00_0000.*.silo"))
+  #files=sorted(glob.glob("BW2d_StoneMHD_B010_n200_level00.000*.silo"))
+  files=sorted(glob.glob("HLLD_B*level00_0000.*.silo"))
 elif solver=="HLLD_UG":
-  files=glob.glob("HLLD_n200_B1_ug_0000.*.silo")
+  files=sorted(glob.glob("HLLD_n200_B1_ug_0000.*.silo"))
 elif solver=="RCV":
-  files==glob.glob("RCV*_level00_0000.*.silo")
+  files==sorted(glob.glob("RCV*_level00_0000.*.silo"))
 else:
   files=[""]
   #files=["FieldLoop032_0000.00000000.silo", "FieldLoop032_0000.00000132.silo", "FieldLoop032_0000.00000264.silo"]

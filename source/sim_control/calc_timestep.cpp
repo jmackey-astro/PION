@@ -118,17 +118,22 @@ int calc_timestep::calculate_timestep(
   // equal to the maximum signal speed on the grid, and not an
   // artificially larger speed associated with a shortened timestep.
   //
+
+  // we always calculate timestep on finest level first.
+  static double td=0.0;
+  if (l==par.grid_nlevels-1)
+    td = t_dyn;
+  else
+    td = min(td,t_dyn/pow(2.0,par.grid_nlevels-1-l));
+
   double cr=0.0;
-  //for (int d=0;d<par.ndim;d++) cr += 1.0/(par.Range[d]*par.Range[d]);
+  //for (int d=0;d<par.ndim;d++)
+  //  cr += 1.0/(par.Range[d]*par.Range[d]);
   //cr = M_PI*sqrt(cr);
   if (par.grid_nlevels==1) cr = 0.25/par.dx;
-  else cr = 0.25/par.levels[0].dx; // this is the old value.
-  sp_solver->Set_GLM_Speeds(t_dyn,grid->DX(),cr);
-//#else
-//  double ch = par.CFL * grid->DX()/t_dyn;
-//  sp_solver->set_max_speed(ch);
-//#endif
-
+  else cr = 0.25/par.levels[par.grid_nlevels-1].dx;
+  if (l==0)
+    spatial_solver->Set_GLM_Speeds(td,par.levels[par.grid_nlevels-1].dx, cr);
   //
   // Check that the timestep doesn't increase too much between steps, and that it 
   // won't bring us past the next output time or the end of the simulation.

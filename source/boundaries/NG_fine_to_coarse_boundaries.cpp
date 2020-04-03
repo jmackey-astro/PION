@@ -227,10 +227,20 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
       CI.set_col(c, s->id, &(cd[off]));
       CI.set_cell_col(c, s->id, &(cd[off+s->NTau]));
     }
-    
     // set primitive variables in coarse cell based on interpolated
     // values stored in first nvar elements of "cd".
     solver->UtoP(cd,c->Ph,par.EP.MinTemperature,par.gamma);
+/*
+// DEBUGGING
+    if (c->pos[XX]<204 && c->pos[XX]>200 &&
+        c->pos[YY]<648 && c->pos[YY]>640) {
+      rep.printVec("cpos",c->pos,2);
+      rep.printVec("cpos Ph",c->Ph,par.nvar);
+      rep.printVec("cpos P ",c->P ,par.nvar);
+      cout <<"\nnew cell column: \n";
+    }
+// DEBUGGING
+*/
     //
     // if full step then assign to c->P as well as c->Ph.
     //
@@ -280,9 +290,35 @@ int NG_fine_to_coarse_bc::average_cells(
     sum_vol += vol;
     //cout <<"vol="<<vol<<", sum="<<sum_vol<<"; ";
     for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
+/*    
+// DEBUGGING
+    if (f->pos[XX]<204 && f->pos[XX]>200 &&
+        f->pos[YY]<648 && f->pos[YY]>640) {
+      rep.printVec("fpos",f->pos,2);
+      rep.printVec("fpos Ph",f->Ph,par.nvar);
+      rep.printVec("fpos P ",f->P ,par.nvar);
+    }
+// DEBUGGING
+*/
   }
   //cout <<"\n";
   for (int v=0;v<par.nvar;v++) cd[v] /= sum_vol;
+  
+  if (par.eqntype == EQGLM) {
+    // HACK to set psi on coarse grid equal to extreme value on fine grid
+    double t1=1.0e99,t2=-1.0e99;
+    for (c_iter=c.begin(); c_iter!=c.end(); ++c_iter) {
+      cell *f = (*c_iter);
+      t1 = min(t1, f->Ph[SI]);
+      t2 = max(t2, f->Ph[SI]);
+    }
+    if      (t1>0.0 && t2>0.0)  t1=t2;
+    else if (t1<=0. && t2<=0.)  t1=t1;
+    else if (fabs(t1)>fabs(t2)) t1=t1;
+    else                        t1=t2;
+    cd[PSI] = t1;
+  }
+
 
   //
   // If doing RT, we also want to update column densities here.

@@ -205,7 +205,7 @@ int assign_update_bcs_NG::TimeUpdateExternalBCs(
       // get outer boundary of this grid from coarser grid.
     case COARSE_TO_FINE:
       // only update if at the start of a full step.
-      if (cstep==maxstep) {
+      if (cstep==maxstep && (par.levels[level].step+2)%2==0) {
         //cout <<"found COARSE_TO_FINE boundary to update\n";
         err += BC_update_COARSE_TO_FINE(par,solver,level,b,
                                         par.levels[level].step);

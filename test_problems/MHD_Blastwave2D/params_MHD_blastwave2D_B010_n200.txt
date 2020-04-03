@@ -77,8 +77,8 @@ OPfreqTime 1000.0
 
 StartTime 0.0
 FinishTime 0.2
-OrderOfAccSpace 2
-OrderOfAccTime  2
+OrderOfAccSpace 1
+OrderOfAccTime  1
 
 
 GAMMA 1.6666666666666666666666

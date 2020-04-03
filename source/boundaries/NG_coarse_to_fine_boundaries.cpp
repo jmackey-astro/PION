@@ -104,8 +104,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
 {
   if (level==0) return 0;
 #ifdef TEST_C2F
-    cout <<"C2F: updating boundary data from coarse grid to level ";
-    cout <<level<<"\n";
+  cout <<"C2F: updating boundary data from coarse grid to level ";
+  cout <<level<<"\n";
 #endif
   //
   // This is a complicated problem to use linear interpolation (or
@@ -236,7 +236,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   // ----------------------------------------------------------------
   // if spatial order of accuracy is 1, then we have piecewise
   // constant data, so there is no interpolation to be done.
-  if (par.spOOA == OA1) {
+  if (par.spOOA == 0) {
     for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
       f = (*f_iter);
       c = f->npt;
@@ -250,7 +250,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
-  else if (par.spOOA == OA2) {
+  else if (par.spOOA == OA2 || par.spOOA == OA1) {
     //
     // Dimensions is sufficiently different that we have an if/else
     // loop for each dimension, and then do linear/bilinear/trilinear
@@ -647,18 +647,22 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   double f3U[par.nvar], f4U[par.nvar], cU[par.nvar];
   double dxo2 = 0.5*fine->DX(); // dx
   double f_vol[4];
-  //double f_psi[4];
+  // HACK
+  
+  double f_psi[4];
+  if (par.eqntype == EQGLM) {
+    f_psi[0] = f1->P[SI];
+    f_psi[1] = f2->P[SI];
+    f_psi[2] = f3->P[SI];
+    f_psi[3] = f4->P[SI];
+  }
+  // HACK
+  
   //
   // Need to do bilinear interpolation, 4 cells at a time.
   // use slopes in each direction to get corner values for the
   // coarse cell.
   //
-  //if (par.eqntype == EQGLM) {
-  //  f_psi[0] = f1->P[SI];
-  //  f_psi[1] = f2->P[SI];
-  //  f_psi[2] = f3->P[SI];
-  //  f_psi[3] = f4->P[SI];
-  //}
   for (int v=0;v<par.nvar;v++) sx[v] *= dxo2; // fine (dx/2)
   for (int v=0;v<par.nvar;v++) sy[v] *= dxo2; // fine (dx/2)
   for (int v=0;v<par.nvar;v++) f1->P[v] = P[v] -sx[v] -sy[v];
@@ -715,13 +719,26 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   solver->UtoP(f4U,f4->Ph, par.EP.MinTemperature, par.gamma);
   for (int v=0;v<par.nvar;v++) f4->P[v] = f4->Ph[v];
 
+  
+  // HACK
   //if (par.eqntype == EQGLM) {
   //  f1->P[SI] = f1->Ph[SI] = P[SI]; // f_psi[0];
   //  f2->P[SI] = f2->Ph[SI] = P[SI]; //0.0; // f_psi[1];
   //  f3->P[SI] = f3->Ph[SI] = P[SI]; //0.0; // f_psi[2];
   //  f4->P[SI] = f4->Ph[SI] = P[SI]; //0.0; // f_psi[3];
   //}
-
+  // HACK
+  
+ /* 
+  // HACK
+  if (par.eqntype == EQGLM) {
+    f1->P[SI] = f1->Ph[SI] =  f_psi[0];
+    f2->P[SI] = f2->Ph[SI] =  f_psi[1];
+    f3->P[SI] = f3->Ph[SI] =  f_psi[2];
+    f4->P[SI] = f4->Ph[SI] =  f_psi[3];
+  }
+  // HACK
+*/
   //int d=par.nvar-1;
   //cout <<"interpolate_coarse2fine2D: "<<P[d]<<": "<<f1->P[d]<<", ";
   //cout <<f2->P[d]<<", "<<f3->P[d]<<", "<<f4->P[d]<<"\n";

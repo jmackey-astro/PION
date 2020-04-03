@@ -827,9 +827,9 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
   bxstar  = 0.5*(left[eqBX]+right[eqBX]);
 #else
   psistar = 0.5*(left[eqSI]+right[eqSI]
-			-GLM_chyp*(right[eqBX]-left[eqBX]));
+			-(right[eqBX]-left[eqBX]));
   bxstar  = 0.5*(left[eqBX]+right[eqBX]
-			-(right[eqSI]-left[eqSI])/GLM_chyp);
+			-(right[eqSI]-left[eqSI]));
 #endif
   left[eqBX] = right[eqBX] = bxstar;
 
@@ -860,9 +860,9 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
   left[eqSI]  = psi_L;
   right[eqSI] = psi_R;
 #else
-  flux[eqERG] += bxstar*psistar;
-  flux[eqBBX]  = psistar;
-  flux[eqPSI]  = GLM_chyp*GLM_chyp*bxstar;
+  flux[eqERG] += GLM_chyp*bxstar*psistar;
+  flux[eqBBX]  = GLM_chyp*psistar;
+  flux[eqPSI]  = GLM_chyp*bxstar;
 #endif
 
   return err;
@@ -1320,7 +1320,7 @@ void cyl_FV_solver_mhd_mixedGLM_adi::geometric_source(
       //if (c->pos[Rcyl]<4 && c->pos[Rcyl]>0) {
       //  cout <<"  "<<c->dU[eqMMX]<<"\n";
       //}
-      dU[eqBBX] += c->Ph[eqSI]/CI.get_dpos(c,Rcyl);
+      dU[eqBBX] += GLM_chyp*c->Ph[eqSI]/CI.get_dpos(c,Rcyl);
       break;
      case OA2:
       dU[eqMMX] += (c->Ph[eqPG]+pm +
@@ -1328,7 +1328,7 @@ void cyl_FV_solver_mhd_mixedGLM_adi::geometric_source(
                    (dpdx[eqPG] +c->Ph[eqBX]*dpdx[eqBX] +
                     c->Ph[eqBY]*dpdx[eqBY] +c->Ph[eqBZ]*dpdx[eqBZ]) )
                    /CI.get_dpos(c,Rcyl);
-      dU[eqBBX] += (c->Ph[eqSI] +(CI.get_dpos(c,Rcyl)-R_com(c,dR))
+      dU[eqBBX] += GLM_chyp*(c->Ph[eqSI] +(CI.get_dpos(c,Rcyl)-R_com(c,dR))
                       *dpdx[eqSI] ) /CI.get_dpos(c,Rcyl);
       break;
      default:
