@@ -232,7 +232,6 @@ int dataio_silo::OutputData(
   string filename=outfile;
 
   for (int l=0; l<SimPM.grid_nlevels; l++) {
-
     if (!cg[l])
       rep.error("dataio_silo::OutputData() null pointer!",
                 cg[l]);
@@ -246,8 +245,7 @@ int dataio_silo::OutputData(
       temp << l;
       filename=temp.str();
     }
-  
-  
+
     err = dataio_silo::choose_filename(filename, file_counter);
     if (err) {
       cerr<<"dataio_silo::OutputData() error choosing filename.\n";
@@ -310,11 +308,11 @@ int dataio_silo::OutputData(
     //
     DBSetDir(*db_ptr,"/");
     
-    dim1[0]=1;
-    int cycle=SimPM.timestep;
-    err += DBWrite(*db_ptr,"cycle",   &cycle, dim1,1,DB_INT);
-    double dtime=SimPM.levels[0].simtime;
-    err += DBWrite(*db_ptr,"dtime",  &dtime, dim1,1,DB_DOUBLE);
+    //dim1[0]=1;
+    //int cycle=SimPM.timestep;
+    //err += DBWrite(*db_ptr,"cycle",   &cycle, dim1,1,DB_INT);
+    //double dtime=SimPM.levels[0].simtime;
+    //err += DBWrite(*db_ptr,"dtime",  &dtime, dim1,1,DB_DOUBLE);
 
     DBMkDir(*db_ptr,"rank_0000_domain_0000");
     DBSetDir(*db_ptr,"/rank_0000_domain_0000");
@@ -331,11 +329,89 @@ int dataio_silo::OutputData(
       if (err)
         rep.error("dataio_silo::OutputData() writing var",(*i));
     }
+
+    // write multimesh info
+    string mm_name ="MultiMesh";
+    string mma_name="Domain_Decomposition";
+    DBSetDir(*db_ptr,"/");
+    int nmesh = 1;
+    int meshtypes[1];
+    int groups[1], ranks[1];
+    meshtypes[0]=DB_QUAD_RECT;
+    groups[0] = 0;
+    ranks[0] = 0;
+    char **mm_names;
+    mm_names = mem.myalloc(mm_names,1);
+    mm_names[0] = mem.myalloc(mm_names[0],512);
+    string s = "/rank_0000_domain_0000/unigrid0000";
+    strcpy(mm_names[0],s.c_str());
+    DBoptlist *mm_opts = DBMakeOptlist(7);
+    DBAddOption(mm_opts,DBOPT_DTIME,&SimPM.simtime);
+    DBAddOption(mm_opts,DBOPT_CYCLE,&SimPM.timestep);
+    int blockorigin=0;
+    DBAddOption(mm_opts,DBOPT_BLOCKORIGIN,&blockorigin);
+    int ext_size = 2*ndim;
+    double extents[ext_size];
+    int zonecounts[1];
+    int externalzones[1];
+    externalzones[0] = 0;
+#ifdef WRITE_GHOST_ZONES
+    zonecounts[0] = gp->Ncell_all();
+    for (int i=0; i<ndim;i++)
+      extents[i  ] = 
+            gp->Xmin(static_cast<axes>(i))-SimPM.Nbc*gp->DX();
+    for (int i=0; i<ndim;i++)
+      extents[ndim+i] =
+            gp->Xmax(static_cast<axes>(i)+SimPM.Nbc*gp->DX();
+#else
+    zonecounts[0] = gp->Ncell();
+    for (int i=0; i<ndim;i++)
+      extents[i     ] = gp->Xmin(static_cast<axes>(i));
+    for (int i=0; i<ndim;i++)
+      extents[ndim+i] = gp->Xmax(static_cast<axes>(i));
+#endif
+    DBAddOption(mm_opts,DBOPT_EXTENTS_SIZE,&ext_size);
+    DBAddOption(mm_opts,DBOPT_EXTENTS,extents);
+    DBAddOption(mm_opts,DBOPT_ZONECOUNTS,zonecounts);
+    DBAddOption(mm_opts,DBOPT_HAS_EXTERNAL_ZONES,externalzones);
+    // write the multimesh
+    err = DBPutMultimesh(*db_ptr, mm_name.c_str(), nmesh, mm_names, meshtypes, mm_opts);
+    if (err) rep.error("dataio_silo:: multimesh",err);
+    DBClearOptlist(mm_opts);
+
+    // re-use all the multimesh vars for the multivar object
+    for (std::vector<string>::iterator i=varnames.begin(); i!=varnames.end(); ++i) {
+      // multivar name
+      string vname;
+      vname.clear(); vname=(*i);
+      meshtypes[0] = DB_QUADVAR;
+      s.erase();
+      s = "/rank_0000_domain_0000/"+vname;
+      strcpy(mm_names[0],s.c_str());
+      DBAddOption(mm_opts,DBOPT_DTIME,&SimPM.simtime);
+      DBAddOption(mm_opts,DBOPT_CYCLE,&SimPM.timestep);
+      DBAddOption(mm_opts,DBOPT_BLOCKORIGIN,&blockorigin);
+      // ext_size=2;
+      // extents[] is the max/min values of the variable -- no time to calculate that.
+      char mn[256]; strcpy(mn, mm_name.c_str());
+      DBAddOption(mm_opts,DBOPT_MMESH_NAME,mn);
+      err = DBPutMultivar(*db_ptr, vname.c_str(), nmesh, mm_names, meshtypes, mm_opts);
+      if (err)
+	rep.error("dataio_silo_pllel::SaveLevelData() variable",(*i));
+      DBClearOptlist(mm_opts);
+    }
+
+    //
+    // Free memory
+    //
+    DBFreeOptlist(mm_opts);
+    mm_names[0] = mem.myfree(mm_names[0]);
+    mm_names = mem.myfree(mm_names);
     dataio_silo::delete_data_arrays();
     DBSetDir(*db_ptr,"/");
     DBClose(*db_ptr); //*db_ptr=0;
-  } // loop over levels.
 
+  } // loop over levels.
   return 0;
 }
 

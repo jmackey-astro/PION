@@ -878,6 +878,7 @@ int NG_BC89flux::recv_BC89_flux_boundary(
 #ifdef SKIP_BC89_FLUX
   return 0;
 #endif
+  //spatial_solver->SetDirection(ax);
   struct flux_interface *fc=0;
   struct flux_interface *ff=0;
   double ftmp[par.nvar],utmp[par.nvar];
@@ -964,8 +965,34 @@ int NG_BC89flux::recv_BC89_flux_boundary(
     //cout <<"Flux rho: "<<fc->flux[0]<<": "<<fc->c[0]->dU[0];
     //cout <<", "<<utmp[0]<<"\n";
 #endif
-
+    /*
+    // HACK
+    double psi[2]={0.0,0.0};
+    if (par.eqntype == EQGLM) {
+      switch (static_cast<int>(ax)) {
+        case 0: psi[0] =  fc->c[0]->dU[BBX]; break;
+        case 1: psi[0] =  fc->c[0]->dU[BBY]; break;
+        case 2: psi[0] =  fc->c[0]->dU[BBZ]; break;
+        default: rep.error("BC89 dir",ax);
+      }
+      psi[1] = fc->c[0]->dU[PSI];
+    }
+    // HACK
+    */
     for (int v=0;v<par.nvar;v++) fc->c[0]->dU[v] += utmp[v];
+    /*
+    // HACK
+    if (par.eqntype == EQGLM) {
+      switch (static_cast<int>(ax)) {
+        case 0: fc->c[0]->dU[BBX] = psi[0]; break;
+        case 1: fc->c[0]->dU[BBY] = psi[0]; break;
+        case 2: fc->c[0]->dU[BBZ] = psi[0]; break;
+        default: rep.error("BC89 dir",ax);
+      }
+      fc->c[0]->dU[PSI] = psi[1];
+    }
+    // HACK
+    */
 
 #ifdef TEST_BC89FLUX
     //spatial_solver->PtoU(fc->c[0]->P,utmp,par.gamma);

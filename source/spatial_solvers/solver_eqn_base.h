@@ -84,7 +84,9 @@ class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
   /// returns max_speed for this step.
   ///
   virtual double get_max_speed() {return 0.0;}
+#endif
 
+#ifdef DERIGS
   /// calculate Powell and GLM source terms for multi-D MHD
   virtual int MHDsource(
       class GridBaseClass *,  ///< pointer to grid.

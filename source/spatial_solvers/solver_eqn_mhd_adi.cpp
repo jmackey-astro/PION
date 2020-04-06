@@ -190,7 +190,6 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
       Gradl = Gradl + GradZone(grid,Cl,i,1,PG);
       Gradr = Gradr + GradZone(grid,Cr,i,1,PG);
     }
-
     //if (Gradl>0.0) cout << "Left gradient: " << Gradl << " Right gradient: " << Gradr << "\n";
 #ifdef TESTING
     if (!isfinite(DivVl) ||
@@ -205,12 +204,13 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
       //
       // HLL solver -- Miyoshi and Kusano (2005) (m05)
       //
-       ///if (DivVl<0 && Gradl>5){rep.printVec("~~~~ HLL left switch!!!! ~~~~",Cl->pos,FV_gndim);}
-       ///if (DivVr<0 && Gradr>5){rep.printVec("~~~~ HLL right switch!!!! ~~~~",Cr->pos,FV_gndim);}
+      //if (DivVl<0 && Gradl>5){rep.printVec("~~~~ HLL left switch!!!! ~~~~",Cl->pos,FV_gndim);}
+      //if (DivVr<0 && Gradr>5){rep.printVec("~~~~ HLL right switch!!!! ~~~~",Cr->pos,FV_gndim);}
+      //cout << "HLL!!!!\n";
       err += MHD_HLL_flux_solver(Pl, Pr, eq_gamma, flux);
     }
     else {
-      ///cout << "HLLD!!!!\n";
+      //cout << "HLLD!!!!\n";
       err += MHD_HLLD_flux_solver(Pl, Pr, eq_gamma, flux);
     }
   }
@@ -415,6 +415,7 @@ void FV_solver_mhd_ideal_adi::Powell_source_terms(
   enum direction pos,neg;
   pos = static_cast<direction>(static_cast<int>(d)*2+1);
   neg = static_cast<direction>(static_cast<int>(d)*2);
+  /*
   cell *p=c, *n=c;
   double dx=0.0;
   if (grid->NextPt(c,pos)) {
@@ -426,7 +427,11 @@ void FV_solver_mhd_ideal_adi::Powell_source_terms(
     dx += grid->DX();
   }
   dBdx = (p->Ph[eqBX] - n->Ph[eqBX])/dx;
-  
+  */
+  //double Pn[eq_nvar], Pp[eq_nvar];
+  //SetEdgeState(c, pos, eq_nvar, slope, Pp, OA1, grid);
+  //SetEdgeState(c, neg, eq_nvar, slope, Pn, OA1, grid);
+  dBdx = slope[eqBX];
   S[eqRHO] += 0.0;
   S[eqMMX] += -dBdx * c->Ph[eqBX];
   S[eqMMY] += -dBdx * c->Ph[eqBY];
@@ -492,13 +497,13 @@ int FV_solver_mhd_ideal_adi::MHDsource(
                       class cell *Cr,   ///< pointer to cell of right state
                       pion_flt *Pl,     ///< left edge state
                       pion_flt *Pr,     ///< right edge state
-                      const axes d,            ///< Which axis we are looking along.
-                      enum direction pos, ///< positive direction normal to interface
-                      enum direction neg, ///< negative direction normal to interface
+                      const axes d,     ///< Which axis we are looking along.
+                      enum direction pos, ///< positive normal direction
+                      enum direction neg, ///< negative normal direction
                       const double dt    ///< timestep dt
                       )
 {
-
+/*
   double dx = 2*grid->DX();
   double dBdx = (Cr->Ph[eqBX] - Cl->Ph[eqBX])/dx;
   
@@ -507,8 +512,8 @@ int FV_solver_mhd_ideal_adi::MHDsource(
     Powell_l[v] = Powell_r[v]  = 0.0;
   }
   
-  double uB_l = Pl[eqBX]*Pl[eqVX] + Pl[eqBY]*Pl[eqVY] + Pl[eqBZ]*Pl[eqVX];
-  double uB_r = Pr[eqBX]*Pr[eqVX] + Pr[eqBY]*Pr[eqVY] + Pr[eqBZ]*Pr[eqVX];
+  double uB_l = Pl[eqBX]*Pl[eqVX] + Pl[eqBY]*Pl[eqVY] + Pl[eqBZ]*Pl[eqVZ];
+  double uB_r = Pr[eqBX]*Pr[eqVX] + Pr[eqBY]*Pr[eqVY] + Pr[eqBZ]*Pr[eqVZ];
   
   //Powell_l[eqRHO] = Powell_l[eqPSI] = 0;
   Powell_l[eqMMX] = Pl[eqBX];
@@ -528,13 +533,43 @@ int FV_solver_mhd_ideal_adi::MHDsource(
   Powell_r[eqBBY] = Pr[eqVY];
   Powell_r[eqBBZ] = Pr[eqVZ];
 
-  
-  
-  
-  for (int v=0;v<eq_nvar;v++) {
-    Cl->dU[v] += dt*dBdx*Powell_l[v];
-    Cr->dU[v] += dt*dBdx*Powell_r[v];
+   for (int v=0;v<eq_nvar;v++) {
+    Cl->dU[v] += dt*dBdx*(Powell_l[v]);
+    Cr->dU[v] -= dt*dBdx*(Powell_r[v]);
   }
+*/
+
+  double dx = 2.0*grid->DX();
+  double uB_l = Cl->Ph[eqBX]*Cl->Ph[eqVX] + Cl->Ph[eqBY]*Cl->Ph[eqVY] + Cl->Ph[eqBZ]*Cl->Ph[eqVZ];
+  double uB_r = Cr->Ph[eqBX]*Cr->Ph[eqVX] + Cr->Ph[eqBY]*Cr->Ph[eqVY] + Cr->Ph[eqBZ]*Cr->Ph[eqVZ];
+  pion_flt Powell_l[eq_nvar], Powell_r[eq_nvar];
+  for (int v=0;v<eq_nvar;v++){
+    Powell_l[v] = Powell_r[v]  = 0.0;
+  }
+  Powell_l[eqMMX] = Cl->Ph[eqBX];
+  Powell_l[eqMMY] = Cl->Ph[eqBY];
+  Powell_l[eqMMZ] = Cl->Ph[eqBZ];
+  Powell_l[eqERG] = uB_l;
+  Powell_l[eqBBX] = Cl->Ph[eqVX];
+  Powell_l[eqBBY] = Cl->Ph[eqVY];
+  Powell_l[eqBBZ] = Cl->Ph[eqVZ];
+  
+  //Powell_r[eqRHO] = Powell_r[eqPSI] = 0;
+  Powell_r[eqMMX] = Cr->Ph[eqBX];
+  Powell_r[eqMMY] = Cr->Ph[eqBY];
+  Powell_r[eqMMZ] = Cr->Ph[eqBZ];
+  Powell_r[eqERG] = uB_r;
+  Powell_r[eqBBX] = Cr->Ph[eqVX];
+  Powell_r[eqBBY] = Cr->Ph[eqVY];
+  Powell_r[eqBBZ] = Cr->Ph[eqVZ];
+
+   for (int v=0;v<eq_nvar;v++) {
+    Cl->dU[v] -= dt*Pl[eqBX]*(Powell_l[v])/dx;
+    Cr->dU[v] += dt*Pr[eqBX]*(Powell_r[v])/dx;
+    //Cl->dU[v] -= dt*dBdx*(Powell_l[v]);
+    //Cr->dU[v] += dt*dBdx*(Powell_r[v]);
+  }
+
   return 0;
 }
 #endif
@@ -819,12 +854,12 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
   // set Psi to zero in left and right states, so that Riemann solvers
   // don't get confused (because otherwise it will contribute to the
   // total energy.
+  psistar = 0.5*(left[eqSI]+right[eqSI]);
+  bxstar  = 0.5*(left[eqBX]+right[eqBX]);
   double psi_L = left[eqSI], psi_R = right[eqSI];
   double bxl = left[eqBX], bxr = right[eqBX];
   left[eqSI]=0.0;
   right[eqSI]=0.0;
-  psistar = 0.5*(left[eqSI]+right[eqSI]);
-  bxstar  = 0.5*(left[eqBX]+right[eqBX]);
 #else
   psistar = 0.5*(left[eqSI]+right[eqSI]
 			-(right[eqBX]-left[eqBX]));
@@ -894,16 +929,15 @@ int FV_solver_mhd_mixedGLM_adi::MHDsource(
 {
   
   double dx = 2.0*grid->DX();
-  
-  //FV_solver_mhd_ideal_adi::MHDsource(grid,Cl,Cr,Pl,Pr,d,pos,neg,dt);
+  FV_solver_mhd_ideal_adi::MHDsource(grid,Cl,Cr,Pl,Pr,d,pos,neg,dt);
+  //return 0;
+
+/*
   double psi_brac = Pr[eqSI] - Pl[eqSI];
-  
   pion_flt psi_l[eq_nvar], psi_r[eq_nvar];
   for (int v=0;v<eq_nvar;v++){
     psi_l[v] = psi_r[v]  = 0.0;
   }
-  
-  
   //psi_l[eqRHO] = psi_l[eqMMX] = psi_l[eqMMY] = psi_l[eqMMZ] = 0;
   psi_l[eqERG] = Pl[eqVX] * Pl[eqSI];
   //psi_l[eqBBX] = psi_l[eqBBY] = psi_l[eqBBZ] = 0;
@@ -916,11 +950,33 @@ int FV_solver_mhd_mixedGLM_adi::MHDsource(
   
   //cout <<"dt="<<dt<<", dx="<<dx<<"\n";
   for (int v=0;v<eq_nvar;v++) {
-    Cl->dU[v] += dt*psi_brac*psi_r[v]/dx;
-    Cr->dU[v] += dt*psi_brac*psi_l[v]/dx;
+    Cl->dU[v] += dt*psi_brac*psi_l[v]/dx;
+    Cr->dU[v] += dt*psi_brac*psi_r[v]/dx;
   }
+*/
+
+  double psi_brac = (Pr[eqSI] + Pl[eqSI])/dx;
+
+  pion_flt psi_l[eq_nvar], psi_r[eq_nvar];
+  for (int v=0;v<eq_nvar;v++){
+    psi_l[v] = psi_r[v]  = 0.0;
+  }
+  //psi_l[eqRHO] = psi_l[eqMMX] = psi_l[eqMMY] = psi_l[eqMMZ] = 0;
+  psi_l[eqERG] = Cl->Ph[eqVX] * Cl->Ph[eqSI];
+  //psi_l[eqBBX] = psi_l[eqBBY] = psi_l[eqBBZ] = 0;
+  psi_l[eqPSI] = Cl->Ph[eqVX];
   
+  //psi_r[eqRHO] = psi_r[eqMMX] = psi_r[eqMMY] = psi_r[eqMMZ] = 0;
+  psi_r[eqERG] = Cr->Ph[eqVX] * Cr->Ph[eqSI];
+  //psi_r[eqBBX] = psi_r[eqBBY] = psi_r[eqBBZ] = 0;
+  psi_r[eqPSI] = Cr->Ph[eqVX];
   
+  //cout <<"dt="<<dt<<", dx="<<dx<<"\n";
+  for (int v=0;v<eq_nvar;v++) {
+    Cl->dU[v] += dt*psi_brac*psi_l[v];
+    Cr->dU[v] -= dt*psi_brac*psi_r[v];
+  }
+
   return 0;
   
 }

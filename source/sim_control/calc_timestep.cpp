@@ -130,10 +130,18 @@ int calc_timestep::calculate_timestep(
   //for (int d=0;d<par.ndim;d++)
   //  cr += 1.0/(par.Range[d]*par.Range[d]);
   //cr = M_PI*sqrt(cr);
-  if (par.grid_nlevels==1) cr = 0.25/par.dx;
-  else cr = 0.25/par.levels[par.grid_nlevels-1].dx;
-  if (l==0)
-    spatial_solver->Set_GLM_Speeds(td,par.levels[par.grid_nlevels-1].dx, cr);
+  if (par.grid_nlevels==1) {
+    cr = 0.25/par.dx;
+    spatial_solver->Set_GLM_Speeds(td,par.dx, cr);
+    cout <<"solver: cr="<<cr<<", ch="<<par.CFL*par.dx/td<<", dt="<<td<<", exp = "<<par.CFL*par.dx*cr<<"\n";
+  }
+  else {
+    cr = 0.25/par.levels[par.grid_nlevels-1].dx;
+    if (l==0)
+      spatial_solver->Set_GLM_Speeds(td,par.levels[par.grid_nlevels-1].dx, cr);
+    //cout <<"solver: cr="<<cr<<", td="<<td<<", dx="<<par.levels[par.grid_nlevels-1].dx<<"\n";
+  }
+//#endif
   //
   // Check that the timestep doesn't increase too much between steps, and that it 
   // won't bring us past the next output time or the end of the simulation.

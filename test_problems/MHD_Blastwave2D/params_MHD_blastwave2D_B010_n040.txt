@@ -85,8 +85,8 @@ GAMMA 1.6666666666666666666666
 CFL 0.3
 
 # Artificial Viscosity 0=None, 1=Falle's linear viscosity.
-ArtificialViscosity 1
-EtaViscosity 0.10
+ArtificialViscosity 0
+EtaViscosity 0.0
 
 # Code Units
 # Reference systems of units are MKS (i.e. SI), CGS, others?
