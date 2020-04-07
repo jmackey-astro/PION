@@ -362,7 +362,7 @@ int dataio_silo::OutputData(
             gp->Xmin(static_cast<axes>(i))-SimPM.Nbc*gp->DX();
     for (int i=0; i<ndim;i++)
       extents[ndim+i] =
-            gp->Xmax(static_cast<axes>(i)+SimPM.Nbc*gp->DX();
+            gp->Xmax(static_cast<axes>(i))+SimPM.Nbc*gp->DX();
 #else
     zonecounts[0] = gp->Ncell();
     for (int i=0; i<ndim;i++)

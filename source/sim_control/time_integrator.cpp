@@ -929,8 +929,8 @@ int time_integrator::grid_update_state_vector(
 #endif // TESTING
     
     if (MP) {
-      double T=0.0;
-      if ((T=MP->Temperature(c->Ph,SimPM.gamma)) > SimPM.EP.MaxTemperature) {
+      double T=MP->Temperature(c->Ph,SimPM.gamma);
+      if (T > SimPM.EP.MaxTemperature) {
         cout <<"warning, temperature too large: "<<T<<"\n";
         MP->Set_Temp(c->Ph,SimPM.EP.MaxTemperature,SimPM.gamma);
       }
@@ -957,7 +957,7 @@ int time_integrator::grid_update_state_vector(
   } while ( (c =grid->NextPt_All(c)) !=0);
 
 #ifdef TESTING
-  cout <<"\tcalc_dynamics_dU done. error="<<err<<"\n";
+  cout <<"\tgrid_update_state_vector done. error="<<err<<"\n";
 #endif // TESTING
   return err; 
 }

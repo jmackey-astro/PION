@@ -236,7 +236,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   // ----------------------------------------------------------------
   // if spatial order of accuracy is 1, then we have piecewise
   // constant data, so there is no interpolation to be done.
-  if (par.spOOA == 0) {
+  if (par.spOOA == 1) {
     for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
       f = (*f_iter);
       c = f->npt;
@@ -250,7 +250,9 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
-  else if (par.spOOA == OA2 || par.spOOA == OA1) {
+  else if (par.spOOA == OA2
+           // || par.spOOA == OA1
+           ) {
     //
     // Dimensions is sufficiently different that we have an if/else
     // loop for each dimension, and then do linear/bilinear/trilinear
@@ -647,8 +649,8 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   double f3U[par.nvar], f4U[par.nvar], cU[par.nvar];
   double dxo2 = 0.5*fine->DX(); // dx
   double f_vol[4];
+
   // HACK
-  
   double f_psi[4];
   if (par.eqntype == EQGLM) {
     f_psi[0] = f1->P[SI];

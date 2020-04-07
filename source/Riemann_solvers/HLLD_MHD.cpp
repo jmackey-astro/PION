@@ -134,11 +134,11 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
   // 
   double BX = 0.5*(Pl[eqBX]+Pr[eqBX]); // Bx is constant (Should be mean of left and right state)
 
-  PtoU(Pl,HD_UL,eq_gamma);
-  PtoU(Pr,HD_UR,eq_gamma);
+  eqns_mhd_ideal::PtoU(Pl,HD_UL,eq_gamma);
+  eqns_mhd_ideal::PtoU(Pr,HD_UR,eq_gamma);
 
-  PUtoFlux(Pl,HD_UL,HD_FL);
-  PUtoFlux(Pr,HD_UR,HD_FR);
+  eqns_mhd_ideal::PUtoFlux(Pl,HD_UL,HD_FL);
+  eqns_mhd_ideal::PUtoFlux(Pr,HD_UR,HD_FR);
 
   //
   // compute wave speeds (m05 eq 3)
@@ -174,9 +174,9 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
 
 
   double temp_l1 = HD_lambda[2] - Pl[eqVX];
-  double temp_l2 = Pl[eqRO]     * sl_vl * sl_sm - pow(BX,2);
+  double temp_l2 = Pl[eqRO]     * sl_vl * sl_sm - BX*BX;
   double temp_r1 = HD_lambda[2] - Pr[eqVX];
-  double temp_r2 = Pr[eqRO]     * sr_vr * sr_sm - pow(BX,2);
+  double temp_r2 = Pr[eqRO]     * sr_vr * sr_sm - BX*BX;
 
   // 0/0 case, "no shock across Sa (m05 pg. 326)"
   double vys_l = Pl[eqVY];
@@ -185,12 +185,12 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
   double vzs_r = Pr[eqVZ];
 
   if(isfinite(temp_l1/temp_l2)){  
-  	vys_l = Pl[eqVY] - BX * Pl[eqBY] * temp_l1/temp_l2; // Vy* (m05 eq. 44)
-  	vzs_l = Pl[eqVZ] - BX * Pl[eqBZ] * temp_l1/temp_l2; // Vz* (m05 eq. 46)
+    vys_l = Pl[eqVY] - BX * Pl[eqBY] * temp_l1/temp_l2; // Vy* (m05 eq. 44)
+    vzs_l = Pl[eqVZ] - BX * Pl[eqBZ] * temp_l1/temp_l2; // Vz* (m05 eq. 46)
   }
 
   if(isfinite(temp_r1/temp_r2)){  
- 	vys_r = Pr[eqVY] - BX * Pr[eqBY] * temp_r1/temp_r2;
+    vys_r = Pr[eqVY] - BX * Pr[eqBY] * temp_r1/temp_r2;
     vzs_r = Pr[eqVZ] - BX * Pr[eqBZ] * temp_r1/temp_r2;
   }  
  
@@ -202,8 +202,8 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
 
   HD_ULs[eqBBX] = HD_URs[eqBBX] = BX;
 
-  temp_l1 = Pl[eqRO] * pow(sl_vl,2) - pow(BX,2);
-  temp_r1 = Pr[eqRO] * pow(sr_vr,2) - pow(BX,2);
+  temp_l1 = Pl[eqRO] * sl_vl*sl_vl - BX*BX;
+  temp_r1 = Pr[eqRO] * sr_vr*sr_vr - BX*BX;
 
   // 0/0 case, "no shock across Sa (m05 pg. 326)"
   HD_ULs[eqBBY] = 0.0;
@@ -212,13 +212,13 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
   HD_URs[eqBBZ] = 0.0;
 
   if(isfinite(temp_l1/temp_l2)){  
-  	HD_ULs[eqBBY] = Pl[eqBY] * temp_l1/temp_l2; // By* (m05 eq. 45)
-  	HD_ULs[eqBBZ] = Pl[eqBZ] * temp_l1/temp_l2; // Bz* (m05 eq. 47)
+    HD_ULs[eqBBY] = Pl[eqBY] * temp_l1/temp_l2; // By* (m05 eq. 45)
+    HD_ULs[eqBBZ] = Pl[eqBZ] * temp_l1/temp_l2; // Bz* (m05 eq. 47)
   }
 
   if(isfinite(temp_r1/temp_r2)){  
- 	HD_URs[eqBBY] = Pr[eqBY] * temp_r1/temp_r2;
-  	HD_URs[eqBBZ] = Pr[eqBZ] * temp_r1/temp_r2;
+    HD_URs[eqBBY] = Pr[eqBY] * temp_r1/temp_r2;
+    HD_URs[eqBBZ] = Pr[eqBZ] * temp_r1/temp_r2;
   }
 
 
@@ -312,7 +312,7 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
       out_flux[v] = HD_FR[v] + HD_lambda[4] * (HD_URs[v] - HD_UR[v]);
   }
   else{ 
-  	for (int v=0; v<eq_nvar; v++) out_flux[v] = HD_FR[v];
+    for (int v=0; v<eq_nvar; v++) out_flux[v] = HD_FR[v];
   }
   
   //rep.printVec("out_Flux",out_flux,eq_nvar);
@@ -370,10 +370,10 @@ int HLLD_MHD::MHD_HLL_flux_solver(
   //
   // compute conserved U and Flux (m05 eq 3)
   //
-  PtoU(Pl,HD_UL,eq_gamma);
-  PtoU(Pr,HD_UR,eq_gamma);
-  PUtoFlux(Pl,HD_UL,HD_FL);
-  PUtoFlux(Pr,HD_UR,HD_FR);
+  eqns_mhd_ideal::PtoU(Pl,HD_UL,eq_gamma);
+  eqns_mhd_ideal::PtoU(Pr,HD_UR,eq_gamma);
+  eqns_mhd_ideal::PUtoFlux(Pl,HD_UL,HD_FL);
+  eqns_mhd_ideal::PUtoFlux(Pr,HD_UR,HD_FR);
   
   //
   // compute wave speeds (m05 eq 3)

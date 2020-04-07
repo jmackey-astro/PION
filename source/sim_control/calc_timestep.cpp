@@ -133,13 +133,17 @@ int calc_timestep::calculate_timestep(
   if (par.grid_nlevels==1) {
     cr = 0.25/par.dx;
     spatial_solver->Set_GLM_Speeds(td,par.dx, cr);
-    cout <<"solver: cr="<<cr<<", ch="<<par.CFL*par.dx/td<<", dt="<<td<<", exp = "<<par.CFL*par.dx*cr<<"\n";
+    //cout <<"solver: cr="<<cr<<", ch="<<par.CFL*par.dx/td<<", dt=";
+    //cout <<td<<", exp = "<<par.CFL*par.dx*cr<<"\n";
   }
   else {
     cr = 0.25/par.levels[par.grid_nlevels-1].dx;
-    if (l==0)
+    if (l==0) {
       spatial_solver->Set_GLM_Speeds(td,par.levels[par.grid_nlevels-1].dx, cr);
-    //cout <<"solver: cr="<<cr<<", td="<<td<<", dx="<<par.levels[par.grid_nlevels-1].dx<<"\n";
+      //cout <<"solver: cr="<<cr<<", td="<<td<<", dx=";
+      //cout <<par.levels[par.grid_nlevels-1].dx;
+      //cout <<", exp = "<<par.CFL*par.levels[par.grid_nlevels-1].dx*cr<<"\n";
+    }
   }
 //#endif
   //

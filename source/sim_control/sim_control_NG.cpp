@@ -404,7 +404,7 @@ int sim_control_NG::Time_Int(
 #endif
 #endif
 
-/*
+
 // HACK
   // ----------------------------------------------------------------
   for (int l=0; l<SimPM.grid_nlevels; l++) {
@@ -428,7 +428,7 @@ int sim_control_NG::Time_Int(
   rep.errorTest("NG_INIT: error from bounday update",0,err);
   // ----------------------------------------------------------------
 // HACK
-*/
+
 
     err += check_energy_cons(grid);
 

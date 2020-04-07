@@ -384,6 +384,7 @@ constants.o: constants.cpp ${GLOBAL}
 sim_params.o: sim_params.cpp ${GLOBAL}
 
 main.o:         main.cpp sim_control.h ${GLOBAL}
+main_NG.o:         main_NG.cpp sim_control_NG.h sim_control.h ${GLOBAL}
 
 icgen.o: icgen.cpp icgen.h get_sim_info.h icgen_base.h grid_base_class.h \
   uniform_grid.h ${GLOBAL} microphysics_base.h dataio_base.h \
