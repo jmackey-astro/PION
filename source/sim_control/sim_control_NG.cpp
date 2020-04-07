@@ -404,32 +404,6 @@ int sim_control_NG::Time_Int(
 #endif
 #endif
 
-
-// HACK
-  // ----------------------------------------------------------------
-  for (int l=0; l<SimPM.grid_nlevels; l++) {
-#ifdef TESTING
-    cout <<"updating external boundaries for level "<<l<<"\n";
-#endif
-    err += TimeUpdateExternalBCs(SimPM,l,grid[l], spatial_solver,
-                            SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-  }
-  rep.errorTest("NG_INIT: error from bounday update",0,err);
-  // ----------------------------------------------------------------
-
-  // ----------------------------------------------------------------
-  for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-#ifdef TESTING
-    cout <<"updating internal boundaries for level "<<l<<"\n";
-#endif
-    err += TimeUpdateInternalBCs(SimPM,l,grid[l], spatial_solver,
-                            SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-  }
-  rep.errorTest("NG_INIT: error from bounday update",0,err);
-  // ----------------------------------------------------------------
-// HACK
-
-
     err += check_energy_cons(grid);
 
     err+= output_data(grid);

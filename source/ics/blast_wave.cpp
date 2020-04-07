@@ -68,7 +68,7 @@ int IC_blastwave::setup_data(
   seek = "BW_nzones";
   str = rp->find_parameter(seek);
   if (str=="") IC_blastwave::bw_nzones=4;
-  IC_blastwave::bw_nzones = atoi(str.c_str());
+  IC_blastwave::bw_nzones = atof(str.c_str());
 
 //  seek = "BWradius";
 //  str = rp->find_parameter(seek);
