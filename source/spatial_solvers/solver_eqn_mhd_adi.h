@@ -107,17 +107,6 @@ class FV_solver_mhd_ideal_adi
       );
 
   ///
-  /// Powell source terms including divB
-  /// 
-  virtual void Powell_source_terms(
-        class GridBaseClass *, ///< pointer to grid
-        cell *,           ///< Current cell.
-        const axes,       ///< Which axis we are looking along.
-        const pion_flt *, ///< slope vector for cell c.
-        pion_flt *        ///< return source term 
-        );
-
-  ///
   /// Geometric source terms (does nothing for Cartesian geometry).
   ///
   virtual void geometric_source(
@@ -399,17 +388,6 @@ class cyl_FV_solver_mhd_ideal_adi
       );
 
   ~cyl_FV_solver_mhd_ideal_adi();
-
-  ///
-  /// Powell source terms including divB
-  /// 
-  virtual void Powell_source_terms(
-        class GridBaseClass *, ///< pointer to grid
-        cell *,           ///< Current cell.
-        const axes,       ///< Which axis we are looking along.
-        const pion_flt *, ///< slope vector for cell c.
-        pion_flt *        ///< return source term 
-        );
 
   ///
   /// Geometric source terms.

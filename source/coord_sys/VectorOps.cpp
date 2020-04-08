@@ -632,25 +632,18 @@ int VectorOps_Cart::DivStateVectorComponent(
         pion_flt *dudt      ///< Vector to assign divergence component to.
         )
 {
-  //enum direction dp;
-  //switch (d) {
-  // case XX: dp=XP; break;
-  // case YY: dp=YP; break;
-  // case ZZ: dp=ZP; break;
-  // default: rep.error("Bad direction in DivStateVectorComponent",d);
-  //}
-  
-  /** \section Sign
-   * Note that this function returns the negative of the i-th component of 
-   * the divergence.  This is b/c it is used in the finite volume time update
-   * where what is needed is the negative of div(F).
-   * */
+  /// Note that this function returns the negative of the i-th
+  /// component of the divergence.  This is b/c it is used in the
+  /// finite volume time update where what is needed is the negative
+  /// of div(F).
+
   double dx=grid->DX();
   for (int v=0;v<nv;v++) {
     dudt[v] = (fn[v]-fp[v])/dx;
   }
   return(0);
-} // DivStateVectorComponent
+}
+
 
 
 // ##################################################################

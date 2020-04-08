@@ -60,32 +60,15 @@ using namespace std;
 #include "dataIO/dataio_fits.h"
 #include "image_io.h"
 
-#include "MCMD_control.h"
-#include "setup_fixed_grid_MPI.h"
+#include "decomposition/MCMD_control.h"
+#include "grid/setup_fixed_grid_MPI.h"
+#include "grid/setup_grid_NG_MPI.h"
 
 #include "microphysics/microphysics_base.h"
-#ifndef EXCLUDE_MPV1
-#include "microphysics/microphysics.h"
-#endif 
-#ifndef EXCLUDE_HD_MODULE
-#include "microphysics/microphysics_lowZ.h"
-#endif 
-#include "microphysics/mp_only_cooling.h"
-#ifndef EXCLUDE_MPV2
-#ifdef MP_V2_AIFA
-#include "microphysics/mp_v2_aifa.h"
-#endif
-#endif 
-#ifndef EXCLUDE_MPV3
-#include "microphysics/mp_explicit_H.h"
-#endif
-#ifndef EXCLUDE_MPV4
-#include "microphysics/mp_implicit_H.h"
-#endif 
-
-#include "microphysics/mpv5_molecular.h"
-#include "microphysics/mpv6_PureH.h"
-#include "microphysics/mpv7_TwoTempIso.h"
+#include "microphysics/MPv3.h"
+#include "microphysics/MPv5.h"
+#include "microphysics/MPv6.h"
+#include "microphysics/MPv7.h"
 
 
 #include "emission_absorption.h"
@@ -115,22 +98,23 @@ int main(int argc, char **argv)
   //
   // Also initialise the MCMD class with myrank and nproc.
   //
-  class MCMDcontrol MCMD;
   int myrank=-1, nproc=-1;
   COMM->get_rank_nproc(&myrank,&nproc);
-  MCMD.set_myrank(myrank);
-  MCMD.set_nproc(nproc);
+  class SimParams SimPM;
+  SimPM.levels.clear();
+  SimPM.levels.resize(1);
+  SimPM.levels[0].MCMD.set_myrank(myrank);
+  SimPM.levels[0].MCMD.set_nproc(nproc);
 
   //*******************************************************************
   //*******************************************************************
   //
   // Get input files and an output file.
   //
-  if (argc<6) {
+  if (argc<7) {
     cout << "Use as follows:\n";
     cout << "executable-filename: <executable-filename> <input-path> <input-silo-file-base>\n";
     cout << "\t\t <output-file> <op-file-type>";
-    //cout << " <multi-opfiles>";
     cout << " <skip>\n";
     cout << "\t\t <ANY-EXTRA-STUFF> \n";
     cout <<"******************************************\n";
@@ -138,7 +122,7 @@ int main(int argc, char **argv)
     cout <<"input file:   base filename of sequence of filesn.\n";
     cout <<"output file:  filename for output file(s).\n";
     cout <<"op-file-type: integer/string [0,text,TEXT], [1,fits,FITS], [3,vtk,VTK]\n";
-    //cout <<"muti-opfiles: integer. 1=one output file per step. (MUST CHOOSE 1))\n";
+    cout <<"level:        level in NG hierarchy of file(s) for analysis.\n";
     cout <<"skip:         will skip this number of input files each loop. ";
     cout <<"(0 means it will calculate every file)\n";
     rep.error("Bad number of args",argc);
@@ -199,23 +183,13 @@ int main(int argc, char **argv)
   //
   // If we write a single output file for all steps or not.
   //
-  int multi_opfiles = 1.0; //atoi(argv[5]);
-  //switch (multi_opfiles) {
-  //case 0:
-  //  cerr <<"\t\tOutputting all timesteps in a single file.\n";
-  //  rep.error("Can't do this!!!",multi_opfiles);
-  //  break;
-  //case 1:
-  //  cout <<"\t\tOutputting timesteps in different files.\n";
-  //  break;
-  //default:
-  //  rep.error("Bad multi-files value",multi_opfiles);
-  //}
+  int multi_opfiles = 1.0;
+  int lev = atoi(argv[5]);
 
   //
   // how sparsely to sample the data files.
   //
-  size_t skip = static_cast<size_t>(atoi(argv[5]));
+  size_t skip = static_cast<size_t>(atoi(argv[6]));
 
 
   //*******************************************************************
@@ -227,7 +201,7 @@ int main(int argc, char **argv)
   //
   // set up dataio_utility class
   //
-  class dataio_silo_utility dataio ("DOUBLE", &MCMD);
+  class dataio_silo_utility dataio (SimPM,"DOUBLE", &(SimPM.levels[0].MCMD));
 
   //
   // Get list of files to read:
@@ -268,31 +242,45 @@ int main(int argc, char **argv)
   ostringstream temp; temp <<input_path<<"/"<<*ff;
   string first_file = temp.str();
   temp.str("");
-  err = dataio.ReadHeader(first_file);
+  err = dataio.ReadHeader(first_file,SimPM);
   if (err) rep.error("Didn't read header",err);
 
-  //
-  // First decompose the domain, so I know the dimensions of the local
-  // grid to set up.  If nproc==1, then this sets the local domain to
-  // be the full domain.
-  //
-  MCMD.decomposeDomain();
-  if (err) rep.error("main: failed to decompose domain!",err);
+  if (lev>=SimPM.grid_nlevels) rep.error("Level doesn't exist",lev);
+  class setup_grid_NG_MPI *SimSetup =0;
+  SimSetup = new setup_grid_NG_MPI();
+  SimSetup->setup_NG_grid_levels(SimPM);
 
+  // assign global grid dimensions to level dimensions.
+  SimPM.grid_nlevels = 1;
+  SimPM.levels[0].parent=0;
+  SimPM.levels[0].child=0;
+  SimPM.levels[0].Ncell = SimPM.Ncell;
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].NG[v]   = SimPM.levels[lev].NG[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Range[v]= SimPM.levels[lev].Range[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmin[v] = SimPM.levels[lev].Xmin[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmax[v] = SimPM.levels[lev].Xmax[v];
+  SimPM.levels[0].dx = SimPM.levels[0].Range[XX]/SimPM.levels[0].NG[XX];
+  SimPM.levels[0].simtime = SimPM.simtime;
+  SimPM.levels[0].dt = 0.0;
+  SimPM.levels[0].multiplier = 1;
+  for (int v=0;v<MAX_DIM;v++) SimPM.Range[v]= SimPM.levels[lev].Range[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.Xmin[v] = SimPM.levels[lev].Xmin[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.Xmax[v] = SimPM.levels[lev].Xmax[v];
+  SimPM.dx = SimPM.Range[XX]/SimPM.NG[XX];
+  SimPM.levels[0].MCMD.decomposeDomain(SimPM, SimPM.levels[0]);
 
-  //
-  // get a setup_grid class, and use it to set up the grid.
-  //
-  class setup_fixed_grid *SimSetup =0;
-  SimSetup = new setup_fixed_grid_pllel();
-  class GridBaseClass *grid = 0;
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
-  SimSetup->setup_grid(&grid,&MCMD);
+  vector<class GridBaseClass *> g;
+  g.resize(1);
+  SimSetup->setup_grid(g,SimPM);
+  class GridBaseClass *grid = g[0];
   if (!grid) rep.error("Grid setup failed",grid);
-  cout <<"\t\tg="<<grid<<"\tDX = "<<grid->DX()<<"\n";
-  double delr = grid->DX();
+  SimPM.dx = grid->DX();
+  double delr= grid->DX();
+  // ----------------------------------------------------------------
+  // ----------------------------------------------------------------
 
   //
   // This code needs 2d data to project...
@@ -304,7 +292,7 @@ int main(int argc, char **argv)
   //
   // Now setup microphysics and raytracing classes
   //
-  err += SimSetup->setup_microphysics();
+  err += SimSetup->setup_microphysics(SimPM);
   //err += setup_raytracing();
   if (err) rep.error("Setup of microphysics and raytracing",err);
 
@@ -340,9 +328,9 @@ int main(int argc, char **argv)
   // 
   double **img_array=0;
   int n_images=NIMG;
-  size_t num_pix = SimPM.Ncell; // Don't do reflected image yet.
-  int N_R = SimPM.NG[Rcyl];
-  int npix[NIMG] = {SimPM.NG[Zcyl],N_R};
+  size_t num_pix = SimPM.levels[0].Ncell; // Don't do reflected image yet.
+  int N_R = SimPM.levels[0].NG[Rcyl];
+  int npix[NIMG] = {SimPM.levels[0].NG[Zcyl],N_R};
   img_array = mem.myalloc(img_array,n_images);
   for (int v=0;v<n_images;v++)
     img_array[v] = mem.myalloc(img_array[v],
@@ -431,31 +419,36 @@ int main(int argc, char **argv)
     temp <<input_path<<"/"<<*ff;
     string infile = temp.str();
     temp.str("");
-    for (size_t q=0;q<=skip;q++) ff++;
-
-    //
-    // skip first file in list.
-    //
-    //if (ifile==0) {
-    //  continue;
-    //}
+    for (size_t q=0;q<=skip+1;q++) ff++;
 
     //
     // Read header to get timestep info.
     //
-    err = dataio.ReadHeader(infile);
+    err = dataio.ReadHeader(infile,SimPM);
     if (err) rep.error("Didn't read header",err);
+    SimPM.grid_nlevels = 1;
+    SimPM.levels[0].parent=0;
+    SimPM.levels[0].child=0;
+    SimPM.levels[0].Ncell = SimPM.Ncell;
+    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].NG[v]   = SimPM.levels[lev].NG[v];
+    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Range[v]= SimPM.levels[lev].Range[v];
+    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmin[v] = SimPM.levels[lev].Xmin[v];
+    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmax[v] = SimPM.levels[lev].Xmax[v];
+    SimPM.levels[0].dx = SimPM.levels[0].Range[XX]/SimPM.levels[0].NG[XX];
+    SimPM.levels[0].simtime = SimPM.simtime;
+    SimPM.levels[0].dt = 0.0;
+    SimPM.levels[0].multiplier = 1;
+    for (int v=0;v<MAX_DIM;v++) SimPM.Range[v]= SimPM.levels[lev].Range[v];
+    for (int v=0;v<MAX_DIM;v++) SimPM.Xmin[v] = SimPM.levels[lev].Xmin[v];
+    for (int v=0;v<MAX_DIM;v++) SimPM.Xmax[v] = SimPM.levels[lev].Xmax[v];
+    SimPM.dx = SimPM.Range[XX]/SimPM.NG[XX];
+    SimPM.levels[0].MCMD.decomposeDomain(SimPM, SimPM.levels[0]);
 
     //
     // Read data (this reader can read serial or parallel data.
     //
-    err = dataio.parallel_read_any_data(infile, ///< file to read from
-					grid    ///< pointer to data.
-					);
+    err = dataio.ReadData(infile, g, SimPM);
     rep.errorTest("(main) Failed to read data",0,err);
-
-
-
 
     //cout <<"--------------- Finished Reading Data  ----------------\n";
     //cout <<"-------------------------------------------------------\n";

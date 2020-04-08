@@ -42,40 +42,77 @@ OPT += -DSILO
 #MAKE_UNAME=aibn129
 #MAKE_UNAME=epona
 #MAKE_UNAME=stokes
+MAKE_UNAME=debian10
 
 # All machines and options need readline and maths
 #LDFLAGS = -lreadline
 # display all warnings
 CXXFLAGS = -O3 
-CXXFLAGS += -g -Wall
+#CXXFLAGS += -g -Wall
+
+PION_OPTIMISE=HIGH
 
 ######################################################################
-# Options for a "standard" workstation.
-# Need libsilo-dev libcfitsio-dev libsundials-serial-dev installed
-# on debian/ubuntu systems.
+# Options for a debian 9 (stretch) workstation with system libs
 ######################################################################
-ifeq ($(MAKE_UNAME), standard)
+ifeq ($(MAKE_UNAME), debian9)
   ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS = -O3 -Wno-unused-function
-    #CXXFLAGS = -Wall -g -Wno-unused-function
+    CXXFLAGS += -O3 -Wno-unused-function
   else
-    CXXFLAGS = -Wall -g -Wno-unused-function
+    CXXFLAGS += -Wall -g -Wno-unused-function
   endif
-  CXX = mpicxx
+  
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+    CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+    CXX = mpicxx
+  endif
 
+  CXXFLAGS += -DCVODE2
   INC  = -I/usr/include
   INC += -I${SRCDIR}
   LDFLAGS += -lm
-  # All libraries are in this path:
   LDFLAGS += -L/usr/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
-  # Libraries for fits, silo
   LDFLAGS += -lcfitsio
   LDFLAGS += -lsiloh5
-  # libs for CVODES
+  LDFLAGS += -lgsl
   LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
 endif
-################### --- STANDARD WORKSTATION ---######################
+################### ---  DEBIAN 9 (STRETCH)  ---######################
+
+######################################################################
+# Options for a debian 10 (buster) workstation with system libs
+######################################################################
+ifeq ($(MAKE_UNAME), debian10)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS += -O3 -Wno-unused-function
+  else
+    CXXFLAGS += -Wall -g -Wno-unused-function
+  endif
+  
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+    CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+    CXX = mpicxx
+  endif
+
+  CXXFLAGS += -DCVODE3
+  INC  = -I/usr/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -lm
+  LDFLAGS += -L/usr/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl
+  LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
+endif
+################### ---  DEBIAN 10 (buster)  ---######################
+
+
 
 ######################################################################
 # Options for an Ubuntu 18 workstation with locally installed libraries.
@@ -240,6 +277,7 @@ OBJ_CHEM=integrator.o cvode_integrator.o cooling.o cooling_SD93_cie.o \
 OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
           outflow_boundaries.o inflow_boundaries.o \
           reflecting_boundaries.o oneway_out_boundaries.o \
+          axisymmetric_boundaries.o \
           fixed_boundaries.o jet_boundaries.o \
           jetreflect_boundaries.o double_Mach_ref_boundaries.o \
           stellar_wind_boundaries.o MCMD_boundaries.o \
@@ -257,7 +295,7 @@ OBJ_NG_BCS = assign_update_bcs_NG_MPI.o assign_update_bcs_NG.o \
 OBJ_EQNS =  eqns_base.o eqns_hydro_adiabatic.o eqns_mhd_adiabatic.o 
 
 OBJ_SOLVE = riemannMHD.o HLLD_MHD.o Roe_MHD_ConservedVar_solver.o \
-            riemann.o findroot.o Riemann_FVS_hydro.o \
+            riemann.o findroot.o Riemann_FVS_hydro.o HLL_hydro.o \
             Roe_Hydro_ConservedVar_solver.o Roe_Hydro_PrimitiveVar_solver.o \
             solver_eqn_base.o solver_eqn_hydro_adi.o solver_eqn_mhd_adi.o
 
@@ -440,6 +478,10 @@ reflecting_boundaries.o: reflecting_boundaries.cpp \
   reflecting_boundaries.h \
   boundaries.h ${GLOBAL} grid_base_class.h
 
+axisymmetric_boundaries.o: axisymmetric_boundaries.cpp \
+  axisymmetric_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
 fixed_boundaries.o: fixed_boundaries.cpp fixed_boundaries.h \
   boundaries.h ${GLOBAL} grid_base_class.h
 
@@ -501,6 +543,9 @@ riemann.o: riemann.cpp riemann.h findroot.h ${GLOBAL} \
  eqns_hydro_adiabatic.h  eqns_base.h
 
 findroot.o: findroot.cpp findroot.h ${GLOBAL}
+
+HLL_hydro.o: HLL_hydro.cpp HLL_hydro.h \
+ ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
 
 Riemann_FVS_hydro.o: Riemann_FVS_hydro.cpp Riemann_FVS_hydro.h \
  ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h

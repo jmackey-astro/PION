@@ -62,8 +62,10 @@ CXXFLAGS = $(OPT)
 MAKE_UNAME=standard
 MAKE_UNAME=ubuntu18
 MAKE_UNAME=debian9
+MAKE_UNAME=debian10
 
 IOMODE = USE_MPI
+PION_OPTIMISE=HIGH
 
 ######################################################################
 # Options for a debian 9 (stretch) workstation with system libs
@@ -94,6 +96,37 @@ ifeq ($(MAKE_UNAME), debian9)
   LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
 endif
 ################### ---  DEBIAN 9 (STRETCH)  ---######################
+
+######################################################################
+# Options for a debian 10 (buster) workstation with system libs
+######################################################################
+ifeq ($(MAKE_UNAME), debian10)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS += -O3 -Wno-unused-function
+  else
+    CXXFLAGS += -Wall -g -Wno-unused-function
+  endif
+  
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+    CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+    CXX = mpicxx
+  endif
+
+  CXXFLAGS += -DCVODE3
+  INC  = -I/usr/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -lm
+  LDFLAGS += -L/usr/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl
+  LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
+endif
+################### ---  DEBIAN 10 (buster)  ---######################
+
 
 ######################################################################
 # Options for an Ubuntu 18 workstation with locally installed libraries.
@@ -174,6 +207,7 @@ OBJ_GRID =  cell_interface.o uniform_grid.o setup_fixed_grid.o \
 OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
   outflow_boundaries.o inflow_boundaries.o \
   reflecting_boundaries.o oneway_out_boundaries.o \
+  axisymmetric_boundaries.o \
   fixed_boundaries.o jet_boundaries.o \
   jetreflect_boundaries.o double_Mach_ref_boundaries.o \
   stellar_wind_boundaries.o MCMD_boundaries.o \
@@ -290,6 +324,10 @@ inflow_boundaries.o: inflow_boundaries.cpp inflow_boundaries.h \
 
 reflecting_boundaries.o: reflecting_boundaries.cpp \
   reflecting_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+axisymmetric_boundaries.o: axisymmetric_boundaries.cpp \
+  axisymmetric_boundaries.h \
   boundaries.h ${GLOBAL} grid_base_class.h
 
 fixed_boundaries.o: fixed_boundaries.cpp fixed_boundaries.h \

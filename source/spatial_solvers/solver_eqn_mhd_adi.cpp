@@ -375,67 +375,6 @@ void FV_solver_mhd_ideal_adi::UtoFlux(
 
 
 
-void FV_solver_mhd_ideal_adi::Powell_source_terms(
-      class GridBaseClass *grid, ///< pointer to grid
-      cell *c,               ///< Current cell.
-      const axes d,            ///< Which axis we are looking along.
-      const pion_flt *slope, ///< slope vector for cell c.
-      pion_flt *S            ///< return source term 
-      )
-{
-#ifdef TESTING
-  if (d != GetDirection()) {
-    cout <<GetDirection()<<"\t";
-    rep.error("bad direction in Powell_source_terms()",d);
-  }
-#endif
-  // use two-sided gradient, second-order accurate in dx, to get
-  // d/dx (B_x)
-  pion_flt dBdx;
-  enum direction pos,neg;
-  pos = static_cast<direction>(static_cast<int>(d)*2+1);
-  neg = static_cast<direction>(static_cast<int>(d)*2);
-  /*
-  cell *p=c, *n=c;
-  double dx=0.0;
-  if (grid->NextPt(c,pos)) {
-    p = grid->NextPt(c,pos);
-    dx += grid->DX();
-  }
-  if (grid->NextPt(c,neg)) {
-    n = grid->NextPt(c,neg);
-    dx += grid->DX();
-  }
-  dBdx = (p->Ph[eqBX] - n->Ph[eqBX])/dx;
-  */
-  //double Pn[eq_nvar], Pp[eq_nvar];
-  //SetEdgeState(c, pos, eq_nvar, slope, Pp, OA1, grid);
-  //SetEdgeState(c, neg, eq_nvar, slope, Pn, OA1, grid);
-  dBdx = slope[eqBX];
-  S[eqRHO] += 0.0;
-  S[eqMMX] += -dBdx * c->Ph[eqBX];
-  S[eqMMY] += -dBdx * c->Ph[eqBY];
-  S[eqMMZ] += -dBdx * c->Ph[eqBZ];
-  S[eqERG] += -dBdx * (c->Ph[eqVX]*c->Ph[eqBX] +
-                       c->Ph[eqVY]*c->Ph[eqBY] +
-                       c->Ph[eqVZ]*c->Ph[eqBZ]);
-  S[eqBBX] += -dBdx * c->Ph[eqVX];
-  S[eqBBY] += -dBdx * c->Ph[eqVY];
-  S[eqBBZ] += -dBdx * c->Ph[eqVZ];
-
-  return;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-///
-/// Adds the contribution from flux in the current direction to dU.
-///
 int FV_solver_mhd_ideal_adi::dU_Cell(
         class GridBaseClass *grid,
         cell *c,          // Current cell.
@@ -449,13 +388,9 @@ int FV_solver_mhd_ideal_adi::dU_Cell(
         )
 {
   pion_flt u1[eq_nvar];
-  //
   // This calculates -dF/dx
-  //
   int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
-  // add source terms
   geometric_source(c, d, slope, ooa, dx, u1);
-  //Powell_source_terms(grid, c, d, slope, u1);
 
   for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   return(err);
@@ -465,6 +400,7 @@ int FV_solver_mhd_ideal_adi::dU_Cell(
 
 // ##################################################################
 // ##################################################################
+
 
 
 int FV_solver_mhd_ideal_adi::MHDsource(
@@ -480,6 +416,7 @@ int FV_solver_mhd_ideal_adi::MHDsource(
                       )
 {
   // The Powell source terms from Powell's paper (1999)
+  // called by time_integrator::dynamics_dU_column() 
   double dx = 2.0*grid->DX();
   double uB_l = Cl->Ph[eqBX]*Cl->Ph[eqVX] +
                 Cl->Ph[eqBY]*Cl->Ph[eqVY] +
@@ -511,7 +448,6 @@ int FV_solver_mhd_ideal_adi::MHDsource(
     Cl->dU[v] -= dt*Pl[eqBX]*(Powell_l[v])/dx;
     Cr->dU[v] += dt*Pr[eqBX]*(Powell_r[v])/dx;
   }
-
   return 0;
 }
 
@@ -539,7 +475,6 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
   //
   // First convert from Primitive to Conserved Variables
   //
-  //for (int v=0;v<eq_nvar;v++) corrector[v]=1.0;
   if (MP) {
     MP->sCMA(corrector, Pin);
     for (int t=0;t<eq_nvar;t++)
@@ -564,7 +499,6 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
 
   // Reset the dU array for the next timestep.
   for (int v=0;v<eq_nvar;v++) dU[v] = 0.;
-  //for (int v=0;v<eq_nvar;v++) corrector[v]=1.0;
   if (MP) {
     MP->sCMA(corrector, Pf);
     for (int t=0;t<eq_nvar;t++) Pf[t] =  Pf[t]* corrector[t];
@@ -597,13 +531,10 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
   //
   pion_flt u1[eq_nvar];
   pion_flt temp = fabs(c->P[eqVX]);
-  if (FV_gndim>1) temp = max(temp,static_cast<pion_flt>(fabs(c->P[eqVY])));
-  if (FV_gndim>2) temp = max(temp,static_cast<pion_flt>(fabs(c->P[eqVZ])));
-  
-  /*  if (fabs(c->P[VX])>fabs(c->P[VY])) {temp = fabs(c->P[VX]);}
-   else {temp = fabs(c->P[VY]);}
-   if (fabs(c->P[VZ])>temp2) temp2=c->P[VZ];
-   */
+  if (FV_gndim>1)
+    temp = max(temp,fabs(c->P[eqVY]));
+  if (FV_gndim>2)
+    temp = max(temp,fabs(c->P[eqVZ]));
   
   //
   // First rotate the state vector to the fastest directions,
@@ -613,7 +544,9 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
   enum axes newdir;
   double cf=0.0;
   if (FV_gndim==1) temp += cfast(c->P,eq_gamma);
-  else { // We may have to rotate the state vector to find the fastest fast speed.
+  else {
+    // We may have to rotate the state vector to find the fastest
+    // fast speed.
     newdir = XX;
     if (fabs(c->P[BY])<fabs(c->P[BX])) {
       newdir =YY;
@@ -881,15 +814,13 @@ int FV_solver_mhd_mixedGLM_adi::MHDsource(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
 
 
-///
-/// General Finite volume scheme for updating a cell's
-/// primitive state vector, for homogeneous equations.
-///
 int FV_solver_mhd_mixedGLM_adi::CellAdvanceTime(
       class cell *c,
       const pion_flt *Pin, // Initial State Vector.
@@ -1035,10 +966,7 @@ cyl_FV_solver_mhd_ideal_adi::cyl_FV_solver_mhd_ideal_adi(
   cout <<"::cyl_FV_solver_mhd_ideal_adi ...starting.\n";
 #endif //FUNCTION_ID
 
-//  cout <<"cyl_FV_solver_mhd_ideal_adi CONSTRUCTOR\n";
-//  cout <<"IdealMHD Equations; Riemann Solver Method; Cylindrical Coordinates.\n";
-  if (nd!=2) rep.error("Cylindrical coordinates only implemented for 2d axial symmetry \
-			 so far.  Sort it out!",nd);
+  if (nd!=2) rep.error("Cylindrical coordinates only 2D",nd);
 
 #ifdef FUNCTION_ID
   cout <<"::cyl_FV_solver_mhd_ideal_adi ...returning.\n";
@@ -1073,12 +1001,12 @@ cyl_FV_solver_mhd_ideal_adi::~cyl_FV_solver_mhd_ideal_adi()
 
 
 void cyl_FV_solver_mhd_ideal_adi::geometric_source(
-      cell *c, ///< Current cell.
-      const axes d, ///< Which axis we are looking along.
+      cell *c,              ///< Current cell.
+      const axes d,         ///< Which axis we are looking along.
       const pion_flt *dpdx, ///< slope vector for cell c.
-      const int OA,      ///< spatial order of accuracy.
-      const double dR, ///< cell length dx.
-      pion_flt *dU ///< update vector to add source term to [OUTPUT]
+      const int OA,         ///< spatial order of accuracy.
+      const double dR,      ///< cell length dx.
+      pion_flt *dU          ///< add to update vector [OUTPUT]
       )
 {
 
@@ -1109,82 +1037,6 @@ void cyl_FV_solver_mhd_ideal_adi::geometric_source(
 
 // ##################################################################
 // ##################################################################
-
-
-
-void cyl_FV_solver_mhd_ideal_adi::Powell_source_terms(
-        class GridBaseClass *grid, ///< pointer to grid
-        cell *c,           ///< Current cell.
-        const axes d,       ///< Which axis we are looking along.
-        const pion_flt *slope, ///< slope vector for cell c.
-        pion_flt *S           ///< return source term 
-        )
-{
-#ifdef TESTING
-  if (d != GetDirection()) {
-    cout <<GetDirection()<<"\t";
-    rep.error("bad direction in CYL Powell_source_terms()",d);
-  }
-#endif
-  pion_flt dBdx;
-  double dx=0.0;
-  enum direction pos,neg;
-  pos = static_cast<direction>(static_cast<int>(d)*2+1);
-  neg = static_cast<direction>(static_cast<int>(d)*2);
-  cell *p=c, *n=c;
-  if (grid->NextPt(c,pos)) {
-    p = grid->NextPt(c,pos);
-    dx += grid->DX();
-  }
-  if (grid->NextPt(c,neg)) {
-    n = grid->NextPt(c,neg);
-    dx += grid->DX();
-  }
-#ifdef TESTING
-  if (p==n) {
-    rep.error("no slope possible CYL Powell_source_terms()",d);
-  }
-#endif
-
-  // this is a divergence term, not a gradient, so the radial
-  // direction is different from z-direction.  d(R f)/(RdR)
-  dBdx = 0.0;
-  if (d==Zcyl) {
-    dBdx = (p->Ph[eqBX] - n->Ph[eqBX])/dx;
-  }
-  else if (d==Rcyl) {
-    double cpos[2];
-    CI.get_dpos(p,cpos);
-    double Rp = cpos[Rcyl];
-    CI.get_dpos(n,cpos);
-    double Rm = cpos[Rcyl];
-    dBdx = 2.0*(Rp*p->Ph[eqBX] - Rm*n->Ph[eqBX]) /
-                (Rp*Rp - Rm*Rm);
-  }
-  else {
-    rep.error("3D not implemented in cylindrical coords",d);
-  }
-
-  S[eqRHO] += 0;
-  S[eqMMX] += -dBdx * c->Ph[eqBX];
-  S[eqMMY] += -dBdx * c->Ph[eqBY];
-  S[eqMMZ] += -dBdx * c->Ph[eqBZ];
-  S[eqERG] += -dBdx * (c->Ph[eqVX]*c->Ph[eqBX] +
-                       c->Ph[eqVY]*c->Ph[eqBY] +
-                       c->Ph[eqVZ]*c->Ph[eqBZ]);
-  S[eqBBX] += -dBdx * c->Ph[eqVX];
-  S[eqBBY] += -dBdx * c->Ph[eqVY];
-  S[eqBBZ] += -dBdx * c->Ph[eqVZ];
-
-  return;
-}
-
-
-
-
-// ##################################################################
-// ##################################################################
-
 
 
 //------------------------------------------------------------------//

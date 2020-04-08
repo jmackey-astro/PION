@@ -44,7 +44,9 @@ ${srcdir}/flux_calc:\
 ${srcdir}/spatial_solvers:\
 ${srcdir}/time_integrators:\
 ${srcdir}/contrib\
-${srcdir}/tools
+${srcdir}/tools\
+${srcdir}/decomposition:\
+${srcdir}/boundaries
 
 
 
@@ -83,30 +85,136 @@ ifeq ($(MT), USE_THREADS)
   LDFLAGS += -pthread
 endif
 
-######################################################################
-# Options for a "standard" workstation.
-# make sure cfitsio and silo are compiled in ../extra_libraries/
-######################################################################
-ifeq ($(MAKE_UNAME), standard)
-  CXX=mpicxx
-  #ifeq ($(PION_OPTIMISE), HIGH)
-  CXXFLAGS = -O3 -Wno-unused-function
-  #else
-  #CXXFLAGS = -Wall -g -Wno-unused-function
-  #endif
+MAKE_UNAME=debian10
+PION_OPTIMISE=HIGH
 
-  MYLIB = ${PION}/extra_libraries
-  INC = -I${MYLIB}/include
+######################################################################
+# Options for a debian 9 (stretch) workstation with system libs
+######################################################################
+ifeq ($(MAKE_UNAME), debian9)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS += -O3 -Wno-unused-function
+  else
+    CXXFLAGS += -Wall -g -Wno-unused-function
+  endif
+  
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+    CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+    CXX = mpicxx
+  endif
+
+  CXXFLAGS += -DCVODE2
+  INC  = -I/usr/include
   INC += -I${srcdir}
-  # All libraries are in this path:
-  LDFLAGS += -L${MYLIB}/lib
-  # Libraries for fits, silo
+  LDFLAGS += -lm
+  LDFLAGS += -L/usr/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
   LDFLAGS += -lcfitsio
-  LDFLAGS += -lsilo
-  # libs for CVODES
-  LDFLAGS +=-Wl,--rpath -Wl,${MYLIB}/lib -lsundials_cvode -lsundials_nvecserial
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl
+  LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
 endif
-################### --- STANDARD WORKSTATION ---######################
+################### ---  DEBIAN 9 (STRETCH)  ---######################
+
+######################################################################
+# Options for a debian 10 (buster) workstation with system libs
+######################################################################
+ifeq ($(MAKE_UNAME), debian10)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS += -O3 -Wno-unused-function
+  else
+    CXXFLAGS += -Wall -g -Wno-unused-function
+  endif
+  
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+    CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+    CXX = mpicxx
+  endif
+
+  CXXFLAGS += -DCVODE3
+  INC  = -I/usr/include
+  INC += -I${srcdir}
+  LDFLAGS += -lm
+  LDFLAGS += -L/usr/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl
+  LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
+endif
+################### ---  DEBIAN 10 (buster)  ---######################
+
+
+
+######################################################################
+# Options for an Ubuntu 18 workstation with locally installed libraries.
+######################################################################
+ifeq ($(MAKE_UNAME), ubuntu18)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3 -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
+  else
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  endif
+  
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+    CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+    CXX = mpicxx
+  endif
+
+  OPT += -DCVODE5
+  MYLIB = $(CURDIR)/../../extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${srcdir}
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -Wl,-rpath,${MYLIB}/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lm
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl -lgslcblas
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+endif
+################### --- UBUNTU 18 ---######################
+
+######################################################################
+# Options for an Ubuntu 16 workstation with locally installed libraries.
+######################################################################
+ifeq ($(MAKE_UNAME), ubuntu16)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3 -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
+  else
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  endif
+  
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+    CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+    CXX = mpicxx
+  endif
+
+  OPT += -DCVODE5
+  MYLIB = $(CURDIR)/../../extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${srcdir}
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -Wl,-rpath,${MYLIB}/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lm
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl -lgslcblas
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+endif
+################### --- UBUNTU 16 ---######################
 
 ######################################################################
 # Options for an OS-X workstation.
@@ -137,56 +245,66 @@ endif
 
 CXXFLAGS += $(OPTION)
 
-OBJECTS = \
-  constants.o \
-  timer.o \
-  mem_manage.o \
-  reporting.o \
-  command_line_interface.o \
-  interpolate.o \
-  sim_params.o \
-  MCMD_control.o \
-  setup_fixed_grid.o \
-  setup_fixed_grid_MPI.o \
-  uniform_grid.o             \
-  readparams.o               \
-  file_status.o              \
-  dataio.o                   \
-  dataio_silo_utility.o      \
-  dataio_silo.o              \
-  dataio_silo_MPI.o          \
-  dataio_fits.o              \
-  uniform_grid_pllel.o       \
-  utility_fits_class.o       \
-  VectorOps.o                \
-  VectorOps_spherical.o      \
-  stellar_wind_BC.o          \
-  image_io.o                 \
-  cell_interface.o           \
-  raytracer_base.o            \
-  raytracer_SC_pllel.o        \
-  raytracer_SC.o              \
-  microphysics_base.o         \
-  cooling_SD93_cie.o         \
-  hydrogen_recomb_Hummer94.o \
-  hydrogen_mp.o              \
-  hydrogen_photoion.o        \
-  mp_explicit_H.o            \
-  cvode_integrator.o         \
-  mp_implicit_H.o            \
-  mp_v2_aifa.o               \
-  integrator.o               \
-  cooling.o                  \
-  microphysics.o             \
-  microphysics_v1.o          \
-  microphysics_lowZ.o        \
-  mp_only_cooling.o          \
-  mpv5_molecular.o           \
-  mpv6_PureH.o               \
-  mpv7_TwoTempIso.o          \
-  mpv8_StarBench_heatcool.o  \
-  xray_emission.o            \
-  emission_absorption.o
+OBJECTS = file_status.o  \
+        constants.o \
+        timer.o \
+        mem_manage.o \
+        reporting.o \
+        interpolate.o \
+        MCMD_control.o \
+        setup_fixed_grid.o \
+        setup_fixed_grid_MPI.o \
+        readparams.o \
+        sim_params.o \
+        dataio_base.o parameter_defs.o \
+	dataio_text.o dataio_silo.o \
+        dataio_silo_MPI.o \
+        dataio_silo_utility.o \
+        cell_interface.o \
+	stellar_wind_BC.o stellar_wind_angle.o \
+        uniform_grid.o \
+        uniform_grid_pllel.o \
+        comm_mpi.o \
+        comm_files.o \
+        VectorOps.o \
+        VectorOps_spherical.o \
+	raytracer_SC_pllel.o \
+        raytracer_SC.o \
+  setup_grid_NG_MPI.o setup_NG_grid.o
+
+
+OBJ_CHEM=integrator.o cvode_integrator.o cooling.o cooling_SD93_cie.o \
+  hydrogen_mp.o hydrogen_photoion.o hydrogen_recomb_Hummer94.o \
+  microphysics_base.o mp_only_cooling.o \
+  MPv3.o MPv5.o MPv6.o MPv7.o MPv10.o photo_xsections.o
+
+OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
+          outflow_boundaries.o inflow_boundaries.o \
+          reflecting_boundaries.o oneway_out_boundaries.o \
+          axisymmetric_boundaries.o \
+          fixed_boundaries.o jet_boundaries.o \
+          jetreflect_boundaries.o double_Mach_ref_boundaries.o \
+          stellar_wind_boundaries.o MCMD_boundaries.o \
+          periodic_boundaries_MPI.o assign_update_bcs_MPI.o \
+          RT_MPI_boundaries.o
+
+OBJ_NG_BCS = assign_update_bcs_NG_MPI.o assign_update_bcs_NG.o \
+  NG_coarse_to_fine_boundaries.o \
+  NG_fine_to_coarse_boundaries.o \
+  NG_MPI_coarse_to_fine_boundaries.o \
+  NG_MPI_fine_to_coarse_boundaries.o \
+  NG_BC89flux.o \
+  NG_MPI_BC89flux.o
+
+OBJ_EQNS =  eqns_base.o eqns_hydro_adiabatic.o eqns_mhd_adiabatic.o 
+
+OBJ_SOLVE = riemannMHD.o HLLD_MHD.o Roe_MHD_ConservedVar_solver.o \
+            riemann.o findroot.o Riemann_FVS_hydro.o HLL_hydro.o \
+            Roe_Hydro_ConservedVar_solver.o Roe_Hydro_PrimitiveVar_solver.o \
+            solver_eqn_base.o solver_eqn_hydro_adi.o solver_eqn_mhd_adi.o
+
+
+OBJECTS += $(OBJ_BCS) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CHEM) $(OBJ_NG_BCS) 
 
 ifeq ($(IOMODE), USE_FILE_COMMS)
   OBJECTS += comm_files.o 
@@ -196,15 +314,7 @@ ifeq ($(IOMODE), USE_MPI)
 endif
 endif
 
-
-ifeq ($(MT), USE_THREADS)
-  OBJECTS += logmessages.o threadpool.o threads.o
-  OBJECTS += project_axi2Ddata_thread.o
-  VPATH +=:${srcdir}/tools/threads_AJL:${srcdir}/tools/threads_AJL/threadpool
-  THREAD_INCLUDE=${srcdir}/tools/threads_AJL/threads.h ${srcdir}/tools/threads_AJL/msvc_constants.h ${srcdir}/tools/threads_AJL/reefa_constants.h
-else
-  OBJECTS += project_axi2Ddata.o
-endif
+OBJECTS += project_axi2Ddata.o emission_absorption.o image_io.o xray_emission.o
 
 
 ##########################
@@ -217,54 +327,51 @@ project_data2D: $(OBJECTS)
 ### DEPENDENCIES OF SOURCE FILES ###
 ####################################
 
-#################################
-# Stuff From PION Source #
-#################################
 reporting.o:   tools/reporting.cpp ${GLOBAL}
 mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
-timer.o: tools/timer.cpp tools/timer.h ${GLOBAL}
-command_line_interface.o: tools/command_line_interface.cpp ${GLOBAL}
 constants.o: constants.cpp ${GLOBAL}
-sim_params.o: 	  sim_params.cpp ${GLOBAL}
-interpolate.o: tools/interpolate.h tools/interpolate.cpp ${GLOBAL}
+timer.o: tools/timer.cpp tools/timer.h ${GLOBAL}
+sim_params.o: 	  sim_params.cpp  ${GLOBAL}
 
-cell_interface.o: cell_interface.cpp  cell_interface.h ${GLOBAL}
-uniform_grid.o:   uniform_grid.cpp  uniform_grid.h  ${GLOBAL}  stellar_wind_BC.h
+comm_mpi.o: comm_mpi.cpp comm_mpi.h comms.h
+comm_files.o: comm_files.cpp comm_files.h comms.h ${GLOBAL}
+
+uniform_grid.o: uniform_grid.cpp uniform_grid.h ${GLOBAL} stellar_wind_BC.h
 uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid.h ${GLOBAL} comms.h
+stellar_wind_BC.o: stellar_wind_BC.cpp stellar_wind_BC.h ${GLOBAL}
 
-VectorOps.o:  VectorOps.cpp  coord_sys/VectorOps.h ${GLOBAL} uniform_grid.h
-VectorOps_spherical.o:  VectorOps_spherical.cpp  coord_sys/VectorOps_spherical.h \
-    coord_sys/VectorOps.h ${GLOBAL} uniform_grid.h
+VectorOps.o:           VectorOps.cpp VectorOps.h uniform_grid.h ${GLOBAL}
+VectorOps_spherical.o: VectorOps_spherical.cpp VectorOps_spherical.h VectorOps.h \
+		       uniform_grid.h ${GLOBAL}
 
+MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
 
-file_status.o: dataIO/file_status.cpp dataIO/file_status.h
-dataio.o:       dataIO/dataio.cpp  dataIO/dataio.h  ${GLOBAL}  solver_eqn_base.h  dataIO/readparams.h \
-		stellar_wind_BC.h dataIO/file_status.h
-dataio_silo.o:  dataIO/dataio_silo.cpp  dataIO/dataio_silo.h  dataIO/dataio.h ${GLOBAL}  solver_eqn_base.h  dataIO/file_status.h
-dataio_fits.o:  dataIO/dataio_fits.cpp  dataIO/dataio_fits.h  dataIO/dataio.h ${GLOBAL}  solver_eqn_base.h \
-		solver_eqn_hydro_adi.h  solver_eqn_hydro_iso.h  dataIO/file_status.h
-readparams.o:	dataIO/readparams.cpp  dataIO/readparams.h  ${GLOBAL}
-dataio_silo_MPI.o:    dataIO/dataio_silo_MPI.cpp  dataIO/dataio_silo.h  dataIO/dataio.h ${GLOBAL}  comms.h  dataIO/file_status.h
-utility_fits_class.o: dataIO/utility_fits_class.cpp  dataIO/dataio_fits.h  dataIO/dataio.h ${GLOBAL}
+setup_fixed_grid_MPI.o: setup_fixed_grid_MPI.cpp setup_fixed_grid_MPI.h \
+  setup_fixed_grid.h ${GLOBAL} uniform_grid_pllel.h \
+  grid_base_class.h uniform_grid.h assign_update_bcs.h \
+  periodic_boundaries_MPI.h assign_update_bcs_MPI.h \
+  RT_MPI_boundaries.h VectorOps.h solver_eqn_base.h  eqns_base.h \
+  solver_eqn_hydro_adi.h solver_eqn_hydro_adi.cpp
 
-comm_mpi.o:    comm_mpi.cpp  comm_mpi.h  comms.h  ${GLOBAL}
-comm_files.o:  comm_files.cpp  comm_files.h  comms.h  ${GLOBAL}
-
-dataio_silo_utility.o:  dataIO/dataio_silo_utility.cpp  dataIO/dataio_silo_utility.h  dataIO/dataio_silo.h  dataIO/dataio.h  ${GLOBAL}
-stellar_wind_BC.o: stellar_wind_BC.cpp  stellar_wind_BC.h ${GLOBAL}
-
-################################
-# Andy's multi-threading files #
-################################
-logmessages.o: logmessages.cxx logmessages.h reefa_constants.h \
-  msvc_constants.h threads.h
-threadpool.o: threadpool.cxx threadpool.h reefa_constants.h \
-  msvc_constants.h logmessages.h threads.h
-threads.o: threads.cxx msvc_constants.h reefa_constants.h threads.h
+setup_grid_NG_MPI.o: setup_grid_NG_MPI.cpp setup_grid_NG_MPI.h \
+  setup_fixed_grid_MPI.h setup_fixed_grid.h setup_NG_grid.h \
+  ${GLOBAL} uniform_grid_pllel.h \
+  grid_base_class.h uniform_grid.h assign_update_bcs.h \
+  periodic_boundaries_MPI.h assign_update_bcs_MPI.h \
+  RT_MPI_boundaries.h VectorOps.h solver_eqn_base.h  eqns_base.h \
+  solver_eqn_hydro_adi.h solver_eqn_hydro_adi.cpp \
+  assign_update_bcs_NG_MPI.h assign_update_bcs_MPI.h \
+  assign_update_bcs_NG.h NG_coarse_to_fine_boundaries.h \
+  NG_MPI_fine_to_coarse_boundaries.h \
+  NG_MPI_coarse_to_fine_boundaries.h \
+  NG_fine_to_coarse_boundaries.h periodic_boundaries_MPI.h \
+  MCMD_boundaries.h boundaries.h \
+  grid_base_class.h solver_eqn_base.h MCMD_control.h
 
 ######################
 # MICROPHYSICS STUFF #
 ######################
+microphysics_base.o: microphysics_base.cpp microphysics_base.h ${GLOBAL}
 
 integrator.o: integrator.cpp integrator.h ${GLOBAL}
 cooling.o:    cooling.cpp cooling.h ${GLOBAL}
@@ -277,11 +384,11 @@ hydrogen_recomb_Hummer94.o: hydrogen_recomb_Hummer94.h hydrogen_recomb_Hummer94.
 mp_only_cooling.o: mp_only_cooling.cpp mp_only_cooling.h ${GLOBAL} \
    cooling_SD93_cie.h microphysics_base.h hydrogen_recomb_Hummer94.h
 
-microphysics.o:	microphysics.cpp microphysics.h microphysics_base.h \
+MPv1.o:	MPv1.cpp MPv1.h microphysics_base.h \
    ${GLOBAL} cooling.h integrator.h
-microphysics_v1.o: microphysics_v1.cpp microphysics.h \
+MPv0.o: MPv0.cpp MPv1.h \
    microphysics_base.h ${GLOBAL} cooling.h integrator.h
-microphysics_lowZ.o: microphysics_lowZ.cpp microphysics_lowZ.h \
+MPv9.o: MPv9.cpp MPv9.h \
    microphysics_base.h ${GLOBAL} integrator.h
 
 hydrogen_mp.o: hydrogen_mp.cpp hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
@@ -289,36 +396,210 @@ hydrogen_mp.o: hydrogen_mp.cpp hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.
 
 hydrogen_photoion.o: hydrogen_photoion.cpp hydrogen_photoion.h ${GLOBAL}
 
-mp_v2_aifa.o: mp_v2_aifa.cpp mp_v2_aifa.h ${GLOBAL} hydrogen_mp.h \
+MPv2.o: MPv2.cpp MPv2.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
   microphysics_base.h
 
 cvode_integrator.o: cvode_integrator.cpp cvode_integrator.h ${GLOBAL}
 
-mpv5_molecular.o: mpv5_molecular.cpp mpv5_molecular.h \
-  mp_explicit_H.h microphysics_base.h ${GLOBAL}
-
-mpv6_PureH.o: mpv6_PureH.cpp mpv6_PureH.h \
-  mp_explicit_H.h microphysics_base.h ${GLOBAL}
-
-mpv7_TwoTempIso.o: mpv7_TwoTempIso.cpp mpv7_TwoTempIso.h \
-  mp_explicit_H.h microphysics_base.h ${GLOBAL}
-
-cvode_integrator.o: cvode_integrator.cpp cvode_integrator.h ${GLOBAL}
-
-mp_explicit_H.o: mp_explicit_H.cpp mp_explicit_H.h ${GLOBAL} hydrogen_mp.h \
+MPv3.o: MPv3.cpp MPv3.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
   microphysics_base.h
 
-mp_implicit_H.o: mp_implicit_H.cpp mp_implicit_H.h mp_explicit_H.h \
+MPv10.o: MPv10.cpp MPv10.h ${GLOBAL} hydrogen_mp.h \
+  hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
+  microphysics_base.h
+
+MPv4.o: MPv4.cpp MPv4.h MPv3.h \
   ${GLOBAL} hydrogen_mp.h hydrogen_recomb_Hummer94.h hydrogen_photoion.h \
   cooling_SD93_cie.h microphysics_base.h
+
+MPv5.o: MPv5.cpp MPv5.h \
+  MPv3.h microphysics_base.h ${GLOBAL}
+
+MPv6.o: MPv6.cpp MPv6.h \
+  MPv3.h microphysics_base.h ${GLOBAL}
+
+MPv7.o: MPv7.cpp MPv7.h \
+  MPv3.h microphysics_base.h ${GLOBAL}
+
+MPv8.o: MPv8.cpp \
+  MPv8.h MPv3.h microphysics_base.h ${GLOBAL}
+
+HHe_photoion.o: HHe_photoion.cpp HHe_photoion.h ${GLOBAL}
+mpv9_HHe.o: mpv9_HHe.cpp mpv9_HHe.h microphysics_base.h \
+  HHe_photoion.h cvode_integrator.h ${GLOBAL}
+
+
+########################
+# Raytracing
+########################
+raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h ${GLOBAL} \
+    uniform_grid.h raytracer_base.h
+
+raytracer_SC_pllel.o : raytracer_SC_pllel.cpp raytracer_SC.h \
+    ${GLOBAL} uniform_grid.h comms.h raytracer_base.h
+
+########################
+# Data I/O
+########################
+file_status.o: file_status.cpp file_status.h
+
+parameter_defs.o:  parameter_defs.cpp parameter_defs.h ${GLOBAL} \
+    solver_eqn_base.h readparams.h \
+    stellar_wind_angle.h stellar_wind_BC.h cell_interface.h
+
+dataio_base.o: dataio_base.cpp dataio_base.h ${GLOBAL} solver_eqn_base.h \
+    readparams.h stellar_wind_BC.h file_status.h
+
+dataio_text.o:  dataio_text.cpp dataio_text.h parameter_defs.h \
+    ${GLOBAL} solver_eqn_base.h grid_base_class.h dataio_base.h
+
+dataio_silo.o:  dataio_silo.cpp dataio_silo.h dataio_base.h ${GLOBAL} \
+    solver_eqn_base.h file_status.h
+
+dataio_silo_MPI.o:    dataio_silo_MPI.cpp dataio_silo.h dataio_base.h \
+    ${GLOBAL} comms.h file_status.h
+
+readparams.o:	readparams.cpp readparams.h ${GLOBAL}
+
+dataio_silo_utility.o: dataio_silo_utility.cpp dataio_silo_utility.h\
+    ${GLOBAL} file_status.h dataio_base.h dataio_silo.h comms.h
+
+#####################
+# BOUNDARY CLASSES  #
+#####################
+
+periodic_boundaries.o: periodic_boundaries.cpp periodic_boundaries.h\
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+outflow_boundaries.o: outflow_boundaries.cpp outflow_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+oneway_out_boundaries.o: oneway_out_boundaries.cpp \
+  oneway_out_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h outflow_boundaries.h
+
+inflow_boundaries.o: inflow_boundaries.cpp inflow_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+reflecting_boundaries.o: reflecting_boundaries.cpp \
+  reflecting_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+axisymmetric_boundaries.o: axisymmetric_boundaries.cpp \
+  axisymmetric_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+fixed_boundaries.o: fixed_boundaries.cpp fixed_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+jet_boundaries.o: jet_boundaries.cpp jet_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+jetreflect_boundaries.o: jetreflect_boundaries.cpp \
+  jetreflect_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+double_Mach_ref_boundaries.o: double_Mach_ref_boundaries.cpp \
+  double_Mach_ref_boundaries.h boundaries.h ${GLOBAL} \
+  grid_base_class.h
+
+stellar_wind_boundaries.o: stellar_wind_boundaries.cpp \
+  stellar_wind_boundaries.h boundaries.h ${GLOBAL} \
+  grid_base_class.h stellar_wind_BC.h
+
+assign_update_bcs.o: assign_update_bcs.cpp assign_update_bcs.h \
+  periodic_boundaries.h outflow_boundaries.h \
+  oneway_out_boundaries.h inflow_boundaries.h \
+  reflecting_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+assign_update_bcs_MPI.o: assign_update_bcs_MPI.cpp \
+  assign_update_bcs_MPI.h periodic_boundaries_MPI.h \
+  MCMD_boundaries.h boundaries.h ${GLOBAL} \
+  grid_base_class.h solver_eqn_base.h MCMD_control.h 
+
+periodic_boundaries_MPI.o: periodic_boundaries_MPI.cpp \
+  periodic_boundaries_MPI.h boundaries.h ${GLOBAL} \
+  grid_base_class.h MCMD_control.h MCMD_boundaries.h
+
+MCMD_boundaries.o: MCMD_boundaries.cpp \
+  MCMD_boundaries.h boundaries.h ${GLOBAL} \
+  grid_base_class.h MCMD_control.h
+
+RT_MPI_boundaries.o: RT_MPI_boundaries.cpp RT_MPI_boundaries.h \
+  boundaries.h ${GLOBAL} \
+  grid_base_class.h MCMD_control.h
+
+#####################
+# EQUATIONS CLASSES #
+#####################
+
+eqns_base.o: eqns_base.cpp eqns_base.h ${GLOBAL}
+
+eqns_hydro_adiabatic.o: eqns_hydro_adiabatic.cpp eqns_hydro_adiabatic.h \
+ eqns_base.h ${GLOBAL}
+
+eqns_mhd_adiabatic.o: eqns_mhd_adiabatic.cpp eqns_mhd_adiabatic.h \
+ eqns_base.h ${GLOBAL}
+
+###################
+# RIEMANN SOLVERS #
+###################
+
+riemann.o: riemann.cpp riemann.h findroot.h ${GLOBAL} \
+ eqns_hydro_adiabatic.h  eqns_base.h
+
+findroot.o: findroot.cpp findroot.h ${GLOBAL}
+
+HLL_hydro.o: HLL_hydro.cpp HLL_hydro.h \
+ ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
+
+Riemann_FVS_hydro.o: Riemann_FVS_hydro.cpp Riemann_FVS_hydro.h \
+ ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
+
+Roe_Hydro_ConservedVar_solver.o: Roe_Hydro_ConservedVar_solver.cpp \
+ Roe_Hydro_ConservedVar_solver.h \
+ ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
+
+Roe_Hydro_PrimitiveVar_solver.o: Roe_Hydro_PrimitiveVar_solver.cpp \
+   Roe_Hydro_PrimitiveVar_solver.h \
+   ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
+
+riemannMHD.o: riemannMHD.cpp riemannMHD.h ${GLOBAL} \
+ eqns_mhd_adiabatic.h eqns_base.h 
+
+Roe_MHD_ConservedVar_solver.o : Roe_MHD_ConservedVar_solver.cpp \
+   Roe_MHD_ConservedVar_solver.h riemannMHD.h \
+   ${GLOBAL} eqns_mhd_adiabatic.h eqns_base.h
+
+HLLD_MHD.o : HLLD_MHD.cpp HLLD_MHD.h  \
+   ${GLOBAL} eqns_mhd_adiabatic.h eqns_base.h
+
+###########
+# SOLVERS #
+###########
+
+solver_eqn_base.o: VectorOps.h solver_eqn_base.h  \
+ eqns_base.h ${GLOBAL} cell_interface.h
+
+solver_eqn_hydro_adi.o:	VectorOps.h VectorOps_spherical.h \
+   solver_eqn_base.h  eqns_base.h ${GLOBAL} cell_interface.h \
+   solver_eqn_hydro_adi.h   eqns_hydro_adiabatic.h \
+   solver_eqn_hydro_adi.cpp grid_base_class.h
+
+solver_eqn_mhd_adi.o: VectorOps.h grid_base_class.h \
+   solver_eqn_base.h  eqns_base.h ${GLOBAL} cell_interface.h \
+   solver_eqn_mhd_adi.h   eqns_mhd_adiabatic.h \
+   solver_eqn_mhd_adi.cpp
 
 ###############################
 # Stuff Specific to this code #
 ###############################
 project_axi2Ddata.o: project_axi2Ddata.cpp image_io.h ${GLOBAL}
 image_io.o: image_io.cpp image_io.h ${GLOBAL}
+xray_emission.o: xray_emission.cpp xray_emission.h ${GLOBAL} interpolate.h projection_constants.h
 
 clean:
 	rm -f *.o project_data2D
