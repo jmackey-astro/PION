@@ -212,11 +212,6 @@ int dataio_text::get_parameters(
   else if (ts=="RS_HLL"  ) {SimPM.solverType = FLUX_RS_HLL;}
   else rep.error("No solver specified!",ts);
   
-  /** \section eqnndim
-   * If I ever use a set of equations that doesn't have 3D vectors like velocity and 
-   * magnetic field, then I will need to set eqnndim more cleverly, but now I always 
-   * set it to 3.
-   * */
   ts = rp->find_parameter("eqnndim");
   if (ts=="") {
     rep.warning("Setting eqnndim=3, not found in param-file",-1,-1);
@@ -548,7 +543,7 @@ int dataio_text::output_ascii_data(
       b2 = cpt->P[BX]*cpt->P[BX] +cpt->P[BY]*cpt->P[BY] +cpt->P[BZ]*cpt->P[BZ];
       //       outf <<"  "<< cpt->P[BX] <<"  "<< cpt->P[BY] <<"  "<< cpt->P[BZ] <<"  ";
       outf <<"  "<< cpt->P[PG]+b2/2.;
-      outf <<"  "<< eqn->Divergence(cpt,0,vars,gp);
+      if (eqn) outf <<"  "<< eqn->Divergence(cpt,0,vars,gp);
     }
 #ifdef RT_TESTING_OUTPUTCOL
     for (int v=0;v<SimPM.RS.Nsources;v++) {

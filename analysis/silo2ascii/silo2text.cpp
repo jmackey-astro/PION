@@ -25,8 +25,8 @@
 #include "constants.h"
 #include "sim_params.h"
 
-#include "MCMD_control.h"
-#include "setup_fixed_grid_MPI.h"
+#include "decomposition/MCMD_control.h"
+#include "grid/setup_fixed_grid_MPI.h"
 #include "grid/uniform_grid.h"
 
 #include <dirent.h>
@@ -35,35 +35,13 @@
 #include <iostream>
 #include <sstream>
 using namespace std;
-#include "dataIO/dataio.h"
+#include "dataIO/dataio_base.h"
+#include "dataIO/dataio_text.h"
 #include "dataIO/dataio_silo.h"
 #include "dataIO/dataio_silo_utility.h"
 #include <silo.h>
 
 #include "microphysics/microphysics_base.h"
-#ifndef EXCLUDE_MPV1
-#include "microphysics/microphysics.h"
-#endif 
-#ifndef EXCLUDE_HD_MODULE
-#include "microphysics/microphysics_lowZ.h"
-#endif 
-#include "microphysics/mp_only_cooling.h"
-#ifndef EXCLUDE_MPV2
-#ifdef MP_V2_AIFA
-#include "microphysics/mp_v2_aifa.h"
-#endif
-#endif 
-#ifndef EXCLUDE_MPV3
-#include "microphysics/mp_explicit_H.h"
-#endif
-#ifndef EXCLUDE_MPV4
-#include "microphysics/mp_implicit_H.h"
-#endif 
-
-#include "microphysics/mpv5_molecular.h"
-#include "microphysics/mpv6_PureH.h"
-#include "microphysics/mpv7_TwoTempIso.h"
-#include "microphysics/mpv8_StarBench_heatcool.h"
 
 #ifdef CODE_EXT_HHE
 #include "future/mpv9_HHe.h"
@@ -80,17 +58,19 @@ int main(int argc, char **argv)
   //
   // Also initialise the MCMD class with myrank and nproc.
   //
-  class MCMDcontrol MCMD;
-  int myrank=-1, nproc=-1;
-  COMM->get_rank_nproc(&myrank,&nproc);
-  MCMD.set_myrank(myrank);
-  MCMD.set_nproc(nproc);
   //
   // get a setup_grid class, to set up the grid, and a grid pointer.
   //
   class setup_fixed_grid *SimSetup =0;
   SimSetup = new setup_fixed_grid_pllel();
-  class GridBaseClass *grid = 0;
+  int myrank=-1, nproc=-1;
+  COMM->get_rank_nproc(&myrank,&nproc);
+  cout <<"Projection3D: myrank="<<myrank<<", nproc="<<nproc<<"\n";
+  class SimParams SimPM;
+  SimPM.levels.clear();
+  SimPM.levels.resize(1);
+  SimPM.levels[0].MCMD.set_myrank(myrank);
+  SimPM.levels[0].MCMD.set_nproc(nproc);
 
 
   //
@@ -114,7 +94,7 @@ int main(int argc, char **argv)
   //
   // set up dataio_utility class
   //
-  class dataio_silo_utility dataio("DOUBLE",&MCMD);
+  class dataio_silo_utility dataio(SimPM,"DOUBLE",&(SimPM.levels[0].MCMD));
   //
   // Get list of first and second files to read, and make sure they match.
   //
@@ -129,6 +109,7 @@ int main(int argc, char **argv)
     if ((*s).find(".silo")==string::npos) {
       cout <<"removing file "<<*s<<" from list.\n";
       files.erase(s);
+      s=files.begin();
     }
     else {
       cout <<"files: "<<*s<<endl;
@@ -139,6 +120,8 @@ int main(int argc, char **argv)
   //
   list<string>::iterator ff=files.begin();
   unsigned int nfiles = files.size();
+  vector<class GridBaseClass *> G;
+  class GridBaseClass *grid = 0;
   
   //
   // loop over all files: open first and write a text file.
@@ -157,8 +140,22 @@ int main(int argc, char **argv)
     //
     // Read in first code header so i know how to setup grid.
     //
-    err = dataio.ReadHeader(firstfile);
+    err = dataio.ReadHeader(firstfile,SimPM);
     if (err) rep.error("Didn't read header",err);
+    SimPM.grid_nlevels = 1;
+    SimPM.levels[0].parent=0;
+    SimPM.levels[0].child=0;
+    SimPM.levels[0].Ncell = SimPM.Ncell;
+    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].NG[v] = SimPM.NG[v];
+    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Range[v] = SimPM.Range[v];
+    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmin[v] = SimPM.Xmin[v];
+    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmax[v] = SimPM.Xmax[v];
+    SimPM.levels[0].dx = SimPM.Range[XX]/SimPM.NG[XX];
+    SimPM.levels[0].simtime = SimPM.simtime;
+    SimPM.levels[0].dt = 0.0;
+    SimPM.levels[0].multiplier = 1;
+    err  = SimPM.levels[0].MCMD.decomposeDomain(SimPM,SimPM.levels[0]);
+    if (err) rep.error("main: failed to decompose domain!",err);
   
     // *****************************************************
     //
@@ -166,26 +163,24 @@ int main(int argc, char **argv)
     //
     if (fff==0) {
       //
-      // Decompose domain (in case running with more than one core).
-      //
-      err  = MCMD.decomposeDomain();
-      if (err) rep.error("main: failed to decompose domain!",err);
-      //
       // Now setup microphysics and raytracing classes
       //
-      err += SimSetup->setup_microphysics();
+      err += SimSetup->setup_microphysics(SimPM);
       //err += setup_raytracing();
+      err += SimSetup->set_equations(SimPM);
       if (err) rep.error("Setup of microphysics and raytracing",err);
 
       //
       // May need to setup extra data in each cell for ray-tracing optical
       // depths and/or viscosity variables (here just set it to zero).
       //
-      CI.setup_extra_data(SimPM.RS,0,0);
+      CI.setup_extra_data(SimPM.RS,0,0,0);
       //
       // Setup grid.
       //
-      SimSetup->setup_grid(&grid,&MCMD);
+      G.resize(1);
+      SimSetup->setup_grid(G, SimPM);
+      grid = G[0];
       if (!grid) rep.error("Grid setup failed",grid);
       cout <<"\t\tg="<<grid<<"\tDX = "<<grid->DX()<<"\n";
     } // first step, setup grid and microphysics.
@@ -206,23 +201,20 @@ int main(int argc, char **argv)
     //
     // Read data (this reader can read serial or parallel data.
     //
-    err = dataio.parallel_read_any_data(firstfile, ///< file to read from
-					grid    ///< pointer to data.
-					);
+    err = dataio.ReadData(firstfile, G, SimPM);
     rep.errorTest("(main) Failed to read data",0,err);
     // ***************************************************************
     // ********* FINISHED FIRST FILE, MOVE ON TO OUTPUT FILE *********
     // ***************************************************************
     
-    class cell *c = grid->FirstPt(); 
-    class dataio_text textio;
-    err += textio.OutputData(outfilebase, grid, SimPM.timestep);
+    class dataio_text textio (SimPM);
+    err += textio.OutputData(outfilebase, G, SimPM, SimPM.timestep);
     if (err) {cerr<<"\t Error writing data.\n"; return(1);}
 
     //
     // move onto next first and second files
     //
-    for (int vv=0;vv<op_freq;vv++) ff++;
+    for (size_t vv=0;vv<op_freq;vv++) ff++;
   } // move onto next file
 
   //
