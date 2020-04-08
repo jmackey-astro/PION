@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # Nova
-#PION=../nested_pion/pion_NG_parallel
+#PION=../nested_pion/pion-ng
 #DDIR=/mnt/data/jm/WRNeb
 #mkdir -p $DDIR
 
 # local computer for testing:
-PION=../../pion_NG_parallel
-ICGEN=../../icgen_NG_parallel
+PION=../../pion-ng
+ICGEN=../../icgen-ng
 DDIR=./WRNeb
 FBASE=35Msun_RHDv20_l5n256
 NC=8
