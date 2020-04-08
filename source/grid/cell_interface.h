@@ -280,7 +280,8 @@ class cell_interface {
     const struct rad_sources &, ///< Pointer to (SimPM.RS)
                                 ///< ray-tracing struct.
     const int,  ///< Flag for H-correction requirements
-    const int   ///< Flag for Div(V) variable required.
+    const int,  ///< Flag for Div(V) variable required.
+    const int   ///< Flag for |Grad(Pg)| variable required.
     );
 
 
@@ -508,6 +509,32 @@ class cell_interface {
     )
   {c->extra_data[iDivV] = divv; return;}
 
+
+// ##################################################################
+// ##################################################################
+
+  ///
+  /// Get |grad(p)| for a cell.
+  ///
+  inline double get_MagGradP(
+    const cell *c
+    )
+  {return c->extra_data[iGradP];}
+
+
+// ##################################################################
+// ##################################################################
+
+  ///
+  /// Set div(v) for a cell.
+  ///
+  inline void   set_MagGradP(
+    cell *c,
+    double gradP
+    )
+  {c->extra_data[iGradP] = gradP; return;}
+
+
 // ##################################################################
 // ##################################################################
 
@@ -527,6 +554,7 @@ class cell_interface {
   short unsigned int using_RT;     ///< Flag: 0=not doing RT, 1=doing RT.
   short unsigned int using_Hcorr;  ///< Flag: 0=no Hcorr, N=need N variables (Hcorr=Ndim).
   short unsigned int using_DivV;   ///< Flag: 0=don't need div(v), 1=do need div(v).
+  short unsigned int using_GradP;   ///< Flag: 0=don't need |grad(P)|, 1=do need it
   unsigned int N_extra_data; ///< Size of extra_data array (can be zero).
 
   ///
@@ -574,6 +602,12 @@ class cell_interface {
   /// the cell data, it is in extra_data[iDivV]].
   ///
   short unsigned int iDivV;
+
+  ///
+  /// If an algorithm needs the magnitude of gradient of Pg in
+  /// the cell data, it is in extra_data[iGradP]].
+  ///
+  short unsigned int iGradP;
 
   // ----------------------------------------------------------------
   // *** Methods for a NG grid ***

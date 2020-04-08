@@ -9,7 +9,7 @@ coordinates cartesian
 solver 7
 
 ics BlastWave
-OutputFile    BW2d_StoneMHD_l2_B010_n200
+OutputFile    BW2d_StoneMHD_l2_B010_n256
 
 # Number and type of tracers.
 ntracer 0
@@ -45,7 +45,7 @@ BC_Ninternal 0
 
 grid_nlevels 2
 grid_aspect_ratio_XX 1
-grid_aspect_ratio_YY 1
+grid_aspect_ratio_YY 2
 grid_aspect_ratio_ZZ 1
 NG_centre_XX 0.0
 NG_centre_YY 0.0
@@ -56,8 +56,8 @@ NG_refine_ZZ 1
 
 # Number of gridpoints in each direction (note cells must be cubic!)
 # INT
-NGridX  200
-NGridY  300
+NGridX  256
+NGridY  384
 NGridZ  200
 # Boundaries of Simulation box:
 Xmin -0.5
@@ -71,9 +71,9 @@ Zmax 0.5
 
 OutputPath ./
 OutputFileType silo
-OutputFrequency 64
-OutputCriterion 0
-OPfreqTime 1000.0 
+OutputFrequency 0
+OutputCriterion 1
+OPfreqTime 0.1 
 
 StartTime 0.0
 FinishTime 0.2
@@ -107,7 +107,7 @@ BWmagfieldY 2.5066282746310002   # Magnetic field strength
 BWmagfieldZ 0.0      # Magnetic field strength
 
 BW_energy 0.471238898038
-BW_nzones 40
+BW_nzones 51.2
 BW_blast_dens 1.0 
 
 RT_Nsources 0

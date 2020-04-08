@@ -146,25 +146,6 @@ int FV_solver_base::get_LaxFriedrichs_flux(
 // ##################################################################
 
 
-
-void FV_solver_base::set_div_v(
-      class cell *c,
-      class GridBaseClass *grid
-      )
-{
-  int indices[MAX_DIM];
-  indices[0]=eqVX; indices[1]=eqVY; indices[2]=eqVZ;
-  CI.set_DivV(c, Divergence(c,1,indices, grid));
-  return;
-}
-
-
-
-
-// ##################################################################
-// ##################################################################
-
-
 ///
 /// Calculate Flux between a left and right state.
 ///
@@ -417,6 +398,22 @@ int FV_solver_base::preprocess_data(
   if (SimPM.artviscosity==AV_HCORRECTION ||
       SimPM.artviscosity==AV_HCORR_FKJ98) {
     err += calc_Hcorrection(csp, SimPM, grid);
+  }
+
+  // HLLD has a switch based on velocity divergence, where it can
+  // reduce to HLL near strong shocks.  So set divV here.
+  if (SimPM.solverType==FLUX_RS_HLLD) {
+    class cell* c = grid->FirstPt_All();
+    double gradp = 0.0;
+    int indices[MAX_DIM];
+    indices[0]=eqVX; indices[1]=eqVY; indices[2]=eqVZ;
+    do {
+      CI.set_DivV(c, Divergence(c,1,indices, grid));
+      gradp = 0.0;
+      for (int i=0; i<SimPM.ndim; i++)
+        gradp += GradZone(grid,c,i,1,PG);
+      CI.set_MagGradP(c, gradp);
+    } while ( (c =grid->NextPt_All(c)) !=0);
   }
 
   return err;

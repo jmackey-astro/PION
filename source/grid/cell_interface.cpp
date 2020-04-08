@@ -84,6 +84,8 @@ cell_interface::cell_interface()
   using_RT = 0;
   /// Flag: 0=no Hcorr, N=need N variables (Lapidus=1,Hcorr=Ndim).
   using_Hcorr = 0;
+  using_DivV  = 0;
+  using_GradP = 0;
   /// Size of extra_data array (can be zero).
   N_extra_data = 0;
   //
@@ -94,6 +96,8 @@ cell_interface::cell_interface()
   iDTau = 0;
   iVsh  = 0;
   idS   = 0;
+  iDivV = 0;
+  iGradP= 0;
   /// indices of Hcorrection values in extra_data [XX,YY,ZZ].
   for (int v=0; v<MAX_DIM; v++)
     iHcorr[v] = 0;
@@ -205,7 +209,8 @@ void cell_interface::set_xmin(const double *xm)
 void cell_interface::setup_extra_data(
         const struct rad_sources &rsi, ///< Flag for ray-tracing
         const int hc_flag,  ///< Flag for H-correction
-        const int dv_flag   ///< Flag for Div(V).
+        const int dv_flag,   ///< Flag for Div(V).
+        const int gp_flag   ///< Flag for |grad(P)|.
         )
 {
 #ifdef TESTING
@@ -293,6 +298,17 @@ void cell_interface::setup_extra_data(
 #endif
   }
 
+  //
+  // GradP just needs one extra variable.
+  //
+  if (gp_flag) {
+    using_GradP = dv_flag;
+    iGradP = N_extra_data;
+    N_extra_data += 1;
+#ifdef TESTING
+    cout <<"\t\t Adding GRADP: N="<<N_extra_data<<"\n";
+#endif
+  }
 
   have_setup_extra_data = true;
 #ifdef TESTING

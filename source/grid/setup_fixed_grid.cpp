@@ -127,11 +127,15 @@ void setup_fixed_grid::setup_cell_extra_data(
   // H-correction or div(v) for some time-updates and/or viscosity corrections.
   //
 
-  int hc_flag = 0, dv_flag=0;
+  int hc_flag = 0, dv_flag=0, gp_flag=0;
   if (SimPM.artviscosity==AV_LAPIDUS ||
       SimPM.eqntype==EQEUL_EINT) {
     // Need one var. for Div(v)
     dv_flag = 1;
+  }
+  if (SimPM.solverType==FLUX_RS_HLLD) {
+    dv_flag = 1; // Need DivV for shock switch in HLLD.
+    gp_flag = 1;
   }
   if (SimPM.artviscosity==AV_HCORRECTION ||
       SimPM.artviscosity==AV_HCORR_FKJ98 ||
@@ -144,7 +148,7 @@ void setup_fixed_grid::setup_cell_extra_data(
     hc_flag = SimPM.ndim;
   }
 
-  CI.setup_extra_data(SimPM.RS, hc_flag, dv_flag);
+  CI.setup_extra_data(SimPM.RS, hc_flag, dv_flag, gp_flag);
   return;
 }
 

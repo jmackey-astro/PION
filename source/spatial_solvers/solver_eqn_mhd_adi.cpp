@@ -179,18 +179,10 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
   // HLLD/HLL solver, including compressive motion check and 
   // strong-gradient zones check (Migone et al. 2011 )
   else if (solve_flag==FLUX_RS_HLLD) {
-    int indices[3];
-    indices[0]=eqVX; indices[1]=eqVY; indices[2]=eqVZ;
-    double DivVl = Divergence(Cl,1,indices, grid);
-    double DivVr = Divergence(Cr,1,indices, grid);
-    
-    double Gradl = 0.0;
-    double Gradr = 0.0;
-    for (int i=0; i<grid->Ndim(); i++){  
-      Gradl = Gradl + GradZone(grid,Cl,i,1,PG);
-      Gradr = Gradr + GradZone(grid,Cr,i,1,PG);
-    }
-    //if (Gradl>0.0) cout << "Left gradient: " << Gradl << " Right gradient: " << Gradr << "\n";
+    double DivVl = CI.get_DivV(Cl);
+    double DivVr = CI.get_DivV(Cr);
+    double Gradl = CI.get_MagGradP(Cl);
+    double Gradr = CI.get_MagGradP(Cr);
 #ifdef TESTING
     if (!isfinite(DivVl) ||
         !isfinite(DivVr) ) {
@@ -198,19 +190,23 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
       cout << DivVr <<"\n";
     }
 #endif
-    if ((DivVl<0 && Gradl>5) || (DivVr<0 && Gradr>5)){ 
+    if ((DivVl<0. && Gradl>5.) || (DivVr<0. && Gradr>5.)){ 
     // compressive motion & strong-gradient zones check
     // Migone et al 2012
       //
       // HLL solver -- Miyoshi and Kusano (2005) (m05)
       //
-      //if (DivVl<0 && Gradl>5){rep.printVec("~~~~ HLL left switch!!!! ~~~~",Cl->pos,FV_gndim);}
-      //if (DivVr<0 && Gradr>5){rep.printVec("~~~~ HLL right switch!!!! ~~~~",Cr->pos,FV_gndim);}
-      //cout << "HLL!!!!\n";
+      //cout << "HLL: divv="<<DivVl<<", "<<DivVr;
+      //cout <<";  GradP="<<Gradl<<", "<<Gradr;
+      //cout <<"; Pl= "<<Cl->Ph[PG]<<", Pr="<<Cr->Ph[PG]<<"\n";
+      Cl->Ph[eqTR[0]] = Cl->P[eqTR[0]] = 1.0;
+      Cr->Ph[eqTR[0]] = Cr->P[eqTR[0]] = 1.0;
       err += MHD_HLL_flux_solver(Pl, Pr, eq_gamma, flux);
     }
     else {
-      //cout << "HLLD!!!!\n";
+      //cout << "HLLD:\n";
+      Cl->Ph[eqTR[0]] = Cl->P[eqTR[0]] = 0.0;
+      Cr->Ph[eqTR[0]] = Cr->P[eqTR[0]] = 0.0;
       err += MHD_HLLD_flux_solver(Pl, Pr, eq_gamma, flux);
     }
   }

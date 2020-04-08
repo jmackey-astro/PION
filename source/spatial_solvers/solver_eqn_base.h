@@ -117,14 +117,6 @@ class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
       ) {eq_gamma = g; return;}
 
   ///
-  /// Set the velocity divergence in a cell for viscosity calculation.
-  ///
-  void set_div_v(
-        class cell *,
-        class GridBaseClass *  ///< pointer to computational grid.
-        );
-
-  ///
   /// Set the H-correction eta value in a cell at the positive
   /// boundary along a given axis, based on the previously
   /// calculated left and right edge states at the boundary.
