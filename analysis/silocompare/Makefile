@@ -523,6 +523,13 @@ RT_MPI_boundaries.o: RT_MPI_boundaries.cpp RT_MPI_boundaries.h \
   boundaries.h ${GLOBAL} \
   grid_base_class.h MCMD_control.h
 
+NG_BC89flux.o: NG_BC89flux.cpp NG_BC89flux.h ${GLOBAL} \
+  grid_base_class.h uniform_grid.h solver_eqn_base.h
+
+NG_MPI_BC89flux.o: NG_MPI_BC89flux.cpp NG_MPI_BC89flux.h \
+  NG_BC89flux.h ${GLOBAL} solver_eqn_base.h \
+  grid_base_class.h uniform_grid.h MCMD_control.h
+
 #####################
 # EQUATIONS CLASSES #
 #####################
