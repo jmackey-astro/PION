@@ -22,7 +22,7 @@ Information
 Developers
 ==============
 
-The following people have contributed to the development of PION over the years
+The following people have contributed to the development of PION:
 
   * Harpreet Dhanoa
   * Margueritta Goulden   
@@ -35,6 +35,6 @@ The following people have contributed to the development of PION over the years
 Licence
 ===========
 
-PION is distributed under a BSD3 License.  Downloading, using, modifying and/or re-distributing the software implies acceptance of the License.
+PION is distributed under a BSD3 License.  Downloading, using, modifying and/or re-distributing the software implies acceptance of the License.  See LICENCE.txt.
 
 

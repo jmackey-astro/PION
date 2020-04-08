@@ -461,24 +461,24 @@ OBJECTS_NG_ICGEN = icgen_NG_MPI.o get_sim_info.o $(OBJ_GEN) \
 ##########################
 ### -- EXECTUTABLES -- ###
 ##########################
-all: ${bindir}/pion_parallel ${bindir}/icgen_parallel
-uni: ${bindir}/pion_parallel ${bindir}/icgen_parallel
-NG:  ${bindir}/pion_NG_parallel ${bindir}/icgen_NG_parallel
+all: ${bindir}/pion-ug ${bindir}/icgen-ug ${bindir}/pion-ng ${bindir}/icgen-ng
+uni: ${bindir}/pion-ug ${bindir}/icgen-ug
+NG:  ${bindir}/pion-ng ${bindir}/icgen-ng
 
-${bindir}/pion_parallel: $(OBJECTS_PION)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_PION) -o ${bindir}/pion_parallel $(LDFLAGS)
+${bindir}/pion-ug: $(OBJECTS_PION)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_PION) -o ${bindir}/pion-ug $(LDFLAGS)
 
-${bindir}/icgen_parallel: $(OBJECTS_ICGEN)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_ICGEN) -o ${bindir}/icgen_parallel $(LDFLAGS)
+${bindir}/icgen-ug: $(OBJECTS_ICGEN)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_ICGEN) -o ${bindir}/icgen-ug $(LDFLAGS)
 
-${bindir}/pion_NG_parallel : $(OBJECTS_NG_PION)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_NG_PION) -o ${bindir}/pion_NG_parallel $(LDFLAGS)
+${bindir}/pion-ng : $(OBJECTS_NG_PION)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_NG_PION) -o ${bindir}/pion-ng $(LDFLAGS)
 
-${bindir}/icgen_NG_parallel: $(OBJECTS_NG_ICGEN)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_NG_ICGEN) -o ${bindir}/icgen_NG_parallel $(LDFLAGS)
+${bindir}/icgen-ng: $(OBJECTS_NG_ICGEN)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_NG_ICGEN) -o ${bindir}/icgen-ng $(LDFLAGS)
 
 clean:
-	rm -f *.o ${bindir}/pion_parallel ${bindir}/icgen_parallel
+	rm -f *.o ${bindir}/pion-ug ${bindir}/icgen_parallel
 
 
 ####################################
@@ -495,6 +495,10 @@ sim_params.o: sim_params.cpp ${GLOBAL}
 main_NG_MPI.o: main_NG_MPI.cpp sim_control.h ${GLOBAL} comms.h
 mainMPI.o: mainMPI.cpp sim_control.h ${GLOBAL} comms.h
 
+icgen_parallel.o: icgen_parallel.cpp icgen_base.h icgen.h \
+  ${GLOBAL} get_sim_info.h dataio_base.h \
+  setup_fixed_grid_MPI.h setup_fixed_grid.h \
+  uniform_grid_pllel.h grid_base_class.h uniform_grid.h
 
 icgen_NG_MPI.o: icgen_NG_MPI.cpp icgen.h get_sim_info.h \
   icgen_base.h grid_base_class.h \
@@ -911,12 +915,6 @@ comm_files.o: comm_files.cpp comm_files.h comms.h ${GLOBAL}
 ##############################
 ##### IC GENERATOR FILES #####
 ##############################
-
-icgen_parallel.o: icgen_parallel.cpp icgen_base.h icgen.h \
-  ${GLOBAL} get_sim_info.h dataio_base.h \
-  setup_fixed_grid_MPI.h setup_fixed_grid.h \
-  uniform_grid_pllel.h grid_base_class.h uniform_grid.h
-
 
 icgen_base.o: icgen_base.cpp icgen_base.h ${GLOBAL}
 

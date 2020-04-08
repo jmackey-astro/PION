@@ -343,32 +343,32 @@ OBJECTS_NG_ICGEN = icgen_NG.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) \
 ##########################
 ### -- EXECTUTABLES -- ###
 ##########################
-all: ${bindir}/pion_serial ${bindir}/icgen_serial  \
-     ${bindir}/pion_NG_serial ${bindir}/icgen_NG_serial
+all: ${bindir}/pion-ugs ${bindir}/icgen-ugs  \
+     ${bindir}/pion-ngs ${bindir}/icgen-ngs
 
-uni: ${bindir}/pion_serial ${bindir}/icgen_serial
+uni: ${bindir}/pion-ugs ${bindir}/icgen-ugs
 
-NG: ${bindir}/icgen_NG_serial  ${bindir}/pion_NG_serial 
+NG: ${bindir}/icgen-ngs  ${bindir}/pion-ngs 
 
-${bindir}/pion_serial : $(OBJECTS_PION)
+${bindir}/pion-ugs : $(OBJECTS_PION)
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_PION) \
-        -o ${bindir}/pion_serial $(LDFLAGS)
+        -o ${bindir}/pion-ugs $(LDFLAGS)
 
-${bindir}/icgen_serial: $(OBJECTS_ICGEN)
+${bindir}/icgen-ugs: $(OBJECTS_ICGEN)
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_ICGEN) \
-        -o ${bindir}/icgen_serial $(LDFLAGS)
+        -o ${bindir}/icgen-ugs $(LDFLAGS)
 
-${bindir}/pion_NG_serial : $(OBJECTS_NG_PION)
+${bindir}/pion-ngs : $(OBJECTS_NG_PION)
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_NG_PION) \
-        -o ${bindir}/pion_NG_serial $(LDFLAGS)
+        -o ${bindir}/pion-ngs $(LDFLAGS)
 
-${bindir}/icgen_NG_serial: $(OBJECTS_NG_ICGEN)
+${bindir}/icgen-ngs: $(OBJECTS_NG_ICGEN)
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_NG_ICGEN) \
-        -o ${bindir}/icgen_NG_serial $(LDFLAGS)
+        -o ${bindir}/icgen-ngs $(LDFLAGS)
 
 clean:
-	rm -f *.o ${bindir}/pion_serial ${bindir}/icgen_serial \
-        ${bindir}/pion_NG_serial ${bindir}/icgen_NG_serial
+	rm -f *.o ${bindir}/pion-ugs ${bindir}/icgen-ugs \
+        ${bindir}/pion-ngs ${bindir}/icgen-ngs
 
 
 ####################################
