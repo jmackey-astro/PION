@@ -21,11 +21,9 @@
 #include "constants.h"
 #include "sim_params.h"
 
-#include "MCMD_control.h"
-#include "setup_fixed_grid_MPI.h"
+#include "decomposition/MCMD_control.h"
+#include "grid/setup_fixed_grid_MPI.h"
 #include "grid/uniform_grid.h"
-
-#include "dataIO/dataio.h"
 #include "dataIO/dataio_fits.h"
 
 #include <sstream>
@@ -56,20 +54,23 @@ int main(int argc, char **argv)
   // Get nproc from command-line (number of fits files for each
   // snapshot)
   //
-  class MCMDcontrol MCMD;
   int myrank=-1, nproc=-1;
   COMM->get_rank_nproc(&myrank,&nproc);
   nproc = atoi(argv[4]);
-  MCMD.set_myrank(myrank);
-  MCMD.set_nproc(nproc);
+  class SimParams SimPM;
+  SimPM.levels.clear();
+  SimPM.levels.resize(1);
+  SimPM.levels[0].MCMD.set_myrank(myrank);
+  SimPM.levels[0].MCMD.set_nproc(nproc);
+  class MCMDcontrol *MCMD = &(SimPM.levels[0].MCMD);
 
   cout <<"reading from file base "<<infilebase<<endl;
   cout <<"Writing to file "<<outfilebase<<endl;
   //cout <<"Step between outputs is "<<step<<" timesteps.\n";
-  cout <<"number of processors: "<<MCMD.get_nproc()<<"\n";
+  cout <<"number of processors: "<<MCMD->get_nproc()<<"\n";
   cout <<"**********************************************\n";
   // Open two input files and output file.
-  class DataIOFits dataio;
+  class DataIOFits dataio(SimPM);
   class file_status fs;
   
   fitsfile *ffin,*ffout;
@@ -96,6 +97,7 @@ int main(int argc, char **argv)
     if ((*s).find(".fits")==string::npos) {
       cout <<"removing file "<<*s<<" from list.\n";
       files.erase(s);
+      s=files.begin();
     }
     else {
       cout <<"files: "<<*s<<endl;
@@ -141,10 +143,10 @@ int main(int argc, char **argv)
     //
     // This should set LocalXmin and Xmin/max/range/NG
     //
-    MCMD.set_myrank(0);
-    err = dataio.ReadHeader(infile);
+    MCMD->set_myrank(0);
+    err = dataio.ReadHeader(infile,SimPM);
     if (err) rep.error("Didn't read header",err);
-    MCMD.decomposeDomain();
+    MCMD->decomposeDomain(SimPM, SimPM.levels[0]);
 
     //
     // Outfile:
@@ -178,6 +180,7 @@ int main(int argc, char **argv)
     long int *pix = new long int [SimPM.ndim];
     for (int j=0;j<SimPM.ndim;j++) pix[j]=SimPM.NG[j];
     cout <<"\tCreating "<<num<<" hdus in outfile (including header)...";
+    rep.printVec("pix",pix,2);
 
     for (int i=2; i<=num; i++) { // hdu1 is header.
       fits_create_img(ffout,DOUBLE_IMG,SimPM.ndim,pix,&status);
@@ -210,10 +213,10 @@ int main(int argc, char **argv)
     // place in oufile image.
     //
     cout <<"\tNow copying infile hdus into outfile.\n";
-    for (int proc=0; proc<MCMD.get_nproc(); proc++) {
+    for (int proc=0; proc<MCMD->get_nproc(); proc++) {
       cout <<"\t\tproc "<<proc<<": ";
-      MCMD.set_myrank(proc);
-      MCMD.decomposeDomain();
+      MCMD->set_myrank(proc);
+      MCMD->decomposeDomain(SimPM, SimPM.levels[0]);
       //
       // read infile header to get local ng/xmin/xmax
       //
@@ -226,14 +229,17 @@ int main(int argc, char **argv)
       //temp.str(""); temp <<outfilebase<<"."<<start<<".fits";
       if (!fs.file_exists(infile)) rep.error("infile doesn't exist",infile);
 
-      err = dataio.ReadHeader(infile);
+      err = dataio.ReadHeader(infile,SimPM);
       if (err) rep.error("Didn't read header",err);
+      MCMD->set_myrank(proc);
+      MCMD->decomposeDomain(SimPM, SimPM.levels[0]);
 
       err = fits_open_file(&ffin, infile.c_str(), READONLY, &status);
       if(status) {fits_report_error(stderr,status); return(err);}
        
       double *array=0;
-      array = new double[MCMD.LocalNcell];
+      cout <<"MCMD->LocalNcell = "<<MCMD->LocalNcell<<"\n";
+      array = new double[MCMD->LocalNcell];
       if (!array) rep.error("mem alloc",array);
        
       for (int im=2;im<=num;im++) { // hdu1 is header.
@@ -250,17 +256,17 @@ int main(int argc, char **argv)
         long int *fpix = new long int [SimPM.ndim];
         long int *lpix = new long int [SimPM.ndim];
         long int *inc  = new long int [SimPM.ndim]; // I think this is the increment in num. pix. per read.
-        long int npix=1; double dx = MCMD.LocalRange[XX]/MCMD.LocalNG[XX];
+        long int npix=1; double dx = MCMD->LocalRange[XX]/MCMD->LocalNG[XX];
         for (int i=0;i<SimPM.ndim;i++) {
           inc[i] = 1;
           fpix[i] = 1;
-          lpix[i] = MCMD.LocalNG[i]; // It's inclusive: fpix,fpix+1,...,lpix
+          lpix[i] = MCMD->LocalNG[i]; // It's inclusive: fpix,fpix+1,...,lpix
           npix *= (lpix[i]-fpix[i]+1);  // +1 because of previous line.
           //    cout <<"fpix[i],lpix[i] = "<<fpix[i]<<", "<<lpix[i]<<endl;
         }
-        if (npix != MCMD.LocalNcell) {
-          cout <<"ncell = "<<MCMD.LocalNcell<<" and counted "<<npix<<" cells.\n";
-          rep.error("Pixel counting failed in Image Read",npix-MCMD.LocalNcell);
+        if (npix != MCMD->LocalNcell) {
+          cout <<"ncell = "<<MCMD->LocalNcell<<" and counted "<<npix<<" cells.\n";
+          rep.error("Pixel counting failed in Image Read",npix-MCMD->LocalNcell);
         }
         double nulval = -1.e99; int anynul=0;
         // Read data from image.
@@ -272,14 +278,14 @@ int main(int argc, char **argv)
         //
         npix = 1;
         for (int i=0;i<SimPM.ndim;i++) {
-          fpix[i] = static_cast<long int>((MCMD.LocalXmin[i]-SimPM.Xmin[i])/dx*1.00000001) +1;
-          lpix[i] = fpix[i] + MCMD.LocalNG[i] -1; // -1 because it's inclusive: fpix,pfix+1,...,lpix
+          fpix[i] = static_cast<long int>((MCMD->LocalXmin[i]-SimPM.Xmin[i])/dx*1.00000001) +1;
+          lpix[i] = fpix[i] + MCMD->LocalNG[i] -1; // -1 because it's inclusive: fpix,pfix+1,...,lpix
           npix *= (lpix[i]-fpix[i]+1);  // +1 because of previous line.
            //	   cout <<"fpix[i],lpix[i] = "<<fpix[i]<<", "<<lpix[i]<<endl;
         }
-        if (npix != MCMD.LocalNcell) {
-          cout <<"ncell = "<<MCMD.LocalNcell<<" and counted "<<npix<<" cells.\n";
-          rep.error("Pixel counting failed in Image Write",npix-MCMD.LocalNcell);
+        if (npix != MCMD->LocalNcell) {
+          cout <<"ncell = "<<MCMD->LocalNcell<<" and counted "<<npix<<" cells.\n";
+          rep.error("Pixel counting failed in Image Write",npix-MCMD->LocalNcell);
         }
         fits_write_subset(ffout, TDOUBLE, fpix, lpix, array, &status);
         if(status) fits_report_error(stderr,status);

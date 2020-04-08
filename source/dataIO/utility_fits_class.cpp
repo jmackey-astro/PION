@@ -174,7 +174,7 @@ int utility_fitsio::check_fits_image_dimensions(
   fits_get_img_param(ff,0, &bitpix,&naxis,naxes,&status);
   //cout <<"naxis="<<naxis<<", axes=["<<naxes[0]<<", "<<naxes[1]<<"], status="<<status<<"\n";
   fits_read_keys_lng(ff,"naxis",1,naxis,naxes,&num,&status); // reads ndim keys matching naxis, returns number found.
-  //cout <<"naxis="<<naxis<<", axes=["<<naxes[0]<<", "<<naxes[1]<<"], status="<<status<<"\n";
+  cout <<"naxis="<<naxis<<", axes=["<<naxes[0]<<", "<<naxes[1]<<"], status="<<status<<"\n";
   if (status) {fits_report_error(stderr,status); return(status);}
   //
   // Check that the image HDU has the right size:
@@ -182,7 +182,7 @@ int utility_fitsio::check_fits_image_dimensions(
   if (bitpix != DOUBLE_IMG) rep.error("Bad image type",bitpix);
   if (naxis  != ndim) rep.error("Bad image dimensionality!",naxis);
   for (int j=0;j<naxis;j++) if (naxes[j]!=npix[j]) {
-    //cout <<"j="<<j<<"  axes="<<naxes[j]<<" npix="<<npix[j]<<"\n";
+    cout <<"j="<<j<<"  axes="<<naxes[j]<<" npix="<<npix[j]<<"\n";
     rep.error("Bad image length in at least one direction delta(N) follows:",naxes[j]-npix[j]);
   }
 

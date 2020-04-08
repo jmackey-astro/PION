@@ -19,9 +19,6 @@
 #include "ics/get_sim_info.h"
 
 #include "dataIO/dataio_base.h"
-#ifdef FITS
-#include "dataIO/dataio_fits.h"
-#endif // if FITS
 #ifdef SILO
 #include "dataIO/dataio_silo.h"
 #endif // if SILO
@@ -212,14 +209,6 @@ int main(int argc, char **argv)
   }
 
   dataio = 0; // zero the class pointer.
-#ifdef FITS    
-  if (icftype=="fits") {
-    cout <<"WRITING FITS FILE: ";
-    cout << icfile << "\n";
-    dataio = 0;
-    dataio = new DataIOFits (SimPM);
-  }
-#endif // if fits.
 
 #ifdef SILO
   if (icftype=="silo") {

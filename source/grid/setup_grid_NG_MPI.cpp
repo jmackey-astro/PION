@@ -31,6 +31,10 @@
 #include "microphysics/MPv7.h"
 #include "microphysics/MPv8.h"
 
+#ifdef FITS
+#include "dataIO/dataio_fits_MPI.h"
+#endif // if FITS
+
 #ifndef EXCLUDE_HD_MODULE
 #include "microphysics/MPv9.h"
 #endif
@@ -485,14 +489,14 @@ void setup_grid_NG_MPI::setup_dataio_class(
   switch (typeOfFile) {
 
 #ifdef SILO
-  case 5: // Start from Silo snapshot.
+    case 5: // Start from Silo snapshot.
     dataio = new dataio_silo_utility
                              (par, "DOUBLE", &(par.levels[0].MCMD));
     break; 
 #endif // if SILO
 
   default:
-    rep.error("sim_control_NG::Init unhandled filetype",typeOfFile);
+    rep.error("sim_control_NG_MPI::Init unhandled filetype",typeOfFile);
   }
   return;
 }

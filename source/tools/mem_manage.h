@@ -49,7 +49,7 @@ public:
         )
   {
     try {ptr = new T [n_el];}
-    catch (std::bad_alloc) {
+    catch (const std::bad_alloc &) {
       cerr <<"mem_alloc() pointer initialisation failed.\n";
       rep.error("mem_alloc() pointer initialisation failed.",ptr);
     }

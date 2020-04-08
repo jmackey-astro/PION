@@ -329,14 +329,6 @@ int main(int argc, char **argv)
     cout << icfile << "\n";
   }
 
-#ifdef FITS    
-  if (icftype=="fits") {
-    cout <<"WRITING FITS FILE: ";
-    cout << icfile << "\n";
-    dataio = 0; dataio = new DataIOFits (SimPM);
-  }
-#endif // if fits.
-
 #ifdef SILO
   if (icftype=="silo") {
     cout <<"WRITING SILO FILE: ";

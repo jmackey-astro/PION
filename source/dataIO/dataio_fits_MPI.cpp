@@ -493,25 +493,9 @@ int DataIOFits_pllel::ReadData(
       )
 {
   string fname="DataIOFits_pllel::ReadData";
+  int err=0; 
 
-  if (!cg[0])
-    rep.error("DataIOFits_pllel::ReadData() null pointer to grid!",cg[0]);
-  DataIOFits_pllel::gp = cg[0];
-
-  int err=0; int status=0; fitsfile *ff;
-  //cout <<"DataIOFits_pllel::ReadData() opening fits file to read data...";
-  err = fits_open_file(&ff, infile.c_str(), READONLY, &status);
-  if(status) {fits_report_error(stderr,status); return(err);}
-  //cout <<"done.\n";
-  // Move to first data hdu; should be 2nd hdu;
-  int num;
-  fits_get_hdu_num(ff, &num);
-  if (num !=1) err += ffmahd(ff,1,0,&status);
-  if (status) {fits_report_error(stderr,status); return(err);} 
-  err += ffmrhd(ff,1,0,&status);   fits_get_hdu_num(ff, &num);
-  //  cout <<"Current hdu: "<<num<<"\t and err="<<err<<"\n";
   // -------------------------------------------------------
-
   int nvar = SimPM.nvar;
   string *var=0;
   if (SimPM.ntracer>5) {
@@ -546,6 +530,48 @@ int DataIOFits_pllel::ReadData(
     var = mem.myalloc(var,10);
     rep.error("What equations?!",SimPM.eqntype);
   }
+  // -------------------------------------------
+
+  // -------------------------------------------
+  // -------------------------------------------
+  // loop over grid refinement levels, read one file per level per proc
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    cout <<"READING DATA FOR LEVEL "<<l<<" IN FITS FORMAT\n";
+    if (!cg[l])
+      rep.error("dataio_silo::ReadData() null pointer!",
+                cg[l]);
+    DataIOFits_pllel::gp = cg[l];
+    mpiPM = &(SimPM.levels[l].MCMD);
+
+    // read a different file for each level in the NG grid.
+    // If more than one level of grid, look for level in filename:
+    string::size_type p;
+    if ((p=infile.find("_level"))==string::npos && 
+        SimPM.grid_nlevels>1) {
+      rep.error("::ReadData() level",infile);
+    }
+    else if (SimPM.grid_nlevels>1) {
+      ostringstream temp; temp.str("");
+      temp.width(2); temp.fill('0');
+      temp << l;
+      infile.replace(p+6,2,temp.str());
+      cout <<"p="<<p<<"  string="<<temp.str()<<", silofile=";
+      cout <<infile<<"\n";
+    }
+
+  int status=0; fitsfile *ff;
+  cout <<"DataIOFits_pllel::ReadData() opening fits file to read data...";
+  err = fits_open_file(&ff, infile.c_str(), READONLY, &status);
+  if(status) {fits_report_error(stderr,status); return(err);}
+  //cout <<"done.\n";
+  // Move to first data hdu; should be 2nd hdu;
+  int num;
+  fits_get_hdu_num(ff, &num);
+  if (num !=1) err += ffmahd(ff,1,0,&status);
+  if (status) {fits_report_error(stderr,status); return(err);} 
+  err += ffmrhd(ff,1,0,&status);   fits_get_hdu_num(ff, &num);
+  cout <<"Current hdu: "<<num<<"\t and err="<<err<<"\n";
+
   // -------------------------------------------
   // Loop over all Variables and read from file.
   // -------------------------------------------
@@ -582,7 +608,7 @@ int DataIOFits_pllel::ReadData(
     else {
       // Variable found, check we're at the right hdu and read data.
       fits_get_hdu_num(ff, &num);
-      //cout <<"Current hdu: "<<num<<"\t i="<<i<<" and var[i] = "<<var[i]<<"\n";
+      cout <<"Current hdu: "<<num<<"\t i="<<i<<" and var[i] = "<<var[i]<<"\n";
       // -----------------------------------------------------------------
       // --- Now call read function differently depending on if infile ---
       // --- is a single file or split already between processors.     ---
@@ -591,6 +617,7 @@ int DataIOFits_pllel::ReadData(
 	// This is where each process reads from its own file.
 	cout <<"DataIOFits_pllel::ReadData() Reading from multiple files.\n";
 	cout <<"Proc "<<mpiPM->get_myrank()<<":\t reading from file "<<infile<<"\n";
+        cout <<", localNG="; rep.printVec(" ",mpiPM->LocalNG,2);
 	err += check_fits_image_dimensions(ff, var[i],  SimPM.ndim, mpiPM->LocalNG);
 	if (err) rep.error("image wrong size.",err);
 	err += read_fits_image(SimPM, ff, var[i], mpiPM->LocalXmin, mpiPM->LocalXmin, mpiPM->LocalNG, mpiPM->LocalNcell);
@@ -627,6 +654,7 @@ int DataIOFits_pllel::ReadData(
     for(int v=0;v<nvar;v++) cpt->Ph[v]=cpt->P[v];
   } while ((cpt=gp->NextPt(cpt))!=0);
     
+  }
   return err;
 }
 

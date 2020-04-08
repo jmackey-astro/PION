@@ -73,8 +73,8 @@ class MCMDcontrol {
   int parent_proc; ///< process of the parent grid, if NG and l>0
 
   bool ReadSingleFile; ///< If the ICs are in a single file, set this to true.
-  bool WriteSingleFile; ///< If you want all the processors to write to one file, set this (BUGGY!)
-  bool WriteFullImage;  ///< If you want multiple fits files, but each one is the full domain size (bad!)
+  bool WriteSingleFile; ///< If you want all the processors to write to one file, set this
+  bool WriteFullImage;  ///< If you want multiple fits files, but each one is the full domain size
 
   ///
   /// Decompose the domain into blocks for each processor, and set up
