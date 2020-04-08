@@ -236,7 +236,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   // ----------------------------------------------------------------
   // if spatial order of accuracy is 1, then we have piecewise
   // constant data, so there is no interpolation to be done.
-  if (par.spOOA == 1) {
+  if (par.spOOA == OA1) {
     for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
       f = (*f_iter);
       c = f->npt;
@@ -324,56 +324,9 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         f3 = fine->NextPt(f1,YP);
         f4 = fine->NextPt(f2,YP);
         
-#ifdef TEST_C2F
-        //rep.printVec("f1 pos",f1->pos,2);
-        //rep.printVec("f2 pos",f2->pos,2);
-        //rep.printVec("f3 pos",f3->pos,2);
-        //rep.printVec("f4 pos",f4->pos,2);
-        //rep.printVec("c  pos",c->pos,2);
-#endif
-
-        // HACK
-        /*
-        if (level==2 && c->pos[YY]<150) {
-          rep.printVec("f1 pos",f1->pos,2);
-          rep.printVec("f2 pos",f2->pos,2);
-          rep.printVec("f3 pos",f3->pos,2);
-          rep.printVec("f4 pos",f4->pos,2);
-          rep.printVec("c  pos",c->pos,2);
-          rep.printVec("Ph",c->Ph,par.nvar);
-          double col=0.0;
-          //CI.get_col(f1,0,&col);
-          //cout <<"f1 : col2cell = "<<col;
-          //CI.get_cell_col(f1,0,&col);
-          //cout <<", cell-col = "<<col<<endl;
-        }
-        */
-        // HACK
-
-#ifdef TEST_C2F
-        //cout <<"BEFORE interpolating coarse to fine 2d: coarse="<<c->id;
-        //cout <<", f1="<<f1->id<<", f2="<<f2->id;
-        //cout <<", f3="<<f3->id<<", f4="<<f4->id<<"\n";
-        //CI.print_cell(c);
-        //CI.print_cell(f1);
-        //CI.print_cell(f2);
-        //CI.print_cell(f3);
-        //CI.print_cell(f4);
-#endif
         interpolate_coarse2fine2D(
               par,fine,solver,c->Ph,c->pos,c_vol,sx,sy,f1,f2,f3,f4);
         
-#ifdef TEST_C2F
-        //cout <<"AFTER interpolating coarse to fine 2d: coarse="<<c->id;
-        //cout <<", f1="<<f1->id<<", f2="<<f2->id;
-        //cout <<", f3="<<f3->id<<", f4="<<f4->id<<"\n";
-        //CI.print_cell(c);
-        //CI.print_cell(f1);
-        //CI.print_cell(f2);
-        //CI.print_cell(f3);
-        //CI.print_cell(f4);
-#endif
-
       } // loop over fine cells
     } // 2D
 
@@ -650,16 +603,6 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   double dxo2 = 0.5*fine->DX(); // dx
   double f_vol[4];
 
-  // HACK
-  double f_psi[4];
-  if (par.eqntype == EQGLM) {
-    f_psi[0] = f1->P[SI];
-    f_psi[1] = f2->P[SI];
-    f_psi[2] = f3->P[SI];
-    f_psi[3] = f4->P[SI];
-  }
-  // HACK
-  
   //
   // Need to do bilinear interpolation, 4 cells at a time.
   // use slopes in each direction to get corner values for the
@@ -721,30 +664,6 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   solver->UtoP(f4U,f4->Ph, par.EP.MinTemperature, par.gamma);
   for (int v=0;v<par.nvar;v++) f4->P[v] = f4->Ph[v];
 
-  
-  // HACK
-  //if (par.eqntype == EQGLM) {
-  //  f1->P[SI] = f1->Ph[SI] = P[SI]; // f_psi[0];
-  //  f2->P[SI] = f2->Ph[SI] = P[SI]; //0.0; // f_psi[1];
-  //  f3->P[SI] = f3->Ph[SI] = P[SI]; //0.0; // f_psi[2];
-  //  f4->P[SI] = f4->Ph[SI] = P[SI]; //0.0; // f_psi[3];
-  //}
-  // HACK
-  
- /* 
-  // HACK
-  if (par.eqntype == EQGLM) {
-    f1->P[SI] = f1->Ph[SI] =  f_psi[0];
-    f2->P[SI] = f2->Ph[SI] =  f_psi[1];
-    f3->P[SI] = f3->Ph[SI] =  f_psi[2];
-    f4->P[SI] = f4->Ph[SI] =  f_psi[3];
-  }
-  // HACK
-*/
-  //int d=par.nvar-1;
-  //cout <<"interpolate_coarse2fine2D: "<<P[d]<<": "<<f1->P[d]<<", ";
-  //cout <<f2->P[d]<<", "<<f3->P[d]<<", "<<f4->P[d]<<"\n";
-  
   // HACK: get rid of slopes:
   //for (int v=0;v<par.nvar;v++) f1->P[v] = f1->Ph[v] = P[v];
   //for (int v=0;v<par.nvar;v++) f2->P[v] = f2->Ph[v] = P[v];

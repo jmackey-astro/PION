@@ -878,7 +878,6 @@ int NG_BC89flux::recv_BC89_flux_boundary(
 #ifdef SKIP_BC89_FLUX
   return 0;
 #endif
-  //spatial_solver->SetDirection(ax);
   struct flux_interface *fc=0;
   struct flux_interface *ff=0;
   double ftmp[par.nvar],utmp[par.nvar];
@@ -890,49 +889,11 @@ int NG_BC89flux::recv_BC89_flux_boundary(
     rep.error("fine and parent face arrays r different size",2);
   }
 
-#ifdef TEST_BC89FLUX
-  cout <<"SERIAL BC89 RECV: send-d="<<send.dir<<", recv-d=";
-  cout <<recv.dir<<", d="<<d<<", ax="<<ax<<endl;
-  cout <<"\t\t Receive "<<recv.fi.size()<<" fluxes\n";
-#endif
   for (unsigned int f=0; f<recv.fi.size(); f++) {
     fc = recv.fi[f];
     ff = send.fi[f];
 
-#ifdef TEST_BC89FLUX
-    cout <<"f="<<f<<":coarse="<<fc<<", flux =  ";
-    rep.printVec("fc->flux",fc->flux,par.nvar);
-    cout <<"f="<<f<<":  fine="<<ff<<", flux =  ";
-    rep.printVec("ff->flux",ff->flux,par.nvar);
-    /*
-    for (int v=0;v<par.nvar;v++) {
-      fc->flux[v] /= fc->area[0];
-    }
-    for (int v=0;v<par.nvar;v++) {
-      ff->flux[v] /= fc->area[0];
-    }
-    cout <<"f="<<f<<":  grid="<<fc<<", flux =  ";
-    rep.printVec("fc->flux",fc->flux,par.nvar);
-    cout <<"f="<<f<<":  fine="<<ff<<", flux =  ";
-    rep.printVec("ff->flux",ff->flux,par.nvar);
-    cout <<"fc->area[0]="<<fc->area[0];
-    cout <<" ff->area[0]="<<ff->area[0]<<"\n";
-    */
-#endif
-    
     for (int v=0;v<par.nvar;v++) fc->flux[v] += ff->flux[v];
-
-#ifdef TEST_BC89FLUX
-/*    rep.printVec("     dU          ",fc->c[0]->dU,par.nvar);
-    rep.printVec("flux",fc->flux,par.nvar);
-    if (d==3) {
-      rep.printVec("c state",fc->c[0]->Ph,par.nvar);
-      rep.printVec("+ state",grid->NextPt(fc->c[0],YP)->Ph,par.nvar);
-      rep.printVec("- state",grid->NextPt(fc->c[0],YN)->Ph,par.nvar);
-    }
-    */
-#endif
-
     for (int v=0;v<par.nvar;v++) fc->flux[v] /= fc->area[0];
     for (int v=0;v<par.nvar;v++) ftmp[v]=0.0;
     
@@ -960,45 +921,8 @@ int NG_BC89flux::recv_BC89_flux_boundary(
       spatial_solver->DivStateVectorComponent(fc->c[0], grid, ax,
                                   par.nvar,fc->flux,ftmp,utmp);
     }
-#ifdef TEST_BC89FLUX
-    //rep.printVec("**********  Error",utmp, par.nvar);
-    //cout <<"Flux rho: "<<fc->flux[0]<<": "<<fc->c[0]->dU[0];
-    //cout <<", "<<utmp[0]<<"\n";
-#endif
-    /*
-    // HACK
-    double psi[2]={0.0,0.0};
-    if (par.eqntype == EQGLM) {
-      switch (static_cast<int>(ax)) {
-        case 0: psi[0] =  fc->c[0]->dU[BBX]; break;
-        case 1: psi[0] =  fc->c[0]->dU[BBY]; break;
-        case 2: psi[0] =  fc->c[0]->dU[BBZ]; break;
-        default: rep.error("BC89 dir",ax);
-      }
-      psi[1] = fc->c[0]->dU[PSI];
-    }
-    // HACK
-    */
     for (int v=0;v<par.nvar;v++) fc->c[0]->dU[v] += utmp[v];
-    /*
-    // HACK
-    if (par.eqntype == EQGLM) {
-      switch (static_cast<int>(ax)) {
-        case 0: fc->c[0]->dU[BBX] = psi[0]; break;
-        case 1: fc->c[0]->dU[BBY] = psi[0]; break;
-        case 2: fc->c[0]->dU[BBZ] = psi[0]; break;
-        default: rep.error("BC89 dir",ax);
-      }
-      fc->c[0]->dU[PSI] = psi[1];
-    }
-    // HACK
-    */
 
-#ifdef TEST_BC89FLUX
-    //spatial_solver->PtoU(fc->c[0]->P,utmp,par.gamma);
-    //rep.printVec(" U",utmp,par.nvar);
-    //rep.printVec("dU",fc->c[0]->dU,par.nvar);
-#endif
   } // loop over interfaces.
   return 0;
 }

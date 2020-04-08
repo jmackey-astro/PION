@@ -91,7 +91,6 @@ class FV_solver_mhd_ideal_adi
         );
 
   
-#ifdef DERIGS
   ///
   /// calculate Powell and GLM source terms for multi-D MHD
   ///
@@ -106,7 +105,6 @@ class FV_solver_mhd_ideal_adi
       enum direction, ///< negative direction normal to interface
       const double    ///< timestep dt
       );
-#endif
 
   ///
   /// Powell source terms including divB
@@ -335,7 +333,6 @@ class FV_solver_mhd_mixedGLM_adi
         );
 
   
-#ifdef DERIGS
   virtual int MHDsource(
         class GridBaseClass *,  ///< pointer to grid.
         class cell *,   ///< pointer to cell of left state
@@ -347,7 +344,6 @@ class FV_solver_mhd_mixedGLM_adi
         enum direction, ///< negative direction normal to interface
         const double    ///< timestep dt
         );
-#endif
   
   ///
   /// Same as ideal MHD version except that total energy contains
@@ -371,26 +367,6 @@ class FV_solver_mhd_mixedGLM_adi
       const double    ///< Gas constant gamma.
       );
 
-#ifdef DERIGS
-  ///
-  /// Set max_speed variable for setting GLM hyperbolic wavespeed.
-  /// This is used to reset to zero at start of each step, and also
-  /// to reset local value to global value for multi-core execution.
-  ///
-  void set_max_speed(
-      const double c ///< new max. speed
-      )
-  {
-    max_speed = c;
-    //cout <<"solver-MHD max-speed="<<max_speed<<"\n";
-    return;
-  }    
-
-  ///
-  /// returns max_speed for this step.
-  ///
-  double get_max_speed() {return max_speed;}
-#endif
 };
 
 

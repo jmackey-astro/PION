@@ -307,13 +307,6 @@ int dataio_silo::OutputData(
     // then write each variable in turn to the mesh.
     //
     DBSetDir(*db_ptr,"/");
-    
-    //dim1[0]=1;
-    //int cycle=SimPM.timestep;
-    //err += DBWrite(*db_ptr,"cycle",   &cycle, dim1,1,DB_INT);
-    //double dtime=SimPM.levels[0].simtime;
-    //err += DBWrite(*db_ptr,"dtime",  &dtime, dim1,1,DB_DOUBLE);
-
     DBMkDir(*db_ptr,"rank_0000_domain_0000");
     DBSetDir(*db_ptr,"/rank_0000_domain_0000");
     string meshname="unigrid0000";
@@ -330,7 +323,7 @@ int dataio_silo::OutputData(
         rep.error("dataio_silo::OutputData() writing var",(*i));
     }
 
-    // write multimesh info
+    // write multimesh info (so data are compatible with MPI files)
     string mm_name ="MultiMesh";
     string mma_name="Domain_Decomposition";
     DBSetDir(*db_ptr,"/");
@@ -410,7 +403,6 @@ int dataio_silo::OutputData(
     dataio_silo::delete_data_arrays();
     DBSetDir(*db_ptr,"/");
     DBClose(*db_ptr); //*db_ptr=0;
-
   } // loop over levels.
   return 0;
 }

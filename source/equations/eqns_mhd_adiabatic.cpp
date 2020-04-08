@@ -581,9 +581,7 @@ void eqns_mhd_mixedGLM::PtoU(
 //  cout <<"glm ptou\n";
   U[eqPSI] = P[eqSI];
   eqns_mhd_ideal::PtoU(P,U,gamma);
-#ifdef DERIGS
   U[eqERG] += 0.5*U[eqPSI]*U[eqPSI];
-#endif
   return;
 }
 
@@ -607,9 +605,7 @@ int eqns_mhd_mixedGLM::UtoP(
   p[eqPG] = (g-1.0) *
     ( u[eqERG]
     - p[eqRO]*(p[eqVX]*p[eqVX] +p[eqVY]*p[eqVY] +p[eqVZ]*p[eqVZ])*0.5
-#ifdef DERIGS
     - 0.5*u[eqPSI]*u[eqPSI]
-#endif
     - (u[eqBBX]*u[eqBBX] +u[eqBBY]*u[eqBBY] +u[eqBBZ]*u[eqBBZ])*0.5);
   p[eqBX] = u[eqBBX];
   p[eqBY] = u[eqBBY];

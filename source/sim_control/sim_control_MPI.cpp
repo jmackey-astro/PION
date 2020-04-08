@@ -399,30 +399,9 @@ int sim_control_pllel::Time_Int(
 #ifdef TESTING
     cout <<"MPI time_int: calculating dt\n";
 #endif
-#ifdef DERIGS
-    //spatial_solver->set_max_speed(0.0);
-#endif
     SimPM.levels[0].last_dt = SimPM.last_dt;
     err += calculate_timestep(SimPM, grid[0],spatial_solver,0);
     rep.errorTest("TIME_INT::calc_timestep()",0,err);
-    //
-    // If using MHD with GLM divB cleaning, the following sets the
-    // hyperbolic wavespeed.  If not, it does nothing.  By setting it
-    // here and using t_dyn, we ensure that the hyperbolic wavespeed is
-    // equal to the maximum signal speed on the grid, and not an
-    // artificially larger speed associated with a shortened timestep.
-    //
-#ifdef DERIGS
-    //double ch = spatial_solver->get_max_speed();
-    //ch = COMM->global_operation_double("MAX",ch);
-    //double cr=0.0;
-    //for (int d=0;d<SimPM.ndim;d++)
-    //  cr += 1.0/(SimPM.Range[d]*SimPM.Range[d]);
-    //cr = M_PI*sqrt(cr);
-    //spatial_solver->Set_GLM_Speeds(SimPM.levels[0].dt,
-    //                               SimPM.levels[0].dx, cr);
-#endif
-
 
 #ifdef TESTING
     cout <<"MPI time_int: stepping forward in time\n";
@@ -513,15 +492,8 @@ int sim_control_pllel::calculate_timestep(
   //
   // Get global min over all grids on this level.
   //
-  //par.dt = t_dyn;
   t_dyn = COMM->global_operation_double("MIN", t_dyn);
-  //cout <<"l="<<l<<", proc "<<SimPM.levels[0].MCMD.get_myrank();
-  //cout<<":\t my t_dyn="<<par.dt<<" and global t_dyn="<<t_dyn<<"\n";
-  //par.dt = t_mp;
-  t_mp = COMM->global_operation_double("MIN", t_mp);
-  //cout <<"l="<<l<<", proc "<<SimPM.levels[0].MCMD.get_myrank();
-  //cout<<":\t my t_mp ="<<par.dt<<" and global t_mp ="<<t_mp<<"\n";
-  //cout <<"l="<<l<<", \t t_dyn="<<t_dyn<<"and t_mp ="<<t_mp<<"\n";
+  t_mp  = COMM->global_operation_double("MIN", t_mp);
 
 
 #ifdef TESTING
@@ -550,7 +522,6 @@ int sim_control_pllel::calculate_timestep(
   par.dt = min(par.dt, t_cond);
 #endif // THERMAL CONDUCTION
 
-//#ifndef DERIGS
   //
   // If using MHD with GLM divB cleaning, the following sets the
   // hyperbolic wavespeed.  If not, it does nothing.  By setting it
@@ -558,7 +529,6 @@ int sim_control_pllel::calculate_timestep(
   // equal to the maximum signal speed on the grid, and not an
   // artificially larger speed associated with a shortened timestep.
   //
-
   // we always calculate timestep on finest level first.
   static double td=0.0;
   if (l==par.grid_nlevels-1)
@@ -567,18 +537,15 @@ int sim_control_pllel::calculate_timestep(
     td = min(td,t_dyn/pow(2.0,par.grid_nlevels-1-l));
 
   double cr=0.0;
-  //for (int d=0;d<par.ndim;d++)
-  //  cr += 1.0/(par.Range[d]*par.Range[d]);
-  //cr = M_PI*sqrt(cr);
-  if (par.grid_nlevels==1) cr = 0.25/par.dx;
-  else cr = 0.25/par.levels[par.grid_nlevels-1].dx;
-  if (l==0)
-    spatial_solver->Set_GLM_Speeds(td,par.levels[par.grid_nlevels-1].dx, cr);
-//#else
-  //double ch = par.CFL * grid->DX()/t_dyn;
-  //sp_solver->set_max_speed(ch);
-  //cout <<"timestep: max-speed="<<ch<<"\n";
-//#endif
+  if (par.grid_nlevels==1) {
+    cr = 0.25/par.dx;
+    spatial_solver->Set_GLM_Speeds(td,par.dx, cr);
+  }
+  else {
+    cr = 0.25/par.levels[par.grid_nlevels-1].dx;
+    if (l==0)
+      spatial_solver->Set_GLM_Speeds(td,par.levels[par.grid_nlevels-1].dx, cr);
+  }
   
   //
   // Check that the timestep doesn't increase too much between step,

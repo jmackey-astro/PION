@@ -27,7 +27,6 @@
 //#define TEST_INF             // test for infinity/nan
 //#define TEST_SYMMETRY // dangerous for real simulations (assumes units for rho,v)
 //#define RT_TESTING ///< Enable this for debugging info on raytracing.
-#define DERIGS
 
 //
 // Various defines for testing bits of the code (lots of sdtout).

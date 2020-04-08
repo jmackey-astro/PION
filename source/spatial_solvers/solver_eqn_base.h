@@ -70,23 +70,6 @@ class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
       const double  ///< GLM damping coefficient c_r
       ) {return;}
 
-#ifdef DERIGS
-  ///
-  /// Set max_speed variable for setting GLM hyperbolic wavespeed.
-  /// This is used to reset to zero at start of each step, and also
-  /// to reset local value to global value for multi-core execution.
-  ///
-  virtual void set_max_speed(
-      const double c ///< new max. speed
-      ) {return;}
-
-  ///
-  /// returns max_speed for this step.
-  ///
-  virtual double get_max_speed() {return 0.0;}
-#endif
-
-#ifdef DERIGS
   /// calculate Powell and GLM source terms for multi-D MHD
   virtual int MHDsource(
       class GridBaseClass *,  ///< pointer to grid.
@@ -99,7 +82,6 @@ class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
       enum direction, ///< negative direction normal to interface
       const double    ///< timestep dt
       ) {return 0;}
-#endif
 
   /// \brief sets current timestep value in the solver class. 
   virtual void Setdt(

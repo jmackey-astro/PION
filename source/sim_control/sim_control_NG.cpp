@@ -319,9 +319,6 @@ int sim_control_NG::Time_Int(
     // Get timestep on each level
     int scale = 1;
     double mindt = 1.0e99;
-#ifdef DERIGS
-    //spatial_solver->set_max_speed(0.0);
-#endif
     //err = RT_all_sources_levels(SimPM);
     //rep.errorTest("sim_control_NG: RT_all_sources_levels",0,err);
     
@@ -371,26 +368,7 @@ int sim_control_NG::Time_Int(
     SimPM.last_dt = SimPM.levels[0].last_dt;
 
     //
-    // If using MHD with GLM divB cleaning, the following sets the
-    // hyperbolic wavespeed.  If not, it does nothing.  By setting it
-    // here and using t_dyn, we ensure that the hyperbolic wavespeed is
-    // equal to the maximum signal speed on the grid, and not an
-    // artificially larger speed associated with a shortened timestep.
-    //
-#ifdef DERIGS
-    //double cr=0.0;
-    //for (int d=0;d<SimPM.ndim;d++)
-    //  cr += 1.0/(SimPM.levels[0].Range[d]*SimPM.levels[0].Range[d]);
-    //cr = M_PI*sqrt(cr);
-    //spatial_solver->Set_GLM_Speeds(SimPM.levels[0].dt,
-    //                               SimPM.levels[0].dx, cr);
-#endif
-
-    //clk.start_timer("advance_time");
-    //
-    // Use a recursive algorithm to update the coarsest level.  This
-    // function also updates the next level twice, by calling itself
-    // for the finer level, and so on.
+    // Use a recursive algorithm to update the coarsest level.
     //
     advance_time(0,SimPM.levels[0].grid);
     SimPM.simtime = SimPM.levels[0].simtime;

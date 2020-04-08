@@ -183,30 +183,14 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
     double DivVr = CI.get_DivV(Cr);
     double Gradl = CI.get_MagGradP(Cl);
     double Gradr = CI.get_MagGradP(Cr);
-#ifdef TESTING
-    if (!isfinite(DivVl) ||
-        !isfinite(DivVr) ) {
-      cout << DivVl <<"  ";
-      cout << DivVr <<"\n";
-    }
-#endif
     if ((DivVl<0. && Gradl>5.) || (DivVr<0. && Gradr>5.)){ 
-    // compressive motion & strong-gradient zones check
-    // Migone et al 2012
-      //
+      // compressive motion & strong-gradient zones check
+      // Migone et al 2012
       // HLL solver -- Miyoshi and Kusano (2005) (m05)
-      //
-      //cout << "HLL: divv="<<DivVl<<", "<<DivVr;
-      //cout <<";  GradP="<<Gradl<<", "<<Gradr;
-      //cout <<"; Pl= "<<Cl->Ph[PG]<<", Pr="<<Cr->Ph[PG]<<"\n";
-      Cl->Ph[eqTR[0]] = Cl->P[eqTR[0]] = 1.0;
-      Cr->Ph[eqTR[0]] = Cr->P[eqTR[0]] = 1.0;
       err += MHD_HLL_flux_solver(Pl, Pr, eq_gamma, flux);
     }
     else {
-      //cout << "HLLD:\n";
-      Cl->Ph[eqTR[0]] = Cl->P[eqTR[0]] = 0.0;
-      Cr->Ph[eqTR[0]] = Cr->P[eqTR[0]] = 0.0;
+      // HLLD solver -- Miyoshi and Kusano (2005) (m05)
       err += MHD_HLLD_flux_solver(Pl, Pr, eq_gamma, flux);
     }
   }
@@ -483,10 +467,6 @@ int FV_solver_mhd_ideal_adi::dU_Cell(
 // ##################################################################
 
 
-///
-/// calculate Powell source terms for multi-D MHD
-///
-#ifdef DERIGS
 int FV_solver_mhd_ideal_adi::MHDsource(
                       class GridBaseClass *grid,  ///< pointer to grid.
                       class cell *Cl,   ///< pointer to cell of left state
@@ -499,10 +479,14 @@ int FV_solver_mhd_ideal_adi::MHDsource(
                       const double dt    ///< timestep dt
                       )
 {
-  // from Powell's paper (1999)
+  // The Powell source terms from Powell's paper (1999)
   double dx = 2.0*grid->DX();
-  double uB_l = Cl->Ph[eqBX]*Cl->Ph[eqVX] + Cl->Ph[eqBY]*Cl->Ph[eqVY] + Cl->Ph[eqBZ]*Cl->Ph[eqVZ];
-  double uB_r = Cr->Ph[eqBX]*Cr->Ph[eqVX] + Cr->Ph[eqBY]*Cr->Ph[eqVY] + Cr->Ph[eqBZ]*Cr->Ph[eqVZ];
+  double uB_l = Cl->Ph[eqBX]*Cl->Ph[eqVX] +
+                Cl->Ph[eqBY]*Cl->Ph[eqVY] +
+                Cl->Ph[eqBZ]*Cl->Ph[eqVZ];
+  double uB_r = Cr->Ph[eqBX]*Cr->Ph[eqVX] +
+                Cr->Ph[eqBY]*Cr->Ph[eqVY] +
+                Cr->Ph[eqBZ]*Cr->Ph[eqVZ];
   pion_flt Powell_l[eq_nvar], Powell_r[eq_nvar];
   for (int v=0;v<eq_nvar;v++){
     Powell_l[v] = Powell_r[v]  = 0.0;
@@ -515,7 +499,6 @@ int FV_solver_mhd_ideal_adi::MHDsource(
   Powell_l[eqBBY] = Cl->Ph[eqVY];
   Powell_l[eqBBZ] = Cl->Ph[eqVZ];
   
-  //Powell_r[eqRHO] = Powell_r[eqPSI] = 0;
   Powell_r[eqMMX] = Cr->Ph[eqBX];
   Powell_r[eqMMY] = Cr->Ph[eqBY];
   Powell_r[eqMMZ] = Cr->Ph[eqBZ];
@@ -531,7 +514,6 @@ int FV_solver_mhd_ideal_adi::MHDsource(
 
   return 0;
 }
-#endif
 
 
 
@@ -809,7 +791,6 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
   /// the flux.
   ///
   double psistar=0.0, bxstar=0.0;
-#ifdef DERIGS
   // set Psi to zero in left and right states, so that Riemann solvers
   // don't get confused (because otherwise it will contribute to the
   // total energy.
@@ -821,15 +802,8 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
 			-(right[eqSI]-left[eqSI]));   // Dedner
 
   double psi_L = left[eqSI], psi_R = right[eqSI];
-  double bxl = left[eqBX], bxr = right[eqBX];
-  left[eqSI]=0.0;
-  right[eqSI]=0.0;
-#else
-  psistar = 0.5*(left[eqSI]+right[eqSI]
-			-(right[eqBX]-left[eqBX]));
-  bxstar  = 0.5*(left[eqBX]+right[eqBX]
-			-(right[eqSI]-left[eqSI]));
-#endif
+  double bxl   = left[eqBX], bxr   = right[eqBX];
+  left[eqSI] = right[eqSI] = 0.0;
   left[eqBX] = right[eqBX] = bxstar;
 
   //
@@ -846,10 +820,7 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
   //
   // NOTE: Dedner doesn't say what to do about the energy flux, so
   // it is modified to ensure consistency (Mackey & Lim, 2011).
-  // Derigs et al. (2017/2018) have a more consistent calculation...
-  // 
-#ifdef DERIGS
-  // see Derigs et al. (2018) eq. 4.45: 3 terms f6*, f9*, last term.
+  // See Derigs et al. (2018) eq. 4.45: 3 terms f6*, f9*, last term.
   // energy (ERG) is f5, Bx (BBX) is f6, PSI is f9.
   // Derigs et al. (2018) eq. 4.43 f6* and f9*
   // *** N.B. I'm using the Dedner solution here, with Mackey & Lim
@@ -858,13 +829,10 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
   flux[eqERG] += GLM_chyp*bxstar*psistar;
   flux[eqBBX]  = GLM_chyp*psistar;
   flux[eqPSI]  = GLM_chyp*bxstar;
-  left[eqSI]  = psi_L;
-  right[eqSI] = psi_R;
-#else
-  flux[eqERG] += GLM_chyp*bxstar*psistar;
-  flux[eqBBX]  = GLM_chyp*psistar;
-  flux[eqPSI]  = GLM_chyp*bxstar;
-#endif
+  left[eqSI]   = psi_L;
+  right[eqSI]  = psi_R;
+  left[eqBX]   = bxl;
+  right[eqBX]  = bxr;
 
   return err;
 }
@@ -879,8 +847,8 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
 
 ///
 /// calculate GLM source terms for multi-D MHD and add to Powell source
+/// Not exactly as indicated in Dominik's paper, but it works.
 ///
-#ifdef DERIGS
 int FV_solver_mhd_mixedGLM_adi::MHDsource(
       class GridBaseClass *grid,  ///< pointer to grid.
       class cell *Cl,   ///< pointer to cell of left state
@@ -910,11 +878,8 @@ int FV_solver_mhd_mixedGLM_adi::MHDsource(
     Cl->dU[v] -= dt*Pl[eqSI]*psi_l[v]/dx;
     Cr->dU[v] += dt*Pr[eqSI]*psi_r[v]/dx;
   }
-
   return 0;
-  
 }
-#endif
 
 // ##################################################################
 // ##################################################################

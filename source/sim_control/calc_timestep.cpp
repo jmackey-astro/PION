@@ -110,7 +110,6 @@ int calc_timestep::calculate_timestep(
   par.dt = min(par.dt, t_cond);
 #endif // THERMAL CONDUCTION
 
-//#ifndef DERIGS
   //
   // If using MHD with GLM divB cleaning, the following sets the
   // hyperbolic wavespeed.  If not, it does nothing.  By setting it
@@ -118,7 +117,6 @@ int calc_timestep::calculate_timestep(
   // equal to the maximum signal speed on the grid, and not an
   // artificially larger speed associated with a shortened timestep.
   //
-
   // we always calculate timestep on finest level first.
   static double td=0.0;
   if (l==par.grid_nlevels-1)
@@ -127,25 +125,17 @@ int calc_timestep::calculate_timestep(
     td = min(td,t_dyn/pow(2.0,par.grid_nlevels-1-l));
 
   double cr=0.0;
-  //for (int d=0;d<par.ndim;d++)
-  //  cr += 1.0/(par.Range[d]*par.Range[d]);
-  //cr = M_PI*sqrt(cr);
   if (par.grid_nlevels==1) {
     cr = 0.25/par.dx;
     spatial_solver->Set_GLM_Speeds(td,par.dx, cr);
-    //cout <<"solver: cr="<<cr<<", ch="<<par.CFL*par.dx/td<<", dt=";
-    //cout <<td<<", exp = "<<par.CFL*par.dx*cr<<"\n";
   }
   else {
     cr = 0.25/par.levels[par.grid_nlevels-1].dx;
     if (l==0) {
       spatial_solver->Set_GLM_Speeds(td,par.levels[par.grid_nlevels-1].dx, cr);
-      //cout <<"solver: cr="<<cr<<", td="<<td<<", dx=";
-      //cout <<par.levels[par.grid_nlevels-1].dx;
-      //cout <<", exp = "<<par.CFL*par.levels[par.grid_nlevels-1].dx*cr<<"\n";
     }
   }
-//#endif
+  
   //
   // Check that the timestep doesn't increase too much between steps, and that it 
   // won't bring us past the next output time or the end of the simulation.
