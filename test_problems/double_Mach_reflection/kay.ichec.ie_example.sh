@@ -13,8 +13,8 @@ module load intel
 mkdir -p /ichec/work/dias01/jmackey/DMR
 opdir=/ichec/work/dias01/jmackey/DMR
 
-mpirun -np 16 ../../icgen_parallel params_DMR_n520.txt silo
-mpirun -np 16 ../../pion_parallel DMRm10t60_n520_0000.00000000.silo \
+mpirun -np 16 ../../icgen-ug params_DMR_n520.txt silo
+mpirun -np 16 ../../pion-ug DMRm10t60_n520_0000.00000000.silo \
   outfile=${opdir}/DMRm10t60_n520 redirect=${opdir}/log_DMRm10t60_n520
 
 # NOTES:

@@ -28,11 +28,11 @@ echo "MAKE IN" ${code_dir}
 bash ./clean.sh
 bash ./compile_code.sh
 echo "MAKE FINISHED"
-cp ../icgen_parallel ../pion_parallel ${test_dir}
+cp ../icgen-ug ../pion-ug ${test_dir}
 cd ${test_dir}
 
-ICGEN="mpirun -np 16 ./icgen_parallel"
-PION="mpirun -np 16 ./pion_parallel"
+ICGEN="mpirun -np 16 ./icgen-ug"
+PION="mpirun -np 16 ./pion-ug"
 
 ${ICGEN} ${test_dir}/params_BWcrt3D_Octant_NR${resolution}.txt   silo redirect=tmp_NR${resolution}_
 

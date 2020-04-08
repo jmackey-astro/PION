@@ -25,7 +25,7 @@ bash ./compile_code.sh
 #echo "FINISHED COMPILING CODE"
 
 cd ${BASE_DIR}
-echo "Serial and parallel executables should be in current directory:"
+echo "MPI-parallel executables should be in current directory:"
 echo " $BASE_DIR "
 echo "If, not, then run the steps in install.sh one-by-one to see \
 what the problem is."

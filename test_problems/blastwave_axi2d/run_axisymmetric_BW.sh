@@ -26,8 +26,8 @@ echo "MAKE FINISHED"
 cp ../icgen_* ../pion_* ${test_dir}
 cd ${test_dir}
 
-ICGEN="./icgen_serial"
-PION="./pion_serial"
+ICGEN="./icgen-ugs"
+PION="./pion-ugs"
 
 ${ICGEN} ${test_dir}/params_axi2dBW_HalfPlane_NR064.txt   silo redirect=tmp_NR064_
 ${ICGEN} ${test_dir}/params_axi2dBW_HalfPlane_NR128.txt   silo redirect=tmp_NR128_

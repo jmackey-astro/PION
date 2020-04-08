@@ -8,8 +8,8 @@ BASE_DIR=`pwd`
 code_dir=${BASE_DIR}/../bin_parallel
 test_dir=${BASE_DIR}
 src_dir=${BASE_DIR}/../source
-ICGEN=${BASE_DIR}/../icgen_parallel
-PION=${BASE_DIR}/../pion_parallel
+ICGEN=${BASE_DIR}/../icgen-ug
+PION=${BASE_DIR}/../pion-ug
 
 
 
@@ -39,7 +39,7 @@ mkdir -p $data_dir
 cd $code_dir
 echo "MAKE IN" $code_dir
 bash ./compile_code.sh
-if [ ! -f ../pion_parallel ] || [ ! -f ../icgen_parallel ]
+if [ ! -f ../pion-ug ] || [ ! -f ../icgen-ug ]
 then
   echo "Cannot compile code"
   exit

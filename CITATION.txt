@@ -9,7 +9,7 @@ If you use PION for your research, please cite it appropriately as follows:
 + Please add a footnote to the text, linking to [https://www.pion.ie](https://www.pion.ie)
 
 + Please add an acknowledgement as follows:
-  "Computations for this work used the \texttt{PION} simulation code, publicly available at https://www.pion.ie/ and developed with support from research funding by Ireland and Germany."
+  "Computations for this work used the \texttt{PION} simulation code, publicly available at https://www.pion.ie/ and developed with support from research funding by the Irish Research Council, Science Foundation Ireland, The Deutsch Forschungsgemeinschaft and the Alexander von Humboldt Stiftung."
 
 
 LaTeX/bibtex source for the citations:

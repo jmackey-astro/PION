@@ -49,8 +49,8 @@ ${src_dir}/defines/testing_flags.h
 #
 cd $code_dir
 echo "MAKE IN" $code_dir
-#bash ./compile_code.sh
-if [ ! -f ../pion_serial ] || [ ! -f ../icgen_serial ]
+bash ./compile_code.sh
+if [ ! -f ../pion-ugs ] || [ ! -f ../icgen-ugs ]
 then
   echo "Cannot compile code"
   exit

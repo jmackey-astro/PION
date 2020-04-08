@@ -25,27 +25,27 @@ mkdir -p $data_dir
 cd ${code_dir}
 echo "MAKE IN" $code_dir
 bash ./compile_code.sh
-if [ ! -f ../pion_serial ] || [ ! -f ../icgen_serial ]
+if [ ! -f ../pion-ugs ] || [ ! -f ../icgen-ugs ]
 then
   echo "Cannot compile code"
   exit
 else
   echo "MAKE SUCEEDED"
-  cp ../pion_serial ../icgen_serial ${test_dir}
+  cp ../pion-ugs ../icgen-ugs ${test_dir}
   cd ${test_dir}
 fi
 
 ##############  TESTING  ##############
 #echo "DOUBLE MACH REFLECTION: GENERATE ICS"
-#./icgen_serial ${test_dir}/params_DMR_n260.txt silo
-#./icgen_serial ${test_dir}/params_DMR_n520.txt silo
+#./icgen-ugs ${test_dir}/params_DMR_n260.txt silo
+#./icgen-ugs ${test_dir}/params_DMR_n520.txt silo
 #echo "DOUBLE MACH REFLECTION: RUN LOW RES"
-#./pion_serial IC_DMRm10t60_n260.silo 5 1 \
+#./pion-ugs IC_DMRm10t60_n260.silo 5 1 \
 # outfile=${data_dir}/DMRm10t60_n260_Hyb_av00 cfl=0.4 artvisc=0   \
 # redirect=${data_dir}/msg_DMRm10t60_n260_Hyb_av00 solver=3 &
-#./pion_serial IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_RCV_Hcor cfl=0.4 AVtype=3 \
+#./pion-ugs IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_RCV_Hcor cfl=0.4 AVtype=3 \
 # redirect=${data_dir}/msg_DMRm10t60_n260_RCV_Hcor solver=4 &
-#./pion_serial IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_RCV_Hcor cfl=0.4 AVtype=3    \
+#./pion-ugs IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_RCV_Hcor cfl=0.4 AVtype=3    \
 # redirect=${data_dir}/msg_DMRm10t60_n520_RCV_Hcor solver=4 &
 #wait
 #exit
@@ -57,18 +57,18 @@ fi
 # Double Mach Reflection, same as Stone et al. 2008.
 #
 echo "DOUBLE MACH REFLECTION: GENERATE ICS"
-./icgen_serial ${test_dir}/params_DMR_n${resolution}.txt silo redirect=${data_dir}/iclog_n${resolution}_
+./icgen-ugs ${test_dir}/params_DMR_n${resolution}.txt silo redirect=${data_dir}/iclog_n${resolution}_
 
 echo "DOUBLE MACH REFLECTION: RUN LOW RES"
-./pion_serial DMRm10t60_n${resolution}.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_Hyb_av10 cfl=0.4 artvisc=0.1 \
+./pion-ugs DMRm10t60_n${resolution}.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_Hyb_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n${resolution}_Hyb_av10 solver=3 &
-./pion_serial DMRm10t60_n${resolution}.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_RCV_av10 cfl=0.4 artvisc=0.1 \
+./pion-ugs DMRm10t60_n${resolution}.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_RCV_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n${resolution}_RCV_av10 solver=4 &
-./pion_serial DMRm10t60_n${resolution}.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_RPV_av10 cfl=0.4 artvisc=0.1 \
+./pion-ugs DMRm10t60_n${resolution}.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_RPV_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n${resolution}_RPV_av10 solver=5 &
-./pion_serial DMRm10t60_n${resolution}.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_FVS_av10 cfl=0.4 artvisc=0.1 \
+./pion-ugs DMRm10t60_n${resolution}.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_FVS_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n${resolution}_FVS_av10 solver=6 &
-./pion_serial DMRm10t60_n${resolution}.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_RCV_Hcor cfl=0.4 AVtype=3    \
+./pion-ugs DMRm10t60_n${resolution}.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_RCV_Hcor cfl=0.4 AVtype=3    \
  redirect=${data_dir}/msg_DMRm10t60_n${resolution}_RCV_Hcor solver=4 &
 wait
 exit
@@ -88,23 +88,23 @@ exit
 
 #
 echo "DOUBLE MACH REFLECTION: RUN LOW RES"
-./pion_serial IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_Hyb_av00 cfl=0.4 artvisc=0   \
+./pion-ugs IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_Hyb_av00 cfl=0.4 artvisc=0   \
  redirect=${data_dir}/msg_DMRm10t60_n260_Hyb_av00 solver=3 &
-./pion_serial IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_Hyb_av10 cfl=0.4 artvisc=0.1 \
+./pion-ugs IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_Hyb_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n260_Hyb_av10 solver=3 &
-./pion_serial IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_RCV_av00 cfl=0.4 artvisc=0   \
+./pion-ugs IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_RCV_av00 cfl=0.4 artvisc=0   \
  redirect=${data_dir}/msg_DMRm10t60_n260_RCV_av00 solver=4 &
-./pion_serial IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_RCV_av10 cfl=0.4 artvisc=0.1 \
+./pion-ugs IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_RCV_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n260_RCV_av10 solver=4 &
-./pion_serial IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_RPV_av00 cfl=0.4 artvisc=0   \
+./pion-ugs IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_RPV_av00 cfl=0.4 artvisc=0   \
  redirect=${data_dir}/msg_DMRm10t60_n260_RPV_av00 solver=5 &
-./pion_serial IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_RPV_av10 cfl=0.4 artvisc=0.1 \
+./pion-ugs IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_RPV_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n260_RPV_av10 solver=5 &
-./pion_serial IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_FVS_av00 cfl=0.4 artvisc=0   \
+./pion-ugs IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_FVS_av00 cfl=0.4 artvisc=0   \
  redirect=${data_dir}/msg_DMRm10t60_n260_FVS_av00 solver=6 &
-./pion_serial IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_FVS_av10 cfl=0.4 artvisc=0.1 \
+./pion-ugs IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_FVS_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n260_FVS_av10 solver=6 &
-./pion_serial IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_RCV_Hcor cfl=0.4 AVtype=3    \
+./pion-ugs IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_RCV_Hcor cfl=0.4 AVtype=3    \
  redirect=${data_dir}/msg_DMRm10t60_n260_RCV_Hcor solver=4 &
 wait
 
@@ -113,23 +113,23 @@ exit
 ########## TEMP #########
 
 echo "DOUBLE MACH REFLECTION: RUN HIGH RES"
-./pion_serial IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_Hyb_av00 cfl=0.4 artvisc=0   \
+./pion-ugs IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_Hyb_av00 cfl=0.4 artvisc=0   \
  redirect=${data_dir}/msg_DMRm10t60_n520_Hyb_av00 solver=3 &
-./pion_serial IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_Hyb_av10 cfl=0.4 artvisc=0.1 \
+./pion-ugs IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_Hyb_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n520_Hyb_av10 solver=3 &
-./pion_serial IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_RCV_av00 cfl=0.4 artvisc=0   \
+./pion-ugs IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_RCV_av00 cfl=0.4 artvisc=0   \
  redirect=${data_dir}/msg_DMRm10t60_n520_RCV_av00 solver=4 &
-./pion_serial IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_RCV_av10 cfl=0.4 artvisc=0.1 \
+./pion-ugs IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_RCV_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n520_RCV_av10 solver=4 &
-./pion_serial IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_RPV_av00 cfl=0.4 artvisc=0   \
+./pion-ugs IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_RPV_av00 cfl=0.4 artvisc=0   \
  redirect=${data_dir}/msg_DMRm10t60_n520_RPV_av00 solver=5 &
-./pion_serial IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_RPV_av10 cfl=0.4 artvisc=0.1 \
+./pion-ugs IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_RPV_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n520_RPV_av10 solver=5 &
-./pion_serial IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_FVS_av00 cfl=0.4 artvisc=0   \
+./pion-ugs IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_FVS_av00 cfl=0.4 artvisc=0   \
  redirect=${data_dir}/msg_DMRm10t60_n520_FVS_av00 solver=6 &
-./pion_serial IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_FVS_av10 cfl=0.4 artvisc=0.1 \
+./pion-ugs IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_FVS_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n520_FVS_av10 solver=6 &
-./pion_serial IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_RCV_Hcor cfl=0.4 AVtype=3    \
+./pion-ugs IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_RCV_Hcor cfl=0.4 AVtype=3    \
  redirect=${data_dir}/msg_DMRm10t60_n520_RCV_Hcor solver=4 &
 wait
 

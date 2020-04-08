@@ -25,37 +25,37 @@ echo "MAKE IN " $code_dir
 echo "MAKE SUCEEDED"
 cd -
 
-../../icgen_serial ${test_dir}/params_FieldLoop${resolution}.txt       silo redirect=tmp_
-../../icgen_serial ${test_dir}/params_FieldLoop${resolution}vz.txt     silo redirect=tmp_
-../../icgen_serial ${test_dir}/params_FieldLoop${resolution}Static.txt silo redirect=tmp_
+../../icgen-ugs ${test_dir}/params_FieldLoop${resolution}.txt       silo redirect=tmp_
+../../icgen-ugs ${test_dir}/params_FieldLoop${resolution}vz.txt     silo redirect=tmp_
+../../icgen-ugs ${test_dir}/params_FieldLoop${resolution}Static.txt silo redirect=tmp_
 
-../../pion_serial IC_FieldLoop${resolution}static.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}static_Roe \
+../../pion-ugs IC_FieldLoop${resolution}static.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}static_Roe \
  redirect=${data_dir}/msg_FieldLoop${resolution}_Roe_static_av1_ cfl=0.4 AVtype=1 EtaVisc=0.1 solver=4 &
-../../pion_serial IC_FieldLoop${resolution}.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}_Roe \
+../../pion-ugs IC_FieldLoop${resolution}.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}_Roe \
  redirect=${data_dir}/msg_FieldLoop${resolution}_Roe_planar_av1_ cfl=0.4 AVtype=1 EtaVisc=0.1 solver=4 &
 #wait
-../../pion_serial IC_FieldLoop${resolution}vz.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}vz_Roe \
+../../pion-ugs IC_FieldLoop${resolution}vz.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}vz_Roe \
  redirect=${data_dir}/msg_FieldLoop${resolution}_Roe_VxVyVz_av1_ cfl=0.4 AVtype=1 EtaVisc=0.1 solver=4 &
-../../pion_serial IC_FieldLoop${resolution}vz.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}vz_RoeAV0 \
+../../pion-ugs IC_FieldLoop${resolution}vz.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}vz_RoeAV0 \
  redirect=${data_dir}/msg_FieldLoop${resolution}_Roe_VxVyVz_av0_ cfl=0.4 AVtype=0 EtaVisc=0.0 solver=4 &
 wait
 
-../../pion_serial IC_FieldLoop${resolution}static.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}static_Lin \
+../../pion-ugs IC_FieldLoop${resolution}static.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}static_Lin \
  redirect=${data_dir}/msg_FieldLoop${resolution}_Lin_static_av1_ cfl=0.4 AVtype=1 EtaVisc=0.1 solver=4 &
-../../pion_serial IC_FieldLoop${resolution}.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}_Lin \
+../../pion-ugs IC_FieldLoop${resolution}.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}_Lin \
  redirect=${data_dir}/msg_FieldLoop${resolution}_Lin_planar_av1_ cfl=0.4 AVtype=1 EtaVisc=0.1 solver=4 &
 #wait
-../../pion_serial IC_FieldLoop${resolution}vz.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}vz_Lin \
+../../pion-ugs IC_FieldLoop${resolution}vz.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}vz_Lin \
  redirect=${data_dir}/msg_FieldLoop${resolution}_Lin_VxVyVz_av1_ cfl=0.4 AVtype=1 EtaVisc=0.1 solver=4 &
-../../pion_serial IC_FieldLoop${resolution}vz.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}vz_LinAV0 \
+../../pion-ugs IC_FieldLoop${resolution}vz.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}vz_LinAV0 \
  redirect=${data_dir}/msg_FieldLoop${resolution}_Lin_VxVyVz_av0_ cfl=0.4 AVtype=0 EtaVisc=0.0 solver=4 &
 wait
 
-../../pion_serial IC_FieldLoop${resolution}static.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}static_Roe_Hcorr \
+../../pion-ugs IC_FieldLoop${resolution}static.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}static_Roe_Hcorr \
  redirect=${data_dir}/msg_FieldLoop${resolution}_Roe_static_Hcorr_ cfl=0.4 AVtype=3 solver=4 &
-../../pion_serial IC_FieldLoop${resolution}.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}_Roe_Hcorr \
+../../pion-ugs IC_FieldLoop${resolution}.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}_Roe_Hcorr \
  redirect=${data_dir}/msg_FieldLoop${resolution}_Roe_planar_Hcorr_ cfl=0.4 AVtype=3 solver=4 &
-../../pion_serial IC_FieldLoop${resolution}vz.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}vz_Roe_Hcorr \
+../../pion-ugs IC_FieldLoop${resolution}vz.silo 5 1 outfile=${data_dir}/FieldLoop${resolution}vz_Roe_Hcorr \
  redirect=${data_dir}/msg_FieldLoop${resolution}_Roe_VxVyVz_Hcorr_ cfl=0.4 AVtype=3 solver=4 &
 wait
 

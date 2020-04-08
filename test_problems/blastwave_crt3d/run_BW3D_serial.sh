@@ -31,8 +31,8 @@ echo "MAKE FINISHED"
 cp ../icgen_* ../pion_* ${test_dir}
 cd ${test_dir}
 
-ICGEN="./icgen_serial"
-PION="./pion_serial"
+ICGEN="./icgen-ugs"
+PION="./pion-ugs"
 
 ${ICGEN} ${test_dir}/params_BWcrt3D_Octant_NR${resolution}.txt   silo redirect=tmp_NR${resolution}_
 

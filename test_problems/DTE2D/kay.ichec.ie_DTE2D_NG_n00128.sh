@@ -13,8 +13,8 @@ module load intel
 mkdir -p /ichec/work/dias01/jmackey/DTE2D
 opdir=/ichec/work/dias01/jmackey/DTE2D
 
-mpirun -np 32 ../../icgen_NG_parallel params_DTE_NG_D2_TTI_n00128.txt silo
-mpirun -np 32 ../../pion_NG_parallel DTE_NG_D2_TTI_n00128_level00_0000.00000000.silo \
+mpirun -np 32 ../../icgen-ng params_DTE_NG_D2_TTI_n00128.txt silo
+mpirun -np 32 ../../pion-ng DTE_NG_D2_TTI_n00128_level00_0000.00000000.silo \
   outfile=${opdir}/DTE_NG_D2_TTI_n00128 opfreq=512 \
   redirect=${opdir}/log_DTE_NG_D2_TTI_n00128_s6 solver=6
 
