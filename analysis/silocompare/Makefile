@@ -13,8 +13,8 @@ SHELL = /bin/sh
 .SUFFIXES: .cpp .o
 srcdir = .
 SRCDIR=${CURDIR}/../../source
-GLOBAL = functionality_flags.h testing_flags.h testing_flags.h reporting.h \
-         sim_params.h sim_constants.h constants.h
+GLOBAL = functionality_flags.h testing_flags.h reporting.h \
+         sim_params.h sim_constants.h constants.h rad_src_data.h
 
 #######################
 ## COMPILATION RULES ##
@@ -57,9 +57,9 @@ PION_OPTIMISE=HIGH
 ######################################################################
 ifeq ($(MAKE_UNAME), debian9)
   ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS += -O3 -Wno-unused-function
+    CXXFLAGS = -O3 -Wno-unused-function
   else
-    CXXFLAGS += -Wall -g -Wno-unused-function
+    CXXFLAGS = -Wall -g -Wno-unused-function
   endif
   
   ifeq ($(IOMODE), USE_FILE_COMMS)
@@ -304,7 +304,7 @@ OBJECTS += $(OBJ_BCS) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CHEM) $(OBJ_NG_BCS)
 
 
 ##########################
-### -- EXECTUTABLES -- ###
+### -- EXECUTABLES -- ###
 ##########################
 
 silocompare: $(OBJECTS)

@@ -7,51 +7,44 @@
 # 2015.07.03 JM: updated for pion_dev: uses MCMD, SimSetup, constants.h
 #
 
-SHELL = /bin/bash
+SHELL = /bin/sh
 .SUFFIXES:
-.SUFFIXES: .cc .o
-.SUFFIXES: .cxx .o
 .SUFFIXES: .cpp .o
 
 #######################
 ## COMPILATION RULES ##
 #######################
-.cxx.o:
-	$(CXX) $(CXXFLAGS) $(INC) -c $<
-.cc.o:
-	$(CXX) $(CXXFLAGS) $(INC) -c $<
 .cpp.o:
 	$(CXX) $(CXXFLAGS) $(INC) -c $<
 #######################
 
-
-srcdir = ${CURDIR}/../../source
-
+srcdir=.
 bindir=.
 
+SRCDIR=${CURDIR}/../../source
 CODEDIR=${CURDIR}/../..
 
-VPATH=../projection:${srcdir}:\
-${srcdir}/grid:\
-${srcdir}/defines:\
-${srcdir}/dataIO:\
-${srcdir}/comms:\
-${srcdir}/coord_sys:\
-${srcdir}/equations:\
-${srcdir}/flux_calc:\
-${srcdir}/spatial_solvers:\
-${srcdir}/time_integrators:\
-${srcdir}/microphysics:\
-${srcdir}/raytracing:\
-${srcdir}/contrib:\
-${srcdir}/tools:\
-${srcdir}/decomposition:\
-${srcdir}/Riemann_solvers:\
-${srcdir}/spatial_solvers:\
-${srcdir}/boundaries
+VPATH=../projection:${SRCDIR}:\
+${SRCDIR}/grid:\
+${SRCDIR}/defines:\
+${SRCDIR}/dataIO:\
+${SRCDIR}/comms:\
+${SRCDIR}/coord_sys:\
+${SRCDIR}/equations:\
+${SRCDIR}/flux_calc:\
+${SRCDIR}/spatial_solvers:\
+${SRCDIR}/time_integrators:\
+${SRCDIR}/microphysics:\
+${SRCDIR}/raytracing:\
+${SRCDIR}/contrib:\
+${SRCDIR}/tools:\
+${SRCDIR}/decomposition:\
+${SRCDIR}/Riemann_solvers:\
+${SRCDIR}/spatial_solvers:\
+${SRCDIR}/boundaries
 
 
-GLOBAL = functionality_flags.h testing_flags.h testing_flags.h reporting.h \
+GLOBAL = functionality_flags.h testing_flags.h reporting.h \
          sim_params.h sim_constants.h constants.h rad_src_data.h
 
 
@@ -70,18 +63,19 @@ OPTION += -DFITS
 PION_OPTIMISE=HIGH
 
 #MAKE_UNAME=standard
-MAKE_UNAME=ubuntu18
+#MAKE_UNAME=ubuntu18
 #MAKE_UNAME=ubuntu16
 #MAKE_UNAME=debian9
+MAKE_UNAME=debian10
 #MAKE_UNAME=OSX
 #MAKE_UNAME=SUPERMUC
 #MAKE_UNAME=JUROPA
 
 # All machines and options need readline and maths
+LDFLAGS = -lm  
 ifeq ($(PION_OPTIMISE), LOW)
-  LDFLAGS = -lreadline
+  LDFLAGS += -lreadline
 endif
-LDFLAGS += -lm  
 
 
 ######################################################################
@@ -103,7 +97,7 @@ ifeq ($(MAKE_UNAME), debian9)
 
   OPTION += -DCVODE2
   INC  = -I/usr/include
-  INC += -I${srcdir}
+  INC += -I${SRCDIR}
   LDFLAGS += -lm
   LDFLAGS += -L/usr/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
@@ -113,6 +107,37 @@ ifeq ($(MAKE_UNAME), debian9)
   LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
 endif
 ################### ---  DEBIAN 9 (STRETCH)  ---######################
+
+######################################################################
+# Options for a debian 10 (buster) workstation with system libs
+######################################################################
+ifeq ($(MAKE_UNAME), debian10)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3 -Wno-unused-function
+  else
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  endif
+  
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+    CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+    CXX = mpicxx
+  endif
+
+  OPTION += -DCVODE3
+  INC  = -I/usr/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -lm
+  LDFLAGS += -L/usr/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl
+  LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
+endif
+################### ---  DEBIAN 10 (buster)  ---######################
+
 
 ######################################################################
 # Options for an Ubuntu 18 workstation with locally installed libraries.
@@ -135,7 +160,7 @@ ifeq ($(MAKE_UNAME), ubuntu18)
   OPTION += -DCVODE5
   MYLIB = $(CODEDIR)/extra_libraries
   INC  = -I${MYLIB}/include
-  INC += -I${srcdir}
+  INC += -I${SRCDIR}
   LDFLAGS += -L${MYLIB}/lib
   LDFLAGS += -Wl,-rpath,${MYLIB}/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
@@ -168,7 +193,7 @@ ifeq ($(MAKE_UNAME), ubuntu16)
   OPTION += -DCVODE5
   MYLIB = $(CODEDIR)/extra_libraries
   INC  = -I${MYLIB}/include
-  INC += -I${srcdir}
+  INC += -I${SRCDIR}
   LDFLAGS += -L${MYLIB}/lib
   LDFLAGS += -Wl,-rpath,${MYLIB}/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
@@ -199,7 +224,7 @@ ifeq ($(MAKE_UNAME), OSX)
   MYLIB = $(CURDIR)/../../extra_libraries
   INC += -I$(MYLIB)/include
   INC += -I/opt/local/include
-  INC += -I${srcdir}
+  INC += -I${SRCDIR}
 
   LDFLAGS += -L${MYLIB}/lib
   LDFLAGS += -L/opt/local/lib
@@ -234,7 +259,7 @@ ifeq ($(MAKE_UNAME), SUPERMUC)
   #CXXFLAGS += -fp-stack-check -fstack-security-check
   MYLIB = ${CODEDIR}/extra_libraries
   INC  = -I${MYLIB}/include
-  INC += -I${srcdir}
+  INC += -I${SRCDIR}
   INC += -I/usr/local/sundials/2.4.0/include
   INC += ${MKL_INC} ${MPI_INC}
   LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
@@ -251,7 +276,7 @@ endif
 
 CXXFLAGS += $(OPTION)
 
-OBJ_CHEM=integrator.o cvode_integrator.o cooling.o cooling_SD93_cie.o \
+OBJ_CHEM = integrator.o cvode_integrator.o cooling.o cooling_SD93_cie.o \
   hydrogen_mp.o hydrogen_photoion.o hydrogen_recomb_Hummer94.o \
   microphysics_base.o mp_only_cooling.o \
   MPv3.o MPv5.o MPv6.o MPv7.o MPv10.o photo_xsections.o
@@ -260,12 +285,12 @@ OBJ_GEN = reporting.o mem_manage.o command_line_interface.o \
   timer.o interpolate.o constants.o sim_params.o \
   comm_mpi.o comm_files.o
 
-OBJ_IO =  parameter_defs.o file_status.o readparams.o \
+OBJ_IO = parameter_defs.o file_status.o readparams.o \
   dataio_silo.o dataio_fits.o utility_fits_class.o \
   dataio_base.o dataio_text.o dataio_fits_MPI.o \
   dataio_silo_MPI.o dataio_silo_utility.o
 
-OBJ_GRID =  cell_interface.o uniform_grid.o setup_fixed_grid.o \
+OBJ_GRID = cell_interface.o uniform_grid.o setup_fixed_grid.o \
   stellar_wind_BC.o stellar_wind_angle.o MCMD_control.o \
   raytracer_SC.o setup_fixed_grid_MPI.o \
   uniform_grid_pllel.o raytracer_SC_pllel.o \
@@ -276,6 +301,7 @@ OBJ_CRD = VectorOps.o VectorOps_spherical.o
 OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
   outflow_boundaries.o inflow_boundaries.o \
   reflecting_boundaries.o oneway_out_boundaries.o \
+  axisymmetric_boundaries.o \
   fixed_boundaries.o jet_boundaries.o \
   jetreflect_boundaries.o double_Mach_ref_boundaries.o \
   stellar_wind_boundaries.o MCMD_boundaries.o \
@@ -290,19 +316,20 @@ OBJ_NG_BCS = assign_update_bcs_NG_MPI.o assign_update_bcs_NG.o \
   NG_BC89flux.o \
   NG_MPI_BC89flux.o
 
-OBJ_EQNS =  eqns_base.o eqns_hydro_adiabatic.o eqns_mhd_adiabatic.o 
+OBJ_EQNS = eqns_base.o eqns_hydro_adiabatic.o eqns_mhd_adiabatic.o 
 
 OBJ_SOLVE = riemannMHD.o HLLD_MHD.o Roe_MHD_ConservedVar_solver.o \
-  riemann.o findroot.o Riemann_FVS_hydro.o \
+  riemann.o findroot.o Riemann_FVS_hydro.o HLL_hydro.o \
   Roe_Hydro_ConservedVar_solver.o Roe_Hydro_PrimitiveVar_solver.o \
   solver_eqn_base.o solver_eqn_hydro_adi.o solver_eqn_mhd_adi.o
 
 OBJECTS = $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_CRD) \
-  $(OBJ_BCS)  $(OBJ_NG_BCS) $(OBJ_EQNS) $(OBJ_SOLVE) \
+  $(OBJ_BCS) $(OBJ_NG_BCS) $(OBJ_EQNS) $(OBJ_SOLVE) \
   point_quantities.o main_projection.o sim_projection.o image_io.o xray_emission.o
 
-        
-
+##########################
+### -- EXECUTABLES -- ###
+##########################
 
 projection: $(OBJECTS)
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o projection $(LDFLAGS)
@@ -340,6 +367,7 @@ uniform_grid.o: uniform_grid.cpp uniform_grid.h grid_base_class.h ${GLOBAL} \
     VectorOps.h VectorOps_spherical.h
 
 VectorOps.o:           VectorOps.cpp VectorOps.h ${GLOBAL} uniform_grid.h grid_base_class.h
+
 VectorOps_spherical.o: VectorOps_spherical.cpp VectorOps_spherical.h VectorOps.h \
 		       ${GLOBAL} uniform_grid.h grid_base_class.h
 
@@ -390,7 +418,7 @@ uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid_pllel.h \
 # BOUNDARY CLASSES  #
 #####################
 
-periodic_boundaries.o: periodic_boundaries.cpp periodic_boundaries.h\
+periodic_boundaries.o: periodic_boundaries.cpp periodic_boundaries.h \
   boundaries.h ${GLOBAL} grid_base_class.h
 
 outflow_boundaries.o: outflow_boundaries.cpp outflow_boundaries.h \
@@ -405,6 +433,10 @@ inflow_boundaries.o: inflow_boundaries.cpp inflow_boundaries.h \
 
 reflecting_boundaries.o: reflecting_boundaries.cpp \
   reflecting_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+axisymmetric_boundaries.o: axisymmetric_boundaries.cpp \
+  axisymmetric_boundaries.h \
   boundaries.h ${GLOBAL} grid_base_class.h
 
 fixed_boundaries.o: fixed_boundaries.cpp fixed_boundaries.h \
@@ -559,6 +591,9 @@ riemann.o: riemann.cpp riemann.h findroot.h ${GLOBAL} \
 
 findroot.o: findroot.cpp findroot.h ${GLOBAL}
 
+HLL_hydro.o: HLL_hydro.cpp HLL_hydro.h \
+ ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
+
 Riemann_FVS_hydro.o: Riemann_FVS_hydro.cpp Riemann_FVS_hydro.h \
  ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
 
@@ -603,6 +638,7 @@ solver_eqn_mhd_adi.o: VectorOps.h grid_base_class.h \
 microphysics_base.o: microphysics_base.cpp microphysics_base.h ${GLOBAL}
 
 integrator.o: integrator.cpp integrator.h ${GLOBAL}
+
 cooling.o:    cooling.cpp cooling.h ${GLOBAL}
 
 cooling_SD93_cie.o: cooling_SD93_cie.cpp cooling_SD93_cie.h ${GLOBAL}
@@ -658,6 +694,7 @@ MPv8.o: MPv8.cpp \
   MPv8.h MPv3.h microphysics_base.h ${GLOBAL}
 
 HHe_photoion.o: HHe_photoion.cpp HHe_photoion.h ${GLOBAL}
+
 mpv9_HHe.o: mpv9_HHe.cpp mpv9_HHe.h microphysics_base.h \
   HHe_photoion.h cvode_integrator.h ${GLOBAL}
 
@@ -676,7 +713,6 @@ dataio_base.o:  dataio_base.cpp dataio_base.h parameter_defs.h \
 dataio_text.o:  dataio_text.cpp dataio_text.h parameter_defs.h \
     ${GLOBAL} solver_eqn_base.h grid_base_class.h dataio_base.h
 
-
 dataio_silo.o:  dataio_silo.cpp dataio_silo.h ${GLOBAL} \
     parameter_defs.h  grid_base_class.h dataio_base.h \
     solver_eqn_base.h file_status.h
@@ -686,19 +722,19 @@ dataio_fits.o:  dataio_fits.cpp dataio_fits.h ${GLOBAL} \
     parameter_defs.h  grid_base_class.h \
     file_status.h dataio_base.h
 
-dataio_fits_MPI.o:  dataio_fits_MPI.cpp dataio_fits_MPI.h \
+dataio_fits_MPI.o: dataio_fits_MPI.cpp dataio_fits_MPI.h \
     dataio_fits.h ${GLOBAL} dataio_base.h \
     solver_eqn_base.h solver_eqn_hydro_adi.h  \
     parameter_defs.h  grid_base_class.h \
     file_status.h uniform_grid_pllel.h
 
-readparams.o:	readparams.cpp readparams.h ${GLOBAL}
+readparams.o: readparams.cpp readparams.h ${GLOBAL}
 
-dataio_silo_MPI.o:    dataio_silo_MPI.cpp dataio_silo.h dataio_base.h \
+dataio_silo_MPI.o: dataio_silo_MPI.cpp dataio_silo.h dataio_base.h \
     parameter_defs.h  grid_base_class.h solver_eqn_base.h \
     ${GLOBAL} comms.h file_status.h uniform_grid_pllel.h
 
-dataio_silo_utility.o:    dataio_silo_utility.cpp dataio_silo_utility.h \
+dataio_silo_utility.o: dataio_silo_utility.cpp dataio_silo_utility.h \
     dataio_silo.h dataio_base.h solver_eqn_base.h \
     parameter_defs.h  grid_base_class.h \
     ${GLOBAL} comms.h file_status.h uniform_grid_pllel.h
@@ -712,22 +748,23 @@ utility_fits_class.o: utility_fits_class.cpp dataio_fits.h dataio_base.h \
 ## MPI/files comms classes
 ########################
 comm_mpi.o: comm_mpi.cpp comm_mpi.h comms.h ${GLOBAL}
+
 comm_files.o: comm_files.cpp comm_files.h comms.h ${GLOBAL}
-
-
-
 
 ###############################
 # Stuff Specific to this code #
 ###############################
 
 point_quantities.o: point_quantities.cpp point_quantities.h ${GLOBAL}
+
 sim_projection.o: sim_projection.cpp sim_projection.h \
     point_quantities.h xray_emission.h \
     ${GLOBAL} uniform_grid.h dataIO/dataio_base.h
+
 main_projection.o: main_projection.cpp sim_projection.h \
     point_quantities.h xray_emission.h \
     ${GLOBAL} uniform_grid.h dataIO/dataio_base.h
+    
 image_io.o: image_io.cpp image_io.h dataIO/dataio_base.h \
     dataIO/dataio_fits.h ${GLOBAL}
 
