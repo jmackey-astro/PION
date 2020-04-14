@@ -1,6 +1,6 @@
 # parameter file for Initial Condition Generation.
 # 
-# 2019.04.25 JM: D-type-early test, in 2D, with MHD.
+# 2020.04.15 JM: D-type-late test, in 2D, with MHD.
 
 
 ics             PhotoEvap_radial
@@ -11,7 +11,7 @@ ndim            2
 coordinates     cylindrical
 eqn             glm-mhd
 ntracer 1
-chem_code MPv3
+chem_code MPv7
 Tracer000 H1+
 InitIons LEAVE
 
@@ -25,26 +25,26 @@ EP_coll_ionisation   1
 EP_rad_recombination 1
 EP_update_erg 1
 EP_MP_timestep_limit 1 
-EP_Min_Temperature 1.0e+2
-EP_Max_Temperature 5.0e+4
-EP_Hydrogen_MassFrac 0.73
-EP_Helium_MassFrac 0.27
-EP_Metal_MassFrac  0.014
+EP_Min_Temperature 1.0e+3
+EP_Max_Temperature 1.0e+4
+EP_Hydrogen_MassFrac 1.0
+EP_Helium_MassFrac 0.0  # Pure Hydrogen gas.
+EP_Metal_MassFrac  0.0  # If this is >0.5, then neutral H is molecular
 
 
 NGridX  256
 NGridY  128
 NGridZ  128
 
-Xmin -3.086e19
+Xmin -10.0e18
 Ymin  0.0
 Zmin  0.0
 
-Xmax   3.086e19
-Ymax   3.086e19
-Zmax   3.086e19
+Xmax   10.0e18
+Ymax   10.0e18
+Zmax   10.0e18
 
-grid_nlevels          1
+grid_nlevels          2
 grid_aspect_ratio_XX  2
 grid_aspect_ratio_YY  1
 grid_aspect_ratio_ZZ  1
@@ -55,14 +55,14 @@ NG_refine_XX          1
 NG_refine_YY          1
 NG_refine_ZZ          1
 
-OutputFile        DTE_D2_KSG07_n00256
+OutputFile        DTL_RHD_d2l2n0256
 OutputPath        ./
 OutputFileType    silo
-OutputFrequency   128
+OutputFrequency   256
 OutputCriterion   0
-OPfreqTime        1.578e11
+OPfreqTime        7.89e10
 StartTime         0.0
-FinishTime        4.986e+13  # 1.58 Myr
+FinishTime        1.0e+14
 
 # Type of Boundary Condition
 BC_XN         outflow
@@ -71,10 +71,10 @@ BC_YN         axisymmetric
 BC_YP         outflow
 BC_Ninternal  0
 
-solver          4
+solver          7
 OrderOfAccSpace 2
 OrderOfAccTime  2
-GAMMA 1.66666666666666667
+GAMMA 1.01
 CFL 0.2
 ArtificialViscosity 1
 EtaViscosity 0.15
@@ -86,25 +86,25 @@ velval 1
 magval 1
 
 # Set initial Stroemgren Sphere properties here:
-# r=0.314pc = L_box/4, 
+# r_s=0.314pc, = 0.0969004 Lbox
 # centred on origin,
 # T=10^4, so pressure is 200x the neutral gas (electrons+ions)
 #
-PECcloudradius 0.25   # Fraction of x-domain
+PECcloudradius 0.0969004   # Fraction of x-domain
 PECcloudTR0 0.99999   # cloud first tracer value (ion fraction)
 PECdratio 1.0         # constant density
-PECpratio 200.0       # photoheated to 10000K.
+PECpratio 20.0       # photoheated to 10000K.
 PECBratio 1.0
 PEC_xpos 0.0e18
 PEC_ypos 0.0e18
 PEC_zpos 0.0e18
 
-PEC_ambRO 2.338e-22  # nH~100.0 per c.c.
-PEC_ambPG 1.518e-12  # set so T_cl=100
+PEC_ambRO 5.21e-21  # nH~3120.0 per c.c.
+PEC_ambPG 4.305e-8  # set so T_cl=1000 (for mu=m_p per hydrogen nucleon).
 PEC_ambVX  0.0e5
 PEC_ambVY  0.0e5
 PEC_ambVZ  0.0e5
-PEC_ambBX 14.20e-6 
+PEC_ambBX 100.00e-6 
 PEC_ambBY 0.00e-6
 PEC_ambBZ 0.00e-6
 PEC_ambTR0 1.0e-12  # neutral medium.
@@ -120,13 +120,13 @@ RT_Nsources 1
 RT_position_0_0  0.0e18
 RT_position_0_1  0.0e18
 RT_position_0_2  0.0e18
-RT_strength_0    5.34421e+36 # erg/sec.
-RT_Rstar____0    1.38259 # Radius of star in solar radii.
-RT_Tstar____0    3.000e4 # Stellar effective temperature.
+RT_strength_0    1.0e49 # photons/sec for monochromatic src.
+RT_Rstar____0    1.0 # (UNUSED) Radius of star in solar radii.
+RT_Tstar____0    1.0 # (UNUSED) Stellar effective temperature.
 RT_src_type_0    1  # 1=single src, 2=diffuse-radiation.
 RT_at_infty_0    0  # 0=no, 1=yes.
 RT_update___0    2  # 1=C2Ray update, 2=New update.
-RT_effect___0    3  # 1=UV heating, 2=mono-photoionisation, 3=multi-photoion
+RT_effect___0    2  # 1=UV heating, 2=mono-photoionisation, 3=multi-photoion
 RT_Tau_src__0    10  # 1=total column, 2=nH*(1-y_i), 3=nH*(y_i)
 RT_Tau_var__0    0  # opacity variably y_i (this is its index in state vector)
 RT_EVO_FILE_0    NOFILE

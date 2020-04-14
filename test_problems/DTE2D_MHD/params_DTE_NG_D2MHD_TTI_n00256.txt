@@ -67,7 +67,7 @@ FinishTime        3.7872e+12
 # Type of Boundary Condition
 BC_XN         outflow
 BC_XP         outflow
-BC_YN         reflecting
+BC_YN         axisymmetric
 BC_YP         outflow
 BC_Ninternal  0
 

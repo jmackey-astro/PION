@@ -32,22 +32,16 @@ font.set_weight('light')
 font.set_size(8)
 
 solver="HLLD_NG"
-#solver="HLLD_UG"
-if solver=="HLL":
-  files=[""]
-elif solver=="HLLD_NG":
+solver="HLLD_UG"
+if solver=="HLLD_NG":
   #files=sorted(glob.glob("HLLD_B001_n040_l2_level00_0000.*.silo"))
-  files=sorted(glob.glob("HLLD_B010_n040_l2_level00_0000.*.silo"))
+  files=sorted(glob.glob("NG_B*_n256_level00_0000.*.silo"))
   #files=sorted(glob.glob("HLLD_B001_n200_l2_level00_0000.*.silo"))
   #files=sorted(glob.glob("BW2d_StoneMHD_B010_n200_level00.000*.silo"))
-  files=sorted(glob.glob("HLLD_B*level00_0000.*.silo"))
 elif solver=="HLLD_UG":
-  files=sorted(glob.glob("HLLD_n200_B1_ug_0000.*.silo"))
-elif solver=="RCV":
-  files==sorted(glob.glob("RCV*_level00_0000.*.silo"))
+  files=sorted(glob.glob("UG_B*_n256_0000.*.silo"))
 else:
   files=[""]
-  #files=["FieldLoop032_0000.00000000.silo", "FieldLoop032_0000.00000132.silo", "FieldLoop032_0000.00000264.silo"]
 
 for file in files:
   print file
@@ -228,7 +222,7 @@ for file in files:
   #  ax.label_outer()
 
   #plt.show()
-  fn = file[0:26] + "_l"+str(n)+"n"+str(level_ng[0])+"c"+str(c)+".png"
+  fn = file[0:12] + "_l"+str(n)+"n"+str(level_ng[0])+"c"+str(c)+".png"
   plt.savefig(fn,bbox_inches="tight",dpi=300)
 
 #  if solver=="HLL":
