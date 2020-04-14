@@ -76,7 +76,7 @@ OutputCriterion 1
 OPfreqTime 0.1 
 
 StartTime 0.0
-FinishTime 0.2
+FinishTime 0.3
 OrderOfAccSpace 2
 OrderOfAccTime  2
 
