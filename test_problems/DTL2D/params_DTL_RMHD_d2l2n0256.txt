@@ -1,6 +1,6 @@
 # parameter file for Initial Condition Generation.
 # 
-# 2019.04.25 JM: D-type-early test, in 2D, with MHD.
+# 2020.04.16 JM: D-type-late test, in 2D, with MHD (Bisbas-2015 params).
 
 
 ics             PhotoEvap_radial

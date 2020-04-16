@@ -403,6 +403,21 @@ class cyl_FV_solver_mhd_ideal_adi
       pion_flt *  ///< update vector to add source term to [OUTPUT]
       );
 
+  ///
+  /// calculate Powell and GLM source terms for multi-D MHD,
+  /// using the cylindrical coordinate divergence operator
+  ///
+  virtual int MHDsource(
+      class GridBaseClass *,  ///< pointer to grid.
+      class cell *,   ///< pointer to cell of left state
+      class cell *,   ///< pointer to cell of right state
+      pion_flt *,     ///< left edge state
+      pion_flt *,     ///< right edge state
+      const axes,     ///< Which axis we are looking along.
+      enum direction, ///< positive direction normal to interface
+      enum direction, ///< negative direction normal to interface
+      const double    ///< timestep dt
+      );
 };
 
 
@@ -415,6 +430,7 @@ class cyl_FV_solver_mhd_ideal_adi
 class cyl_FV_solver_mhd_mixedGLM_adi
   :
   virtual public FV_solver_mhd_mixedGLM_adi,
+  virtual public cyl_FV_solver_mhd_ideal_adi,
   virtual public VectorOps_Cyl
 {
   public:
@@ -445,6 +461,22 @@ class cyl_FV_solver_mhd_mixedGLM_adi
       pion_flt *  ///< update vector to add source term to [OUTPUT]
       );
 
+  ///
+  /// calculate Powell and GLM source terms for multi-D MHD,
+  /// using the cylindrical coordinate divergence operator in the
+  /// Powell terms
+  ///
+  virtual int MHDsource(
+      class GridBaseClass *,  ///< pointer to grid.
+      class cell *,   ///< pointer to cell of left state
+      class cell *,   ///< pointer to cell of right state
+      pion_flt *,     ///< left edge state
+      pion_flt *,     ///< right edge state
+      const axes,     ///< Which axis we are looking along.
+      enum direction, ///< positive direction normal to interface
+      enum direction, ///< negative direction normal to interface
+      const double    ///< timestep dt
+      );
 };
 
 

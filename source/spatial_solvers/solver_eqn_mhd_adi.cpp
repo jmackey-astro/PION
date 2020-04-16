@@ -404,20 +404,21 @@ int FV_solver_mhd_ideal_adi::dU_Cell(
 
 
 int FV_solver_mhd_ideal_adi::MHDsource(
-                      class GridBaseClass *grid,  ///< pointer to grid.
-                      class cell *Cl,   ///< pointer to cell of left state
-                      class cell *Cr,   ///< pointer to cell of right state
-                      pion_flt *Pl,     ///< left edge state
-                      pion_flt *Pr,     ///< right edge state
-                      const axes d,     ///< Which axis we are looking along.
-                      enum direction pos, ///< positive normal direction
-                      enum direction neg, ///< negative normal direction
-                      const double dt    ///< timestep dt
-                      )
+      class GridBaseClass *grid,  ///< pointer to grid.
+      class cell *Cl,   ///< pointer to cell of left state
+      class cell *Cr,   ///< pointer to cell of right state
+      pion_flt *Pl,     ///< left edge state
+      pion_flt *Pr,     ///< right edge state
+      const axes d,     ///< Which axis we are looking along.
+      enum direction pos, ///< positive normal direction
+      enum direction neg, ///< negative normal direction
+      const double dt    ///< timestep dt
+      )
 {
   // The Powell source terms from Powell's paper (1999)
   // called by time_integrator::dynamics_dU_column() 
-  double dx = 2.0*grid->DX();
+  double dx = grid->DX();
+  double bm = 0.5*(Cl->Ph[eqBX]+Cr->Ph[eqBX]);
   double uB_l = Cl->Ph[eqBX]*Cl->Ph[eqVX] +
                 Cl->Ph[eqBY]*Cl->Ph[eqVY] +
                 Cl->Ph[eqBZ]*Cl->Ph[eqVZ];
@@ -444,9 +445,9 @@ int FV_solver_mhd_ideal_adi::MHDsource(
   Powell_r[eqBBY] = Cr->Ph[eqVY];
   Powell_r[eqBBZ] = Cr->Ph[eqVZ];
 
-   for (int v=0;v<eq_nvar;v++) {
-    Cl->dU[v] -= dt*Pl[eqBX]*(Powell_l[v])/dx;
-    Cr->dU[v] += dt*Pr[eqBX]*(Powell_r[v])/dx;
+  for (int v=0;v<eq_nvar;v++) {
+    Cl->dU[v] -= dt*bm*(Powell_l[v])/dx;
+    Cr->dU[v] += dt*bm*(Powell_r[v])/dx;
   }
   return 0;
 }
@@ -777,7 +778,6 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
 
 
 
-
 ///
 /// calculate GLM source terms for multi-D MHD and add to Powell source
 /// Not exactly as indicated in Dominik's paper, but it works.
@@ -794,7 +794,8 @@ int FV_solver_mhd_mixedGLM_adi::MHDsource(
       const double dt    ///< timestep dt
       )
 {
-  double dx = 2.0*grid->DX();
+  double dx = grid->DX();
+  double sm = 0.5*(Cl->Ph[eqSI]+Cr->Ph[eqSI]);
   FV_solver_mhd_ideal_adi::MHDsource(grid,Cl,Cr,Pl,Pr,d,pos,neg,dt);
 
   pion_flt psi_l[eq_nvar], psi_r[eq_nvar];
@@ -808,8 +809,8 @@ int FV_solver_mhd_mixedGLM_adi::MHDsource(
   psi_r[eqPSI] = Cr->Ph[eqVX];
   
   for (int v=0;v<eq_nvar;v++) {
-    Cl->dU[v] -= dt*Pl[eqSI]*psi_l[v]/dx;
-    Cr->dU[v] += dt*Pr[eqSI]*psi_r[v]/dx;
+    Cl->dU[v] -= dt*sm*psi_l[v]/dx;
+    Cr->dU[v] += dt*sm*psi_r[v]/dx;
   }
   return 0;
 }
@@ -1033,6 +1034,77 @@ void cyl_FV_solver_mhd_ideal_adi::geometric_source(
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+int cyl_FV_solver_mhd_ideal_adi::MHDsource(
+      class GridBaseClass *grid,  ///< pointer to grid.
+      class cell *Cl,   ///< pointer to cell of left state
+      class cell *Cr,   ///< pointer to cell of right state
+      pion_flt *Pl,     ///< left edge state
+      pion_flt *Pr,     ///< right edge state
+      const axes d,     ///< Which axis we are looking along.
+      enum direction pos, ///< positive normal direction
+      enum direction neg, ///< negative normal direction
+      const double dt    ///< timestep dt
+      )
+{
+  // The Powell source terms from Powell's paper (1999)
+  // called by time_integrator::dynamics_dU_column() 
+  double dx = grid->DX(), rp=0.0, rn=0.0;
+  double bm = 0.5*(Cl->Ph[eqBX]+Cr->Ph[eqBX]);
+  double uB_l = Cl->Ph[eqBX]*Cl->Ph[eqVX] +
+                Cl->Ph[eqBY]*Cl->Ph[eqVY] +
+                Cl->Ph[eqBZ]*Cl->Ph[eqVZ];
+  double uB_r = Cr->Ph[eqBX]*Cr->Ph[eqVX] +
+                Cr->Ph[eqBY]*Cr->Ph[eqVY] +
+                Cr->Ph[eqBZ]*Cr->Ph[eqVZ];
+  pion_flt Powell_l[eq_nvar], Powell_r[eq_nvar];
+  for (int v=0;v<eq_nvar;v++){
+    Powell_l[v] = Powell_r[v]  = 0.0;
+  }
+  Powell_l[eqMMX] = Cl->Ph[eqBX];
+  Powell_l[eqMMY] = Cl->Ph[eqBY];
+  Powell_l[eqMMZ] = Cl->Ph[eqBZ];
+  Powell_l[eqERG] = uB_l;
+  Powell_l[eqBBX] = Cl->Ph[eqVX];
+  Powell_l[eqBBY] = Cl->Ph[eqVY];
+  Powell_l[eqBBZ] = Cl->Ph[eqVZ];
+  
+  Powell_r[eqMMX] = Cr->Ph[eqBX];
+  Powell_r[eqMMY] = Cr->Ph[eqBY];
+  Powell_r[eqMMZ] = Cr->Ph[eqBZ];
+  Powell_r[eqERG] = uB_r;
+  Powell_r[eqBBX] = Cr->Ph[eqVX];
+  Powell_r[eqBBY] = Cr->Ph[eqVY];
+  Powell_r[eqBBZ] = Cr->Ph[eqVZ];
+
+  switch (d) {
+  case Zcyl:
+    for (int v=0;v<eq_nvar;v++) {
+      Cl->dU[v] -= dt*bm*(Powell_l[v])/dx;
+      Cr->dU[v] += dt*bm*(Powell_r[v])/dx;
+    }
+    break;
+  case Rcyl:
+    rp = CI.get_dpos(Cl,Rcyl) +dx*0.5;
+    rn = rp - dx;
+    for (int v=0;v<eq_nvar;v++) {
+      Cl->dU[v] -= dt*bm*(Powell_l[v])*2.0*rp/(rp*rp-rn*rn);
+    }
+    rn = rp;
+    rp += dx;
+    for (int v=0;v<eq_nvar;v++) {
+      Cr->dU[v] += dt*bm*(Powell_r[v])*2.0*rn/(rp*rp-rn*rn);
+    }
+    break;
+  }
+
+  return 0;
+}
+
 
 
 // ##################################################################
@@ -1057,6 +1129,7 @@ cyl_FV_solver_mhd_mixedGLM_adi::cyl_FV_solver_mhd_mixedGLM_adi(
     HLLD_MHD(nv,gam),
     VectorOps_Cart(nd),
     FV_solver_mhd_ideal_adi(nv,nd,cflno,gam,state,avcoeff,ntr),
+    cyl_FV_solver_mhd_ideal_adi(nv,nd,cflno,gam,state,avcoeff,ntr),
     eqns_mhd_mixedGLM(nv),
     FV_solver_mhd_mixedGLM_adi(nv,nd,cflno,gam,state,avcoeff,ntr),
     VectorOps_Cyl(nd)
@@ -1140,6 +1213,50 @@ void cyl_FV_solver_mhd_mixedGLM_adi::geometric_source(
   }
 
   return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+///
+/// calculate GLM source terms for multi-D MHD and add to Powell source
+/// Not exactly as indicated in Dominik's paper, but it works.
+///
+int cyl_FV_solver_mhd_mixedGLM_adi::MHDsource(
+      class GridBaseClass *grid,  ///< pointer to grid.
+      class cell *Cl,   ///< pointer to cell of left state
+      class cell *Cr,   ///< pointer to cell of right state
+      pion_flt *Pl,     ///< left edge state
+      pion_flt *Pr,     ///< right edge state
+      const axes d,            ///< Which axis we are looking along.
+      enum direction pos, ///< positive direction normal to interface
+      enum direction neg, ///< negative direction normal to interface
+      const double dt    ///< timestep dt
+      )
+{
+  double dx = grid->DX();
+  double sm = 0.5*(Cl->Ph[eqSI]+Cr->Ph[eqSI]);
+  cyl_FV_solver_mhd_ideal_adi::MHDsource(grid,Cl,Cr,Pl,Pr,d,pos,neg,dt);
+
+  pion_flt psi_l[eq_nvar], psi_r[eq_nvar];
+  for (int v=0;v<eq_nvar;v++){
+    psi_l[v] = psi_r[v]  = 0.0;
+  }
+  psi_l[eqERG] = Cl->Ph[eqVX] * Cl->Ph[eqSI];
+  psi_l[eqPSI] = Cl->Ph[eqVX];
+  
+  psi_r[eqERG] = Cr->Ph[eqVX] * Cr->Ph[eqSI];
+  psi_r[eqPSI] = Cr->Ph[eqVX];
+  
+  for (int v=0;v<eq_nvar;v++) {
+    Cl->dU[v] -= dt*sm*psi_l[v]/dx;
+    Cr->dU[v] += dt*sm*psi_r[v]/dx;
+  }
+  return 0;
 }
 
 
