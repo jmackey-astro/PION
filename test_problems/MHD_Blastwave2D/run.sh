@@ -1,27 +1,26 @@
 #!/bin/bash
 
-../../icgen-ng params_MHD_blastwave2D_B001_n040.txt silo
-../../icgen-ng params_MHD_blastwave2D_B001_n200.txt silo
-../../pion-ng BW2d_StoneMHD_B001_n040_level00_0000.00000000.silo \
-  outfile=HLLD_B001_n040_l2 solver=7 opfreq_time=0.1
-mpirun -np 4 ../../pion-ng \
-  BW2d_StoneMHD_B001_n200_level00_0000.00000000.silo \
-  outfile=HLLD_B001_n200_l2 solver=7 opfreq_time=0.1
+mpirun ../../icgen-ug params_MHD_blastwave2D_UG_B001_n256.txt silo
+mpirun ../../icgen-ug params_MHD_blastwave2D_UG_B010_n256.txt silo
+mpirun ../../icgen-ug params_MHD_blastwave2D_UG_B100_n256.txt silo
 
-../../icgen-ng params_MHD_blastwave2D_B010_n040.txt silo
-../../icgen-ng params_MHD_blastwave2D_B010_n200.txt silo
-../../pion-ng BW2d_StoneMHD_B010_n040_level00_0000.00000000.silo \
-  outfile=HLLD_B010_n040_l2 solver=7 opfreq_time=0.1
-mpirun -np 4 ../../pion-ng \
-  BW2d_StoneMHD_B010_n200_level00_0000.00000000.silo \
-  outfile=HLLD_B010_n200_l2 solver=7 opfreq_time=0.1
+mpirun -np 4 ../../pion-ug BW2d_StoneMHD_UG_B100_n256_0000.00000000.silo solver=7 cfl=0.24 opfreq_time=0.1 outfile=UG_B100_n256
+mpirun -np 4 ../../pion-ug BW2d_StoneMHD_UG_B010_n256_0000.00000000.silo solver=7 cfl=0.24 opfreq_time=0.1 outfile=UG_B010_n256
+mpirun -np 4 ../../pion-ug BW2d_StoneMHD_UG_B001_n256_0000.00000000.silo solver=7 cfl=0.24 opfreq_time=0.1 outfile=UG_B001_n256
 
-../../icgen-ng params_MHD_blastwave2D_B100_n040.txt silo
-../../icgen-ng params_MHD_blastwave2D_B100_n200.txt silo
-../../pion-ng BW2d_StoneMHD_B100_n040_level00_0000.00000000.silo \
-  outfile=HLLD_B100_n040_l2 solver=7 opfreq_time=0.1
-mpirun -np 4 ../../pion-ng \
-  BW2d_StoneMHD_B100_n200_level00_0000.00000000.silo \
-  outfile=HLLD_B100_n200_l2 solver=7 opfreq_time=0.1
+
+mpirun ../../icgen-ng params_MHD_blastwave2D_l2_B000_n256.txt silo
+mpirun ../../icgen-ng params_MHD_blastwave2D_l2_B001_n256.txt silo
+mpirun ../../icgen-ng params_MHD_blastwave2D_l2_B010_n256.txt silo
+mpirun ../../icgen-ng params_MHD_blastwave2D_l2_B100_n256.txt silo
+
+mpirun -np 4 ../../pion-ng BW2d_StoneMHD_l2_B000_n256_level00_0000.00000000.silo solver=7 cfl=0.24 opfreq_time=0.1 outfile=NG_B000_n256
+mpirun -np 4 ../../pion-ng BW2d_StoneMHD_l2_B001_n256_level00_0000.00000000.silo solver=7 cfl=0.24 opfreq_time=0.1 outfile=NG_B001_n256
+mpirun -np 4 ../../pion-ng BW2d_StoneMHD_l2_B010_n256_level00_0000.00000000.silo solver=7 cfl=0.24 opfreq_time=0.1 outfile=NG_B010_n256
+mpirun -np 4 ../../pion-ng BW2d_StoneMHD_l2_B010_n256_level00_0000.00000000.silo solver=8 cfl=0.24 opfreq_time=0.1 outfile=NG_B010_n256_HLL
+mpirun -np 4 ../../pion-ng BW2d_StoneMHD_l2_B010_n256_level00_0000.00000000.silo solver=7 ooa=1 cfl=0.24 opfreq_time=0.1 outfile=NG_B010_n256_HLLDOA1
+mpirun -np 4 ../../pion-ng BW2d_StoneMHD_l2_B100_n256_level00_0000.00000000.silo solver=7 cfl=0.24 opfreq_time=0.1 outfile=NG_B100_n256
+
+exit
 
 
