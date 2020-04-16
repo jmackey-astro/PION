@@ -623,20 +623,20 @@ int VectorOps_Cart::SetSlope(
 
 
 int VectorOps_Cart::DivStateVectorComponent(
-        const cell *c,    ///< current cell.
-        class GridBaseClass *grid,
-        const axes d,     ///< current coordinate axis we are looking along.
-        const int nv,     ///< length of state vectors.
-        const pion_flt *fn, ///< Negative direction flux.
-        const pion_flt *fp, ///< Positive direction flux.
-        pion_flt *dudt      ///< Vector to assign divergence component to.
-        )
+      const cell *c,    ///< current cell.
+      class GridBaseClass *grid, 
+      const axes d,     ///< current coordinate axis
+      const int nv,     ///< length of state vectors.
+      const pion_flt *fn, ///< Negative direction flux.
+      const pion_flt *fp, ///< Positive direction flux.
+      pion_flt *dudt      ///< output vector.
+      )
 {
+  /// \section Sign
   /// Note that this function returns the negative of the i-th
   /// component of the divergence.  This is b/c it is used in the
-  /// finite volume time update where what is needed is the negative
-  /// of div(F).
-
+  /// finite volume time update where -div(F) is needed.
+  
   double dx=grid->DX();
   for (int v=0;v<nv;v++) {
     dudt[v] = (fn[v]-fp[v])/dx;
@@ -1210,21 +1210,20 @@ int VectorOps_Cyl::SetSlope(
 
 
 int VectorOps_Cyl::DivStateVectorComponent(
-        const cell *c,    ///< current cell.
-        class GridBaseClass *grid, 
-        const axes d,     ///< current coordinate axis we are looking along.
-        const int nv,     ///< length of state vectors.
-        const pion_flt *fn, ///< Negative direction flux.
-        const pion_flt *fp, ///< Positive direction flux.
-        pion_flt *dudt      ///< Vector to assign divergence component to.
-        )
+      const cell *c,    ///< current cell.
+      class GridBaseClass *grid, 
+      const axes d,     ///< current coordinate axis
+      const int nv,     ///< length of state vectors.
+      const pion_flt *fn, ///< Negative direction flux.
+      const pion_flt *fp, ///< Positive direction flux.
+      pion_flt *dudt      ///< output vector.
+      )
 {
-  /** \section Sign
-   * Note that this function returns the negative of the i-th component of 
-   * the divergence.  This is b/c it is used in the finite volume time update
-   * where what is needed is the negative of div(F).
-   * */
-
+  /// \section Sign
+  /// Note that this function returns the negative of the i-th
+  /// component of the divergence.  This is b/c it is used in the
+  /// finite volume time update where -div(F) is needed.
+  
   double dZ = grid->DX();
   double dR = dZ;
   

@@ -100,7 +100,7 @@ PEC_ypos 0.0e18
 PEC_zpos 0.0e18
 
 PEC_ambRO 5.21e-21  # nH~3120.0 per c.c.
-PEC_ambPG 4.305e-8  # set so T_cl=1000 (for mu=m_p per hydrogen nucleon).
+PEC_ambPG 4.305e-10  # set so T_cl=1000 (for mu=m_p per hydrogen nucleon).
 PEC_ambVX  0.0e5
 PEC_ambVY  0.0e5
 PEC_ambVZ  0.0e5
