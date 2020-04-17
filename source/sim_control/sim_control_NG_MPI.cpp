@@ -553,7 +553,34 @@ int sim_control_NG_MPI::Time_Int(
       SimPM.maxtime=true;
       cout <<"RUNTIME>"<<get_max_walltime()<<" SECS.\n";
     }
-	
+
+  // update fine-to-coarse level boundaries
+  for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+    if (l<SimPM.grid_nlevels-1) {
+#ifdef TEST_INT
+      cout <<"NG_MPI Receiving F2C boundaries for level "<<l<<"\n";
+#endif
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_RECV) {
+          err += BC_update_FINE_TO_COARSE_RECV(SimPM,spatial_solver,
+                      l,grid[l]->BC_bd[i],2,2);
+        }
+      }
+    }        
+    if (l>0) {
+#ifdef TEST_INT
+      cout <<"NG_MPI Sending F2C boundaries for level "<<l<<"\n";
+#endif
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_SEND) {
+          err += BC_update_FINE_TO_COARSE_SEND(SimPM,
+                spatial_solver, l, grid[l]->BC_bd[i], 2,2);
+        }
+      }
+    }
+  }
+
+
     err+= output_data(grid);
     rep.errorTest("MPI_NG TIME_INT::output_data()",0,err);
 

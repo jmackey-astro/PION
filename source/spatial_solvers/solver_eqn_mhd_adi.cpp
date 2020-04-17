@@ -890,8 +890,8 @@ int FV_solver_mhd_mixedGLM_adi::UtoP(
   cout <<"FV_solver_mhd_mixedGLM_adi::UtoP ...starting.\n";
 #endif //FUNCTION_ID
 
+  for (int t=0;t<FV_ntr;t++) p[eqTR[t]] = u[eqTR[t]]/u[eqRO];
   int err=eqns_mhd_mixedGLM::UtoP(u,p,MinTemp,g);
-  for (int t=0;t<FV_ntr;t++) p[eqTR[t]] = u[eqTR[t]]/p[eqRO];
 
 #ifdef FUNCTION_ID
   cout <<"FV_solver_mhd_mixedGLM_adi::UtoP ...returning.\n";

@@ -16,6 +16,8 @@
 using namespace std;
 
 //#define TEST_MPI_NG_F2C
+//#define NG_F2C_POS
+
 // ##################################################################
 // ##################################################################
 
@@ -127,7 +129,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   // data to send will be ordered as position,conserved-var,X-data
   // for each averaged cell.  Position only needed for testing.
   pion_flt *data = 0;
-#ifdef TEST_MPI_NG_F2C
+#ifdef NG_F2C_POS
   data = mem.myalloc(data,nel*(par.nvar+F2C_Nxd+par.ndim));
 #else
   data = mem.myalloc(data,nel*(par.nvar+F2C_Nxd));
@@ -143,23 +145,13 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   for (v=0;v<nel;v++) {
     for (int j=0;j<nv;j++) cd[j]=0.0;
     average_cells(par,solver,grid,nc,b->avg[v].c, b->avg[v].cpos,cd);
-#ifdef TEST_MPI_NG_F2C
+#ifdef NG_F2C_POS
     for (int i=0;i<par.ndim;i++) data[ct+i] = b->avg[v].cpos[i];
     ct += par.ndim;
 #endif
     for (int i=0;i<nv;i++) data[ct+i] = cd[i];
     ct += nv;
 
-#ifdef TEST_MPI_NG_F2C
-    if (fabs(b->avg[v].c[0]->Ph[VY])>1.0e6 ||
-        fabs(b->avg[v].c[1]->Ph[VY])>1.0e6) {
-      rep.printVec("SEND Prim -", b->avg[v].c[0]->Ph, par.nvar);
-      rep.printVec("SEND Prim  ", b->avg[v].c[1]->Ph, par.nvar);
-      rep.printVec("SEND Prim  ", b->avg[v].c[2]->Ph, par.nvar);
-      rep.printVec("SEND Prim  ", b->avg[v].c[3]->Ph, par.nvar);
-      cout <<"SEND AVG VY = "<< cd[MMY]/cd[RHO]<<"\n";
-    }
-#endif
   } // go to next avg element.
 
   //
@@ -420,7 +412,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       // receive the data
       size_t nel = b->NGrecvF2C[i].size();
 
-#ifdef TEST_MPI_NG_F2C
+#ifdef NG_F2C_POS
       size_t ct = nel*(par.nvar+F2C_Nxd+par.ndim);
 #else
       size_t ct = nel*(par.nvar+F2C_Nxd);
@@ -441,7 +433,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       // data onto these cells.
       list<cell*>::iterator c_iter=b->NGrecvF2C[i].begin();
       cell *c=0;
-#ifdef TEST_MPI_NG_F2C
+#ifdef NG_F2C_POS
       pion_flt pos[MAX_DIM];
 #endif
       pion_flt prim[par.nvar];
@@ -449,10 +441,17 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       for (c_iter=b->NGrecvF2C[i].begin();
            c_iter!=b->NGrecvF2C[i].end(); ++c_iter) {
         c = (*c_iter);
-#ifdef TEST_MPI_NG_F2C
+#ifdef NG_F2C_POS
         CI.get_dpos(c,pos);
-        rep.printVec("cell pos", pos, par.ndim);
-        rep.printVec("recv pos", &(buf[i_el]), par.ndim);
+        bool errors=false;
+        for (int v=0;v<par.ndim;v++) {
+          if (!pconst.equalD(pos[v],buf[i_el+v])) errors=true;
+        }
+        if (errors) {
+          cout <<"ERROR in positions! ";
+          rep.printVec("cell pos", pos, par.ndim);
+          rep.printVec("recv pos", &(buf[i_el]), par.ndim);
+        }
         i_el += par.ndim;
 #endif
         solver->UtoP(&(buf[i_el]),prim,

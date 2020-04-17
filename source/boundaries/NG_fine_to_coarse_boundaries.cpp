@@ -227,6 +227,7 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
       CI.set_col(c, s->id, &(cd[off]));
       CI.set_cell_col(c, s->id, &(cd[off+s->NTau]));
     }
+
     // set primitive variables in coarse cell based on interpolated
     // values stored in first nvar elements of "cd".
     solver->UtoP(cd,c->Ph,par.EP.MinTemperature,par.gamma);

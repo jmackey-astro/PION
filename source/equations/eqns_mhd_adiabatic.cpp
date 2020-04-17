@@ -158,7 +158,7 @@ int eqns_mhd_ideal::check_pressure(
     rep.error("Negative Density! Bugging out",p[eqRO]);
     if (ct_rho<1000) {
       ct_rho ++;
-      cout <<"(eqns_mhd_ideal::UtoP) negative density!  ";
+      cout <<"(eqns_mhd_ideal::check_pressure) negative density!  ";
       rep.printVec("u",u,eq_nvar);
       rep.printVec("p",p,eq_nvar);
 #ifdef TESTING
@@ -189,6 +189,7 @@ int eqns_mhd_ideal::check_pressure(
     //
     //cout <<"UtoP() mhd set-neg-press-to-fixed-T.  P<0\n";
     if (MP) {
+      //cout <<"UtoP() mhd set-neg-press-to-fixed-T.  T<Tmin\n";
       MP->Set_Temp(p,MinTemp,gamma);
     }
     else {
@@ -200,17 +201,20 @@ int eqns_mhd_ideal::check_pressure(
   }
   else if (MP && (MP->Temperature(p,gamma) <MinTemp)) {
     //
-    // If we have microphysics, just set T=10K.
+    // If we have microphysics, just set T=MinTemp
     //
-    //cout <<"UtoP() mhd set-neg-press-to-fixed-T.  T<Tmin\n";
+    //cout <<"UtoP() mhd set-small-press-to-fixed-T.  T<Tmin\n";
+    //rep.printVec("U",u,eq_nvar);
+    //rep.printVec("p0",p,eq_nvar);
     MP->Set_Temp(p,MinTemp,gamma);
+    //rep.printVec("p1",p,eq_nvar);
   }
 
 #else // don't SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   if (p[eqPG] <=0.) {
     if (ct_pg<1000) {
       ct_pg ++;
-      cout <<"(eqns_mhd_ideal::UtoP) negative pressure...p="<<p[eqPG];
+      cout <<"(eqns_mhd_ideal::check_pressure) -ve p_g="<<p[eqPG];
       cout <<", correcting, count="<<ct_pg<<"\n";
     }
     p[eqPG] = eq_refvec[eqPG]*1.0e-6;

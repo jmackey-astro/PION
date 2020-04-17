@@ -5,7 +5,7 @@
 
 ics             PhotoEvap_radial
 smooth -1
-noise 0.05
+noise -1
 
 ndim            2
 coordinates     cylindrical
@@ -58,11 +58,11 @@ NG_refine_ZZ          1
 OutputFile        DTE_KSG07_d2l3n0256
 OutputPath        ./
 OutputFileType    silo
-OutputFrequency   256
+OutputFrequency   512
 OutputCriterion   0
 OPfreqTime        1.578e11
 StartTime         0.0
-FinishTime        4.986e+13  # 1.58 Myr
+FinishTime        2.0e14
 
 # Type of Boundary Condition
 BC_XN         outflow
@@ -75,9 +75,9 @@ solver          7
 OrderOfAccSpace 2
 OrderOfAccTime  2
 GAMMA 1.66666666666666667
-CFL 0.2
-ArtificialViscosity 1
-EtaViscosity 0.15
+CFL 0.25
+ArtificialViscosity 0
+EtaViscosity 0.0
 
 units 
 rhoval 1
