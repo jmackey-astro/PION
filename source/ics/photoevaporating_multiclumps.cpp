@@ -510,7 +510,7 @@ int IC_photevap_multi_clumps::add_ambient_data_to_grid(
       }
     }
 
-    if (amb->xscale=true) {
+    if (amb->xscale==true) {
       //cout <<"*#*#*#*#*#*# adding scaled X-data: ";
       //cout <<amb->xscale_x0<<", "<<amb->xscale_l0<<", "<<amb->xscale_alpha<<": ";
       CI.get_dpos(c,dpos);

@@ -505,11 +505,9 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
     cout <<"l="<<l<<": don't send fluxes on half step\n";
     return 1;
   }
-#ifdef BC89_FULLSTEP
   if (par.levels[l].step%2 !=0 ) {
     rep.error("Don't call BC89 Flux-SEND on odd steps",1);
   }
-#endif
   if (l==0) {
     rep.error("Coarsest level trying to send flux data",l);
   }
@@ -606,12 +604,10 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
 #ifdef SKIP_BC89_FLUX
   return 0;
 #endif
-#ifdef BC89_FULLSTEP
   if (step != ooa) {
     cout <<"don't receive fluxes on half step\n";
-    return 1;
+    rep.error("trying to receive BC89 flux on half step",l);
   }
-#endif
   if (l==par.grid_nlevels-1) {
     rep.error("finest level trying to receive data from l+1",l);
   }

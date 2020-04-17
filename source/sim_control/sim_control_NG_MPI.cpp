@@ -36,7 +36,6 @@ using namespace std;
 
 #ifdef PARALLEL
 
-#define BC89_FULLSTEP
 //#define TEST_INT
 
 // ##################################################################
@@ -605,7 +604,7 @@ double sim_control_NG_MPI::advance_step_OA1(
   bool finest_level = (l<(SimPM.grid_nlevels-1)) ? false : true;
 
 #ifdef TEST_INT
-  cout <<"advance_step_OA1: child="<<child<<"\n";
+  cout <<"advance_step_OA1: child="<<SimPM.levels[l].child<<"\n";
   cout <<"finest_level="<<finest_level<<", l="<<l<<", max="<<SimPM.grid_nlevels<<"\n";
 #endif
 
@@ -865,7 +864,7 @@ double sim_control_NG_MPI::advance_step_OA2(
   bool finest_level = (l<SimPM.grid_nlevels-1) ? false : true;
 
 #ifdef TEST_INT
-  cout <<"advance_step_OA2: child="<<child<<endl;
+  cout <<"advance_step_OA2: child="<<SimPM.levels[l].child<<endl;
 #endif
 
   // --------------------------------------------------------
@@ -1139,17 +1138,13 @@ double sim_control_NG_MPI::advance_step_OA2(
 #ifdef TEST_INT
     cout <<"advance_step_OA2: l="<<l<<" send BC89 fluxes"<<endl;
 #endif
-#ifdef BC89_FULLSTEP
     if (SimPM.levels[l].step%2==0) {
-#endif
       // only send level fluxes every 2nd step (coarse grid is only
       // updated at the full-step, not at the half-step).
 #ifndef SKIP_BC89_FLUX
       err += send_BC89_fluxes_F2C(SimPM,l,OA2,OA2);
 #endif
-#ifdef BC89_FULLSTEP
     }
-#endif
 #ifdef TEST_INT
     cout <<"advance_step_OA2: l="<<l<<" sent BC89 fluxes"<<endl;
 #endif
