@@ -186,9 +186,7 @@ int sim_init::Init(
       vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
-#ifdef TESTING
-  cout <<"(sim_init::Init) Initialising grid"<<"\n";
-#endif
+  cout <<"(pion)  Initialising"<<"\n";
   int err=0;
   class MCMDcontrol ppar; // unused for serial code.
   
@@ -340,9 +338,10 @@ int sim_init::Init(
 
 int sim_init::override_params(int narg, string *args)
 {
-  cout <<"------------------------------------------------------\n";
-  cout <<"--------  Overriding parameters if requested ---------\n";
-  // Find command line params and assign them to SimPM.whatever.
+
+  cout <<"(pion)  Overriding parameters if requested...\n";
+
+  // Find command line params and change them
   for (int i=2;i<narg;i++) {
 
     if      (args[i].find("ooa=") != string::npos) {
@@ -662,7 +661,6 @@ int sim_init::override_params(int narg, string *args)
 
     else rep.error("Don't recognise this optional argument, please fix.",args[i]);
   }
-  cout <<"------------------------------------------------------\n\n";
   return(0);
 } // sim_init::override_params
 
@@ -753,7 +751,8 @@ int sim_init::output_data(
   // Since we got past all that, we are in a timestep that should be
   // saved, so go and do it...
   //
-  cout <<"\tSaving data, at simtime: "<<SimPM.simtime << " to file ";
+  cout <<"\tSaving data at step "<<SimPM.timestep;
+  cout <<" and sim-time "<<SimPM.simtime << " to file ";
   cout <<SimPM.outFileBase<<"\n";
   err = dataio->OutputData(SimPM.outFileBase, grid, SimPM,
                            SimPM.timestep);

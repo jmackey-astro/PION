@@ -217,8 +217,8 @@ void FV_solver_Hydro_Euler::PtoU(
       const double g
       )
 {
-  eqns_Euler::PtoU(p,u,g);
   for (int t=0;t<FV_ntr;t++) u[eqTR[t]] = p[eqTR[t]]*p[eqRO];
+  eqns_Euler::PtoU(p,u,g);
   return;
 }
 
@@ -252,8 +252,8 @@ void FV_solver_Hydro_Euler::PUtoFlux(
       pion_flt *f
       )
 {
-  eqns_Euler::PUtoFlux(p,u,f);
   for (int t=0;t<FV_ntr;t++) f[eqTR[t]] = p[eqTR[t]]*f[eqRHO];
+  eqns_Euler::PUtoFlux(p,u,f);
   return;
 }
 

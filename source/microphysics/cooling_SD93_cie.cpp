@@ -89,9 +89,11 @@ void cooling_function_SD93CIE::setup_SD93_cie()
   if (have_set_cooling) {
     rep.error("setup_SD93_cie() only one cooling function in cooling_function_SD93CIE",1);
   }
+#ifdef DEBUG_COOL
   cout <<"\t\t----------------------------------------------------\n";
   cout <<"\t\tSetting up Sutherland & Dopita (1993, ApJS, 88, 253) CIE cooling function\n";
   cout <<"\t\tfrom file m-00.cie from http://www.mso.anu.edu.au/~ralph/data/cool/\n";
+#endif
 
   Tarray  = mem.myalloc(Tarray, Nspl);
   Larray  = mem.myalloc(Larray, Nspl);
@@ -162,12 +164,16 @@ void cooling_function_SD93CIE::setup_SD93_cie()
   MaxSlope = (Larray[Nspl-1]-Larray[Nspl-2])/(Tarray[Nspl-1]-Tarray[Nspl-2]);
   //MaxSlope = 0.0;
 
+#ifdef DEBUG_COOL
   cout << "\t\t min-slope="<<MinSlope<<" max-slope="<<MaxSlope<<"\n";
+#endif
 
   interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, spline_id);
 
   have_set_cooling = true;
+#ifdef DEBUG_COOL
   cout <<"\t\t----------------------------------------------------\n";
+#endif
 #ifdef TESTING
   ofstream outf("cooling_SD93_cie_solar.txt");
   if(!outf.is_open()) rep.error("couldn't open outfile",1);
@@ -198,10 +204,12 @@ void cooling_function_SD93CIE::setup_SD93_cie_OnlyMetals()
   if (have_set_cooling) {
     rep.error("setup_SD93_OnlyMetals() only one cooling function in cooling_function_SD93CIE",1);
   }
+#ifdef DEBUG_COOL
   cout <<"\t\t----------------------------------------------------\n";
   cout <<"\t\tSetting up Sutherland & Dopita (1993, ApJS, 88, 253) CIE cooling function\n";
   cout <<"\t\tfrom file m-00.cie from http://www.mso.anu.edu.au/~ralph/data/cool/\n";
   cout <<"\t\tand file mzero.cie from http://www.mso.anu.edu.au/~ralph/data/cool/\n";
+#endif
 
   Tarray  = mem.myalloc(Tarray, Nspl);
   Larray  = mem.myalloc(Larray, Nspl);
@@ -275,7 +283,9 @@ void cooling_function_SD93CIE::setup_SD93_cie_OnlyMetals()
   //
   MaxSlope = 0.0;
 
+#ifdef DEBUG_COOL
   cout << "\t\t min-slope="<<MinSlope<<" max-slope="<<MaxSlope<<"\n";
+#endif
 
   interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, spline_id);
 
@@ -293,7 +303,9 @@ void cooling_function_SD93CIE::setup_SD93_cie_OnlyMetals()
   } while (t<1.0e9);
   outf.close();
 #endif //TESTING
+#ifdef DEBUG_COOL
   cout <<"\t\t----------------------------------------------------\n";
+#endif
   return;
 }
 
@@ -311,9 +323,11 @@ void cooling_function_SD93CIE::setup_SD93_cie_MetalFree()
   if (have_set_cooling) {
     rep.error("setup_SD93_MetalFree() only one cooling function in cooling_function_SD93CIE",1);
   }
+#ifdef DEBUG_COOL
   cout <<"\t\t----------------------------------------------------\n";
   cout <<"\t\tSetting up Sutherland&Dopita(1993,ApJS,88,253) METAL-FREE-CIE cooling function\n";
   cout <<"\t\tfrom file m-zero.cie from http://www.mso.anu.edu.au/~ralph/data/cool/\n";
+#endif
 
   Tarray  = mem.myalloc(Tarray, Nspl);
   Larray  = mem.myalloc(Larray, Nspl);
@@ -386,12 +400,17 @@ void cooling_function_SD93CIE::setup_SD93_cie_MetalFree()
   MaxSlope = (Larray[Nspl-1]-Larray[Nspl-2])/(Tarray[Nspl-1]-Tarray[Nspl-2]);
   //MaxSlope = 0.0;
 
+#ifdef DEBUG_COOL
   cout << "\t\t min-slope="<<MinSlope<<" max-slope="<<MaxSlope<<"\n";
+#endif
 
   interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, spline_id);
 
   have_set_cooling = true;
+
+#ifdef DEBUG_COOL
   cout <<"\t\t----------------------------------------------------\n";
+#endif
 #ifdef TESTING
   ofstream outf("cooling_SD93_cie_metalfree.txt");
   if(!outf.is_open()) rep.error("couldn't open outfile",1);
@@ -426,10 +445,12 @@ void cooling_function_SD93CIE::setup_WSS09_CIE_OnlyMetals()
   if (have_set_cooling) {
     rep.error("setup_WSS09_CIE_OnlyMetals() only one cooling function in cooling_function_SD93CIE",1);
   }
+#ifdef DEBUG_COOL
   cout <<"\t\t----------------------------------------------------\n";
   cout <<"\t\tSetting up  Wiersma et al. (2009,MNRAS,393,99) CIE cooling function\n";
   cout <<"\t\tMETALS-ONLY CURVE, resampled onto a 91 point cubic spline interpolation.\n";
   cout <<"\t\tFile from file http://www.strw.leidenuniv.nl/WSS08/z_collis.txt\n";
+#endif
 
   Tarray  = mem.myalloc(Tarray, Nspl);
   Larray  = mem.myalloc(Larray, Nspl);
@@ -492,7 +513,9 @@ void cooling_function_SD93CIE::setup_WSS09_CIE_OnlyMetals()
   MaxSlope = (Larray[Nspl-1]-Larray[Nspl-2])/(Tarray[Nspl-1]-Tarray[Nspl-2]);
   //MaxSlope = 0.0;
 
+#ifdef DEBUG_COOL
   cout << "\t\t min-slope="<<MinSlope<<" max-slope="<<MaxSlope<<"\n";
+#endif
 
   interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, spline_id);
 
@@ -510,7 +533,9 @@ void cooling_function_SD93CIE::setup_WSS09_CIE_OnlyMetals()
   } while (t<1.0e9);
   outf.close();
 #endif //TESTING
+#ifdef DEBUG_COOL
   cout <<"\t\t----------------------------------------------------\n";
+#endif
   return;
 }
 
@@ -532,10 +557,12 @@ void cooling_function_SD93CIE::setup_WSS09_CIE()
   if (have_set_cooling) {
     rep.error("setup_WSS09_CIE() only one cooling function in cooling_function_SD93CIE",1);
   }
+#ifdef DEBUG_COOL
   cout <<"\t\t----------------------------------------------------\n";
   cout <<"\t\tSetting up  Wiersma et al. (2009,MNRAS,393,99) CIE cooling function\n";
   cout <<"\t\tTOTAL COOLING CURVE, resampled onto a 91 point cubic spline interpolation.\n";
   cout <<"\t\tFile from file http://www.strw.leidenuniv.nl/WSS08/z_collis.txt\n";
+#endif
 
   Tarray  = mem.myalloc(Tarray, Nspl);
   Larray  = mem.myalloc(Larray, Nspl);
@@ -598,7 +625,9 @@ void cooling_function_SD93CIE::setup_WSS09_CIE()
   MaxSlope = (Larray[Nspl-1]-Larray[Nspl-2])/(Tarray[Nspl-1]-Tarray[Nspl-2]);
   //MaxSlope = 0.0;
 
+#ifdef DEBUG_COOL
   cout << "\t\t min-slope="<<MinSlope<<" max-slope="<<MaxSlope<<"\n";
+#endif
 
   interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, spline_id);
 
@@ -616,7 +645,9 @@ void cooling_function_SD93CIE::setup_WSS09_CIE()
   } while (t<1.0e9);
   outf.close();
 #endif //TESTING
+#ifdef DEBUG_COOL
   cout <<"\t\t----------------------------------------------------\n";
+#endif
   return;
 }
 

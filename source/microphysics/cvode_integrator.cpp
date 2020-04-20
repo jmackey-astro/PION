@@ -144,7 +144,9 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
   int err = 0;
 
   get_problem_size(&n_eq, &n_xd);
+#ifdef CVODE_DEBUG
   cout <<"\t\tN_equations="<<n_eq<<", N_extra_data="<<n_xd<<"\n";
+#endif
   if (n_eq<0 || n_xd<0) {
     cout <<"Error in values for problem size.\n";
     return 1;
@@ -195,9 +197,11 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
   double *atol = NV_DATA_S(abstol);
   get_error_tolerances(&reltol,atol); // both args passed by reference.
 
+#ifdef CVODE_DEBUG
   cout <<"\t\treltol="<<reltol<<", atol=["<<NV_Ith_S(abstol,0);
   for (int v=1; v<n_eq;v++) cout<<", "<<NV_Ith_S(abstol,v);
   cout <<"]\n";
+#endif
   
   err = CVodeSVtolerances(cvode_mem, reltol, abstol);
   if (err!= CV_SUCCESS) {
@@ -254,13 +258,14 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
 // ##################################################################
 
 
+
 int cvode_solver::integrate_cvode_step(
-              N_Vector Y_Input,
-              void *user_data, ///<  user_data
-              double t_now,
-              double dt,
-              N_Vector Y_Output
-              )
+      N_Vector Y_Input,
+      void *user_data, ///<  user_data
+      double t_now,
+      double dt,
+      N_Vector Y_Output
+      )
 {
   int err = 0;
   //

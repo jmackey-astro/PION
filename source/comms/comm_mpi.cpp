@@ -98,6 +98,8 @@ int comm_mpi::init(int *argc,   ///< number of program arguments.
     MPI_Abort(MPI_COMM_WORLD, err);
   }
 
+  if (myrank==0) cout <<"(pion)  comm_mpi: nproc = "<<nproc<<"\n";
+
   return 0;
 }
 
@@ -117,7 +119,7 @@ int comm_mpi::get_rank_nproc(
   *n = nproc;
 #ifdef TEST_COMMS
   cout << "comm_mpi::get_rank_nproc():  rank: " << myrank;
-  cout << " nproc: " << nproc << "\n";
+  cout << " of nproc: " << nproc << "\n";
 #endif
   return 0;
 }

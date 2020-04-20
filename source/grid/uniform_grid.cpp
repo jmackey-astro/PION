@@ -799,7 +799,9 @@ int UniformGrid::assign_grid_structure()
 
 int UniformGrid::allocate_grid_data()
 {
+#ifdef TESTING
   cout <<"\tAllocating grid data... G_ncell="<<G_ncell<<"\n";
+#endif
   //
   // First generate G_ncell_all points and add a npt_all counter so
   // that they are in a singly linked list.
@@ -818,7 +820,6 @@ int UniformGrid::allocate_grid_data()
 #ifdef TESTING
   cout <<"\tFinished Allocating Data.\n";
 #endif // TESTING
-
   return 0;
 } // allocate_grid_data
 

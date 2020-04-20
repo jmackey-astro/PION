@@ -90,6 +90,7 @@ void setup_NG_grid::setup_NG_grid_levels(
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
+  cout <<"(pion-ng)  Setting up nested grid parameters\n";
   // first make sure that NG_centre[] is oriented such that an
   // oct-tree structure works.  Centre should be xmin + i/4 of the
   // full domain, where i is in [0,4]
@@ -173,12 +174,15 @@ void setup_NG_grid::setup_NG_grid_levels(
     ostringstream temp; temp<<i;
     string lv = "level "+temp.str();
     string t2=lv+"_Range";
+    cout <<"\t";
     rep.printVec(t2,SimPM.levels[i].Range,SimPM.ndim);
     t2 = lv+"_Xmin";
+    cout <<"\t";
     rep.printVec(t2,SimPM.levels[i].Xmin,SimPM.ndim);
     t2 = lv+"_Xmax";
+    cout <<"\t";
     rep.printVec(t2,SimPM.levels[i].Xmax,SimPM.ndim);
-    cout <<"dx="<<SimPM.levels[i].dx;
+    cout <<"\t\tdx="<<SimPM.levels[i].dx;
     cout <<", step="<<SimPM.levels[i].step<<"\n";
   }
 

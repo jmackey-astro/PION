@@ -371,9 +371,9 @@ void raytracer_USC_infinity::set_Vshell_for_source(
   // cell.  Then call RayTrace_Column_Density() where Vshell is set, and then 
   // change the opacity flag back to its original value.
   //
-//#ifdef RT_TESTING
+#ifdef RT_TESTING
   cout <<"\t\tSetting Vshell for source.\n";
-//#endif
+#endif
 
   int temp = this_src->s->opacity_src;
   int upd  = this_src->s->update;
@@ -1182,8 +1182,8 @@ int raytracer_USC::Add_Source(
       struct rad_src_info *src ///< source info.
       )
 {
-  //  cout <<"AddSource() adding source to list.\n";
 #ifdef RT_TESTING
+  cout <<"AddSource() adding source to list.\n";
   cout <<"\n--BEGIN-----raytracer_USC::AddSource()------------\n";
 #endif
   //
@@ -1384,9 +1384,9 @@ void raytracer_USC::set_Vshell_for_source(
   // Change opacity flag to 'Vshell' so ProcessCell() will just set Vshell in each 
   // cell.
   //
-//#ifdef RT_TESTING
+#ifdef RT_TESTING
   cout <<"\t\tSetting Vshell for source (finite src distance).\n";
-//#endif
+#endif
 
   int temp = this_src->s->opacity_src;
   int upd  = this_src->s->update;
@@ -1910,9 +1910,9 @@ cell * raytracer_USC::find_source_cell(
     }
   } // loop over ndim axes.
   
+#ifdef RT_TESTING
   rep.printVec("SOURCE-CELL POS",sc->pos,ndim);
   rep.printVec("SOURCE      POS",ipos,ndim);
-#ifdef RT_TESTING
   cout <<"raytracer_USC::find_source_cell() returning.\n";
 #endif
   return sc;

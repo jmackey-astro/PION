@@ -686,7 +686,7 @@ int DataIOBase::read_simulation_parameters(
       }
       else {
         //cout <<"\t|+|+|+|+|+| Evolving radiation source "<<i<<" detected = ";
-        cout <<SimPM.RS.sources.at(i).EvoFile<<"\n";
+        //cout <<SimPM.RS.sources.at(i).EvoFile<<"\n";
       }
       if (SimPM.RS.sources.at(i).opacity_var+SimPM.ftr >=SimPM.nvar) {
         rep.error("Opacity var for source is off end of array (ftr offset!)",i);
@@ -1147,8 +1147,10 @@ void DataIOBase::set_rt_src_params(
   // to add any elements.
   //
   if (SimPM.RS.sources.empty()) {
+#ifdef RT_TESTING
     cout <<" DataIOBase::set_rt_src_params() setting up SimPM.RS.sources: ";
     cout <<SimPM.RS.sources.size()<<"  "<<SimPM.RS.Nsources<<"\n";
+#endif
     for (int n=0; n<SimPM.RS.Nsources; n++) {
       struct rad_src_info temp;
 
@@ -1200,8 +1202,10 @@ void DataIOBase::set_rt_src_params(
     ostringstream tmp12; tmp12.str(""); tmp12 << "RT_EVO_FILE_" <<n;
     ostringstream tmp13; tmp13.str(""); tmp13 << "RT_Nbins____" <<n;
 
-//ADD SOURCE_EFFECT VARIABLE!
+//ADD SOURCE_EFFECT VARIABLE
+#ifdef RT_TESTING
     cout <<"Adding Source Effect Variables\n";
+#endif
     pm_ddimarr *rtpos = new pm_ddimarr (temp2.str(), (SimPM.RS.sources[n].pos));
     rt_src.push_back(rtpos);
     pm_double  *rtstr = new pm_double  (temp3.str(), &(SimPM.RS.sources[n].strength));
@@ -1296,40 +1300,30 @@ void DataIOBase::set_bc_pm_params(
   bc_pm.push_back(p117);
   pm_string  *p118 = new pm_string  
     ("BC_YN",&SimPM.BC_YN);
-  //p118->critical=true;  
   bc_pm.push_back(p118);
   pm_string  *p119 = new pm_string  
     ("BC_YP",&SimPM.BC_YP);
-  //p119->critical=true;  
   bc_pm.push_back(p119);
   pm_string  *p122 = new pm_string  
     ("BC_ZN",&SimPM.BC_ZN);
-  //p122->critical=true;  
   bc_pm.push_back(p122);
   pm_string  *p123 = new pm_string  
     ("BC_ZP",&SimPM.BC_ZP);
-  //p123->critical=true;  
   bc_pm.push_back(p123);
 
   //
   // Read internal boundary data
   //
-  //SimPM.BC_INT.clear();
-  //SimPM.BC_INT.resize(SimPM.BC_Nint);
   if (SimPM.BC_Nint>0) {
     if (!SimPM.BC_INT)
       SimPM.BC_INT = mem.myalloc(SimPM.BC_INT,SimPM.BC_Nint);
   }
-  //cout <<"BC_Nint = "<<SimPM.BC_Nint<<"\n";
   for (int v=0; v<SimPM.BC_Nint; v++) {
-    //cout <<"reading internal boundary "<<v<<"\n";
     ostringstream intbc; intbc.str("");
     intbc << "BC_INTERNAL_";
     intbc.width(3); intbc.fill('0');
     intbc << v;
-    //cout <<"v="<<v<<", setting up Internal BC : "<<intbc.str()<<"\n";
     pm_string  *p124 = new pm_string (intbc.str(),&(SimPM.BC_INT[v]));
-    //p124->critical=true;  
     bc_pm.push_back(p124);
   }
   have_setup_bc_pm=true;

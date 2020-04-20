@@ -99,7 +99,7 @@ int main(int argc, char **argv)
   rep.kill_stdout_from_other_procs(0);
 #endif
   cout <<"-------------------------------------------------------\n";
-  cout <<"---------   pion v.1.0  running   ---------------------\n";
+  cout <<"---------   pion UG MPI v2.0  running   ---------------\n";
   cout <<"-------------------------------------------------------\n\n";
 
 

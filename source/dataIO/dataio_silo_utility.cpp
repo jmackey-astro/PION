@@ -52,6 +52,9 @@ using namespace std;
 /********************************************************/
 /*************** dataio_silo_utility ********************/
 /********************************************************/
+
+
+
 dataio_silo_utility::dataio_silo_utility(
       class SimParams &SimPM,  ///< pointer to simulation parameters
       std::string dtype,   ///< FLOAT or DOUBLE for files.
@@ -60,7 +63,7 @@ dataio_silo_utility::dataio_silo_utility(
 :
 dataio_silo_pllel(SimPM, dtype,p)
 {
-#ifdef TESTING
+#ifdef TEST_SILO_IO
   cout <<"Setting up utility Silo I/O class.\n";
 #endif
   return;
@@ -123,7 +126,9 @@ int dataio_silo_utility::SRAD_get_nproc_numfiles(
 
   *np = nproc;
   *nf = numfiles;
+#ifdef TEST_SILO_IO
   cout <<"dataio_silo_utility::SRAD_get_nproc_numfiles returning "<<err<<"\n";
+#endif
   return err;
 }
 
@@ -651,6 +656,8 @@ int dataio_silo_utility::ReadLevelData(
       if (mpiPM->get_nproc()%max_reads !=0) {
         nloops+=1; // this shouldn't happen, but anyway...
         cout <<"Nproc not a power of 2!  This will cause trouble.\n";
+        rep.error("dataio_silo_utility::ReadLevelData()",
+                  mpiPM->get_nproc());
       }
     }
 
@@ -662,17 +669,23 @@ int dataio_silo_utility::ReadLevelData(
 #endif
     for (int count=0; count<nloops; count++) {
       if ( (mpiPM->get_myrank()+nloops)%nloops == count) {
+#ifdef TEST_SILO_IO
         cout <<"!READING DATA!!... myrank="<<mpiPM->get_myrank()<<"  i="<<count;
+#endif
         err = parallel_read_parallel_silodata(firstfile, ggg, SimPM,
                                         numfiles, groupsize, nproc, l);
         rep.errorTest("Failed to read parallel data",0,err);
       }
       else {
+#ifdef TEST_SILO_IO
         cout <<"waiting my turn... myrank="<<mpiPM->get_myrank()<<"  i="<<count;
+#endif
       }
       COMM->barrier("pllel_file_read");
       tsf=clk.time_so_far("readdata");
+#ifdef TEST_SILO_IO
       cout <<"\t time = "<<tsf<<" secs."<<"\n";
+#endif
     }
     clk.stop_timer("readdata");
 
@@ -1152,7 +1165,6 @@ int dataio_silo_utility::PP_read_var2grid(
     }
     else rep.error("what var to read???",variable);
   }
-  //cout <<"vars=["<<v1<<", "<<v2<<", "<<v3<<"]\n";
 
   //
   // Get to first cell in the quadmesh/grid intersection region.
@@ -1252,7 +1264,6 @@ int dataio_silo_utility::PP_read_var2grid(
           if (v3>0) cx->P[v3] = ddata[2][qv_index];
         }
 #ifdef NEW_B_NORM
-        //if (v1==BX) cout <<"val="<<cx->P[v1]<<", norm="<<norm<<"\n"; 
         if (B) {
           //cout <<"PP_read_var2grid: scaling B var "<<v1;
           //cout <<" val="<< cx->P[v1]<<" by "<<norm<<"\n";
@@ -1261,19 +1272,7 @@ int dataio_silo_utility::PP_read_var2grid(
           if (v2>0) cx->P[v3] *= norm; 
         }
 #endif
-        //cx->P[v1] = data[0][qv_index];
-        //if (v2>0) cx->P[v2] = data[1][qv_index];
-        //if (v3>0) cx->P[v3] = data[2][qv_index];
         
-#ifdef DEBUG
-        if (v1==RO) {
-          cout <<"id="<<cx->id<<",  x="<<CI.get_dpos(cx,XX)<<" : ";
-          cout <<"iXmax="<<iXmax[XX]<<" : ";
-          rep.printVec("Cell",cx->pos,ndim);
-          cout.flush();
-        }
-#endif
-
         cx = ggg->NextPt(cx,XP);
         qv_index++;
         qm_ix[XX] ++;

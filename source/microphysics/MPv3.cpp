@@ -274,14 +274,18 @@ MPv3::MPv3(
 : microphysics_base(nv, ntr, tracers, ephys,rsrcs),
   ndim(nd), eos_gamma(g), coord_sys(csys)
 {
+#ifdef MPV3_DEBUG
   cout <<"\n---------------------------------------------------------------------\n";
   cout <<"MPv3: a microphysics class.\n";
+#endif
 
   // ----------------------------------------------------------------
   // ------- Set up tracer variables (find which one is H+). --------
   // ----------------------------------------------------------------
+#ifdef MPV3_DEBUG
   cout <<"\t\tSetting up Tracer Variables.  Assuming tracers are last ";
   cout <<ntracer<<" variables in state vec.\n";
+#endif
   int len = ntracer;
 
   //
@@ -294,12 +298,16 @@ MPv3::MPv3(
     s = tracers[i]; // Get 'i'th tracer variable.
     if (s=="H1+___" || s=="HII__" || s=="H1+" || s=="HII") {
       pv_Hp = ftr+i;
+#ifdef MPV3_DEBUG
       cout <<"\t\tGot H+ as the "<<pv_Hp<<"th element of P[] (zero offset).\n";
+#endif
     }
     if (s=="WIND") {
       pv_WIND = ftr+i;
+#ifdef MPV3_DEBUG
       cout <<"\t\tGot WIND tracer as the "<<pv_WIND;
       cout <<"th element of P[] (zero offset).\n";
+#endif
     }
   }
   if (pv_Hp<0)
@@ -336,7 +344,9 @@ MPv3::MPv3(
   JM_NELEC = 1.0; // if He is always neutral.
 #endif // HE_INERT
   METALLICITY = EP->Metal_MassFrac/0.0142; // in units of solar.
+#ifdef MPV3_DEBUG
   cout <<"Metallicity = "<<METALLICITY<<" of solar (0.0142)\n";
+#endif
 
   setup_local_vectors();
   gamma_minus_one = eos_gamma -1.0;
@@ -387,8 +397,10 @@ MPv3::MPv3(
         ion_src_type=RT_EFFECT_MFION;
     }
   }
+#ifdef MPV3_DEBUG
   cout <<"\t\tMPv3: got "<<N_diff_srcs<<" diffuse and ";
   cout <<N_ion_srcs<<" ionising sources.\n";
+#endif
   // ================================================================
   // ================================================================
 
@@ -493,8 +505,10 @@ MPv3::MPv3(
   // ================================================================
   // ================================================================
 
+#ifdef MPV3_DEBUG
   cout <<"MPv3: Constructor finished and returning.\n";
   cout <<"---------------------------------------------------------------------\n\n";
+#endif
   return;
 }
 
@@ -565,8 +579,10 @@ void MPv3::setup_diffuse_RT_angle()
         count++;
       }
     }
+#ifdef MPV3_DEBUG
     cout <<"Angles for diffuse sources: ["<<diff_angle[0]<<", ";
     cout <<diff_angle[1]<<", "<<diff_angle[2]<<"]\n";
+#endif
   }
   else if (coord_sys==COORD_SPH && ndim==1) {
     //
@@ -1027,21 +1043,21 @@ void MPv3::get_dtau(
   // source, and n(H)*sigma(dust)*ds in UV for UV heating source.
   double yh0=0.0;
   switch (s->s->effect) {
-    case RT_EFFECT_PION_MONO:
-    case RT_EFFECT_MFION:
+   case RT_EFFECT_PION_MONO:
+   case RT_EFFECT_MFION:
     yh0 = max(Min_NeutralFrac, 
                    min(Max_NeutralFrac, 1.0-p_in[pv_Hp]));
     *dtau = p_in[RO] * yh0 / mean_mass_per_H *
             Hi_monochromatic_photo_ion_xsection(JUST_IONISED) * ds;
     break;
 
-    case RT_EFFECT_UV_HEATING:
+   case RT_EFFECT_UV_HEATING:
     //cout <<"uv heating: "<< s->s->id <<"  ";
     *dtau = p_in[RO] * 5.348e-22 * METALLICITY/mean_mass_per_H * ds;
     //cout << *dtau <<"\n";
     break;
 
-    default:
+   default:
     cout <<"id="<<s->s->id<<", effect="<<s->s->effect<<"\n";
     rep.error("Bad source effect in MPv3::get_dtau()",s->s->effect);
     break;
@@ -1268,8 +1284,8 @@ double MPv3::timescales_RT(
 
 #ifdef MPV3_DEBUG
   if (t<3.16e9) {
-  cout <<"MP timescales: xdot="<<NV_Ith_S(y_out, lv_H0);
-  cout <<", Edot="<<NV_Ith_S(y_out, lv_eint)<<" t_x="<<t;
+    cout <<"MP timescales: xdot="<<NV_Ith_S(y_out, lv_H0);
+    cout <<", Edot="<<NV_Ith_S(y_out, lv_eint)<<" t_x="<<t;
   }
 #endif // MPV3_DEBUG
 
@@ -1278,8 +1294,6 @@ double MPv3::timescales_RT(
   // Now cooling/heating time to limit to X% change in energy).
   //
   t = min(t,DTFRAC*P[lv_eint]/(fabs(NV_Ith_S(y_out, lv_eint))+TINYVALUE));
-  //cout <<"using fractional energy change.\n";
-  //cout <<"limit by dE: dt="<<DTFRAC*P[lv_eint]/(fabs(NV_Ith_S(y_out, lv_eint))+TINYVALUE)<<"\n";
 #endif
 
 #ifdef MPV3_DEBUG

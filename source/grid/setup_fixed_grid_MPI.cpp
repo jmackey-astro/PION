@@ -183,6 +183,7 @@ int setup_fixed_grid_pllel::setup_raytracing(
       class GridBaseClass *grid ///< pointer to grid
       )
 {
+  cout <<"(pion-mpi)  Setting up raytracing on level\n";
   //
   // This function is identical to the serial setup function, except
   // that it sets up parallelised versions of the raytracers.
@@ -198,7 +199,9 @@ int setup_fixed_grid_pllel::setup_raytracing(
   // sources to it.
   //
   if (!MP) rep.error("can't do raytracing without microphysics",MP);
+#ifdef RT_TESTING
   cout <<"\n***************** RAYTRACER SETUP STARTING ***********************\n";
+#endif
   grid->RT=0;
   //
   // If the ionising source is at infinity then set up the simpler parallel
@@ -263,8 +266,11 @@ int setup_fixed_grid_pllel::setup_raytracing(
       // single sources have a flux (if at infinity) or a luminosity (if point
       // sources.
       //
+      int s = grid->RT->Add_Source(&(SimPM.RS.sources[isrc]));
+#ifdef RT_TESTING
       cout <<"Adding IONISING or UV single-source with id: ";
-      cout << grid->RT->Add_Source(&(SimPM.RS.sources[isrc])) <<"\n";
+      cout << s <<"\n";
+#endif
       if (SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MONO ||
           SimPM.RS.sources[isrc].effect==RT_EFFECT_MFION)
         ion_count++;
@@ -275,8 +281,11 @@ int setup_fixed_grid_pllel::setup_raytracing(
       // note that diffuse radiation must be at infinity, and the strength is assumed to
       // be an intensity not a flux, so it is multiplied by a solid angle appropriate
       // to its location in order to get a flux.
+      int s = grid->RT->Add_Source(&(SimPM.RS.sources[isrc]));
+#ifdef RT_TESTING
       cout <<"Adding DIFFUSE radiation source with id: ";
-      cout << grid->RT->Add_Source(&(SimPM.RS.sources[isrc])) <<"\n";
+      cout << s <<"\n";
+#endif
       uv_count++;
       dif_count++;
     } // if diffuse source
@@ -284,8 +293,10 @@ int setup_fixed_grid_pllel::setup_raytracing(
   if (ion_count>1) {
     rep.error("Can only have one ionising source for currently implemented method",ion_count);
   }
+#ifdef RT_TESTING
   cout <<"Added "<<ion_count<<" ionising and "<<uv_count<<" non-ionising";
   cout <<" radiation sources, of which "<<dif_count<<" are diffuse radiation.\n";
+#endif
   grid->RT->Print_SourceList();
 
   //
@@ -317,7 +328,9 @@ int setup_fixed_grid_pllel::setup_raytracing(
     FVI_need_column_densities_4dt = false;
   }
   
+#ifdef RT_TESTING
   cout <<"***************** RAYTRACER SETUP ***********************\n";
+#endif
   return 0;
 }
 

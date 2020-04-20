@@ -257,16 +257,17 @@ int setup_fixed_grid::setup_microphysics(
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
-  cout <<"------------------------------------------------------------\n";
-  cout <<"----------------- MICROPHYSICS SETUP -----------------------\n";
-  cout <<"------------------------------------------------------------\n";
+  //cout <<"------------------------------------------------------------\n";
+  //cout <<"----------------- MICROPHYSICS SETUP -----------------------\n";
+  //cout <<"------------------------------------------------------------\n";
+  cout <<"(pion)  Setting up microphysics\n";
   //
   // Setup Microphysics class, if needed.
   // First see if we want the only_cooling class (much simpler), and if
   // not then check for the one of the bigger microphysics classes.
   //
   if (SimPM.EP.cooling && !SimPM.EP.chemistry) {
-    cout <<"\t******* Requested cooling but no chemistry... setting";
+    cout <<"\tRequested cooling but no chemistry... setting";
     cout <<" up mp_only_cooling() class, with timestep-limiting.\n";
     SimPM.EP.MP_timestep_limit = 1;
     MP = new mp_only_cooling(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
@@ -281,7 +282,7 @@ int setup_fixed_grid::setup_microphysics(
 
 #ifdef LEGACY_CODE
     if      (mptype=="MPv0") {
-      cout <<"\t******* setting up MPv0 module *********\n";
+      cout <<"\tsetting up MPv0 module *********\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new MPv0(SimPM.nvar, SimPM.ntracer, SimPM.chem_code, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
       if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
@@ -290,7 +291,7 @@ int setup_fixed_grid::setup_microphysics(
     }
 
     if      (mptype=="MPv1") {
-      cout <<"\t******* setting up MPv1 microphysics module *********\n";
+      cout <<"\tsetting up MPv1 microphysics module *********\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new MPv1(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
       cout <<"\t**---** WARNING, THIS MODULE HAS BEEN SUPERSEDED BY MPv4. **--**\n";
@@ -298,7 +299,7 @@ int setup_fixed_grid::setup_microphysics(
     }
 
     if      (mptype=="MPv2") {
-      cout <<"\t******* setting up MPv2 module *********\n";
+      cout <<"\tsetting up MPv2 module *********\n";
       cout <<"\t******* N.B. Timestep limiting is enforced. **\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new MPv2(SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
@@ -307,7 +308,7 @@ int setup_fixed_grid::setup_microphysics(
     }
 
     if (mptype=="MPv4") {
-      cout <<"\t******* setting up MPv4 module *********\n";
+      cout <<"\tsetting up MPv4 module *********\n";
 #if MPV4_DTLIMIT>=5 && MPV4_DTLIMIT<=12
       cout <<"\t******* N.B. dt05-12 Timestep limiting is enforced by #def";
       cout <<" DTLIMIT="<<MPV4_DTLIMIT<<". **\n";
@@ -327,7 +328,7 @@ int setup_fixed_grid::setup_microphysics(
     }
 
     if (mptype=="MPv8") {
-      cout <<"\t******* setting up MPv8 module *********\n";
+      cout <<"\tsetting up MPv8 module *********\n";
       cout <<"\t******* This is for StarBench test propblems with heating and cooling.\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
@@ -342,7 +343,7 @@ int setup_fixed_grid::setup_microphysics(
 
 #ifndef EXCLUDE_HD_MODULE
     if (mptype=="MPv9") {
-      cout <<"\t******* setting up microphysics_lowz module *********\n";
+      cout <<"\tsetting up microphysics_lowz module *********\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new microphysics_lowz(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
       have_set_MP=true;
@@ -352,7 +353,7 @@ int setup_fixed_grid::setup_microphysics(
 
 
     if (mptype=="MPv3" || mptype=="MPv3__") {
-      cout <<"\t******* setting up MPv3 module *********\n";
+      cout <<"\tsetting up MPv3 module *********\n";
 #if MPV3_DTLIMIT>=0 && MPV4_DTLIMIT<=12
       cout <<"\t******* N.B. Timestep limiting is enforced by #def";
       cout <<" MPV3_DTLIMIT="<<MPV3_DTLIMIT<<". **\n";
@@ -371,7 +372,7 @@ int setup_fixed_grid::setup_microphysics(
     }
     
     if (mptype=="MPv10" || mptype=="MPv10__") {
-      cout <<"\t******* setting up MPv10 module *********\n";
+      cout <<"\tsetting up MPv10 module *********\n";
 #if MPV3_DTLIMIT>=0 && MPV4_DTLIMIT<=12
       cout <<"\t******* N.B. Timestep limiting is enforced by #def";
       cout <<" MPV10_DTLIMIT="<<MPV3_DTLIMIT<<". **\n";
@@ -390,7 +391,7 @@ int setup_fixed_grid::setup_microphysics(
     }
 
     if (mptype=="MPv5" || mptype=="MPv5__") {
-      cout <<"\t******* setting up MPv5 module *********\n";
+      cout <<"\tsetting up MPv5 module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new MPv5(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
@@ -400,7 +401,7 @@ int setup_fixed_grid::setup_microphysics(
     }
 
     if (mptype=="MPv6" || mptype=="MPv6__") {
-      cout <<"\t******* setting up MPv6 module *********\n";
+      cout <<"\tsetting up MPv6 module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new MPv6(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
@@ -410,7 +411,7 @@ int setup_fixed_grid::setup_microphysics(
     }
 
     if (mptype=="MPv7" || mptype=="MPv7__") {
-      cout <<"\t******* setting up MPv7 module *********\n";
+      cout <<"\tsetting up MPv7 module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new MPv7(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
@@ -422,7 +423,7 @@ int setup_fixed_grid::setup_microphysics(
 
 #ifdef CODE_EXT_HHE
     if (mptype=="MPv10") {
-      cout <<"\t******* setting up MPv10 module *********\n";
+      cout <<"\tsetting up MPv10 module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new mpv9_HHe(SimPM.nvar, SimPM.ntracer, SimPM.tracers, 
@@ -435,7 +436,7 @@ int setup_fixed_grid::setup_microphysics(
     if (!have_set_MP) rep.error("HUH? have_set_MP",have_set_MP);
   }
   else {
-    cout <<"\t******** not doing microphysics.\n";
+    cout <<"\tnot doing microphysics.\n";
     MP=0;
   }
 
@@ -457,9 +458,9 @@ int setup_fixed_grid::setup_microphysics(
   if (err) rep.error("Setting multifreq source properties",err);
   
 
-  cout <<"------------------------------------------------------------\n";
-  cout <<"----------------- MICROPHYSICS SETUP -----------------------\n";
-  cout <<"------------------------------------------------------------\n";
+  //cout <<"------------------------------------------------------------\n";
+  //cout <<"----------------- MICROPHYSICS SETUP -----------------------\n";
+  //cout <<"------------------------------------------------------------\n";
   return 0;
 }
 
@@ -475,6 +476,7 @@ int setup_fixed_grid::setup_raytracing(
       class GridBaseClass *grid ///< pointer to grid
       )
 {
+  cout <<"(pion)  Setting up raytracing on level\n";
   //
   // If not doing raytracing, return immediately.
   //
@@ -486,7 +488,9 @@ int setup_fixed_grid::setup_raytracing(
   // Now we are doing raytracing, so set up a raytracer and add sources to it.
   //
   if (!MP) rep.error("can't do raytracing without microphysics",MP);
+#ifdef RT_TESTING
   cout <<"\n----------------- RAYTRACER SETUP STARTING -----------------------\n";
+#endif
   //
   // If the ionising source is at infinity then set up the simpler parallel
   // rays tracer.  Otherwise the more complicated one is required.
@@ -534,8 +538,11 @@ int setup_fixed_grid::setup_raytracing(
       // single sources have a flux (if at infinity) or a luminosity (if point
       // sources.
       //
+      int s = grid->RT->Add_Source(&(SimPM.RS.sources[isrc]));
+#ifdef RT_TESTING
       cout <<"Adding IONISING or UV single-source with id: ";
-      cout << grid->RT->Add_Source(&(SimPM.RS.sources[isrc])) <<"\n";
+      cout << s <<"\n";
+#endif
       if (SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MONO ||
           SimPM.RS.sources[isrc].effect==RT_EFFECT_MFION)
         ion_count++;
@@ -546,8 +553,11 @@ int setup_fixed_grid::setup_raytracing(
       // note that diffuse radiation must be at infinity, and the strength is assumed to
       // be an intensity not a flux, so it is multiplied by a solid angle appropriate
       // to its location in order to get a flux.
+      int s = grid->RT->Add_Source(&(SimPM.RS.sources[isrc]));
+#ifdef RT_TESTING
       cout <<"Adding DIFFUSE radiation source with id: ";
-      cout << grid->RT->Add_Source(&(SimPM.RS.sources[isrc])) <<"\n";
+      cout << s <<"\n";
+#endif
       uv_count++;
       dif_count++;
     } // if diffuse source
@@ -555,8 +565,10 @@ int setup_fixed_grid::setup_raytracing(
   if (ion_count>1) {
     rep.error("Can only have one ionising source for currently implemented method",ion_count);
   }
+#ifdef RT_TESTING
   cout <<"Added "<<ion_count<<" ionising and "<<uv_count<<" non-ionising";
   cout <<" radiation sources, of which "<<dif_count<<" are diffuse radiation.\n";
+#endif
   grid->RT->Print_SourceList();
 
   //
@@ -589,7 +601,9 @@ int setup_fixed_grid::setup_raytracing(
     FVI_need_column_densities_4dt = false;
   }
 
+#ifdef RT_TESTING
   cout <<"------------- RAYTRACER SETUP COMPLETE ----------------\n";
+#endif
   return 0;
 }
 
@@ -611,7 +625,7 @@ int setup_fixed_grid::setup_evolving_RT_sources(
   int Nevo=0;
   for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
     if (SimPM.RS.sources[isrc].EvoFile == "NOFILE") {
-#ifdef TESTING
+#ifdef RT_TESTING
       cout <<"setup_evolving_RT_sources() Source "<<isrc;
       cout <<" has no evolution file.\n";
 #endif
@@ -619,10 +633,10 @@ int setup_fixed_grid::setup_evolving_RT_sources(
     else {
       Nevo++;
       struct star istar;
-//#ifdef TESTING
+#ifdef RT_TESTING
       cout <<"setup_evolving_RT_sources() Source "<<isrc;
       cout <<" has EvoFile "<<istar.file_name<<"\n";
-//#endif
+#endif
       istar.file_name = SimPM.RS.sources[isrc].EvoFile;
       istar.src_id    = isrc;
       SimPM.STAR.push_back(istar);
@@ -653,10 +667,8 @@ int setup_fixed_grid::setup_evolving_RT_sources(
     char *rval = 0;
     rval = fgets(line,512,infile);
     if (!rval) rep.error("setup_fixed_grid, RS, file read 1",line);
-    //printf("%s",line);
     rval = fgets(line,512,infile);
     if (!rval) rep.error("setup_fixed_grid, RS, file read 2",line);
-    //printf("%s",line);
     // Temporary variables for column values
     // Columns are time, M, L, Teff, Mdot, vrot, vcrit, vinf
     double t1=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0, t6=0.0, t7=0.0;
@@ -683,13 +695,8 @@ int setup_fixed_grid::setup_evolving_RT_sources(
     }
     fclose(infile);
 
-    //for (size_t i=0; i< istar->time.size(); i++) {
-    //  cout <<"t="<< istar->time[i] <<", logL="<<istar->Log_L[i];
-    //  cout <<", logT="<<istar->Log_T[i] <<", logR="<<istar->Log_R[i]<<"\n";
-    //}
-
     //
-    // Finally set the last_line counter to be the array index
+    // set the last_line counter to be the array index
     // nearest to (but less than) the current time.
     //
     iline=0;
@@ -789,7 +796,7 @@ int setup_fixed_grid::update_evolving_RT_sources(
       if (rs->effect == RT_EFFECT_UV_HEATING) {
         rs->strength = 1.0e48*(rs->strength/1.989e38)*
                                             exp(-1e4/rs->Tstar);
-        cout <<"FUV source: strength="<<rs->strength<<"\n";
+        //cout <<"FUV source: strength="<<rs->strength<<"\n";
       }
 
       RT->update_RT_source_properties(rs);
@@ -1087,8 +1094,7 @@ int setup_fixed_grid::set_equations(
       class SimParams &par  ///< simulation parameters
       )
 {
-  cout <<"------------------------------------------------------\n";
-  cout <<"--------  Setting up solver for eqauations------------\n";
+  cout <<"(pion)  Setting up solver for equations\n";
 
   if (par.solverType <0)
     rep.error("set_equations: solverType not set yet.",
@@ -1114,10 +1120,10 @@ int setup_fixed_grid::set_equations(
   }
 
   if (par.coord_sys==COORD_CRT) {
-    cout <<"set_equations() Using Cartesian coord. system.\n";
+    cout <<"\tset_equations() Using Cartesian coord. system.\n";
     switch (par.eqntype) {
     case EQEUL:
-      cout <<"set_equations() Using Euler Equations.\n";
+      cout <<"\tset_equations() Using Euler Equations.\n";
       spatial_solver = new class FV_solver_Hydro_Euler(
           par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec,
           par.etav, par.ntracer);
@@ -1125,7 +1131,7 @@ int setup_fixed_grid::set_equations(
         rep.error("Couldn't set up solver/equations class.",EQEUL);
       break;
     case EQMHD:
-      cout <<"set_equations() Using Ideal MHD Equations.\n";
+      cout <<"\tset_equations() Using Ideal MHD Equations.\n";
       spatial_solver = new class FV_solver_mhd_ideal_adi(
           par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec,
           par.etav, par.ntracer);
@@ -1133,7 +1139,7 @@ int setup_fixed_grid::set_equations(
         rep.error("Couldn't set up solver/equations class.",EQMHD);
       break;
     case EQGLM:
-      cout <<"set_equations() Using GLM MHD Equations.\n";
+      cout <<"\tset_equations() Using GLM MHD Equations.\n";
       spatial_solver = new class FV_solver_mhd_mixedGLM_adi(
           par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec,
           par.etav, par.ntracer);
@@ -1141,7 +1147,7 @@ int setup_fixed_grid::set_equations(
         rep.error("Couldn't set up solver/equations class.",EQGLM);
       break;
     case EQFCD:
-      cout <<"set_equations() Using Field-CD MHD Equations.\n";
+      cout <<"\tset_equations() Using Field-CD MHD Equations.\n";
       rep.error("Field CD got lost in some code updates",EQFCD);
       break;
     default:
@@ -1151,10 +1157,10 @@ int setup_fixed_grid::set_equations(
   } // cartesian
 
   else if (par.coord_sys==COORD_CYL) {
-    cout <<"set_equations() Using Cylindrical coord. system.\n";
+    cout <<"\tset_equations() Using Cylindrical coord. system.\n";
     switch (par.eqntype) {
     case EQEUL:
-      cout <<"set_equations() Using Euler Equations.\n";
+      cout <<"\tset_equations() Using Euler Equations.\n";
       spatial_solver = new class cyl_FV_solver_Hydro_Euler(
           par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec,
           par.etav, par.ntracer);
@@ -1162,7 +1168,7 @@ int setup_fixed_grid::set_equations(
         rep.error("Couldn't set up solver/equations class.",EQEUL);
       break;
     case EQMHD:
-      cout <<"set_equations() Using Ideal MHD Equations.\n";
+      cout <<"\tset_equations() Using Ideal MHD Equations.\n";
       spatial_solver = new class cyl_FV_solver_mhd_ideal_adi(
           par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec,
           par.etav, par.ntracer);
@@ -1170,7 +1176,7 @@ int setup_fixed_grid::set_equations(
         rep.error("Couldn't set up solver/equations class.",EQMHD);
       break;
     case EQGLM:
-      cout <<"set_equations() Using GLM MHD Equations.\n";
+      cout <<"\tset_equations() Using GLM MHD Equations.\n";
       spatial_solver = new class cyl_FV_solver_mhd_mixedGLM_adi(
           par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec,
           par.etav, par.ntracer);
@@ -1183,10 +1189,10 @@ int setup_fixed_grid::set_equations(
   } // axisymmetric
   
   else if (par.coord_sys==COORD_SPH) {
-    cout <<"set_equations() Using Spherical coordinate system.\n";
+    cout <<"\tset_equations() Using Spherical coordinate system.\n";
     switch (par.eqntype) {
     case EQEUL:
-      cout <<"set_equations() Using Euler Equations.\n";
+      cout <<"\tset_equations() Using Euler Equations.\n";
       spatial_solver = new class sph_FV_solver_Hydro_Euler(
             par.nvar, par.ndim, par.CFL,
             par.gamma, par.RefVec, par.etav, par.ntracer);
@@ -1206,7 +1212,7 @@ int setup_fixed_grid::set_equations(
     rep.error("setup_fixed_grid::set_equations() Failed",
               spatial_solver);
 
-  cout <<"------------------------------------------------------\n\n";
+  //cout <<"------------------------------------------------------\n\n";
   return(0);
 } // set_equations.
 

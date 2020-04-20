@@ -129,8 +129,8 @@ int setup_grid_NG_MPI::setup_grid(
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
-  cout <<"------------------------------------------------------\n";
-  cout <<"------------  Setting up MPI NG grid -----------------\n";
+  //cout <<"------------------------------------------------------\n";
+  cout <<"(pion)  Setting up MPI NG grid\n";
 
   if (SimPM.ndim <1 || SimPM.ndim>3)
     rep.error("Only know 1D,2D,3D methods!",SimPM.ndim);
@@ -242,7 +242,7 @@ int setup_grid_NG_MPI::setup_grid(
     if (l!=0) setup_flux_send(SimPM,grid[l],l-1);
     if (l!=SimPM.grid_nlevels-1) setup_flux_recv(SimPM,grid[l],l+1);
   }
-  cout <<"------------------------------------------------------\n\n";
+  //cout <<"------------------------------------------------------\n\n";
 
   return(0);
 } // setup_grid()

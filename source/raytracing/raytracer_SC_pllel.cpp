@@ -99,12 +99,12 @@ int raytracer_USC_pllel::Add_Source(
       struct rad_src_info *src ///< source info.
       )
 {
-  cout <<"\n--BEGIN-----raytracer_USC_pllel::AddSource()------------\n";
   //
   // First call serial version.  This finds the source, and centres
   // it on a cell vertex if needed.
   //
 #ifdef RT_TESTING
+  cout <<"\n--BEGIN-----raytracer_USC_pllel::AddSource()------------\n";
   cout <<"\t**** PARALLEL Add_Source: calling serial version.\n";
 #endif
   if (src->at_infinity) {
@@ -139,8 +139,8 @@ int raytracer_USC_pllel::Add_Source(
 
 #ifdef RT_TESTING
   cout <<"\t**** PARALLEL Add_Source: all done..\n";
-#endif
   cout <<"--END-----raytracer_USC_pllel::AddSource()------------\n";
+#endif
   return id;
 }
 

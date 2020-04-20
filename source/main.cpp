@@ -93,7 +93,7 @@ int main(int argc, char **argv)
     }
   }
   cout <<"-------------------------------------------------------\n";
-  cout <<"---------   pion v.1.0  running   ---------------------\n";
+  cout <<"---------   pion UG SERIAL v2.0  running   ------------\n";
   cout <<"-------------------------------------------------------\n\n";
 
   // Set what type of file to open: 1=parameterfile, 2/5=restartfile.

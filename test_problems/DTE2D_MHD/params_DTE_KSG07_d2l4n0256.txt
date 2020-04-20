@@ -36,15 +36,15 @@ NGridX  256
 NGridY  128
 NGridZ  1
 
-Xmin -3.086e19
+Xmin -6.172e19
 Ymin  0.0
 Zmin  0.0
 
-Xmax   3.086e19
-Ymax   3.086e19
-Zmax   3.086e19
+Xmax   6.172e19
+Ymax   6.172e19
+Zmax   6.172e19
 
-grid_nlevels          3
+grid_nlevels          4
 grid_aspect_ratio_XX  2
 grid_aspect_ratio_YY  1
 grid_aspect_ratio_ZZ  1
@@ -55,7 +55,7 @@ NG_refine_XX          1
 NG_refine_YY          1
 NG_refine_ZZ          1
 
-OutputFile        DTE_KSG07_d2l3n0256
+OutputFile        DTE_KSG07_d2l4n0256
 OutputPath        ./
 OutputFileType    silo
 OutputFrequency   512

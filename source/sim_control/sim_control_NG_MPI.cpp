@@ -77,9 +77,7 @@ int sim_control_NG_MPI::Init(
       vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
-#ifdef TESTING
-  cout <<"(sim_control_NG_MPI::init) Initialising grid: infile = "<<infile<<"\n";
-#endif
+  cout <<"(pion) Init: infile = "<<infile<<"\n";
   int err=0;
 
   //
@@ -108,9 +106,13 @@ int sim_control_NG_MPI::Init(
   // ----------------------------------------------------------------
   setup_NG_grid_levels(SimPM);
   grid.resize(SimPM.grid_nlevels);
+#ifdef TESTING
   cout <<"NG_MPI Init: grid setup\n";
+#endif
   err = setup_grid(grid,SimPM);
+#ifdef TESTING
   cout <<"NG_MPI Init: grid setup finished\n";
+#endif
   SimPM.dx = grid[0]->DX();
   rep.errorTest("(NG_MPI INIT::setup_grid) error",0,err);
 
@@ -339,8 +341,7 @@ int sim_control_NG_MPI::Time_Int(
       )
 {
   cout <<"-------------------------------------------------------\n";
-  cout <<"--- sim_control_NG_MPI:: STARTING TIME INTEGRATION. ---\n";
-  cout <<"-------------------------------------------------------\n";
+  cout <<"(pion-ng-mpi)  STARTING TIME INTEGRATION. \n";
   int err=0;
   SimPM.maxtime=false;
 

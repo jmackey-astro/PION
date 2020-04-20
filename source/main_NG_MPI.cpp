@@ -87,7 +87,7 @@ int main(int argc, char **argv)
   rep.kill_stdout_from_other_procs(0);
 #endif
   cout <<"-------------------------------------------------------\n";
-  cout <<"---------   pion NG MPI v1.0 running   ----------------\n";
+  cout <<"---------   pion NG MPI v2.0 running   ----------------\n";
   cout <<"-------------------------------------------------------\n";
 
   //
@@ -171,7 +171,7 @@ int main(int argc, char **argv)
   cout << "rank: " << myrank << " nproc: " << nproc << "\n";
   delete COMM; COMM=0;
   cout <<"-------------------------------------------------------\n";
-  cout <<"---------   pion NG MPI v1.0 finished  ----------------\n";
+  cout <<"---------   pion NG MPI v2.0 finished  ----------------\n";
   cout <<"-------------------------------------------------------\n";
 
   return 0;
