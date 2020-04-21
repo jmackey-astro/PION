@@ -533,6 +533,7 @@ int dataio_silo_utility::ReadData(
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
+  cout <<"(pion-ng mpi)  Reading data from file: "<<firstfile<<"\n";
   silofile=firstfile;
 
   int err=0;

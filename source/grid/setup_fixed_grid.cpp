@@ -282,7 +282,7 @@ int setup_fixed_grid::setup_microphysics(
 
 #ifdef LEGACY_CODE
     if      (mptype=="MPv0") {
-      cout <<"\tsetting up MPv0 module *********\n";
+      cout <<"\tsetting up MPv0 module\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new MPv0(SimPM.nvar, SimPM.ntracer, SimPM.chem_code, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
       if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
@@ -291,7 +291,7 @@ int setup_fixed_grid::setup_microphysics(
     }
 
     if      (mptype=="MPv1") {
-      cout <<"\tsetting up MPv1 microphysics module *********\n";
+      cout <<"\tsetting up MPv1 microphysics module\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new MPv1(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
       cout <<"\t**---** WARNING, THIS MODULE HAS BEEN SUPERSEDED BY MPv4. **--**\n";
@@ -299,8 +299,7 @@ int setup_fixed_grid::setup_microphysics(
     }
 
     if      (mptype=="MPv2") {
-      cout <<"\tsetting up MPv2 module *********\n";
-      cout <<"\t******* N.B. Timestep limiting is enforced. **\n";
+      cout <<"\tsetting up MPv2 module\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new MPv2(SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
       SimPM.EP.MP_timestep_limit = 1;
@@ -308,14 +307,14 @@ int setup_fixed_grid::setup_microphysics(
     }
 
     if (mptype=="MPv4") {
-      cout <<"\tsetting up MPv4 module *********\n";
+      cout <<"\tsetting up MPv4 module\n";
 #if MPV4_DTLIMIT>=5 && MPV4_DTLIMIT<=12
-      cout <<"\t******* N.B. dt05-12 Timestep limiting is enforced by #def";
-      cout <<" DTLIMIT="<<MPV4_DTLIMIT<<". **\n";
+      //cout <<"\t******* N.B. dt05-12 Timestep limiting is enforced by #def";
+      //cout <<" DTLIMIT="<<MPV4_DTLIMIT<<". **\n";
       SimPM.EP.MP_timestep_limit =5;
 #elif MPV4_DTLIMIT>=0 && MPV4_DTLIMIT<=4
-      cout <<"\t******* N.B. dt00-04 Timestep limiting is enforced by #def";
-      cout <<" MPV4_DTLIMIT="<<MPV4_DTLIMIT<<". **\n";
+      //cout <<"\t******* N.B. dt00-04 Timestep limiting is enforced by #def";
+      //cout <<" MPV4_DTLIMIT="<<MPV4_DTLIMIT<<". **\n";
       SimPM.EP.MP_timestep_limit =4;
 #else
 #error "No timestep-limiting is defined in source/defines/functionality_flags.h"
@@ -328,8 +327,7 @@ int setup_fixed_grid::setup_microphysics(
     }
 
     if (mptype=="MPv8") {
-      cout <<"\tsetting up MPv8 module *********\n";
-      cout <<"\t******* This is for StarBench test propblems with heating and cooling.\n";
+      cout <<"\tsetting up MPv8 module\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new MPv8(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
@@ -343,7 +341,7 @@ int setup_fixed_grid::setup_microphysics(
 
 #ifndef EXCLUDE_HD_MODULE
     if (mptype=="MPv9") {
-      cout <<"\tsetting up microphysics_lowz module *********\n";
+      cout <<"\tsetting up microphysics_lowz module\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new microphysics_lowz(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
       have_set_MP=true;
@@ -353,10 +351,10 @@ int setup_fixed_grid::setup_microphysics(
 
 
     if (mptype=="MPv3" || mptype=="MPv3__") {
-      cout <<"\tsetting up MPv3 module *********\n";
+      cout <<"\tsetting up MPv3 module\n";
 #if MPV3_DTLIMIT>=0 && MPV4_DTLIMIT<=12
-      cout <<"\t******* N.B. Timestep limiting is enforced by #def";
-      cout <<" MPV3_DTLIMIT="<<MPV3_DTLIMIT<<". **\n";
+      //cout <<"\t******* N.B. Timestep limiting is enforced by #def";
+      //cout <<" MPV3_DTLIMIT="<<MPV3_DTLIMIT<<". **\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
 #else
@@ -372,10 +370,10 @@ int setup_fixed_grid::setup_microphysics(
     }
     
     if (mptype=="MPv10" || mptype=="MPv10__") {
-      cout <<"\tsetting up MPv10 module *********\n";
+      cout <<"\tsetting up MPv10 module\n";
 #if MPV3_DTLIMIT>=0 && MPV4_DTLIMIT<=12
-      cout <<"\t******* N.B. Timestep limiting is enforced by #def";
-      cout <<" MPV10_DTLIMIT="<<MPV3_DTLIMIT<<". **\n";
+      //cout <<"\t******* N.B. Timestep limiting is enforced by #def";
+      //cout <<" MPV10_DTLIMIT="<<MPV3_DTLIMIT<<". **\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
 #else
@@ -391,7 +389,7 @@ int setup_fixed_grid::setup_microphysics(
     }
 
     if (mptype=="MPv5" || mptype=="MPv5__") {
-      cout <<"\tsetting up MPv5 module *********\n";
+      cout <<"\tsetting up MPv5 module\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new MPv5(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
@@ -401,7 +399,7 @@ int setup_fixed_grid::setup_microphysics(
     }
 
     if (mptype=="MPv6" || mptype=="MPv6__") {
-      cout <<"\tsetting up MPv6 module *********\n";
+      cout <<"\tsetting up MPv6 module\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new MPv6(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
@@ -411,7 +409,7 @@ int setup_fixed_grid::setup_microphysics(
     }
 
     if (mptype=="MPv7" || mptype=="MPv7__") {
-      cout <<"\tsetting up MPv7 module *********\n";
+      cout <<"\tsetting up MPv7 module\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new MPv7(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
@@ -423,7 +421,7 @@ int setup_fixed_grid::setup_microphysics(
 
 #ifdef CODE_EXT_HHE
     if (mptype=="MPv10") {
-      cout <<"\tsetting up MPv10 module *********\n";
+      cout <<"\tsetting up MPv10 module\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new mpv9_HHe(SimPM.nvar, SimPM.ntracer, SimPM.tracers, 
@@ -433,7 +431,7 @@ int setup_fixed_grid::setup_microphysics(
 #endif
 
     if (!MP) rep.error("microphysics init",MP);
-    if (!have_set_MP) rep.error("HUH? have_set_MP",have_set_MP);
+    if (!have_set_MP) rep.error("have_set_MP",have_set_MP);
   }
   else {
     cout <<"\tnot doing microphysics.\n";

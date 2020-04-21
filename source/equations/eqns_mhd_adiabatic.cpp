@@ -523,7 +523,9 @@ void eqns_mhd_ideal::SetAvgState(
   eq_refvec[eqVX] = eq_refvec[eqVY] = eq_refvec[eqVZ] = 0.1*refvel;
   eq_refvec[eqBX] = eq_refvec[eqBY] = eq_refvec[eqBZ] = refB;
   
+#ifdef TESTING
   rep.printVec("eq_refvec",eq_refvec,eq_nvar);
+#endif
   return;
 }
 

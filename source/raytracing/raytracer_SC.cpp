@@ -586,9 +586,11 @@ void raytracer_USC_infinity::Print_SourceList()
     if (ndim>1) cout <<", "<<(*i).s->pos[YY];
     if (ndim>2) cout <<", "<<(*i).s->pos[ZZ];
     cout <<"] has strength "<<(*i).s->strength;
+#ifdef RT_TESTING
     if ( (*i).sc !=0 )
       cout <<" and cell id "<<(*i).sc->id;
     cout <<" on grid? (Y=1,N=0) "<<(*i).src_on_grid;
+#endif
     cout <<"\n";
   }
   return;
@@ -1360,11 +1362,15 @@ void raytracer_USC::Print_SourceList()
     if (ndim>1) cout <<", "<<(*i).s->pos[YY];
     if (ndim>2) cout <<", "<<(*i).s->pos[ZZ];
     cout <<"] has strength "<<(*i).s->strength;
+#ifdef RT_TESTING
     if ( (*i).sc !=0 )
       cout <<" and cell id "<<(*i).sc->id;
     cout <<" on grid? (Y=1,N=0) "<<(*i).src_on_grid;
     cout <<".   at infinity? "<<(*i).s->at_infinity<<".  ";
     rep.printVec("integer posn",(*i).ipos,ndim);
+#else
+    cout <<"\n";
+#endif
   }
   return;
 }
