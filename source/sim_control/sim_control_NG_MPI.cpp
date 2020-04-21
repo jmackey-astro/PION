@@ -457,9 +457,6 @@ int sim_control_NG_MPI::Time_Int(
   // ----------------------------------------------------------------
 
   
-  err+= output_data(grid);
-  rep.errorTest("MPI_NG TIME_INT::output_data()",0,err);
-
   while (SimPM.maxtime==false) {
     // --------------------------------------------------------------
     // Get timestep on each level
@@ -543,6 +540,9 @@ int sim_control_NG_MPI::Time_Int(
     }
     // --------------------------------------------------------------
 	
+    err+= output_data(grid);
+    rep.errorTest("MPI_NG TIME_INT::output_data()",0,err);
+
     err += check_energy_cons(grid);
 
     //
