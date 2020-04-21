@@ -75,19 +75,18 @@ setup_fixed_grid_pllel::~setup_fixed_grid_pllel()
 
 
 int setup_fixed_grid_pllel::setup_grid(
-      vector<class GridBaseClass *> &g,  ///< address of vector of grid pointers.
-      class SimParams &SimPM  ///< pointer to simulation parameters
+      vector<class GridBaseClass *> &g,  ///< grid pointers.
+      class SimParams &SimPM  ///< simulation parameters
       )
 {
 #ifdef TESTING
   cout <<"setup_fixed_grid_pllel: setting up parallel grid.\n";
 #endif
+  cout <<"(pion mpi) setting up grid\n";
   class GridBaseClass **grid = &g[0];
   class MCMDcontrol *MCMD = &(SimPM.levels[0].MCMD);
 
   if (SimPM.gridType!=1) {
-    rep.warning("gridType not set correctly: Only know Uniform finite\
-                volume grid, so resetting to 1!",1,SimPM.gridType);
     SimPM.gridType=1;
   }
   if (SimPM.ndim <1 || SimPM.ndim>3)
@@ -166,8 +165,8 @@ int setup_fixed_grid_pllel::setup_grid(
   cout <<"grid="<<*grid<<", and";
   cout <<"\t DX = "<<(*grid)->DX()<<"\n";
   dp.grid = (*grid);
-#endif
   cout <<"DX = "<<(*grid)->DX()<<"\n";
+#endif
 
   return(0);
 }
@@ -183,7 +182,6 @@ int setup_fixed_grid_pllel::setup_raytracing(
       class GridBaseClass *grid ///< pointer to grid
       )
 {
-  cout <<"(pion-mpi)  Setting up raytracing on level\n";
   //
   // This function is identical to the serial setup function, except
   // that it sets up parallelised versions of the raytracers.
@@ -194,14 +192,12 @@ int setup_fixed_grid_pllel::setup_raytracing(
     return 0;
   }
 
+  cout <<"(pion-mpi)  Setting up raytracing on level\n";
   //
   // Now we are doing raytracing, so set up a raytracer and add
   // sources to it.
   //
   if (!MP) rep.error("can't do raytracing without microphysics",MP);
-#ifdef RT_TESTING
-  cout <<"\n***************** RAYTRACER SETUP STARTING ***********************\n";
-#endif
   grid->RT=0;
   //
   // If the ionising source is at infinity then set up the simpler parallel
@@ -328,9 +324,6 @@ int setup_fixed_grid_pllel::setup_raytracing(
     FVI_need_column_densities_4dt = false;
   }
   
-#ifdef RT_TESTING
-  cout <<"***************** RAYTRACER SETUP ***********************\n";
-#endif
   return 0;
 }
 

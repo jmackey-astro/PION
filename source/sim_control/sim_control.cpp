@@ -243,10 +243,11 @@ int sim_control::Time_Int(
 
 #if ! defined (CHECK_MAGP)
 #if ! defined (BLAST_WAVE_CHECK)
-    cout <<"dt="<<SimPM.dt<<"\tNew time: "<<SimPM.simtime;
-    cout <<"\t timestep: "<<SimPM.timestep;
+    cout <<"New time: "<<SimPM.simtime;
+    cout <<"\t dt="<<SimPM.dt;
+    cout <<"\t steps: "<<SimPM.timestep;
     tsf=clk.time_so_far("Time_Int");
-    cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
+    cout <<"\t runtime: "<<tsf<<" s"<<"\n";
 #endif
 #endif
     err += check_energy_cons(grid[0]);

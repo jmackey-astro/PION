@@ -5,7 +5,7 @@
 ndim 2
 eqn euler
 coordinates cartesian
-solver RS_Roe
+solver 4
 
 
 # Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
@@ -66,6 +66,16 @@ Xmax 3.25
 Ymax 1.0
 Zmax 1.0
 
+grid_nlevels 1
+grid_aspect_ratio_XX
+grid_aspect_ratio_YY
+grid_aspect_ratio_ZZ
+NG_centre_XX
+NG_centre_YY
+NG_centre_ZZ
+NG_refine_XX
+NG_refine_YY
+NG_refine_ZZ
 
 # Data Output Path
 OutputPath test_DMR/
@@ -112,6 +122,7 @@ magval 1.0
 # winds and radiative transfer
 RT_Nsources 0
 WIND_NSRC   0
+N_JET 0
 
 
 # Reference Vector

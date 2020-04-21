@@ -276,9 +276,9 @@ int sim_control_pllel::Init(
   //
   //  cout <<"Setting up raytracing\n";
   err += setup_raytracing(SimPM, grid[0]);
-  cout <<"Setting up RT sources\n";
+  //cout <<"Setting up RT sources\n";
   err += setup_evolving_RT_sources(SimPM);
-  cout <<"Updating evolving RT sources\n";
+  //cout <<"Updating evolving RT sources\n";
   err += update_evolving_RT_sources(SimPM,SimPM.simtime,grid[0]->RT);
   rep.errorTest("Failed to setup raytracer and/or microphysics",0,err);
 
@@ -415,10 +415,11 @@ int sim_control_pllel::Time_Int(
 
     if ( (SimPM.levels[0].MCMD.get_myrank()==0) &&
          (SimPM.timestep%log_freq)==0) {
-      cout <<"dt="<<SimPM.dt<<"\tNew time: "<<SimPM.simtime;
-      cout <<"\t timestep: "<<SimPM.timestep;
-      tsf=clk.time_so_far("time_int");
-      cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
+      cout <<"New time: "<<SimPM.simtime;
+      cout <<"\t dt="<<SimPM.dt;
+      cout <<"\t steps: "<<SimPM.timestep;
+      tsf=clk.time_so_far("Time_Int");
+      cout <<"\t runtime: "<<tsf<<" s"<<"\n";
 #ifdef TESTING
       cout.flush();
 #endif // TESTING

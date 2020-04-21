@@ -251,7 +251,7 @@ int dataio_silo::OutputData(
       cerr<<"dataio_silo::OutputData() error choosing filename.\n";
       return err;
     }
-    cout <<"\tWriting to file: "<<silofile<<"\n";
+    if (l==0) cout <<"\tWriting to file: "<<silofile<<"\n";
     ofstream fff;
     fff.open(silofile.c_str());
     if (!fff) {
@@ -484,8 +484,8 @@ int dataio_silo::ReadData(
       temp << l;
       silofile.replace(p+6,2,temp.str());
       //cout <<"p="<<p<<"  string="<<temp.str()<<", silofile=";
-      cout <<silofile<<"\n";
     }
+    if (l==0) cout <<"(pion) reading from file: "<<silofile<<"\n";
 
     if (!cg[l])
       rep.error("dataio_silo::ReadData() null grid",cg[l]);

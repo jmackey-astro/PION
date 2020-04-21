@@ -292,15 +292,15 @@ int sim_control_NG::Time_Int(
     SimPM.levels[l].simtime = SimPM.simtime;
   }
 
-  cout <<"raytracing all levels...\n";
+  //cout <<"raytracing all levels...\n";
   // Do raytracing on all levels, and update internal and external
   // boundaries to populate the column densities correctly.
   // Even if there is not RT, this updates the boundaries.
   err = RT_all_sources_levels(SimPM);
   rep.errorTest("sim_control_NG: RT_all_sources_levels",0,err);
-  cout <<"raytracing all levels... finished\n";
+  //cout <<"raytracing all levels... finished\n";
   if (SimPM.timestep==0) {
-    cout << "(step=0) Writing initial data.\n";
+    //cout << "(step=0) Writing initial data.\n";
     err=output_data(grid);
     rep.errorTest("Failed to write file... path?",0,err);
   }
@@ -375,10 +375,12 @@ int sim_control_NG::Time_Int(
 
 #if ! defined (CHECK_MAGP)
 #if ! defined (BLAST_WAVE_CHECK)
-    cout <<"dt="<<SimPM.levels[0].dt<<"\tNew time: "<<SimPM.simtime;
-    cout <<"\t timestep: "<<SimPM.timestep;
+    cout <<"New time: "<<SimPM.simtime;
+    cout <<"\t dt="<<SimPM.levels[SimPM.grid_nlevels-1].dt;
+    cout <<"\t steps: "<<SimPM.timestep;
+    cout <<"\t level-0 steps="<<SimPM.levels[0].step;
     tsf=clk.time_so_far("Time_Int");
-    cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
+    cout <<"\t runtime: "<<tsf<<" s"<<"\n";
 #endif
 #endif
 

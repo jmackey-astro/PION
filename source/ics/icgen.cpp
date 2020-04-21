@@ -154,9 +154,7 @@ int main(int argc, char **argv)
   grid.resize(1);
   SimPM.grid_nlevels=1;
   // Now set up the grid structure.
-  cout <<"Init: &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
   err = SimSetup->setup_grid(grid,SimPM);
-  cout <<"Init: &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
   SimPM.dx = grid[0]->DX();
   if (!grid[0]) rep.error("Grid setup failed",grid[0]);
   

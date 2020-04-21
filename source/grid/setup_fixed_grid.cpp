@@ -164,8 +164,7 @@ int setup_fixed_grid::setup_grid(
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
-  cout <<"------------------------------------------------------\n";
-  cout <<"--------  Setting up computational grid --------------\n";
+  cout <<"(pion ug)  Setting up computational grid\n";
 
 #ifdef TESTING
   cout <<"Init::setup_grid: \n";
@@ -240,8 +239,8 @@ int setup_fixed_grid::setup_grid(
   cout <<", and grid="<<*grid<<"\n";
   cout <<"DX = "<<(*grid)->DX()<<"\n";
   dp.grid = (*grid);
-#endif
   cout <<"------------------------------------------------------\n\n";
+#endif
 
   return(0);
 } // setup_grid()
@@ -434,7 +433,7 @@ int setup_fixed_grid::setup_microphysics(
     if (!have_set_MP) rep.error("have_set_MP",have_set_MP);
   }
   else {
-    cout <<"\tnot doing microphysics.\n";
+    cout <<"\tno microphysics.\n";
     MP=0;
   }
 
@@ -474,20 +473,20 @@ int setup_fixed_grid::setup_raytracing(
       class GridBaseClass *grid ///< pointer to grid
       )
 {
-  cout <<"(pion)  Setting up raytracing on level\n";
   //
   // If not doing raytracing, return immediately.
   //
   if (!SimPM.EP.raytracing) {
     return 0;
   }
+  cout <<"(pion)  Setting up raytracing on level\n";
 
   //
-  // Now we are doing raytracing, so set up a raytracer and add sources to it.
+  // set up a raytracer and add sources to it.
   //
   if (!MP) rep.error("can't do raytracing without microphysics",MP);
 #ifdef RT_TESTING
-  cout <<"\n----------------- RAYTRACER SETUP STARTING -----------------------\n";
+  cout <<"\n------ RAYTRACER SETUP STARTING --------------\n";
 #endif
   //
   // If the ionising source is at infinity then set up the simpler parallel

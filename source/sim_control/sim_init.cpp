@@ -203,9 +203,7 @@ int sim_init::Init(
   
   // Now set up the grid structure.
   grid.resize(1);
-  cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
   err = setup_grid(grid,SimPM);
-  cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
   SimPM.dx = grid[0]->DX();
   rep.errorTest("(INIT::setup_grid) err!=0 Something went wrong",0,err);
 

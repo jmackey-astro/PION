@@ -42,7 +42,6 @@ int double_Mach_ref_bc::BC_assign_DMACH(
   b->refval[VY] = 0.0;
   b->refval[VZ] = 0.0;
   for (int v=par.ftr; v<par.nvar; v++) b->refval[v] = -1.0;
-  cout <<"par.ftr="<<par.ftr<<", par.nvar="<<par.nvar<<"\n";
 
   //
   // Run through all boundary cells, and give them either upstream or

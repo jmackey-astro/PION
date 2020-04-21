@@ -170,7 +170,8 @@ void setup_NG_grid::setup_NG_grid_levels(
       SimPM.levels[i].step = SimPM.timestep;
     else
       SimPM.levels[i].step = SimPM.levels[i+1].step/2;
-    
+
+#ifdef TESTING
     ostringstream temp; temp<<i;
     string lv = "level "+temp.str();
     string t2=lv+"_Range";
@@ -184,6 +185,8 @@ void setup_NG_grid::setup_NG_grid_levels(
     rep.printVec(t2,SimPM.levels[i].Xmax,SimPM.ndim);
     cout <<"\t\tdx="<<SimPM.levels[i].dx;
     cout <<", step="<<SimPM.levels[i].step<<"\n";
+#endif
+
   }
 
   return;
@@ -201,8 +204,7 @@ int setup_NG_grid::setup_grid(
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
-  cout <<"------------------------------------------------------\n";
-  cout <<"----------------  Setting up NG grid -----------------\n";
+  cout <<"(pion ng)  Setting up computational grid\n";
 
   if (SimPM.ndim <1 || SimPM.ndim>3)
     rep.error("Only know 1D,2D,3D methods!",SimPM.ndim);
