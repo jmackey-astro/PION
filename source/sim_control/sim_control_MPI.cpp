@@ -368,7 +368,8 @@ int sim_control_pllel::Time_Int(
   rep.errorTest("TIME_INT:: initial RT()",0,err);
   int log_freq=10;
   SimPM.maxtime=false;
-  clk.start_timer("time_int"); double tsf=0.0;
+  clk.start_timer("time_int");
+  double tsf=0.0;
   while (SimPM.maxtime==false) {
     //
     // Update RT sources.
@@ -418,7 +419,7 @@ int sim_control_pllel::Time_Int(
       cout <<"New time: "<<SimPM.simtime;
       cout <<"\t dt="<<SimPM.dt;
       cout <<"\t steps: "<<SimPM.timestep;
-      tsf=clk.time_so_far("Time_Int");
+      tsf=clk.time_so_far("time_int");
       cout <<"\t runtime: "<<tsf<<" s"<<"\n";
 #ifdef TESTING
       cout.flush();
@@ -447,12 +448,13 @@ int sim_control_pllel::Time_Int(
       return(1);
     }
   }
-  cout <<"(sim_control_pllel::time_int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM."<<"\n";
+  cout <<"(sim_control_pllel::time_int) FINISHED - FINALISING SIM"<<"\n";
   tsf=clk.time_so_far("time_int");
-  cout <<"TOTALS ###: Nsteps="<<SimPM.timestep;
-  cout <<", sim-time="<<SimPM.simtime;
-  cout <<", wall-time=" <<tsf;
-  cout <<", time/step="<<tsf/static_cast<double>(SimPM.timestep) <<"\n";
+  cout <<"TOTALS: Nsteps: "<<SimPM.timestep;
+  cout <<", sim-time: "<<SimPM.simtime;
+  cout <<", wall-time: " <<tsf;
+  cout <<", time/step: "<<tsf/static_cast<double>(SimPM.timestep) <<"\n";
+#ifdef RT_TESTING
   if (grid[0]->RT!=0) {
     //
     // output raytracing timing info.  Have to start and stop timers to get 
@@ -464,8 +466,9 @@ int sim_control_pllel::Time_Int(
     clk.start_timer(t1); total = clk.pause_timer(t1);
     clk.start_timer(t2); wait  = clk.pause_timer(t2);
     clk.start_timer(t3); run   = clk.pause_timer(t3);
-    cout <<"TOTALS RT#: active="<<run<<" idle="<<wait<<" total="<<total<<"\n";
+    cout <<"TOTALS RT: active: "<<run<<" idle: "<<wait<<" total: "<<total<<"\n";
   }
+#endif
   cout <<"                               **************************************\n\n";
   return(0);
 }

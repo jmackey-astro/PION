@@ -208,7 +208,7 @@ int sim_control::Time_Int(
   cout <<"------------------------------------------------------------\n";
   int err=0;
   SimPM.maxtime=false;
-  clk.start_timer("Time_Int"); double tsf=0;
+  clk.start_timer("time_int"); double tsf=0;
   class MCMDcontrol ppar; // unused for serial code.
   err = update_evolving_RT_sources(SimPM,SimPM.simtime,grid[0]->RT);
   rep.errorTest("TIME_INT:: initial RT src update()",0,err);
@@ -246,7 +246,7 @@ int sim_control::Time_Int(
     cout <<"New time: "<<SimPM.simtime;
     cout <<"\t dt="<<SimPM.dt;
     cout <<"\t steps: "<<SimPM.timestep;
-    tsf=clk.time_so_far("Time_Int");
+    tsf=clk.time_so_far("time_int");
     cout <<"\t runtime: "<<tsf<<" s"<<"\n";
 #endif
 #endif
@@ -267,10 +267,10 @@ int sim_control::Time_Int(
 
   cout <<"(sim_control::Time_Int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM.\n";
 
-  tsf=clk.time_so_far("Time_Int");
-  cout <<"TOTALS ###: Nsteps="<<SimPM.timestep<<" wall-time=";
-  cout <<tsf<<" time/step="<<tsf/static_cast<double>(SimPM.timestep)<<"\n";
-  cout <<"STEPS "<<SimPM.timestep;
+  tsf=clk.time_so_far("time_int");
+  cout <<"TOTALS ###: Nsteps: "<<SimPM.timestep<<" wall-time: ";
+  cout <<tsf<<" time/step: "<<tsf/static_cast<double>(SimPM.timestep)<<"\n";
+  cout <<"STEPS: "<<SimPM.timestep;
   cout.setf( ios_base::scientific );
   cout.precision(6);
   cout <<"\t"<<tsf<<"\t"<<tsf/static_cast<double>(SimPM.timestep);

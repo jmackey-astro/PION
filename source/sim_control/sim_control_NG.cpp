@@ -284,7 +284,7 @@ int sim_control_NG::Time_Int(
   bool restart=true;
   if (SimPM.timestep!=0) first_step=false;
   if (SimPM.timestep==0) restart=false;
-  clk.start_timer("Time_Int"); double tsf=0;
+  clk.start_timer("time_int"); double tsf=0;
 
   // make sure all levels start at the same time.
   for (int l=0; l<SimPM.grid_nlevels; l++) {
@@ -379,7 +379,7 @@ int sim_control_NG::Time_Int(
     cout <<"\t dt="<<SimPM.levels[SimPM.grid_nlevels-1].dt;
     cout <<"\t steps: "<<SimPM.timestep;
     cout <<"\t level-0 steps="<<SimPM.levels[0].step;
-    tsf=clk.time_so_far("Time_Int");
+    tsf=clk.time_so_far("time_int");
     cout <<"\t runtime: "<<tsf<<" s"<<"\n";
 #endif
 #endif
@@ -395,11 +395,11 @@ int sim_control_NG::Time_Int(
   cout <<"(sim_control_NG::Time_Int) TIME_INT FINISHED.";
   cout <<" MOVING ON TO FINALISE SIM.\n";
 
-  tsf=clk.time_so_far("Time_Int");
-  cout <<"TOTALS ###: Nsteps="<<SimPM.timestep<<" wall-time=";
-  cout <<tsf<<" time/step=";
+  tsf=clk.time_so_far("time_int");
+  cout <<"TOTALS: Nsteps: "<<SimPM.timestep<<" wall-time: ";
+  cout <<tsf<<" time/step: ";
   cout <<tsf/static_cast<double>(SimPM.timestep)<<"\n";
-  cout <<"STEPS "<<SimPM.timestep;
+  cout <<"STEPS: "<<SimPM.timestep;
   cout.setf( ios_base::scientific );
   cout.precision(6);
   cout <<"\t"<<tsf<<"\t"<<tsf/static_cast<double>(SimPM.timestep);
