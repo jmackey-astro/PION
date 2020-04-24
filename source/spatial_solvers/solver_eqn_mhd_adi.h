@@ -62,16 +62,16 @@ class FV_solver_mhd_ideal_adi
 
   /// Calculates Flux based on a left and right state vector (primitive).
   virtual int inviscid_flux(
+      class SimParams &,    ///< simulation parameters
+      class GridBaseClass *, ///< pointer to grid
+      const double,  ///< cell-size dx (for LF method)
       class cell *, ///< Left state cell pointer
       class cell *, ///< Right state cell pointer
       const pion_flt *, ///< Left Primitive state vector.
       const pion_flt *, ///< Right Primitive state vector.
       pion_flt *,       ///< Resultant Flux state vector.
       pion_flt *,      ///< State vector at interface.
-      const int, 
-      ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS,4=RoeRS)
-      class GridBaseClass *, ///<  pointer to grid
-      const double,  ///< cell-size dx (for LF method)
+      const int,        ///< Which Riemann solver
       const double    ///< Gas constant gamma.
       );
   
@@ -308,31 +308,31 @@ class FV_solver_mhd_mixedGLM_adi
   /// \f[ F(B_x) = \psi_* = \frac{1}{2}(\psi_L+\psi_R) - \frac{c_h}{2}(B_x(R)-B_X(L)) \f]
   /// 
   virtual int inviscid_flux(
-        class cell *, ///< Left state cell pointer
-        class cell *, ///< Right state cell pointer
-        const pion_flt *, ///< Left Primitive state vector.
-        const pion_flt *, ///< Right Primitive state vector.
-        pion_flt *,       ///< Resultant Flux state vector.
-        pion_flt *,      ///< State vector at interface.
-        const int,
-        ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS,4=RoeRS)
-        class GridBaseClass *, ///< pointer to grid
-        const double dx,  ///< cell-size dx (for LF method)
-        const double    ///< Gas constant gamma.
-        );
+      class SimParams &,    ///< simulation parameters
+      class GridBaseClass *, ///< pointer to grid
+      const double,  ///< cell-size dx (for LF method)
+      class cell *, ///< Left state cell pointer
+      class cell *, ///< Right state cell pointer
+      const pion_flt *, ///< Left Primitive state vector.
+      const pion_flt *, ///< Right Primitive state vector.
+      pion_flt *,     ///< Resultant Flux state vector.
+      pion_flt *,     ///< State vector at interface.
+      const int,      ///< Which Riemann Solver
+      const double    ///< Gas constant gamma.
+      );
 
   
   virtual int MHDsource(
-        class GridBaseClass *,  ///< pointer to grid.
-        class cell *,   ///< pointer to cell of left state
-        class cell *,   ///< pointer to cell of right state
-        pion_flt *,     ///< left edge state
-        pion_flt *,     ///< right edge state
-        const axes,            ///< Which axis we are looking along.
-        enum direction, ///< positive direction normal to interface
-        enum direction, ///< negative direction normal to interface
-        const double    ///< timestep dt
-        );
+      class GridBaseClass *,  ///< pointer to grid.
+      class cell *,   ///< pointer to cell of left state
+      class cell *,   ///< pointer to cell of right state
+      pion_flt *,     ///< left edge state
+      pion_flt *,     ///< right edge state
+      const axes,            ///< Which axis we are looking along.
+      enum direction, ///< positive direction normal to interface
+      enum direction, ///< negative direction normal to interface
+      const double    ///< timestep dt
+      );
   
   ///
   /// Same as ideal MHD version except that total energy contains

@@ -150,19 +150,18 @@ int FV_solver_base::get_LaxFriedrichs_flux(
 /// Calculate Flux between a left and right state.
 ///
 int FV_solver_base::InterCellFlux(
-        class GridBaseClass *grid,
-        class cell *Cl, ///< Left state cell pointer
-        class cell *Cr, ///< Right state cell pointer
-        pion_flt *lp, ///< Left Primitive State Vector.
-        pion_flt *rp, ///< Right Primitive State Vector.
-        pion_flt *f, ///< Flux Vector. (written to).
-        const int solve_flag, ///< Solve Type (0-7)
-        const int av_flag,    ///< Viscosity Flag (0=none,1=Falle's,3=H-correction)
-        const double g, ///< gas EOS gamma.
-        const double dx ///< Cell size dx.
-        )
+      class SimParams &par,  ///< simulation parameters
+      class GridBaseClass *grid,
+      class cell *Cl, ///< Left state cell pointer
+      class cell *Cr, ///< Right state cell pointer
+      pion_flt *lp, ///< Left Primitive State Vector.
+      pion_flt *rp, ///< Right Primitive State Vector.
+      pion_flt *f, ///< Flux Vector. (written to).
+      const double g, ///< gas EOS gamma.
+      const double dx ///< Cell size dx.
+      )
 {
-  //cout <<"FV_solver_base::InterCellFlux() gamma="<<eq_gamma<<" and passed in was g="<<g<<"\n";
+//cout <<"FV_solver_base::InterCellFlux() gamma="<<eq_gamma<<" and passed in was g="<<g<<"\n";
   eq_gamma=g;
   pion_flt pstar[eq_nvar];
 
@@ -170,13 +169,13 @@ int FV_solver_base::InterCellFlux(
   // Pre-calcualate anything needed for the viscosity (H-correction).
   // Data is stored in each cell, so no values returned.
   //
-  pre_calc_viscous_terms(grid,Cl,Cr,av_flag);
+  pre_calc_viscous_terms(grid,Cl,Cr,par.artviscosity);
 
 
   //
   // Get the flux from the flux solver:
   //
-  int err = inviscid_flux(Cl,Cr,lp,rp,f,pstar,solve_flag,grid,dx,g);
+  int err = inviscid_flux(par,grid,dx,Cl,Cr,lp,rp,f,pstar,par.solverType,g);
   
 #ifdef DEBUG
   if (fabs(f[0]) > 1.0e-50) {
@@ -190,12 +189,8 @@ int FV_solver_base::InterCellFlux(
   //
   // Post-calculate anthing needed for the viscosity: calls the FKJ98
   // viscosity function which acts after the flux has been calculated
-  // Doesn't work for HLLD because pstar is not calculated, nor for
-  // HLL because it is so diffusive that it is not required.
   //
-  if (solve_flag != FLUX_RS_HLLD && solve_flag != FLUX_RS_HLL) {
-    post_calc_viscous_terms(Cl,Cr,lp,rp,pstar,f,av_flag);
-  }
+  post_calc_viscous_terms(Cl,Cr,lp,rp,pstar,f,par.artviscosity);
 
   //
   // Calculate tracer flux based on whether flow is to left or right.

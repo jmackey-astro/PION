@@ -727,9 +727,8 @@ int time_integrator::dynamics_dU_column(
 #endif
     err += spatial_solver->SetEdgeState(npt, negdir, SimPM.nvar,
                                 slope_npt, edgeR, csp, grid);
-    err += spatial_solver->InterCellFlux(grid, cpt, npt, edgeL,
-                                edgeR, Fr_this, SimPM.solverType,
-                                SimPM.artviscosity, SimPM.gamma, dx);
+    err += spatial_solver->InterCellFlux(SimPM, grid, cpt, npt, edgeL,
+                                edgeR, Fr_this, SimPM.gamma, dx);
     err += spatial_solver->MHDsource(grid,cpt,npt,edgeL,edgeR,axis,posdir,negdir,dt);
     err += spatial_solver->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this,
                                 slope_cpt, csp, dx, dt);
@@ -808,8 +807,7 @@ int time_integrator::dynamics_dU_column(
   err += spatial_solver->SetEdgeState(
           npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
   err += spatial_solver->InterCellFlux(
-          grid, cpt, npt, edgeL, edgeR, Fr_this, SimPM.solverType,
-          SimPM.artviscosity, SimPM.gamma, dx);
+          SimPM,grid,cpt,npt,edgeL,edgeR,Fr_this, SimPM.gamma, dx);
   err += spatial_solver->MHDsource(grid,cpt,npt,edgeL,edgeR,axis,posdir,negdir,dt);
   err += spatial_solver->dU_Cell(
           grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);

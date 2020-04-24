@@ -32,7 +32,8 @@ class HLLD_MHD :  virtual public eqns_mhd_ideal
       const pion_flt *, ///< input left state
       const pion_flt *, ///< input right state
       const double,     ///< input eq_gamma
-      pion_flt *        ///< output flux
+      pion_flt *,        ///< output flux
+      pion_flt *        ///< output Ustar vec
       );
     
   double *HD_lambda, *HD_UL, *HD_UR, *HD_FL, *HD_FR,
@@ -40,7 +41,7 @@ class HLLD_MHD :  virtual public eqns_mhd_ideal
     *HD_ULss, *HD_URss, *HD_FLss, *HD_FRss;
   double HD_nvar;
    
-   void HLLD_signal_speeds(
+  void HLLD_signal_speeds(
     const pion_flt *,    ///< inputs
     const pion_flt *,
     const double,
@@ -48,11 +49,12 @@ class HLLD_MHD :  virtual public eqns_mhd_ideal
     double &
     );
 
-   int MHD_HLL_flux_solver(
+  int MHD_HLL_flux_solver(
     const pion_flt *,  ///< input left state
     const pion_flt *, ///< input right state
     const double,    ///< input gamma
-    pion_flt *       ///< output flux
+    pion_flt *,       ///< output flux
+    pion_flt *        ///< output Ustar vec
     );
 
 };

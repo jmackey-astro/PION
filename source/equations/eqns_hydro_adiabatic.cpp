@@ -105,8 +105,11 @@ void eqns_Euler::PtoU(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 int eqns_Euler::UtoP(
       const pion_flt *u,
@@ -132,8 +135,7 @@ int eqns_Euler::UtoP(
 
   //
   // First check for negative density, and fix it if present.
-  // Note this is usually fatal to a simulation, so we print out messages so
-  // that we know this is what has happened (for the first 1000 instances).
+  // This is usually fatal to a simulation, so bug out by default.
   //
   if (p[eqRO] <=0.0) {
     rep.printVec("u",u,eq_nvar);
@@ -163,42 +165,18 @@ int eqns_Euler::UtoP(
   // being too low, and fix that.
   //
   if (p[eqPG] <=0.0) {
-    //
-    // Set minimum temperature to be 10K
-    //
+    // enforce minimum temperature limit
     if (MP) {
-#ifdef TESTING
-      cout <<"fixing negative pressure from p="<<p[eqPG]<<" to p=";
-#endif
       MP->Set_Temp(p,MinTemp,gamma);
-#ifdef TESTING
-      cout <<p[eqPG]<<"\n";
-#endif
     }
     else {
-      //
       // If not, assume dimensionless simulation and set p=rho/100
-      //
-#ifdef TESTING
-      cout <<"fixing negative pressure from p="<<p[eqPG]<<" to p=";
-#endif
       p[eqPG] = 0.01*p[eqRO];
-#ifdef TESTING
-      cout <<p[eqPG]<<"\n";
-#endif
     }
   }
   else if (MP && (MP->Temperature(p,gamma) <MinTemp)) {
-    //
     // If we have microphysics, just set T=10K.
-    //
-#ifdef TESTING
-    cout <<"fixing low pressure from p="<<p[eqPG]<<" to p=";
-#endif
     MP->Set_Temp(p,MinTemp,gamma);
-#ifdef TESTING
-    cout <<p[eqPG]<<"\n";
-#endif
   }
 
 #else // don't SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
