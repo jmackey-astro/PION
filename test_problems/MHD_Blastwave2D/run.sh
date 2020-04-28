@@ -1,5 +1,14 @@
 #!/bin/bash
 
+mpirun -np 1 ../../icgen-ng params_MHD_blastwave2D_l2_B010_n128.txt silo
+mpirun -np 1 ../../icgen-ng params_MHD_blastwave2D_l2_B010_n256.txt silo
+mpirun -np 1 ../../icgen-ng params_MHD_blastwave2D_l2_B010_n512.txt silo
+
+mpirun -np 4 ../../pion-ng BW2d_StoneMHD_l2_B010_n128_level00_0000.00000000.silo solver=7 cfl=0.24 opfreq_time=0.1 outfile=NG_B010_n128
+mpirun -np 8 ../../pion-ng BW2d_StoneMHD_l2_B010_n256_level00_0000.00000000.silo solver=7 cfl=0.24 opfreq_time=0.1 outfile=NG_B010_n256
+mpirun -np 16 ../../pion-ng BW2d_StoneMHD_l2_B010_n512_level00_0000.00000000.silo solver=7 cfl=0.24 opfreq_time=0.1 outfile=NG_B010_n512
+exit
+
 mpirun ../../icgen-ug params_MHD_blastwave2D_UG_B001_n256.txt silo
 mpirun ../../icgen-ug params_MHD_blastwave2D_UG_B010_n256.txt silo
 mpirun ../../icgen-ug params_MHD_blastwave2D_UG_B100_n256.txt silo
