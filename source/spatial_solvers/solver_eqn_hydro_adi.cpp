@@ -128,15 +128,10 @@ int FV_solver_Hydro_Euler::inviscid_flux(
 #endif
 
   int err=0;
-
-  //
-  // Set flux and pstar vector to zero.
-  //
+  double ustar[eq_nvar];
+  for (int v=0;v<eq_nvar;v++) ustar[v] = 0.0;
   for (int v=0;v<eq_nvar;v++) flux[v]  = 0.0;
   for (int v=0;v<eq_nvar;v++) pstar[v]  = 0.0;
-  //
-  // Set EOS gamma in riemann solver class:
-  //
   eq_gamma = g;
 
 
@@ -193,9 +188,9 @@ int FV_solver_Hydro_Euler::inviscid_flux(
 
   // HLL solver, very diffusive 2 wave solver (Migone et al. 2011 )
   else if (solve_flag==FLUX_RS_HLL) {
-    err += hydro_HLL_flux_solver(Pl, Pr, eq_gamma, flux, pstar);
-    // HLL solver returns Ustar, so convert to Pstar (in place)
-    err += UtoP(pstar,pstar,par.EP.MinTemperature,eq_gamma);
+    err += hydro_HLL_flux_solver(Pl, Pr, eq_gamma, flux, ustar);
+    // HLL solver returns Ustar, so convert to Pstar
+    err += UtoP(ustar,pstar,par.EP.MinTemperature,eq_gamma);
   }
 
 

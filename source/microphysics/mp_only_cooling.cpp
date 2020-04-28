@@ -148,8 +148,8 @@ mp_only_cooling::mp_only_cooling(
   MinT_allowed = EP->MinTemperature;
   if (MinT_allowed <1.0   || MinT_allowed>1.0e6 ) MinT_allowed=1.0;
   if (MaxT_allowed <1.0e2 || MaxT_allowed>3.0e10) MaxT_allowed=1.0e8; 
-  cout <<"\t\tAllowed Temperature range: T_min="<<MinT_allowed<<"  T_max=";
-  cout <<MaxT_allowed<<" (MAKE SURE THIS IS SET APPROPRIATELY!\n";
+  //cout <<"\t\tAllowed Temperature range: T_min="<<MinT_allowed<<"  T_max=";
+  //cout <<MaxT_allowed<<" (MAKE SURE THIS IS SET APPROPRIATELY!\n";
 #else
   rep.error("Please set SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE in defines/functionality_flags.h if using cooling",123);
 #endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
@@ -188,7 +188,7 @@ int mp_only_cooling::TimeUpdateMP(
       )
 {
 
-//#ifdef TEST_INF
+#ifdef TEST_INF
   for (int v=0;v<nv_prim;v++) {
     if (!isfinite(p_in[v])) {
       cout <<"NAN/INF input to  mp_only_cooling::TimeUpdateMP: ";
@@ -196,7 +196,7 @@ int mp_only_cooling::TimeUpdateMP(
       return 1;
     }
   }
-//#endif
+#endif
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   //

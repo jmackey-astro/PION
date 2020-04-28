@@ -47,8 +47,10 @@ CoolingFn::CoolingFn(int flag)
   Temp=0; Lamb=0; 
   int id=0;
 
+#ifdef FUNCTION_ID
   string fname="CoolingFn::CoolingFn";
   cout <<"\t\tCooling Function Constructor."<<"\n";
+#endif // FUNCTION_ID
   if (flag==1) {
     WhichFunction = 1;
     cout <<"\t\tFlag = "<<flag<<" corresponding to Sutherland & Dopita (1993, ApJS, 88, 253) cooling function\n";
