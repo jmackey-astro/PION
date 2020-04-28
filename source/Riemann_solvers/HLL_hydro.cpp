@@ -120,7 +120,7 @@ int HLL_hydro::hydro_HLL_flux_solver(
     const pion_flt *Pr, ///< input right state
     const double eq_gamma,    ///< input gamma
     pion_flt *out_flux,       ///< output flux
-    pion_flt *out_pstar       ///< output interface state
+    pion_flt *out_ustar       ///< output interface state (cons.var.)
     )
 {
     
@@ -155,15 +155,10 @@ int HLL_hydro::hydro_HLL_flux_solver(
 
   // inteface state: first in conserved variables.
   for (int v=0; v<eq_nvar; v++) {
-    HD_FL[v] = (HD_lambda[1]*HD_UR[v] - HD_lambda[0]*HD_UL[v]
+    out_ustar[v] = (HD_lambda[1]*HD_UR[v] - HD_lambda[0]*HD_UL[v]
                     + HD_FL[v] - HD_FR[v]) /
                    (HD_lambda[1]-HD_lambda[0]);
   }
-  // now switch back to primitive.  HLL is so diffusive that we
-  // should not get negative temperatures, so we set the min-value
-  // to be 1.0e-30 and hope it never gets used.  It will be noticed
-  // if it appears.
-  UtoP(HD_FL,out_pstar,1.0e-30,eq_gamma);
 
   return 0;
 }

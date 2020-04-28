@@ -132,33 +132,32 @@ class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
   /// Calculate Flux between a left and right state.
   ///
   int InterCellFlux(
-        class GridBaseClass *grid,
-        class cell *, ///< Left state cell pointer
-        class cell *, ///< Right state cell pointer
-        pion_flt *, ///< Left Primitive State Vector.
-        pion_flt *, ///< Right Primitive State Vector.
-        pion_flt *, ///< Flux Vector. (written to).
-        const int,   ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
-        const int,   ///< Viscosity Flag (0=none,1=Falle's,2=Lapidus(broken),etc.)
-        const double, ///< gas EOS gamma.
-        const double  ///< Cell size dx.
-        );
+      class SimParams &,  ///< simulation parameters
+      class GridBaseClass *grid, ///< pointer to grid
+      class cell *, ///< Left state cell pointer
+      class cell *, ///< Right state cell pointer
+      pion_flt *, ///< Left Primitive State Vector.
+      pion_flt *, ///< Right Primitive State Vector.
+      pion_flt *, ///< Flux Vector. (written to).
+      const double, ///< gas EOS gamma.
+      const double  ///< Cell size dx.
+      );
 
   ///
-  /// Calculates Flux based on a left and right state vector (primitive).
+  /// Calculates Flux based on a left and right state vector (prim).
   ///
   virtual int inviscid_flux(
-      class cell *,  ///< Left state cell pointer
-      class cell *,  ///< Right state cell pointer
-      const pion_flt *,///< Left Primitive state vector.
-      const pion_flt *,///< Right Primitive state vector.
-      pion_flt *,      ///< Resultant Flux state vector.
-      pion_flt *,      ///< State vector at interface.
-      const int, 
-      ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)      
+      class SimParams &,    ///< simulation parameters
       class GridBaseClass *, ///<  pointer to grid
-      const double,  ///< cell-size dx (for LF method)
-      const double    ///< Gas constant gamma.
+      const double,     ///< cell-size dx (for LF method)
+      class cell *,     ///< Left state cell pointer
+      class cell *,     ///< Right state cell pointer
+      const pion_flt *, ///< Left Primitive state vector.
+      const pion_flt *, ///< Right Primitive state vector.
+      pion_flt *,       ///< Resultant Flux state vector.
+      pion_flt *,       ///< State vector at interface.
+      const int,        ///< Which Riemann solver
+      const double      ///< Gas constant gamma.
       ) =0;
 
   /// Adds the contribution from flux in the current direction to dU.

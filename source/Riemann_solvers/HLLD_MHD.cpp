@@ -124,15 +124,17 @@ HLLD_MHD::~HLLD_MHD()
 int HLLD_MHD::MHD_HLLD_flux_solver(
       const pion_flt *Pl,  ///< input left state
       const pion_flt *Pr, ///< input right state
-      const double eq_gamma,    ///< input gamma
-      pion_flt *out_flux       ///< output flux
+      const double gamma,    ///< input gamma
+      pion_flt *out_flux,       ///< output flux
+      pion_flt *out_ustar       ///< output state (cons. var)
       )
 {
-
+  eq_gamma = gamma;
   //
   // compute conserved U and Flux (m05 eq 3)
   // 
-  double BX = 0.5*(Pl[eqBX]+Pr[eqBX]); // Bx is constant (Should be mean of left and right state)
+  double BX = 0.5*(Pl[eqBX]+Pr[eqBX]);
+  // Bx is constant (Should be mean of left and right state)
 
   eqns_mhd_ideal::PtoU(Pl,HD_UL,eq_gamma);
   eqns_mhd_ideal::PtoU(Pr,HD_UR,eq_gamma);
@@ -288,31 +290,38 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
   //rep.printVec("HD_URs",HD_URs,eq_nvar);
   //rep.printVec("HD_UR",HD_UR,eq_nvar);
 
- // Tmin ?
-
   // fluxes (m05 eq 66)
   if      (HD_lambda[0]>0){
-    for (int v=0; v<eq_nvar; v++) 
-      out_flux[v] = HD_FL[v];
+    for (int v=0; v<eq_nvar; v++) out_flux[v] = HD_FL[v];
+    for (int v=0; v<eq_nvar; v++) out_ustar[v] = HD_UL[v];
   }
   else if (HD_lambda[1]>=0){
     for (int v=0; v<eq_nvar; v++) // Fl* (m05 eq. 64) 
       out_flux[v] = HD_FL[v] + HD_lambda[0] * (HD_ULs[v] - HD_UL[v]);
+    for (int v=0; v<eq_nvar; v++) out_ustar[v] = HD_ULs[v];
   }
   else if (HD_lambda[2]>=0){
     for (int v=0; v<eq_nvar; v++)   // Fl** (m05 eq. 65)
-      out_flux[v] = HD_FL[v] + HD_lambda[1] * HD_ULss[v] - (HD_lambda[1] - HD_lambda[0]) * HD_ULs[v] - HD_lambda[0] * HD_UL[v];
+      out_flux[v] = HD_FL[v] + HD_lambda[1] * HD_ULss[v] - 
+                    (HD_lambda[1] - HD_lambda[0]) * HD_ULs[v] -
+                    HD_lambda[0] * HD_UL[v];
+    for (int v=0; v<eq_nvar; v++) out_ustar[v] = HD_ULss[v];
   }
   else if (HD_lambda[3]>=0){
     for (int v=0; v<eq_nvar; v++) 
-      out_flux[v] = HD_FR[v] + HD_lambda[3] * HD_URss[v] - (HD_lambda[3] - HD_lambda[4]) * HD_URs[v] - HD_lambda[4] * HD_UR[v];
+      out_flux[v] = HD_FR[v] + HD_lambda[3] * HD_URss[v] - 
+                    (HD_lambda[3] - HD_lambda[4]) * HD_URs[v] -
+                    HD_lambda[4] * HD_UR[v];
+    for (int v=0; v<eq_nvar; v++) out_ustar[v] = HD_URss[v];
   }
   else if (HD_lambda[4]>=0){
     for (int v=0; v<eq_nvar; v++) 
       out_flux[v] = HD_FR[v] + HD_lambda[4] * (HD_URs[v] - HD_UR[v]);
+    for (int v=0; v<eq_nvar; v++) out_ustar[v] = HD_URs[v];
   }
   else{ 
     for (int v=0; v<eq_nvar; v++) out_flux[v] = HD_FR[v];
+    for (int v=0; v<eq_nvar; v++) out_ustar[v] = HD_UR[v];
   }
   
   //rep.printVec("out_Flux",out_flux,eq_nvar);
@@ -322,8 +331,11 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
 }
 
 
+
 // ###################################################################
 // ###################################################################
+
+
 
 void HLLD_MHD::HLLD_signal_speeds(
     const pion_flt *Pl,    ///< inputs
@@ -363,12 +375,14 @@ void HLLD_MHD::HLLD_signal_speeds(
 int HLLD_MHD::MHD_HLL_flux_solver(
     const pion_flt *Pl,  ///< input left state
     const pion_flt *Pr, ///< input right state
-    const double eq_gamma,    ///< input gamma
-    pion_flt *out_flux       ///< output flux
+    const double gamma, ///< input gamma
+    pion_flt *out_flux,    ///< output flux
+    pion_flt *out_ustar    ///< output Ustar vec
     )
 {
+  eq_gamma = gamma;
   //
-  // compute conserved U and Flux (m05 eq 3)
+  // compute conserved U and Flux
   //
   eqns_mhd_ideal::PtoU(Pl,HD_UL,eq_gamma);
   eqns_mhd_ideal::PtoU(Pr,HD_UR,eq_gamma);
@@ -381,17 +395,21 @@ int HLLD_MHD::MHD_HLL_flux_solver(
   HLLD_signal_speeds(Pl,Pr,eq_gamma,HD_lambda[0],HD_lambda[1]); // Pl,Pr,g,Sl,Sr
 
   if (HD_lambda[0]>0.0){
-      for (int v=0; v<eq_nvar; v++)
-          out_flux[v] = HD_FL[v];
+    for (int v=0; v<eq_nvar; v++) out_flux[v] = HD_FL[v];
+    for (int v=0; v<eq_nvar; v++) out_ustar[v] = HD_UL[v];
   }
   else if (HD_lambda[1]<0.0){
-      for (int v=0; v<eq_nvar; v++)
-          out_flux[v] = HD_FR[v];
+    for (int v=0; v<eq_nvar; v++) out_flux[v] = HD_FR[v];
+    for (int v=0; v<eq_nvar; v++) out_ustar[v] = HD_UR[v];
   }
   else {
-      for (int v=0; v<eq_nvar; v++)
-          out_flux[v] = (HD_lambda[1]*HD_FL[v] - HD_lambda[0]*HD_FR[v] 
-            + HD_lambda[1]*HD_lambda[0]*(HD_UR[v]-HD_UL[v]))/(HD_lambda[1]-HD_lambda[0]);
+    for (int v=0; v<eq_nvar; v++)
+      out_flux[v] = (HD_lambda[1]*HD_FL[v] - HD_lambda[0]*HD_FR[v] 
+        + HD_lambda[1]*HD_lambda[0]*(HD_UR[v]-HD_UL[v]))/
+          (HD_lambda[1]-HD_lambda[0]);
+    for (int v=0; v<eq_nvar; v++)
+      out_ustar[v] = (HD_lambda[1]*HD_UR[v] - HD_lambda[0]*HD_UL[v] 
+        - HD_FR[v] + HD_FL[v])/ (HD_lambda[1]-HD_lambda[0]);
   }
   return 0;
 }

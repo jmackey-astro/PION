@@ -92,16 +92,16 @@ FV_solver_Hydro_Euler::~FV_solver_Hydro_Euler()
 
 
 int FV_solver_Hydro_Euler::inviscid_flux(
+      class SimParams &par,  ///< simulation parameters
+      class GridBaseClass *, ///< pointer to grid
+      const double dx,  ///< cell-size dx (for LF method)
       class cell *Cl, ///< Left state cell pointer
       class cell *Cr, ///< Right state cell pointer
       const pion_flt *Pl,///< Left Primitive state vector.
       const pion_flt *Pr,///< Right Primitive state vector.
       pion_flt *flux,   ///< Resultant Flux state vector.
       pion_flt *pstar,  ///< State vector at interface.
-      const int solve_flag,
-      ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
-      class GridBaseClass *, ///< pointer to grid
-      const double dx,  ///< cell-size dx (for LF method)
+      const int solve_flag, ///< Solver to use
       const double g  ///< Gas constant gamma.
       )
 {
@@ -128,15 +128,10 @@ int FV_solver_Hydro_Euler::inviscid_flux(
 #endif
 
   int err=0;
-
-  //
-  // Set flux and pstar vector to zero.
-  //
+  double ustar[eq_nvar];
+  for (int v=0;v<eq_nvar;v++) ustar[v] = 0.0;
   for (int v=0;v<eq_nvar;v++) flux[v]  = 0.0;
   for (int v=0;v<eq_nvar;v++) pstar[v]  = 0.0;
-  //
-  // Set EOS gamma in riemann solver class:
-  //
   eq_gamma = g;
 
 
@@ -193,7 +188,9 @@ int FV_solver_Hydro_Euler::inviscid_flux(
 
   // HLL solver, very diffusive 2 wave solver (Migone et al. 2011 )
   else if (solve_flag==FLUX_RS_HLL) {
-    err += hydro_HLL_flux_solver(Pl, Pr, eq_gamma, flux, pstar);
+    err += hydro_HLL_flux_solver(Pl, Pr, eq_gamma, flux, ustar);
+    // HLL solver returns Ustar, so convert to Pstar
+    err += UtoP(ustar,pstar,par.EP.MinTemperature,eq_gamma);
   }
 
 

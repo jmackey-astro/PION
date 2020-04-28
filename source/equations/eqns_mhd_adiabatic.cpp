@@ -573,10 +573,13 @@ void eqns_mhd_mixedGLM::GLMsetPsiSpeed(
   GLM_cr = crel;   // crel = 1/(cp^2/ch) has units of 1/length.
   return;
 }
-			    
+
+
 
 // ##################################################################
 // ##################################################################
+
+
 
 void eqns_mhd_mixedGLM::PtoU(
       const pion_flt *P,    ///< pointer to Primitive variables.
@@ -592,8 +595,11 @@ void eqns_mhd_mixedGLM::PtoU(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 int eqns_mhd_mixedGLM::UtoP(
       const pion_flt *u, ///< pointer to conserved variables.
@@ -622,8 +628,11 @@ int eqns_mhd_mixedGLM::UtoP(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 void eqns_mhd_mixedGLM::GLMsource(
       pion_flt *psivar, ///< Primitive Psi variable.

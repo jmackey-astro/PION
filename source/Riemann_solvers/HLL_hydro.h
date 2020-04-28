@@ -43,7 +43,7 @@ class HLL_hydro :  virtual public eqns_Euler
     const pion_flt *, ///< input right state
     const double,    ///< input gamma
     pion_flt *,       ///< output flux
-    pion_flt *       ///< output interface state
+    pion_flt *       ///< output interface state (cons.var.)
     );
 
 };
