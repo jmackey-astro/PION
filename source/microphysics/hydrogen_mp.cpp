@@ -38,7 +38,9 @@ using namespace std;
 Hydrogen_chem::Hydrogen_chem()
  : Hummer94_Hrecomb(), hydrogen_photoion()
 {
-  //cout <<"Setting up Hydrogen_chem().\n";
+#ifdef TESTING
+  cout <<"Setting up Hydrogen_chem().\n";
+#endif
 
   cx_T = cx_rate = 0;
   cx_Nspl = 26;
@@ -58,7 +60,9 @@ Hydrogen_chem::Hydrogen_chem()
 
 Hydrogen_chem::~Hydrogen_chem()
 {
+#ifdef TESTING
   cout <<"Deleting Hydrogen_chem() class.\n";
+#endif
   cx_T     = mem.myfree(cx_T);
   cx_rate  = mem.myfree(cx_rate);
   return;
