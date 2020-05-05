@@ -49,6 +49,7 @@
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
 #include "tools/interpolate.h"
+#include "tools/timer.h"
 #include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
@@ -386,6 +387,15 @@ void stellar_wind::set_wind_cell_reference_state(
     wc->p[PG] = pconst.kB()*WS->Tw/pconst.m_p();
     wc->p[PG]*= exp((gamma-1.0)*log(2.0*M_PI*WS->Rstar*WS->Vinf/WS->Mdot));
     wc->p[PG]*= exp((gamma)*log(wc->p[RO]));
+
+    // HACK
+    //clk.start_timer("w");
+    double tsf=0;
+    tsf=clk.time_so_far("time_int");
+    if (fabs(pp[YY]) < 1.0e14 && pp[XX]<0.0) {
+      wc->p[RO] *= 1.0+0.1*sin(tsf);
+      //cout <<"tsf="<<tsf<<" sin="<<0.1*sin(2.0*M_PI*tsf)<<"\n";
+    }
   }
 
   else {
@@ -615,7 +625,7 @@ int stellar_wind::get_num_cells(
 
 
 int stellar_wind::set_cell_values(
-      class GridBaseClass *,
+      class GridBaseClass *grid,
       const int id,  ///< src id
       const double t ///< simulation time
       )
@@ -632,6 +642,9 @@ int stellar_wind::set_cell_values(
 #endif
   for (int i=0; i<WS->ncell; i++) {
     //cout <<"i="<<i<<", density = "<<WS->wcells[i]->p[RO]<<"\n";
+    // HACK
+    set_wind_cell_reference_state(grid, WS->wcells[i], WS, 5./3.);
+    // HACK
     for (int v=0;v<nvar;v++)
       WS->wcells[i]->c->P[v]  = WS->wcells[i]->p[v];
     for (int v=0;v<nvar;v++)
