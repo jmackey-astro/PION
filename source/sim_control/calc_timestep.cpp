@@ -425,7 +425,7 @@ double calc_timestep::get_mp_timescales_no_radiation(
     // boundary data then we skip it.
 
     //
-    if (c->isbd) {
+    if (c->isbd || !c->isleaf) {
 #ifdef TESTING
       cout <<"skipping cell "<<c->id<<" in get_mp_timescales_no_radiation() c->isbd.\n";
 #endif

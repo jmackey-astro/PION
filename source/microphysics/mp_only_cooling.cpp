@@ -187,6 +187,7 @@ int mp_only_cooling::TimeUpdateMP(
       double *Tf ///< final temperature.
       )
 {
+  int warn=128;
 
 #ifdef TEST_INF
   for (int v=0;v<nv_prim;v++) {
@@ -231,7 +232,7 @@ int mp_only_cooling::TimeUpdateMP(
     T = E0_step*(gamma-1.0)*Mu_tot_over_kB/p_in[RO];
     //cout <<"starting new loop: T="<<T<<" E0="<<E0_step<<"\n";
 
-    if (nstep>16) {
+    if (nstep>warn) {
       cout <<"Warning: cooling nsteps="<<nstep<<"\n";
       rep.printVec("p_in",p_in,nv_prim);
       cout <<"E0_step="<<E0_step<<", Ein="<<Eint0;
@@ -265,14 +266,14 @@ int mp_only_cooling::TimeUpdateMP(
       E0_step = E0_step +(k1 +2.0*k2 +2.0*k3 +k4)/6.0;
       T = E0_step*(gamma-1.0)*Mu_tot_over_kB/p_in[RO];
 
-      if (nstep>16) {
+      if (nstep>warn) {
         cout <<"MP_only_cooling integration: step="<<v<<", T=";
         cout <<T<<", E0_step="<<E0_step<<", Edot="<<k1<<", ";
         cout <<k2<<", "<<k3<<"  "<<k4<<"\n";
       }
     }
     
-    if (nstep>16) {
+    if (nstep>warn) {
       //cout <<"Warning: cooling nsteps="<<nstep<<"\n";
       //rep.printVec("p_in",p_in,nv_prim);
       cout <<"END: T="<<T<<", E0_step="<<E0_step<<", Ein="<<Eint0<<"\n";
@@ -400,8 +401,7 @@ double mp_only_cooling::get_n_Hneutral(
 
 //
 // This returns the minimum timescale of the times flagged in the
-// arguments.  Time is returned in seconds.  Only cooling flag has
-// any effect here.
+// arguments.  Time is returned in seconds.
 //
 double mp_only_cooling::timescales(
     const pion_flt *p_in, ///< Current cell.
@@ -420,23 +420,19 @@ double mp_only_cooling::timescales(
   double rate=0.0;
 
   //
-  // we skip the cooling time if the temperature is already very low;
-  // a reasonable temperature could be 10K; there is unlikely to be
-  // significant cooling below this temperature, and even if there is
-  // it won't be by a large fraction.
+  // we skip the cooling time if the temperature is already near the
+  // minimum allowed.
   //
   // We get the cooling rate per unit volume, first for the actual
   // temperature, and then for T/2, and we take the max. of this.
-  // This is to try to ensure we will get an accurate one-step 
-  // integration.
   //
-  if (T>=10.0) {
-    rate = max(fabs(Edot(p_in[RO],T)), fabs(Edot(p_in[RO],0.5*T)));
+  if (T>=1.1*MinT_allowed) {
+    rate = max(fabs(Edot(p_in[RO],T)),
+               fabs(Edot(p_in[RO],max(MinT_allowed,0.5*T))));
     //
     // Cooling time is then the energy per unit volume divided by the rate.
-    // Bear in mind we could have net heating, so take fabs(rate)
     //
-    mintime = min(mintime, Eint/fabs(rate));
+    mintime = min(mintime, 10.0*Eint/rate);
   }
   
   return mintime;

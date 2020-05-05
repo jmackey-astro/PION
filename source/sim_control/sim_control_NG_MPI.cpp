@@ -137,8 +137,13 @@ int sim_control_NG_MPI::Init(
   // Set Ph[] = P[], and then implement the boundary conditions.
   for (int l=0; l<SimPM.grid_nlevels; l++) {
     cell *c = grid[l]->FirstPt();
+    double u[SimPM.nvar];
     //rep.printVec("First Point",c->P,SimPM.nvar);
     do {
+      // make sure temperature of the gas is reasonable
+      spatial_solver->PtoU(c->P,u,SimPM.gamma);
+      spatial_solver->UtoP(u,c->P,SimPM.EP.MinTemperature,SimPM.gamma);
+      // set Ph[]=P[]
       for(int v=0;v<SimPM.nvar;v++) c->Ph[v]=c->P[v];
     } while ((c=grid[l]->NextPt(c))!=0);
 

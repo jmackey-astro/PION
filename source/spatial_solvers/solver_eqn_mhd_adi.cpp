@@ -1091,6 +1091,12 @@ int cyl_FV_solver_mhd_ideal_adi::MHDsource(
       Cr->dU[v] += dt*bm*(Powell_r[v])*2.0*rn/(rp*rp-rn*rn);
     }
     break;
+  case Tcyl:
+    rep.error("3D cylindrical GLM-MHD Source",d);
+    break;
+  default:
+    rep.error("GLM-MHD Source bad direction",d);
+    break;
   }
 
   return 0;
@@ -1120,10 +1126,10 @@ cyl_FV_solver_mhd_mixedGLM_adi::cyl_FV_solver_mhd_mixedGLM_adi(
     HLLD_MHD(nv,gam),
     VectorOps_Cart(nd),
     FV_solver_mhd_ideal_adi(nv,nd,cflno,gam,state,avcoeff,ntr),
-    cyl_FV_solver_mhd_ideal_adi(nv,nd,cflno,gam,state,avcoeff,ntr),
     eqns_mhd_mixedGLM(nv),
     FV_solver_mhd_mixedGLM_adi(nv,nd,cflno,gam,state,avcoeff,ntr),
-    VectorOps_Cyl(nd)
+    VectorOps_Cyl(nd),
+    cyl_FV_solver_mhd_ideal_adi(nv,nd,cflno,gam,state,avcoeff,ntr)
 {
 #ifdef FUNCTION_ID
   cout <<"::cyl_FV_solver_mhd_mixedGLM_adi ...starting.\n";
