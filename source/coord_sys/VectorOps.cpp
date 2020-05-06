@@ -31,8 +31,8 @@ using namespace std;
 
 BaseVectorOps::~BaseVectorOps() {}
 
-//#define AVG_FALLE
-#define AVG_MINMOD
+#define AVG_FALLE
+//#define AVG_MINMOD
 
 // ##################################################################
 // ##################################################################
