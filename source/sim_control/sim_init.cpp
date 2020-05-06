@@ -421,25 +421,6 @@ int sim_init::override_params(int narg, string *args)
       SimPM.etav = visc;
     }
 
-    else if (args[i].find("artvisc=") != string::npos) {
-      cout <<"\tOVERRIDE PARAMS: old AV="<<SimPM.artviscosity<<" and eta="<<SimPM.etav<<" ... overriding!\n";
-      // Assign art.viscosity parameter. String is 'artvisc=D' with D in [0,N].
-      double visc = atof((args[i].substr(8)).c_str());
-      if(fabs(visc) <= 1.e-6) {
-        cout <<"\t\tNot using artificial viscosity.\n";
-        SimPM.artviscosity=0; SimPM.etav=0.;
-      }
-      else if (visc <=0) {
-        SimPM.artviscosity = 1;
-        SimPM.etav = 0.15;
-      }
-      else {
-        SimPM.artviscosity=1;
-        SimPM.etav = visc;
-      }
-      cout <<"\tOVERRIDE PARAMS: setting AV = "<<SimPM.artviscosity<<" and eta = "<<SimPM.etav<<"\n"; 
-    }
-
     else if (args[i].find("opfreq=") != string::npos) {
       // Assign output frequency to new value. String is 'opfreq=N' with N=[0..Nmax].
       int tmp = atoi((args[i].substr(7)).c_str());

@@ -388,14 +388,15 @@ void stellar_wind::set_wind_cell_reference_state(
     wc->p[PG]*= exp((gamma-1.0)*log(2.0*M_PI*WS->Rstar*WS->Vinf/WS->Mdot));
     wc->p[PG]*= exp((gamma)*log(wc->p[RO]));
 
+    /*
     // HACK
-    //clk.start_timer("w");
     double tsf=0;
     tsf=clk.time_so_far("time_int");
     if (fabs(pp[YY]) < 1.0e14 && pp[XX]<0.0) {
-      wc->p[RO] *= 1.0+0.1*sin(tsf);
+      wc->p[RO] *= 1.0+0.1*sin(0.1*tsf);
       //cout <<"tsf="<<tsf<<" sin="<<0.1*sin(2.0*M_PI*tsf)<<"\n";
     }
+    */
   }
 
   else {
