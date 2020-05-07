@@ -181,6 +181,7 @@ int eqns_Euler::UtoP(
 
 #else // don't SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   if (p[eqPG] <=0.0) {
+#ifdef TESTING
     if (ct_pg<1000) {
       ct_pg ++;
       cout <<"(eqns_Euler::UtoP) negative pressure...p="<<p[eqPG];
@@ -188,10 +189,9 @@ int eqns_Euler::UtoP(
       cout << 0.5*p[eqRO]*
 	(p[eqVX]*p[eqVX] +p[eqVY]*p[eqVY] +p[eqVZ]*p[eqVZ]);
       cout << "... correcting\n"; 
-#ifdef TESTING
       cout <<"NEG.PRES.CELL:";CI.print_cell(dp.c);
-#endif
     }
+#endif
     p[eqPG] = 0.01*p[eqRO];
     //err +=1;
   }

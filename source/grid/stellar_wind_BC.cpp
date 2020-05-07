@@ -644,7 +644,7 @@ int stellar_wind::set_cell_values(
   for (int i=0; i<WS->ncell; i++) {
     //cout <<"i="<<i<<", density = "<<WS->wcells[i]->p[RO]<<"\n";
     // HACK
-    set_wind_cell_reference_state(grid, WS->wcells[i], WS, 5./3.);
+    //set_wind_cell_reference_state(grid, WS->wcells[i], WS, 5./3.);
     // HACK
     for (int v=0;v<nvar;v++)
       WS->wcells[i]->c->P[v]  = WS->wcells[i]->p[v];

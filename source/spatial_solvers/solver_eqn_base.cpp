@@ -481,75 +481,69 @@ int FV_solver_base::calc_Hcorrection(
       xcolumns_finished = false;
       do {
 
-  // --------------------------------------------------------
-  // Calculate the H-correction coefficients for this column:
-  // Start at the outermost boundary cell, and go to the end.
-  // We need all interfaces between and including the
-  // grid-boundary interface.
-  // --------------------------------------------------------
+        // --------------------------------------------------------
+        // Calculate the H-correction coefficients for this column:
+        // Start at the outermost boundary cell, and go to the end.
+        // We need all interfaces between and including the
+        // grid-boundary interface.
+        // --------------------------------------------------------
 
-  //
-  // Set three cell pointers (2nd order slopes have a 3-point
-  // stencil).
-  //
-  cell *cpt = start;
-  cell *npt  = grid->NextPt(cpt,posdirs[idim]);
-  cell *n2pt = grid->NextPt(npt,posdirs[idim]);
-  if (npt==0 || n2pt==0)
-    rep.error("Couldn't find two real cells in column",0);
+        //
+        // Set three cell pointers (2nd order slopes have a 3-point
+        // stencil).
+        //
+        cell *cpt = start;
+        cell *npt  = grid->NextPt(cpt,posdirs[idim]);
+        cell *n2pt = grid->NextPt(npt,posdirs[idim]);
+        if (npt==0 || n2pt==0)
+          rep.error("Couldn't find two real cells in column",0);
 
-  // 
-  // Need to get slopes and edge states if 2nd order (csp==OA2).
-  //
-  for (int v=0;v<SimPM.nvar;v++) { 
-    slope_cpt[v] = 0.;
-    edgeL[v]     = 0.;
-  } // slope_npt[] and edgeR[] get initialised in next loop.
-  
-  // --------------------------------------------------------
-  // Run through column, calculating slopes, edge-states, and
-  // eta[] values as we go.
-  // --------------------------------------------------------
-  do {
-    err += SetEdgeState(cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp, grid);
-    err += SetSlope(npt, axis[idim], SimPM.nvar, slope_npt, csp, grid);
-    err += SetEdgeState(npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR, csp, grid);
-    set_Hcorrection(cpt, axis[idim], edgeL, edgeR, SimPM.gamma);
-    //cout <<" Hcorr["<<axis[idim]<<"] = "<<CI.get_Hcorr(cpt,axis[idim])<<"\n";
+        // 
+        // Need to get slopes and edge states if 2nd order (csp==OA2).
+        //
+        for (int v=0;v<SimPM.nvar;v++) { 
+          slope_cpt[v] = 0.;
+          edgeL[v]     = 0.;
+        } // slope_npt[] and edgeR[] get initialised in next loop.
+        
+        // --------------------------------------------------------
+        // Run through column, calculating slopes, edge-states, and
+        // eta[] values as we go.
+        // --------------------------------------------------------
+        do {
+          err += SetEdgeState(cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp, grid);
+          err += SetSlope(npt, axis[idim], SimPM.nvar, slope_npt, csp, grid);
+          err += SetEdgeState(npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR, csp, grid);
+          set_Hcorrection(cpt, axis[idim], edgeL, edgeR, SimPM.gamma);
+          //cout <<" Hcorr["<<axis[idim]<<"] = "<<CI.get_Hcorr(cpt,axis[idim])<<"\n";
 
-    //
-    // Set npt slope to cpt slope, set n2pt to npt, npt to cpt.
-    // Move to next cell.
-    //
-    cpt = npt;
+          cpt = npt;
           npt = n2pt;
-    temp = slope_cpt;
-    slope_cpt = slope_npt;
-    slope_npt = temp;
-  }  while ( (n2pt=grid->NextPt(n2pt,posdirs[idim])) !=0);
+          temp = slope_cpt;
+          slope_cpt = slope_npt;
+          slope_npt = temp;
+        }  while ( (n2pt=grid->NextPt(n2pt,posdirs[idim])) !=0);
 
-  //
-  // If 1st order, cpt is still a grid cell (2nd order we are done)
-  //
-  err += SetEdgeState(cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp, grid);
-  for (int v=0;v<SimPM.nvar;v++) slope_npt[v] = 0.; // last cell must be 1st order.
-  err += SetEdgeState(npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR, csp, grid);
-  set_Hcorrection(cpt, axis[idim], edgeL, edgeR, SimPM.gamma);
-  //cout <<" Hcorr["<<axis[idim]<<"] = "<<CI.get_Hcorr(cpt,axis[idim])<<"\n";
-  
-  // --------------------------------------------------------
-  // Finished H-correction calculation for the column.
-  // --------------------------------------------------------
+        // If 1st order, cpt is still a grid cell (2nd order we are done)
+        err += SetEdgeState(cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp, grid);
+        for (int v=0;v<SimPM.nvar;v++) slope_npt[v] = 0.; // last cell must be 1st order.
+        err += SetEdgeState(npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR, csp, grid);
+        set_Hcorrection(cpt, axis[idim], edgeL, edgeR, SimPM.gamma);
+        //cout <<" Hcorr["<<axis[idim]<<"] = "<<CI.get_Hcorr(cpt,axis[idim])<<"\n";
+        
+        // --------------------------------------------------------
+        // Finished H-correction calculation for the column.
+        // --------------------------------------------------------
 
-  //
-  // Get next x-column, or if it doesn't exist set a flag to
-  // indicate that we are finished.
-  //
-  if (SimPM.ndim==1) xcolumns_finished = true;
-  else {
-    start = grid->NextPt(start,posdirs[(idim+1)%SimPM.ndim]);
-    if (!start) xcolumns_finished = true;
-  }
+        //
+        // Get next x-column, or if it doesn't exist set a flag to
+        // indicate that we are finished.
+        //
+        if (SimPM.ndim==1) xcolumns_finished = true;
+        else {
+          start = grid->NextPt(start,posdirs[(idim+1)%SimPM.ndim]);
+          if (!start) xcolumns_finished = true;
+        }
       } while (!xcolumns_finished);
   
       //
@@ -559,9 +553,9 @@ int FV_solver_base::calc_Hcorrection(
       //
       if (SimPM.ndim<=2) zplanes_finished = true;
       else {
-  start = grid->NextPt(marker,posdirs[(idim+2)%SimPM.ndim]);
-  marker = start;
-  if (!start) zplanes_finished = true;
+        start = grid->NextPt(marker,posdirs[(idim+2)%SimPM.ndim]);
+        marker = start;
+        if (!start) zplanes_finished = true;
       }
     } while (!zplanes_finished);
 
@@ -577,9 +571,9 @@ int FV_solver_base::calc_Hcorrection(
 
 
 
+// ##################################################################
+// ##################################################################
 
-// ##################################################################
-// ##################################################################
 
 
 void FV_solver_base::set_Hcorrection(

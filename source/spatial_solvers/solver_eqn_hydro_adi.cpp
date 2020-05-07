@@ -193,10 +193,10 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     err += UtoP(ustar,pstar,par.EP.MinTemperature,eq_gamma);
   }
 
-
   else {
     rep.error("what sort of flux solver do you mean???",solve_flag);
   }
+
   return err;
 }
 
@@ -404,6 +404,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
   for (int v=0;v<eq_nvar;v++) {
     u1[v] += dU[v];   // Update conserved variables
   }
+
   int err;
   if((err=UtoP(u1,Pf, MinTemp, eq_gamma))!=0) {
 #ifdef TESTING

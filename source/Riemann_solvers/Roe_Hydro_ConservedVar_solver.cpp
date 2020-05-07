@@ -218,7 +218,21 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric(
 //    rep.printVec("out_flux",out_flux,5);
 //    rep.printVec("out_pstar",out_pstar,5);
 //  }
+  
+  if (fabs(out_flux[1])>1.0e50) {
+    cout <<"Very big Energy Flux!\n";
+    rep.printVec("\tleft",left,5);
+    rep.printVec("\tright",right,5);
+    rep.printVec("\tRCV_meanp",RCV_meanp,5);
+    cout <<"\tRCV_a_mean="<<RCV_a_mean<<",  RCV_v2_mean="<<RCV_v2_mean<<"\n";
+    rep.printVec("\tRCV_eval",RCV_eval,5);
+    rep.printVec("\tRCV_udiff",RCV_udiff,5);
+    rep.printVec("\tRCV_strength",RCV_strength,5);
+    rep.printVec("\tout_flux",out_flux,5);
+    rep.printVec("\tout_pstar",out_pstar,5);
+  }
 #endif // DEBUG
+
 
   //
   // Note that out_pstar[] and out_flux[] only have the first 5
@@ -317,7 +331,9 @@ void Riemann_Roe_Hydro_CV::set_Roe_mean_state(
   RCV_v2_mean = RCV_meanp[eqVX]*RCV_meanp[eqVX] 
     +RCV_meanp[eqVY]*RCV_meanp[eqVY] 
     +RCV_meanp[eqVZ]*RCV_meanp[eqVZ];
-  RCV_a_mean = sqrt((eq_gamma-1.0)*max(RCV_meanp[eqHH]-0.5*RCV_v2_mean,TINYVALUE));
+  // make sure sound speed is positive, and at least 10^{-6} of the 
+  // flow velocities
+  RCV_a_mean = sqrt((eq_gamma-1.0)*max(RCV_meanp[eqHH]-0.5*RCV_v2_mean,1.0e-12*RCV_v2_mean));
 
 #ifdef FUNCTION_ID
   cout <<"Riemann_Roe_Hydro_CV::set_Roe_mean_state ...returning.\n";
