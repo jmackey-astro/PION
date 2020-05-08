@@ -169,7 +169,8 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_onesided(
   rep.printVec("right",right,8);
 #endif
 
-  set_UL_and_UR(left,right);
+  PtoU(left ,Roe_UL,eq_gamma);
+  PtoU(right,Roe_UR,eq_gamma);
 
   err += Roe_get_average_state(left,right);
 
@@ -236,7 +237,8 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_symmetric(
 
   eq_gamma=g;
 
-  set_UL_and_UR(left,right);
+  PtoU(left ,Roe_UL,eq_gamma);
+  PtoU(right,Roe_UR,eq_gamma);
   err += Roe_get_average_state(left,right);
   err += Roe_get_difference_states(left,right);
   err += Roe_get_wavespeeds();
@@ -291,33 +293,6 @@ double Riemann_Roe_MHD_CV::Enthalpy(
 
 
 ///
-/// Set UL[] and UR[] from PL[] and PR[].
-///
-void Riemann_Roe_MHD_CV::set_UL_and_UR(
-      const pion_flt *left, ///< left primitive vec.
-      const pion_flt *right  ///< right primitive vec.
-      )
-{
-#ifdef FUNCTION_ID
-  cout <<"Riemann_Roe_MHD_CV::set_UL_and_UR ...starting.\n";
-#endif //FUNCTION_ID
-
-  PtoU(left ,Roe_UL,eq_gamma);
-  PtoU(right,Roe_UR,eq_gamma);
-
-#ifdef FUNCTION_ID
-  cout <<"Riemann_Roe_MHD_CV::set_UL_and_UR ...returning.\n";
-#endif //FUNCTION_ID
-  return;
-}
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-///
 /// Set Pstar[] from Roe_meanp[] (need to replace enthalpy with
 /// pressure).
 ///
@@ -344,13 +319,10 @@ void Riemann_Roe_MHD_CV::set_pstar_from_meanp(
   // Instead just convert from enthalpy to pressure:
   // p_g = [(g-1)/g]*[H*rho -rho*v^2/2 -B^2]
   //
-  out_pstar[eqPG] = ((eq_gamma-1.0)/eq_gamma)*
-    (out_pstar[eqRO]*(out_pstar[eqHH]-0.5*Roe_V*Roe_V)-Roe_B*Roe_B);
-  //if (out_pstar[eqPG] <0.0) {
-  // cout <<"pressure: pl="<<left[eqPG]<<" pr="<<right[eqPG]<<" pm="<<out_pstar[eqPG];
-  // cout <<" roe-avg="<< (sqrt(left[eqRO])*left[eqPG]
-  // +sqrt(right[eqRO])*right[eqPG])/(sqrt(left[eqRO])+sqrt(right[eqRO]))<<"\n";
-  //}
+  // or p_g  = rho*a^2/g
+  //out_pstar[eqPG] = ((eq_gamma-1.0)/eq_gamma)*
+  //  (out_pstar[eqRO]*(out_pstar[eqHH]-0.5*Roe_V*Roe_V)-Roe_B*Roe_B);
+  out_pstar[eqPG] = out_pstar[eqRO] * Roe_a * Roe_a / eq_gamma;
 
 #ifdef FUNCTION_ID
   cout <<"Riemann_Roe_MHD_CV::set_pstar_from_meanp ...returning.\n";
@@ -505,8 +477,11 @@ int Riemann_Roe_MHD_CV::Roe_get_wavespeeds()
   // 
   double b2 = Roe_B*Roe_B/Roe_meanp[eqRO];
 
+  // max() to make sure sound speed is at least 1e-6 of flow speed
   Roe_a = sqrt((2.0-eq_gamma)*Roe_CGparamX +
-	       (eq_gamma-1.0)*(Roe_meanp[eqHH] -0.5*Roe_V*Roe_V -b2));
+	       (eq_gamma-1.0)*
+               max((Roe_meanp[eqHH] -0.5*Roe_V*Roe_V -b2),
+                   1.0e-12*Roe_V*Roe_V) );
   double astar2 = Roe_a*Roe_a +b2;
 
   Roe_ca = sqrt(Roe_meanp[eqBX]*Roe_meanp[eqBX]/Roe_meanp[eqRO]);
@@ -607,10 +582,10 @@ int Riemann_Roe_MHD_CV::Roe_get_eigenvalues(
   // Modify the eigenvalues by the H-correction eta value.  Note that
   // HC_etamax is set to zero in the simulation initialisation, and it
   // is only changed if AVtype==3, so this code has no effect if we
-  // are not using the H-correction.  Unless of course the eigenvalue
+  // are not using the H-correction.  Unless the eigenvalue
   // is _very_ close to zero and the eval changes within the machine
   // precision.  This shouldn't ever have a significant effect on
-  // anything!
+  // anything.
   //
   for (int v=0; v<7; v++) {
     //

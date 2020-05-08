@@ -113,14 +113,6 @@ class Riemann_Roe_MHD_CV :  virtual public eqns_mhd_ideal
   
  private:
   ///
-  /// Set UL[] and UR[] from PL[] and PR[].
-  ///
-  void set_UL_and_UR(
-      const pion_flt *, ///< left primitive vec.
-      const pion_flt *  ///< right primitive vec.
-      );
-
-  ///
   /// Set Pstar[] from Roe_meanp[] (need to replace enthalpy with
   /// pressure).
   ///
