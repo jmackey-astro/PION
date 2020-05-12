@@ -406,7 +406,8 @@ double calc_timestep::get_mp_timescales_no_radiation(
   // paranoid checking...
   //
   if (par.EP.MP_timestep_limit==0) {
-    cout <<"calc_timestep::get_mp_timescales_no_radiation() called, but no MP-dt limiting!\n";
+    cout <<"calc_timestep::get_mp_timescales_no_radiation() called, ";
+    cout <<"but no MP-dt limiting!\n";
     return -1.0;
   }
 #endif // TESTING

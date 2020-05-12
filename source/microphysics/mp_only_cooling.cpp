@@ -64,27 +64,11 @@ mp_only_cooling::mp_only_cooling(
   CoolingFn(ephys->cooling),
   nv_prim(nv)
 {
-
-  //
-  // First check that we are updating energy
-  //
   if (!EP->update_erg) {
     rep.error("requested cooling microphysics but no energy update",
 	      DONT_CALL_ME);
   }
-
   Integrator_Base::Set_Nvar(1);
-
-  //
-  // Next check that we are limiting timestep by the cooling time,
-  // and if not, then set it!
-  //
-  //if (EP->MP_timestep_limit != 1) {
-  //  cout <<"\t\tmp_only_cooling: timestep limiting not set correctl";
-  //  cout <<"y.  Changing from "<<EP->MP_timestep_limit<<" to ";
-  //  EP->MP_timestep_limit = 1;
-  //  cout << EP->MP_timestep_limit <<"\n";
-  //}
 
   //
   // Mean masses per species/atom: we assume cosmic abundances which gives
@@ -177,9 +161,6 @@ mp_only_cooling::~mp_only_cooling()
 
 
 
-//
-// update internal energy over full timestep.
-//
 int mp_only_cooling::TimeUpdateMP(
       const pion_flt *p_in, ///< Primitive Vector to be updated
       pion_flt *p_out, ///< Destination Vector for updated values.
@@ -349,12 +330,13 @@ double mp_only_cooling::get_n_Hneutral(
 double mp_only_cooling::timescales(
     const pion_flt *p_in, ///< Current cell.
     const double gam,   ///< EOS gamma.
-    const bool, ///< set to true if including cooling time.
+    const bool tc, ///< set to true if including cooling time.
     const bool, ///< set to true if including recombination time.
     const bool  ///< set to true if including photo-ionsation time.
     )
 {
-  return 1.0e99;
+  if (!tc) return 1.0e99;
+  
   //
   // First get temperature and internal energy density.
   //
@@ -376,7 +358,7 @@ double mp_only_cooling::timescales(
     //
     // Cooling time is then the energy per unit volume divided by the rate.
     //
-    mintime = min(mintime, 10.0*Eint/rate);
+    mintime = min(mintime, Eint/rate);
   }
   
   return mintime;
