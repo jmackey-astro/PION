@@ -129,13 +129,14 @@ int Integrator_Base::Set_Nvar(int nv)
 
 
 
-int Integrator_Base::Int_Euler(const int nv,   ///< number of elements in P array.
-			       const double *p0, ///< value of P at initial value of t.
-			       const double t0,  ///< initial value of t.
-			       const double dt,  ///< Total step dt to take.
-			       const int nn,     ///< Number of integration steps to take.
-			       double *pf        ///< pointer to final P value.
-			       )
+int Integrator_Base::Int_Euler(
+      const int nv,   ///< number of elements in P array.
+      const double *p0, ///< value of P at initial value of t.
+      const double t0,  ///< initial value of t.
+      const double dt,  ///< Total step dt to take.
+      const int nn,     ///< Number of integration steps to take.
+      double *pf        ///< pointer to final P value.
+      )
 {
   if (int_nvar!=nv) {
     cerr <<"Integrator_Base() nvar not equal to state vector length.\n";
@@ -226,17 +227,19 @@ int Integrator_Base::Int_DumbAdaptive_Euler(
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
 
 
-int Integrator_Base::Step_RK4(const int nv,   ///< number of elements in P array.
-			      const double *p0, ///< value of P at initial value of t.
-			      const double t0,  ///< initial value of t.
-			      const double dt,  ///< Total step dt to take.
-			      double *pf       ///< pointer to final P value.
-			      )
+int Integrator_Base::Step_RK4(
+      const int nv,   ///< number of elements in P array.
+      const double *p0, ///< value of P at initial value of t.
+      const double t0,  ///< initial value of t.
+      const double dt,  ///< Total step dt to take.
+      double *pf       ///< pointer to final P value.
+      )
 {
   if (int_nvar!=nv) {
     cerr <<"Integrator_Base() nvar not equal to state vector length.\n";
@@ -273,18 +276,20 @@ int Integrator_Base::Step_RK4(const int nv,   ///< number of elements in P array
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
 
 
-int Integrator_Base::Step_RK5CK(const int nv,   ///< number of elements in P array.
-				const double *p0, ///< value of y at initial value of t
-				const double t0,  ///< initial value of t.
-				const double dt,  ///< stepsize, dt.
-				double *pf,     ///< final value of P
-				double *dp      ///< error estimate.
-				)
+int Integrator_Base::Step_RK5CK(
+      const int nv,   ///< number of elements in P array.
+      const double *p0, ///< value of y at initial value of t
+      const double t0,  ///< initial value of t.
+      const double dt,  ///< stepsize, dt.
+      double *pf,     ///< final value of P
+      double *dp      ///< error estimate.
+      )
 {
   if (int_nvar!=nv) {
     cerr <<"Integrator_Base() nvar not equal to state vector length.\n";
@@ -393,15 +398,16 @@ int Integrator_Base::Step_RK5CK(const int nv,   ///< number of elements in P arr
 
 
 #define BISECTION_STEPPER
-int Integrator_Base::Stepper_RKCK(const int nv,   ///< number of elements in P array.
-				  const double *p0,
-				  const double t0,
-				  const double htry,
-				  const double errtol,
-				  double *p1,
-				  double *hdid,
-				  double *hnext
-				  )
+int Integrator_Base::Stepper_RKCK(
+      const int nv,   ///< number of elements in P array.
+      const double *p0,
+      const double t0,
+      const double htry,
+      const double errtol,
+      double *p1,
+      double *hdid,
+      double *hnext
+      )
 {
   if (int_nvar!=nv) {
     cerr <<"Integrator_Base() nvar not equal to state vector length.\n";
@@ -443,8 +449,8 @@ int Integrator_Base::Stepper_RKCK(const int nv,   ///< number of elements in P a
     //cout <<"\tSTEPPER:\t"; rep.printVec("stepper pt",ptemp,nv);
     maxerr = 0;
     for (int v=0;v<int_nvar;v++){
-      // if we get back NAN, make sure we try a shorter step!
-      if (isnan(err[v]) || isnan(ptemp[v]) || isinf(err[v]) || isinf(ptemp[v])) {
+      // if we get back NAN or negative values, try a shorter step.
+      if (!isfinite(err[v]) || !isfinite(ptemp[v]) || ptemp[v]<0.0) {
 	maxerr=max(maxerr,1000.0);
 	//cout <<"err["<<v<<"]="<<err[v]<<" and ptemp["<<v<<"]="<<ptemp[v]<<"\n";
       }
@@ -486,7 +492,7 @@ int Integrator_Base::Stepper_RKCK(const int nv,   ///< number of elements in P a
     rval += ct+static_cast<int>(fabs(maxerr));
   }
   
-#define BISECTION_STEPPER
+//#define BISECTION_STEPPER
 #ifdef BISECTION_STEPPER
   *hnext = h*2.0; // Try double the step for the next one.
 #else
@@ -523,21 +529,23 @@ int Integrator_Base::Stepper_RKCK(const int nv,   ///< number of elements in P a
 
   return rval;
 }
- 
+
+
 
 // ##################################################################
 // ##################################################################
 
 
 
-int Integrator_Base::Int_Adaptive_RKCK(const int nv,   ///< number of elements in P array.
-				       const double *p0, ///< initial state vector.
-				       const double t0,  ///< initial time
-				       const double dt,  ///< timestep to advance by.
-				       const double errtol, ///< error tolerance per step.
-				       double *pf,  ///< final state vector
-				       double *tf   ///< pointer to final time.
-				       )
+int Integrator_Base::Int_Adaptive_RKCK(
+      const int nv,   ///< number of elements in P array.
+      const double *p0, ///< initial state vector.
+      const double t0,  ///< initial time
+      const double dt,  ///< timestep to advance by.
+      const double errtol, ///< error tolerance per step.
+      double *pf,  ///< final state vector
+      double *tf   ///< pointer to final time.
+      )
 {
   //cout <<"\t\t\tIntegrator: explicit step!\n";
   if (int_nvar!=nv) {
@@ -599,14 +607,14 @@ int Integrator_Base::Int_Adaptive_RKCK(const int nv,   ///< number of elements i
 // ##################################################################
 
 
-
   
-int Integrator_Base::Int_Iterative_FC(const int nv,   ///< number of elements in P array.
-				      const double *p0, ///< value of P at initial value of t.
-				      const double t0,  ///< initial value of t.
-				      const double dt,   ///< Total step dt to take.
-				      double *pf ///< pointer to final P value.
-				      )
+int Integrator_Base::Int_Iterative_FC(
+      const int nv,   ///< number of elements in P array.
+      const double *p0, ///< value of P at initial value of t.
+      const double t0,  ///< initial value of t.
+      const double dt,   ///< Total step dt to take.
+      double *pf ///< pointer to final P value.
+      )
 {
   /** \section Coefficients
    * This function is explicitly for solving the rate equations pdot=A*(1-p)-B*p
@@ -658,18 +666,20 @@ int Integrator_Base::Int_Iterative_FC(const int nv,   ///< number of elements in
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
 
 
-int Integrator_Base::Int_Subcycle_BDF(const int nv,   ///< number of elements in P array.
-				      double *p0,   ///< value of P at initial value of t.
-				      double t0,    ///< initial value of t.
-				      double dt,    ///< Total step dt to take.
-				      double dptol, ///< subcycling parameter: dt_sub = dPtol*P/dPdt
-				      double *pf   ///< pointer to final P value.
-				      )
+int Integrator_Base::Int_Subcycle_BDF(
+      const int nv,   ///< number of elements in P array.
+      double *p0,   ///< value of P at initial value of t.
+      double t0,    ///< initial value of t.
+      double dt,    ///< Total step dt to take.
+      double dptol, ///< subcycling parameter: dt_sub = dPtol*P/dPdt
+      double *pf   ///< pointer to final P value.
+      )
 {
   int err=0;
 

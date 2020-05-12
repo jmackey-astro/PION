@@ -33,6 +33,7 @@
 #include "microphysics/cooling_SD93_cie.h"
 #include "microphysics/microphysics_base.h"
 #include "microphysics/hydrogen_recomb_Hummer94.h"
+#include "microphysics/integrator.h"
 
 
 ///
@@ -44,7 +45,8 @@ class mp_only_cooling
   virtual public microphysics_base,
   virtual public cooling_function_SD93CIE,
   virtual public Hummer94_Hrecomb,
-  virtual public CoolingFn
+  virtual public CoolingFn,
+  virtual public Integrator_Base
 {
   public :
   ///
@@ -239,6 +241,30 @@ class mp_only_cooling
   const int nv_prim; ///< number of variables in primitive state vec
   double MinT_allowed; ///< minimum sensible temperature (from pfile).
   double MaxT_allowed; ///< maximum sensible temperature (from pfile).
+  double rho; ///< mass density for this integration.
+  double gamma;  ///< EOS gamma
+
+  /// Calculate rate of change of local state vector, for use in the
+  /// integrator class with the adaptive CK method.
+  int dPdt(
+      const int ,     ///< length of state vector.
+      const double *, ///< current state vector P.
+      double *        ///< Rate vector to write to, R=dPdt(P)#
+      );
+
+  /// not used, but must be defined.
+  int C_rate(
+      const int,      ///< length of state vector.
+      const double *, ///< current state vector P.
+      double *        ///< Creation rate vector to write to.
+      ) {return 999;}
+
+  /// not used, but must be defined.
+  int D_rate(
+      const int,      ///< length of state vector.
+      const double *, ///< current state vector P.
+      double *        ///< Destruction rate vector to write to.
+      ) {return 999;}
 
   ///
   /// Calculate the rate of change of internal energy density (result

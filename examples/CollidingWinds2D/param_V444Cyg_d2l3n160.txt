@@ -11,7 +11,7 @@ GAMMA 1.6666666666666667
 ########################
 
 ########################
-solver 8
+solver 4
 OrderOfAccSpace 2
 OrderOfAccTime  2
 CFL 0.3
@@ -33,7 +33,7 @@ EP_chemistry    0
 EP_coll_ionisation   0
 EP_rad_recombination 0
 EP_update_erg 1
-EP_MP_timestep_limit 1 
+EP_MP_timestep_limit 0
 EP_Min_Temperature 5.0e3
 EP_Max_Temperature 1.0e9
 EP_Hydrogen_MassFrac 0.33  # n(He)/n(H)=1/10
@@ -79,7 +79,7 @@ OutputPath ./
 OutputFile V444Cyg_d2l3n160
 OutputFileType silo
 OutputCriterion 0
-OutputFrequency 512
+OutputFrequency 2048
 OPfreqTime 1.578e99
 ########################
 

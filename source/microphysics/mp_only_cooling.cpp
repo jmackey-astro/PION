@@ -73,16 +73,18 @@ mp_only_cooling::mp_only_cooling(
 	      DONT_CALL_ME);
   }
 
+  Integrator_Base::Set_Nvar(1);
+
   //
   // Next check that we are limiting timestep by the cooling time,
   // and if not, then set it!
   //
-  if (EP->MP_timestep_limit != 1) {
-    cout <<"\t\tmp_only_cooling: timestep limiting not set correctl";
-    cout <<"y.  Changing from "<<EP->MP_timestep_limit<<" to ";
-    EP->MP_timestep_limit = 1;
-    cout << EP->MP_timestep_limit <<"\n";
-  }
+  //if (EP->MP_timestep_limit != 1) {
+  //  cout <<"\t\tmp_only_cooling: timestep limiting not set correctl";
+  //  cout <<"y.  Changing from "<<EP->MP_timestep_limit<<" to ";
+  //  EP->MP_timestep_limit = 1;
+  //  cout << EP->MP_timestep_limit <<"\n";
+  //}
 
   //
   // Mean masses per species/atom: we assume cosmic abundances which gives
@@ -182,29 +184,23 @@ int mp_only_cooling::TimeUpdateMP(
       const pion_flt *p_in, ///< Primitive Vector to be updated
       pion_flt *p_out, ///< Destination Vector for updated values.
       const double dt, ///< Time Step to advance by.
-      const double gamma, ///< EOS gamma.
-      const int, ///< Switch for what type of integration to use (not used here!)
+      const double g, ///< EOS gamma.
+      const int, ///< Switch for what type of integration to use
       double *Tf ///< final temperature.
       )
 {
-  int warn=128;
+  mp_only_cooling::rho = p_in[RO];
+  mp_only_cooling::gamma = g;
+  for (int v=0;v<nv_prim;v++) p_out[v] = p_in[v];
 
-#ifdef TEST_INF
   for (int v=0;v<nv_prim;v++) {
-    if (!isfinite(p_in[v])) {
-      cout <<"NAN/INF input to  mp_only_cooling::TimeUpdateMP: ";
-      cout <<" v="<<v<<", val="<<p_in[v]<<"\n";
-      return 1;
+    if (!isfinite(p_out[v])) {
+      rep.printVec("pout",p_in,nv_prim);
+      rep.error("p_out[v]",v);
     }
   }
-#endif
 
-#ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
-  //
-  // First get gas temperature, and if it outside the allowed ranges,
-  // then set it to the relevant limiting min/max value.
-  //
-  for (int v=0;v<nv_prim;v++) p_out[v] = p_in[v];
+  double Eint0 = p_in[PG]/(gamma-1.0);
   double T = p_out[PG]*Mu_tot_over_kB/p_out[RO];
   if (T<MinT_allowed) {
     Set_Temp(p_out,MinT_allowed,gamma);
@@ -214,95 +210,53 @@ int mp_only_cooling::TimeUpdateMP(
     Set_Temp(p_out,MaxT_allowed,gamma);
     T = MaxT_allowed;
   }
-  double Eint0 = p_in[PG]/(gamma-1.0);
-#else
-  double T = p_in[PG]*Mu_tot_over_kB/p_in[RO];
-  double Eint0 = p_in[PG]/(gamma-1.0);
-#endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
+  double Eint = Eint0;
+  double tout = 0.0;
+  
 
-  //
-  // Now we do a few RK4 steps
-  //
-  size_t nstep=1;
-  double step_dt;
-  double Etemp, E0_step, k1, k2, k3, k4;
-  do {
-    step_dt = dt/nstep;
-    E0_step = Eint0;
-    T = E0_step*(gamma-1.0)*Mu_tot_over_kB/p_in[RO];
-    //cout <<"starting new loop: T="<<T<<" E0="<<E0_step<<"\n";
-
-    if (nstep>warn) {
-      cout <<"Warning: cooling nsteps="<<nstep<<"\n";
-      rep.printVec("p_in",p_in,nv_prim);
-      cout <<"E0_step="<<E0_step<<", Ein="<<Eint0;
-      cout <<", T="<<T<<", Edot="<<Edot(p_in[RO],T)<<"\n";
-      if (nstep>256) {
-        cout.flush();
-        cerr <<" Input density="<<p_in[RO]<<", pressure="<<p_in[PG];
-        cerr <<", v = ["<<p_in[VX]<<", "<<p_in[VY]<<", "<<p_in[VZ];
-        cerr <<"] ... T="<<T<<"\n";
-        cerr.flush();
-        rep.error("too many steps",nstep);
-      }
-    }
-
-    for (size_t v=0;v<nstep;v++) {
-
-      k1 = step_dt*Edot(p_in[RO],T);
-      Etemp = E0_step+0.5*k1;
-
-      T = Etemp*(gamma-1.0)*Mu_tot_over_kB/p_in[RO];
-      k2 = step_dt*Edot(p_in[RO],T);
-      Etemp = E0_step+0.5*k2;
-      
-      T = Etemp*(gamma-1.0)*Mu_tot_over_kB/p_in[RO];
-      k3 = step_dt*Edot(p_in[RO],T);
-      Etemp = E0_step+k3;
-
-      T = Etemp*(gamma-1.0)*Mu_tot_over_kB/p_in[RO];
-      k4 = step_dt*Edot(p_in[RO],T);
-
-      E0_step = E0_step +(k1 +2.0*k2 +2.0*k3 +k4)/6.0;
-      T = E0_step*(gamma-1.0)*Mu_tot_over_kB/p_in[RO];
-
-      if (nstep>warn) {
-        cout <<"MP_only_cooling integration: step="<<v<<", T=";
-        cout <<T<<", E0_step="<<E0_step<<", Edot="<<k1<<", ";
-        cout <<k2<<", "<<k3<<"  "<<k4<<"\n";
-      }
-    }
-    
-    if (nstep>warn) {
-      //cout <<"Warning: cooling nsteps="<<nstep<<"\n";
-      //rep.printVec("p_in",p_in,nv_prim);
-      cout <<"END: T="<<T<<", E0_step="<<E0_step<<", Ein="<<Eint0<<"\n";
-    }
-    //cout <<"nstep="<<nstep<<", T="<<T<<", MinT="<<MinT_allowed;
-    //cout <<", MaxT="<<MaxT_allowed<<", E0_step="<<E0_step<<"\n";
-    if (T>MaxT_allowed && isfinite(T)) {
-      E0_step *= MaxT_allowed/T;
-      T = MaxT_allowed;
-    }
-    nstep *=2;
-  } while (T<MinT_allowed || T>MaxT_allowed || !isfinite(E0_step));
-
-  p_out[PG] = E0_step*(gamma-1);
+  int err = Int_Adaptive_RKCK(1,&Eint,0.0,dt,1.0e-4,&Eint,&tout);
+  if (err) {
+    rep.printVec("p_in",p_in,nv_prim);
+    cout <<"Ein = "<<Eint0 <<", T="<<T<<", Eout="<<Eint<<", dt="<<dt<<", tout="<<tout<<"\n";
+    rep.error("mp_only_cooling integration failed.",err);
+  }
+  p_out[PG] = Eint*(gamma-1);
   *Tf = p_out[PG]*Mu_tot_over_kB/p_out[RO];
-
+  if (*Tf > MaxT_allowed) {
+    p_out[PG] *= MaxT_allowed/(*Tf);
+    *Tf = MaxT_allowed;
+  }
+  else if (*Tf < MinT_allowed) {
+    p_out[PG] *= MinT_allowed/(*Tf);
+    *Tf = MinT_allowed;
+  }
   return 0;
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
 
 
+int mp_only_cooling::dPdt(
+      const int nv, ///< number of variables we are expecting.
+      const double *P,    ///< Current state vector.
+      double *R     ///< Rate Vector to write to.
+      )
+{
+  R[0] = Edot(rho,P[0]*(gamma-1.0)*Mu_tot_over_kB/rho);
+  return 0;
+}
 
-//
-// Reset pressure so it corresponds to requested temperature.
-//
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 int mp_only_cooling::Set_Temp(
       pion_flt *p_in, ///< primitive vector.
       const double T, ///< temperature requested.
@@ -333,10 +287,6 @@ int mp_only_cooling::Set_Temp(
 
 
 
-//
-// Returns the gas temperature.  Assumes primitive vector is in
-// cgs units and ionised gas with mu=0.7m_p.
-//
 double mp_only_cooling::Temperature(
     const pion_flt *p_in, ///< primitive vector
     const double   ///< eos gamma
@@ -346,12 +296,12 @@ double mp_only_cooling::Temperature(
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
-//
-// Get electron number density (cm^{-3})
-//
+
+
 double mp_only_cooling::get_n_elec(
       const pion_flt *p_in ///< primitive state vector.
       )
@@ -361,13 +311,12 @@ double mp_only_cooling::get_n_elec(
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
 
-//
-// Get H+ number density (cm^{-3})
-//
+
 double mp_only_cooling::get_n_Hplus(
       const pion_flt *p_in ///< primitive state vector.
       )
@@ -382,9 +331,6 @@ double mp_only_cooling::get_n_Hplus(
 
 
 
-//
-// Get neutral H number density (cm^{-3})
-//
 double mp_only_cooling::get_n_Hneutral(
       const pion_flt *p_in ///< primitive state vector.
       )
@@ -394,15 +340,12 @@ double mp_only_cooling::get_n_Hneutral(
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
 
 
-//
-// This returns the minimum timescale of the times flagged in the
-// arguments.  Time is returned in seconds.
-//
 double mp_only_cooling::timescales(
     const pion_flt *p_in, ///< Current cell.
     const double gam,   ///< EOS gamma.
@@ -411,6 +354,7 @@ double mp_only_cooling::timescales(
     const bool  ///< set to true if including photo-ionsation time.
     )
 {
+  return 1.0e99;
   //
   // First get temperature and internal energy density.
   //
@@ -439,9 +383,9 @@ double mp_only_cooling::timescales(
 }
 
 
-// ##################################################################
-// ##################################################################
 
+// ##################################################################
+// ##################################################################
 
 
 
@@ -486,13 +430,12 @@ double mp_only_cooling::Edot(
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
 
 
-
-/// only cooling, uses SD93-CIE curve only.
 double mp_only_cooling::Edot_SD93CIE_cool(
             const double rho, ///< mass density (g/cm3)
             const double T    ///< Temperature (K)
