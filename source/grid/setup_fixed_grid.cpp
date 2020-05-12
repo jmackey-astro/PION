@@ -269,7 +269,8 @@ int setup_fixed_grid::setup_microphysics(
     cout <<"\tRequested cooling but no chemistry... setting";
     cout <<" up mp_only_cooling() class. \n";
     cout <<"\tTimestep limit = "<<SimPM.EP.MP_timestep_limit<<"\n";
-    MP = new mp_only_cooling(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
+    MP = new mp_only_cooling(SimPM.nvar,SimPM.ntracer,SimPM.tracers,
+                              &(SimPM.EP), &(SimPM.RS));
     if (!MP) rep.error("mp_only_cooling() init",MP);
   }
   else if (SimPM.EP.chemistry) {
@@ -292,7 +293,8 @@ int setup_fixed_grid::setup_microphysics(
     if      (mptype=="MPv1") {
       cout <<"\tsetting up MPv1 microphysics module\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new MPv1(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
+      MP = new MPv1(SimPM.nvar, SimPM.ntracer, SimPM.tracers,
+                    &(SimPM.EP), &(SimPM.RS));
       cout <<"\t**---** WARNING, THIS MODULE HAS BEEN SUPERSEDED BY MPv4. **--**\n";
       have_set_MP=true;
     }
