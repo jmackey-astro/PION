@@ -88,7 +88,7 @@ fi
 #################################
 DDD=`uname -a | grep "Darwin"`
 if [ ! -z "$DDD" ]; then
-  export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DCVODE5"
+  export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DCVODE3"
   export CXX=g++
   export CC=gcc
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  

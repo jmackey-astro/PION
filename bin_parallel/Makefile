@@ -327,12 +327,12 @@ ifeq ($(MAKE_UNAME), OSX)
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif
 
-  MYLIB = $(CURDIR)/../extra_libraries
-  INC  = -I${MYLIB}/include
+  #MYLIB = $(CURDIR)/../extra_libraries
+  #INC  = -I${MYLIB}/include
   INC += -I/opt/local/include
   INC += -I${SRCDIR}
   LDFLAGS += -lm  
-  LDFLAGS += -L${MYLIB}/lib
+  #LDFLAGS += -L${MYLIB}/lib
   LDFLAGS += -L/opt/local/lib
   LDFLAGS += -lcfitsio
   LDFLAGS += -lsiloh5 
