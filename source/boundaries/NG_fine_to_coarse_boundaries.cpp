@@ -231,6 +231,7 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
     // set primitive variables in coarse cell based on interpolated
     // values stored in first nvar elements of "cd".
     solver->UtoP(cd,c->Ph,par.EP.MinTemperature,par.gamma);
+
     //
     // if full step then assign to c->P as well as c->Ph.
     //

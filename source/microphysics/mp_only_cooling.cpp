@@ -195,7 +195,7 @@ int mp_only_cooling::TimeUpdateMP(
   double tout = 0.0;
   
 
-  int err = Int_Adaptive_RKCK(1,&Eint,0.0,dt,1.0e-4,&Eint,&tout);
+  int err = Int_Adaptive_RKCK(1,&Eint,0.0,dt,1.0e-2,&Eint,&tout);
   if (err) {
     rep.printVec("p_in",p_in,nv_prim);
     cout <<"Ein = "<<Eint0 <<", T="<<T<<", Eout="<<Eint<<", dt="<<dt<<", tout="<<tout<<"\n";

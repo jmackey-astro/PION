@@ -22,7 +22,7 @@ EtaViscosity 0.15
 ########################
 ntracer 1
 chem_code none
-Tracer000 colour
+Tracer000 WIND
 InitIons LEAVE
 
 EP_dynamics     1
@@ -33,7 +33,7 @@ EP_chemistry    0
 EP_coll_ionisation   0
 EP_rad_recombination 0
 EP_update_erg 1
-EP_MP_timestep_limit 1 
+EP_MP_timestep_limit 0 
 EP_Min_Temperature 5.0e3
 EP_Max_Temperature 1.0e10
 EP_Hydrogen_MassFrac 0.714  # n(He)/n(H)=1/10
@@ -78,7 +78,7 @@ OutputPath ./
 OutputFile Ostar3D_B010_n0128l3
 OutputFileType silo
 OutputCriterion 0
-OutputFrequency 256
+OutputFrequency 512
 OPfreqTime 1.578e10
 ########################
 

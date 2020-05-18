@@ -901,7 +901,7 @@ int time_integrator::grid_update_state_vector(
     dp.ergTotChange = 0.;temperg =0.;
     dp.c = c;
 #endif
-    if (!c->isdomain) {
+    if (!c->isdomain || !c->isleaf) {
       // skip cell if it has been cut out of the domain.
       for (int v=0;v<SimPM.nvar;v++) c->dU[v]=0.0;
     }
@@ -925,7 +925,7 @@ int time_integrator::grid_update_state_vector(
     if (MP) {
       double T=MP->Temperature(c->Ph,SimPM.gamma);
       if (T > SimPM.EP.MaxTemperature) {
-        cout <<"warning, temperature too large: "<<T<<"\n";
+        //cout <<"warning, temperature too large: "<<T<<"\n";
         MP->Set_Temp(c->Ph,SimPM.EP.MaxTemperature,SimPM.gamma);
       }
     }

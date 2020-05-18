@@ -446,7 +446,7 @@ void riemann_MHD::code2solvervars(
 {
   //
   // Need to re-order velocity and B-field elements.
-  // The Riemann Solver should never even access elements with
+  // The Riemann Solver should never access elements with
   // v>7, so we can ignore them.
 
   pion_flt temp[8];
@@ -469,6 +469,13 @@ void riemann_MHD::code2solvervars(
 
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 void riemann_MHD::solver2codevars(
       pion_flt *statevec
