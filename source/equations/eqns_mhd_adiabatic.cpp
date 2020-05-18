@@ -93,7 +93,7 @@ void eqns_mhd_ideal::PtoU(
   u[eqERG] =
       (p[eqRO]*(p[eqVX]*p[eqVX]+p[eqVY]*p[eqVY]+p[eqVZ]*p[eqVZ])*0.5)
      +(p[eqPG]/(gamma-1.))
-     +((u[eqBBX]*u[eqBBX] +u[eqBBY]*u[eqBBY] +u[eqBBZ]*u[eqBBZ])/2.);
+     +((u[eqBBX]*u[eqBBX] +u[eqBBY]*u[eqBBY] +u[eqBBZ]*u[eqBBZ])*0.5);
 
   //cout <<"gamma="<<gamma<<"\n";
   return;

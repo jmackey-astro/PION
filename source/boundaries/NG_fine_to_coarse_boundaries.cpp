@@ -269,6 +269,16 @@ int NG_fine_to_coarse_bc::average_cells(
   //
   double sum_vol=0.0, vol=0.0;
   vector<cell*>::iterator c_iter;
+
+  // DEBUG
+  /*
+  double pmin=1.0e99, pmax=-1.0, pmean=0.0, temp[par.nvar];
+  double ke=0.0, kemin=1.0e99, kemax=-1.0, kemean=0.0;
+  double be=0.0, bemin=1.0e99, bemax=-1.0, bemean=0.0;
+  int ct=0;
+  */
+  // DEBUG
+
   for (c_iter=c.begin(); c_iter!=c.end(); ++c_iter) {
     cell *f = (*c_iter);
 #ifdef TEST_MPI_NG
@@ -278,7 +288,25 @@ int NG_fine_to_coarse_bc::average_cells(
     // get conserved vars for cell in fine grid, *cellvol.
     solver->PtoU(f->Ph, u, par.gamma);
     vol = grid->CellVolume(f,0);
-    sum_vol += vol;
+    sum_vol += vol; 
+
+    // DEBUG
+    /*
+    pmin = min(pmin,f->Ph[PG]);
+    pmax = max(pmax,f->Ph[PG]);
+    pmean += f->Ph[PG];
+    ke=0.5*f->Ph[RO]*(f->Ph[VX]*f->Ph[VX] +f->Ph[VY]*f->Ph[VY]+f->Ph[VZ]*f->Ph[VZ]);
+    be=0.5*(f->Ph[BX]*f->Ph[BX] +f->Ph[BY]*f->Ph[BY]+f->Ph[BZ]*f->Ph[BZ]);
+    kemin = min(kemin,ke);
+    kemax = max(kemax,ke);
+    kemean += ke;
+    bemin = min(bemin,be);
+    bemax = max(bemax,be);
+    bemean += be;
+    ct++;
+    */
+    // DEBUG
+
     //cout <<"vol="<<vol<<", sum="<<sum_vol<<"; ";
     for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
   }
@@ -290,6 +318,24 @@ int NG_fine_to_coarse_bc::average_cells(
   int pos[MAX_DIM];
   CI.get_ipos_vec(cpos,pos);
   get_F2C_TauAvg(par, ncells, c, pos, &(cd[par.nvar]) );
+
+
+  // DEBUG
+  /*
+  pmean /= ct;
+  kemean /= ct;
+  bemean /= ct;
+  solver->UtoP(cd, temp, par.EP.MinTemperature, par.gamma);
+  if (temp[PG]>5.0*pmean && grid->idx()==2) {
+    cout <<"P min/max/mean = "<<pmin<<", "<<pmax<<", "<<pmean<<", pc="<<temp[PG]<<"\n";
+    cout <<"KE min/max/mean = "<<kemin<<", "<<kemax<<", "<<kemean<<", pc="<<0.5*temp[RO]*(temp[VX]*temp[VX] +temp[VY]*temp[VY]+temp[VZ]*temp[VZ])<<"\n";
+    cout <<"BE min/max/mean = "<<bemin<<", "<<bemax<<", "<<bemean<<", pc="<<0.5*(temp[BX]*temp[BX] +temp[BY]*temp[BY]+temp[BZ]*temp[BZ])<<"\n";
+    rep.printVec("U",cd,par.nvar);
+    rep.printVec("P",temp,par.nvar);
+  }
+  */
+  // DEBUG
+
 
   return 0;
 }
