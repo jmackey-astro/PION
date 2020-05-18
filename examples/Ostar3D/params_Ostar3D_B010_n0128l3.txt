@@ -113,7 +113,7 @@ UNIFORM_core_centre_ZZ 1.1e200
 
 UNIFORM_ambRO 2.0e-24
 UNIFORM_ambPG 2.9e-12
-UNIFORM_ambVX -25.0e5
+UNIFORM_ambVX -30.0e5
 UNIFORM_ambVY 0.0
 UNIFORM_ambVZ 0.0
 UNIFORM_ambBX 4.0e-6
@@ -151,7 +151,7 @@ WIND_0_vinf   1500.0     # 1500 km/s wind terminal velocity
 WIND_0_vrot   100.0      # 100 km/s surface equatorial rotation velocity
 WIND_0_temp   3.5e4      # 35 kK effective temperature
 WIND_0_Rstr   6.96e11    # 10 solar radii
-WIND_0_Bsrf   10.0        # 100 Gauss surface field
+WIND_0_Bsrf   10.0       # 10 Gauss surface field
 WIND_0_TR0    1.0
 WIND_0_evofile NOFILE
 WIND_0_t_offset   0.0000    # in (unscaled) years
