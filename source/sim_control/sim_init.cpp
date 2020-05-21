@@ -373,6 +373,7 @@ int sim_init::override_params(int narg, string *args)
         SimPM.etav = 0.1;
       }
       else if (v == 2) {
+        rep.error("divv viscosity not working, use AVtype=1 or 3",v);
         cout <<"\t\tUsing Colella and Woodward (1984) AV prescription (Lapidus).\n";
         cout <<"\t\t****** WARNING, THIS NEEDS TESTING, EXPERIMENTAL CODE!! ****\n";
         SimPM.artviscosity=AV_LAPIDUS; // ==2 (NEEDS TESTING!!!)
@@ -380,18 +381,17 @@ int sim_init::override_params(int narg, string *args)
       }
       else if (v == 3) {
         cout <<"\t\tUsing the H-correction of Sanders et al. (1998,JCP,145,511).\n";
-        cout <<"\t\t****** WARNING, THIS NEEDS TESTING, EXPERIMENTAL CODE!! ****\n";
         SimPM.artviscosity=AV_HCORRECTION;
         SimPM.etav = 0.1; // This parameter is redundant for the H-correction.
       }
       else if (v == 4) {
         cout <<"\t\tUsing the H-correction of Sanders et al. (1998,JCP,145,511)\n";
         cout <<"\t\twith the 1D viscosity of Falle, Komissarov, Joarder (1998)\n";
-        cout <<"\t\t****** WARNING, THIS NEEDS TESTING, EXPERIMENTAL CODE!! ****\n";
         SimPM.artviscosity=AV_HCORR_FKJ98; // ==4 (NEEDS TESTING!!!)
         SimPM.etav = 0.1;
       }
       else if (v == AV_VonNeuRicht) {
+        rep.error("von Neumann & Richtmeyer viscosity not working",v);
         // AV_VonNeuRicht==5
         cout <<"\t\tUsing Multi-D von Neumann & Richtmeyer (1950) viscosity.\n";
         cout <<"\t\tSee Tscharnuter & Winkler (1979), Stone & Norman (1992).\n";
@@ -400,14 +400,13 @@ int sim_init::override_params(int narg, string *args)
         SimPM.etav = 1.0;
       }
       else {
-        cout <<"\t\t********************** FIX ME!!!! **************************\n";
         cout <<"\t\tDIDN'T UNDERSTAND AV="<<v<<", SETTING TO FALLE et al (1998).\n";
-        cout <<"\t\t********************** FIX ME!!!! **************************\n";
         SimPM.artviscosity = 1;
         SimPM.etav = 0.1;
         rep.error("Bad viscosity flag from command-line",v);
       }  
-      cout <<"\tOVERRIDE PARAMS: setting AV = "<<SimPM.artviscosity<<" and eta = "<<SimPM.etav<<"\n"; 
+      cout <<"\tOVERRIDE PARAMS: setting AV = "<<SimPM.artviscosity;
+      cout <<" and eta = "<<SimPM.etav<<"\n"; 
     }
 
     else if (args[i].find("EtaVisc=") != string::npos) {
