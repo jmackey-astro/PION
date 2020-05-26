@@ -335,7 +335,9 @@ UniformGrid::UniformGrid(
     }
     if (!dom) c->isdomain = false;
     c->isleaf=true; // assume all cells are leaves unless changed.
-    if (dom) c->timestep = true;
+    if (dom) {
+      c->timestep = true;
+    }
   } while ( (c=NextPt_All(c))!=0);
 
 

@@ -36,7 +36,7 @@ using namespace std;
 
 #ifdef PARALLEL
 
-//#define TEST_INT
+#define TEST_INT
 
 // ##################################################################
 // ##################################################################
@@ -488,7 +488,7 @@ int sim_control_NG_MPI::Time_Int(
       mindt = COMM->global_operation_double("MIN",mindt);
 #ifdef TEST_INT
       cout <<"level "<<l<<" got dt="<<SimPM.dt<<" and ";
-      cout <<SimPM.dt/scale <<"\n";
+      cout <<SimPM.dt/scale <<"... mindt="<<mindt<<"\n";
 #endif
       SimPM.levels[l].dt = SimPM.dt;
       scale *= 2;

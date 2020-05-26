@@ -405,6 +405,11 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
     u1[v] += dU[v];   // Update conserved variables
   }
 
+  if (u1[RHO]<0.0) {
+    cout <<"celladvancetime, negative density. rho="<<u1[RHO]<<"\n";
+    CI.print_cell(c);
+  }
+  
   int err;
   if((err=UtoP(u1,Pf, MinTemp, eq_gamma))!=0) {
 #ifdef TESTING

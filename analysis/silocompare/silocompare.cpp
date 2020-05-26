@@ -79,7 +79,6 @@ int main(int argc, char **argv)
     cerr << "\t 0: Diff image is relative error for rho/p_g (abs.val)\n";
     cerr << "\t 1: Diff image is relative error for rho/p_g (+/-)\n";
     cerr << "\t 2: Just calculate L1+L2 error, no difference image.\n";
-    cerr << "<flt/dbl>: FLOAT or DOUBLE for whether you think the file is float or double precision.\n";
     rep.error("Bad number of args",argc);
   }
   string fdir       = argv[1];

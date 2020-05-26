@@ -658,7 +658,8 @@ void cell_interface::print_cell(const cell *c)
   cout <<"\tcell pointer= "<<c<<"\n";
   cout <<"\tisedge:"<<c->isedge<<"\tisbd:"<<c->isbd<<"\tisgd:"<<c->isgd<<"\n";
   cout <<"\tisdomain:"<<c->isdomain;
-  cout <<"\tisleaf:"<<c->isleaf<<"\n";
+  cout <<"\tisleaf:"<<c->isleaf;
+  cout <<"\ttimestep: "<<c->timestep<<"\n";
   cout <<"\trt:"<<c->rt<<"\n";
   cout<<"\tnpt: "<<c->npt;
   if (c->npt!=0) cout <<"\tnpt[id]: "<<c->npt->id<<"\n";

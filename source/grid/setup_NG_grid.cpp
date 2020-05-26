@@ -351,7 +351,7 @@ void setup_NG_grid::set_leaf_cells(
         }
         if (notleaf) c->isleaf=false;
       }
-      if (notleaf) c->timestep=false;
+      if (!c->isleaf) c->timestep=false;
 
     } while ( (c=grid[l]->NextPt_All(c))!=0);
   }
