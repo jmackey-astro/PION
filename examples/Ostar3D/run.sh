@@ -14,11 +14,11 @@ mpirun -np 16 ../../icgen-ng params_Ostar3D_B100_n0128l3.txt silo
 # initial conditions snapshot
 mpirun -np 32 ../../pion-ng Ostar3D_B010_n0128l3_level00_0000.00000000.silo opfreq=512 \
 redirect=/mnt/jmackey/jm/data/pion_codepaper/Ostar3D/log_Ostar3D_B010_n0128l3 \
-outfile=/mnt/jmackey/jm/data/pion_codepaper/Ostar3D/log_Ostar3D_B010_n0128l3_v2 &
+outfile=/mnt/jmackey/jm/data/pion_codepaper/Ostar3D/Ostar3D_B010_n0128l3_node &
 
 mpirun -np 32 ../../pion-ng Ostar3D_B100_n0128l3_level00_0000.00000000.silo opfreq=512 \
 redirect=/mnt/jmackey/jm/data/pion_codepaper/Ostar3D/log_Ostar3D_B100_n0128l3 \
-outfile=/mnt/jmackey/jm/data/pion_codepaper/Ostar3D/log_Ostar3D_B100_n0128l3_v2 &
+outfile=/mnt/jmackey/jm/data/pion_codepaper/Ostar3D/Ostar3D_B100_n0128l3_node &
 
 wait
 
