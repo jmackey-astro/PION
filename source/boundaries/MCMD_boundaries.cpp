@@ -31,12 +31,6 @@ int MCMD_bc::BC_assign_BCMPI(
   //
   int err = 0;
 
-  // set isdomain to true because these data are part of the domain.
-  list<cell*>::iterator c=b->data.begin();
-  do {
-    c++;
-  } while (c!=b->data.end());
-
 #ifdef TEST_COMMS
   cout <<"*******************************************\n";
   cout <<"BC_assign_BCMPI: sending data in dir: "<<b->dir<<"\n";
