@@ -103,6 +103,9 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       )
 {
   if (level==0) return 0;
+#ifdef C2F_FULLSTEP
+  if ((step+2)%2 !=0) return 0;
+#endif
 #ifdef TEST_C2F
   cout <<"C2F: updating boundary data from coarse grid to level ";
   cout <<level<<"\n";

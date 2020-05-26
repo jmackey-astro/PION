@@ -255,6 +255,9 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
   // been calculated for the coarse grid, but not updated to Ph[]
   //
   if (cstep != maxstep) {
+#ifdef C2F_FULLSTEP
+    return 0;
+#endif
 #ifdef TEST_C2F
     cout <<"MPI C2F SEND: odd step, interpolating data in time.\n";
 #endif
@@ -266,14 +269,14 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
         solver->PtoU(c->P, U, par.gamma);
         for (int v=0;v<par.nvar;v++) U[v] += 0.5*c->dU[v];
         solver->UtoP(U,c->Ph, par.EP.MinTemperature, par.gamma);
-//#ifdef TEST_INF
+#ifdef TEST_INF
         for (int v=0;v<par.nvar;v++) {
           if (!isfinite(c->Ph[v])) {
             rep.printVec("NAN c->P ",c->P,par.nvar);
             rep.printVec("NAN c->Ph",c->Ph,par.nvar);
           }
         }
-//#endif
+#endif
       } // loop over cells in boundary
     } // loop over send boundaries
   } // if not at a full step update
@@ -600,6 +603,9 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
       const int step  ///< timestep on this (fine) grid
       )
 {
+#ifdef C2F_FULLSTEP
+  if ((step+2)%2 !=0) return 0;
+#endif
 #ifdef TEST_C2F
   cout <<"C2F_MPI: receiving boundary data to level ";
   cout <<l<<", updating boundary dir = "<<b->dir<<endl;
