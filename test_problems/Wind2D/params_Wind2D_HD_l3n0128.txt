@@ -18,11 +18,11 @@ CFL 0.3
 ArtificialViscosity 1
 EtaViscosity 0.15
 
-
 ########################
 ntracer 1
 chem_code none
 Tracer000 WIND
+
 InitIons LEAVE
 
 EP_dynamics     1
@@ -67,20 +67,20 @@ NG_centre_YY 0.0e18
 NG_centre_ZZ 0.0e18
 NG_refine_XX 1
 NG_refine_YY 1
-NG_refine_ZZ 0
+NG_refine_ZZ 1
 ########################
 
 
 ########################
-StartTime  0.000e11
+StartTime  0.000e12
 FinishTime 3.156e12
 
 OutputPath ./
-OutputFile ResStudy_HD_l3n0128
+OutputFile Wind2D_HD_l3n0128
 OutputFileType silo
 OutputCriterion 0
 OutputFrequency 1024
-OPfreqTime 1.578e10
+OPfreqTime 1.578e99
 ########################
 
 ########################
@@ -110,9 +110,9 @@ UNIFORM_core_centre_XX 1.1e200
 UNIFORM_core_centre_YY 1.1e200
 UNIFORM_core_centre_ZZ 1.1e200
 
-UNIFORM_ambRO 7.0e-24
-UNIFORM_ambPG 7.0e-12
-UNIFORM_ambVX -25.0e5
+UNIFORM_ambRO 7.0e-24   # Density in g/cm^3
+UNIFORM_ambPG 7.0e-12   # Pressure in dyne/cm^2
+UNIFORM_ambVX -25.0e5   # X-velocity of background medium
 UNIFORM_ambVY 0.0
 UNIFORM_ambVZ 0.0
 UNIFORM_ambBX 0.0
@@ -140,16 +140,16 @@ RT_Nsources 0
 WIND_NSRC 1
 
 # locate the source at the origin.
-WIND_0_pos0  0.0e18
-WIND_0_pos1  0.0e18
-WIND_0_pos2  0.0e18
-WIND_0_radius 2.0e17  # about 20 cells for 128x128 and 3 levels
-WIND_0_type   0
-WIND_0_mdot   1.0e-8
-WIND_0_vinf   1500.0
-WIND_0_vrot   200.0
-WIND_0_temp   3.0e4
-WIND_0_Rstr   1.0e12
+WIND_0_pos0  0.0e18   # X-position of Wind source
+WIND_0_pos1  0.0e18   # Y-position of Wind source
+WIND_0_pos2  0.0e18   # Z-position of Wind source
+WIND_0_radius 2.0e17  # radius of boundary region: ~20 cells for 128^2, 3 levels
+WIND_0_type   0       # Constant wind
+WIND_0_mdot   1.0e-8  # mass-loss rate in solar masses per year
+WIND_0_vinf   1500.0  # wind speed in km/s
+WIND_0_vrot   200.0   # surface rotation in km/s
+WIND_0_temp   3.0e4   # effective temperature in K
+WIND_0_Rstr   1.0e12  # radius of surface in cm
 WIND_0_Bsrf   0.0
 WIND_0_TR0    1.0
 WIND_0_evofile NOFILE

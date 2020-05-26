@@ -123,40 +123,35 @@ void sim_init::print_command_line_options(
 
   cout <<"\n*********** DATA I/O OPTIONS ************\n";
   cout <<"\t redirect=string : filename with path to redirect stdout/stderr to\n";
-
-  cout <<"\t checkpt_freq=N  : checkpoint every N timesteps (default is never).\n";
   cout <<"\t op_criterion=N  : 0=output every I steps, 1=output every D time units.\n";
-  cout <<"\t opfreq=N        : Output data every Nth timestep  (if op_criterion=0).\n";
-  cout <<"\t opfreq_time=D   : Output data every Dth time unit (if op_criterion=1).\n";
+  cout <<"\t opfreq=N        : Save snapshot every Nth timestep  (if op_criterion=0).\n";
+  cout <<"\t opfreq_time=D   : Save snapshot every Dth time unit (if op_criterion=1).\n";
   cout <<"\t finishtime=D    : set time to finish simulation, in code time units.\n";
   cout <<"\t optype=S        : Specify type of output file,";
   cout <<             " [1,text]=TEXT,[2,fits]=FITS,[4,both]=FITS+TEXT,[5,silo]=SILO,[6]=SILO+TEXT.\n";
-  cout <<"\t outfile=NAME    : Replacement output filename, with path.\n";
+  cout <<"\t outfile=NAME    : Replacement snapshot filename, with path.\n";
 
   cout <<"\n*********** PHYSICS/Grid OPTIONS *************\n";
   cout <<"\t ooa=N         : modify order of accuracy (either 1 or 2).\n";
   cout <<"\t AVtype=N      : modify type of artificial viscosity:";
-  cout <<" 0=none, 1=Falle,Komissarov,Joarder(1998), 2=Colella+Woodward(1984), 3=Sanders et al.(1998)[H-correction].\n";
-  cout <<"\t\t\t WARNING -- AVtype=2 IS NOT WORKING WELL.  ONLY USE FKJ98/H-corr.";
+  cout <<" 0=none, 1=Falle,Komissarov,Joarder(1998), 3=Sanders et al.(1998)[H-correction], 4=both 1+3.\n";
   cout <<"\t EtaVisc=D     : modify viscosity parameter to the given double precision value.\n";
-
   cout <<"\t cfl=D         : change the CFL no. for the simulation, in range (0,1).\n";
-  cout <<"\t cooling=N     : cooling=0 for no cooling, 1 for Sutherland&Dopita1993.\n";
-  cout <<"\t\t\t For other cooling functions see microphysics/cooling.cpp\n";
+  cout <<"\t cooling=N     : cooling=0 for no cooling, >0 for different prescriptions.\n";
 
   cout <<"\t solver=N      :\n";
-  cout <<"\t\t 0 = Lax-Friedrichs Flux, TESTING ONLY!\n";
-  cout <<"\t\t 1 = Linear Riemann Solver : EULER/MHD (mean value average)";
+  cout <<"\t\t 0 = Lax-Friedrichs Flux\n";
+  cout <<"\t\t 1 = Linear Riemann Solver : HD/MHD";
   cout  <<" (Falle, Komissarov, Joarder, 1998),\n";
-  cout <<"\t\t 2 = Exact Riemann Solver  : EULER ONLY (Hirsch (199X), Toro, 1999)\n";
-  cout <<"\t\t 3 = Hybrid Riemann Solver (1+2)         : EULER ONLY \n";
-  cout <<"\t\t 4 = Roe Conserved Variables flux solver : EULER/MHD";
+  cout <<"\t\t 2 = Exact Riemann Solver  : HD (Hirsch (199X), Toro, 1999)\n";
+  cout <<"\t\t 3 = Hybrid Riemann Solver (1+2)         : HD \n";
+  cout <<"\t\t 4 = Roe Conserved Variables flux solver : HD/MHD";
   cout  <<" (e.g. Toro, 1999, Stone, Gardiner et al. 2008)\n";
-  cout <<"\t\t 5 = Roe Primitive Variables flux solver : EULER ONLY";
+  cout <<"\t\t 5 = Roe Primitive Variables flux solver : HD";
   cout  <<" (e.g. Stone, Gardiner et al. 2008)\n";
-  cout <<"\t\t 6 = Flux vector splitting : EULER ONLY (van Leer, 1982) \n";
-  cout <<"\t\t 7 = HLLD solver : MHD only () \n";
-  cout <<"\t\t 8 = HLL  solver : MHD only () \n";
+  cout <<"\t\t 6 = Flux vector splitting : HD only (van Leer, 1982) \n";
+  cout <<"\t\t 7 = HLLD solver : MHD only \n";
+  cout <<"\t\t 8 = HLL  solver : HD/MHD \n";
 
   cout <<"\n*********** PARALLEL CODE ONLY *************\n";
   cout <<"\t maxwalltime=D : change the max. runtime to D in hours.\n";
@@ -165,9 +160,6 @@ void sim_init::print_command_line_options(
   cout <<"\t nlevels=N     : modify number of levels in NG grid.\n";
   cout <<"\t wind_radius_N=D : change radius of boundary for wind source N to value D (in cm)\n";
   cout <<"\n";
-  cout <<"********* DEPRECATED -- STILL HERE FOR LEGACY SCRIPTS... ******\n";
-  cout <<"\t artvisc=D : modify artificial viscosity, 0=none, Otherwise FalleAV with eta=D,\n";
-  cout <<"\t noise=D   : add noise to initial conditions if desired, at fractional level of D.\n";
   cout <<"     *********************************************\n\n";
   return;
 }
