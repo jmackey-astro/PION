@@ -641,7 +641,7 @@ double sim_control_NG_MPI::advance_step_OA1(
 
   // --------------------------------------------------------
   // 0. Coarse to fine recv:
-#ifndef C2F_FULLSTEP
+#ifdef C2F_FULLSTEP
   // only receive every 2nd step (every full step on coarse grid)
   if (SimPM.levels[l].step%2 ==0) {
 #endif
@@ -658,7 +658,7 @@ double sim_control_NG_MPI::advance_step_OA1(
     cout <<"advance_step_OA1: l="<<l<<" C2F CLEAR SEND\n";
 #endif
     BC_COARSE_TO_FINE_SEND_clear_sends();
-#ifndef C2F_FULLSTEP
+#ifdef C2F_FULLSTEP
   }
 #endif
   // --------------------------------------------------------
@@ -908,7 +908,7 @@ double sim_control_NG_MPI::advance_step_OA2(
 
   // --------------------------------------------------------
   // 0. Coarse to fine recv:
-#ifndef C2F_FULLSTEP
+#ifdef C2F_FULLSTEP
   // only receive every 2nd step (every full step on coarse grid)
   if (SimPM.levels[l].step%2 ==0) {
 #endif
@@ -925,7 +925,7 @@ double sim_control_NG_MPI::advance_step_OA2(
     cout <<"advance_step_OA2: l="<<l<<" C2F CLEAR SEND"<<endl;
 #endif
     BC_COARSE_TO_FINE_SEND_clear_sends();
-#ifndef C2F_FULLSTEP
+#ifdef C2F_FULLSTEP
   }
 #endif
  // --------------------------------------------------------
