@@ -11,7 +11,7 @@ OrderOfAccTime  2
 GAMMA 1.0001
 CFL 0.4
 ArtificialViscosity 1
-EtaViscosity 0.15
+EtaViscosity 0.01
 
 
 ics StarBench_ContactDiscontinuity3

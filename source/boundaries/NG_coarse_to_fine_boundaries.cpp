@@ -104,21 +104,22 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
 {
   if (level==0) return 0;
 #ifdef C2F_FULLSTEP
-  if ((step+2)%2 !=0) return 0;
+  if ((step)%2 !=0) return 0;
 #endif
 #ifdef TEST_C2F
   cout <<"C2F: updating boundary data from coarse grid to level ";
   cout <<level<<"\n";
 #endif
+
   //
-  // This is a complicated problem to use linear interpolation (or
-  // higher order), because you have to conserve mass, momentum and
+  // Use linear interpolation (or
+  // higher order), must conserve mass, momentum and
   // energy between the two levels.  It should also be monotonic and
   // produce cell-averaged values. Flash and pluto seem
   // to use very old Fortran code to accomplish this, and the code is
   // almost impenetrable.  AMRVAC uses linear/bilinear/trilinear
   // interpolation with renormalisation to conserve mass/P/E.
-  // PION is doing what AMRVAC does, I think.
+  // PION is doing what AMRVAC does, as far as I can tell.
   //
 
   // pointers to coarse and fine grids:
