@@ -292,7 +292,7 @@ double calc_timestep::calc_dynamics_dt(
 #ifdef TESTING
     dp.c = c;
 #endif
-    if (c->timestep) {
+    if (c->timestep && !c->isbd) {
       tempdt = sp_solver->CellTimeStep(
                 c, ///< pointer to cell
                 par.gamma, ///< gas EOS gamma.

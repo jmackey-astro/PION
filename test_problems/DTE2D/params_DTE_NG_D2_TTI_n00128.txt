@@ -5,7 +5,7 @@
 ndim 2
 coordinates cylindrical
 eqn  euler
-solver 6
+solver 4
 GAMMA 1.001
 CFL 0.2
 ArtificialViscosity 1
@@ -20,7 +20,7 @@ OutputPath ./
 OutputFileType silo
 StartTime 0.0
 FinishTime 3.7872e+12  # 0.12 Myr in seconds
-OutputFrequency 256
+OutputFrequency 512
 OutputCriterion 0    # output per n-years=1, per step=0
 OPfreqTime 7.89e10   # 2.5 kyr
 
