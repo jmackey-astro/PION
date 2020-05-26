@@ -93,7 +93,7 @@ void eqns_mhd_ideal::PtoU(
   u[eqERG] =
       (p[eqRO]*(p[eqVX]*p[eqVX]+p[eqVY]*p[eqVY]+p[eqVZ]*p[eqVZ])*0.5)
      +(p[eqPG]/(gamma-1.))
-     +((u[eqBBX]*u[eqBBX] +u[eqBBY]*u[eqBBY] +u[eqBBZ]*u[eqBBZ])/2.);
+     +((u[eqBBX]*u[eqBBX] +u[eqBBY]*u[eqBBY] +u[eqBBZ]*u[eqBBZ])*0.5);
 
   //cout <<"gamma="<<gamma<<"\n";
   return;
@@ -147,9 +147,8 @@ int eqns_mhd_ideal::check_pressure(
   static long int ct_rho=0;
 
   //
-  // First check for negative density, and fix it if present.
-  // Note this is usually fatal to a simulation, so we print out messages so
-  // that we know this is what has happened (for the first 1000 instances).
+  // First check for negative density.
+  // This is usually fatal to a simulation, so we quit here.
   //
   int err=0;
   if (p[eqRO] <=0.0) {
@@ -165,8 +164,8 @@ int eqns_mhd_ideal::check_pressure(
       cout <<"NEG.DENS.CELL:";CI.print_cell(dp.c);
 #endif
     }
-    // reset all variables because a negative density will change the sign of 
-    // all of the velocities!
+    // reset all variables because a negative density will change the 
+    // sign of all of the velocities
     p[eqRO] = BASE_RHO*eq_refvec[eqRO];
     p[eqVX] *= u[eqRHO]/p[eqRO];
     p[eqVY] *= u[eqRHO]/p[eqRO];
@@ -179,7 +178,7 @@ int eqns_mhd_ideal::check_pressure(
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   //
-  // First check for negative pressure, fixing it if needed.
+  // Check for negative pressure, fixing it if needed.
   // Then if there was no negative pressure, check for pressure
   // being too low, and fix that.
   //
@@ -253,9 +252,7 @@ double eqns_mhd_ideal::cfast(
   double ch = chydro(p, gamma);
   double temp1 = ch*ch + (p[eqBX]*p[eqBX] +p[eqBY]*p[eqBY] +p[eqBZ]*p[eqBZ])/p[eqRO];
   double temp2 = 4.*ch*ch*p[eqBX]*p[eqBX]/p[eqRO];
-  // This subtraction has to be done carefully to avoid
-  // sqrt(negative number).
-  if ((temp2=temp1*temp1-temp2) <MACHINEACCURACY) temp2=MACHINEACCURACY;
+  temp2 = max(MACHINEACCURACY, temp1*temp1-temp2);
   return( sqrt( (temp1 + sqrt(temp2))/2.) );
 }
 
@@ -276,9 +273,7 @@ double eqns_mhd_ideal::cfast_components(
   double ch = sqrt(g*cfPG/cfRO);
   double temp1 = ch*ch + (cfBX*cfBX +cfBY*cfBY +cfBZ*cfBZ)/cfRO;
   double temp2 = 4.*ch*ch*cfBX*cfBX/cfRO;
-  // This subtraction has to be done carefully to avoid
-  // sqrt(negative number).
-  if ((temp2=temp1*temp1-temp2) <MACHINEACCURACY) temp2=MACHINEACCURACY;
+  temp2 = max(MACHINEACCURACY, temp1*temp1-temp2);
   return( sqrt( (temp1 + sqrt(temp2))/2.) );
 }
 
@@ -298,20 +293,16 @@ double eqns_mhd_ideal::cslow(
   double ch = chydro(p, gamma);
   temp1 = ch*ch + (p[eqBX]*p[eqBX] +p[eqBY]*p[eqBY] +p[eqBZ]*p[eqBZ])/p[eqRO];
   temp2 = 4.*ch*ch*p[eqBX]*p[eqBX]/p[eqRO];
-  if ((temp2=temp1*temp1-temp2) <MACHINEACCURACY) temp2=MACHINEACCURACY; // This is as good as the computer can get.
-  if ((temp2=temp1-sqrt(temp2)) <MACHINEACCURACY) temp2=MACHINEACCURACY; // Again, as good as the machine can get.
-  /** \section Accuracy
-   * Because I'm taking the square root of a difference of two numbers, 
-   * the slow magnetic speed can only be determined accurately down to
-   * the square root of the machine accuracy (\f$\simeq 3 \times 10^{-8}\f$ 
-   * for double precision), so I have it hardcoded to never be smaller than this.
-   * */
+  temp2 = max(MACHINEACCURACY, temp1*temp1-temp2);
+  temp2 = max(MACHINEACCURACY, temp1-sqrt(temp2));
   return( sqrt(temp2/2.) );
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void eqns_mhd_ideal::PUtoFlux(
@@ -337,8 +328,10 @@ void eqns_mhd_ideal::PUtoFlux(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void eqns_mhd_ideal::UtoFlux(
@@ -362,8 +355,29 @@ void eqns_mhd_ideal::UtoFlux(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
+
+void eqns_mhd_ideal::PtoFlux(
+      const pion_flt *p,
+      pion_flt *f,
+      const double gamma
+      )
+{
+   pion_flt u[eq_nvar];
+   eqns_mhd_ideal::PtoU(p, u, gamma);
+   eqns_mhd_ideal::PUtoFlux(p,u,f);
+   return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 void eqns_mhd_ideal::rotate(
@@ -646,8 +660,12 @@ void eqns_mhd_mixedGLM::GLMsource(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
+
 
 
 

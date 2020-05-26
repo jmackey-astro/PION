@@ -103,6 +103,9 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       )
 {
   if (level==0) return 0;
+#ifdef C2F_FULLSTEP
+  if ((step+2)%2 !=0) return 0;
+#endif
 #ifdef TEST_C2F
   cout <<"C2F: updating boundary data from coarse grid to level ";
   cout <<level<<"\n";
@@ -486,13 +489,6 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
   // of the fine cells.
   // These positions are half-way to the coarse cell-corners.
   //
-  //if (par.eqntype == EQGLM) {
-  //  f_psi[0] = f1->P[SI];
-  //  f_psi[1] = f2->P[SI];
-  //  f_psi[2] = f3->P[SI];
-  //  f_psi[3] = f4->P[SI];
-  //}
-
   for (int v=0;v<par.nvar;v++) sx[v] *= dxo2; // centres of fine cell
   for (int v=0;v<par.nvar;v++) sy[v] *= dxo2;
   for (int v=0;v<par.nvar;v++) sz[v] *= dxo2;
@@ -507,8 +503,6 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
   for (int v=0;v<par.nvar;v++) fU[7][v] = P[v] +sx[v] +sy[v] +sz[v];
 
   for (int i=0;i<8;i++) for (int v=0;v<par.nvar;v++) fch[i]->P[v] = fU[i][v];
-  for (int i=0;i<8;i++) for (int v=0;v<par.nvar;v++) fch[i]->Ph[v] = fch[i]->P[v];
-
 
   // Need to check mass/momentum/energy conservation between
   // coarse and fine levels.  Re-use fU[][] array for this
@@ -550,13 +544,6 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
   }
 
   for (int i=0;i<8;i++) for (int v=0;v<par.nvar;v++) fch[i]->dU[v]=0.0;
-
-  //if (par.eqntype == EQGLM) {
-  //  f1->P[SI] = f1->Ph[SI] = P[SI]; // f_psi[0];
-  //  f2->P[SI] = f2->Ph[SI] = P[SI]; //0.0; // f_psi[1];
-  //  f3->P[SI] = f3->Ph[SI] = P[SI]; //0.0; // f_psi[2];
-  //  f4->P[SI] = f4->Ph[SI] = P[SI]; //0.0; // f_psi[3];
-  //}
 
 
 #ifdef DEBUG_NG
@@ -663,13 +650,6 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   for (int v=0;v<par.nvar;v++) f3->P[v] = f3->Ph[v];
   solver->UtoP(f4U,f4->Ph, par.EP.MinTemperature, par.gamma);
   for (int v=0;v<par.nvar;v++) f4->P[v] = f4->Ph[v];
-
-  // HACK: get rid of slopes:
-  //for (int v=0;v<par.nvar;v++) f1->P[v] = f1->Ph[v] = P[v];
-  //for (int v=0;v<par.nvar;v++) f2->P[v] = f2->Ph[v] = P[v];
-  //for (int v=0;v<par.nvar;v++) f3->P[v] = f3->Ph[v] = P[v];
-  //for (int v=0;v<par.nvar;v++) f4->P[v] = f4->Ph[v] = P[v];
-  // HACK 
 
   for (int v=0;v<par.nvar;v++) f1->dU[v] = 0.0;
   for (int v=0;v<par.nvar;v++) f2->dU[v] = 0.0;

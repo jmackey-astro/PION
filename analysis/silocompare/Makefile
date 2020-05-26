@@ -42,7 +42,7 @@ OPT += -DSILO
 #MAKE_UNAME=aibn129
 #MAKE_UNAME=epona
 #MAKE_UNAME=stokes
-MAKE_UNAME=debian10
+#MAKE_UNAME=debian10
 
 # All machines and options need readline and maths
 #LDFLAGS = -lreadline

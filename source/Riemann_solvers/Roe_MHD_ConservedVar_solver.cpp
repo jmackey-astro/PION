@@ -157,7 +157,7 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_onesided(
 #endif
     for (int v=0;v<eq_nvar;v++)
       out_pstar[v] = 0.5*(left[v]+right[v]);
-    PtoFlux(left,out_flux,eq_gamma);
+    eqns_mhd_ideal::PtoFlux(left,out_flux,eq_gamma);
     return 0;
   }
 
@@ -169,8 +169,8 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_onesided(
   rep.printVec("right",right,8);
 #endif
 
-  PtoU(left ,Roe_UL,eq_gamma);
-  PtoU(right,Roe_UR,eq_gamma);
+  eqns_mhd_ideal::PtoU(left ,Roe_UL,eq_gamma);
+  eqns_mhd_ideal::PtoU(right,Roe_UR,eq_gamma);
 
   err += Roe_get_average_state(left,right);
 
@@ -237,8 +237,8 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_symmetric(
 
   eq_gamma=g;
 
-  PtoU(left ,Roe_UL,eq_gamma);
-  PtoU(right,Roe_UR,eq_gamma);
+  eqns_mhd_ideal::PtoU(left ,Roe_UL,eq_gamma);
+  eqns_mhd_ideal::PtoU(right,Roe_UR,eq_gamma);
   err += Roe_get_average_state(left,right);
   err += Roe_get_difference_states(left,right);
   err += Roe_get_wavespeeds();
@@ -420,8 +420,8 @@ int Riemann_Roe_MHD_CV::Roe_get_difference_states(
       )
 {
   // double Ul[eq_nvar], Ur[eq_nvar];
-  // PtoU(left,  Ul, eq_gamma);
-  // PtoU(right, Ur, eq_gamma);
+  // eqns_mhd_ideal::PtoU(left,  Ul, eq_gamma);
+  // eqns_mhd_ideal::PtoU(right, Ur, eq_gamma);
   //
   // The conserved vectors UL,UR should already be set.
   //
@@ -854,7 +854,7 @@ int Riemann_Roe_MHD_CV::Roe_get_flux_onesided(
   // Conversely if the positive e-value is negative, the solution is the right state.
   //
   if      (Roe_evalues[FN] >= 0.0) {  // if(u_av-c_av>0) pstar = left state
-    PUtoFlux(left,Roe_UL,out_flux);
+    eqns_mhd_ideal::PUtoFlux(left,Roe_UL,out_flux);
 #ifdef MHD_ROE_USE_USTAR
     for (int v=0;v<eq_nvar;v++)
       out_pstar[v] = left[v];
@@ -863,7 +863,7 @@ int Riemann_Roe_MHD_CV::Roe_get_flux_onesided(
   }
 
   else if (Roe_evalues[FP] <=0.) {  //else if(u_av+c_av<=0) pstar = right state
-    PUtoFlux(right,Roe_UR,out_flux);
+    eqns_mhd_ideal::PUtoFlux(right,Roe_UR,out_flux);
 #ifdef MHD_ROE_USE_USTAR
     for (int v=0;v<eq_nvar;v++)
       out_pstar[v] = right[v];
@@ -876,9 +876,9 @@ int Riemann_Roe_MHD_CV::Roe_get_flux_onesided(
     // First get the left state flux:
     // 
     //rep.printVec("left  flux:",out_flux,8);
-    PUtoFlux(left, Roe_UL, out_flux);
+    eqns_mhd_ideal::PUtoFlux(left, Roe_UL, out_flux);
 #ifdef MHD_ROE_USE_USTAR
-    //PtoU(left,Ustar,eq_gamma);
+    //eqns_mhd_ideal::PtoU(left,Ustar,eq_gamma);
     for (int v=0;v<eq_nvar;v++)
       Ustar[v] = Roe_UL[v];
 #endif // MHD_ROE_USE_USTAR
@@ -932,9 +932,9 @@ int Riemann_Roe_MHD_CV::Roe_get_flux_onesided(
     // by going back from the right to the left:
     //
     pion_flt ftemp[eq_nvar];
-    PUtoFlux(right, Roe_UR, ftemp);
+    eqns_mhd_ideal::PUtoFlux(right, Roe_UR, ftemp);
 #ifdef MHD_ROE_USE_USTAR
-    //PtoU(right,UstarR,eq_gamma);
+    //eqns_mhd_ideal::PtoU(right,UstarR,eq_gamma);
     for (int v=0;v<eq_nvar;v++)
       UstarR[v] = Roe_UR[v];
 #endif // MHD_ROE_USE_USTAR
@@ -1018,7 +1018,7 @@ int Riemann_Roe_MHD_CV::Roe_get_flux_onesided(
   //
   // Finally assign Pstar with the values from Ustar[]:
   //
-  int err = UtoP(Ustar,out_pstar,eq_gamma);
+  int err = eqns_mhd_ideal::UtoP(Ustar,out_pstar,eq_gamma);
   //
   // Check for Errors!
   //
@@ -1093,8 +1093,8 @@ int Riemann_Roe_MHD_CV::calculate_symmetric_flux(
   //
   // First add the left and right state fluxes to out_flux[]:
   //
-  PUtoFlux(left, Roe_UL, out_flux);
-  PUtoFlux(right,Roe_UR, Roe_UL);
+  eqns_mhd_ideal::PUtoFlux(left, Roe_UL, out_flux);
+  eqns_mhd_ideal::PUtoFlux(right,Roe_UR, Roe_UL);
   for (int v=0;v<8;v++) 
     out_flux[v] += Roe_UL[v];
 

@@ -492,6 +492,10 @@ int sim_control_pllel::calculate_timestep(
   double t_dyn=0.0, t_mp=0.0;
   t_dyn = calc_dynamics_dt(par,grid,sp_solver);
   t_mp  = calc_microphysics_dt(par,grid,l);
+
+#ifdef TESTING
+  cout <<"calc_time: local t_dyn= "<<t_dyn;
+#endif 
   
   //
   // Get global min over all grids on this level.
@@ -499,8 +503,8 @@ int sim_control_pllel::calculate_timestep(
   t_dyn = COMM->global_operation_double("MIN", t_dyn);
   t_mp  = COMM->global_operation_double("MIN", t_mp);
 
-
 #ifdef TESTING
+  cout <<" , global t_dyn= "<<t_dyn<<endl;
   // Write step-limiting info every tenth timestep.
   if (t_mp<t_dyn && (par.timestep%10)==0)
     cout <<"Limiting timestep by MP: mp_t="<<t_mp<<"\thydro_t="<<t_dyn<<"\n";

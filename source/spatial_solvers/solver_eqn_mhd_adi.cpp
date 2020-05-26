@@ -480,6 +480,12 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
   // This can give negative pressures, so check for that and fix it
   // if needed.
   for (int v=0;v<eq_nvar;v++) u1[v] += dU[v];
+
+  if (u1[RHO]<0.0) {
+    cout <<"celladvancetime, negative density. rho="<<u1[RHO]<<"\n";
+    CI.print_cell(c);
+  }
+
   if(UtoP(u1,Pf,MinTemp, eq_gamma)!=0) {
     cout <<"(FV_solver_mhd_ideal_adi::CellAdvanceTime) UtoP ";
     cout <<"complained (maybe about negative pressure...) fixing\n";

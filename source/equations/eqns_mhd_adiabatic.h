@@ -63,6 +63,15 @@ class eqns_mhd_ideal : virtual public eqns_base {
       pion_flt *,       ///< Pointer to flux variable state vector.
       const double   ///< Gas constant gamma.
       );
+  
+  ///  convert direct from primitive variables to flux.
+  ///Creates conserved variable array as an intermediate step, 
+  ///and then calls PUtoFlux(). 
+  virtual void PtoFlux(
+      const pion_flt *, ///< pointer to Primitive variables.
+      pion_flt *,       ///< Pointer to flux variable.
+      const double    ///< Gas constant gamma.
+      );
 
   ///
   /// Hydro sound speed sqrt(gamma*P_g/rho)

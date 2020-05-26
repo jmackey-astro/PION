@@ -217,8 +217,8 @@ int setup_NG_grid::setup_grid(
   //
   // Nbc is the depth of the boundary layer around each grid.
   //
-  if      (SimPM.spOOA==OA2) SimPM.Nbc = 4;
-  else if (SimPM.spOOA==OA1) SimPM.Nbc = 2;
+  if      (SimPM.spOOA==OA2) SimPM.Nbc = 6;
+  else if (SimPM.spOOA==OA1) SimPM.Nbc = 4;
   else rep.error("unhandles spatial order of accuracy",SimPM.spOOA);
   
   //
@@ -351,7 +351,7 @@ void setup_NG_grid::set_leaf_cells(
         }
         if (notleaf) c->isleaf=false;
       }
-      if (notleaf) c->timestep=false;
+      if (!c->isleaf) c->timestep=false;
 
     } while ( (c=grid[l]->NextPt_All(c))!=0);
   }

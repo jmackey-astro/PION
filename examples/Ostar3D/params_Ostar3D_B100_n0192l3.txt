@@ -1,6 +1,6 @@
 # parameter file for Initial Condition Generation.
 # Lines beginning with "#" are ignored.
-# Format of a line is "<parameter>  <value>"
+# Format of a line is "<parameter>  <value>"
 # 
 
 ########################
@@ -22,7 +22,7 @@ EtaViscosity 0.15
 ########################
 ntracer 1
 chem_code none
-Tracer000 colour
+Tracer000 WIND
 InitIons LEAVE
 
 EP_dynamics     1
@@ -33,7 +33,7 @@ EP_chemistry    0
 EP_coll_ionisation   0
 EP_rad_recombination 0
 EP_update_erg 1
-EP_MP_timestep_limit 1 
+EP_MP_timestep_limit 0 
 EP_Min_Temperature 5.0e3
 EP_Max_Temperature 1.0e10
 EP_Hydrogen_MassFrac 0.714  # n(He)/n(H)=1/10
@@ -49,19 +49,19 @@ NGridY  192
 NGridZ  192
 
 # Boundaries of Simulation box:
-Xmin  -1.28e18
-Ymin  -1.28e18
-Zmin  -1.28e18
-Xmax   1.28e18
-Ymax   1.28e18
-Zmax   1.28e18
+Xmin -19.432e18
+Ymin -12.288e18
+Zmin -12.288e18
+Xmax   5.144e18
+Ymax  12.288e18
+Zmax  12.288e18
 
 # Nested grid
 grid_nlevels 3
 grid_aspect_ratio_XX 1
 grid_aspect_ratio_YY 1
 grid_aspect_ratio_ZZ 1
-NG_centre_XX 0.0e18
+NG_centre_XX 5.144e18
 NG_centre_YY 0.0e18
 NG_centre_ZZ 0.0e18
 NG_refine_XX 1
@@ -72,13 +72,13 @@ NG_refine_ZZ 1
 
 ########################
 StartTime  0.000e11
-FinishTime 7.0e10
+FinishTime 1e13
 
 OutputPath ./
 OutputFile Ostar3D_B100_n0192l3
 OutputFileType silo
 OutputCriterion 0
-OutputFrequency 384
+OutputFrequency 512
 OPfreqTime 1.578e10
 ########################
 
@@ -111,9 +111,9 @@ UNIFORM_core_centre_XX 1.1e200
 UNIFORM_core_centre_YY 1.1e200
 UNIFORM_core_centre_ZZ 1.1e200
 
-UNIFORM_ambRO 2.2e-24
-UNIFORM_ambPG 2.2e-12
-UNIFORM_ambVX -20.0e5
+UNIFORM_ambRO 2.0e-24
+UNIFORM_ambPG 2.9e-12
+UNIFORM_ambVX -30.0e5
 UNIFORM_ambVY 0.0
 UNIFORM_ambVZ 0.0
 UNIFORM_ambBX 4.0e-6
@@ -144,7 +144,7 @@ WIND_NSRC 1
 WIND_0_pos0  0.0e18
 WIND_0_pos1  0.0e18
 WIND_0_pos2  0.0e18
-WIND_0_radius 1.0e17  # 20 cells for 128^2 and 3 levels
+WIND_0_radius 0.64e18  # 20 cells for 192^3 and 3 levels
 WIND_0_type   0
 WIND_0_mdot   1.0e-7     # 10^(-7) solar masses per year mass-loss rate
 WIND_0_vinf   1500.0     # 1500 km/s wind terminal velocity
