@@ -121,7 +121,7 @@ if [ ! -z "$DDD" ]; then
     export CC=gcc
     export PION_OPTIMISE=HIGH
     echo "*** COMPILING WITH OS-X: host ${HOST}: libs=${SL}: COMPILERS ARE $CC $CXX"
-    echo "Make sure you installed gsl, sundials, cfitsio with Homebrew"
+    echo "Make sure you installed gsl, sundials, cfitsio with Homebrew, and SILO in ../extra_libraries/"
     MAKE_UNAME=OSX-HB
   else
     echo "ERROR: Need Macports or Homebrew installed on OSX"
