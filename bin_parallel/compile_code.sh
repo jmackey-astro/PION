@@ -48,48 +48,61 @@ export CXX=mpicxx
 #################################
 ## First try debian-based linux #
 #################################
-id=`lsb_release -s -i`
-ver=`lsb_release -s -r`
-code=`lsb_release -s -c`
-nc=`nproc --all`
-
-if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
-  echo "Detected Ubuntu 18.04: Note system Silo library has a bug, you must install yourself using the script in PION/extra_libraries"
-  MAKE_UNAME=ubuntu18
-  export CXX=mpicxx
-  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE5"
-  export PION_OPTIMISE=HIGH
-  NCORES=$nc
-  #NCORES=1
-elif [  "$id" == "Ubuntu" ] && [ "$ver" == "16.04" ]; then
-  echo "Detected Ubuntu 16.04 (xenial): compiling extra libraries"
-  MAKE_UNAME=ubuntu16
-  export CXX=mpicxx
-  export CC=mpicc
-  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE5"
-  export PION_OPTIMISE=HIGH
-  NCORES=$nc
-elif [ "$id" == "Debian" ] && [ "$code" == "stretch" ]; then
-  echo "Detected Debian 9 (stretch), using system libs for SILO, FITS, GSL, SUNDIALS"
-  MAKE_UNAME=debian9
-  export CXX=mpicxx
-  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE2"
-  export PION_OPTIMISE=HIGH
-  #export PION_OPTIMISE=LOW
-  #NCORES=1
-  NCORES=$nc
-elif [ "$id" == "Debian" ] && [ "$code" == "buster" ]; then
-  echo "Detected Debian 10 (buster), using system libs for SILO, FITS, GSL, SUNDIALS"
-  MAKE_UNAME=debian10
-  export CXX=mpicxx
-  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE3"
-  export PION_OPTIMISE=HIGH
-  #export PION_OPTIMISE=LOW
-  #NCORES=1
-  NCORES=$nc
+LINUX=""
+id=""
+ver=""
+code=""
+nc=""
+if ! [ -x "$(command -v lsb_release)" ]; then
+  LINUX="NO"
 else
-  echo "Failed to find a known version of Linux: checking for other OS types."
-  MAKE_UNAME=standard
+  id=`lsb_release -s -i`
+  ver=`lsb_release -s -r`
+  code=`lsb_release -s -c`
+  nc=`nproc --all`
+fi
+
+if [ $LINUX == "YES" ]; then
+
+  if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
+    echo "Detected Ubuntu 18.04: Note system Silo library has a bug, you must install yourself using the script in PION/extra_libraries"
+    MAKE_UNAME=ubuntu18
+    export CXX=mpicxx
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE5"
+    export PION_OPTIMISE=HIGH
+    NCORES=$nc
+    #NCORES=1
+  elif [  "$id" == "Ubuntu" ] && [ "$ver" == "16.04" ]; then
+    echo "Detected Ubuntu 16.04 (xenial): compiling extra libraries"
+    MAKE_UNAME=ubuntu16
+    export CXX=mpicxx
+    export CC=mpicc
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE5"
+    export PION_OPTIMISE=HIGH
+    NCORES=$nc
+  elif [ "$id" == "Debian" ] && [ "$code" == "stretch" ]; then
+    echo "Detected Debian 9 (stretch), using system libs for SILO, FITS, GSL, SUNDIALS"
+    MAKE_UNAME=debian9
+    export CXX=mpicxx
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE2"
+    export PION_OPTIMISE=HIGH
+    #export PION_OPTIMISE=LOW
+    #NCORES=1
+    NCORES=$nc
+  elif [ "$id" == "Debian" ] && [ "$code" == "buster" ]; then
+    echo "Detected Debian 10 (buster), using system libs for SILO, FITS, GSL, SUNDIALS"
+    MAKE_UNAME=debian10
+    export CXX=mpicxx
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE3"
+    export PION_OPTIMISE=HIGH
+    #export PION_OPTIMISE=LOW
+    #NCORES=1
+    NCORES=$nc
+  else
+    echo "Failed to find a known version of Linux: checking for other OS types."
+    MAKE_UNAME=standard
+  fi
+
 fi
 #################################
 
@@ -127,14 +140,33 @@ esac
 #################################
 DDD=`uname -a | grep "Darwin"`
 if [ ! -z "$DDD" ]; then
-  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE3"
-  export PION_OPTIMISE=HIGH
-  export CXX=mpicxx
-  export CC=mpicc
-  echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
-  MAKE_UNAME=OSX
+  if ! [ -x "$(command -v /opt/local/bin/port)" ]; then
+    SL="Homebrew"
+  else
+    SL="MacPorts"
+  fi
+  echo "detected support software ${SL} and assuming that is what you are using"
+  if [ "$SL" == "MacPorts" ]; then
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE3"
+    export PION_OPTIMISE=HIGH
+    export CXX=mpicxx
+    export CC=mpicc
+    echo "*** COMPILING WITH OS-X: host ${HOST}: libs=${SL}: COMPILERS ARE $CC $CXX"
+    echo "Make sure you installed silo, sundials, cfitsio with MacPorts"
+    MAKE_UNAME=OSX-MP
+  elif [ "$SL" == "Homebrew" ]; then
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE5"
+    export PION_OPTIMISE=HIGH
+    export CXX=mpicxx
+    export CC=mpicc
+    echo "*** COMPILING WITH OS-X: host ${HOST}: libs=${SL}: COMPILERS ARE $CC $CXX"
+    echo "Make sure you installed open-mpi, sundials, cfitsio with Homebrew"
+    MAKE_UNAME=OSX-HB
+  else
+    echo "ERROR: Need Macports or Homebrew installed on OSX"
+    exit
+  fi
   NCORES=`sysctl -n hw.ncpu`
-  path=`pwd`
 fi
 #################################
 

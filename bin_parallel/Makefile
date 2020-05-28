@@ -317,9 +317,9 @@ endif
 ##################### -- SuperMUC -- #################################
 
 ###########################################
-# Specific Options for OSX
+# Options for OSX - MACPORTS
 ###########################################
-ifeq ($(MAKE_UNAME), OSX)
+ifeq ($(MAKE_UNAME), OSX-MP)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
     #CXXFLAGS = -Wall -g -Wno-unused-function
@@ -327,21 +327,44 @@ ifeq ($(MAKE_UNAME), OSX)
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif
 
-  #MYLIB = $(CURDIR)/../extra_libraries
-  #INC  = -I${MYLIB}/include
   INC += -I/opt/local/include
   INC += -I${SRCDIR}
   LDFLAGS += -lm  
-  #LDFLAGS += -L${MYLIB}/lib
   LDFLAGS += -L/opt/local/lib
   LDFLAGS += -lcfitsio
   LDFLAGS += -lsiloh5 
   LDFLAGS += -lgsl
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
-  #LDFLAGS += -Wl,-no_compact_unwind
 
 endif
 #################### --- OS X Darwin --- #############################
+
+###########################################
+# Options for OSX
+###########################################
+ifeq ($(MAKE_UNAME), OSX-HB)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3 -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
+  else
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  endif
+
+  MYLIB = $(CURDIR)/../extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I/opt/local/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -lm  
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -L/opt/local/lib
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsilo 
+  LDFLAGS += -lgsl
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+
+endif
+#################### --- OS X Darwin --- #############################
+
 
 
 

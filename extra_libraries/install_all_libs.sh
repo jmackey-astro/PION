@@ -124,6 +124,11 @@ if [ ! -z "$DDD" ]; then
   MAKE_UNAME=osx
   NCORES=4
   SHARED=NO
+  COMPILE_SILO=yes
+  COMPILE_SUNDIALS=no
+  COMPILE_FITS=no
+  echo "Installing SILO library: SUNDIALS and CFITSIO can be installed via macports or homebrew"
+  echo "If you want to install SUNDIALS and CFITSIO then change lines 128 and 129 of this script"
 fi
 #################################
 

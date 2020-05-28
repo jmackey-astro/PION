@@ -101,8 +101,6 @@ ifeq ($(MAKE_UNAME), locallibs)
   LDFLAGS += -Wl,-rpath,${MYLIB}/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu/
   LDFLAGS += -lm
-  # All libraries are in this path:
-  # Libraries for fits, silo, cvode
   LDFLAGS += -lcfitsio
   #LDFLAGS += -lsiloh5
   LDFLAGS += -lsilo
@@ -215,9 +213,33 @@ endif
 
 
 ######################################################################
-####  OS X
+####  OS X with Macports and no self-installed libraries
 ######################################################################
-ifeq ($(MAKE_UNAME), OSX)
+ifeq ($(MAKE_UNAME), OSX-MP)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3
+  else
+    CXXFLAGS = -O0 -Wall -g
+    LDFLAGS = -lreadline
+  endif
+
+  INC = -I/opt/local/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -L/opt/local/lib
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl
+  LDFLAGS += -lm  
+  LDFLAGS += -Wl,-rpath,${MYLIB}/lib
+
+endif
+#######################  OSX-MP  #####################################
+
+######################################################################
+####  OS X with Homebrew libraries + locally compiled SILO
+######################################################################
+ifeq ($(MAKE_UNAME), OSX-HB)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
     #CXXFLAGS = -O0 -Wall -g
@@ -226,23 +248,21 @@ ifeq ($(MAKE_UNAME), OSX)
     LDFLAGS = -lreadline
   endif
 
-  #MYLIB = $(CURDIR)/../extra_libraries
-  #INC = -I${MYLIB}/include
+  MYLIB = $(CURDIR)/../extra_libraries
+  INC = -I${MYLIB}/include
   INC += -I/opt/local/include
   INC += -I${SRCDIR}
-  #LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -L${MYLIB}/lib
   LDFLAGS += -L/opt/local/lib
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += -lcfitsio
-  #LDFLAGS += -lsiloh5
   LDFLAGS += -lsilo
   LDFLAGS += -lgsl
   LDFLAGS += -lm  
   LDFLAGS += -Wl,-rpath,${MYLIB}/lib
 
 endif
-######################################################################
-######################################################################
+#######################  OSX-HB  #####################################
 
 
 
