@@ -56,13 +56,14 @@ nc=""
 if ! [ -x "$(command -v lsb_release)" ]; then
   LINUX="NO"
 else
+  LINUX="YES"
   id=`lsb_release -s -i`
   ver=`lsb_release -s -r`
   code=`lsb_release -s -c`
   nc=`nproc --all`
 fi
 
-if [ $LINUX == "YES" ]; then
+if [ "$LINUX" == "YES" ]; then
 
   if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
     echo "Detected Ubuntu 18.04: Note system Silo library has a bug, you must install yourself using the script in PION/extra_libraries"
