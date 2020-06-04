@@ -1,12 +1,12 @@
 #!/bin/bash
 
-../../icgen-ng params_DTE_NG_D2_TTI_n0128.txt silo
-mpirun -np  1 ../../pion-ng DTE_NG_D2_TTI_n0128_level00_0000.00000000.silo outfile=np01oa2 solver=8 cfl=0.4 AVtype=1 EtaVisc=0.15 &
-mpirun -np  2 ../../pion-ng DTE_NG_D2_TTI_n0128_level00_0000.00000000.silo outfile=np02oa2 solver=8 cfl=0.4 AVtype=1 EtaVisc=0.15 &
-mpirun -np  4 ../../pion-ng DTE_NG_D2_TTI_n0128_level00_0000.00000000.silo outfile=np04oa2 solver=8 cfl=0.4 AVtype=1 EtaVisc=0.15 &
-mpirun -np  8 ../../pion-ng DTE_NG_D2_TTI_n0128_level00_0000.00000000.silo outfile=np08oa2 solver=8 cfl=0.4 AVtype=1 EtaVisc=0.15 &
-mpirun -np 16 ../../pion-ng DTE_NG_D2_TTI_n0128_level00_0000.00000000.silo outfile=np16oa2 solver=8 cfl=0.4 AVtype=1 EtaVisc=0.15 &
-mpirun -np 32 ../../pion-ng DTE_NG_D2_TTI_n0128_level00_0000.00000000.silo outfile=np32oa2 solver=8 cfl=0.4 AVtype=1 EtaVisc=0.15 &
+../../icgen-ng params_DTE_NG_D2_TTI_n00128.txt silo
+mpirun -np  1 ../../pion-ng DTE_NG_D2_TTI_n00128_level00_0000.00000000.silo outfile=np01oa2 solver=8 cfl=0.4 AVtype=1 EtaVisc=0.15 redirect=log_np01oa2 &
+mpirun -np  2 ../../pion-ng DTE_NG_D2_TTI_n00128_level00_0000.00000000.silo outfile=np02oa2 solver=8 cfl=0.4 AVtype=1 EtaVisc=0.15 redirect=log_np02oa2 &
+mpirun -np  4 ../../pion-ng DTE_NG_D2_TTI_n00128_level00_0000.00000000.silo outfile=np04oa2 solver=8 cfl=0.4 AVtype=1 EtaVisc=0.15 redirect=log_np04oa2 &
+mpirun -np  8 ../../pion-ng DTE_NG_D2_TTI_n00128_level00_0000.00000000.silo outfile=np08oa2 solver=8 cfl=0.4 AVtype=1 EtaVisc=0.15 redirect=log_np08oa2 &
+mpirun -np 16 ../../pion-ng DTE_NG_D2_TTI_n00128_level00_0000.00000000.silo outfile=np16oa2 solver=8 cfl=0.4 AVtype=1 EtaVisc=0.15 redirect=log_np16oa2 &
+mpirun -np 32 ../../pion-ng DTE_NG_D2_TTI_n00128_level00_0000.00000000.silo outfile=np32oa2 solver=8 cfl=0.4 AVtype=1 EtaVisc=0.15 redirect=log_np32oa2 &
 wait
 exit
 
