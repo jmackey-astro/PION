@@ -72,8 +72,8 @@ NG_refine_ZZ 1
 
 ########################
 # Start time (either side of Mdot spike)
-StartTime  1.0
-FinishTime 3.9e10
+StartTime  5.0e10
+FinishTime 6.46e10
 
 OutputPath ./
 OutputFile EtaCar_LGM99_d2l3n256_xi043
