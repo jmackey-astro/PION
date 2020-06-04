@@ -44,8 +44,8 @@ EP_Metal_MassFrac  0.02
 
 ########################
 ## Grid Parameters
-NGridX  512
-NGridY  256
+NGridX  256
+NGridY  128
 NGridZ  128
 
 # Boundaries of Simulation box:
@@ -160,7 +160,7 @@ WIND_NSRC 1
 WIND_0_pos0  0.0e18
 WIND_0_pos1  0.0e18
 WIND_0_pos2  0.0e18
-WIND_0_radius 7.0e15  # cm (~20 cells wide)
+WIND_0_radius 13.2e15  # cm (~20 cells wide)
 WIND_0_type   2
 WIND_0_mdot   0.0  # not needed for evoling wind.
 WIND_0_vinf   0.0  # not needed for evoling wind.

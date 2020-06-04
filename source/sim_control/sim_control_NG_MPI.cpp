@@ -504,11 +504,11 @@ int sim_control_NG_MPI::Time_Int(
 #endif
     }
     if (first_step) {
-      // take a ~20x smaller timestep for the first timestep in case
+      // take a ~3x smaller timestep for the first timestep in case
       // a gentle start is needed.
       for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
         //cout <<"level "<<l<<", orig dt="<<SimPM.levels[l].dt;
-        SimPM.levels[l].dt *=0.05;
+        SimPM.levels[l].dt *=0.3;
       }
       first_step=false;
     }

@@ -315,6 +315,12 @@ double calc_timestep::calc_dynamics_dt(
   if (par.timestep==0 && JP.jetic!=0) {
     dt = std::min(dt, 0.1*par.CFL*grid->DX()/JP.jetstate[VX]);
   }
+  // if on first step and stellar winds are present, limit dt based
+  // on the wind speed (convert from km/s to cm/s)
+  if (par.timestep==0 && SWP.Nsources!=0) {
+    for (int v=0; v<SWP.Nsources; v++)
+      dt = std::min(dt, 0.1*par.CFL*grid->DX()/(SWP.params[v]->Vinf*1.0e5));
+  }
 
 
   if (dt <= 0.0)
