@@ -317,7 +317,7 @@ int stellar_wind::add_cell(
       cout <<"inf theta="<<wc->theta<<", opp1="<<opp1<<", adj1=";
       cout <<adj1<<", opp2="<<opp2<<", adj2="<<adj2<<", arg=";
       cout <<fabs(adj2/opp2)<<"\n";
-      rep.error("theta is not finite.",theta);
+      rep.error("theta is not finite.",wc->theta);
     }
     // DEBUG
   }
