@@ -254,6 +254,31 @@ ifeq ($(MAKE_UNAME), ubuntu16)
 endif
 ################### --- UBUNTU 16 ---######################
 
+######################################################################
+# Options for ManjaroLinux workstation with locally installed libraries.
+######################################################################
+ifeq ($(MAKE_UNAME), ubuntu16)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3 -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
+  else
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  endif
+
+  MYLIB = $(CURDIR)/../extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -Wl,-rpath,${MYLIB}/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lm
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsilo
+  LDFLAGS += -lgsl -lgslcblas
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+endif
+################### --- UBUNTU 16 ---######################
+
 ################### --- KAY at ICHEC.IE ---######################
 # Options for kay.ichec.ie
 ######################################################################

@@ -99,6 +99,16 @@ if [ "$LINUX" == "YES" ]; then
     #export PION_OPTIMISE=LOW
     #NCORES=1
     NCORES=$nc
+  elif [ "$id" == "ManjaroLinux" ]; then
+    echo "Detected ManjaroLinux, using local libs for SILO FITS SUNDIALS"
+    echo "Assuming using system libs for MPI and GSL"
+    MAKE_UNAME=ManjaroLinux
+    export CXX=mpicxx
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE5"
+    export PION_OPTIMISE=HIGH
+    #export PION_OPTIMISE=LOW
+    #NCORES=1
+    NCORES=$nc
   else
     echo "Failed to find a known version of Linux: checking for other OS types."
     MAKE_UNAME=standard

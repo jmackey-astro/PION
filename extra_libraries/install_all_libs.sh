@@ -57,12 +57,10 @@ elif [  "$id" == "Ubuntu" ] && [ "$ver" == "16.04" ]; then
   MAKE_UNAME=ubuntu16
   export CXX=g++
   export CC=gcc
+  export FC=gfortran
   export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
   export PION_OPTIMISE=HIGH
   NCORES=$nc
-  export CC=gcc
-  export CXX=g++
-  export FC=gfortran
   SHARED=YES
   HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
   COMPILE_SILO=yes
@@ -82,6 +80,22 @@ elif [ "$id" == "Debian" ] && [ "$code" == "buster" ]; then
   echo "run  apt install libcfitsio-bin libcfitsio-dev libsilo-dev libsilo-bin python-silo libsundials-dev openmpi-bin openmpi-common curl libhdf5-serial-dev git libgsl-dev"
   echo "Then cd to serial/parallel binary directory and run  bash compile_code.sh"
   exit
+
+elif [ "$id" == "ManjaroLinux" ]; then
+  echo "Detected ManjaroLinux, using local libs for SILO FITS SUNDIALS"
+  echo "Assuming using system libs for MPI and GSL"
+  MAKE_UNAME=ManjaroLinux
+  export CXX=g++
+  export CC=gcc
+  export FC=gfortran
+  export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
+  export PION_OPTIMISE=HIGH
+  NCORES=$nc
+  SHARED=YES
+  HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
+  COMPILE_SILO=yes
+  COMPILE_SUNDIALS=yes
+  COMPILE_FITS=yes
 
 else
   echo "Failed to find a known version of Linux: checking for other OS types."
