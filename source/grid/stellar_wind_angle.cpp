@@ -405,65 +405,65 @@ double stellar_wind_angle::fn_density_interp(
     )
 {
   omega = std::min(omega,0.999);
-    //
-    // Use tables to interpolate the value of delta
-    //
-    double delta_interp;
+  //
+  // Use tables to interpolate the value of delta
+  //
+  double delta_interp;
 
-    // Vector for delta interpolation vector sizes
-    vector<size_t> delta_vec_size (2);
-    delta_vec_size[0] = npts_omega;
-    delta_vec_size[1] = npts_Teff;
-    
-    // Vector for delta input (omega, Teff)
-    vector<double> delta_input (2);
-    delta_input[0] = omega;
-    delta_input[1] = Teff;
+  // Vector for delta interpolation vector sizes
+  vector<size_t> delta_vec_size (2);
+  delta_vec_size[0] = npts_omega;
+  delta_vec_size[1] = npts_Teff;
+  
+  // Vector for delta input (omega, Teff)
+  vector<double> delta_input (2);
+  delta_input[0] = omega;
+  delta_input[1] = Teff;
 
-   
-    delta_interp = root_find_bilinear_vec(omega_vec, Teff_vec, delta_vec, delta_vec_size, delta_input);
+ 
+  delta_interp = root_find_bilinear_vec(omega_vec, Teff_vec,
+                            delta_vec, delta_vec_size, delta_input);
 
-    //
-    // Use tables to interpolate the value of alpha
-    //
-    double alpha_interp;
+  // Use tables to interpolate the value of alpha
+  double alpha_interp;
 
-    // Vector for delta interpolation vector sizes
-    vector<size_t> alpha_vec_size (3);
-    alpha_vec_size[0] = npts_omega;
-    alpha_vec_size[1] = npts_theta;
-    alpha_vec_size[2] = npts_Teff;
-    
-    // Vector for delta input (omega, Teff)
-    vector<double> alpha_input (3);
-    alpha_input[0] = omega;
-    alpha_input[1] = theta;
-    alpha_input[2] = Teff;
-	
-	// Error occuring here:
-    alpha_interp = root_find_trilinear_vec(omega_vec, theta_vec, Teff_vec, alpha_vec, alpha_vec_size, alpha_input);
+  // Vector for delta interpolation vector sizes
+  vector<size_t> alpha_vec_size (3);
+  alpha_vec_size[0] = npts_omega;
+  alpha_vec_size[1] = npts_theta;
+  alpha_vec_size[2] = npts_Teff;
+  
+  // Vector for delta input (omega, Teff)
+  vector<double> alpha_input (3);
+  alpha_input[0] = omega;
+  alpha_input[1] = theta;
+  alpha_input[2] = Teff;
+      
+  alpha_interp = root_find_trilinear_vec(omega_vec, theta_vec,
+                  Teff_vec, alpha_vec, alpha_vec_size, alpha_input);
 
-    //
-    // Return interpolated density
-    //
-
-    double result = (mdot * alpha_interp * delta_interp * pow_fast(1.0 - omega*sin(theta), c_xi));
-    result /= (8.0 * pconst.pi() * pow_fast(radius, 2.0) * fn_v_inf(omega, v_esc, theta, Teff));
+  // Return interpolated density
+  double result = (mdot * alpha_interp * delta_interp *
+                          pow_fast(1.0 - omega*sin(theta), c_xi));
+  result /= (8.0 * pconst.pi() * pow_fast(radius, 2.0) *
+                          fn_v_inf(omega, v_esc, theta, Teff));
 
 #ifdef TESTING
-    if (!isfinite(result)) {
-      cout <<delta_interp <<"  "<< alpha_interp <<"  "<< result <<"  "<<fn_v_inf(omega, v_esc, theta, Teff)<< "  "<<omega<<"\n";
-      cout <<"  "<< mdot;
-      cout <<"  "<< alpha_interp;
-      cout <<"  "<< delta_interp;
-      cout <<"  "<< pow_fast(1.0 - omega*sin(theta), c_xi);
-      cout <<"  "<< pow_fast(radius, 2.0);
-      cout <<"  "<< fn_v_inf(omega, v_esc, theta, Teff);
-      cout <<"  "<< radius;
-      cout <<"  "<< "\n";
-    }
+  if (!isfinite(result)) {
+    cout <<delta_interp <<"  "<< alpha_interp <<"  "<< result;
+    cout <<"  "<<fn_v_inf(omega, v_esc, theta, Teff)<< "  ";
+    cout <<omega<<"\n";
+    cout <<"  "<< mdot;
+    cout <<"  "<< alpha_interp;
+    cout <<"  "<< delta_interp;
+    cout <<"  "<< pow_fast(1.0 - omega*sin(theta), c_xi);
+    cout <<"  "<< pow_fast(radius, 2.0);
+    cout <<"  "<< fn_v_inf(omega, v_esc, theta, Teff);
+    cout <<"  "<< radius;
+    cout <<"  "<< "\n";
+  }
 #endif
-    return result;
+  return result;
 }
 
 

@@ -148,7 +148,7 @@ RT_update___0    2  # 1=C2Ray update, 2=New update.
 RT_effect___0    3  # 1=UV heating, 2=mono-photoionisation, 3=multi-photoion
 RT_Tau_src__0    10  # 1=total column, 2=nH*(1-y_i), 3=nH*(y_i)
 RT_Tau_var__0    0  # opacity variably y_i (this is its index in tracers)
-RT_Nbins____1    1
+RT_Nbins____0    1
 RT_EVO_FILE_0    eta_car.wnd.txt
 
 
@@ -162,11 +162,11 @@ WIND_0_pos1  0.0e18
 WIND_0_pos2  0.0e18
 WIND_0_radius 9.7e15  # cm (~30 cells wide, agrees with LGM99)
 WIND_0_type   2
-WIND_0_mdot   0.0  # not needed for evoling wind.
-WIND_0_vinf   0.0  # not needed for evoling wind.
+WIND_0_mdot   0.0  # not needed for evolving wind.
+WIND_0_vinf   0.0  # not needed for evolving wind.
 WIND_0_vrot   0.0
-WIND_0_temp   0.0  # not needed for evoling wind.
-WIND_0_Rstr   0.0  # not needed for evoling wind.
+WIND_0_temp   0.0  # not needed for evolving wind.
+WIND_0_Rstr   0.0  # not needed for evolving wind.
 WIND_0_Bsrf   0.0
 WIND_0_TR0 0.0
 WIND_0_TR1 1.0

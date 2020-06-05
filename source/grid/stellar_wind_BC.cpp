@@ -122,6 +122,7 @@ stellar_wind::~stellar_wind()
 
 
 // Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
+// only works for all b when a>0
 double stellar_wind::pow_fast(
 	double a,
 	double b
@@ -309,8 +310,16 @@ int stellar_wind::add_cell(
     double adj1 = grid->difference_vertex2cell(WS->dpos, c, YY);
     // Opposite and adjacent in Y-Z plane
     double opp2 = grid->difference_vertex2cell(WS->dpos, c, ZZ);
-    double adj2 = sqrt(pow_fast(opp1, 2.0) + pow_fast(adj1, 2.0));
+    double adj2 = sqrt(opp1*opp1 + adj1*adj1);
     wc->theta = atan(fabs(adj2/opp2));
+    // DEBUG
+    if (!isfinite(wc->theta)) {
+      cout <<"inf theta="<<wc->theta<<", opp1="<<opp1<<", adj1=";
+      cout <<adj1<<", opp2="<<opp2<<", adj2="<<adj2<<", arg=";
+      cout <<fabs(adj2/opp2)<<"\n";
+      rep.error("theta is not finite.",theta);
+    }
+    // DEBUG
   }
 
   //

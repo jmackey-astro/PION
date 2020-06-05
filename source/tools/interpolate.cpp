@@ -412,46 +412,40 @@ double interpolate_arrays::root_find_trilinear_vec(
   z0 = z_vec[z_index - 1], z1 = z_vec[z_index];
   
   if (x_index <= 0 || x_index >= vec_size[0]) {
-    cout <<"x out of range: x_index="<<x_index<<", "<<vec_size[0]<<"\n";
+    cout <<"x out of range: x_index="<<x_index<<", "<<vec_size[0];
+    cout <<"\n";
     rep.printSTLVec<double>("xvec",x_vec);
     cout << "x="<<x<<"\n";
     rep.error("Bug",1);
   }
-  if (y_index <= 0 || y_index >= vec_size[1])
-    cout <<"y out of range: y_index="<<y_index<<", "<<vec_size[1]<<"\n";
-  if (z_index <= 0 || z_index >= vec_size[2])
-    cout <<"z out of range: z_index="<<z_index<<", "<<vec_size[2]<<"\n";
+  if (y_index <= 0 || y_index >= vec_size[1]) {
+    cout <<"y out of range: y_index="<<y_index<<", y="<<y<<", ";
+    cout <<vec_size[1]<<"\n";
+    rep.error("Bug",2);
+  }
+  if (z_index <= 0 || z_index >= vec_size[2]) {
+    cout <<"z out of range: z_index="<<z_index<<", "<<vec_size[2];
+    cout<<"\n";
+    rep.error("Bug",3);
+  }
 
-  //
-  // Calculate delta x, delta y and delta z terms for trilinear interpolation
-  //
-
+  // Calculate delta x, delta y and delta z terms for trilinear
+  // interpolation
   double dx = (x - x0)/(x1 - x0);
   double dy = (y - y0)/(y1 - y0);
   double dz = (z - z0)/(z1 - z0);
 
-  
-  //
   // Calculate f000, f001 etc. terms for coefficients
-  //
-  
   double f000 = f[x_index - 1][y_index - 1][z_index - 1]; // f(x0, y0, z0)
-  
   double f001 = f[x_index - 1][y_index - 1][z_index]; // f(x0, y0, z1)
   double f010 = f[x_index - 1][y_index][z_index - 1]; // f(x0, y1, z0)
   double f100 = f[x_index][y_index - 1][z_index - 1]; // f(x1, y0, z0)
-  
   double f110 = f[x_index][y_index][z_index - 1]; // f(x1, y1, z0)
   double f011 = f[x_index - 1][y_index][z_index]; // f(x0, y1, z1)
   double f101 = f[x_index][y_index - 1][z_index]; // f(x1, y0, z1)
-  
   double f111 = f[x_index][y_index][z_index]; // f(x1, y1, z1)
-  
-  
-  //
+
   // Calculate c coefficients for trilinear interpolation
-  //
-  
   double c0 = f000;
   double c1 = f100 - f000;
   double c2 = f010 - f000;
@@ -460,13 +454,12 @@ double interpolate_arrays::root_find_trilinear_vec(
   double c5 = f011 - f001 - f010 + f000;
   double c6 = f101 - f001 - f100 + f000;
   double c7 = f111 - f011 - f101 - f110 + f100 + f001 + f010 - f000;
-  
-  
-  //
+
   // Return f(x,y,z)
-  //
-  
-  return c0 + c1*dx + c2*dy + c3*dz + c4*dx*dy + c5*dy*dz + c6*dz*dx + c7*dx*dy*dz;
+  return c0 +
+         c1*dx + c2*dy + c3*dz +
+         c4*dx*dy + c5*dy*dz + c6*dz*dx +
+         c7*dx*dy*dz;
 }
 
 
