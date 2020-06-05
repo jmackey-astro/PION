@@ -181,7 +181,7 @@ WIND_0_updatefreq 1.0   # in (seconds)
 WIND_0_enhance_mdot 0.0
 WIND_0_xi         -0.43
 
-NJET 0
+N_JET 0
 
 # Reference Vector
 refvec0 1.0e-22  # ~10 particles /cc
