@@ -278,7 +278,7 @@ ifeq ($(MAKE_UNAME), ManjaroLinux)
   LDFLAGS += -lgsl -lgslcblas
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
 endif
-################### --- UBUNTU 16 ---######################
+################### --- ManjaroLinux ---######################
 
 ################### --- KAY at ICHEC.IE ---######################
 # Options for kay.ichec.ie

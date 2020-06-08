@@ -98,8 +98,8 @@ elif [ "$id" == "ManjaroLinux" ]; then
   HDF5=NO
   HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
   COMPILE_SILO=yes
-  COMPILE_SUNDIALS=yes
-  COMPILE_FITS=yes
+  COMPILE_SUNDIALS=no
+  COMPILE_FITS=no
 
 else
   echo "Failed to find a known version of Linux: checking for other OS types."
