@@ -266,7 +266,8 @@ ifeq ($(MAKE_UNAME), ManjaroLinux)
   endif
 
   MYLIB = $(CURDIR)/../extra_libraries
-  INC  = -I${MYLIB}/include
+  INC  = -I/usr/include
+  INC += -I${MYLIB}/include
   INC += -I${SRCDIR}
   LDFLAGS += -L${MYLIB}/lib
   LDFLAGS += -Wl,-rpath,${MYLIB}/lib
