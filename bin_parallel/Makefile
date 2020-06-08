@@ -257,7 +257,7 @@ endif
 ######################################################################
 # Options for ManjaroLinux workstation with locally installed libraries.
 ######################################################################
-ifeq ($(MAKE_UNAME), ubuntu16)
+ifeq ($(MAKE_UNAME), ManjaroLinux)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
     #CXXFLAGS = -Wall -g -Wno-unused-function

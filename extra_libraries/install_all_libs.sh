@@ -19,6 +19,7 @@ export CC=gcc
 export CXX=g++
 export FC=gfortran
 SHARED=YES
+HDF5=YES
 HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
 
 COMPILE_SILO=yes
@@ -47,6 +48,7 @@ if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
   export CXX=g++
   export FC=gfortran
   SHARED=YES
+  HDF5=YES
   HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
   COMPILE_SILO=yes
   COMPILE_SUNDIALS=yes
@@ -62,6 +64,7 @@ elif [  "$id" == "Ubuntu" ] && [ "$ver" == "16.04" ]; then
   export PION_OPTIMISE=HIGH
   NCORES=$nc
   SHARED=YES
+  HDF5=YES
   HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
   COMPILE_SILO=yes
   COMPILE_SUNDIALS=yes
@@ -92,6 +95,7 @@ elif [ "$id" == "ManjaroLinux" ]; then
   export PION_OPTIMISE=HIGH
   NCORES=$nc
   SHARED=YES
+  HDF5=NO
   HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
   COMPILE_SILO=yes
   COMPILE_SUNDIALS=yes
@@ -214,6 +218,15 @@ then
    --disable-silex \
    --disable-shared \
    --disable-pythonmodule
+  elif [ "$MAKE_UNAME" == "ManjaroLinux" ]
+  then
+    ./configure --prefix=${BASE_PATH} \
+   --disable-browser \
+   --disable-fortran \
+   --disable-silex \
+   --disable-shared \
+   --enable-pythonmodule \
+   --without-hdf5
   elif [ "$SHARED" == "NO" ]
   then
     echo " ****** NOT COMPILING SHARED LIBRARIES ****** "
