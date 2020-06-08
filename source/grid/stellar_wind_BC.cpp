@@ -554,11 +554,8 @@ void stellar_wind::set_wind_cell_reference_state(
   if (eqntype==EQGLM) {
     wc->p[SI] = 0.0;
   }
-    
-  // update tracers: should be set already.
-  for (int v=0;v<ntracer;v++)
-    wc->p[ftr+v] = WS->tracers[v];
-
+  
+  // set H+ tracer value based on stellar temperature.
   if (WS->Hplus>=0) {
     //cout <<"WS->Hplus = "<<WS->Hplus;
     //cout <<" itr = "<<WS->iHplus<<endl;
@@ -566,6 +563,10 @@ void stellar_wind::set_wind_cell_reference_state(
     else if (WS->Tw > 1.5e4) WS->tracers[WS->iHplus] = 1.0;
     else    WS->tracers[WS->iHplus] = 1.0e-10 + (WS->Tw-1.0e4)*(1.0-1.0e-10)/0.5e4;
   }
+  // update tracers: should be set already.
+  for (int v=0;v<ntracer;v++)
+    wc->p[ftr+v] = WS->tracers[v];
+
 
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE

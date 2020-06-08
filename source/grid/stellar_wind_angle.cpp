@@ -608,37 +608,52 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   // TODO: Add axi-symmetric BC so that VZ,BZ not reflected at 
   //       symmetry axis.  Otherwise 2D with rotation won't work.
   if (eqntype==EQMHD || eqntype==EQGLM) {
+    //double t=0.0;
+    double B_s = WS->Bstar/sqrt(4.0*M_PI); // code units for B_surf
+    double D_s = WS->Rstar/wc->dist;     // 1/d in stellar radii
+    double D_2 = D_s*D_s;                // 1/d^2 in stellar radii
+    // this multiplies the toroidal component:
+    double beta_B_sint = (WS->v_rot /  WS->Vinf) * B_s * D_s;
+
     switch (ndim) {
     case 1:
       rep.error("1D spherical but MHD?",ndim);
       break;
     case 2:
       // split monopole
-      wc->p[BX] = (WS->Bstar/sqrt(4.0*M_PI)) * 
-              pow(WS->Rstar/wc->dist,2) * fabs(x)/wc->dist;
-      wc->p[BY] = (WS->Bstar/sqrt(4.0*M_PI)) *
-              pow(WS->Rstar/wc->dist,2) / wc->dist;
+      wc->p[BX] = B_s * D_2 * fabs(x)/wc->dist;
+      wc->p[BY] = B_s * D_2 / wc->dist;
       wc->p[BY] = (x>0.0) ? y * wc->p[BY] : -y * wc->p[BY];
-      wc->p[BZ] = 0.0;
+      // toroidal component
+      beta_B_sint = beta_B_sint * y / wc->dist;
+      wc->p[BZ] = (x>0.0) ? -beta_B_sint : beta_B_sint;
       break;
 
     case 3:
       // split monopole along z-axis, parallel to J
-      wc->p[BX] = (WS->Bstar/sqrt(4.0*M_PI)) *
-              pow(WS->Rstar/wc->dist,2) /wc->dist;
+      wc->p[BX] = B_s * D_2 / wc->dist;
       wc->p[BX] = (z>0.0) ? x * wc->p[BX] : -x * wc->p[BX];
 
-      wc->p[BY] = (WS->Bstar/sqrt(4.0*M_PI)) *
-              pow(WS->Rstar/wc->dist,2) / wc->dist;
+      wc->p[BY] = B_s * D_2 / wc->dist;
       wc->p[BY] = (z>0.0) ? y * wc->p[BY] : -y * wc->p[BY];
 
-      wc->p[BZ] = (WS->Bstar/sqrt(4.0*M_PI)) *
-              pow(WS->Rstar/wc->dist,2) * fabs(z) / wc->dist;
+      wc->p[BZ] = B_s * D_2 * fabs(z) / wc->dist;
 
       // toroidal component in x-y plane from rotation, such that
-      // v is parallel to B
-      wc->p[BX] *= (1.0 + xf);
-      wc->p[BY] *= (1.0 + yf);
+      // we have a Parker spiral, inward winding for z<0 and 
+      // outwards for z>0.
+      beta_B_sint *= sqrt(x*x+y*y)/wc->dist;
+      beta_B_sint = (z>0.0) ? -beta_B_sint : beta_B_sint;
+
+      // modulate strength near the equator by linearly reducing 
+      // torodial component for |theta|<1 degree from equator
+      // See Pogorelov et al (2006,ApJ,644,1299).  This is for
+      // testing the code.
+      //t = fabs(z)/wc->dist * 180.0 / M_PI; // angle in degrees.
+      //if (t < 2.0) beta_B_sint *= 0.5*t;
+
+      wc->p[BX] += - beta_B_sint * y / wc->dist;
+      wc->p[BY] +=   beta_B_sint * x / wc->dist;
       break;
 
     default:
@@ -650,23 +665,22 @@ void stellar_wind_angle::set_wind_cell_reference_state(
     wc->p[SI] = 0.0;
   }
   
+  //
+  // Set the H+ ion fraction so that it goes from y=1 at T>tp to
+  // y=1.0e-7 at T<tm, with linear interpolation.  //
+  double tm=1.0e4, tp=1.5e4;
+  if (WS->Hplus >= 0) {
+    if      (WS->Tw > tp)
+      WS->tracers[WS->iHplus] = 1.0;
+    else if (WS->Tw < tm)
+      WS->tracers[WS->iHplus] = 1.0e-10;
+    else
+      WS->tracers[WS->iHplus] = 1.0e-10 + 
+                                (WS->Tw-tm)*(1.0-1.0e-10)/(tp-tm);
+  }
   // update tracers
   for (int v=0;v<ntracer;v++)
     wc->p[ftr+v] = WS->tracers[v];
-  //
-  // Set the H+ ion fraction so that it goes from y=1 at T>tp to
-  // y=1.0e-7 at T<tm, with linear interpolation.  THIS IS A CRUDE
-  // APPROXIMATION!
-  //
-  double tm=0.7e4, tp=1.0e4;
-  if (WS->Hplus >= 0) {
-    if      (WS->Tw > tp)
-      wc->p[WS->Hplus] = 1.0;
-    else if (WS->Tw < tm)
-      wc->p[WS->Hplus] = 1.0e-7;
-    else
-      wc->p[WS->Hplus] = std::max((WS->Tw-tm)/(tp-tm),1.0e-7);
-  }
 
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
