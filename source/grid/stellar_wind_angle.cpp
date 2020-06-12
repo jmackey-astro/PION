@@ -526,18 +526,12 @@ void stellar_wind_angle::set_wind_cell_reference_state(
                         1.0-eos_gamma);
   wc->p[PG] *= pow_fast(wc->p[RO], eos_gamma);
 
-
-  //
-  // VELOCITIES: These should be cell-average values, which are
-  // the values at the centre-of-volume, so we call the geometry-aware
-  // grid functions.
-  //
   // calculate terminal wind velocity
   double Vinf = fn_v_inf(std::min(0.9999,WS->v_rot/WS->vcrit),
                          WS->v_esc, wc->theta, WS->Tw);
 
   cell *c = wc->c;
-  double x,y,z,xf,yf; //,nr;
+  double x,y,z,xf,yf;
   switch (ndim) {
   case 1:
     x = grid->difference_vertex2cell(WS->dpos,c,XX);
@@ -592,7 +586,6 @@ void stellar_wind_angle::set_wind_cell_reference_state(
     wc->p[VY] += yf;
     xf /= Vinf * x / wc->dist; // fraction of x-vel in non-radial dir.
     yf /= Vinf * y / wc->dist;
-    //nr = WS->v_rot * WS->Rstar / (wc->dist * Vinf);
     break;
 
   default:
@@ -608,12 +601,11 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   // TODO: Add axi-symmetric BC so that VZ,BZ not reflected at 
   //       symmetry axis.  Otherwise 2D with rotation won't work.
   if (eqntype==EQMHD || eqntype==EQGLM) {
-    //double t=0.0;
     double B_s = WS->Bstar/sqrt(4.0*M_PI); // code units for B_surf
     double D_s = WS->Rstar/wc->dist;     // 1/d in stellar radii
     double D_2 = D_s*D_s;                // 1/d^2 in stellar radii
     // this multiplies the toroidal component:
-    double beta_B_sint = (WS->v_rot /  WS->Vinf) * B_s * D_s;
+    double beta_B_sint = (WS->v_rot /  Vinf) * B_s * D_s;
 
     switch (ndim) {
     case 1:
@@ -645,12 +637,14 @@ void stellar_wind_angle::set_wind_cell_reference_state(
       beta_B_sint *= sqrt(x*x+y*y)/wc->dist;
       beta_B_sint = (z>0.0) ? -beta_B_sint : beta_B_sint;
 
+      // TESTING
       // modulate strength near the equator by linearly reducing 
       // torodial component for |theta|<1 degree from equator
       // See Pogorelov et al (2006,ApJ,644,1299).  This is for
       // testing the code.
       //t = fabs(z)/wc->dist * 180.0 / M_PI; // angle in degrees.
       //if (t < 2.0) beta_B_sint *= 0.5*t;
+      // TESTING
 
       wc->p[BX] += - beta_B_sint * y / wc->dist;
       wc->p[BY] +=   beta_B_sint * x / wc->dist;
@@ -887,7 +881,9 @@ int stellar_wind_angle::add_rotating_source(
 
   for (int v=0;v<ndim;v++)
     ws->dpos[v] = pos[v];
+#ifdef TESTING
   rep.printVec("ws->dpos",ws->dpos,ndim);
+#endif
 
   for (int v=ndim;v<MAX_DIM;v++)
     ws->dpos[v] = VERY_LARGE_VALUE;
@@ -897,7 +893,7 @@ int stellar_wind_angle::add_rotating_source(
   // all inputs in cgs units.
   ws->Mdot  = mdot;
   ws->v_esc = vesc;
-  ws->Vinf  = vesc;
+  ws->Vinf  = 0.0; // not used in the rotating wind
   ws->v_rot = vrot;
   ws->vcrit = vcrit;
 
@@ -909,7 +905,9 @@ int stellar_wind_angle::add_rotating_source(
   ws->tracers = mem.myalloc(ws->tracers,ntracer);
   for (int v=0;v<ntracer; v++) {
     ws->tracers[v] = trv[v];
+#ifdef TESTING
     cout <<"ws->tracers[v] = "<<ws->tracers[v]<<"\n";
+#endif
   }
 
   // if using microphysics, find H+ tracer variable, if it exists.
@@ -999,7 +997,7 @@ void stellar_wind_angle::update_source(
   // all in cgs units already.
   wd->ws->Mdot = mdot;
   wd->ws->v_esc = vesc;
-  wd->ws->Vinf = vesc;
+  wd->ws->Vinf = 0.0;
   wd->ws->v_rot = vrot;
   wd->ws->vcrit = vcrit;
   wd->ws->Tw   = Twind;
