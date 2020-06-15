@@ -32,8 +32,8 @@ EP_Helium_MassFrac 0.0  # Pure Hydrogen gas.
 EP_Metal_MassFrac  0.0  # If this is >0.5, then neutral H is molecular
 
 
-NGridX  256
-NGridY  128
+NGridX  1024
+NGridY  512
 NGridZ  128
 
 Xmin -50.0e18
@@ -44,7 +44,7 @@ Xmax   50.0e18
 Ymax   50.0e18
 Zmax   50.0e18
 
-grid_nlevels          5
+grid_nlevels          4
 grid_aspect_ratio_XX  2
 grid_aspect_ratio_YY  1
 grid_aspect_ratio_ZZ  1
@@ -55,10 +55,10 @@ NG_refine_XX          1
 NG_refine_YY          1
 NG_refine_ZZ          1
 
-OutputFile        DTE_MHD_d2l5n0128
+OutputFile        DTE_MHD_d2l4n0512
 OutputPath        ./
 OutputFileType    silo
-OutputFrequency  1024
+OutputFrequency   2048
 OutputCriterion   0
 OPfreqTime        7.89e10
 StartTime         0.0
@@ -104,7 +104,7 @@ PEC_ambPG 4.305e-11  # set so T_cl=100 (for mu=m_p per hydrogen nucleon).
 PEC_ambVX  0.0e5
 PEC_ambVY  0.0e5
 PEC_ambVZ  0.0e5
-PEC_ambBX 30.00e-6 
+PEC_ambBX 30.00e-6 # so beta=1.2 in neutral medium, ~240 in ionized.
 PEC_ambBY 0.00e-6
 PEC_ambBZ 0.00e-6
 PEC_ambTR0 1.0e-12  # neutral medium.

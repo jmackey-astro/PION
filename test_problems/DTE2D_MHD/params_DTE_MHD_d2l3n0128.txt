@@ -44,7 +44,7 @@ Xmax   50.0e18
 Ymax   50.0e18
 Zmax   50.0e18
 
-grid_nlevels          5
+grid_nlevels          3
 grid_aspect_ratio_XX  2
 grid_aspect_ratio_YY  1
 grid_aspect_ratio_ZZ  1
@@ -55,10 +55,10 @@ NG_refine_XX          1
 NG_refine_YY          1
 NG_refine_ZZ          1
 
-OutputFile        DTE_MHD_d2l5n0128
+OutputFile        DTE_MHD_d2l3n0128
 OutputPath        ./
 OutputFileType    silo
-OutputFrequency  1024
+OutputFrequency   256
 OutputCriterion   0
 OPfreqTime        7.89e10
 StartTime         0.0
