@@ -8,8 +8,8 @@ ics     PhotoEvap_radial
 smooth  -1
 noise   -1
 
-ndim        1
-coordinates spherical
+ndim        2
+coordinates cylindrical
 eqn         euler
 ntracer     1
 chem_code   MPv7
@@ -33,11 +33,11 @@ EP_Helium_MassFrac 0.0  # Pure Hydrogen gas.
 EP_Metal_MassFrac  0.0  # If this is >0.5, then neutral H is molecular
 
 
-NGridX  128
-NGridY  128
+NGridX  512
+NGridY  256
 NGridZ  128
 
-Xmin  0.0e18
+Xmin -80.0e18
 Ymin  0.0
 Zmin  0.0
 
@@ -45,7 +45,7 @@ Xmax   80.0e18
 Ymax   80.0e18
 Zmax   80.0e18
 
-grid_nlevels          1
+grid_nlevels          4
 grid_aspect_ratio_XX  2
 grid_aspect_ratio_YY  1
 grid_aspect_ratio_ZZ  1
@@ -56,17 +56,17 @@ NG_refine_XX          1
 NG_refine_YY          1
 NG_refine_ZZ          1
 
-OutputFile        DTE_HD_d1l1n0128
+OutputFile        DTE_HD_d2l4n0256
 OutputPath        ./
 OutputFileType    silo
-OutputFrequency   128
+OutputFrequency   2048
 OutputCriterion   0
 OPfreqTime        7.89e10
 StartTime         0.0
-FinishTime        1.0e15
+FinishTime        1.1e15
 
 # Type of Boundary Condition
-BC_XN         reflecting
+BC_XN         outflow
 BC_XP         outflow
 BC_YN         axisymmetric
 BC_YP         outflow

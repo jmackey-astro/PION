@@ -72,7 +72,7 @@ BC_YN         axisymmetric
 BC_YP         outflow
 BC_Ninternal  0
 
-solver          4
+solver          3
 OrderOfAccSpace 2
 OrderOfAccTime  2
 GAMMA 1.01
