@@ -84,11 +84,11 @@ int main(int argc, char **argv)
   //
   // Get input files and an output file.
   //
-  if (argc<5) {
+  if (argc<7) {
     cout << "Use as follows:\n";
     cout << "./emission-cube <input-path>";
     cout << " <input-silo-file-base>";
-    cout << " <output-path> <output-fits-file-base> <var>";
+    cout << " <output-path> <output-fits-file-base> <var> <Nskip>";
     cout << "\n";
     cout <<"******************************************\n";
     cout <<"input path:  path to input files.\n";
@@ -96,6 +96,7 @@ int main(int argc, char **argv)
     cout <<"output path: directory to write output files to.\n";
     cout <<"output file: filename for output FITS file(s).\n";
     cout <<"var:         what to plot (currently just Halpha)\n";
+    cout <<"Nskip:       skip this number of files each iteration (0=all files)\n";
     rep.error("Bad number of args",argc);
   }
 
@@ -106,6 +107,8 @@ int main(int argc, char **argv)
 
   string var = argv[5];
   cout <<"Ignoring var="<<var<<" directive while debugging code.\n";
+  
+  size_t Nskip = static_cast<size_t>(atoi(argv[6]));
 
   //
   // Redirect output to a text file if you want to:
@@ -139,7 +142,7 @@ int main(int argc, char **argv)
   cout <<"-------------------------------------------------------\n";
   cout <<"--------------- Setting up Grid -----------------------\n";
 
-  CI.set_minimal_cell_data();
+  //CI.set_minimal_cell_data();
   list<string>::iterator ff=files.begin();
   ostringstream temp; temp <<input_path<<"/"<<*ff;
   string first_file = temp.str();
@@ -209,7 +212,7 @@ int main(int argc, char **argv)
 
   size_t ifile=0;
   class DataIOFits_pllel writer (SimPM, &(SimPM.levels[0].MCMD));
-  class Xray_emission xray ();
+  class Xray_emission xray;
 
   cout <<"-------------------------------------------------------\n";
   cout <<"--------------- Starting Loop over all input files ----\n";
@@ -255,22 +258,30 @@ int main(int argc, char **argv)
     cout <<"-------------------------------------------------------\n";
 
     cout <<"--------------- Calculating Emission   ----------------\n";
-    double T=0.0, em=0.0, ne=0.0, np=0.0;
+    double T=0.0, em=0.0, ne=0.0, np=0.0, sky=206265.0*206265.0*4.0*M_PI;
+    double res[8];
+    for (int v=0;v<8;v++) res[v]=0.0;
     for (int l=0; l<SimPM.grid_nlevels; l++) {
       grid = G[l];
       cell *c = grid->FirstPt();
       do {
+        for (int v=0;v<SimPM.nvar;v++) c->Ph[v] = c->P[v];
         if (MP) {
           T  = MP->Temperature(c->Ph,SimPM.gamma);
           ne = MP->get_n_elec(c->Ph);
           np = MP->get_n_Hplus(c->Ph);
+          //cout <<"T="<<T<<", ne="<<ne<<", np="<<np<<"\n";
         }
         else {
           T = ne = np = 0.0;
           rep.error("need microphysics to get temperature",MP);
         }
-        em = xray.Halpha_emissivity(T)*ne*np;
-        c->P[PG] = em;
+        c->P[RO] = ne*np * xray.Halpha_emissivity(T) *sky; // erg/cm3/s
+        c->P[PG] = ne*ne * xray.Brems20cm_emissivity(T) *4.0*M_PI; // MJy/cm
+        xray.get_xray_emissivity(T, res);
+        c->P[BX] = ne*np * (res[5]-res[7]);
+        c->P[BY] = ne*np * (res[3]-res[5]);
+        c->P[BZ] = ne*np * (res[0]-res[3]);
       } while ((c=grid->NextPt(c))!=0);
     }
 

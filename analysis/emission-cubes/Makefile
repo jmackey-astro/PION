@@ -63,7 +63,7 @@ OPTION += -DFITS
 PION_OPTIMISE=HIGH
 
 #MAKE_UNAME=standard
-#MAKE_UNAME=ubuntu18
+MAKE_UNAME=ubuntu18
 #MAKE_UNAME=ubuntu16
 #MAKE_UNAME=debian9
 #MAKE_UNAME=debian10
@@ -145,7 +145,7 @@ endif
 ifeq ($(MAKE_UNAME), ubuntu18)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
-    CXXFLAGS = -Wall -g -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
   else
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif
