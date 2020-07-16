@@ -24,7 +24,7 @@ bindir=.
 SRCDIR=${CURDIR}/../../source
 CODEDIR=${CURDIR}/../..
 
-VPATH=../projection:../xray:${SRCDIR}:\
+VPATH=../xray:${SRCDIR}:\
 ${SRCDIR}/grid:\
 ${SRCDIR}/defines:\
 ${SRCDIR}/dataIO:\
@@ -66,7 +66,7 @@ PION_OPTIMISE=HIGH
 #MAKE_UNAME=ubuntu18
 #MAKE_UNAME=ubuntu16
 #MAKE_UNAME=debian9
-MAKE_UNAME=debian10
+#MAKE_UNAME=debian10
 #MAKE_UNAME=OSX
 #MAKE_UNAME=SUPERMUC
 #MAKE_UNAME=JUROPA
@@ -325,14 +325,14 @@ OBJ_SOLVE = riemannMHD.o HLLD_MHD.o Roe_MHD_ConservedVar_solver.o \
 
 OBJECTS = $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_CRD) \
   $(OBJ_BCS) $(OBJ_NG_BCS) $(OBJ_EQNS) $(OBJ_SOLVE) \
-  point_quantities.o main_projection.o sim_projection.o image_io.o xray_emission.o
+  make_emission_cube.o xray_emission.o
 
 ##########################
 ### -- EXECUTABLES -- ###
 ##########################
 
-projection: $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o projection $(LDFLAGS)
+emission-cube: $(OBJECTS)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o emission-cube $(LDFLAGS)
 
 
 ####################################
@@ -755,18 +755,9 @@ comm_files.o: comm_files.cpp comm_files.h comms.h ${GLOBAL}
 # Stuff Specific to this code #
 ###############################
 
-point_quantities.o: point_quantities.cpp point_quantities.h ${GLOBAL}
-
-sim_projection.o: sim_projection.cpp sim_projection.h \
-    point_quantities.h xray_emission.h \
-    ${GLOBAL} uniform_grid.h dataIO/dataio_base.h
-
-main_projection.o: main_projection.cpp sim_projection.h \
-    point_quantities.h xray_emission.h \
+make_emission_cube.o: make_emission_cube.cpp  \
+    xray_emission.h \
     ${GLOBAL} uniform_grid.h dataIO/dataio_base.h
     
-image_io.o: image_io.cpp image_io.h dataIO/dataio_base.h \
-    dataIO/dataio_fits.h ${GLOBAL}
-
 clean:
-	rm -f *.o projection
+	rm -f *.o emission-cube

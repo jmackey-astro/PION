@@ -290,7 +290,7 @@ class microphysics_base {
       ) {return -1.0e99;}
 
   ///
-  /// Get electron number density (cm^{-3})
+  /// Get ion number density (cm^{-3})
   ///
   virtual double get_n_ion(
       std::string, ///< ion name

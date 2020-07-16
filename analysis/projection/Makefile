@@ -30,7 +30,7 @@ PION=${CURDIR}/../..
 srcdir=${PION}/source
 bindir=.
 
-VPATH = \
+VPATH=../xray:\
 ${srcdir}:\
 ${srcdir}/ics:\
 ${srcdir}/Riemann_solvers:\

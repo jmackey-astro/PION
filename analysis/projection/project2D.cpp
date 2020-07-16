@@ -47,7 +47,7 @@ using namespace std;
 #include "projection_constants.h"
 #include "perp_projection.h"
 #include "angle_projection.h"
-#include "xray_emission.h"
+#include "../xray/xray_emission.h"
 
 
 // ##################################################################
