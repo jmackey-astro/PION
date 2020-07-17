@@ -28,7 +28,7 @@
 #include "microphysics/microphysics_base.h"
 
 #include "point_quantities.h"
-#include "../projection/xray_emission.h"
+#include "../xray/xray_emission.h"
 #include "../projection/projection_constants.h"
 using namespace std;
 

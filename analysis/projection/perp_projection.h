@@ -17,7 +17,7 @@
 #include "grid/cell_interface.h"
 #include "grid/grid_base_class.h"
 #include "sim_params.h"
-#include "xray_emission.h"
+#include "../xray/xray_emission.h"
 #include <vector>
 
 

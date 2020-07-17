@@ -20,7 +20,7 @@ using namespace std;
 #include "tools/timer.h"
 #include "constants.h"
 #include "sim_params.h"
-#include "xray_emission.h"
+#include "../xray/xray_emission.h"
 
 #include "angle_projection.h"
 #include "projection_constants.h"

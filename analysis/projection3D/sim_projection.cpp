@@ -48,7 +48,7 @@
 #include "sim_projection.h"
 
 // these files are in ../projection.
-#include "../projection/xray_emission.h"
+#include "../xray/xray_emission.h"
 #include "../projection/projection_constants.h"
 using namespace std;
 
