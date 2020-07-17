@@ -95,6 +95,57 @@
 #define JM_MINERG 1.0e-17  ///< Minimum internal energy density I care about.
 
 
+// ##################################################################
+// ##################################################################
+
+
+/// Lookup table for reaction rates and heating/cooling rates for
+/// MPv3.
+struct lkuptab {
+  size_t NT;
+  double dlogT;
+  double dlogne;
+  std::vector<double> T;      ///< temperature
+  std::vector<double> ne;      ///< number density
+  std::vector<double> cirh;   ///< coll-ion rate H0
+  std::vector<double> C_cih0; ///< cooling coll-ion H0
+  std::vector<double> rrhp;   ///< rad-recomb rate H+
+  std::vector<double> C_rrh;  ///< cooling rad-recomb+free-free H+
+  std::vector<double> C_ffhe; ///< cooling free-free He+
+  std::vector<double> C_cxh0; ///< colling coll-ex H0
+  std::vector<double> C_fbdn; ///< forbidden line-cooling CNO
+  std::vector<double> C_cie;  ///< line-cooling CIE metals
+  std::vector<double> C_cxch; ///< line-cooling C+ + H0
+  std::vector<double> C_cxo;  ///< line-cooling O  + H0
+  std::vector<double> C_cxce; ///< line-cooling C+ + e
+  std::vector<double> C_dust; ///< dust cooling in hot gas
+  std::vector< std::vector<double> > H_pah; ///< pah heating
+  std::vector< std::vector<double> > C_pah; ///< PAH cooling
+  std::vector<double> s_cirh;   ///< coll-ion rate H0
+  std::vector<double> s_C_cih0; ///< cooling coll-ion H0
+  std::vector<double> s_rrhp;   ///< rad-recomb rate H+
+  std::vector<double> s_C_rrh;  ///< cooling rad-recomb+free-free H+
+  std::vector<double> s_C_ffhe; ///< cooling free-free He+
+  std::vector<double> s_C_cxh0; ///< colling coll-ex H0
+  std::vector<double> s_C_fbdn; ///< forbidden line-cooling CNO
+  std::vector<double> s_C_cie;  ///< line-cooling CIE metals
+  std::vector<double> s_C_cxch; ///< line-cooling C+ + H0
+  std::vector<double> s_C_cxo;  ///< line-cooling O  + H0
+  std::vector<double> s_C_cxce; ///< line-cooling C+ + e
+  std::vector<double> s_C_dust; ///< dust cooling in hot gas
+  std::vector< std::vector<double> > st_H_pah; ///< pah heating, slope in T
+  std::vector< std::vector<double> > st_C_pah; ///< PAH cooling, slope in T
+  std::vector< std::vector<double> > se_H_pah; ///< pah heating, slope in ne
+  std::vector< std::vector<double> > se_C_pah; ///< PAH cooling, slope in ne
+};
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 ///
 /// Integrator for the microphysics equations for the non-equilibrium ion
 /// fraction of hydrogen, and for the internal energy density.
@@ -494,6 +545,11 @@ class MPv3
       double []  ///< absolute error tolerance (array)
       );
 
+  ///
+  /// setup MPv3 lookup tables
+  ///
+  void gen_mpv3_lookup_tables();
+  struct lkuptab lt;
   //---------------------------------------------------------------------------
   //-------------- END OF FUNCTIONS DERIVED FROM BASE CLASS -------------------
   //---------------------------------------------------------------------------
@@ -512,6 +568,7 @@ class MPv3
     mpv_delta_S;///< path length through current cell.
 
 };
+
 
 #endif // MPV3_H
 

@@ -13,7 +13,7 @@ OutputFile    VFTS682_n1e2_dx008
 ntracer 2
 chem_code MPv3
 Tracer000 H1+
-Tracer001 Trace
+Tracer001 WIND
 InitIons LEAVE
 
 EP_dynamics     1

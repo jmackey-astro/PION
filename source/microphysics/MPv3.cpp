@@ -178,6 +178,7 @@ using namespace std;
 //#define BETELGEUSE
 //#define MPV3_DEBUG
 
+#define DUSTCOOL
 
 //
 // The timestep-limiting is set by ifdef in
@@ -446,7 +447,7 @@ MPv3::MPv3(
   setup_WSS09_CIE_OnlyMetals();
   // ================================================================
   // ================================================================
-
+  gen_mpv3_lookup_tables();
 
   // ----------------------------------------------------------------
   // --------------------------- CVODES ----------------------------
@@ -848,7 +849,10 @@ int MPv3::convert_prim2local(
   //
   p_local[lv_eint] = p_in[PG]/(gamma_minus_one);
   p_local[lv_H0]   = 1.0-p_in[pv_Hp];
-  f_dust = max(0.0, min(1.0,1-0-p_in[pv_WIND]));
+#ifdef DUSTCOOL
+  if (pv_WIND>0) f_dust = max(0.0, min(1.0,1-0-p_in[pv_WIND]));
+  else f_dust = 0.0;
+#endif
   mpv_nH = p_in[RO]/mean_mass_per_H;
 
 
@@ -1563,8 +1567,10 @@ void MPv3::setup_radiation_source_parameters(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 int MPv3::ydot(
@@ -1581,38 +1587,51 @@ int MPv3::ydot(
   double E_in      = NV_Ith_S(y_now,lv_eint);
   double x_in      = 1.0-OneMinusX;
 
-  double ne        = JM_NELEC*x_in*mpv_nH;
-
-  //
-  // First get the temperature.  We assume the total particle number density
-  // is given by 1.1*nH*(1+x_in), appropriate for a gas with 10% Helium by 
-  // number, and if He is singly ionised whenever H is.
-  //
+  // First get the temperature.
   double T = get_temperature(mpv_nH, E_in, x_in);
 
-  double temp1=0.0, temp2=0.0;
-  double oneminusx_dot=0.0; // oneminusx_dot is in units of 1/s
-  double Edot=0.0;
-  // Edot is calculated in units of erg/s per H nucleon, multiplied by mpv_nH
-  // at the end.
-
-  //
+  // now get electron density
+  double ne        = JM_NELEC*x_in*mpv_nH;
+  double expnh = exp(-mpv_nH/1.0e4);
   // We set a minimum electron density based on the idea that Carbon is singly
   // ionised in low density gas.  y(C)=1.5e-4 in the gas phase (by number)
-  // (Sofia,1997), approximately, so I add this to the electron number density
-  // with an exponential cutoff at high densities.
-  //
-  ne += mpv_nH*1.5e-4*METALLICITY*exp(-mpv_nH/1.0e4);
+  // (Sofia,1997), with an exponential cutoff at high densities.
+  ne += mpv_nH * 1.5e-4 * METALLICITY * expnh;
 
+//  int iT = -1;
+//  do {iT++;} while (T >= lt.T[iT]);
+//  if (iT>0) iT--;
+//  double dT = T - lt.T[iT];
+//  //cout <<"T="<<T<<", T[it]="<<lt.T[iT]<<", T[it+1]="<<lt.T[iT+1]<<"\n";
+//
+//  int ie = -1;
+//  do {ie++;} while (ne >= lt.ne[ie]);
+//  if (ie>0) ie--;
+//  double dne = ne - lt.ne[ie];
+  
+  // Get T-vector index
+  int iT = 0;
+  size_t ihi = lt.NT-1, ilo = 0, imid= 0;
+  do {
+    imid = ilo + floor((ihi-ilo)/2.0);
+    if (lt.T[imid] < T) ilo = imid;
+    else                ihi = imid;
+  } while (ihi-ilo >1);
+  iT = ilo;
+  double dT = T - lt.T[iT];
+  //cout <<"T="<<T<<", T[it]="<<lt.T[iT]<<", T[it+1]="<<lt.T[iT+1]<<"\n";
 
-  //
-  // collisional ionisation of H, with its associated cooling.
-  // scales with n_e*nH0
-  //
-  Hi_coll_ion_rates(T, &temp1, &temp2);
-  oneminusx_dot -= temp1*ne*OneMinusX; // the nH is divided out on both sides.
-  Edot -= temp2*ne*OneMinusX;
-  //cout <<"CI-CR="<< temp2*ne*OneMinusX<<"\n";
+  // Get ne-vector index
+  int ie = 0;
+  ihi = lt.NT-1, ilo = 0, imid= 0;
+  do {
+    imid = ilo + floor((ihi-ilo)/2.0);
+    if (lt.ne[imid] < ne) ilo = imid;
+    else                  ihi = imid;
+  } while (ihi-ilo >1);
+  ie = ilo;
+  double dne = ne - lt.ne[ie];
+  //cout <<"ne="<<ne<<", ne[ie]="<<lt.ne[ie]<<", ne[ie+1]="<<lt.ne[ie+1]<<"\n";
 
 #ifdef TEST_INF
   if (!isfinite(mpv_nH) || !isfinite(mpv_delta_S) ||
@@ -1624,6 +1643,24 @@ int MPv3::ydot(
   }
 #endif
   
+  double temp1=0.0, temp2=0.0;
+  double oneminusx_dot=0.0; // oneminusx_dot is in units of 1/s
+  double Edot=0.0;
+  // Edot is calculated in units of erg/s per H nucleon, multiplied by mpv_nH
+  // at the end.
+
+
+  //
+  // collisional ionisation of H, with its associated cooling.
+  // scales with n_e*nH0
+  //
+  temp1 = lt.cirh[iT] + dT*lt.s_cirh[iT];
+  oneminusx_dot -= temp1*ne*OneMinusX; // the nH is divided out on both sides.
+
+  temp2 = lt.C_cih0[iT] + dT*lt.s_C_cih0[iT];
+  Edot -= temp2*ne*OneMinusX;
+  //cout <<"CI-CR="<< temp2*ne*OneMinusX<<"\n";
+
   //
   // photo-ionisation of H: photoionisation rate uses equation 18 in Mellema et
   // al. 2006 (C2-ray paper), noting that their Gamma is the rate per neutral
@@ -1678,34 +1715,19 @@ int MPv3::ydot(
     } // switch
   }
 
-  //
   // radiative recombination of H+
-  //
-  oneminusx_dot += Hii_rad_recomb_rate(T) *x_in*ne;
-  //cout <<", RR = "<<Hii_rad_recomb_rate(T) *x_in*ne;
-  //
+  oneminusx_dot += (lt.rrhp[iT] + dT*lt.s_rrhp[iT]) *x_in*ne;
   // Total H+ cooling: recombination plus free-free
-  //
-  Edot -= Hii_total_cooling(T) *x_in*ne;
-  //cout <<"HII-TC="<<Hii_total_cooling(T) *x_in*ne<<"\n";
+  Edot -= (lt.C_rrh[iT] + dT*lt.s_C_rrh[iT]) *x_in*ne;
 
-  //
-  // Add Helium free-free (Z^2*n(He)/n(H) = 0.25*X(He)/X(H) of the H+ free-free
-  // rate) The normalisation is scaled so that I multiply by ne*nHp to get the
-  // correct cooling rate (i.e. the abundance of He is included in the
-  // prefactor).
-  //
+  // Add Helium free-free 
 #ifndef HE_INERT
   // Only if He is ionised, otherwise it has no free-free.
-  //
-  Edot -= 1.68e-27*(JM_NION-1.0)*sqrt(T)*x_in*ne;
+  Edot -= (lt.C_ffhe[iT] + dT*lt.s_C_ffhe[iT]) *x_in*ne;
 #endif // HE_INERT
 
-  //
   // collisional excitation cooling of H0 Aggarwal (1983) and Raga+(1997,ApJS).
-  //
-  Edot -= Hi_coll_excitation_cooling_rate(T)*OneMinusX*ne *exp(-T*T/5.0e10);
-  //cout <<"CE-CR="<<Hi_coll_excitation_cooling_rate(T)*OneMinusX*ne *exp(-T*T/5.0e10)<<"\n";
+  Edot -= (lt.C_cxh0[iT] + dT*lt.s_C_cxh0[iT])*OneMinusX*ne;
 
   //
   // --------- END OF HYDROGEN COOLING, MOVING TO METAL COOLING --------
@@ -1730,99 +1752,51 @@ int MPv3::ydot(
     // There is a different G0 parameter because the attenuation is according
     // to exp(-0.05Av) rather than before where the coefficient was 1.9.
     //
-    Edot += 7.7e-32*METALLICITY*mpv_G0_IR/pow(1.0+3.0e4/mpv_nH,2.0);
+    temp1 = 1.0+3.0e4/mpv_nH;
+    temp1 = temp1*temp1;
+    Edot += 7.7e-32*METALLICITY*mpv_G0_IR/temp1;
     //cout <<"DfIR="<<7.7e-32*METALLICITY*mpv_G0_IR/pow(1.0+3.0e4/mpv_nH,2.0)<<"\n";
   }
 
-  //
-  // X-ray heating (HAdCM09 eq.A5) Massive stars have x-ray luminosities of
-  // ~1.0e32 erg/s, so use this.  NOT IMPLEMENTED YET... NEEDS SOMETHING MORE
-  // CAREFUL.
-  //
-  ////Edot += 6.0e9*mpv_delta_S/mpv_Vshell;
-
-  //
   // Cosmic ray heating (HAdCM09 eq.A7).
-  //
   Edot += 5.0e-28*OneMinusX;
-  //cout <<"CR-HR="<<5.0e-28*OneMinusX<<"\n";
-
-  //
   // Cosmic Ray ionisation rate (Wolfire+,2003,eq.16) in solar neighbourhood.
-  //
   oneminusx_dot -= 1.8e-17*OneMinusX;
 
-  //
-  // Diffuse UV Heating rate (Wolfire+,2003,eq.20,21, Fig.10,b).  This is a fit
-  // to the curve in the top-right panel of Fig.10.
-  //Edot += 1.66e-26*pow(mpv_nH,0.2602)*OneMinusX;
-  //
-  // This is a better function, using the first term of eq.19, with
-  // phi_{PAH}=0.5 and G_0=1.7.  I multiply by the neutral fraction OneMinusX
+  // Diffuse UV Heating rate (Wolfire+,2003,eq.20,21, Fig.10,b).
+  // Using the first term of eq.19, with
+  // phi_{PAH}=0.5 and G_0=1.7.  multiply by the neutral fraction OneMinusX
   // because this heating term is only calculated for warm neutral medium.
-  //
-  // HACK!!!
-#ifndef BETELGEUSE
-  Edot += 1.083e-25*METALLICITY*OneMinusX/(1.0+9.77e-3*pow(sqrt(T)/ne,0.73));
-  //cout<<"FUV-HR="<<1.083e-25*METALLICITY*OneMinusX
-  //                 /(1.0+9.77e-3*pow(sqrt(T)/ne,0.73))<<"\n";
-#endif // BETELGEUSE
+  temp1 = lt.H_pah[iT][ie] + dT*lt.st_H_pah[iT][ie] + dne*lt.se_H_pah[iT][ie];
+  Edot += OneMinusX * temp1;
   
-//#ifdef BETELGEUSE
-//  Edot -= METALLICITY*mpv_nH* (2.0e-19*exp(-1.184e5/(T+1.0e3)) +2.8e-28*sqrt(T)*exp(-92.0/T));
-//#endif // BETELGEUSE
-
-//#ifndef BETELGEUSE
   //
-  // Now COOLING: First forbidden line cooling of e.g. OII,OIII, dominant in
+  // COOLING: First forbidden line cooling of e.g. OII,OIII, dominant in
   // HII regions.  This is collisionally excited lines of photoionised metals.
-  // (HAdCM09 eq.A9) I have exponentially damped this at high temperatures!
-  // This was important!  Oxygen abundance set to 5.37e-4 from
+  // (HAdCM09 eq.A9) I have exponentially damped this at high temperatures
+  // Oxygen abundance set to 5.37e-4 from
   // Asplund+(2009,ARAA), times 0.77 to account for 23% of O in solid dust.
   //
-  temp1 = 1.20e-22*METALLICITY *exp(-33610.0/T -(2180.0*2180.0/T/T))
-                               *x_in*ne*exp(-T*T/5.0e10);
-  //
-  // Fit to Raga, Mellema, Lundqvist (1997) rates for CNO if all are only
-  // singly ionised, and for gas phase abundances of CNO of - n(C)/nH =
-  // 2.95e-4*0.508 = 1.5e-4 (Sofia+,1997) - n(N)/nH = 7.41e-5 - n(O)/nH =
-  // 5.37e-4*0.77 (0.23 goes in solids) These are taken from Asplund et al.
-  // 2009.
-  //
-  //temp1 = 3.0e-22*METALLICITY*exp(-pow(1.4e5/T,0.6))
-  //        *exp(-sqrt(mpv_nH/3.0e4)) *x_in*ne*exp(-T*T/5.0e10);
-
+  temp1 = (lt.C_fbdn[iT] + dT*lt.s_C_fbdn[iT])*x_in*ne;
 
   //
   // Now the Wiersma et al (2009,MN393,99) (metals-only) CIE cooling curve.  We
   // take the actual cooling rate to be the max of SD93-CIE and the previous
   // two terms.
   //
-  temp2 = cooling_rate_SD93CIE(T) *x_in*x_in*mpv_nH*METALLICITY;
+  temp2 = (lt.C_cie[iT] + dT*lt.s_C_cie[iT]) * x_in*x_in * mpv_nH;
   Edot -= max(temp1,temp2);
 
-#define DUSTCOOL
-#ifdef DUSTCOOL
-  //double track=max(temp1,temp2);
-#endif
 
-  //
   // Instead of the PDR cooling from Henney, use Wolfire's eq.C1,C3 for
   // collisional cooling of CII and OI by neutral H atoms.  In eq.C3 I have
   // absorbed the (100K)^{-0.4} into the prefactor, and used x^a=exp(a*ln(x)).
   // I have cut off equation C1 at high densities to be consistent with the ion
   // fraction of C that I assumed above for the electron density.
   //
-  Edot -= 3.15e-27*METALLICITY*exp(-92.0/T)*mpv_nH*OneMinusX*exp(-mpv_nH/1.0e4);
-  Edot -= 3.96e-28*METALLICITY*exp(0.4*log(T)-228.0/T)*mpv_nH*OneMinusX;
+  Edot -= (lt.C_cxch[iT] + dT*lt.s_C_cxch[iT])*mpv_nH*OneMinusX*expnh;
+  Edot -= (lt.C_cxo[iT]  + dT*lt.s_C_cxo[iT] )*mpv_nH*OneMinusX;
 
-#ifdef DUSTCOOL
-  //track+=3.15e-27*METALLICITY*exp(-92.0/T)*mpv_nH*OneMinusX
-  //                *exp(-mpv_nH/1.0e4);
-  //track+=3.96e-28*METALLICITY*exp(0.4*log(T)-228.0/T)*mpv_nH*OneMinusX;
-#endif
-
-  //
   // This is the CII cooling by electron collisions, cutoff at high density
   // again, for consistency, again with sqrt(100K) absorbed into the
   // prefactor.
@@ -1830,17 +1804,12 @@ int MPv3::ydot(
   // 2012ApJS..203...13G), at n_c=20 cm^{-3} at 1000K, so we use their
   // temperature scaling and divide by density according to
   // rate = rate/(1.0 + 0.05*nH*(T/2000K)^(-0.37))
-  //
-  Edot -= 1.4e-23*METALLICITY*exp(-0.5*log(T)-92.0/T)*ne
-          *exp(-mpv_nH/1.0e4)
+  Edot -= (lt.C_cxce[iT] + dT*lt.s_C_cxce[iT])*ne
+          *expnh
 #ifndef BETELGEUSE
        //   /(1.0 + 0.05*mpv_nH*pow(T/2000.0,-0.37))
 #endif // BETELGEUSE
           ;
-#ifdef DUSTCOOL
-  //track+=1.4e-23*METALLICITY*exp(-0.5*log(T)-92.0/T)*ne
-  //        *exp(-mpv_nH/1.0e4);
-#endif
 
   //
   // PAH cooling: eq. 21 in Wolfire+,2003.  I think they should have multiplied
@@ -1848,24 +1817,15 @@ int MPv3::ydot(
   //
 #ifndef BETELGEUSE
   //Edot -= 2.325e-30*METALLICITY*exp(0.94*log(T) +0.74*pow(T,-0.068)*log(3.4*sqrt(T)/ne))*ne;
-  Edot -= 3.02e-30*METALLICITY*exp(0.94*log(T) +0.74*pow(T,-0.068)*log(3.4*sqrt(T)/ne))*ne;
+  Edot -= (lt.C_pah[iT][ie] + dT*lt.st_C_pah[iT][ie] + dne*lt.se_C_pah[iT][ie]);
 #endif // BETELGEUSE
 //#endif // BETELGEUSE
 
 #ifdef DUSTCOOL
-  //track+=3.02e-30*METALLICITY*exp(0.94*log(T) +0.74*pow(T,-0.068)*log(3.4*sqrt(T)/ne))*ne;
-#endif
-
-  //
   // Dust cooling in hot gas (following Everett & Churchwell (2010)
   // figure 9, which is calculated from CLOUDY).
-  //
-#ifdef DUSTCOOL
   if (pv_WIND>0) {
-    //double dc=ne*f_dust*1.0e-17 * exp(1.5*log(T/2.5e8));
-    //if (dc > track && T<2.0e5)
-    //  cout <<"T="<<T<<", yH+="<<x_in<<" ne="<<ne<<" dc="<<dc<<", PIE="<<max(temp1,temp2)<<"\n";
-    Edot -= ne*x_in*f_dust*1.0e-17 * exp(1.5*log(T/2.5e8));
+    Edot -= ne*x_in*f_dust*(lt.C_dust[iT] + dT*lt.s_C_dust[iT]);
   }
 #endif
 
@@ -1905,5 +1865,161 @@ int MPv3::ydot(
 #endif
   return 0;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void MPv3::gen_mpv3_lookup_tables()
+{
+  //  Start by generating the logarithmic temperature scale:
+  lt.NT = 200; //NB this needs to be const so can initialise arrays with it. If this is >=1e4, get stack overflow errors.
+  double temp1=0.0, temp2=0.0, temp3=0.0;
+  lt.dlogT = (log10(EP->MaxTemperature) - log10(EP->MinTemperature)) /
+                                                      (lt.NT-1);
+  lt.dlogne = 12.0/(lt.NT-1); // ne from 1e-6 to 1e6.
+  lt.T.resize(lt.NT);
+  lt.ne.resize(lt.NT);
+  for (size_t i=0; i < lt.NT; i++) {
+    lt.T[i] = pow (10.0, log10(EP->MinTemperature) + i*lt.dlogT);
+    lt.ne[i] = pow(10.0, -6.0 + i*lt.dlogne);
+  }
+
+  // collisional ionization of H
+  lt.cirh.resize(lt.NT);
+  lt.C_cih0.resize(lt.NT);
+  lt.rrhp.resize(lt.NT);
+  lt.C_rrh.resize(lt.NT);
+  lt.C_ffhe.resize(lt.NT);
+  lt.C_cxh0.resize(lt.NT);
+  lt.C_fbdn.resize(lt.NT);
+
+  lt.C_cie.resize(lt.NT);
+  lt.C_cxch.resize(lt.NT);
+  lt.C_cxo.resize(lt.NT);
+  lt.C_cxce.resize(lt.NT);
+  lt.C_dust.resize(lt.NT);
+
+  for (size_t i=0; i < lt.NT; i++) {
+    Hi_coll_ion_rates(lt.T[i], &temp1, &temp2);
+    lt.cirh[i] = temp1;
+    lt.C_cih0[i] = temp2;
+    lt.rrhp[i] = Hii_rad_recomb_rate(lt.T[i]);
+    lt.C_rrh[i] = Hii_total_cooling(lt.T[i]);
+    lt.C_ffhe[i] = 1.68e-27*(JM_NION-1.0)*sqrt(lt.T[i]);
+    lt.C_cxh0[i] = Hi_coll_excitation_cooling_rate(lt.T[i])*
+                    exp(-lt.T[i]*lt.T[i]/5.0e10);
+    lt.C_fbdn[i] = 1.20e-22*METALLICITY *
+            exp(-33610.0/lt.T[i] -(2180.0*2180.0/lt.T[i]/lt.T[i])) * 
+            exp(-lt.T[i]*lt.T[i]/5.0e10);
+    lt.C_cie[i] = METALLICITY * cooling_rate_SD93CIE(lt.T[i]);
+    lt.C_cxch[i] = 3.15e-27*METALLICITY*exp(-92.0/lt.T[i]);
+    lt.C_cxo[i] = 3.96e-28*METALLICITY*exp(0.4*log(lt.T[i])-228.0/lt.T[i]);
+    lt.C_cxce[i] = 1.4e-23*METALLICITY*exp(-0.5*log(lt.T[i])-92.0/lt.T[i]);
+    lt.C_dust[i] = 1.0e-17 * exp(1.5*log(lt.T[i]/2.5e8));
+  }
+
+  // PAH cooling depends non-linearly on ne, so 2D lookup table
+  lt.H_pah.resize(lt.NT);
+  for (size_t i=0; i < lt.NT; i++) lt.H_pah[i].resize(lt.NT);
+  lt.C_pah.resize(lt.NT);
+  for (size_t i=0; i < lt.NT; i++) lt.C_pah[i].resize(lt.NT);
+  for (size_t i=0; i < lt.NT; i++) {
+    for (size_t j=0; j < lt.NT; j++) {
+      lt.H_pah[i][j] = 1.083e-25*METALLICITY/
+                      (1.0+9.77e-3*pow(sqrt(lt.T[i])/lt.ne[j],0.73));
+      lt.C_pah[i][j] = 3.02e-30*METALLICITY * 
+        exp( 0.94*log(lt.T[i]) +
+       0.74 * pow(lt.T[i],-0.068) * log(3.4 * sqrt(lt.T[i])/lt.ne[j])
+            ) * lt.ne[j];
+    }
+  }
+
+  
+  lt.s_cirh.resize(lt.NT);
+  lt.s_C_cih0.resize(lt.NT);
+  lt.s_rrhp.resize(lt.NT);
+  lt.s_C_rrh.resize(lt.NT);
+  lt.s_C_ffhe.resize(lt.NT);
+  lt.s_C_cxh0.resize(lt.NT);
+  lt.s_C_fbdn.resize(lt.NT);
+  lt.s_C_cie.resize(lt.NT);
+  lt.s_C_cxch.resize(lt.NT);
+  lt.s_C_cxo.resize(lt.NT);
+  lt.s_C_cxce.resize(lt.NT);
+  lt.s_C_dust.resize(lt.NT);
+  for (size_t i=0; i < lt.NT-1; i++) {
+    lt.s_cirh[i]   = (lt.cirh[i+1]  -lt.cirh[i]  ) / (lt.T[i+1]-lt.T[i]);
+    lt.s_C_cih0[i] = (lt.C_cih0[i+1]-lt.C_cih0[i]) / (lt.T[i+1]-lt.T[i]);
+    lt.s_rrhp[i]   = (lt.rrhp[i+1]  -lt.rrhp[i]  ) / (lt.T[i+1]-lt.T[i]);
+    lt.s_C_rrh[i]  = (lt.C_rrh[i+1] -lt.C_rrh[i] ) / (lt.T[i+1]-lt.T[i]);
+    lt.s_C_ffhe[i] = (lt.C_ffhe[i+1]-lt.C_ffhe[i]) / (lt.T[i+1]-lt.T[i]);
+    lt.s_C_cxh0[i] = (lt.C_cxh0[i+1]-lt.C_cxh0[i]) / (lt.T[i+1]-lt.T[i]);
+    lt.s_C_fbdn[i] = (lt.C_fbdn[i+1]-lt.C_fbdn[i]) / (lt.T[i+1]-lt.T[i]);
+    lt.s_C_cie[i]  = (lt.C_cie[i+1] -lt.C_cie[i] ) / (lt.T[i+1]-lt.T[i]);
+    lt.s_C_cxch[i] = (lt.C_cxch[i+1]-lt.C_cxch[i]) / (lt.T[i+1]-lt.T[i]);
+    lt.s_C_cxo[i]  = (lt.C_cxo[i+1] -lt.C_cxo[i] ) / (lt.T[i+1]-lt.T[i]);
+    lt.s_C_cxce[i] = (lt.C_cxce[i+1]-lt.C_cxce[i]) / (lt.T[i+1]-lt.T[i]);
+    lt.s_C_dust[i] = (lt.C_dust[i+1]-lt.C_dust[i]) / (lt.T[i+1]-lt.T[i]);
+  }
+  lt.s_cirh[lt.NT-1]   = 0.0; 
+  lt.s_C_cih0[lt.NT-1] = 0.0; 
+  lt.s_rrhp[lt.NT-1]   = 0.0;
+  lt.s_C_rrh[lt.NT-1] = 0.0; 
+  lt.s_C_ffhe[lt.NT-1] = 0.0; 
+  lt.s_C_cxh0[lt.NT-1] = 0.0; 
+  lt.s_C_fbdn[lt.NT-1] = 0.0; 
+  lt.s_C_cie[lt.NT-1]  = 0.0; 
+  lt.s_C_cxch[lt.NT-1] = 0.0; 
+  lt.s_C_cxo[lt.NT-1]  = 0.0; 
+  lt.s_C_cxce[lt.NT-1] = 0.0; 
+  lt.s_C_dust[lt.NT-1] = 0.0;
+
+  // slopes for bilinear interpolation
+  lt.st_H_pah.resize(lt.NT);
+  for (size_t i=0; i < lt.NT; i++) lt.st_H_pah[i].resize(lt.NT);
+  lt.se_H_pah.resize(lt.NT);
+  for (size_t i=0; i < lt.NT; i++) lt.se_H_pah[i].resize(lt.NT);
+  lt.st_C_pah.resize(lt.NT);
+  for (size_t i=0; i < lt.NT; i++) lt.st_C_pah[i].resize(lt.NT);
+  lt.se_C_pah.resize(lt.NT);
+  for (size_t i=0; i < lt.NT; i++) lt.se_C_pah[i].resize(lt.NT);
+  for (size_t i=0; i < lt.NT-1; i++) {
+    for (size_t j=0; j < lt.NT-1; j++) {
+      lt.st_H_pah[i][j] = (lt.H_pah[i+1][j]  -lt.H_pah[i][j]  ) /
+                                            (lt.T[i+1]-lt.T[i]);
+      lt.st_C_pah[i][j] = (lt.C_pah[i+1][j]  -lt.H_pah[i][j]  ) / 
+                                            (lt.T[i+1]-lt.T[i]);
+      lt.se_H_pah[i][j] = (lt.H_pah[i][j+1]  -lt.H_pah[i][j]  ) /
+                                            (lt.ne[j+1]-lt.ne[j]);
+      lt.se_C_pah[i][j] = (lt.C_pah[i][j+1]  -lt.H_pah[i][j]  ) / 
+                                            (lt.ne[j+1]-lt.ne[j]);
+    }
+  }
+  for (size_t i=0; i < lt.NT; i++) {
+    lt.st_H_pah[i][lt.NT-1] = 0.0;
+    lt.st_C_pah[i][lt.NT-1] = 0.0;
+    lt.se_H_pah[i][lt.NT-1] = 0.0;
+    lt.se_C_pah[i][lt.NT-1] = 0.0;
+  }
+  for (size_t j=0; j < lt.NT; j++) {
+    lt.st_H_pah[lt.NT-1][j] = 0.0;
+    lt.st_C_pah[lt.NT-1][j] = 0.0;
+    lt.se_H_pah[lt.NT-1][j] = 0.0;
+    lt.se_C_pah[lt.NT-1][j] = 0.0;
+  }
+
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
