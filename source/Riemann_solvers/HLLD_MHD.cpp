@@ -47,28 +47,28 @@ HLLD_MHD::HLLD_MHD(
   //do I need those?
   //HD_nvar  = 7;
   //eq_gamma = g;
+  HD_nvar=8;
 
   HD_lambda = mem.myalloc(HD_lambda, 5);   // wave speeds (one entropy, two Alfvén)
  
-  HD_UL   = mem.myalloc(HD_UL,   eq_nvar); // conserved
-  HD_UR   = mem.myalloc(HD_UR,   eq_nvar);
+  HD_UL   = mem.myalloc(HD_UL,   HD_nvar); // conserved
+  HD_UR   = mem.myalloc(HD_UR,   HD_nvar);
 
-  HD_FL   = mem.myalloc(HD_FL,   eq_nvar); // flux
-  HD_FR   = mem.myalloc(HD_FR,   eq_nvar);
+  HD_FL   = mem.myalloc(HD_FL,   HD_nvar); // flux
+  HD_FR   = mem.myalloc(HD_FR,   HD_nvar);
   
-  HD_ULs  = mem.myalloc(HD_ULs,  eq_nvar); // U*
-  HD_URs  = mem.myalloc(HD_URs,  eq_nvar);
+  HD_ULs  = mem.myalloc(HD_ULs,  HD_nvar); // U*
+  HD_URs  = mem.myalloc(HD_URs,  HD_nvar);
 
-  HD_FLs  = mem.myalloc(HD_FLs,  eq_nvar); // F*
-  HD_FRs  = mem.myalloc(HD_FRs,  eq_nvar); 
+  HD_FLs  = mem.myalloc(HD_FLs,  HD_nvar); // F*
+  HD_FRs  = mem.myalloc(HD_FRs,  HD_nvar); 
 
-  HD_ULss = mem.myalloc(HD_ULss, eq_nvar); // U**
-  HD_URss = mem.myalloc(HD_URss, eq_nvar);
+  HD_ULss = mem.myalloc(HD_ULss, HD_nvar); // U**
+  HD_URss = mem.myalloc(HD_URss, HD_nvar);
 
-  HD_FLss = mem.myalloc(HD_FLss, eq_nvar); // F**
-  HD_FRss = mem.myalloc(HD_FRss, eq_nvar); 
+  HD_FLss = mem.myalloc(HD_FLss, HD_nvar); // F**
+  HD_FRss = mem.myalloc(HD_FRss, HD_nvar); 
   
-
 #ifdef TESTING
   cout << "(HLLD_MHD::HLLD_MHD) All set.\n";
 #endif
@@ -246,7 +246,7 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
 
   // ADD CASE BX=0
   if (BX==0){
-    for (int v=0; v<eq_nvar; v++) {
+    for (int v=0; v<HD_nvar; v++) {
       HD_ULss[v] = HD_ULs[v];
       HD_URss[v] = HD_URs[v];
     }
@@ -283,49 +283,51 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
     HD_URss[eqERG] = HD_URs[eqERG] + temp_r1 * (temp_r2 - temp) * sgn;
   }
 
-  //rep.printVec("HD_UL",HD_UL,eq_nvar);
-  //rep.printVec("HD_ULs",HD_ULs,eq_nvar);
-  //rep.printVec("HD_ULss",HD_ULss,eq_nvar);
-  //rep.printVec("HD_URss",HD_URss,eq_nvar);
-  //rep.printVec("HD_URs",HD_URs,eq_nvar);
-  //rep.printVec("HD_UR",HD_UR,eq_nvar);
+  //rep.printVec("HD_UL",HD_UL,HD_nvar);
+  //rep.printVec("HD_ULs",HD_ULs,HD_nvar);
+  //rep.printVec("HD_ULss",HD_ULss,HD_nvar);
+  //rep.printVec("HD_URss",HD_URss,HD_nvar);
+  //rep.printVec("HD_URs",HD_URs,HD_nvar);
+  //rep.printVec("HD_UR",HD_UR,HD_nvar);
 
   // fluxes (m05 eq 66)
   if      (HD_lambda[0]>0){
-    for (int v=0; v<eq_nvar; v++) out_flux[v] = HD_FL[v];
-    for (int v=0; v<eq_nvar; v++) out_ustar[v] = HD_UL[v];
+    for (int v=0; v<HD_nvar; v++) out_flux[v] = HD_FL[v];
+    for (int v=0; v<HD_nvar; v++) out_ustar[v] = HD_UL[v];
   }
   else if (HD_lambda[1]>=0){
-    for (int v=0; v<eq_nvar; v++) // Fl* (m05 eq. 64) 
+    for (int v=0; v<HD_nvar; v++) // Fl* (m05 eq. 64) 
       out_flux[v] = HD_FL[v] + HD_lambda[0] * (HD_ULs[v] - HD_UL[v]);
-    for (int v=0; v<eq_nvar; v++) out_ustar[v] = HD_ULs[v];
+    for (int v=0; v<HD_nvar; v++) out_ustar[v] = HD_ULs[v];
   }
   else if (HD_lambda[2]>=0){
-    for (int v=0; v<eq_nvar; v++)   // Fl** (m05 eq. 65)
+    for (int v=0; v<HD_nvar; v++)   // Fl** (m05 eq. 65)
       out_flux[v] = HD_FL[v] + HD_lambda[1] * HD_ULss[v] - 
                     (HD_lambda[1] - HD_lambda[0]) * HD_ULs[v] -
                     HD_lambda[0] * HD_UL[v];
-    for (int v=0; v<eq_nvar; v++) out_ustar[v] = HD_ULss[v];
+    for (int v=0; v<HD_nvar; v++) out_ustar[v] = HD_ULss[v];
   }
   else if (HD_lambda[3]>=0){
-    for (int v=0; v<eq_nvar; v++) 
+    for (int v=0; v<HD_nvar; v++) 
       out_flux[v] = HD_FR[v] + HD_lambda[3] * HD_URss[v] - 
                     (HD_lambda[3] - HD_lambda[4]) * HD_URs[v] -
                     HD_lambda[4] * HD_UR[v];
-    for (int v=0; v<eq_nvar; v++) out_ustar[v] = HD_URss[v];
+    for (int v=0; v<HD_nvar; v++) out_ustar[v] = HD_URss[v];
   }
   else if (HD_lambda[4]>=0){
-    for (int v=0; v<eq_nvar; v++) 
+    for (int v=0; v<HD_nvar; v++) 
       out_flux[v] = HD_FR[v] + HD_lambda[4] * (HD_URs[v] - HD_UR[v]);
-    for (int v=0; v<eq_nvar; v++) out_ustar[v] = HD_URs[v];
+    for (int v=0; v<HD_nvar; v++) out_ustar[v] = HD_URs[v];
   }
   else{ 
-    for (int v=0; v<eq_nvar; v++) out_flux[v] = HD_FR[v];
-    for (int v=0; v<eq_nvar; v++) out_ustar[v] = HD_UR[v];
+    for (int v=0; v<HD_nvar; v++) out_flux[v] = HD_FR[v];
+    for (int v=0; v<HD_nvar; v++) out_ustar[v] = HD_UR[v];
   }
   
-  //rep.printVec("out_Flux",out_flux,eq_nvar);
-
+  // set the Psi variable ustar and flux to zero, if using GLM-MHD,
+  // because its value will be set in a later step.
+  for (int v=8;v<eq_nvar;v++) out_flux[v] = 0.0;
+  for (int v=8;v<eq_nvar;v++) out_ustar[v] = 0.0;
 
   return 0;
 }
@@ -395,19 +397,19 @@ int HLLD_MHD::MHD_HLL_flux_solver(
   HLLD_signal_speeds(Pl,Pr,eq_gamma,HD_lambda[0],HD_lambda[1]); // Pl,Pr,g,Sl,Sr
 
   if (HD_lambda[0]>0.0){
-    for (int v=0; v<eq_nvar; v++) out_flux[v] = HD_FL[v];
-    for (int v=0; v<eq_nvar; v++) out_ustar[v] = HD_UL[v];
+    for (int v=0; v<HD_nvar; v++) out_flux[v] = HD_FL[v];
+    for (int v=0; v<HD_nvar; v++) out_ustar[v] = HD_UL[v];
   }
   else if (HD_lambda[1]<0.0){
-    for (int v=0; v<eq_nvar; v++) out_flux[v] = HD_FR[v];
-    for (int v=0; v<eq_nvar; v++) out_ustar[v] = HD_UR[v];
+    for (int v=0; v<HD_nvar; v++) out_flux[v] = HD_FR[v];
+    for (int v=0; v<HD_nvar; v++) out_ustar[v] = HD_UR[v];
   }
   else {
-    for (int v=0; v<eq_nvar; v++)
+    for (int v=0; v<HD_nvar; v++)
       out_flux[v] = (HD_lambda[1]*HD_FL[v] - HD_lambda[0]*HD_FR[v] 
         + HD_lambda[1]*HD_lambda[0]*(HD_UR[v]-HD_UL[v]))/
           (HD_lambda[1]-HD_lambda[0]);
-    for (int v=0; v<eq_nvar; v++)
+    for (int v=0; v<HD_nvar; v++)
       out_ustar[v] = (HD_lambda[1]*HD_UR[v] - HD_lambda[0]*HD_UL[v] 
         - HD_FR[v] + HD_FL[v])/ (HD_lambda[1]-HD_lambda[0]);
   }

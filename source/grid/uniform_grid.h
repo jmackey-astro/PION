@@ -143,8 +143,9 @@ class UniformGrid
   int G_ntracer;      ///< number of tracer fields.
   int G_ftr;          ///< index of first tracer field.
   int *G_ng;          ///< number of grid points in each direction.
-  size_t G_ncell;   ///< Total number of grid points.
-  /// number of grid points in each direction, including boundary cells
+  size_t G_ncell;   ///< Total number of grid points (excl. boundary)
+  int *G_nbc;       ///< depth of boundary layer in each dir [2*ndim]
+  /// number of grid points in each dir, including boundary cells
   int *G_ng_all;
   /// Total number of grid points, including boundary points.
   size_t G_ncell_all;

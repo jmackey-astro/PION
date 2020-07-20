@@ -39,7 +39,7 @@ int MCMD_bc::BC_assign_BCMPI(
   if (b->send_data.size() != 0) {
     rep.error("send_data is not empty!",b->send_data.size());
   }
-  err += BC_select_data2send(par,grid,&(b->send_data), &ncell, b);
+  err += BC_select_data2send(par,grid,&(b->send_data), &ncell, b,comm_tag);
 #ifdef TEST_COMMS
   cout <<"BC_assign_BCMPI: got "<<ncell<<" cells in send_data\n";
 #endif
@@ -59,7 +59,8 @@ int MCMD_bc::BC_select_data2send(
       class GridBaseClass *grid,  ///< pointer to grid.
       list<cell *> *l,
       int *nc,
-      boundary_data *b
+      boundary_data *b,
+      int comm_tag
       )
 {
   // Check inputs.
@@ -78,16 +79,24 @@ int MCMD_bc::BC_select_data2send(
   
   //
   // We want to get all cells on the grid that are adjacent to the
-  // boundary data, so we just go BC_nbc cells in the "ondir"
+  // boundary data, so we just go 2 cells in the "ondir"
   // direction from every boundary cell, and this is a "send" cell.
+  //
+  // N.B. The domain decomposition boundaries are max. 4 cells deep,
+  //      whereas periodic boundaries are Nbc cells deep (6 for NG).
   //
   int count=0;
   list<cell*>::iterator c=b->data.begin();
   cell *temp =0;
+  int Nc=0;
+  if      (comm_tag==BC_PERtag) Nc = par.Nbc;
+  else if (comm_tag==BC_MPItag) Nc = min(4,par.Nbc);
+  else rep.error("bad tag in MCMD_bc::BC_select_data2send",comm_tag);
+
   do {
     temp = *c;
     //CI.print_cell(temp);
-    for (int v=0;v<par.Nbc;v++) temp = grid->NextPt(temp,b->ondir);
+    for (int v=0;v<Nc;v++) temp = grid->NextPt(temp,b->ondir);
     (*l).push_back(temp);
     count++;
     ++c;

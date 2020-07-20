@@ -59,7 +59,8 @@ class MCMD_bc {
       class GridBaseClass *, ///< pointer to grid.
       list<cell *> *,   ///< list of cells (returned by this func.)
       int *,            ///< number of cells in list.
-      boundary_data *   ///< pointer to boundary data.
+      boundary_data *,  ///< pointer to boundary data.
+      int         ///< tag, either BC_MPItag or BC_PERtag.
       );
 
 };

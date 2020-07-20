@@ -265,8 +265,11 @@ double MPv7::get_ntot(
     ((1.0-xp)*TTI_Mol +(TTI_Nnt-TTI_Mol) +xp*(JM_NELEC+JM_NION))*nH;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
 
 
 int MPv7::ydot(
@@ -392,7 +395,6 @@ int MPv7::ydot(
 
 
 
-
 // ##################################################################
 // ##################################################################
 
@@ -409,13 +411,9 @@ double MPv7::get_recombination_rate(
 #endif // FUNCTION_ID
   double rate=0.0;
   double P[nvl];
-  //
   // First convert to local variables.
-  //
   convert_prim2local(p_in,P);
-  //
   // Now get rate
-  //
   rate = 2.7e-13*mpv_nH*mpv_nH*(1.0-P[lv_H0])*(1.0-P[lv_H0])*JM_NELEC;
 
 #ifdef FUNCTION_ID

@@ -117,6 +117,7 @@ using namespace std;
 
 
 //#define TEST_BC89FLUX
+//#define BC_DEBUG
 
 // ##################################################################
 // ##################################################################
@@ -194,6 +195,8 @@ UniformGrid::UniformGrid(
   L_ixmax  = mem.myalloc(L_ixmax, G_ndim);
   L_irange = mem.myalloc(L_irange,G_ndim);
 
+  G_nbc = mem.myalloc(G_nbc,2*MAX_DIM);
+
   //
   // Assign values to grid dimensions and set the cell-size
   //
@@ -204,12 +207,10 @@ UniformGrid::UniformGrid(
     G_ng_all[i] = 1;
     G_ng[i] = 1;
   }
-
+  
   for (int i=0;i<G_ndim;i++) {
     G_ng[i] = g_nc[i];
-    G_ng_all[i] = g_nc[i] + 2*BC_nbc;
     G_ncell *= G_ng[i]; // Get total number of cells.
-    G_ncell_all *= G_ng[i] +2*BC_nbc; // all cells including boundary.
     G_xmin[i] = g_xn[i];
     G_xmax[i] = g_xp[i];
     G_range[i] = G_xmax[i]-G_xmin[i];
@@ -228,7 +229,21 @@ UniformGrid::UniformGrid(
     L_xmin[i] = lev_xn[i];
     L_xmax[i] = lev_xp[i];
     L_range[i] = lev_xp[i]-lev_xn[i];
+    
+    // if grid boundary is a level boundary, then add BC_nbc cells,
+    // otherwise (i.e. MPI domain boundary) add 4.
+    if (!pconst.equalD(G_xmin[i],L_xmin[i])) G_nbc[2*i]   = min(4,BC_nbc);
+    else                                     G_nbc[2*i]   = BC_nbc;
+    if (!pconst.equalD(G_xmax[i],L_xmax[i])) G_nbc[2*i+1] = min(4,BC_nbc);
+    else                                     G_nbc[2*i+1] = BC_nbc;
+    // all cells including boundary.
+    G_ng_all[i]  = g_nc[i] + G_nbc[2*i] + G_nbc[2*i+1];
+    G_ncell_all *= G_ng[i] + G_nbc[2*i] + G_nbc[2*i+1];
 
+  }
+  for (int i=G_ndim;i<MAX_DIM;i++) {
+    G_nbc[2*i]   = 0;
+    G_nbc[2*i+1] = 0;
   }
 
 #ifdef TESTING
@@ -243,9 +258,9 @@ UniformGrid::UniformGrid(
 
   // grid dimensions including boundary data
   for (int v=0;v<G_ndim;v++)
-    G_xmin_all[v] = G_xmin[v] - BC_nbc*G_dx;
+    G_xmin_all[v] = G_xmin[v] - G_nbc[2*v]*G_dx;
   for (int v=0;v<G_ndim;v++)
-    G_xmax_all[v] = G_xmax[v] + BC_nbc*G_dx;
+    G_xmax_all[v] = G_xmax[v] + G_nbc[2*v+1]*G_dx;
   for (int v=0;v<G_ndim;v++)
     G_range_all[v] = G_xmax_all[v] - G_xmin_all[v];
 
@@ -306,9 +321,9 @@ UniformGrid::UniformGrid(
     G_irange[v] = G_ixmax[v]-G_ixmin[v];
   G_idx = G_irange[XX]/G_ng[XX];
   for (int v=0;v<G_ndim;v++)
-    G_ixmin_all[v] = G_ixmin[v] - BC_nbc*G_idx;
+    G_ixmin_all[v] = G_ixmin[v] - G_nbc[2*v]*G_idx;
   for (int v=0;v<G_ndim;v++)
-    G_ixmax_all[v] = G_ixmax[v] + BC_nbc*G_idx;
+    G_ixmax_all[v] = G_ixmax[v] + G_nbc[2*v+1]*G_idx;
   for (int v=0;v<G_ndim;v++)
     G_irange_all[v] = G_ixmax_all[v] - G_ixmin_all[v];
 
@@ -462,7 +477,7 @@ int UniformGrid::assign_grid_structure()
   // BC_nbc cells negative of G_xmin in all directions.
   //
   int    ix[MAX_DIM];  // ix[] is a counter for cell number.
-  for (int i=0;i<MAX_DIM;i++) ix[i]=-BC_nbc;
+  for (int i=0;i<MAX_DIM;i++) ix[i]=-G_nbc[2*i];
 
   double dpos[MAX_DIM];
   for (int i=0;i<MAX_DIM;i++) dpos[i] = 0.0;
@@ -595,19 +610,19 @@ int UniformGrid::assign_grid_structure()
     //
     // if we got to the end of a row, then loop back and increment iy
     //
-    if (ix[XX] == G_ng[XX]+BC_nbc) {
-      ix[XX] = -BC_nbc;
+    if (ix[XX] == G_ng[XX]+G_nbc[XP]) {
+      ix[XX] = -G_nbc[XN];
       if (G_ndim > 1) {
         ix[YY]++;
         //
         // if we got to the end of a y-column, then loop back and
         // increment z.
         //
-        if (ix[YY] == G_ng[YY]+BC_nbc) {
-          ix[YY] = -BC_nbc;
+        if (ix[YY] == G_ng[YY]+G_nbc[YP]) {
+          ix[YY] = -G_nbc[YN];
           if (G_ndim > 2) {
             ix[ZZ]++;
-            if (ix[ZZ]>G_ng[ZZ]+BC_nbc) {
+            if (ix[ZZ]>G_ng[ZZ]+G_nbc[ZP]) {
               cerr <<"\tWe should be done by now.\n";
               return(ix[ZZ]);
             }
@@ -1031,23 +1046,23 @@ int UniformGrid::SetupBCs(
     do {
       c=cy;
       // add boundary cells beside the grid.
-      for (int v=0; v<BC_nbc; v++) c = NextPt(c, XN);
+      for (int v=0; v<G_nbc[XN]; v++) c = NextPt(c, XN);
       if (!c) rep.error("Got lost on grid! XN",cy->id);
-      for (int v=0; v<BC_nbc; v++) {
+      for (int v=0; v<G_nbc[XN]; v++) {
         BC_bd[XN]->data.push_back(c);
-#ifdef TESTING
+#ifdef BC_DEBUG
         cout << " Adding cell "<<c->id<<" to XN boundary.\n";
-#endif // TESTING
+#endif // BC_DEBUG
         c = NextPt(c, XP);
       }
       if (G_ndim>1) cy=NextPt(cy,YP);
     } while (G_ndim>1 && cy!=0 && cy->isgd);
     if (G_ndim>2) cz=NextPt(cz,ZP);
   } while (G_ndim>2 && cz!=0 && cz->isgd);
-#ifdef TESTING
+#ifdef BC_DEBUG
   cout <<"** Setup XN boundary, got "<<BC_bd[XN]->data.size();
   cout <<" grid cells.\n";
-#endif // TESTING
+#endif // BC_DEBUG
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -1064,25 +1079,25 @@ int UniformGrid::SetupBCs(
     do {
       c=cy;
       // add boundary cells beside the grid.
-      for (int v=0; v<BC_nbc; v++) {
+      for (int v=0; v<G_nbc[XP]; v++) {
         c = NextPt(c, XP);
         if (!c) {
           CI.print_cell(cy);
           rep.error("Got lost on grid! XP",cy->id);
         }
         BC_bd[XP]->data.push_back(c);
-#ifdef TESTING
+#ifdef BC_DEBUG
         cout << " Adding cell "<<c->id<<" to XP boundary.\n";
-#endif // TESTING
+#endif // BC_DEBUG
       }
       if (G_ndim>1) cy=NextPt(cy,YP);
     } while (G_ndim>1 && cy!=0 && cy->isgd);
     if (G_ndim>2) cz=NextPt(cz,ZP);
   } while (G_ndim>2 && cz!=0 && cz->isgd);
-#ifdef TESTING
+#ifdef BC_DEBUG
   cout <<"** Setup XP boundary, got "<<BC_bd[XP]->data.size();
   cout <<" grid cells.\n";
-#endif // TESTING
+#endif // BC_DEBUG
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -1118,10 +1133,10 @@ int UniformGrid::SetupBCs(
 
       if (G_ndim>2) cz = NextPt(cz, ZP);
     } while (G_ndim>2 && cz!=0 && cz->pos[ZZ]<G_ixmax[ZZ]);
-#ifdef TESTING
+#ifdef BC_DEBUG
     cout <<"** Setup YN boundary, got "<<BC_bd[YN]->data.size();
     cout <<" grid cells.\n";
-#endif // TESTING
+#endif // BC_DEBUG
     // --------------------------------------------------------------
 
     // --------------------------------------------------------------
@@ -1152,10 +1167,10 @@ int UniformGrid::SetupBCs(
       
       if (G_ndim>2) cz = NextPt(cz, ZP);
     } while (G_ndim>2 && cz!=0 && cz->pos[ZZ]<G_ixmax[ZZ]);
-#ifdef TESTING
+#ifdef BC_DEBUG
     cout <<"** Setup YP boundary, got "<<BC_bd[YP]->data.size();
     cout <<" grid cells.\n";
-#endif // TESTING
+#endif // BC_DEBUG
     // --------------------------------------------------------------
   }
   // ----------------------------------------------------------------
@@ -1174,10 +1189,10 @@ int UniformGrid::SetupBCs(
       //cout << " Adding cell "<<cz->id<<" to ZN boundary.\n";
       cz = NextPt_All(cz);
     } while (cz->pos[ZZ] < G_ixmin[ZZ]);
-#ifdef TESTING
+#ifdef BC_DEBUG
     cout <<"** Setup ZN boundary, got "<<BC_bd[ZN]->data.size();
     cout <<" grid cells.\n";
-#endif // TESTING
+#endif // BC_DEBUG
     //
     // ZP is also easy... all points with pos[Z] > xmax[Z]
     //
@@ -1188,10 +1203,10 @@ int UniformGrid::SetupBCs(
       //cout << " Adding cell "<<cz->id<<" to ZP boundary.\n";
       cz = NextPt_All(cz);
     } while (cz!=0);
-#ifdef TESTING
+#ifdef BC_DEBUG
     cout <<"** Setup ZP boundary, got "<<BC_bd[ZP]->data.size();
     cout <<" grid cells.\n";
-#endif // TESTING
+#endif // BC_DEBUG
   }
   // ----------------------------------------------------------------
   return 0;

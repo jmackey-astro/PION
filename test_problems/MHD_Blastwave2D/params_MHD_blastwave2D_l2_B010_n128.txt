@@ -26,7 +26,7 @@ EP_coll_ionisation   0
 EP_rad_recombination 0
 EP_update_erg 0
 EP_MP_timestep_limit 0
-EP_Min_Temperature 0
+EP_Min_Temperature 1.0e-100
 EP_Max_Temperature 1e100
 EP_Hydrogen_MassFrac 1.0
 EP_Helium_MassFrac 0.0
