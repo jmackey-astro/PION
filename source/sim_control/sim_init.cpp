@@ -538,6 +538,32 @@ int sim_init::override_params(int narg, string *args)
       cout <<" to "<<SimPM.EP.dynamics<<"\n";
     }
     
+    else if (args[i].find("raytracing=") != string::npos) {
+      cout <<"\tOVERRIDE PARAMS: resetting raytracing";
+      int c = atoi((args[i].substr(11)).c_str());
+      if (c<0 || c>1 ) rep.error("Bad raytracing flag (only 0,1, allowed",c);
+      cout <<" flag from "<<SimPM.EP.raytracing;
+      SimPM.EP.raytracing = c;
+      cout <<" to "<<SimPM.EP.raytracing<<"\n";
+    }
+
+    else if (args[i].find("chemistry=") != string::npos) {
+      cout <<"\tOVERRIDE PARAMS: resetting chemistry";
+      int c = atoi((args[i].substr(10)).c_str());
+      if (c<0 || c>1 ) rep.error("Bad chemistry flag (only 0,1, allowed",c);
+      cout <<" flag from "<<SimPM.EP.chemistry;
+      SimPM.EP.chemistry = c;
+      cout <<" to "<<SimPM.EP.chemistry<<"\n";
+    }
+
+    else if (args[i].find("microphysics=") != string::npos) {
+      cout <<"\tOVERRIDE PARAMS: resetting microphysics";
+      string t = (args[i].substr(13));
+      cout <<" flag from "<<SimPM.chem_code;
+      SimPM.chem_code = t;
+      cout <<" to "<<SimPM.chem_code<<"\n";
+    }
+
     else if (args[i].find("solver=") != string::npos) {
       cout <<"\tOVERRIDE PARAMS: resetting solver: ";
       cout <<"0=LF,1=RSlin,2=RSexact,3=RShybrid,4=RSroe,5=RSroePV,6=FVS,7=HLLD,8=HLL:";

@@ -1876,7 +1876,7 @@ int MPv3::ydot(
 void MPv3::gen_mpv3_lookup_tables()
 {
   //  Start by generating the logarithmic temperature scale:
-  lt.NT = 200; //NB this needs to be const so can initialise arrays with it. If this is >=1e4, get stack overflow errors.
+  lt.NT = 200;
   double temp1=0.0, temp2=0.0, temp3=0.0;
   lt.dlogT = (log10(EP->MaxTemperature) - log10(EP->MinTemperature)) /
                                                       (lt.NT-1);

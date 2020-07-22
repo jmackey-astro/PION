@@ -126,6 +126,8 @@ class GridBaseClass {
       const double      ///< unused
       )=0; ///< Returns Surface area of interface.
 
+  /// Return depth of boundary data in given direction
+  virtual int boundary_depth(enum direction) const =0;
 
   ///
   /// Returns cell diameter for a given cell along a given axis.

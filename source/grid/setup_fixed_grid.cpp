@@ -181,14 +181,14 @@ int setup_fixed_grid::setup_grid(
   cout <<"Setting number of boundary cells == spatial OOA: ";
   cout <<SimPM.spOOA<<"\n";
 #endif // TESTING
-  if      (SimPM.spOOA==OA2) SimPM.Nbc = 2;
-  else if (SimPM.spOOA==OA1) SimPM.Nbc = 1;
+  if      (SimPM.spOOA==OA2) {SimPM.Nbc = 2; SimPM.Nbc_DD = 2;}
+  else if (SimPM.spOOA==OA1) {SimPM.Nbc = 1; SimPM.Nbc_DD = 1;}
   else
     rep.error("Spatial order of accuracy unhandled by boundary conditions!",SimPM.spOOA);
   
   // Force Nbc=1 if using Lax-Friedrichs flux.
   if (SimPM.solverType==FLUX_LF)
-  {SimPM.spOOA = SimPM.tmOOA = OA1; SimPM.Nbc=1;}
+  {SimPM.spOOA = SimPM.tmOOA = OA1; SimPM.Nbc=1; SimPM.Nbc_DD = 1;}
 
   //
   // May need to setup extra data in each cell for ray-tracing optical
@@ -475,17 +475,11 @@ int setup_fixed_grid::setup_raytracing(
       class GridBaseClass *grid ///< pointer to grid
       )
 {
-  //
-  // If not doing raytracing, return immediately.
-  //
   if (!SimPM.EP.raytracing) {
     return 0;
   }
   cout <<"(pion)  Setting up raytracing on level\n";
 
-  //
-  // set up a raytracer and add sources to it.
-  //
   if (!MP) rep.error("can't do raytracing without microphysics",MP);
 #ifdef RT_TESTING
   cout <<"\n------ RAYTRACER SETUP STARTING --------------\n";
@@ -881,7 +875,8 @@ int setup_fixed_grid::setup_boundary_structs(
 #endif
     for (int b=0;b<len;b++) {
       struct boundary_data *bd = new boundary_data;
-      if (b<2*par.ndim) bd->depth = par.Nbc;
+      if (b<2*par.ndim)
+        bd->depth = grid->boundary_depth(static_cast<enum direction>(b));
       grid->BC_bd.push_back(bd);
     }
   }

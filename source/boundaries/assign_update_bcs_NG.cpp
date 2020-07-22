@@ -82,7 +82,9 @@ int assign_update_bcs_NG::TimeUpdateInternalBCs(
       const int maxstep
       )
 {
-  //cout <<"assign_update_bcs_NG::TimeUpdateInternalBCs() running.\n";
+#ifdef TEST_MPI_NG
+  cout <<"assign_update_bcs_NG::TimeUpdateInternalBCs() running.\n";
+#endif
   struct boundary_data *b;
   int err = 0;
   size_t i=0;
@@ -117,21 +119,25 @@ int assign_update_bcs_NG::TimeUpdateInternalBCs(
       break;
 
     case FINE_TO_COARSE:
-      //cout <<"found FINE_TO_COARSE boundary to update\n";
+#ifdef TEST_MPI_NG
+      cout <<"found FINE_TO_COARSE boundary to update\n";
+#endif
       err += BC_update_FINE_TO_COARSE(par,solver,level,b,0,
                                                     cstep,maxstep);
       break;
 
     default:
-      //      cout <<"no internal boundaries to update.\n";
+#ifdef TEST_MPI_NG
+      cout <<"no internal boundaries to update.\n";
+#endif
       rep.error("Unhandled BC: serial NG update internal",b->itype);
       break;
     }
   }
-#ifdef TEST_NEST
+#ifdef TEST_MPI_NG
   cout <<"updated NG-grid serial internal BCs\n";
+  cout <<"assign_update_bcs_NG::TimeUpdateInternalBCs() returns.\n";
 #endif
-  //cout <<"assign_update_bcs_NG::TimeUpdateInternalBCs() returns.\n";
   return 0;
 }
   

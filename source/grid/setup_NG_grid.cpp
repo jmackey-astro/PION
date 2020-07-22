@@ -217,8 +217,8 @@ int setup_NG_grid::setup_grid(
   //
   // Nbc is the depth of the boundary layer around each grid.
   //
-  if      (SimPM.spOOA==OA2) SimPM.Nbc = 6;
-  else if (SimPM.spOOA==OA1) SimPM.Nbc = 4;
+  if      (SimPM.spOOA==OA2) {SimPM.Nbc = 6; SimPM.Nbc_DD = 4;}
+  else if (SimPM.spOOA==OA1) {SimPM.Nbc = 4; SimPM.Nbc_DD = 2;}
   else rep.error("unhandles spatial order of accuracy",SimPM.spOOA);
   
   //
@@ -370,6 +370,9 @@ int setup_NG_grid::setup_raytracing(
       vector<class GridBaseClass *> &grid  ///< vector of grids.
       )
 {
+  if (!SimPM.EP.raytracing) {
+    return 0;
+  }
   int err = 0;
   for (int l=0;l<SimPM.grid_nlevels;l++) {
     //cout <<"setting up raytracing for grid level "<<l<<"\n";

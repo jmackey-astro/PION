@@ -248,7 +248,8 @@ class SimParams {
   std::string *BC_INT;   ///< List of internal boundary regions.
   std::string BC_STRING; ///< For reading pre-2018 data-files.
 
-  int Nbc;         ///< Depth of boundary/ghost cells from edge of grid.
+  int Nbc;  ///< Depth of boundary/ghost cells from edge of grid.
+  int Nbc_DD; ///< Depth of boundary cells for MPI boundaries.
   // Integration accuracy
   int spOOA;  ///< Spatial Order of Accuracy in the code.
   int tmOOA;  ///< Time Order of Accuracy in the code.

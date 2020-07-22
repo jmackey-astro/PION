@@ -141,8 +141,8 @@ UniformGrid::UniformGrid(
   VectorOps_Cart(nd),
   G_ndim(nd),
   G_nvar(nv),
-  G_eqntype(eqt),
-  BC_nbc(Nbc)
+  G_eqntype(eqt)//,
+  //BC_nbc(Nbc)
 {
 
 #ifdef TESTING
@@ -232,10 +232,10 @@ UniformGrid::UniformGrid(
     
     // if grid boundary is a level boundary, then add BC_nbc cells,
     // otherwise (i.e. MPI domain boundary) add 4.
-    if (!pconst.equalD(G_xmin[i],L_xmin[i])) G_nbc[2*i]   = min(4,BC_nbc);
-    else                                     G_nbc[2*i]   = BC_nbc;
-    if (!pconst.equalD(G_xmax[i],L_xmax[i])) G_nbc[2*i+1] = min(4,BC_nbc);
-    else                                     G_nbc[2*i+1] = BC_nbc;
+    if (!pconst.equalD(G_xmin[i],L_xmin[i])) G_nbc[2*i]   = min(4,Nbc);
+    else                                     G_nbc[2*i]   = Nbc;
+    if (!pconst.equalD(G_xmax[i],L_xmax[i])) G_nbc[2*i+1] = min(4,Nbc);
+    else                                     G_nbc[2*i+1] = Nbc;
     // all cells including boundary.
     G_ng_all[i]  = g_nc[i] + G_nbc[2*i] + G_nbc[2*i+1];
     G_ncell_all *= G_ng[i] + G_nbc[2*i] + G_nbc[2*i+1];
@@ -360,9 +360,11 @@ UniformGrid::UniformGrid(
   rep.printVec("grid ixmin ", G_ixmin, G_ndim);
   rep.printVec("grid ixmax ", G_ixmax, G_ndim);
   rep.printVec("grid irange", G_irange,G_ndim);
+  rep.printVec("grid Ncell", G_ng,G_ndim);
   rep.printVec("grid ixmin_all ", G_ixmin_all, G_ndim);
   rep.printVec("grid ixmax_all ", G_ixmax_all, G_ndim);
   rep.printVec("grid irange_all", G_irange_all,G_ndim);
+  rep.printVec("grid Ncell_all", G_ng_all,G_ndim);
   rep.printVec("grid xmin ", G_xmin, G_ndim);
   rep.printVec("grid xmax ", G_xmax, G_ndim);
   rep.printVec("grid range", G_range,G_ndim);
@@ -372,6 +374,7 @@ UniformGrid::UniformGrid(
   rep.printVec("Sim xmin ", Sim_xmin, G_ndim);
   rep.printVec("Sim xmax ", Sim_xmax, G_ndim);
   rep.printVec("Sim range", Sim_range,G_ndim);
+  rep.printVec("boundary depth", G_nbc, 2*G_ndim);
 #endif
 
 

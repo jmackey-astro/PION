@@ -113,6 +113,9 @@ mp_only_cooling::mp_only_cooling(
 	      cooling_flag);
     break;
   }
+  
+  // generate lookup tables for WSS09_CIE_LINE_HEAT_COOL function.
+  gen_mpoc_lookup_tables();
 
 #ifdef TESTING
   ostringstream opfile; opfile << "coolingNOCHEM_" << cooling_flag << ".txt";
@@ -490,46 +493,92 @@ double mp_only_cooling::Edot_WSS09CIE_heat_cool_metallines(
             const double T    ///< Temperature (K)
             )
 {
-  //
-  // COOLING:
-  // First forbidden line cooling of e.g. OII,OIII, dominant in HII regions.
-  // This is collisionally excited lines of photoionised metals.
-  // (Henney et al. 2009,MN,398,157,eq.A9)
-  // I exponentially damped this rate at high temperatures because physically
-  // oxygen will move to higher ionisation states and that is not accounted for
-  // in this simple formula.
-  //
-  // TODO: Check Oxygen abundance is ok. It is set to 5.81e-4 from Lodders 
-  //       (2003,ApJ,591,1220,Tab.4) which is the 'proto-solar nebula' value.
-  //       The photospheric value is lower 4.9e-4, and that is used by Wiersma
-  //       et al. (2009,MN,393,99).
-  //
-  // The CIE cooling is from WSS09, which is normalised by [n(H)]^2, not n(e-)n(H+),
-  // hence the differing multipliers on the two functions.
-  //
-  double rho2 = rho*rho;
-  double rate = -1.69e-22 *exp(-33610.0/T -(2180.0*2180.0/T/T)) *rho2*inv_Mu2_elec_H *exp(-T*T/5.0e10);
-  //cout <<"M="<<rate;
-  rate = min(rate, -cooling_rate_SD93CIE(T)*rho2*inv_Mu2);
-  //cout <<", CIE="<<-cooling_rate_SD93CIE(T)*rho2*inv_Mu2;
-  //
-  // Now Hydrogen cooling due to recombinations and Bremsstrahlung.
-  //
-  rate -= Hii_total_cooling(T) *rho2*inv_Mu2_elec_H;
-  //cout <<", H="<<-Hii_total_cooling(T) *rho2*inv_Mu2_elec_H;
-  //
-  // Now need to add Helium Bremsstrahlung (using eq.5.15b from Rybicki &
-  // Lightman (1978), p.162, with Z=2, n(He)/n(H)=0.1, g_B=1.2 (Gaunt-factor))
-  //
-  rate -= 6.72e-28*sqrt(T)*rho2*inv_Mu2_elec_H;
-  //
-  // heating rate = 5eV*RRR*n(e-)*n(H+) = 8.01e-12*Hii_rad_recomb_rate(T)*rho*rho/Mu_elec/Mu
+  // Get T-vector index
+  int iT = 0;
+  double dT = 0.0;
+  size_t ihi = lt.NT-1, ilo = 0, imid= 0;
+  do {
+    imid = ilo + floor((ihi-ilo)/2.0);
+    if (lt.T[imid] < T) ilo = imid;
+    else                ihi = imid;
+  } while (ihi-ilo >1);
+  iT = ilo;
+  dT = T - lt.T[iT];
+  double rho2 = rho*rho, rate=0.0;
+  // Henney et al. (2009) forbidden lines (eq. A9)
+  rate = -(lt.C_fbdn[iT] + dT*lt.s_C_fbdn[iT])*rho2*inv_Mu2_elec_H;
+  // take stronger rate between Henney A9 and the WSS09 CIE rate.
+  rate = min(rate, -(lt.C_cie[iT] + dT*lt.s_C_cie[iT])*rho2*inv_Mu2);
+  // Hydrogen cooling due to recombinations and Bremsstrahlung.
+  rate -=  (lt.C_rrh[iT] + dT*lt.s_C_rrh[iT])*rho2*inv_Mu2_elec_H;
+  // Helium Bremsstrahlung (using eq.5.15b from Rybicki &
+  // Lightman (1978), p.162, with Z=2, n(He)/n(H)=0.1, g_B=1.2
+  rate -= (lt.C_ffhe[iT] + dT*lt.s_C_ffhe[iT])*rho2*inv_Mu2_elec_H;
+  // heating rate = 5eV*RRR*n(e-)*n(H+) = 8.01e-12*Hii_rrr(T)*n^2
   // assuming all hydrogen is ionised.
-  //
-  rate += 8.01e-12*Hii_rad_recomb_rate(T)*rho2*inv_Mu2_elec_H;
-  //cout <<", Heat="<<8.01e-12*Hii_rad_recomb_rate(T)*rho2*inv_Mu2_elec_H<<"\n";
+  rate += 8.01e-12*(lt.rrhp[iT] + dT*lt.s_rrhp[iT])*rho2*inv_Mu2_elec_H;
   return rate;
 }
+
+// ##################################################################
+// ##################################################################
+
+
+
+void mp_only_cooling::gen_mpoc_lookup_tables()
+{
+  //  Start by generating the logarithmic temperature scale:
+  lt.NT = 200;
+  double temp1=0.0, temp2=0.0, temp3=0.0;
+  lt.dlogT = (log10(EP->MaxTemperature) - log10(EP->MinTemperature)) /
+                                                      (lt.NT-1);
+  lt.T.resize(lt.NT);
+  for (size_t i=0; i < lt.NT; i++) {
+    lt.T[i] = pow (10.0, log10(EP->MinTemperature) + i*lt.dlogT);
+  }
+
+  lt.rrhp.resize(lt.NT);
+  lt.C_rrh.resize(lt.NT);
+  lt.C_ffhe.resize(lt.NT);
+  lt.C_fbdn.resize(lt.NT);
+  lt.C_cie.resize(lt.NT);
+  //lt.C_dust.resize(lt.NT);
+
+  for (size_t i=0; i < lt.NT; i++) {
+    lt.rrhp[i] = Hii_rad_recomb_rate(lt.T[i]);
+    lt.C_rrh[i] = Hii_total_cooling(lt.T[i]);
+    lt.C_ffhe[i] = 6.72e-28*sqrt(lt.T[i]);
+    lt.C_fbdn[i] = 1.20e-22 *
+            exp(-33610.0/lt.T[i] -(2180.0*2180.0/lt.T[i]/lt.T[i])) * 
+            exp(-lt.T[i]*lt.T[i]/5.0e10);
+    lt.C_cie[i] = cooling_rate_SD93CIE(lt.T[i]);
+    //lt.C_dust[i] = 1.0e-17 * exp(1.5*log(lt.T[i]/2.5e8));
+  }
+  
+  lt.s_rrhp.resize(lt.NT);
+  lt.s_C_rrh.resize(lt.NT);
+  lt.s_C_ffhe.resize(lt.NT);
+  lt.s_C_fbdn.resize(lt.NT);
+  lt.s_C_cie.resize(lt.NT);
+  //lt.s_C_dust.resize(lt.NT);
+  for (size_t i=0; i < lt.NT-1; i++) {
+    lt.s_rrhp[i]   = (lt.rrhp[i+1]  -lt.rrhp[i]  ) / (lt.T[i+1]-lt.T[i]);
+    lt.s_C_rrh[i]  = (lt.C_rrh[i+1] -lt.C_rrh[i] ) / (lt.T[i+1]-lt.T[i]);
+    lt.s_C_ffhe[i] = (lt.C_ffhe[i+1]-lt.C_ffhe[i]) / (lt.T[i+1]-lt.T[i]);
+    lt.s_C_fbdn[i] = (lt.C_fbdn[i+1]-lt.C_fbdn[i]) / (lt.T[i+1]-lt.T[i]);
+    lt.s_C_cie[i]  = (lt.C_cie[i+1] -lt.C_cie[i] ) / (lt.T[i+1]-lt.T[i]);
+    //lt.s_C_dust[i] = (lt.C_dust[i+1]-lt.C_dust[i]) / (lt.T[i+1]-lt.T[i]);
+  }
+  lt.s_rrhp[lt.NT-1]   = 0.0;
+  lt.s_C_rrh[lt.NT-1] = 0.0; 
+  lt.s_C_ffhe[lt.NT-1] = 0.0; 
+  lt.s_C_fbdn[lt.NT-1] = 0.0; 
+  lt.s_C_cie[lt.NT-1]  = 0.0; 
+  //lt.s_C_dust[lt.NT-1] = 0.0;
+  return;
+}
+
+
 
 // ##################################################################
 // ##################################################################

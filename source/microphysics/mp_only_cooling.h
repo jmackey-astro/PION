@@ -35,6 +35,27 @@
 #include "microphysics/hydrogen_recomb_Hummer94.h"
 #include "microphysics/integrator.h"
 
+/// Lookup table for reaction rates and heating/cooling rates for
+/// MPv3.
+struct lkuptab_MPoc {
+  size_t NT;
+  double dlogT;
+  std::vector<double> T;      ///< temperature
+  std::vector<double> ne;     ///< number density
+  std::vector<double> rrhp;   ///< rad-recomb rate H+
+  std::vector<double> C_rrh;  ///< cooling rad-recomb+free-free H+
+  std::vector<double> C_ffhe; ///< cooling free-free He+
+  std::vector<double> C_fbdn; ///< forbidden line-cooling CNO
+  std::vector<double> C_cie;  ///< line-cooling CIE metals
+  //std::vector<double> C_dust; ///< dust cooling in hot gas
+  std::vector<double> s_rrhp;   ///< rad-recomb rate H+
+  std::vector<double> s_C_rrh;  ///< cooling rad-recomb+free-free H+
+  std::vector<double> s_C_ffhe; ///< cooling free-free He+
+  std::vector<double> s_C_fbdn; ///< forbidden line-cooling CNO
+  std::vector<double> s_C_cie;  ///< line-cooling CIE metals
+  //std::vector<double> s_C_dust; ///< dust cooling in hot gas
+};
+
 
 ///
 /// This is a simple microphysics class which only has heating and
@@ -325,6 +346,9 @@ class mp_only_cooling
         const double  ///< Temperature (K)
         );
   
+  /// setup lookup tables
+  void gen_mpoc_lookup_tables();
+  struct lkuptab_MPoc lt;
 };
 
 /************************ MICROPHYSICS ***************************/

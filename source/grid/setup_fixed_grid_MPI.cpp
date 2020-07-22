@@ -99,8 +99,8 @@ int setup_fixed_grid_pllel::setup_grid(
   cout <<"Setting number of boundary cells == spatial OOA: ";
   cout <<SimPM.spOOA<<"\n";
 #endif // TESTING
-  if      (SimPM.spOOA==OA2) SimPM.Nbc = 2;
-  else if (SimPM.spOOA==OA1) SimPM.Nbc = 1;
+  if      (SimPM.spOOA==OA2) {SimPM.Nbc = 2; SimPM.Nbc_DD = 2;}
+  else if (SimPM.spOOA==OA1) {SimPM.Nbc = 1; SimPM.Nbc_DD = 1;}
   else
     rep.error("Spatial order of accuracy unhandled by boundary conditions!",SimPM.spOOA);
   
@@ -184,19 +184,13 @@ int setup_fixed_grid_pllel::setup_raytracing(
 {
   //
   // This function is identical to the serial setup function, except
-  // that it sets up parallelised versions of the raytracers.
-  //
-  // If not doing raytracing, return immediately.
+  // that it sets up MPI-aware versions of the raytracers.
   //
   if (!SimPM.EP.raytracing) {
     return 0;
   }
-
   cout <<"(pion-mpi)  Setting up raytracing on level\n";
-  //
-  // Now we are doing raytracing, so set up a raytracer and add
-  // sources to it.
-  //
+  
   if (!MP) rep.error("can't do raytracing without microphysics",MP);
   grid->RT=0;
   //

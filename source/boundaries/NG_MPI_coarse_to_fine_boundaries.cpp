@@ -109,7 +109,8 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
           bdata->c.clear();
 
           // find cells along this boundary.
-          add_cells_to_C2F_send_list(par,grid,bdata,fg_ixmin,fg_ixmax);
+          add_cells_to_C2F_send_list(par,grid,bdata,
+                            fg_ixmin,fg_ixmax,l+1,fl_ixmin,fl_ixmax);
           b->NGsendC2F.push_back(bdata);
 #ifdef TEST_C2F
           cout <<"added "<<bdata->c.size()<<" cells to C2F send el ";
@@ -130,7 +131,8 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
           bdata->c.clear();
 
           // find cells along this boundary.
-          add_cells_to_C2F_send_list(par,grid,bdata,fg_ixmin,fg_ixmax);
+          add_cells_to_C2F_send_list(par,grid,bdata,
+                            fg_ixmin,fg_ixmax,l+1,fl_ixmin,fl_ixmax);
           b->NGsendC2F.push_back(bdata);
 #ifdef TEST_C2F
           cout <<"added "<<bdata->c.size()<<" cells to C2F send el ";
@@ -176,7 +178,8 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
             bdata->rank = fgngb[dir][f].rank;
             bdata->dir  = 2*d +1; // outward normal of child is +ve
             bdata->c.clear();
-            add_cells_to_C2F_send_list(par,grid,bdata,fg_ixmin,fg_ixmax);
+            add_cells_to_C2F_send_list(par,grid,bdata,
+                            fg_ixmin,fg_ixmax,l+1,fl_ixmin,fl_ixmax);
             b->NGsendC2F.push_back(bdata);
           }
         }
@@ -207,7 +210,8 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
             bdata->rank = fgngb[dir][f].rank;
             bdata->dir  = 2*d; // outward normal of child is -ve dir
             bdata->c.clear();
-            add_cells_to_C2F_send_list(par,grid,bdata,fg_ixmin,fg_ixmax);
+            add_cells_to_C2F_send_list(par,grid,bdata,
+                            fg_ixmin,fg_ixmax,l+1,fl_ixmin,fl_ixmax);
             b->NGsendC2F.push_back(bdata);
           }
         }
@@ -634,8 +638,8 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     string recv_id; int recv_tag=-1; int from_rank=-1;
     int comm_tag = BC_MPI_NGC2F_tag+100*b->dir +l;
 #ifdef TEST_C2F
-    if (check) {
-    cout <<"BC_update_COARSE_TO_FINE_RECV: looking for data with tag";
+    if (1==1) {
+    cout <<"BC_update_COARSE_TO_FINE_RECV: looking for data tag ";
     cout <<comm_tag<<endl;
     }
 #endif 
@@ -643,7 +647,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
                         &recv_tag,comm_tag, COMM_DOUBLEDATA);
     if (err) rep.error("look for double data failed",err);
 #ifdef TEST_C2F
-    if (check) {
+    if (1==1) {
     cout <<"BC_update_COARSE_TO_FINE_RECV: found data from rank ";
     cout <<from_rank<<", with tag "<< recv_tag<<" and id ";
     cout <<recv_id<<".  Looked for comm_tag="<<comm_tag<<endl;
@@ -660,7 +664,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     pion_flt *buf = 0;
     buf = mem.myalloc(buf,n_el);
 #ifdef TEST_C2F
-    if (check) {
+    if (1==1) {
     cout <<"BC_update_COARSE_TO_FINE_RECV: get "<<n_cell;
     cout <<" cells, and "<<n_el<<" doubles.\n";
     }
@@ -838,7 +842,10 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list(
       class GridBaseClass *grid,  ///< pointer to coarse-level grid
       struct c2f *bdata,          ///< pointer to list of cells
       int *ixmin,                 ///< child grid xmin (integer)
-      int *ixmax                  ///< child grid xmax (integer)
+      int *ixmax,                  ///< child grid xmax (integer)
+      const int lf,       ///< level of fine grid.
+      const int *fl_xmin, ///< level xmin of fine grid.
+      const int *fl_xmax  ///< level xmax of fine grid.
       )
 {
   // In XN,XP direction we add cells with faces that touch the fine-
@@ -854,19 +861,22 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list(
 #ifdef TEST_C2F
     cout <<"1D \n";
 #endif
-    add_cells_to_C2F_send_list_1D(par,grid,bdata,ixmin,ixmax);
+    add_cells_to_C2F_send_list_1D(par,grid,bdata,ixmin,ixmax,lf,
+                                                  fl_xmin,fl_xmax);
   }
   else if (par.ndim==2) {
 #ifdef TEST_C2F
     cout <<"2D \n";
 #endif
-    add_cells_to_C2F_send_list_2D(par,grid,bdata,ixmin,ixmax);
+    add_cells_to_C2F_send_list_2D(par,grid,bdata,ixmin,ixmax,lf,
+                                                  fl_xmin,fl_xmax);
   }
   else {
 #ifdef TEST_C2F
     cout <<"3D \n";
 #endif
-    add_cells_to_C2F_send_list_3D(par,grid,bdata,ixmin,ixmax);
+    add_cells_to_C2F_send_list_3D(par,grid,bdata,ixmin,ixmax,lf,
+                                                  fl_xmin,fl_xmax);
   }
   return;
 }
@@ -879,11 +889,14 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list(
 
 
 void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_1D(
-      class SimParams &par,      ///< pointer to simulation parameters
+      class SimParams &par,       ///< pointer to simulation parameters
       class GridBaseClass *grid,  ///< pointer to coarse-level grid
       struct c2f *bdata,          ///< pointer to list of cells
       int *ixmin,                 ///< child grid xmin (integer)
-      int *ixmax                  ///< child grid xmax (integer)
+      int *ixmax,                  ///< child grid xmax (integer)
+      const int lf,       ///< level of fine grid.
+      const int *fl_xmin, ///< level xmin of fine grid.
+      const int *fl_xmax  ///< level xmax of fine grid.
       )
 {
   int bsize = grid->idx()*par.Nbc/2; // idx is >=2, Nbc is >=1.
@@ -926,10 +939,15 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
       class GridBaseClass *grid,  ///< pointer to coarse-level grid
       struct c2f *bdata,          ///< pointer to list of cells
       int *ixmin,                 ///< child grid xmin (integer)
-      int *ixmax                  ///< child grid xmax (integer)
+      int *ixmax,                 ///< child grid xmax (integer)
+      const int lf,       ///< level of fine grid.
+      const int *fl_xmin, ///< level xmin of fine grid.
+      const int *fl_xmax  ///< level xmax of fine grid.
       )
 {
+  // depth of boundary region, in integer coordinates.
   int bsize = grid->idx()*par.Nbc/2; // idx is >=2, Nbc is >=1.
+  int n = 0;
   //cout <<"bsize="<<bsize<<", and idx="<<grid->idx()<<", Nbc=";
   //cout <<par.Nbc<<"\n";
   //rep.printVec("ixmin",ixmin,par.ndim);
@@ -953,23 +971,33 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
     break;
 
     case YN:
-    xn = ixmin[XX]-bsize;
-    xp = ixmax[XX]+bsize;
+    if (ixmin[XX]==fl_xmin[XX]) n= grid->idx()*par.Nbc/2;
+    else                        n= grid->idx()*par.Nbc_DD/2;
+    xn = ixmin[XX]-n;
+    if (ixmax[XX]==fl_xmax[XX]) n= grid->idx()*par.Nbc/2;
+    else                        n= grid->idx()*par.Nbc_DD/2;
+    xp = ixmax[XX]+n;
     yn = ixmin[YY]-bsize;
     yp = ixmin[YY];
     break;
 
     case YP:
-    xn = ixmin[XX]-bsize;
-    xp = ixmax[XX]+bsize;
+    if (ixmin[XX]==fl_xmin[XX]) n= grid->idx()*par.Nbc/2;
+    else                        n= grid->idx()*par.Nbc_DD/2;
+    xn = ixmin[XX]-n;
+    if (ixmax[XX]==fl_xmax[XX]) n= grid->idx()*par.Nbc/2;
+    else                        n= grid->idx()*par.Nbc_DD/2;
+    xp = ixmax[XX]+n;
     yn = ixmax[YY];
     yp = ixmax[YY]+bsize;
     break;
 
-
     default:
     rep.error("bad direction in 2D C2F",bdata->dir);
   }
+  //cout <<"par.Nbc="<<par.Nbc<<", par.Nbc_DD="<<par.Nbc_DD<<"\n";
+  //rep.printVec("fl_xmin",fl_xmin,par.ndim);
+  //rep.printVec("fl_xmax",fl_xmax,par.ndim);
 
   //cout <<"boundary: x in ["<<xn<<","<<xp<<"], y in["<<yn<<","<<yp<<"]\n";
   size_t ct=0;
@@ -1001,7 +1029,10 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
       class GridBaseClass *grid,  ///< pointer to coarse-level grid
       struct c2f *bdata,          ///< pointer to list of cells
       int *ixmin,                 ///< child grid xmin (integer)
-      int *ixmax                  ///< child grid xmax (integer)
+      int *ixmax,                  ///< child grid xmax (integer)
+      const int lf,       ///< level of fine grid.
+      const int *fl_xmin, ///< level xmin of fine grid.
+      const int *fl_xmax  ///< level xmax of fine grid.
       )
 {
 #ifdef TEST_C2F
@@ -1010,6 +1041,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
 #endif
   
   int bsize = grid->idx()*par.Nbc/2; // idx is >=2, Nbc is >=1.
+  int n = 0;
   
   // define domain of boundary region
   int xn=0,xp=0,yn=0,yp=0,zn=0,zp=0;
@@ -1033,8 +1065,12 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
     break;
 
     case YN:
-    xn = ixmin[XX]-bsize;
-    xp = ixmax[XX]+bsize;
+    if (ixmin[XX]==fl_xmin[XX]) n=grid->idx()*par.Nbc/2;
+    else                        n=grid->idx()*par.Nbc_DD/2;
+    xn = ixmin[XX]-n;
+    if (ixmax[XX]==fl_xmax[XX]) n=grid->idx()*par.Nbc/2;
+    else                        n=grid->idx()*par.Nbc_DD/2;
+    xp = ixmax[XX]+n;
     yn = ixmin[YY]-bsize;
     yp = ixmin[YY];
     zn = ixmin[ZZ];
@@ -1042,8 +1078,12 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
     break;
 
     case YP:
-    xn = ixmin[XX]-bsize;
-    xp = ixmax[XX]+bsize;
+    if (ixmin[XX]==fl_xmin[XX]) n=grid->idx()*par.Nbc/2;
+    else                        n=grid->idx()*par.Nbc_DD/2;
+    xn = ixmin[XX]-n;
+    if (ixmax[XX]==fl_xmax[XX]) n=grid->idx()*par.Nbc/2;
+    else                        n=grid->idx()*par.Nbc_DD/2;
+    xp = ixmax[XX]+n;
     yn = ixmax[YY];
     yp = ixmax[YY]+bsize;
     zn = ixmin[ZZ];
@@ -1051,19 +1091,35 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
     break;
     
     case ZN:
-    xn = ixmin[XX]-bsize;
-    xp = ixmax[XX]+bsize;
-    yn = ixmin[YY]-bsize;
-    yp = ixmax[YY]+bsize;
+    if (ixmin[XX]==fl_xmin[XX]) n=grid->idx()*par.Nbc/2;
+    else                        n=grid->idx()*par.Nbc_DD/2;
+    xn = ixmin[XX]-n;
+    if (ixmax[XX]==fl_xmax[XX]) n=grid->idx()*par.Nbc/2;
+    else                        n=grid->idx()*par.Nbc_DD/2;
+    xp = ixmax[XX]+n;
+    if (ixmin[YY]==fl_xmin[YY]) n=grid->idx()*par.Nbc/2;
+    else                        n=grid->idx()*par.Nbc_DD/2;
+    xn = ixmin[YY]-n;
+    if (ixmax[YY]==fl_xmax[YY]) n=grid->idx()*par.Nbc/2;
+    else                        n=grid->idx()*par.Nbc_DD/2;
+    xp = ixmax[YY]+n;
     zn = ixmin[ZZ]-bsize;
     zp = ixmin[ZZ];
     break;
 
     case ZP:
-    xn = ixmin[XX]-bsize;
-    xp = ixmax[XX]+bsize;
-    yn = ixmin[YY]-bsize;
-    yp = ixmax[YY]+bsize;
+    if (ixmin[XX]==fl_xmin[XX]) n=grid->idx()*par.Nbc/2;
+    else                        n=grid->idx()*par.Nbc_DD/2;
+    xn = ixmin[XX]-n;
+    if (ixmax[XX]==fl_xmax[XX]) n=grid->idx()*par.Nbc/2;
+    else                        n=grid->idx()*par.Nbc_DD/2;
+    xp = ixmax[XX]+n;
+    if (ixmin[YY]==fl_xmin[YY]) n=grid->idx()*par.Nbc/2;
+    else                        n=grid->idx()*par.Nbc_DD/2;
+    xn = ixmin[YY]-n;
+    if (ixmax[YY]==fl_xmax[YY]) n=grid->idx()*par.Nbc/2;
+    else                        n=grid->idx()*par.Nbc_DD/2;
+    xp = ixmax[YY]+n;
     zn = ixmax[ZZ];
     zp = ixmax[ZZ]+bsize;
     break;

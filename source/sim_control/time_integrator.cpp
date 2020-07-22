@@ -269,7 +269,7 @@ int time_integrator::calc_microphysics_dU(
 #endif // TESTING
   int err = 0;
 
-  if (SimPM.RS.Nsources==0) {
+  if (SimPM.RS.Nsources==0 || !SimPM.EP.raytracing) {
     //
     // If no radiative transfer, then just do a simple MP update.
     //
@@ -291,6 +291,7 @@ int time_integrator::calc_microphysics_dU(
   }
     
   //cout <<"\tcalc_microphysics_dU finished.\n";
+  rep.errorTest("calc_microphysics_dU",0,err);
   return err;
 }
 

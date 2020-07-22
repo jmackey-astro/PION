@@ -545,9 +545,7 @@ class MPv3
       double []  ///< absolute error tolerance (array)
       );
 
-  ///
   /// setup MPv3 lookup tables
-  ///
   void gen_mpv3_lookup_tables();
   struct lkuptab lt;
   //---------------------------------------------------------------------------

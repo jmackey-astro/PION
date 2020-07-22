@@ -390,12 +390,6 @@ int sim_control::check_eosim()
     rep.error("Don't know how to check for end of simulation.",2);
   }  
 
-  // Diagnose boundary cells... comment out if not needed.
-  //  for (int bc=0;bc<SimPM.Nbc;bc++) {
-  //    rep.printVec("boundary vec, P :",bd[bc].P );
-  //    rep.printVec("boundary vec, Ph:",bd[bc].Ph);
-  //  }
-  // diagnose bcs
   return(0);
 }
 

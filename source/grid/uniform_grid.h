@@ -201,14 +201,9 @@ class UniformGrid
   ///
   int assign_grid_structure();
 
-
-
-
   int BC_nbd; ///< Number of Boundaries.
-  ///
-  /// Depth of boundary cells (1 or 2 cells so far).
-  ///
-  const int BC_nbc;
+  /// Depth of boundary cells.
+  //const int BC_nbc;
 
   public:
   /// 
@@ -367,6 +362,10 @@ class UniformGrid
   virtual int level_iRange(enum axes a) const
   {return(L_irange[a]);}
 
+  /// Return depth of boundary data in given direction
+  virtual int boundary_depth(enum direction d) const
+  {return G_nbc[static_cast<int>(d)];}
+  
   /// Return cell size in integer units
   int idx() const
   {return G_idx;}

@@ -31,7 +31,7 @@
 #include <sstream>
 using namespace std;
 
-
+//#define TESTING
 
 // ##################################################################
 // ##################################################################
@@ -217,7 +217,9 @@ int main(int argc, char **argv)
         }
       }
     }
-    //cout <<"icgen_NG_MPI: updating C2F boundaries, sent, now recv\n";
+#ifdef TESTING
+    cout <<"icgen_NG_MPI: updating C2F boundaries, sent, now recv\n";
+#endif
     if (l>0) {
       for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
         if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
@@ -226,9 +228,11 @@ int main(int argc, char **argv)
         }
       }
     }
-    //cout <<"icgen_NG_MPI: updating C2F boundaries: done with level\n";
+#ifdef TESTING
+    cout <<"icgen_NG_MPI: updating C2F boundaries: done with level\n";
+#endif
   }
-  //cout <<"icgen_NG_MPI: updating C2F boundaries done\n";
+  cout <<"icgen_NG_MPI: updating C2F boundaries done\n";
   SimSetup->BC_COARSE_TO_FINE_SEND_clear_sends();
   rep.errorTest("NG_MPI INIT: error from boundary update",0,err);
   // ----------------------------------------------------------------

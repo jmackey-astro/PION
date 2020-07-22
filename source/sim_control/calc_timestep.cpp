@@ -468,7 +468,7 @@ double calc_timestep::get_mp_timescales_no_radiation(
   // all neutral initially, but only for a few seconds!!!
   // (DON'T WANT TO SET THIS FOR NON-DYNAMICS TEST PROBLEMS)
   //
-  if ((par.timestep<3) && (par.RS.Nsources>0) &&
+  if ((par.timestep<3) && (par.EP.raytracing>0) &&
       (par.EP.phot_ionisation)) {
     //
     // adjust first timestep so that it corresponds to ionised cell.
@@ -480,7 +480,9 @@ double calc_timestep::get_mp_timescales_no_radiation(
     // hardcode the time.
     //
     dt = min(dt,1.0e7);
+#ifdef DEBUG_MP
     cout <<"\tRT timestep: \t\t\tdt="<<dt<<"\n";
+#endif
   }
   //
   // Make sure the first timestep is short if doing RT, here set to be 
@@ -491,9 +493,13 @@ double calc_timestep::get_mp_timescales_no_radiation(
   //
   if ((par.timestep==0) && (par.RS.Nsources>0)) {
     c=grid->FirstPt();
+#ifdef DEBUG_MP
     cout <<"rho="<<c->Ph[RO]<<", old dt="<<dt;
+#endif
     dt = min(dt, 3.009e-12/c->Ph[RO]);
+#ifdef DEBUG_MP
     cout <<", updated dt="<<dt<<"\n";
+#endif
   }
 #endif // RT_TEST_PROBS
 
