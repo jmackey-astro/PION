@@ -547,8 +547,6 @@ void stellar_wind::set_wind_cell_reference_state(
   
   // set H+ tracer value based on stellar temperature.
   if (WS->Hplus>=0) {
-    //cout <<"WS->Hplus = "<<WS->Hplus;
-    //cout <<" itr = "<<WS->iHplus<<endl;
     if      (WS->Tw < 1.0e4) WS->tracers[WS->iHplus] = 1.0e-10;
     else if (WS->Tw > 1.5e4) WS->tracers[WS->iHplus] = 1.0;
     else    WS->tracers[WS->iHplus] = 1.0e-10 + (WS->Tw-1.0e4)*(1.0-1.0e-10)/0.5e4;
@@ -560,12 +558,10 @@ void stellar_wind::set_wind_cell_reference_state(
 
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
-  //
   // Set a minimum temperature in the wind
-  //
   if (MP) {
-    if (MP->Temperature(wc->p,gamma) <WS->Tw) {
-      MP->Set_Temp(wc->p,WS->Tw,gamma);
+    if (MP->Temperature(wc->p,gamma) <Tmin) {
+      MP->Set_Temp(wc->p,Tmin,gamma);
     }
   }
   else {
