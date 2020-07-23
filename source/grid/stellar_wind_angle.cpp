@@ -682,8 +682,8 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   // Set the minimum temperature to be Tstar in the wind...
   //
   if (MP) {
-    if (MP->Temperature(wc->p,eos_gamma) < WS->Tw) {
-      MP->Set_Temp(wc->p, WS->Tw ,eos_gamma);
+    if (MP->Temperature(wc->p,eos_gamma) < Tmin) {
+      MP->Set_Temp(wc->p, Tmin, eos_gamma);
     }
   }
   else {
