@@ -1,3 +1,8 @@
+///
+/// \file stellar_wind_angle.cpp
+/// \author Jonathan Mackey
+/// \date 2017.07.01
+///
 /// Modifications:
 /// - 2017.07.[20-31] RK/JM: Getting it working.
 /// - 2017.08.[15-?] RK: reworked to include trilinear interpolation
@@ -483,6 +488,13 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   // for the reference state of the cell.  Every timestep the cell-values will
   // be reset to this reference state.
   //
+  bool set_rho=true;
+  if (wc->dist < 0.75*WS->radius) {
+    wc->p[RO] = 1.0e-31;
+    wc->p[PG] = 1.0e-31;
+    set_rho=false;
+  }
+  
   double pp[ndim];
   CI.get_dpos(wc->c,pp);
   //rep.printVec("cell pos", pp, ndim);
@@ -491,40 +503,26 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   //
   // 3D geometry: either 3D-cartesian, 2D-axisymmetry, or 1D-spherical.
   //
-  wc->p[RO] = fn_density_interp(
-          std::min(0.9999,WS->v_rot/WS->vcrit),
-          WS->v_esc, WS->Mdot, wc->dist, wc->theta, WS->Tw);
-#ifdef TESTING
-  if (!isfinite(wc->p[RO]) || pconst.equalD(wc->p[RO],0.0)) {
-    cout <<"bad density interpolation: "<<wc->p[RO]<<"\n";
-    cout <<pconst.sqrt2()*WS->v_rot/WS->v_esc <<"  ";
-    cout <<WS->v_esc <<"  ";
-    cout <<WS->Mdot <<"  ";
-    cout <<wc->dist <<"  ";
-    cout <<wc->theta <<"  ";
-    cout << WS->Tw <<"\n";
-    rep.error("Density",1);
+  if (set_rho) {
+    wc->p[RO] = fn_density_interp(
+            std::min(0.9999,WS->v_rot/WS->vcrit),
+            WS->v_esc, WS->Mdot, wc->dist, wc->theta, WS->Tw);
+    //
+    // Set pressure based on wind density/temperature at the stellar radius,
+    // assuming adiabatic expansion outside Rstar, and that we don't care what
+    // the temperature is inside Rstar (because this function will make it 
+    // hotter than Teff, which is not realistic):
+    //
+    // rho_star = Mdot/(4.pi.R_star^2.v_inf),
+    //   p_star = rho_star.k.T_star/(mu.m_p)
+    // So then p(r) = p_star (rho(r)/rho_star)^gamma
+    //
+    wc->p[PG] = WS->Tw*pconst.kB()/pconst.m_p(); // taking mu = 1
+    wc->p[PG] *= pow_fast(fn_density_interp(std::min(0.9999,WS->v_rot/WS->vcrit),
+                          WS->v_esc, WS->Mdot, WS->Rstar, wc->theta, WS->Tw),
+                          1.0-eos_gamma);
+    wc->p[PG] *= pow_fast(wc->p[RO], eos_gamma);
   }
-#endif
-
-  //
-  // Set pressure based on wind density/temperature at the stellar radius,
-  // assuming adiabatic expansion outside Rstar, and that we don't care what
-  // the temperature is inside Rstar (because this function will make it 
-  // hotter than Teff, which is not realistic):
-  //
-  // rho_star = Mdot/(4.pi.R_star^2.v_inf),
-  //   p_star = rho_star.k.T_star/(mu.m_p)
-  // So then p(r) = p_star (rho(r)/rho_star)^gamma
-  // ******************************************************************************
-  // *********** WARNING MU=1 HERE, PROBABLY SHOULD BE O.6 (IONISED) 1.3 (NEUTRAL).
-  // ******************************************************************************
-  //
-  wc->p[PG] = WS->Tw*pconst.kB()/pconst.m_p(); // taking mu = 1
-  wc->p[PG] *= pow_fast(fn_density_interp(std::min(0.9999,WS->v_rot/WS->vcrit),
-                        WS->v_esc, WS->Mdot, WS->Rstar, wc->theta, WS->Tw),
-                        1.0-eos_gamma);
-  wc->p[PG] *= pow_fast(wc->p[RO], eos_gamma);
 
   // calculate terminal wind velocity
   double Vinf = fn_v_inf(std::min(0.9999,WS->v_rot/WS->vcrit),
@@ -598,8 +596,6 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   // Use a split monopole plus a rotational term adding toroidal
   // component.
   // TODO: for general J vector, what is rotational component.
-  // TODO: Add axi-symmetric BC so that VZ,BZ not reflected at 
-  //       symmetry axis.  Otherwise 2D with rotation won't work.
   if (eqntype==EQMHD || eqntype==EQGLM) {
     double B_s = WS->Bstar/sqrt(4.0*M_PI); // code units for B_surf
     double D_s = WS->Rstar/wc->dist;     // 1/d in stellar radii

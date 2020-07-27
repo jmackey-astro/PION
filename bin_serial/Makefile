@@ -145,7 +145,7 @@ endif
 ifeq ($(MAKE_UNAME), debian10)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
-    #CXXFLAGS = -O0 -Wall -g
+    CXXFLAGS = -O0 -Wall -g
   else
     CXXFLAGS = -O0 -Wall -g
   endif
@@ -310,7 +310,7 @@ OBJ_ICS = shock_tube.o radiative_shock.o blast_wave.o basic_tests.o \
           shock_cloud.o jet.o laser_ablation.o spherical_clump.o \
           photoevaporating_clump.o photoevaporating_random_clumps.o \
           photoevaporating_multiclumps.o inside_sphere.o \
-          icgen_base.o
+          icgen_base.o read_1Dto2D.o
 
 OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
           outflow_boundaries.o inflow_boundaries.o \
@@ -719,6 +719,7 @@ laser_ablation.o:   laser_ablation.cpp icgen_base.h icgen.h ${GLOBAL}
 jet.o:		    jet.cpp icgen_base.h icgen.h ${GLOBAL}
 spherical_clump.o: spherical_clump.cpp icgen_base.h icgen.h ${GLOBAL}
 StarBench_test.o: StarBench_test.cpp icgen_base.h icgen.h ${GLOBAL}
+read_1Dto2D.o: read_1Dto2D.cpp icgen_base.h icgen.h ${GLOBAL}
 #######################
 
 ###############################################

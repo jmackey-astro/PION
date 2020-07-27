@@ -127,6 +127,10 @@ void setup_ics_type(
   }
 #endif // BBTURBULENCE_CODE_EXT
 
+  else if (ics=="1Dto2D") {
+    *ic = new IC_read_1Dto2D();
+  }
+
   else rep.error("BAD IC identifier",ics);
   if (!*ic) rep.error("failed to init",ics);
 

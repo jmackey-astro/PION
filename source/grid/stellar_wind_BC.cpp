@@ -1,5 +1,5 @@
 ///
-/// \file stellar_wind_BC.cc
+/// \file stellar_wind_BC.cpp
 /// \author Jonathan Mackey
 /// \date 2010.10.05
 ///

@@ -237,7 +237,7 @@ void IC_HD_2D_ShockCloud::get_data_vals(
   //
   //cout <<"Rshock="<<Rshock<<" Rmin/Rmax="<<radius.front()<<"/"<<radius.back()<<"\n";
   //
-  // First see if z<Rshock, in which case just use slab symmetry.
+  // see if z<Rshock, in which case just use slab symmetry.
   //
   double seek = dpos[Zcyl];
   int imin=0, imax=0;

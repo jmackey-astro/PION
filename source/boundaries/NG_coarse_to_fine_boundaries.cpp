@@ -257,13 +257,17 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   else if (par.spOOA == OA2
            // || par.spOOA == OA1
            ) {
+    pion_flt sx[par.nvar], sy[par.nvar], sz[par.nvar];
+    for (int v=0;v<par.nvar;v++) sx[v]=0.0;
+    for (int v=0;v<par.nvar;v++) sy[v]=0.0;
+    for (int v=0;v<par.nvar;v++) sz[v]=0.0;
     //
     // Dimensions is sufficiently different that we have an if/else
     // loop for each dimension, and then do linear/bilinear/trilinear
     // interpolation as needed.
     //
     if (par.ndim ==1) {
-      pion_flt slope[par.nvar], c_vol=0;
+      pion_flt c_vol=0.0;
       for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
         cell *f1, *f2, *c;
         f1 = (*f_iter);
@@ -272,9 +276,9 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         // coarse cell properties:
         c = f1->npt;
         c_vol = coarse->CellVolume(c,0);
-        solver->SetSlope(c,XX,par.nvar,slope,OA2,coarse);
+        solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
         interpolate_coarse2fine1D(
-                            par,fine,solver,c->Ph,c_vol,slope,f1,f2);
+                            par,fine,solver,c->Ph,c_vol,sx,f1,f2);
       }
     } // 1D
 
@@ -283,7 +287,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       cout <<"interpolating coarse to fine 2d: ncells=";
       cout << b->data.size()<<"\n";
 #endif
-      pion_flt sx[par.nvar], sy[par.nvar], c_vol=0;
+      pion_flt c_vol=0.0;
 
       //
       // Need to do bilinear interpolation, 4 cells at a time.
@@ -342,7 +346,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       cout <<"interpolating coarse to fine 2d: ncells=";
       cout << b->data.size()<<"\n";
 #endif
-      pion_flt sx[par.nvar], sy[par.nvar], sz[par.nvar], c_vol=0;
+      pion_flt c_vol=0.0;
       cell *fch[8]; // fine-level cells (children)
       cell *c;      // coarse-level cell.
       for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
