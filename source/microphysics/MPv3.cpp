@@ -460,10 +460,13 @@ MPv3::MPv3(
   // ----------------------------------------------------------------
   // ---------- output cooling rates for various temperatures -------
   // ----------------------------------------------------------------
-#ifdef MPV3_DEBUG
-  double p[nv_prim];
+#ifdef MPV3_DEBUG 
+  double p[nv_prim], P[nvl], temp1=0.0, ne=0.0;
+  vector<rt_source_data> rt;
+  N_ion_srcs=0;
   p[RO]=2.338e-24; p[PG]=1.0e-12;
   p[pv_Hp] = 0.99;
+  if (pv_WIND>=0) p[pv_WIND] = 0.1;
   mpv_nH=1.0e0;
 
   string opfile("cooling_MPv3.txt");
@@ -474,7 +477,31 @@ MPv3::MPv3(
   outf.setf( ios_base::scientific );
   outf.precision(6);
   double T=EP->MinTemperature, Edi=0.0,Edn=0.0,Edpi=0.0,junk=0.0;
+  setup_radiation_source_parameters(p, P, 0,rt,0,rt);
   do {
+    // Get T-vector index
+    int iT = 0;
+    size_t ihi = lt.NT-1, ilo = 0, imid= 0;
+    do {
+      imid = ilo + floor((ihi-ilo)/2.0);
+      if (lt.T[imid] < T) ilo = imid;
+      else                ihi = imid;
+    } while (ihi-ilo >1);
+    iT = ilo;
+    double dT = T - lt.T[iT];
+    
+    // Get ne-vector index
+    int ie = 0;
+    ne = 0.5;
+    ihi = lt.NT-1, ilo = 0, imid= 0;
+    do {
+      imid = ilo + floor((ihi-ilo)/2.0);
+      if (lt.ne[imid] < ne) ilo = imid;
+      else                  ihi = imid;
+    } while (ihi-ilo >1);
+    ie = ilo;
+    double dne = ne - lt.ne[ie];
+
     p[pv_Hp] = 0.99999;
     Set_Temp(p,T,junk);
     NV_Ith_S(y_in,lv_H0)   = 1.0-p[pv_Hp];
@@ -498,9 +525,26 @@ MPv3::MPv3(
 
     outf << T <<"\t"<< Edi/mpv_nH/mpv_nH;
     outf <<"  "<< Edn/mpv_nH/mpv_nH;
-    outf <<"  "<< Edpi/mpv_nH/mpv_nH <<"\n";
-    T *=1.05;
-  } while (T<min(1.0e9,EP->MaxTemperature));
+    outf <<"  "<< Edpi/mpv_nH/mpv_nH;
+    
+    outf <<"  "<< lt.cirh[iT] + dT*lt.s_cirh[iT];
+    outf <<"  "<< lt.C_cih0[iT] + dT*lt.s_C_cih0[iT];
+    outf <<"  "<< (lt.rrhp[iT] + dT*lt.s_rrhp[iT]) ;
+    outf <<"  "<< (lt.C_rrh[iT] + dT*lt.s_C_rrh[iT]);
+    outf <<"  "<< (lt.C_ffhe[iT] + dT*lt.s_C_ffhe[iT]);
+    outf <<"  "<< (lt.C_cxh0[iT] + dT*lt.s_C_cxh0[iT]);
+    outf <<"  "<< lt.H_pah[iT][ie] + dT*lt.st_H_pah[iT][ie] + dne*lt.se_H_pah[iT][ie];
+    outf <<"  "<< (lt.C_fbdn[iT] + dT*lt.s_C_fbdn[iT]);
+    outf <<"  "<< (lt.C_cie[iT] + dT*lt.s_C_cie[iT]);
+    outf <<"  "<< (lt.C_cxch[iT] + dT*lt.s_C_cxch[iT]);
+    outf <<"  "<< (lt.C_cxo[iT]  + dT*lt.s_C_cxo[iT] );
+    outf <<"  "<< (lt.C_cxce[iT] + dT*lt.s_C_cxce[iT]);
+    outf <<"  "<< lt.C_pah[iT][ie] + dT*lt.st_C_pah[iT][ie] + dne*lt.se_C_pah[iT][ie];
+    outf <<"  "<< (lt.C_dust[iT] + dT*lt.s_C_dust[iT]);
+    //outf <<"  "<< ;
+    outf <<"\n";
+    T *=1.02;
+  } while (T<min(1.0e5,EP->MaxTemperature));
   outf.close();  
 #endif //Debug
   // ================================================================
@@ -1989,13 +2033,13 @@ void MPv3::gen_mpv3_lookup_tables()
   for (size_t i=0; i < lt.NT; i++) lt.se_C_pah[i].resize(lt.NT);
   for (size_t i=0; i < lt.NT-1; i++) {
     for (size_t j=0; j < lt.NT-1; j++) {
-      lt.st_H_pah[i][j] = (lt.H_pah[i+1][j]  -lt.H_pah[i][j]  ) /
+      lt.st_H_pah[i][j] = (lt.H_pah[i+1][j] -lt.H_pah[i][j]  ) /
                                             (lt.T[i+1]-lt.T[i]);
-      lt.st_C_pah[i][j] = (lt.C_pah[i+1][j]  -lt.H_pah[i][j]  ) / 
+      lt.st_C_pah[i][j] = (lt.C_pah[i+1][j] -lt.C_pah[i][j]  ) / 
                                             (lt.T[i+1]-lt.T[i]);
-      lt.se_H_pah[i][j] = (lt.H_pah[i][j+1]  -lt.H_pah[i][j]  ) /
+      lt.se_H_pah[i][j] = (lt.H_pah[i][j+1] -lt.H_pah[i][j]  ) /
                                             (lt.ne[j+1]-lt.ne[j]);
-      lt.se_C_pah[i][j] = (lt.C_pah[i][j+1]  -lt.H_pah[i][j]  ) / 
+      lt.se_C_pah[i][j] = (lt.C_pah[i][j+1] -lt.C_pah[i][j]  ) / 
                                             (lt.ne[j+1]-lt.ne[j]);
     }
   }
