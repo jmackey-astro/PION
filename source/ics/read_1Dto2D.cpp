@@ -160,13 +160,14 @@ void IC_read_1Dto2D::get_data_vals(
   while (radius[imax]<seek && imax<len-1) {
     imax++;
   }
-  imin=imax-1;
+  imin = max(0,imax-1);
   if (imin<0 || imax>len-1)
     rep.error("position out of range.",imax);
   //
   // Now linearly interpolate to get the correct value.
   //
   if (imax==len-1) sx = 1.0; // zero slope for extrapolation
+  else if (imax==0) sx = 1.0; // hope this is inside the boundary
   else sx = (seek-radius[imin])/(radius[imax]-radius[imin]);
   for (int v=0;v<nvar;v++) {
     out[v] = data[v][imin] + (data[v][imax]-data[v][imin])*sx;
