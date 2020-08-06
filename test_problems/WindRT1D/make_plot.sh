@@ -33,6 +33,7 @@ fi
 cat << EOF  > gnu.plt
 set terminal png truecolor notransparent linewidth 2 font "times,22" enhanced size 1024,768
 set xrange [*:*]
+#set xrange [0:1.2]
 set yrange [1.0e-3:20000.0]
 set ylabel "rho,T,v" offset 3,0
 set xlabel "r (pc)" offset 0,0.5
@@ -69,7 +70,7 @@ do
 !echo "${IMGDIR}/${OUTFILE}"
 set output "${IMGDIR}/${OUTFILE}"
 set title "${TITLE}" offset 0,-0.5
-plot '${LIST[$ii]}' u (\$1/PC):(\$2*4.277e23)      w l lt 1 lc -1 lw 2 title "n(H) (cm-3)", \
+plot '${LIST[$ii]}' u (\$1/PC):(\$2*4.277e21)      w l lt 1 lc -1 lw 2 title "n(H) (100 cm-3)", \
                  '' u (\$1/PC):(\$$TempVar*1.0e-4) w l lt 1 lc 1 lw 2 title "Temperature (10^{4}K)", \
                  '' u (\$1/PC):(\$4/1.0e5)    w l lt 3 lc 3 lw 2 title "Velocity (km/s)", \
                  '' u (\$1/PC):((-1)*\$4/1.0e5)    w l lt 3 lc 3 lw 1 notitle, \
@@ -81,7 +82,7 @@ done
 
 gnuplot gnu.plt
 
-ffmpeg -r 4.0 -f image2 -i ${IMGDIR}/${FBASE}_%03d.png -q:v 0 -s 1024x768 -pix_fmt yuv420p -vcodec h264 ${IMGDIR}/${FBASE}.mp4
+ffmpeg -y -r 4.0 -f image2 -i ${IMGDIR}/${FBASE}_%03d.png -q:v 0 -s 1024x768 -pix_fmt yuv420p -vcodec h264 ${IMGDIR}/${FBASE}.mp4
 
 
 

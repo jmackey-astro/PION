@@ -93,7 +93,7 @@ int IC_read_1Dto2D::setup_data(
   cout <<"read "<<i<<" lines.\n";
   infile.close();
   
-  if (SimPM->coord_sys!=COORD_CYL)
+  if (SimPM->ndim==2 && SimPM->coord_sys!=COORD_CYL)
     rep.error("Wrong coords, use cylindrical!",SimPM->coord_sys);
 
   //
@@ -116,7 +116,16 @@ int IC_read_1Dto2D::setup_data(
 
   do {
     CI.get_dpos(c,dpos);
-    get_data_vals(dpos,radius,data,nvar,data_vals);
+    switch (SimPM->ndim) {
+    case 2:
+      get_data_vals(dpos,radius,data,nvar,data_vals);
+      break;
+    case 3:
+      get_3D_data_vals(dpos,radius,data,nvar,data_vals);
+      break;
+    default:
+      rep.error("read1d2d: dims",SimPM->ndim); break;
+    }
 
     for (int v=0;v<5; v++) c->P[v] = data_vals[v];
     for (int v=0; v<SimPM->ntracer;v++) c->P[SimPM->ftr+v] = data_vals[5+v];
@@ -179,6 +188,49 @@ void IC_read_1Dto2D::get_data_vals(
   out[VX] = out[VX]*dpos[Zcyl]/seek;
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void IC_read_1Dto2D::get_3D_data_vals(
+          double *dpos, ///< Cell centre
+          vector<double> &radius, ///< radius vector
+          vector<vector<double> > &data, ///< arrays of variable data.
+          const int nvar, ///< number of variables.
+          double *out   ///< array for output data values at pos.
+          )
+{
+  int imin=0, imax=0, len=radius.size();
+  double origin[MAX_DIM], seek=0.0, sx=0.0;
+  for (int v=0;v<MAX_DIM;v++) origin[v]=0;
+  seek = gg->distance(dpos,origin);
+  // bracket this value in the radius[] array.
+  while (radius[imax]<seek && imax<len-1) {
+    imax++;
+  }
+  imin = max(0,imax-1);
+  if (imin<0 || imax>len-1)
+    rep.error("position out of range.",imax);
+  //
+  // Now linearly interpolate to get the correct value.
+  //
+  if (imax==len-1) sx = 1.0; // zero slope for extrapolation
+  else if (imax==0) sx = 1.0; // hope this is inside the boundary
+  else sx = (seek-radius[imin])/(radius[imax]-radius[imin]);
+  for (int v=0;v<nvar;v++) {
+    out[v] = data[v][imin] + (data[v][imax]-data[v][imin])*sx;
+  }
+  // rotate velocities to point in radial direction.
+  // assumes VX=radial velocity, VY=0, VZ=0
+  out[VZ] = out[VX]*dpos[ZZ]/seek;
+  out[VY] = out[VX]*dpos[YY]/seek;
+  out[VX] = out[VX]*dpos[XX]/seek;
+  return;
+}
+
 
 
 

@@ -574,6 +574,7 @@ class IC_spherical_clump : public ICsetup_base {
 /// Read 1D data onto a 2D grid.  The 1D data should be in a text
 /// file with format for each non-comment line as follows:
 /// radius density pressure v_r v_theta v_phi <tracer variables>
+/// Also works for 3D data, despite the name.
 ///
 class IC_read_1Dto2D : public ICsetup_base {
   public:
@@ -586,6 +587,13 @@ class IC_read_1Dto2D : public ICsetup_base {
 
   protected:
   void get_data_vals(
+          double *, ///< Cell centre
+          vector<double> &, ///< radius vector
+          vector<vector<double> > &, ///< arrays of variable data.
+          const int, ///< number of variables.
+          double *   ///< array for output data values at pos.
+          );
+  void get_3D_data_vals(
           double *, ///< Cell centre
           vector<double> &, ///< radius vector
           vector<vector<double> > &, ///< arrays of variable data.
