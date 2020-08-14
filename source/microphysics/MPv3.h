@@ -117,10 +117,11 @@ struct lkuptab {
   std::vector<double> C_cie;  ///< line-cooling CIE metals
   std::vector<double> C_cxch; ///< line-cooling C+ + H0
   std::vector<double> C_cxo;  ///< line-cooling O  + H0
-  std::vector<double> C_cxce; ///< line-cooling C+ + e
+  //std::vector<double> C_cxce; ///< line-cooling C+ + e
   std::vector<double> C_dust; ///< dust cooling in hot gas
   std::vector< std::vector<double> > H_pah; ///< pah heating
   std::vector< std::vector<double> > C_pah; ///< PAH cooling
+  std::vector< std::vector<double> > C_cxce; ///< PAH cooling
   std::vector<double> s_cirh;   ///< coll-ion rate H0
   std::vector<double> s_C_cih0; ///< cooling coll-ion H0
   std::vector<double> s_rrhp;   ///< rad-recomb rate H+
@@ -131,12 +132,14 @@ struct lkuptab {
   std::vector<double> s_C_cie;  ///< line-cooling CIE metals
   std::vector<double> s_C_cxch; ///< line-cooling C+ + H0
   std::vector<double> s_C_cxo;  ///< line-cooling O  + H0
-  std::vector<double> s_C_cxce; ///< line-cooling C+ + e
+  //std::vector<double> s_C_cxce; ///< line-cooling C+ + e
   std::vector<double> s_C_dust; ///< dust cooling in hot gas
   std::vector< std::vector<double> > st_H_pah; ///< pah heating, slope in T
-  std::vector< std::vector<double> > st_C_pah; ///< PAH cooling, slope in T
   std::vector< std::vector<double> > se_H_pah; ///< pah heating, slope in ne
+  std::vector< std::vector<double> > st_C_pah; ///< PAH cooling, slope in T
   std::vector< std::vector<double> > se_C_pah; ///< PAH cooling, slope in ne
+  std::vector< std::vector<double> > st_C_cxce; ///< cxce heating, slope in ne
+  std::vector< std::vector<double> > se_C_cxce; ///< PAH cooling, slope in ne
 };
 
 

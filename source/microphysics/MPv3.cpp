@@ -175,10 +175,9 @@ using namespace std;
 
 //#define HIGHDENS_CUTOFF ///< decreases CIE cooling exponentially with exp(-(nH/1000)^2)
 #define HE_INERT
-//#define BETELGEUSE
 //#define MPV3_DEBUG
 
-#define DUSTCOOL
+//#define DUSTCOOL
 
 //
 // The timestep-limiting is set by ifdef in
@@ -749,7 +748,7 @@ int MPv3::set_multifreq_source_properties(
     //  ) /pconst.Rsun();
     //cout <<"Rstar="<<Rcorr<<", rsi->Rstar="<<rsi->Rstar<<", sqrt(Lcorr)="<<sqrt(Lcorr)<<"\t";
     //Rcorr /= rsi->Rstar;
-    //cout <<"Lcorr="<<Lcorr<<", Rcorr="<<Rcorr<<"\n";
+    cout <<"Lcorr="<<Lcorr<<", Rcorr="<<Rcorr<<"\n";
     //
     // Now need to multiply rsi->strength and rsi->Rstar by the two
     // correction factors when setting up the tables.
@@ -1704,6 +1703,7 @@ int MPv3::ydot(
   temp2 = lt.C_cih0[iT] + dT*lt.s_C_cih0[iT];
   Edot -= temp2*ne*OneMinusX;
   //cout <<"CI-CR="<< temp2*ne*OneMinusX<<"\n";
+ // if (x_in>0.98 && T>2000.0) cout <<T<<"  "<< temp2*ne*OneMinusX <<"  ";
 
   //
   // photo-ionisation of H: photoionisation rate uses equation 18 in Mellema et
@@ -1734,6 +1734,7 @@ int MPv3::ydot(
                                           mpv_nH, mpv_delta_S, mpv_Vshell);
       Edot += Hi_discrete_multifreq_photoheating_rate(mpv_Tau0, temp1, mpv_nH,
                                           mpv_delta_S, mpv_Vshell);
+     // if (x_in>0.98 && T>2000.0) cout <<"PI-heat "<< Hi_discrete_multifreq_photoheating_rate(mpv_Tau0, temp1, mpv_nH, mpv_delta_S, mpv_Vshell)<<"\n";
       break;
 
       case RT_EFFECT_PION_MONO:
@@ -1763,16 +1764,18 @@ int MPv3::ydot(
   oneminusx_dot += (lt.rrhp[iT] + dT*lt.s_rrhp[iT]) *x_in*ne;
   // Total H+ cooling: recombination plus free-free
   Edot -= (lt.C_rrh[iT] + dT*lt.s_C_rrh[iT]) *x_in*ne;
+ // if (x_in>0.98 && T>2000.0) cout <<"HII-TC="<<(lt.C_rrh[iT] + dT*lt.s_C_rrh[iT]) *x_in*ne <<"\n";
 
   // Add Helium free-free 
 #ifndef HE_INERT
   // Only if He is ionised, otherwise it has no free-free.
   Edot -= (lt.C_ffhe[iT] + dT*lt.s_C_ffhe[iT]) *x_in*ne;
-#endif // HE_INERT
+ // if (x_in>0.98 && T>2000.0) cout <<"He FF "<< (lt.C_ffhe[iT] + dT*lt.s_C_ffhe[iT]) *x_in*ne<<"\n";  
+ #endif // HE_INERT
 
   // collisional excitation cooling of H0 Aggarwal (1983) and Raga+(1997,ApJS).
   Edot -= (lt.C_cxh0[iT] + dT*lt.s_C_cxh0[iT])*OneMinusX*ne;
-
+ // if (x_in>0.98 && T>2000.0) cout <<"CE-CR="<<(lt.C_cxh0[iT] + dT*lt.s_C_cxh0[iT])*OneMinusX*ne<<"\n";
   //
   // --------- END OF HYDROGEN COOLING, MOVING TO METAL COOLING --------
   //
@@ -1788,8 +1791,7 @@ int MPv3::ydot(
     //
     //cout <<"adding diffuse heating! ";
     Edot += 1.9e-26*METALLICITY*mpv_G0_UV/(1.0+6.4*(mpv_G0_UV/mpv_nH));
-    //cout <<"
-    //DfUV="<<1.9e-26*METALLICITY*mpv_G0_UV/(1.0+6.4*(mpv_G0_UV/mpv_nH));
+   // if (x_in>0.98 && T>2000.0)cout <<"DfUV="<<1.9e-26*METALLICITY*mpv_G0_UV/(1.0+6.4*(mpv_G0_UV/mpv_nH));
 
     //
     // IR heating (HAdCM09 eq.A6) from point source and/or diffuse radiation.
@@ -1799,11 +1801,12 @@ int MPv3::ydot(
     temp1 = 1.0+3.0e4/mpv_nH;
     temp1 = temp1*temp1;
     Edot += 7.7e-32*METALLICITY*mpv_G0_IR/temp1;
-    //cout <<"DfIR="<<7.7e-32*METALLICITY*mpv_G0_IR/pow(1.0+3.0e4/mpv_nH,2.0)<<"\n";
+   // if (x_in>0.98 && T>2000.0)cout <<"DfIR="<<7.7e-32*METALLICITY*mpv_G0_IR/temp1<<"\n";
   }
 
   // Cosmic ray heating (HAdCM09 eq.A7).
   Edot += 5.0e-28*OneMinusX;
+ // if (x_in>0.98 && T>2000.0)cout <<"CR-HR="<<5.0e-28*OneMinusX<<"\n";
   // Cosmic Ray ionisation rate (Wolfire+,2003,eq.16) in solar neighbourhood.
   oneminusx_dot -= 1.8e-17*OneMinusX;
 
@@ -1813,6 +1816,8 @@ int MPv3::ydot(
   // because this heating term is only calculated for warm neutral medium.
   temp1 = lt.H_pah[iT][ie] + dT*lt.st_H_pah[iT][ie] + dne*lt.se_H_pah[iT][ie];
   Edot += OneMinusX * temp1;
+ // if (x_in>0.98 && T>2000.0) cout <<"PAH-HR="<< OneMinusX * temp1<<"\n";
+  
   
   //
   // COOLING: First forbidden line cooling of e.g. OII,OIII, dominant in
@@ -1829,7 +1834,14 @@ int MPv3::ydot(
   // two terms.
   //
   temp2 = (lt.C_cie[iT] + dT*lt.s_C_cie[iT]) * x_in*x_in * mpv_nH;
+  // This is the CII cooling by electron collisions.
+  // This rate has a very low critical density (Goldsmith, Langer et al.,
+  // 2012ApJS..203...13G), at n_c=20 cm^{-3} at 1000K, so we use their
+  // temperature scaling and divide by density according to
+  // rate = rate/(1.0 + 0.05*nH*(T/2000K)^(-0.37))
+  temp2 += (lt.C_cxce[iT][ie] + dT*lt.st_C_cxce[iT][ie] + dne*lt.se_C_cxce[iT][ie]);
   Edot -= max(temp1,temp2);
+ // if (x_in>0.98 && T>2000.0) cout <<"High-T"<< max(temp1,temp2)<<"\n";
 
 
   // Instead of the PDR cooling from Henney, use Wolfire's eq.C1,C3 for
@@ -1840,36 +1852,23 @@ int MPv3::ydot(
   //
   Edot -= (lt.C_cxch[iT] + dT*lt.s_C_cxch[iT])*mpv_nH*OneMinusX*expnh;
   Edot -= (lt.C_cxo[iT]  + dT*lt.s_C_cxo[iT] )*mpv_nH*OneMinusX;
+ // if (x_in>0.98 && T>2000.0) cout <<"CII-HI "<< (lt.C_cxch[iT] + dT*lt.s_C_cxch[iT])*mpv_nH*OneMinusX*expnh <<"\n";
+ // if (x_in>0.98 && T>2000.0) cout <<"OI-HI  "<< (lt.C_cxo[iT]  + dT*lt.s_C_cxo[iT] )*mpv_nH*OneMinusX <<"\n";
 
-  // This is the CII cooling by electron collisions, cutoff at high density
-  // again, for consistency, again with sqrt(100K) absorbed into the
-  // prefactor.
-  // This rate has a very low critical density (Goldsmith, Langer et al.,
-  // 2012ApJS..203...13G), at n_c=20 cm^{-3} at 1000K, so we use their
-  // temperature scaling and divide by density according to
-  // rate = rate/(1.0 + 0.05*nH*(T/2000K)^(-0.37))
-  Edot -= (lt.C_cxce[iT] + dT*lt.s_C_cxce[iT])*ne
-          *expnh
-#ifndef BETELGEUSE
-       //   /(1.0 + 0.05*mpv_nH*pow(T/2000.0,-0.37))
-#endif // BETELGEUSE
-          ;
 
   //
   // PAH cooling: eq. 21 in Wolfire+,2003.  I think they should have multiplied
   // their equation by 1.3 for the increased PAH abundance...
   //
-#ifndef BETELGEUSE
-  //Edot -= 2.325e-30*METALLICITY*exp(0.94*log(T) +0.74*pow(T,-0.068)*log(3.4*sqrt(T)/ne))*ne;
   Edot -= (lt.C_pah[iT][ie] + dT*lt.st_C_pah[iT][ie] + dne*lt.se_C_pah[iT][ie]);
-#endif // BETELGEUSE
-//#endif // BETELGEUSE
+ // if (x_in>0.98 && T>2000.0) cout <<"PAH-C "<<(lt.C_pah[iT][ie] + dT*lt.st_C_pah[iT][ie] + dne*lt.se_C_pah[iT][ie]) <<"\n";
 
 #ifdef DUSTCOOL
   // Dust cooling in hot gas (following Everett & Churchwell (2010)
   // figure 9, which is calculated from CLOUDY).
   if (pv_WIND>0) {
     Edot -= ne*x_in*f_dust*(lt.C_dust[iT] + dT*lt.s_C_dust[iT]);
+   // if (x_in>0.98 && T>2000.0) cout <<"DUST-C "<< ne*x_in*f_dust*(lt.C_dust[iT] + dT*lt.s_C_dust[iT])<<"\n";
   }
 #endif
 
@@ -1907,6 +1906,32 @@ int MPv3::ydot(
     cout <<"  "<<  mpv_Tau0 <<"  "<<  mpv_Vshell <<"\n";
   }
 #endif
+
+  if (1==0 && x_in>0.98 && T>6000.0) {
+    cout << T <<"  ";
+    cout << ne <<"  ";
+    cout << ne*ne <<"  ";
+    cout << (lt.rrhp[iT] + dT*lt.s_rrhp[iT]) *x_in*ne * 1.5*1.602e-12 <<"  ";
+    temp1 = mpv_nH*mpv_delta_S*OneMinusX*
+            Hi_monochromatic_photo_ion_xsection(JUST_IONISED);
+    cout << Hi_discrete_multifreq_photoheating_rate(mpv_Tau0, temp1, mpv_nH, mpv_delta_S, mpv_Vshell) <<"  ";
+    cout << 1.9e-26*METALLICITY*mpv_G0_UV/(1.0+6.4*(mpv_G0_UV/mpv_nH)) <<"  ";
+    cout << 7.7e-32*METALLICITY*mpv_G0_IR/pow(1.0+3.0e4/mpv_nH,2) <<"  ";
+    cout << 5.0e-28*OneMinusX <<"  ";
+    cout << (lt.H_pah[iT][ie] + dT*lt.st_H_pah[iT][ie] + dne*lt.se_H_pah[iT][ie]) * temp1 <<"  ";
+    cout << -(lt.C_cih0[iT] + dT*lt.s_C_cih0[iT])*ne*OneMinusX <<"  ";
+    cout << -(lt.C_rrh[iT] + dT*lt.s_C_rrh[iT]) *x_in*ne <<"  ";
+    cout << -(lt.C_cxh0[iT] + dT*lt.s_C_cxh0[iT])*OneMinusX*ne <<"  ";
+    cout << -(lt.C_fbdn[iT] + dT*lt.s_C_fbdn[iT])*x_in*ne <<"  ";
+    cout << -(lt.C_cie[iT] + dT*lt.s_C_cie[iT]) * x_in*x_in * mpv_nH <<"  ";
+    cout << -(lt.C_cxce[iT][ie] + dT*lt.st_C_cxce[iT][ie] + dne*lt.se_C_cxce[iT][ie]) <<"  ";
+    cout << -(lt.C_cxch[iT] + dT*lt.s_C_cxch[iT])*mpv_nH*OneMinusX*expnh <<"  ";
+    cout << -(lt.C_cxo[iT]  + dT*lt.s_C_cxo[iT] )*mpv_nH*OneMinusX <<"  ";
+    cout << -(lt.C_pah[iT][ie] + dT*lt.st_C_pah[iT][ie] + dne*lt.se_C_pah[iT][ie]) <<"  ";
+    //cout << - <<"  ";
+    cout <<"\n";
+  }
+
   return 0;
 }
 
@@ -1944,7 +1969,7 @@ void MPv3::gen_mpv3_lookup_tables()
   lt.C_cie.resize(lt.NT);
   lt.C_cxch.resize(lt.NT);
   lt.C_cxo.resize(lt.NT);
-  lt.C_cxce.resize(lt.NT);
+  //lt.C_cxce.resize(lt.NT);
   lt.C_dust.resize(lt.NT);
 
   for (size_t i=0; i < lt.NT; i++) {
@@ -1956,29 +1981,37 @@ void MPv3::gen_mpv3_lookup_tables()
     lt.C_ffhe[i] = 1.68e-27*(JM_NION-1.0)*sqrt(lt.T[i]);
     lt.C_cxh0[i] = Hi_coll_excitation_cooling_rate(lt.T[i])*
                     exp(-lt.T[i]*lt.T[i]/5.0e10);
-    lt.C_fbdn[i] = 1.20e-22*METALLICITY *
+    lt.C_fbdn[i] = 1.20e-22*METALLICITY * 1.0 *
             exp(-33610.0/lt.T[i] -(2180.0*2180.0/lt.T[i]/lt.T[i])) * 
             exp(-lt.T[i]*lt.T[i]/5.0e10);
     lt.C_cie[i] = METALLICITY * cooling_rate_SD93CIE(lt.T[i]);
     lt.C_cxch[i] = 3.15e-27*METALLICITY*exp(-92.0/lt.T[i]);
     lt.C_cxo[i] = 3.96e-28*METALLICITY*exp(0.4*log(lt.T[i])-228.0/lt.T[i]);
-    lt.C_cxce[i] = 1.4e-23*METALLICITY*exp(-0.5*log(lt.T[i])-92.0/lt.T[i]);
+    //lt.C_cxce[i] = 1.4e-23*METALLICITY*exp(-0.5*log(lt.T[i])-92.0/lt.T[i]);
     lt.C_dust[i] = 1.0e-17 * exp(1.5*log(lt.T[i]/2.5e8));
   }
 
-  // PAH cooling depends non-linearly on ne, so 2D lookup table
+  // PAH cooling/heating and CII-e cooling depend non-linearly on ne,
+  // so 2D lookup table
   lt.H_pah.resize(lt.NT);
   for (size_t i=0; i < lt.NT; i++) lt.H_pah[i].resize(lt.NT);
   lt.C_pah.resize(lt.NT);
   for (size_t i=0; i < lt.NT; i++) lt.C_pah[i].resize(lt.NT);
+  lt.C_cxce.resize(lt.NT);
+  for (size_t i=0; i < lt.NT; i++) lt.C_cxce[i].resize(lt.NT);
+
   for (size_t i=0; i < lt.NT; i++) {
     for (size_t j=0; j < lt.NT; j++) {
       lt.H_pah[i][j] = 1.083e-25*METALLICITY/
                       (1.0+9.77e-3*pow(sqrt(lt.T[i])/lt.ne[j],0.73));
+
       lt.C_pah[i][j] = 3.02e-30*METALLICITY * 
         exp( 0.94*log(lt.T[i]) +
        0.74 * pow(lt.T[i],-0.068) * log(3.4 * sqrt(lt.T[i])/lt.ne[j])
             ) * lt.ne[j];
+
+      lt.C_cxce[i][j] = 1.4e-23*METALLICITY*exp(-0.5*log(lt.T[i])-92.0/lt.T[i])
+            *lt.ne[j] / (1.0 + 0.05*lt.ne[j]*pow(lt.T[i]/2000.0,-0.37));
     }
   }
 
@@ -1993,7 +2026,7 @@ void MPv3::gen_mpv3_lookup_tables()
   lt.s_C_cie.resize(lt.NT);
   lt.s_C_cxch.resize(lt.NT);
   lt.s_C_cxo.resize(lt.NT);
-  lt.s_C_cxce.resize(lt.NT);
+  //lt.s_C_cxce.resize(lt.NT);
   lt.s_C_dust.resize(lt.NT);
   for (size_t i=0; i < lt.NT-1; i++) {
     lt.s_cirh[i]   = (lt.cirh[i+1]  -lt.cirh[i]  ) / (lt.T[i+1]-lt.T[i]);
@@ -2006,7 +2039,7 @@ void MPv3::gen_mpv3_lookup_tables()
     lt.s_C_cie[i]  = (lt.C_cie[i+1] -lt.C_cie[i] ) / (lt.T[i+1]-lt.T[i]);
     lt.s_C_cxch[i] = (lt.C_cxch[i+1]-lt.C_cxch[i]) / (lt.T[i+1]-lt.T[i]);
     lt.s_C_cxo[i]  = (lt.C_cxo[i+1] -lt.C_cxo[i] ) / (lt.T[i+1]-lt.T[i]);
-    lt.s_C_cxce[i] = (lt.C_cxce[i+1]-lt.C_cxce[i]) / (lt.T[i+1]-lt.T[i]);
+    //lt.s_C_cxce[i] = (lt.C_cxce[i+1]-lt.C_cxce[i]) / (lt.T[i+1]-lt.T[i]);
     lt.s_C_dust[i] = (lt.C_dust[i+1]-lt.C_dust[i]) / (lt.T[i+1]-lt.T[i]);
   }
   lt.s_cirh[lt.NT-1]   = 0.0; 
@@ -2019,7 +2052,7 @@ void MPv3::gen_mpv3_lookup_tables()
   lt.s_C_cie[lt.NT-1]  = 0.0; 
   lt.s_C_cxch[lt.NT-1] = 0.0; 
   lt.s_C_cxo[lt.NT-1]  = 0.0; 
-  lt.s_C_cxce[lt.NT-1] = 0.0; 
+  //lt.s_C_cxce[lt.NT-1] = 0.0; 
   lt.s_C_dust[lt.NT-1] = 0.0;
 
   // slopes for bilinear interpolation
@@ -2031,29 +2064,41 @@ void MPv3::gen_mpv3_lookup_tables()
   for (size_t i=0; i < lt.NT; i++) lt.st_C_pah[i].resize(lt.NT);
   lt.se_C_pah.resize(lt.NT);
   for (size_t i=0; i < lt.NT; i++) lt.se_C_pah[i].resize(lt.NT);
+  lt.st_C_cxce.resize(lt.NT);
+  for (size_t i=0; i < lt.NT; i++) lt.st_C_cxce[i].resize(lt.NT);
+  lt.se_C_cxce.resize(lt.NT);
+  for (size_t i=0; i < lt.NT; i++) lt.se_C_cxce[i].resize(lt.NT);
   for (size_t i=0; i < lt.NT-1; i++) {
     for (size_t j=0; j < lt.NT-1; j++) {
       lt.st_H_pah[i][j] = (lt.H_pah[i+1][j] -lt.H_pah[i][j]  ) /
                                             (lt.T[i+1]-lt.T[i]);
-      lt.st_C_pah[i][j] = (lt.C_pah[i+1][j] -lt.C_pah[i][j]  ) / 
-                                            (lt.T[i+1]-lt.T[i]);
       lt.se_H_pah[i][j] = (lt.H_pah[i][j+1] -lt.H_pah[i][j]  ) /
                                             (lt.ne[j+1]-lt.ne[j]);
+      lt.st_C_pah[i][j] = (lt.C_pah[i+1][j] -lt.C_pah[i][j]  ) / 
+                                            (lt.T[i+1]-lt.T[i]);
       lt.se_C_pah[i][j] = (lt.C_pah[i][j+1] -lt.C_pah[i][j]  ) / 
+                                            (lt.ne[j+1]-lt.ne[j]);
+      lt.st_C_cxce[i][j] = (lt.C_cxce[i+1][j] -lt.C_cxce[i][j]  ) / 
+                                            (lt.T[i+1]-lt.T[i]);
+      lt.se_C_cxce[i][j] = (lt.C_cxce[i][j+1] -lt.C_cxce[i][j]  ) / 
                                             (lt.ne[j+1]-lt.ne[j]);
     }
   }
   for (size_t i=0; i < lt.NT; i++) {
     lt.st_H_pah[i][lt.NT-1] = 0.0;
-    lt.st_C_pah[i][lt.NT-1] = 0.0;
     lt.se_H_pah[i][lt.NT-1] = 0.0;
+    lt.st_C_pah[i][lt.NT-1] = 0.0;
     lt.se_C_pah[i][lt.NT-1] = 0.0;
+    lt.st_C_cxce[i][lt.NT-1] = 0.0;
+    lt.se_C_cxce[i][lt.NT-1] = 0.0;
   }
   for (size_t j=0; j < lt.NT; j++) {
     lt.st_H_pah[lt.NT-1][j] = 0.0;
-    lt.st_C_pah[lt.NT-1][j] = 0.0;
     lt.se_H_pah[lt.NT-1][j] = 0.0;
+    lt.st_C_pah[lt.NT-1][j] = 0.0;
     lt.se_C_pah[lt.NT-1][j] = 0.0;
+    lt.st_C_cxce[lt.NT-1][j] = 0.0;
+    lt.se_C_cxce[lt.NT-1][j] = 0.0;
   }
 
   return;

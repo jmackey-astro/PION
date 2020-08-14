@@ -197,9 +197,9 @@ double hydrogen_photoion::Hi_discrete_multifreq_photoheating_rate(
 
 // Get multifrequency photoionisation rate for a given column density of H0, local
 // number density of H0, and Shell volume ~4.Pi.[(R+)^3-(R-)^3]/3
-// PHYSICALLY THIS IS KIND OF MEANINGLESS, BECAUSE THERE IS NO POINT IN THE
+// PHYSICALLY THIS IS MEANINGLESS, BECAUSE THERE IS NO POINT IN THE
 // VSHELL PARAMETER WITHOUT HAVING A DTAU THROUGH THE SHELL!!  THIS FUNCTION
-// IS REALLY A NUMERICAL CONVENIENCE.
+// ISA NUMERICAL CONVENIENCE.
 //
 double hydrogen_photoion::Hi_multifreq_photoionisation_rate(
       const double Tau0, ///< Optical depth of H0 (at 13.6eV).
