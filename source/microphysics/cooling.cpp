@@ -91,10 +91,6 @@ CoolingFn::CoolingFn(int flag)
     //    MinSlope *=2.0;
     MinSlope = 4.0;
     cout <<"\t\tMinSlope (logarithmic) = "<<MinSlope<<"\n";
-    //cout <<"\t\tMinTemp="<<MinTemp<<" and MaxTemp="<<MaxTemp<<"\n";
-    //cout <<"\t\tNspl="<<Nspl<<" and Lamb[68]="<<Lamb[68]<<"\n";
-    //for (int i=0;i<Nspl;i++)
-    //  cout <<"i="<<i<<"\tT="<<Temp[i]<<"\tL="<<Lamb[i]<<"\n";
 #endif
     // The two large values passed to spline tell it to use zero second derivative
     // boundary conditions for extrapolation beyond the range of the data.  It is 
@@ -111,10 +107,6 @@ CoolingFn::CoolingFn(int flag)
     cout <<"\t\tThis is a double exponential fitting function, using their equations 4 and 5.\n";
     cout <<"\t\tN.B. The KI02 equation had two typos: (1.148e5 instead of 1.184e5, and 14 instead of 1.4e-2)\n";
     cout <<"\t\tThese were corrected by Vasquez-Semadeni et al. 2007, ApJ, 657, 870.\n";
-    // cout <<"\t\tN.B. I found the cooling was 10^3x stronger than SD93, so I divided their cooling rate by 10x!\n";
-    // cout <<"\t\t\tThis is an arbitrary change, with no physical basis whatsoever.\n";
-    // cout <<"\t\t\tOther changes : low temp. bump is not divided by 10, but is only activated for gas with x<0.01.\n";
-    // cout <<"\t\t\theating rate is wrong, b/c i should divide it by n_h, but I don't, but not a big error.\n";
     MinTemp=5.0; MaxTemp=5.0e8;
   } // KI02 function
 
