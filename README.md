@@ -9,7 +9,7 @@ PION is open source software primarily for simulation of nebulae around stars, b
 Information
 =============
 
- * The PION homepage is at [https://www.pion.ie](https://www.pion.ie)
+ * The PION homepage is at [https://www.pion.ie](https://www.pion.ie), with documentation including a quick-start guide at [https://www.pion.ie/docs/](https://www.pion.ie/docs/).
 
  * The git repository to obtain the latest version of PION is at [https://git.dias.ie/massive-stars-software/pion](https://git.dias.ie/massive-stars-software/pion)
 
@@ -17,7 +17,7 @@ Information
 
  * Python routines and libraries for visualising results are at [https://git.dias.ie/massive-stars-software/pypion](https://git.dias.ie/massive-stars-software/pypion)
 
- *  Contact [info@pion.ie](mailto:info@pion.ie) for help and information
+ * Contact [info@pion.ie](mailto:info@pion.ie) for help and information
 
 
 
@@ -38,6 +38,6 @@ The following people have contributed to the development of PION:
 Licence
 ===========
 
-PION is distributed under a BSD3 License.  Downloading, using, modifying and/or re-distributing the software implies acceptance of the License.  See LICENCE.txt.
+PION is distributed under a BSD3 License.  Downloading, using, modifying and/or re-distributing the software implies acceptance of the License.  See [LICENSE.md](https://git.dias.ie/massive-stars-software/pion/-/blob/master/LICENSE.md).
 
 
