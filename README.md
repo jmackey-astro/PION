@@ -33,6 +33,7 @@ The following people have contributed to the development of PION:
   * Andrew Lim
   * Jonathan Mackey       <jmackey@cp.dias.ie>
   * Maria Moutzouri    
+  * Davit Zargaryan
 
 
 Licence
