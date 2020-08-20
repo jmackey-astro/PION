@@ -11,9 +11,11 @@ Information
 
  * The PION homepage is at [https://www.pion.ie](https://www.pion.ie)
 
- * The git repository to obtain the latest version of PION is at [https://git.dias.ie/compastro/pion](https://git.dias.ie/compastro/pion)
+ * The git repository to obtain the latest version of PION is at [https://git.dias.ie/massive-stars-software/pion](https://git.dias.ie/massive-stars-software/pion)
 
- * Python routines and libraries for visualising results are at [https://git.dias.ie/compastro/pion_python](https://git.dias.ie/compastro/pion_python)
+ * This is mirrored on github at [https://github.com/jmackey-astro/PION](https://github.com/jmackey-astro/PION)
+
+ * Python routines and libraries for visualising results are at [https://git.dias.ie/massive-stars-software/pypion](https://git.dias.ie/massive-stars-software/pypion)
 
  *  Contact [info@pion.ie](mailto:info@pion.ie) for help and information
 
