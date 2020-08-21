@@ -36,7 +36,7 @@ The following people have contributed to the development of PION:
   * Davit Zargaryan
 
 
-Licence
+License
 ===========
 
 PION is distributed under a BSD3 License.  Downloading, using, modifying and/or re-distributing the software implies acceptance of the License.  See [LICENSE.md](https://git.dias.ie/massive-stars-software/pion/-/blob/master/LICENSE.md).
