@@ -274,7 +274,7 @@ CXXFLAGS += $(OPT) $(PION_OPTIONS)
 OBJ_CHEM=integrator.o cvode_integrator.o cooling.o cooling_SD93_cie.o \
  hydrogen_mp.o hydrogen_photoion.o hydrogen_recomb_Hummer94.o \
  microphysics_base.o mp_only_cooling.o \
- MPv3.o MPv5.o MPv6.o MPv7.o photo_xsections.o
+ MPv3.o MPv5.o MPv6.o MPv7.o 
 
 ifneq (,$(findstring LEGACY_CODE,$(PION_OPTIONS)))
   OBJ_CHEM +=  MPv0.o MPv1.o MPv2.o MPv4.o MPv8.o
@@ -545,9 +545,6 @@ eqns_base.o:	          eqns_base.cpp eqns_base.h ${GLOBAL}
 eqns_hydro_adiabatic.o: eqns_hydro_adiabatic.cpp eqns_hydro_adiabatic.h \
 			eqns_base.h ${GLOBAL}
 
-eqns_hydro_isothermal.o: eqns_hydro_isothermal.cpp \
-                  eqns_hydro_isothermal.h eqns_base.h ${GLOBAL}
-
 eqns_mhd_adiabatic.o: eqns_mhd_adiabatic.cpp eqns_mhd_adiabatic.h \
 		      eqns_base.h ${GLOBAL}
 
@@ -644,8 +641,6 @@ MPv3.o: MPv3.cpp MPv3.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
   microphysics_base.h
 
-photo_xsections.o:  photo_xsections.cpp  photo_xsections.h ${GLOBAL}
-
 MPv4.o: MPv4.cpp MPv4.h MPv3.h \
   ${GLOBAL} hydrogen_mp.h hydrogen_recomb_Hummer94.h hydrogen_photoion.h \
   cooling_SD93_cie.h microphysics_base.h
@@ -682,7 +677,7 @@ dataio_silo.o:  dataio_silo.cpp dataio_silo.h parameter_defs.h \
     ${GLOBAL} solver_eqn_base.h grid_base_class.h
 dataio_fits.o:  dataio_fits.cpp dataio_fits.h parameter_defs.h \
     ${GLOBAL} solver_eqn_base.h \
-    solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h grid_base_class.h
+    solver_eqn_hydro_adi.h grid_base_class.h
 
 readparams.o:   readparams.cpp readparams.h ${GLOBAL}
 utility_fits_class.o: utility_fits_class.cpp dataio_fits.h parameter_defs.h ${GLOBAL} grid_base_class.h

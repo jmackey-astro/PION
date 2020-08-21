@@ -41,7 +41,6 @@
 #include "microphysics/MPv6.h"
 #include "microphysics/MPv7.h"
 #include "microphysics/MPv8.h"
-#include "microphysics/MPv10.h"
 
 #ifdef CODE_EXT_HHE
 #include "future/mpv9_HHe.h"
@@ -370,25 +369,6 @@ int setup_fixed_grid::setup_microphysics(
       have_set_MP=true;
     }
     
-    if (mptype=="MPv10" || mptype=="MPv10__") {
-      cout <<"\tsetting up MPv10 module\n";
-#if MPV3_DTLIMIT>=0 && MPV4_DTLIMIT<=12
-      //cout <<"\t******* N.B. Timestep limiting is enforced by #def";
-      //cout <<" MPV10_DTLIMIT="<<MPV3_DTLIMIT<<". **\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-#else
-#error "No timestep-limiting is defined in source/defines/functionality_flags.h"
-#endif
-
-      MP = new MPv10(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
-                            SimPM.ntracer, SimPM.tracers,
-                            &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
-      //if (SimPM.EP.MP_timestep_limit != 1)
-      //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
-      have_set_MP=true;
-    }
-
     if (mptype=="MPv5" || mptype=="MPv5__") {
       cout <<"\tsetting up MPv5 module\n";
       SimPM.EP.MP_timestep_limit = 1;
