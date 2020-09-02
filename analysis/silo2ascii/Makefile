@@ -71,7 +71,7 @@ OPT += -DSILO
 #MAKE_UNAME=JUROPA
 #MAKE_UNAME=standard
 #MAKE_UNAME=stokes
-MAKE_UNAME=debian10
+#MAKE_UNAME=debian10
 
 # All machines and options need readline and maths
 LDFLAGS = -lreadline
@@ -284,7 +284,7 @@ OBJECTS = \
 OBJ_CHEM=integrator.o cvode_integrator.o cooling.o cooling_SD93_cie.o \
   hydrogen_mp.o hydrogen_photoion.o hydrogen_recomb_Hummer94.o \
   microphysics_base.o mp_only_cooling.o \
-  MPv3.o MPv5.o MPv6.o MPv7.o MPv10.o photo_xsections.o
+  MPv3.o MPv5.o MPv6.o MPv7.o
 
 OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
           outflow_boundaries.o inflow_boundaries.o \
@@ -388,10 +388,6 @@ MPv2.o: MPv2.cpp MPv2.h ${GLOBAL} hydrogen_mp.h \
 cvode_integrator.o: cvode_integrator.cpp cvode_integrator.h ${GLOBAL}
 
 MPv3.o: MPv3.cpp MPv3.h ${GLOBAL} hydrogen_mp.h \
-  hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
-  microphysics_base.h
-
-MPv10.o: MPv10.cpp MPv10.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
   microphysics_base.h
 

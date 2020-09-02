@@ -59,10 +59,10 @@ OPT += -DFITS
 OPT += -DSILO
 CXXFLAGS = $(OPT)
 
-MAKE_UNAME=standard
-MAKE_UNAME=ubuntu18
-MAKE_UNAME=debian9
-MAKE_UNAME=debian10
+#MAKE_UNAME=standard
+#MAKE_UNAME=ubuntu18
+#MAKE_UNAME=debian9
+#MAKE_UNAME=debian10
 
 IOMODE = USE_MPI
 PION_OPTIMISE=HIGH
@@ -191,7 +191,7 @@ endif
 OBJ_CHEM=integrator.o cvode_integrator.o cooling.o cooling_SD93_cie.o \
   hydrogen_mp.o hydrogen_photoion.o hydrogen_recomb_Hummer94.o \
   microphysics_base.o mp_only_cooling.o \
-  MPv3.o MPv5.o MPv6.o MPv7.o MPv10.o photo_xsections.o
+  MPv3.o MPv5.o MPv6.o MPv7.o
 
 OBJ_IO =  parameter_defs.o file_status.o readparams.o \
   dataio_silo.o dataio_fits.o utility_fits_class.o \

@@ -63,7 +63,7 @@ OPTION += -DFITS
 PION_OPTIMISE=HIGH
 
 #MAKE_UNAME=standard
-MAKE_UNAME=ubuntu18
+#MAKE_UNAME=ubuntu18
 #MAKE_UNAME=ubuntu16
 #MAKE_UNAME=debian9
 #MAKE_UNAME=debian10
@@ -279,7 +279,7 @@ CXXFLAGS += $(OPTION)
 OBJ_CHEM = integrator.o cvode_integrator.o cooling.o cooling_SD93_cie.o \
   hydrogen_mp.o hydrogen_photoion.o hydrogen_recomb_Hummer94.o \
   microphysics_base.o mp_only_cooling.o \
-  MPv3.o MPv5.o MPv6.o MPv7.o MPv10.o photo_xsections.o
+  MPv3.o MPv5.o MPv6.o MPv7.o 
 
 OBJ_GEN = reporting.o mem_manage.o command_line_interface.o \
   timer.o interpolate.o constants.o sim_params.o \

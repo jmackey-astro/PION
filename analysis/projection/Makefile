@@ -275,7 +275,7 @@ CXXFLAGS += $(OPTION)
 OBJ_CHEM=integrator.o cvode_integrator.o cooling.o cooling_SD93_cie.o \
   hydrogen_mp.o hydrogen_photoion.o hydrogen_recomb_Hummer94.o \
   microphysics_base.o mp_only_cooling.o \
-  MPv3.o MPv5.o MPv6.o MPv7.o MPv10.o photo_xsections.o
+  MPv3.o MPv5.o MPv6.o MPv7.o 
 
 OBJ_GEN = reporting.o mem_manage.o command_line_interface.o \
   timer.o interpolate.o constants.o sim_params.o \
@@ -672,12 +672,6 @@ cvode_integrator.o: cvode_integrator.cpp cvode_integrator.h ${GLOBAL}
 MPv3.o: MPv3.cpp MPv3.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
   microphysics_base.h
-
-MPv10.o: MPv10.cpp MPv10.h ${GLOBAL} hydrogen_mp.h \
-  hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
-  microphysics_base.h
-
-photo_xsections.o: photo_xsections.cpp photo_xsections.h ${GLOBAL}
 
 MPv4.o: MPv4.cpp MPv4.h MPv3.h \
   ${GLOBAL} hydrogen_mp.h hydrogen_recomb_Hummer94.h hydrogen_photoion.h \
