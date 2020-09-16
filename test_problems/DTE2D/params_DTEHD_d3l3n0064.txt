@@ -33,9 +33,9 @@ EP_Helium_MassFrac 0.0  # Pure Hydrogen gas.
 EP_Metal_MassFrac  0.0  # If this is >0.5, then neutral H is molecular
 
 
-NGridX  128
-NGridY  128
-NGridZ  128
+NGridX  64
+NGridY  64
+NGridZ  64
 
 Xmin  0.0e18
 Ymin  0.0
@@ -56,10 +56,10 @@ NG_refine_XX          1
 NG_refine_YY          1
 NG_refine_ZZ          1
 
-OutputFile        DTEHD_d3l3n0128
+OutputFile        DTEHD_d3l3n0064
 OutputPath        ./
 OutputFileType    silo
-OutputFrequency   512
+OutputFrequency   256
 OutputCriterion   1
 OPfreqTime        3.0e11
 StartTime         0.0

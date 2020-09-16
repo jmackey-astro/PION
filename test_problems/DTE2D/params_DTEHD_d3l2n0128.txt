@@ -59,7 +59,7 @@ NG_refine_ZZ          1
 OutputFile        DTEHD_d3l2n0128
 OutputPath        ./
 OutputFileType    silo
-OutputFrequency   128
+OutputFrequency   256
 OutputCriterion   1
 OPfreqTime        3.0e11
 StartTime         0.0
