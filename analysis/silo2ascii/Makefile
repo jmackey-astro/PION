@@ -74,7 +74,7 @@ OPT += -DSILO
 #MAKE_UNAME=debian10
 
 # All machines and options need readline and maths
-LDFLAGS = -lreadline
+#LDFLAGS = -lreadline
 # display all warnings
 CXXFLAGS = -O3 
 #CXXFLAGS += -Wall
