@@ -41,9 +41,9 @@ Xmin  0.0e18
 Ymin  0.0
 Zmin  0.0
 
-Xmax   4.0e18
-Ymax   4.0e18
-Zmax   4.0e18
+Xmax   8.0e18
+Ymax   8.0e18
+Zmax   8.0e18
 
 grid_nlevels          1
 grid_aspect_ratio_XX  1
@@ -63,7 +63,7 @@ OutputFrequency   128
 OutputCriterion   0
 OPfreqTime        7.89e10
 StartTime         0.0
-FinishTime        4.45e12
+FinishTime        1.5e13
 
 # Type of Boundary Condition
 BC_XN         reflecting

@@ -37,13 +37,13 @@ NGridX  512
 NGridY  256
 NGridZ  128
 
-Xmin -4.0e18
+Xmin -8.0e18
 Ymin  0.0
 Zmin  0.0
 
-Xmax   4.0e18
-Ymax   4.0e18
-Zmax   4.0e18
+Xmax   8.0e18
+Ymax   8.0e18
+Zmax   8.0e18
 
 grid_nlevels          1
 grid_aspect_ratio_XX  2
@@ -63,7 +63,7 @@ OutputFrequency   2048
 OutputCriterion   0
 OPfreqTime        7.89e10
 StartTime         0.0
-FinishTime        1.0e15
+FinishTime        1.5e13
 
 # Type of Boundary Condition
 BC_XN         outflow
