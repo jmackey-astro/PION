@@ -33,11 +33,11 @@ EP_Helium_MassFrac 0.0  # Pure Hydrogen gas.
 EP_Metal_MassFrac  0.0  # If this is >0.5, then neutral H is molecular
 
 
-NGridX  256
+NGridX  128
 NGridY  128
 NGridZ  128
 
-Xmin -8.0e18
+Xmin  0.0
 Ymin  0.0
 Zmin  0.0
 
@@ -60,13 +60,13 @@ OutputFile        DTEHD_d2l1n0128
 OutputPath        ./
 OutputFileType    silo
 OutputFrequency   2048
-OutputCriterion   0
-OPfreqTime        7.89e10
+OutputCriterion   1
+OPfreqTime        3.0e11
 StartTime         0.0
 FinishTime        1.5e13
 
 # Type of Boundary Condition
-BC_XN         outflow
+BC_XN         reflecting
 BC_XP         outflow
 BC_YN         axisymmetric
 BC_YP         outflow

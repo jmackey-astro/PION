@@ -60,8 +60,8 @@ OutputFile        DTEHD_d1l1n1024
 OutputPath        ./
 OutputFileType    silo
 OutputFrequency   1024
-OutputCriterion   0
-OPfreqTime        7.89e10
+OutputCriterion   1
+OPfreqTime        3.0e11
 StartTime         0.0
 FinishTime        1.5e13
 
