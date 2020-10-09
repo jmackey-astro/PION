@@ -1,3 +1,3 @@
 #!/bin/bash
-rm -f *.o ../pion-ug ../pion-ng ../icgen-ug ../pion-ng
+rm -f *.o ../pion-ug ../pion-ng ../icgen-ug ../icgen-ng
 

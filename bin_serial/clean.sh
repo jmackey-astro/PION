@@ -1,4 +1,4 @@
 #!/bin/bash
-rm -f *.o ../pion-ugs ../pion-ngs ../icgen-ugs ../pion-ngs
+rm -f *.o ../pion-ugs ../pion-ngs ../icgen-ugs ../icgen-ngs
 
 
