@@ -1,4 +1,4 @@
-/// \file comm_mpi.cc
+/// \file comm_mpi.cpp
 ///
 /// \brief Contains comms class for multi-process communication using 
 /// the Message Passing Interface (MPI).
