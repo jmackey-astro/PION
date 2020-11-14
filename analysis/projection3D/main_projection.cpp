@@ -404,6 +404,18 @@ int main(int argc, char **argv)
   class setup_grid_NG_MPI *SimSetup =0;
   SimSetup = new setup_grid_NG_MPI();
   SimSetup->setup_NG_grid_levels(SimPM);
+  // have to re-do the domain decomposition because we only split
+  // the domain on one axis.
+  enum axes perpaxis = static_cast<axes>(static_cast<int>(perpdir)/2);
+  cout <<"*** perpendicular axis = "<<perpaxis<<"\n";
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    SimPM.levels[l].MCMD.decomposeDomain(perpaxis,SimPM,SimPM.levels[l]);
+  }
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    SimPM.levels[l].MCMD.set_NG_hierarchy(SimPM,l);
+  }
+  if (err) rep.error("main: failed to decompose domain!",err);
+  // setup grids
   vector<class GridBaseClass *> G;
   G.resize(SimPM.grid_nlevels);
   SimSetup->setup_grid(G, SimPM);
@@ -412,17 +424,6 @@ int main(int argc, char **argv)
   SimPM.dx = grid->DX();
   cout <<"\t\tg="<<grid<<"\tDX = "<<grid->DX()<<endl;
 
-  // have to re-do the domain decomposition because we only split
-  // the domain on one axis.
-  enum axes perpaxis = static_cast<axes>(static_cast<int>(perpdir)/2);
-  cout <<"*** perpendicular axis = "<<perpaxis<<"\n";
-  for (int l=0;l<SimPM.grid_nlevels;l++) {
-    SimPM.levels[0].MCMD.decomposeDomain(perpaxis,SimPM,SimPM.levels[0]);
-  }
-  for (int l=0;l<SimPM.grid_nlevels;l++) {
-    SimPM.levels[l].MCMD.set_NG_hierarchy(SimPM,l);
-  }
-  if (err) rep.error("main: failed to decompose domain!",err);
   //
   // May need to setup extra data in each cell for ray-tracing optical
   // depths and/or viscosity variables (here just set it to zero).
@@ -1018,6 +1019,7 @@ int main(int argc, char **argv)
     rep.printVec("sim origin in units of dx",origin,3);
 #endif // TESTING
 
+    grid = G[SimPM.grid_nlevels -1];
     double im_dx[3] = {grid->DX(), grid->DX(), grid->DX()};
     if (what_to_integrate==I_VEL_LOS || what_to_integrate==I_VX) {
       im_xmin[2] = v_min;
@@ -1114,7 +1116,6 @@ int main(int argc, char **argv)
       // Loop over all images.
       //
       for (int outputs=0;outputs<n_images;outputs++) {
-        //
         // Make a global image by summing results from all levels.
         im = imgmaster[outputs][0];
 #ifdef TESTING
@@ -1174,11 +1175,8 @@ int main(int argc, char **argv)
               }
             }
           }
-            
-            
-        }
+        } // loop over levels 1->n-1
 
-        // find the focal point of the nested grid.
         switch (what_to_integrate) {
         case I_D: case I_NtD: case I_HA: case I_ALL_SCALARS:
           err = imio.write_image_to_file(
