@@ -43,7 +43,8 @@ double point_quantities::get_point_density(const struct point_4cellavg *pt)
 {
   double val=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) val += pt->wt[v] *pt->ngb[v]->P[RO];
+    if (pt->ngb[v] && pt->ngb[v]->isleaf)
+      val += pt->wt[v] *pt->ngb[v]->P[RO];
   }
   return val;
 }
@@ -63,7 +64,7 @@ double point_quantities::get_point_electron_numberdensity(
   // Use the microphysics function to get electron number density.
   //
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
+    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
       val += pt->wt[v] *MP->get_n_elec(pt->ngb[v]->P);
     }
   }
@@ -84,7 +85,7 @@ double point_quantities::get_point_ionizedH_numberdensity(
   // Use the microphysics function to get ionized H number density.
   //
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
+    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
       val += pt->wt[v] *MP->get_n_Hplus(pt->ngb[v]->P);
     }
   }
@@ -105,7 +106,7 @@ double point_quantities::get_point_neutralH_numberdensity(
   // Use the microphysics function to get neutral H number density.
   //
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
+    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
       val += pt->wt[v] *MP->get_n_Hneutral(pt->ngb[v]->P);
     }
   }
@@ -132,7 +133,7 @@ double point_quantities::get_point_temperature(
   //
   if (MP) {
     for (int v=0;v<4;v++) {
-      if (pt->ngb[v]) {
+      if (pt->ngb[v] && pt->ngb[v]->isleaf) {
         val += pt->wt[v] *MP->Temperature(pt->ngb[v]->P,gamma);
         //if (!isfinite(MP->Temperature(pt->ngb[v]->P,gamma)) ||
         //    MP->Temperature(pt->ngb[v]->P,gamma)==0.0) {
@@ -183,7 +184,7 @@ double point_quantities::get_point_StokesQ(
   //
   double val=0.0, bx2=0.0, by2=0.0, btot=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
+    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
       //
       // Get Bx along line of sight:
       //
@@ -238,7 +239,7 @@ double point_quantities::get_point_StokesU(
   //
   double val=0.0, btot=0.0, bxy=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
+    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
       //
       // Calculate Bx and add Bx^2 to btot
       //
@@ -292,7 +293,7 @@ double point_quantities::get_point_BXabs(
   //
   double val=0.0, btot=0.0, bx2=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
+    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
       bx2 = signx*pt->ngb[v]->P[bx]*costht -signz*pt->ngb[v]->P[bz]*sintht;
       bx2 *= bx2;
       btot = sqrt(pt->ngb[v]->P[bx]*pt->ngb[v]->P[bx] +
@@ -333,7 +334,7 @@ double point_quantities::get_point_BYabs(
   //
   double val=0.0, btot=0.0, by2=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
+    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
       by2 = pt->ngb[v]->P[by]*pt->ngb[v]->P[by];
       btot = sqrt(pt->ngb[v]->P[bx]*pt->ngb[v]->P[bx] +
 		  by2 +
@@ -381,10 +382,8 @@ double point_quantities::get_point_RotationMeasure(
   //
   double val=0.0;
   for (int v=0;v<4;v++) {
-    //
     // If point exists, add its contribution, with weight.
-    //
-    if (pt->ngb[v]) {
+    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
       val += pt->wt[v] *
           (sx*pt->ngb[v]->P[bx]*st +sz*pt->ngb[v]->P[bz]*ct) *
           MP->get_n_elec(pt->ngb[v]->P);
@@ -520,10 +519,8 @@ double point_quantities::get_point_EmissionMeasure(
   //
   double val=0.0;
   for (int v=0;v<4;v++) {
-    //
     // If point exists, add its contribution, with weight.
-    //
-    if (pt->ngb[v]) {
+    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
       val += pt->wt[v] 
               *pow(MP->get_n_elec(pt->ngb[v]->P),2.0);
     }
@@ -551,10 +548,8 @@ double point_quantities::get_point_Bremsstrahlung20cm(
   //
   double val=0.0;
   for (int v=0;v<4;v++) {
-    //
     // If point exists, add its contribution, with weight.
-    //
-    if (pt->ngb[v]) {
+    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
       val += pt->wt[v]
               * MP->get_n_elec(pt->ngb[v]->P)
               * MP->get_n_Hplus(pt->ngb[v]->P)

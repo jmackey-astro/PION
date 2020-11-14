@@ -205,7 +205,7 @@ coordinate_conversion::coordinate_conversion(
   sim_dxP = gptr->DX();
   if (gptr->Ndim() !=3) rep.error("Need 3D sim for projections",gptr->Ndim());
 
-  sim_dxI = CI.get_integer_cell_size();
+  sim_dxI = gptr->idx();
   CI.get_ipos_vec(sim_xminP, sim_xminI);
   CI.get_ipos_vec(sim_xmaxP, sim_xmaxI);
   for (int v=0; v<3; v++) {
@@ -415,11 +415,9 @@ void coordinate_conversion::get_image_Ipos(
       pion_flt *im_pos   ///< converted position in image coords.
       )
 {
-  //
   // first get delta, the distance between the left hand edge of the sim and 
   // the point in question.  Then divide by dx to get it in units of number of cells, 
   // which is the image unit.
-  //
   pion_flt delta[3];
   for (int v=0;v<3;v++) {
     if (ss[v]>0)
@@ -427,14 +425,11 @@ void coordinate_conversion::get_image_Ipos(
     else 
       delta[v] = static_cast<pion_flt>(sim_xmaxI[sa[v]] - spos[sa[v]])/sim_dxI;
   }
-  //
   // Now we have this, I can use simple geometry to get from the sim 'origin' to
   // the point in question.
-  //
   im_pos[XX] = s_origin_img[XX] + delta[XX]*costheta - delta[ZZ]*sintheta;
   im_pos[YY] = delta[YY];
   im_pos[ZZ] = s_origin_img[ZZ] + delta[XX]*sintheta + delta[ZZ]*costheta;
-
   return;
 }
 
@@ -1481,7 +1476,7 @@ void image::calculate_pixel(
   else if (what_to_integrate==I_X00p1) {
     integrate_xray_emission(px,SimPM.ftr,0,SimPM.gamma,*tot_mass,ans);
     im[px->ipix] = ans;
-  }
+  } // I_X00p1
 
   else if (what_to_integrate==I_X00p2) {
     integrate_xray_emission(px,SimPM.ftr,1,SimPM.gamma,*tot_mass,ans);
@@ -1953,7 +1948,8 @@ double point_velocity::get_point_los_velocity(
 {
   double val=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) val += pt->wt[v] *(sx*pt->ngb[v]->P[vx]*st
+    if (pt->ngb[v] && pt->ngb[v]->isleaf)
+      val += pt->wt[v] *(sx*pt->ngb[v]->P[vx]*st
                                       +sz*pt->ngb[v]->P[vz]*ct);
   }
   //  cout <<"sx="<<sx<<" sz="<<sz;
@@ -1980,7 +1976,8 @@ double point_velocity::get_point_perp_velocity(
 {
   double val=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) val += pt->wt[v] *(sx*pt->ngb[v]->P[vx]*ct
+    if (pt->ngb[v] && pt->ngb[v]->isleaf)
+      val += pt->wt[v] *(sx*pt->ngb[v]->P[vx]*ct
                                       -sz*pt->ngb[v]->P[vz]*st);
   }
   //cout <<"sx="<<sx<<" sz="<<sz<<" ct="<<ct<<" st="<<st<<" val="<<val;
@@ -2009,7 +2006,7 @@ double point_velocity::get_point_VX(
   //
   double val=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
+    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
       val += pt->wt[v] *pt->ngb[v]->P[VX];
       //cout <<"vx="<<sx*pt->ngb[v]->P[VX]<<endl;
     }
