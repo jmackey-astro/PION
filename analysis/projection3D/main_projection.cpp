@@ -1268,10 +1268,10 @@ int main(int argc, char **argv)
   for (int i=0; i<SimPM.grid_nlevels; i++)
     IMG[i]->delete_cell_positions();
 
-  if(grid!=0) {
-    cout << "\t Deleting Grid Data..." << "\n";
-    delete grid; grid=0;
-  }
+  //if(grid!=0) {
+  //  cout << "\t Deleting Grid Data..." << "\n";
+  //  delete grid; grid=0;
+  //}
   if (MP)     {delete MP; MP=0;}
 
   COMM->finalise();
