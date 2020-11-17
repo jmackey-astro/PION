@@ -573,7 +573,7 @@ void point_quantities::get_point_Xray_params(
         const int index, ///< which X-ray emissivity to use (index in array).
         const double gamma,   ///< EOS gamma
         double *alpha,   ///< absorption coefficient (/cm)
-        double *j        ///< emission coefficient (erg. cm^3/s/cm)
+        double *j        ///< emission coefficient (erg/cm^3/s/sq.arcsec)
         )
 {
   // Need the electron number density and temperature.
@@ -582,7 +582,6 @@ void point_quantities::get_point_Xray_params(
   T  = get_point_temperature(pt,gamma);
   ne = get_point_electron_numberdensity(pt);
   ni = get_point_ionizedH_numberdensity(pt);
-  get_xray_emissivity(T,xr); // volume emissivity per e- per H+
  
   if (T<1.0) {
     // can get zero temperature if point is off-grid.
@@ -590,7 +589,9 @@ void point_quantities::get_point_Xray_params(
     *alpha = 0.0;
   }
   else {
-    // prefactor converts to intensity in erg/cm2/s/square-arcsec
+    get_xray_emissivity(T,xr); // volume emissivity per e- per H+
+    // prefactor converts to intensity in erg/cm2/s/square-arcsec,
+    // once multiplied by a path length.
     *j = xr[index] * ne * ni * per_angle;
     *alpha = 0.0;
   }

@@ -106,7 +106,7 @@ class constants {
   inline double K_per_eV(){return 1.16045221e4;}
   inline double year()    {return 3.1558150e7;}
   inline double asec_per_rad() {return 206264.806;}
-  inline double sqasec_per_sr() {return 4.14429e+12;}
+  inline double sqasec_per_sr() {return 4.2545250225e10;}
   //
   // Astronomy
   //

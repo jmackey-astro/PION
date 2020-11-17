@@ -1527,12 +1527,12 @@ void image::calculate_pixel(
 
 
 void image::integrate_xray_emission(
-      struct pixel *pix, ///< pointer to pixel
+      struct pixel *pix,  ///< pointer to pixel
       const int ftr,      ///< tracer variable of H+ fraction (if exists).
-      const int index,      ///< which x-ray band to calculate (index in array)
-      const double gamma,   ///< EOS gamma
-      double &tot_mass,       ///< [OUT] tot_mass counter (not really used here)
-      double &ans        ///< [OUT] answer to return.
+      const int index,    ///< which x-ray band to calculate (index in array)
+      const double gamma, ///< EOS gamma
+      double &tot_mass,   ///< [OUT] tot_mass counter (not really used here)
+      double &ans         ///< [OUT] answer to return.
       )
 {
   // we ignore absorption for now, just sum up the emission.
