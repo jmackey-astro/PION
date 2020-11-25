@@ -3,7 +3,7 @@
 # Author: Jonathan Mackey
 # Date:   2010.XX.XX
 # Description:
-#  Compilation script for the parallel version of the code.
+#  Compilation script for the parallel version of PION.
 # 
 # Modifications:
 # - 2010.11.09 JM: Added options for Phalanx at UCL
@@ -21,6 +21,7 @@
 # - 2014.04.14 JM: Section for Judge at JSC.
 # - 2015.01.14 JM: Section for Juropatest system at JSC.
 # - 2016.05.04 JM: Added FIONN to list of machines
+# - 2020.11.25 JM: Updated regularly for new machines and settings.
 
 #
 # We first need to set MAKE_UNAME which is an identifier for the computer

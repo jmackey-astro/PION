@@ -19,6 +19,7 @@
 # - 2013.02.27 JM: Added extensions for contributed code.
 # - 2014.04.14 JM: Added option for JUDGE.
 # - 2016.05.04 JM: Added FIONN to list of machines
+# - 2020.11.25 JM: Updated regularly for new machines and settings.
 #
 # We first need to set MAKE_UNAME which is an identifier for the computer
 # we are compiling on.  If it is not a known computer we just set it to
@@ -54,11 +55,18 @@ fi
 
 if [ "$LINUX" == "YES" ]; then
 
+  if [ "$id" == "Ubuntu" ] && [ "$ver" == "20.04" ]; then
+    echo "Detected Ubuntu 20.04: Note system Silo library has a bug, you must install yourself using the script in PION/extra_libraries"
+    MAKE_UNAME=debian10
+    export CXX=g++
+    export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DCVODE3"
+    export PION_OPTIMISE=HIGH
+    NCORES=$nc
+    #NCORES=1
   if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
     echo "Detected Ubuntu 18.04 (bionic): Note system Silo library has a bug, you must install yourself using the script in PION/extra_libraries"
     MAKE_UNAME=ubuntu18
     export CXX=g++
-    export CC=gcc
     export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DCVODE5"
     export PION_OPTIMISE=HIGH
     #export PION_OPTIMISE=LOW
@@ -67,7 +75,6 @@ if [ "$LINUX" == "YES" ]; then
     echo "Detected Ubuntu 16.04 (xenial): compiling extra libraries"
     MAKE_UNAME=ubuntu16
     export CXX=g++
-    export CC=gcc
     export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DCVODE5"
     export PION_OPTIMISE=HIGH
     NCORES=$nc
