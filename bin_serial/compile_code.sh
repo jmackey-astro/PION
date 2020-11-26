@@ -63,7 +63,7 @@ if [ "$LINUX" == "YES" ]; then
     export PION_OPTIMISE=HIGH
     NCORES=$nc
     #NCORES=1
-  if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
+  elif [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
     echo "Detected Ubuntu 18.04 (bionic): Note system Silo library has a bug, you must install yourself using the script in PION/extra_libraries"
     MAKE_UNAME=ubuntu18
     export CXX=g++
