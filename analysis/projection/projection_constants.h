@@ -16,7 +16,7 @@
 #define PROJ_X10p0 11 /// < X-ray emission >10.0 keV
 #define PROJ_HA    12 ///< projected H-alpha emission.
 #define PROJ_NII   13 ///< projected ionised metal-line.
-#define PROJ_BREMS20CM 14
+#define PROJ_BREMS6GHZ 14
 #define PROJ_B_STOKESQ   15
 #define PROJ_B_STOKESU   16
 #define PROJ_BXabs       17
@@ -40,7 +40,7 @@
 #define I_X10p0 11 /// < X-ray emission >10.0 keV
 #define I_HA    12 ///< projected H-alpha emission.
 #define I_NII6584   13 ///< projected ionised metal-line.
-#define I_BREMS20CM 14
+#define I_BREMS6GHZ 14
 #define I_B_STOKESQ   15
 #define I_B_STOKESU   16
 #define I_BXabs       17

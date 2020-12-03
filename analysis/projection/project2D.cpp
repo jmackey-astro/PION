@@ -337,7 +337,7 @@ int main(int argc, char **argv)
       case PROJ_X10p0: im_name[im] = "Proj_XRAY_g10p0keV"; break;
       case PROJ_HA:  im_name[im] = "Proj_Halpha"; break;
       case PROJ_NII: im_name[im] = "Proj_NII_ll6584"; break;
-      case PROJ_BREMS20CM: im_name[im] = "Proj_BREMS20CM"; break;
+      case PROJ_BREMS6GHZ: im_name[im] = "Proj_BREMS6GHZ"; break;
       default: rep.error("Bad image count",im); break;
     }
   }

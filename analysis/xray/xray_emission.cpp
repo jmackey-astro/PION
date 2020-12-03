@@ -9,6 +9,8 @@
 ///
 /// - 2018-01-11 SG: Added in more energy bands (0.2, 2, 10 keV).
 /// - 2019-02-05 SG: Added in 0.3keV energy band.
+/// - 2020.12.03 JM: updated Bremsstrahlung emission formula, and set
+///    calculation at 6 GHz, not 1.4.
 
 #include <iostream>
 #include <sstream>
@@ -298,13 +300,18 @@ double Xray_emission::NII6584_emissivity(
 // ##################################################################
 
 
-double Xray_emission::Brems20cm_emissivity(
+double Xray_emission::Brems6GHz_emissivity(
         const double T ///< Temperature (K)
         )
 {
   // returned value has units cm^5*MJy/ster
-  // multiply by path length, n(e), n(H+) to get intensity.
-  return 4.44e-21 * sqrt(T);
+  // multiply by path length (cm), (n_e/cm^3)^2 to get intensity.
+  // Uses equations 4.54 and 4.60 from
+  // https://www.cv.nrao.edu/~sransom/web/Ch4.html
+  // for definition of intensity as function of tau, and approximate
+  // expression for Tau.
+  // Last expression contains frequency, hardcoded to 6 GHz.
+  return 3.27e-23 * pow(T*1e-4,-0.35) * pow(6.0,-0.1);
 }
 
 

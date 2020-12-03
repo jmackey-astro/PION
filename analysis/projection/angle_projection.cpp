@@ -386,7 +386,7 @@ void add_cell_emission_to_ray(
   if (MP->Tr("N1p") > 0)  n_N1p = MP->get_n_ion("N1p", P);
   else                    n_N1p = fNp * n_Hp;
   ans[PROJ_NII] += integral * n_e * n_N1p * XR.NII6584_emissivity(T);
-  ans[PROJ_BREMS20CM] += integral * n_e * n_Hp * XR.Brems20cm_emissivity(T);
+  ans[PROJ_BREMS6GHZ] += integral * n_e * n_Hp * XR.Brems6GHz_emissivity(T);
 
   return;
 }

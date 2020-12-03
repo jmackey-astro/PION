@@ -12,7 +12,7 @@
 ///  point_velocity and image classes, so both can derive from this
 ///  class.
 /// - 2015.08.19 JM: Added get_point_RotationMeasure()
-/// - 2015.10.13 JM: added 20cm Bremsstrahlung and Emission measure
+/// - 2015.10.13 JM: added 6GHz Bremsstrahlung and Emission measure
 /// - 2018.01.25 JM: added functions to request n(H+),n(H0),n(e-)
 
 #ifndef POINT_QUANTITIES_H
@@ -212,10 +212,10 @@ class point_quantities : public Xray_emission {
       );
 
   ///
-  /// Get the 20cm Bremsstrahlung at a point, based on 4-cell bilinear
+  /// Get the 6GHz Bremsstrahlung at a point, based on 4-cell bilinear
   /// interpolation.  Returns value in MJy/sr/cm.
   ///
-  double get_point_Bremsstrahlung20cm(
+  double get_point_Bremsstrahlung6GHz(
       const struct point_4cellavg *, ///< point
       const double   ///< EOS gamma
       );

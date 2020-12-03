@@ -49,7 +49,7 @@
 ///    from the first image and apply that to all subsequent images.
 /// - 2015.08.20 JM: Changed image coordinates, so that the origin of
 ///    the simulation is projected onto the image origin.
-/// - 2015.10.13 JM: added 20cm Bremsstrahlung and Emission measure
+/// - 2015.10.13 JM: added 6GHz Bremsstrahlung and Emission measure
 
 
 ///
@@ -581,7 +581,7 @@ int main(int argc, char **argv)
 
   case I_ALL_SCALARS:
     if (SIMeqns==1) 
-      n_images = N_HD_SCALAR; // No B-field components (dens, NH0, HA, NII, EM, 20cm, xray)
+      n_images = N_HD_SCALAR; // No B-field components (dens, NH0, HA, NII, EM, 6GHz, xray)
     else
       n_images = N_MHD_SCALAR; // Project Stokes Q,U and BX,BT, RM
     
@@ -596,7 +596,7 @@ int main(int argc, char **argv)
     what2int[PROJ_HA] = I_HA;
     what2int[PROJ_NII] = I_NII6584;
     what2int[PROJ_EM] = I_EM;
-    what2int[PROJ_BREMS20CM] = I_BREMS20CM;
+    what2int[PROJ_BREMS6GHZ] = I_BREMS6GHZ;
     what2int[PROJ_X00p1] = I_X00p1;
     what2int[PROJ_X00p2] = I_X00p2;
     what2int[PROJ_X00p3] = I_X00p3;
@@ -1083,7 +1083,7 @@ int main(int argc, char **argv)
             case PROJ_X10p0: im_name[im] = "Proj_XRAY_g10p0keV"; break;
             case PROJ_HA:   im_name[im] = "Proj_Halpha"; break;
             case PROJ_NII:  im_name[im] = "Proj_NII_ll6584"; break;
-            case PROJ_BREMS20CM: im_name[im] = "Proj_BREMS20CM"; break;
+            case PROJ_BREMS6GHZ: im_name[im] = "Proj_BREMS6GHZ"; break;
             case PROJ_B_STOKESQ: im_name[im] = "Proj_B_STOKESQ"; break;
             case PROJ_B_STOKESU: im_name[im] = "Proj_B_STOKESU"; break;
             case PROJ_BXabs:     im_name[im] = "Proj_BXabs"; break;

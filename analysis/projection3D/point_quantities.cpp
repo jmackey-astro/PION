@@ -14,7 +14,7 @@
 /// - 2015.08.19 JM: Added get_point_RotationMeasure()
 /// - 2015.08.21 JM: MP->Temperature() is NOT threadsafe, so had to
 ///    hardcode the temperature estimate if using threads.
-/// - 2015.10.13 JM: added 20cm Bremsstrahlung and Emission measure
+/// - 2015.10.13 JM: added 6GHz Bremsstrahlung and Emission measure
 /// - 2018.01.25 JM: added functions to request n(H+),n(H0),n(e-)
 
 #include "defines/functionality_flags.h"
@@ -534,7 +534,7 @@ double point_quantities::get_point_EmissionMeasure(
 // ##################################################################
 
 
-double point_quantities::get_point_Bremsstrahlung20cm(
+double point_quantities::get_point_Bremsstrahlung6GHz(
       const struct point_4cellavg *pt,
       const double gamma   ///< EOS gamma
       )
@@ -542,7 +542,7 @@ double point_quantities::get_point_Bremsstrahlung20cm(
   //
   // Bilinear interpolation with pre-calculated weights and
   // neighbouring cells.
-  // The point value is j = 4.44e-21 n_e n_i *sqrt(T) (MJy/sr/cm) 
+  // The point value is j = 3.27e-23 n_e^2 T^-0.35 nu^-0.1 (MJy/sr/cm)
   // This gets multiplied at the end by the path length through each
   // element of the integral (hh).
   //
@@ -552,8 +552,8 @@ double point_quantities::get_point_Bremsstrahlung20cm(
     if (pt->ngb[v] && pt->ngb[v]->isleaf) {
       val += pt->wt[v]
               * MP->get_n_elec(pt->ngb[v]->P)
-              * MP->get_n_Hplus(pt->ngb[v]->P)
-              * Brems20cm_emissivity(MP->Temperature(pt->ngb[v]->P,gamma));
+              * MP->get_n_elec(pt->ngb[v]->P)
+              * Brems6GHz_emissivity(MP->Temperature(pt->ngb[v]->P,gamma));
     }
   }
   return val;

@@ -73,7 +73,7 @@ class stellar_wind_angle
       const double,   ///< radius (cm)
       const int,      ///< type (2=lat-dep.)
       const double,   ///< Mdot (g/s)
-      const double,   ///< Vesc (cm/s)
+      const double,   ///< Vinf (cm/s)
       const double,   ///< Vrot (cm/s)
       const double,   ///< Vcrit (cm/s)
       const double,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
@@ -82,45 +82,36 @@ class stellar_wind_angle
       pion_flt *  ///< Tracer values of wind (if any)
       );
 
-  // Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
+  /// Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
   double pow_fast(
 	double, ///< a
 	double ///< b
 	);
 
-  //
-  // setup tables for interpolation.
-  //
+  /// setup tables for interpolation.
   void setup_tables();
 
-  //
-  // Wind terminal velocity function
-  //
+  /// Wind terminal velocity function
   double fn_v_inf(
-	double, ///< omega
-	double, ///< escape velocity (cm/s)
-	double, ///< theta
-	double ///< Teff(K)
+	double, ///< omega (v_rot/v_crit)
+	double, ///< terminal velocity at pole (cm/s)
+	double  ///< theta (latitude, measured from pole)
 	);
 
-  //
-  // Analytic wind density function
-  //
+  /// Analytic wind density function
   double fn_density(
-	double, ///< omega
-	double, ///< escape velocity (cm/s)
+	double, ///< omega (v_rot/v_crit)
+	double, ///< terminal velocity at pole (cm/s)
 	double, ///< mass loss rate (g/s)
-	double, ///< radius
-	double, ///< theta
+	double, ///< radius (cm)
+	double, ///< theta (latitude, measured from pole)
 	double ///< Teff (K)
   );
     
-  //
-  // Interpolated wind density function
-  //
+  /// Interpolated wind density function
   double fn_density_interp(
-	double, ///< omega
-	double, ///< escape velocity (cm/s)
+	double, ///< omega (v_rot/v_crit)
+	double, ///< terminal velocity at pole (cm/s)
 	double, ///< mass loss rate (g/s)
 	double, ///< radius
 	double, ///< theta
@@ -129,9 +120,7 @@ class stellar_wind_angle
   
   private:
   
-  //
-  // Simpson's rule integration of function f
-  //
+  /// Simpson's rule integration of function f
   double integrate_Simpson(
     const double, ///< lower limit
     const double, ///< upper limit
@@ -140,36 +129,28 @@ class stellar_wind_angle
 	const double ///< Teff (K)
     );
 
-  //
-  // Phi' function
-  //
+  /// Phi' function
   double fn_phi(
 	double, ///< omega
 	double, ///< theta
 	double ///< Teff (K)
 	);
 
-  //
-  // Alpha function
-  //
+  /// Alpha function
   double fn_alpha(
 	double, ///< omega
 	double, ///< theta
 	double ///< Teff (K)
 	);
 
-  //
-  // Integrand to be integrated to get delta
-  //
+  /// Integrand to be integrated to get delta
   double integrand(
     double, ///< theta
     double,  ///< omega
     const double ///< Teff
     );
   
-  //
-  // Delta function
-  //
+  /// Delta function
   double fn_delta(
     double, ///< omega
     double ///< Teff (K)
@@ -191,21 +172,12 @@ class stellar_wind_angle
   vector<vector<double> > delta_vec;          ///< delta table
   vector<vector<vector<double> > > alpha_vec; ///< alpha table
   
-  //vector<double> time_evo;
-  //vector<double> M_evo;
-  //vector<double> L_evo;
-  //vector<double> R_evo;
-  //vector<double> Teff_evo;
-  //vector<double> Mdot_evo;
-  //vector<double> vrot_evo;
-  //vector<double> vesc_evo;
-  //vector<double> vcrit_evo;
 
   protected:
 
   ///
-  /// Set values of wind_cell reference state based on Wind-Source properties
-  /// and the cell-to-source distance.
+  /// Set values of wind_cell reference state based on Wind-Source
+  /// properties and the cell-to-source distance.
   ///
   void set_wind_cell_reference_state(
       class GridBaseClass *,
@@ -215,8 +187,8 @@ class stellar_wind_angle
       );
 
   ///
-  /// Update both the wind properties and the state vectors of all of the
-  /// wind cells, for a rotating star with latitude-dependent wind.
+  /// Update both the wind properties and the state vectors of all of
+  /// the wind cells, for rotating star with latitude-dependent wind.
   ///
   virtual void update_source(
       class GridBaseClass *,

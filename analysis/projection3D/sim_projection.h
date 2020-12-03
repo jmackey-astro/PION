@@ -12,7 +12,7 @@
 /// - 2015.07.03 JM: updated for pion_dev: uses MCMD, SimSetup,
 ///    constants.h
 /// - 2015.07.13 JM: Multithreaded add_integration_pts_to_pixels
-/// - 2015.10.13 JM: added 20cm Bremsstrahlung and Emission measure
+/// - 2015.10.13 JM: added 6GHz Bremsstrahlung and Emission measure
 /// - 2018.02.20 SG: Added X-ray emission for several energies.
 
 

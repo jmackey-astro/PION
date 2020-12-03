@@ -326,7 +326,7 @@ int get_emission_absorption_data(
     ems[PROJ_X10p0][i] = n_e * n_Hp * xr[7] * per_angle;
     ems[PROJ_HA   ][i] = n_e * n_Hp * XR.Halpha_emissivity(T);
     ems[PROJ_NII  ][i] = n_e * n_N1p* XR.NII6584_emissivity(T);
-    ems[PROJ_BREMS20CM][i]= n_e * n_Hp * XR.Brems20cm_emissivity(T);
+    ems[PROJ_BREMS6GHZ][i]= n_e * n_Hp * XR.Brems6GHz_emissivity(T);
 
     c = grid->NextPt(c,RPcyl);
   }
@@ -362,7 +362,7 @@ int get_emission_absorption_data(
       abs[PROJ_HA   ][i] = 0.0;
       abs[PROJ_NII  ][i] = 0.0;
 #endif
-      abs[PROJ_BREMS20CM][i] = (ems[PROJ_BREMS20CM][i+1]-ems[PROJ_BREMS20CM][i]) /dr;
+      abs[PROJ_BREMS6GHZ][i] = (ems[PROJ_BREMS6GHZ][i+1]-ems[PROJ_BREMS6GHZ][i]) /dr;
     }
     else {
       // last point, use backwards differencing.
@@ -385,7 +385,7 @@ int get_emission_absorption_data(
       abs[PROJ_HA   ][i] = 0.0;
       abs[PROJ_NII  ][i] = 0.0;
 #endif
-      abs[PROJ_BREMS20CM][i] = abs[PROJ_BREMS20CM][i-1];
+      abs[PROJ_BREMS6GHZ][i] = abs[PROJ_BREMS6GHZ][i-1];
     }
 
     c = grid->NextPt(c,RPcyl);

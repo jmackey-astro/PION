@@ -27,7 +27,7 @@
 ///    constants.h
 /// - 2015.07.13 JM: Multithreaded add_integration_pts_to_pixels
 /// - 2015.08.05 JM: Added pion_flt datatype for low-memory cells.
-/// - 2015.10.13 JM: added 20cm Bremsstrahlung and Emission measure
+/// - 2015.10.13 JM: added 6GHz Bremsstrahlung and Emission measure
 /// - 2018.01.25 JM: test that cells are on-grid before adding them
 ///    as neighbours (new now that boundary cells are always created)
 //
@@ -1118,18 +1118,18 @@ void image::calculate_pixel(
     *tot_mass += ans;
     im[px->ipix] = ans;
   }
-  else if (what_to_integrate==I_BREMS20CM) {
+  else if (what_to_integrate==I_BREMS6GHZ) {
     //
-    // Bremsstrahlung at 20cm:
+    // Bremsstrahlung at 6GHz:
     // Point quantity in units MJy/sr/cm
     // Projected quantity in MJy/sr
     //
-    ans = get_point_Bremsstrahlung20cm(&(px->int_pts.p[0]), SimPM.gamma);
+    ans = get_point_Bremsstrahlung6GHz(&(px->int_pts.p[0]), SimPM.gamma);
     for (int v=1; v<(npt-1); v++) {
       wt = 6-wt;
-      ans += wt *get_point_Bremsstrahlung20cm(&(px->int_pts.p[v]), SimPM.gamma);
+      ans += wt *get_point_Bremsstrahlung6GHz(&(px->int_pts.p[v]), SimPM.gamma);
     }
-    ans += get_point_Bremsstrahlung20cm(&(px->int_pts.p[npt-1]), SimPM.gamma);
+    ans += get_point_Bremsstrahlung6GHz(&(px->int_pts.p[npt-1]), SimPM.gamma);
     ans *= hh/3.0;
     *tot_mass += ans;
     im[px->ipix] = ans;
