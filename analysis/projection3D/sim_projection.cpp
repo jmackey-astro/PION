@@ -812,7 +812,11 @@ void image::find_surrounding_cells(
 	ngb[3] = 0;
     }
 
-    for (int v=0;v<4;v++) if (!ngb[v]->isgd) ngb[v]=0;
+    for (int v=0;v<4;v++) if (ngb[v] && !ngb[v]->isgd)   ngb[v]=0;
+    // if no cells are leaves, then set all ngb pointers to zero.
+    //int r=0;
+    for (int v=0;v<4;v++) if (ngb[v] && !ngb[v]->isleaf) ngb[v]=0; // r++;
+    //if (r>=2) for (int v=0;v<4;v++) ngb[v]=0;
 
     //
     // Debug info:

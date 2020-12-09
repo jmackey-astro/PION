@@ -1152,12 +1152,17 @@ int main(int argc, char **argv)
 #ifdef TESTING
           rep.printVec("sim origin in units of dx",origin,3);
           rep.printVec("level origin in units of dx",origin,3);
-          rep.printVec("sim xmin in units of dx",im_xmin,3);
-          rep.printVec("level xmin in units of dx",lv_xmin,3);
+          rep.printVec("sim xmin",im_xmin,3);
+          rep.printVec("level xmin",lv_xmin,3);
 #endif // TESTING
-          for (int v=0; v<3;v++)
-            corner[v] = static_cast<int>(
-                              (lv_xmin[v]-im_xmin[v])*sz/grid->DX());
+          for (int v=0; v<3;v++) {
+            corner[v] = static_cast<int>(round(
+                              (lv_xmin[v]-im_xmin[v])*sz*ONE_PLUS_EPS/grid->DX()));
+            //corner[v] = static_cast<int>(
+            //                  (lv_xmin[v]-im_xmin[v])*sz*ONE_PLUS_EPS/grid->DX());
+            //cout<<(lv_xmin[v]-im_xmin[v])*sz*ONE_PLUS_EPS/grid->DX() <<" , ";
+          }
+          //cout <<"\n";
 #ifdef TESTING
           rep.printVec("corner for level",corner,3);
 #endif // TESTING
@@ -1249,12 +1254,14 @@ int main(int argc, char **argv)
   cout <<"-------------------------------------------------------\n";
   cout <<"--------------- Clearing up and Exiting ---------------\n";
 
-  if (im) im = mem.myfree(im);
-  im1 = mem.myfree(im1);
-  im2 = mem.myfree(im2);
+  if (n_images<2 && im)   im = mem.myfree(im);
+  if (im1) im1 = mem.myfree(im1);
+  if (im2) im2 = mem.myfree(im2);
   if (n_images>1) {
-    for (int v=0;v<n_images;v++)
-      img_array[v] = mem.myfree(img_array[v]);
+    for (int v=0;v<n_images;v++) {
+      //cout <<"v="<<v<<" freeing image "<<img_array[v]<<"\n";
+      if (img_array[v]) img_array[v] = mem.myfree(img_array[v]);
+    }
   }
   img_array=mem.myfree(img_array);
   what2int=mem.myfree(what2int);

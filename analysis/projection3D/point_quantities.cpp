@@ -43,7 +43,7 @@ double point_quantities::get_point_density(const struct point_4cellavg *pt)
 {
   double val=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v] && pt->ngb[v]->isleaf)
+    if (pt->ngb[v])
       val += pt->wt[v] *pt->ngb[v]->P[RO];
   }
   return val;
@@ -64,7 +64,7 @@ double point_quantities::get_point_electron_numberdensity(
   // Use the microphysics function to get electron number density.
   //
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
+    if (pt->ngb[v]) {
       val += pt->wt[v] *MP->get_n_elec(pt->ngb[v]->P);
     }
   }
@@ -85,7 +85,7 @@ double point_quantities::get_point_ionizedH_numberdensity(
   // Use the microphysics function to get ionized H number density.
   //
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
+    if (pt->ngb[v]) {
       val += pt->wt[v] *MP->get_n_Hplus(pt->ngb[v]->P);
     }
   }
@@ -106,7 +106,7 @@ double point_quantities::get_point_neutralH_numberdensity(
   // Use the microphysics function to get neutral H number density.
   //
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
+    if (pt->ngb[v]) {
       val += pt->wt[v] *MP->get_n_Hneutral(pt->ngb[v]->P);
     }
   }
@@ -127,14 +127,17 @@ double point_quantities::get_point_temperature(
         )
 {
   double val = 0.0;
+  int ct=0;
   //
   // If microphysics is set up, then use MP->Temperature() to get the
   // temperature.  Otherwise assume a pure Hydrogen gas.
-  //
+  // We want a mean temperature for nearly everything, so don't do
+  // the weighting.
   if (MP) {
     for (int v=0;v<4;v++) {
-      if (pt->ngb[v] && pt->ngb[v]->isleaf) {
+      if (pt->ngb[v]) {
         val += pt->wt[v] *MP->Temperature(pt->ngb[v]->P,gamma);
+        //val += MP->Temperature(pt->ngb[v]->P,gamma);
         //if (!isfinite(MP->Temperature(pt->ngb[v]->P,gamma)) ||
         //    MP->Temperature(pt->ngb[v]->P,gamma)==0.0) {
         //  cout <<"Invalid Temperature in loop="<<val<<"  "<<gamma<<"  "<<endl;
@@ -142,8 +145,10 @@ double point_quantities::get_point_temperature(
         //  rep.printVec("pos",pt->ngb[v]->pos, 3);
         //  //rep.printVec("img",pt->ngb[v]->Ph, SimPM.ndim);
         //}
+        ct++;
       }
     }
+    //if (ct>0) val /= static_cast<double>(ct);
   }
   else {
     rep.error("get_point_temperature(): no microphysics class",1);
@@ -184,7 +189,7 @@ double point_quantities::get_point_StokesQ(
   //
   double val=0.0, bx2=0.0, by2=0.0, btot=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
+    if (pt->ngb[v]) {
       //
       // Get Bx along line of sight:
       //
@@ -239,7 +244,7 @@ double point_quantities::get_point_StokesU(
   //
   double val=0.0, btot=0.0, bxy=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
+    if (pt->ngb[v]) {
       //
       // Calculate Bx and add Bx^2 to btot
       //
@@ -293,7 +298,7 @@ double point_quantities::get_point_BXabs(
   //
   double val=0.0, btot=0.0, bx2=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
+    if (pt->ngb[v]) {
       bx2 = signx*pt->ngb[v]->P[bx]*costht -signz*pt->ngb[v]->P[bz]*sintht;
       bx2 *= bx2;
       btot = sqrt(pt->ngb[v]->P[bx]*pt->ngb[v]->P[bx] +
@@ -334,7 +339,7 @@ double point_quantities::get_point_BYabs(
   //
   double val=0.0, btot=0.0, by2=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
+    if (pt->ngb[v]) {
       by2 = pt->ngb[v]->P[by]*pt->ngb[v]->P[by];
       btot = sqrt(pt->ngb[v]->P[bx]*pt->ngb[v]->P[bx] +
 		  by2 +
@@ -383,7 +388,7 @@ double point_quantities::get_point_RotationMeasure(
   double val=0.0;
   for (int v=0;v<4;v++) {
     // If point exists, add its contribution, with weight.
-    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
+    if (pt->ngb[v]) {
       val += pt->wt[v] *
           (sx*pt->ngb[v]->P[bx]*st +sz*pt->ngb[v]->P[bz]*ct) *
           MP->get_n_elec(pt->ngb[v]->P);
@@ -393,14 +398,16 @@ double point_quantities::get_point_RotationMeasure(
 };
 
 
+
 // ##################################################################
 // ##################################################################
 
 
-///
-/// Get the absorption and emission coefficients for H-alpha
-/// recombination radiation, with a fit to Ostebrock (1989)'s tables.
-///
+
+//
+// Get the absorption and emission coefficients for H-alpha
+// recombination radiation, with a fit to Ostebrock (1989)'s tables.
+//
 void point_quantities::get_point_Halpha_params(
       const struct point_4cellavg *pt, ///< point in question.
       const int ifrac, ///< index of Prim.Vector with Ion. fraction.
@@ -415,30 +422,38 @@ void point_quantities::get_point_Halpha_params(
   // neutral_density).
   // 
   double T, ni, nn, ne;
-  T  = get_point_temperature(pt,gamma);
-  nn = get_point_neutralH_numberdensity(pt);
-  ni = get_point_ionizedH_numberdensity(pt);
-  ne = get_point_electron_numberdensity(pt);
-  //
-  // First absorption, from Henney et al. (2009) assuming the opacity
-  // is from dust, so that neutrals and ions both count.
-  //
-  *alpha = (ni+nn) *5.0e-22; // cgs units hardcoded.
-  //*alpha = 0.0; // zero absorption (cuts out simulation edges).
-  //
-  // Emissivity in H-alpha is
-  //   j = 1.12e-22*n_e*n_p/pow(T,0.9) erg/cm3/s/sr,
-  // from Osterbrock (book, edition 2006, table 4.4).
-  // Converted to per square arcsec this is
-  //   j = 2.63e-33*n_e*n_p/pow(T,0.9) erg/cm3/s/sq.arcsec.
-  // Assume n_e=n_p (i.e. ignore electrons from Helium).
-  //
-  if (T<1.0) {
-    // can get zero temperature if point is off-grid.
-    *j = 0.0;
-  }
-  else {
-    *j = ni * ne * Halpha_emissivity(T); // from Xray class
+  //T  = get_point_temperature(pt,gamma);
+  //nn = get_point_neutralH_numberdensity(pt);
+  //ni = get_point_ionizedH_numberdensity(pt);
+  //ne = get_point_electron_numberdensity(pt);
+  *alpha = 0.0;
+  *j     = 0.0;
+
+  for (int v=0;v<4;v++) {
+    // If point exists, add its contribution, with weight.
+    if (pt->ngb[v]) {
+      T = MP->Temperature(pt->ngb[v]->P,gamma);
+      ne = MP->get_n_elec(pt->ngb[v]->P);
+      ni = MP->get_n_Hplus(pt->ngb[v]->P);
+      nn = MP->get_n_Hneutral(pt->ngb[v]->P);
+      //
+      // First absorption, from Henney et al. (2009) assuming the opacity
+      // is from dust, so that neutrals and ions both count.
+      //
+      *alpha += pt->wt[v] * (ni+nn) *5.0e-22; // cgs units hardcoded.
+      //*alpha = 0.0; // zero absorption (cuts out simulation edges).
+      //
+      // Emissivity in H-alpha is
+      //   j = 1.12e-22*n_e*n_p/pow(T,0.9) erg/cm3/s/sr,
+      // from Osterbrock (book, edition 2006, table 4.4).
+      // Converted to per square arcsec this is
+      //   j = 2.63e-33*n_e*n_p/pow(T,0.9) erg/cm3/s/sq.arcsec.
+      // Assume n_e=n_p (i.e. ignore electrons from Helium).
+      //
+      if (T>1.0) {
+        *j += pt->wt[v] * ni * ne * Halpha_emissivity(T); // from Xray class
+      }
+    }
   }
   return;
 }
@@ -469,33 +484,41 @@ void point_quantities::get_point_NII6584_params(
   // neutral_density).
   // 
   double T, ni, nn, ne;
-  T  = get_point_temperature(pt,gamma);
-  nn = get_point_neutralH_numberdensity(pt);
-  ni = get_point_ionizedH_numberdensity(pt);
-  ne = get_point_electron_numberdensity(pt);
-  //
-  // First absorption, from Henney et al. (2009) assuming the opacity
-  // is from dust, so that neutrals and ions both count.
-  //
-  *alpha = (ni+nn) *5.0e-22; // cgs units hardcoded.
-  //*alpha = 0.0; // zero absorption (cuts out simulation edges).
-  //
-  // Emissivity in [N II] 6584AA is
-  //  j([NII] ll 6584) =
-  //   6.82e-18 n_e*n_p*f(N)*exp(-chi/kT)/(4*pi*sqrt(T))
-  // in units of erg/cm3/s/sr, and we convert to erg/cm2/s/sq.arcsec.
-  // Furthermore, we assume N has its solar ISM abundance of
-  // A(N)=7.85 or f(N)=7.08e-5.
-  //
-  if (T<1.0) {
-    // can get zero temperature if point is off-grid!!!
-    *j = 0.0;
-  }
-  else {
-    //double n_N1p;
-    //double fNp = 7.08e-5; // ISM abundance of Nitrogen, by number.
-    //n_N1p = fNp * ni;
-    *j = 7.08e-5 * ni * ne * NII6584_emissivity(T);
+  //T  = get_point_temperature(pt,gamma);
+  //nn = get_point_neutralH_numberdensity(pt);
+  //ni = get_point_ionizedH_numberdensity(pt);
+  //ne = get_point_electron_numberdensity(pt);
+  *alpha = 0.0;
+  *j     = 0.0;
+
+  for (int v=0;v<4;v++) {
+    // If point exists, add its contribution, with weight.
+    if (pt->ngb[v]) {
+      T = MP->Temperature(pt->ngb[v]->P,gamma);
+      ne = MP->get_n_elec(pt->ngb[v]->P);
+      ni = MP->get_n_Hplus(pt->ngb[v]->P);
+      nn = MP->get_n_Hneutral(pt->ngb[v]->P);
+      //
+      // First absorption, from Henney et al. (2009) assuming the opacity
+      // is from dust, so that neutrals and ions both count.
+      //
+      *alpha += pt->wt[v] * (ni+nn) *5.0e-22; // cgs units hardcoded.
+      //*alpha = 0.0; // zero absorption (cuts out simulation edges).
+      //
+      // Emissivity in [N II] 6584AA is
+      //  j([NII] ll 6584) =
+      //   6.82e-18 n_e*n_p*f(N)*exp(-chi/kT)/(4*pi*sqrt(T))
+      // in units of erg/cm3/s/sr, and we convert to erg/cm2/s/sq.arcsec.
+      // Furthermore, we assume N has its solar ISM abundance of
+      // A(N)=7.85 or f(N)=7.08e-5.
+      //
+      if (T>1.0) {
+        //double n_N1p;
+        //double fNp = 7.08e-5; // ISM abundance of Nitrogen, by number.
+        //n_N1p = fNp * ni;
+        *j += pt->wt[v] * 7.08e-5 * ni * ne * NII6584_emissivity(T);
+      }
+    }
   }
   return;
 }
@@ -520,7 +543,7 @@ double point_quantities::get_point_EmissionMeasure(
   double val=0.0;
   for (int v=0;v<4;v++) {
     // If point exists, add its contribution, with weight.
-    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
+    if (pt->ngb[v]) {
       val += pt->wt[v] 
               *pow(MP->get_n_elec(pt->ngb[v]->P),2.0);
     }
@@ -549,7 +572,7 @@ double point_quantities::get_point_Bremsstrahlung6GHz(
   double val=0.0;
   for (int v=0;v<4;v++) {
     // If point exists, add its contribution, with weight.
-    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
+    if (pt->ngb[v]) {
       val += pt->wt[v]
               * MP->get_n_elec(pt->ngb[v]->P)
               * MP->get_n_elec(pt->ngb[v]->P)
@@ -557,7 +580,7 @@ double point_quantities::get_point_Bremsstrahlung6GHz(
     }
   }
   return val;
-};
+}
 
 
 
@@ -579,21 +602,20 @@ void point_quantities::get_point_Xray_params(
   // Need the electron number density and temperature.
   double xr[8], T, ne, ni;
   double per_angle = 1.0/(4.0*pconst.pi()*pconst.sqasec_per_sr());
-  T  = get_point_temperature(pt,gamma);
-  ne = get_point_electron_numberdensity(pt);
-  ni = get_point_ionizedH_numberdensity(pt);
- 
-  if (T<1.0) {
-    // can get zero temperature if point is off-grid.
-    *j = 0.0;
-    *alpha = 0.0;
-  }
-  else {
-    get_xray_emissivity(T,xr); // volume emissivity per e- per H+
-    // prefactor converts to intensity in erg/cm2/s/square-arcsec,
-    // once multiplied by a path length.
-    *j = xr[index] * ne * ni * per_angle;
-    *alpha = 0.0;
+  *alpha = 0.0;
+  *j     = 0.0;
+
+  for (int v=0;v<4;v++) {
+    // If point exists, add its contribution, with weight.
+    if (pt->ngb[v]) {
+      T = MP->Temperature(pt->ngb[v]->P,gamma);
+      ne = MP->get_n_elec(pt->ngb[v]->P);
+      ni = MP->get_n_Hplus(pt->ngb[v]->P);
+      if (T>1.0e3) {
+        get_xray_emissivity(T,xr); // volume emissivity per e- per H+
+        *j += pt->wt[v] * xr[index] * ne * ni * per_angle;
+      }
+    }
   }
   return;
 }
