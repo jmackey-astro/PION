@@ -367,7 +367,7 @@ void stellar_wind::set_wind_cell_reference_state(
   // be reset to this reference state.
   //
   bool set_rho=true;
-  if (wc->dist < 0.75*WS->radius) {
+  if (wc->dist < 0.75*WS->radius && ndim>1) {
     wc->p[RO] = 1.0e-31;
     wc->p[PG] = 1.0e-31;
     set_rho=false;

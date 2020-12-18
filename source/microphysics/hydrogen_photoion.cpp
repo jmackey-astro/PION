@@ -388,7 +388,7 @@ void hydrogen_photoion::Setup_photoionisation_rate_table(
   //
   //cout <<Tstar<<"  "<<Rstar<<"  "<<Lstar<<"\n";
   if (Tstar<1000.0) rep.error("T<1000K.  Object is not a star!",Tstar);
-  double L = 5.67e-5*pow(Tstar,4.0)*4.0*M_PI*Rstar*Rstar;
+  double L = pconst.StefanBoltzmannConst()*pow(Tstar,4.0)*4.0*M_PI*Rstar*Rstar;
   if (fabs(1.0-L/Lstar) >0.05 && !pconst.equalD(Lstar,1.0)) {
     cout <<"\tLuminosities don't match! Lstar="<<Lstar;
     cout <<" and Stefan-Bolt. law gives L="<<L;
