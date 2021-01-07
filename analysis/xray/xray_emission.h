@@ -49,9 +49,9 @@ class Xray_emission {
        const double ///< Temperature (K)
        );
 
-  /// Return the Bremsstrahlung emissivity in MJy*cm^6/ster/cm at 20cm.
+  /// Return the Bremsstrahlung emissivity in MJy*cm^6/ster/cm at 6GHz.
   /// Multiply by n(e) * n(N+) to get volume emissivity.
-  double Brems20cm_emissivity(
+  double Brems6GHz_emissivity(
        const double ///< Temperature (K)
        );
 

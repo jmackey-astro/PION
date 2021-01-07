@@ -748,7 +748,7 @@ int MPv3::set_multifreq_source_properties(
     //  ) /pconst.Rsun();
     //cout <<"Rstar="<<Rcorr<<", rsi->Rstar="<<rsi->Rstar<<", sqrt(Lcorr)="<<sqrt(Lcorr)<<"\t";
     //Rcorr /= rsi->Rstar;
-    cout <<"Lcorr="<<Lcorr<<", Rcorr="<<Rcorr<<"\n";
+    //cout <<"Lcorr="<<Lcorr<<", Rcorr="<<Rcorr<<"\n";
     //
     // Now need to multiply rsi->strength and rsi->Rstar by the two
     // correction factors when setting up the tables.

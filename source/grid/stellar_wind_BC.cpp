@@ -367,7 +367,7 @@ void stellar_wind::set_wind_cell_reference_state(
   // be reset to this reference state.
   //
   bool set_rho=true;
-  if (wc->dist < 0.75*WS->radius) {
+  if (wc->dist < 0.75*WS->radius && ndim>1) {
     wc->p[RO] = 1.0e-31;
     wc->p[PG] = 1.0e-31;
     set_rho=false;
@@ -976,6 +976,8 @@ void stellar_wind_evolution::set_element_indices(
 // ##################################################################
 // ##################################################################
 
+
+
 int stellar_wind_evolution::read_evolution_file(
       const string infile,      ///< file name to read data from.
       struct evolving_wind_data *data   ///< where to put the data
@@ -984,7 +986,8 @@ int stellar_wind_evolution::read_evolution_file(
 
   //
   // Read in stellar evolution data
-  // Format: time M L Teff Mdot vrot vcrit vinf X_H X_He X_C X_N X_O X_Z X_D
+  // Format: time M L Teff Mdot vrot vcrit vinf
+  //     X_H X_He X_C X_N X_O X_Z X_D
   //
   FILE *wf = 0;
   wf = fopen(infile.c_str(), "r");
@@ -1003,6 +1006,9 @@ int stellar_wind_evolution::read_evolution_file(
 
   // read file line by line and add to struct vectors.
   // Everthing must be in CGS units already.
+  // format:
+  // time  mass  luminosity  T_eff  Mdot  v_rot  v_crit  v_inf
+  //  X_H  X_He  X_C  X_N  X_O  X_Z  X_D
   double time=0.0, mass=0.0, lumi=0.0, teff=0.0, radi=0.0, mdot=0.0,
     vrot=0.0, vcrt=0.0, vinf=0.0;
   double xh=0.0, xhe=0.0, xc=0.0, xn=0.0, xo=0.0, xz=0.0, xd=0.0;

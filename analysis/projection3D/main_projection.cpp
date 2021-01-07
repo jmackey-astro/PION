@@ -49,7 +49,7 @@
 ///    from the first image and apply that to all subsequent images.
 /// - 2015.08.20 JM: Changed image coordinates, so that the origin of
 ///    the simulation is projected onto the image origin.
-/// - 2015.10.13 JM: added 20cm Bremsstrahlung and Emission measure
+/// - 2015.10.13 JM: added 6GHz Bremsstrahlung and Emission measure
 
 
 ///
@@ -403,12 +403,27 @@ int main(int argc, char **argv)
   //
   class setup_grid_NG_MPI *SimSetup =0;
   SimSetup = new setup_grid_NG_MPI();
-  SimPM.grid_nlevels = 1;
   SimSetup->setup_NG_grid_levels(SimPM);
+  // have to re-do the domain decomposition because we only split
+  // the domain on one axis.
   enum axes perpaxis = static_cast<axes>(static_cast<int>(perpdir)/2);
   cout <<"*** perpendicular axis = "<<perpaxis<<"\n";
-  SimPM.levels[0].MCMD.decomposeDomain(perpaxis,SimPM,SimPM.levels[0]);
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    SimPM.levels[l].MCMD.decomposeDomain(perpaxis,SimPM,SimPM.levels[l]);
+  }
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    SimPM.levels[l].MCMD.set_NG_hierarchy(SimPM,l);
+  }
   if (err) rep.error("main: failed to decompose domain!",err);
+  // setup grids
+  vector<class GridBaseClass *> G;
+  G.resize(SimPM.grid_nlevels);
+  SimSetup->setup_grid(G, SimPM);
+  class GridBaseClass *grid = G[0];
+  if (!grid) rep.error("Grid setup failed",grid);
+  SimPM.dx = grid->DX();
+  cout <<"\t\tg="<<grid<<"\tDX = "<<grid->DX()<<endl;
+
   //
   // May need to setup extra data in each cell for ray-tracing optical
   // depths and/or viscosity variables (here just set it to zero).
@@ -419,21 +434,8 @@ int main(int argc, char **argv)
   // *****************************************************
   reset_radiation_sources(SimPM);
 
-  vector<class GridBaseClass *> G;
-  G.resize(1);
-  //
-  // Now we have read in parameters from the file, so set up a grid.
-  //
-  SimSetup->setup_grid(G, SimPM);
-  class GridBaseClass *grid = G[0];
-  if (!grid) rep.error("Grid setup failed",grid);
-  cout <<"\t\tg="<<grid<<"\tDX = "<<grid->DX()<<"\n";
-
-  //
   // This code needs 3d data to project...
-  //
-  if (SimPM.ndim!=3) rep.error("projection needs 3D data to work on",SimPM.ndim);
-
+  if (SimPM.ndim!=3) rep.error("projection needs 3D data",SimPM.ndim);
 
   //
   // If doing MHD we may want to project the field components, but
@@ -474,34 +476,46 @@ int main(int argc, char **argv)
   //image.set_image_properties(map_dim, normal, perpdir, theta, zero_angle, Npix_max,
   //			     SimPM.Xmin, SimPM.Xmax, SimPM.Range, grid->DX());
 
-  class image IMG (normal, angle, perpdir, grid);
-  
+  class image *IMG[SimPM.grid_nlevels];
+  for (size_t v=0;v<SimPM.grid_nlevels;v++) {
+    IMG[v] = new class image (normal, angle, perpdir, G[v]);
+  }
+
   int npix[3]={-1,-1,-1}, num_pixels=0;
-  IMG.get_npix(npix);
+  IMG[0]->get_npix(npix);    // all levels are topologically the same.
   num_pixels = npix[0]*npix[1];
   cout <<"npix = ["<<npix[0]<<", "<<npix[1]<<"] and total="<<num_pixels<<"\n"; 
-  //
-  // If getting velocity profiles, velocity is the third image dimension.
-  //
+
+  // If getting velocity profiles, velocity is the third image dim.
   npix[2]=Nbins;
   for (int ii=0;ii<3;ii++) vps.npix[ii] = npix[ii];
 
-  cout <<"<----- Setting cell positions in Image ----->\n"; cout.flush();
-  IMG.set_cell_positions_in_image();
-  mltsf=clk.time_so_far("mainloop");
-  cout <<"*-*-*-* ... ,\t total time so far = "<<mltsf<<" secs or "<<mltsf/3600.0<<" hours. *-*-*-*\n";
-  cout.flush();
-  cout <<"<----- Adding cells to pixels...       ----->\n"; cout.flush();
-  IMG.add_cells_to_pixels();
-  mltsf=clk.time_so_far("mainloop");
-  cout <<"*-*-*-* ... ,\t total time so far = "<<mltsf<<" secs or "<<mltsf/3600.0<<" hours. *-*-*-*\n";
-  cout.flush();
-  cout <<"<----- Adding Integration points to px ----->\n"; cout.flush();
-  IMG.add_integration_pts_to_pixels();
-  mltsf=clk.time_so_far("mainloop");
-  cout <<"*-*-*-* ... ,\t total time so far = "<<mltsf<<" secs or "<<mltsf/3600.0<<" hours. *-*-*-*\n";
-  cout.flush();
-  cout <<"<----- Finished setting up pixels      ----->\n"; cout.flush();
+  // setup rays for each level
+  for (size_t v=0;v<SimPM.grid_nlevels;v++) {
+    cout <<"<----- LEVEL "<<v<<": setting up rays        ----->\n";
+    cout <<"<----- Setting cell positions in Image ----->\n";
+    cout.flush();
+    IMG[v]->set_cell_positions_in_image();
+    mltsf=clk.time_so_far("mainloop");
+    cout <<"*-*-*-* ... ,\t total time so far = "<<mltsf;
+    cout <<" secs or "<<mltsf/3600.0<<" hours. *-*-*-*\n";
+    cout.flush();
+    cout <<"<----- Adding cells to pixels...       ----->\n";
+    cout.flush();
+    IMG[v]->add_cells_to_pixels();
+    mltsf=clk.time_so_far("mainloop");
+    cout <<"*-*-*-* ... ,\t total time so far = "<<mltsf;
+    cout <<" secs or "<<mltsf/3600.0<<" hours. *-*-*-*\n";
+    cout.flush();
+    cout <<"<----- Adding Integration points to px ----->\n";
+    cout.flush();
+    IMG[v]->add_integration_pts_to_pixels();
+    mltsf=clk.time_so_far("mainloop");
+    cout <<"*-*-*-* ... ,\t total time so far = "<<mltsf;
+    cout <<" secs or "<<mltsf/3600.0<<" hours. *-*-*-*\n";
+    cout.flush();
+    cout <<"<----- Finished setting up pixels      ----->\n"; cout.flush();
+  }
 
   //
   // So now we have a list of pixels with their physical 3D box locations,
@@ -546,12 +560,9 @@ int main(int argc, char **argv)
   case I_D:
   case I_NtD:
   case I_HA:
-    //
     // Only need one image:
-    //
     n_images = 1;
-    img_array = mem.myalloc(img_array,n_images);
-    img_array[0] = mem.myalloc(img_array[0],nels);
+    im1 = mem.myalloc(im1,nels);
     what2int  = mem.myalloc(what2int ,n_images);
     img_array = mem.myalloc(img_array,n_images);
     what2int[0] = what_to_integrate;
@@ -570,7 +581,7 @@ int main(int argc, char **argv)
 
   case I_ALL_SCALARS:
     if (SIMeqns==1) 
-      n_images = N_HD_SCALAR; // No B-field components (dens, NH0, HA, NII, EM, 20cm, xray)
+      n_images = N_HD_SCALAR; // No B-field components (dens, NH0, HA, NII, EM, 6GHz, xray)
     else
       n_images = N_MHD_SCALAR; // Project Stokes Q,U and BX,BT, RM
     
@@ -585,15 +596,15 @@ int main(int argc, char **argv)
     what2int[PROJ_HA] = I_HA;
     what2int[PROJ_NII] = I_NII6584;
     what2int[PROJ_EM] = I_EM;
-    what2int[PROJ_BREMS20CM] = I_BREMS20CM;
+    what2int[PROJ_BREMS6GHZ] = I_BREMS6GHZ;
     what2int[PROJ_X00p1] = I_X00p1;
     what2int[PROJ_X00p2] = I_X00p2;
     what2int[PROJ_X00p3] = I_X00p3;
     what2int[PROJ_X00p5] = I_X00p5;
-    what2int[PROJ_X01p0] = I_X00p1;
-    what2int[PROJ_X02p0] = I_X00p2;
-    what2int[PROJ_X05p0] = I_X00p5;
-    what2int[PROJ_X10p0] = I_X01p0;
+    what2int[PROJ_X01p0] = I_X01p0;
+    what2int[PROJ_X02p0] = I_X01p0;
+    what2int[PROJ_X05p0] = I_X05p0;
+    what2int[PROJ_X10p0] = I_X10p0;
     if (SIMeqns==2) { 
       what2int[PROJ_B_STOKESQ] = I_B_STOKESQ;
       what2int[PROJ_B_STOKESU] = I_B_STOKESU;
@@ -626,6 +637,19 @@ int main(int argc, char **argv)
   string filehandle("");
   string this_outfile("");
 
+  // set up master image vectors for each level and each variable.
+  cout <<"allocating imgmaster array... ";
+  vector< vector< double *> > imgmaster;
+  imgmaster.resize(n_images);
+  for (int im=0;im<n_images;im++) {
+    imgmaster[im].resize(SimPM.grid_nlevels);
+    for (int lv=0;lv<SimPM.grid_nlevels;lv++) {
+      imgmaster[im][lv] = mem.myalloc(imgmaster[im][lv],nels);
+    }
+  }
+  cout <<"done!\n";
+  
+
   cout <<"--------------- Finished Image Setup/Coordinates ------\n";
   cout <<"-------------------------------------------------------\n";
   cout <<"--------------- Starting Loop over all input files ----\n";
@@ -653,38 +677,23 @@ int main(int argc, char **argv)
     string infile = temp.str();
     temp.str("");
     for (size_t q=0;q<=skip;q++) ff++;
-    //
+
     // Read header to get timestep info; 
     // also reset the domain to 1/2 the size in Y and Z (if needed).
-    //
     err = dataio.ReadHeader(infile, SimPM);
 #ifdef RESET_DOMAIN
     reset_domain(&(SimPM.levels[0].MCMD));
 #endif
     if (err) rep.error("Didn't read header",err);
-    SimPM.grid_nlevels = 1;
-    if ( (err=SimPM.levels[0].MCMD.decomposeDomain(
-                            perpaxis, SimPM,SimPM.levels[0])) !=0) { 
-      rep.error("Couldn't Decompose Domain!",err);
-    }
 
     cout <<"############ SIMULATION TIME: "<<SimPM.simtime/3.156e7;
     cout <<" yrs for step="<<ifile<<"   ############\n";
     cout.flush();
 
-    //
     // Read data (this reader can read serial or parallel data.
-    //
     err = dataio.ReadData(infile, G, SimPM);
     rep.errorTest("(main) Failed to read data",0,err);
     
-    //cell *tt = grid->FirstPt_All();
-    //do {
-    //  if (tt->P[RO]<1.0e-40) {
-    //    rep.printVec("Bad Cell, PV",tt->P,SimPM.nvar);
-    //    rep.printVec("-------, pos",tt->pos,SimPM.ndim);
-    //  }
-    //} while ((tt=grid->NextPt_All(tt))!=0);
 #ifdef TESTING
     cout <<"--------------- Finished Reading Data  ----------------\n";
     cout <<"-------------------------------------------------------\n";
@@ -707,258 +716,274 @@ int main(int argc, char **argv)
     //
     // Initialize image arrays to zero
     //
-    switch (what_to_integrate) {
-    case I_D:
-    case I_NtD:
-    case I_HA:
-      //
-      // Only need one image:
-      //
-      for (int v=0;v<nels;           v++) im1[v]=0.0;
-      break;
-    case I_VEL_LOS:
-    case I_VX:
-      for (int v=0;v<nels;           v++) im1[v]=0.0;
-      for (int v=0;v<npix[0]*npix[2];v++) im2[v]=0.0;
-      break;
-
-    case I_ALL_SCALARS:
-      for (int j=0;j<n_images;j++) {
-        for (int v=0;v<nels; v++) img_array[j][v] = 0.0;
+    cout <<"setting images to zero.\n";
+    for (int im=0;im<n_images;im++) {
+      for (int lv=0;lv<SimPM.grid_nlevels;lv++) {
+        for (int v=0;v<nels; v++) imgmaster[im][lv][v] = 0.0;
       }
-      break;
-
-    default:
-      rep.error("bad what-to-integrate integer...",what_to_integrate);
     }
-
-    double tot_mass = 0.0;
-    struct pixel *px;
-    int w2i=-1;
-    cell *c = grid->FirstPt();
-    // For Cartesian 3D grid, all cell faces have the same area:
-    double cell_area = grid->CellInterface(c,XP,0.0);
-
-    for (int outputs=0;outputs<n_images;outputs++) {
-#ifdef TESTING
-      cout <<"starting image "<<outputs<<" calculation.\n";
-      cout.flush();
-#endif // TESTING
-      im  = img_array[outputs];
-      w2i =  what2int[outputs];
-      tot_mass = 0.0;
-
-      //
-      // For each output image, loop over all pixels:
-      // either multi-threaded or not...
-      //
-      clk.start_timer("makeimage"); double tsf=0.0;
-
-      for (int i=0;i<num_pixels;i++) {
-	px = &(IMG.pix[i]);
-
-	IMG.calculate_pixel(px,       ///< pointer to pixel
-			    &vps,     ///< info for velocity profiling.
-			    w2i,      ///< flag for what to integrate.
-                            SimPM,
-			    im,       ///< array of pixel data.
-			    &tot_mass ///< general purpose counter for stuff.
-			    );
-      }
-      tsf=clk.time_so_far("makeimage");
-      cout <<"\t time = "<<tsf<<" secs."<<"\n";
-      //cout.flush();
-      clk.stop_timer("makeimage");
-
-      // ------------------------------------------------------------
-      // ------------------------------------------------------------
-      // If nproc>1, then we need to gather all data on process 0.
-      //
-      if (nproc>1 && myrank==0) {
-        //
-        // allocate buffer to receive data.
-        //
-        //cout <<"RANK 0: RECEIVING DATA\n";
-        //double *buf =0;
-        long int ct = nels/nproc;
-        //buf = mem.myalloc(buf,ct);
-        //
-        // loop over all the other processes to get data from them,
-        // in any order.
-        //
-        for (int irank=1; irank<nproc; irank++) {
-          string recv_id;
-          int recv_tag=-1;
-          int from_rank=-1;
-          int comm_tag = irank;
-          err = COMM->look_for_data_to_receive(
-                       &from_rank, ///< rank of sender
-                       recv_id,    ///< identifier for receive.
-                       &recv_tag,  ///< comm_tag associated with data.
-                       BC_RTtag,
-                       COMM_DOUBLEDATA ///< type of data we want.
-                       );
-          if (err) rep.error("look for cell data failed",err);
-
-          //
-          // Receive data into buffer.
-          //
-          //cout <<"receiving from "<<from_rank<<"  "<<recv_id<<"  "<<recv_tag<<"\n";
-          err = COMM->receive_double_data(
-                  from_rank, recv_tag, recv_id, ct, &(im[ct*from_rank])
-                  );
-          if (err) {
-            cout <<from_rank <<"\t"<< recv_tag <<"\t"<< recv_id;
-            cout <<"\t"<< ct <<"\t"<< irank<<"\n";
-            rep.error("Receive image getdata failed",err);
-          }
-
-          //
-          // put data into image array
-          //
-          //for (long int v=0; v<ct; v++) im[ct*from_rank +v] = buf[v];
-        }
-        //buf = mem.myfree(buf);
-      } // if myrank==0
-      else if (myrank!=0 && nproc>1) {
-        //
-        // send data to rank 0
-        //
-        cout <<"RANK "<<myrank<<": SENDING DATA\n";
-        string id;
-        //cout <<"sending "<<nels<<" to rank 0.\n";
-        //cout.flush();
-        err = COMM->send_double_data(
-              0,       ///< rank to send to.
-              nels,    ///< size of buffer, in number of doubles.
-              im,      ///< pointer to double array.
-              id,      ///< identifier for send, for tracking delivery later.
-              BC_RTtag ///< comm_tag, to say what kind of send this is.
-              );
-        if (err) rep.error("Send image failed.",err);
-
-        err = COMM->wait_for_send_to_finish(id);
-        if (err) rep.error("wait for send to finish failed",err);
-      } // if myrank !=0
-      // ------------------------------------------------------------
-      // ------------------------------------------------------------
-      COMM->barrier("outputs");
-
-    } // loop over output images
-
     
-    // ***************************************************************
-    //
-    // Replace projected |Bx|,|By| (images 6,7) with values calculated
-    // from the Stokes Q and U values in images 4,5.
-    //
-    if (n_images==N_MHD_SCALAR) {
-      double norm;
-      for (int ix=0;ix<num_pixels;ix++) {
-        norm = sqrt(img_array[PROJ_B_STOKESQ][ix]*img_array[PROJ_B_STOKESQ][ix]+
-                    img_array[PROJ_B_STOKESU][ix]*img_array[PROJ_B_STOKESU][ix]);
-        img_array[PROJ_BXabs][ix] =
-          norm*cos(0.5*atan2(img_array[PROJ_B_STOKESU][ix],img_array[PROJ_B_STOKESQ][ix]));
-        img_array[PROJ_BYabs][ix] =
-          norm*sin(0.5*atan2(img_array[PROJ_B_STOKESU][ix],img_array[PROJ_B_STOKESQ][ix]));
-      }
-    }
-    // ***************************************************************
-
-    //
-    // Now see if we got all the mass in the simulation domain:
-    //  
-    tot_mass *= cell_area;
-    //cout <<"\t\tANGLE, TOTAL MASS FROM PROJECTION, SUMMATION: "<<angle<<"\t"<<tot_mass;
-    //tot_mass=0;
-    //  //double posIMG[3], posSIM[3];
-    //cell *c=grid->FirstPt();
-    //do {
-    //  tot_mass += c->P[RO];
-    //  //IMG.get_image_Ipos(c->pos,posIMG);
-    //  //IMG.get_sim_Dpos(posIMG, posSIM);
-    //  //rep.printVec("CELL POS:",c->pos,3);
-    //  //rep.printVec("IMG  POS:",posIMG,3);
-    //  //rep.printVec("SIM  POS:",posSIM,3);
-    //  //rep.printVec("IMG OOOO:",IMG.s_origin_img,2);
-    //} while ( (c=grid->NextPt(c))!=0);
-    //tot_mass *= grid->DV();
-    //cout <<"\t"<<tot_mass<<endl;
-
-#ifdef SUBTRACT_MEAN
-    //
-    // Here we want to subtract off the mean density and neutral
-    // density from the images, to avoid linear gradients from the
-    // cubic domain being projected at an angle.
-    // We assume the "top" of the image is upstream undisturbed gas
-    // and subtract the values in the top row from all rows below.
-    //
-    // Again, only do this for rank 0 with the gathered image.
-    //
-    if (myrank==0) {
+    // Loop over levels to save images for each level
+    for (size_t lv=0; lv<SimPM.grid_nlevels; lv++) {
+      cout <<"analysis for level "<<lv<<" starting \n";
+      grid = G[lv];
+      //cout <<"grid pointer="<<grid<<"\n";
+  
       switch (what_to_integrate) {
       case I_D:
       case I_NtD:
+      case I_HA:
         //
-        // Here we just do the first (and only) image.
+        // Only need one image:
         //
-        for (int iy=0; iy<rank0_npix[1]; iy++)
-          for (int ix=0; ix<rank0_npix[0]; ix++)
-            img_array[0][rank0_npix[0]*iy+ix] -= img_array[0][rank0_npix[0]*(rank0_npix[1]-1)+ix];
+        for (int v=0;v<nels;           v++) im1[v]=0.0;
         break;
-      case I_ALL_SCALARS:
-        //
-        // if we are on the first image, then we need to get the top
-        // row of pixels and store them in mean_array[img][x-pix]
-        //
-        if (ifile==0) {
-          for (int ix=0; ix<rank0_npix[0]; ix++) {
-            mean_array[IMG_DENSITY][ix] = img_array[IMG_DENSITY][rank0_npix[0]*(rank0_npix[1]-1)+ix];
-            mean_array[IMG_NtD][ix] = img_array[IMG_NtD][rank0_npix[0]*(rank0_npix[1]-1)+ix];
-          }
-          //rep.printVec("rho",mean_array[0],npix[0]);
-          //rep.printVec("NH ",mean_array[1],npix[0]);
-        }
+      case I_VEL_LOS:
+      case I_VX:
+        for (int v=0;v<nels;           v++) im1[v]=0.0;
+        for (int v=0;v<npix[0]*npix[2];v++) im2[v]=0.0;
+        break;
 
-        //
-        // Here we need to subtract from the first and second images.
-        //
-        for (int iy=0; iy<rank0_npix[1]; iy++) {
-          for (int ix=0; ix<rank0_npix[0]; ix++) {
-            //if (!isfinite(img_array[0][npix[0]*iy+ix]) ||
-            //    !isfinite(mean_array[0][ix])) {
-            //  cout <<"not finite! "<<img_array[0][npix[0]*iy+ix];
-            //  cout<<"  "<<mean_array[0][ix]<<"\n";
-            //}
-            img_array[IMG_DENSITY][rank0_npix[0]*iy+ix] -= mean_array[IMG_DENSITY][ix];
-            img_array[IMG_NtD][rank0_npix[0]*iy+ix] -= mean_array[IMG_NtD][ix];
-            //img_array[0][npix[0]*iy+ix] -= img_array[0][npix[0]*(npix[1]-1)+ix];
-            //img_array[1][npix[0]*iy+ix] -= img_array[1][npix[0]*(npix[1]-1)+ix];
-          }
+      case I_ALL_SCALARS:
+        for (int j=0;j<n_images;j++) {
+          for (int v=0;v<nels; v++) img_array[j][v] = 0.0;
         }
         break;
+
       default:
-        // default action is to do nothing.
-        break;
+        rep.error("bad what-to-integrate integer...",what_to_integrate);
       }
-    } // if myrank==0
+      //cout <<"set image to zero...\n";
+      
+      double tot_mass = 0.0;
+      struct pixel *px;
+      int w2i=-1;
+      cell *c = grid->FirstPt();
+      // For Cartesian 3D grid, all cell faces have the same area:
+      double cell_area = grid->CellInterface(c,XP,0.0);
+
+      // loop over images.
+      for (int outputs=0;outputs<n_images;outputs++) {
+#ifdef TESTING
+        cout <<"starting image "<<outputs<<" calculation.\n";
+        cout.flush();
+#endif // TESTING
+        im  = img_array[outputs];
+        w2i =  what2int[outputs];
+        tot_mass = 0.0;
+
+        // For each output image, loop over all pixels:
+        // either multi-threaded or not...
+        clk.start_timer("makeimage"); double tsf=0.0;
+
+        for (int i=0;i<num_pixels;i++) {
+          px = &(IMG[lv]->pix[i]);
+          IMG[lv]->calculate_pixel(px,&vps,w2i,SimPM,im,&tot_mass);
+        }
+        tsf=clk.time_so_far("makeimage");
+#ifdef TESTING
+        cout <<"\t time = "<<tsf<<" secs."<<"\n";
+        cout.flush();
+#endif // TESTING
+        clk.stop_timer("makeimage");
+
+        // ------------------------------------------------------------
+        // ------------------------------------------------------------
+        // If nproc>1, then we need to gather all data on process 0.
+        //
+        if (nproc>1 && myrank==0) {
+          //
+          // allocate buffer to receive data.
+          //
+          //cout <<"RANK 0: RECEIVING DATA\n";
+          //double *buf =0;
+          long int ct = nels/nproc;
+          //buf = mem.myalloc(buf,ct);
+          //
+          // loop over all the other processes to get data from them,
+          // in any order.
+          //
+          for (int irank=1; irank<nproc; irank++) {
+            string recv_id;
+            int recv_tag=-1;
+            int from_rank=-1;
+            int comm_tag = irank;
+            err = COMM->look_for_data_to_receive(
+                         &from_rank, ///< rank of sender
+                         recv_id,    ///< identifier for receive.
+                         &recv_tag,  ///< comm_tag associated with data.
+                         BC_RTtag,
+                         COMM_DOUBLEDATA ///< type of data we want.
+                         );
+            if (err) rep.error("look for cell data failed",err);
+
+            //
+            // Receive data into buffer.
+            //
+            // cout <<"receiving from "<<from_rank<<"  ";
+            // cout <<recv_id<<"  "<<recv_tag<<"\n";
+            err = COMM->receive_double_data(
+                    from_rank, recv_tag, recv_id, ct, &(im[ct*from_rank])
+                    );
+            if (err) {
+              cout <<from_rank <<"\t"<< recv_tag <<"\t"<< recv_id;
+              cout <<"\t"<< ct <<"\t"<< irank<<"\n";
+              rep.error("Receive image getdata failed",err);
+            }
+
+            //
+            // put data into image array
+            //
+            //for (long int v=0; v<ct; v++) im[ct*from_rank +v] = buf[v];
+          }
+          //buf = mem.myfree(buf);
+        } // if myrank==0
+        else if (myrank!=0 && nproc>1) {
+          //
+          // send data to rank 0
+          //
+          cout <<"RANK "<<myrank<<": SENDING DATA\n";
+          string id;
+          //cout <<"sending "<<nels<<" to rank 0.\n";
+          //cout.flush();
+          err = COMM->send_double_data(
+                0,       ///< rank to send to.
+                nels,    ///< size of buffer, in number of doubles.
+                im,      ///< pointer to double array.
+                id,      ///< identifier for send, for tracking delivery later.
+                BC_RTtag ///< comm_tag, to say what kind of send this is.
+                );
+          if (err) rep.error("Send image failed.",err);
+
+          err = COMM->wait_for_send_to_finish(id);
+          if (err) rep.error("wait for send to finish failed",err);
+        } // if myrank !=0
+        // ------------------------------------------------------------
+        // ------------------------------------------------------------
+        COMM->barrier("outputs");
+
+      } // loop over output images
+
+      
+      // ***************************************************************
+      //
+      // Replace projected |Bx|,|By| (images 6,7) with values calculated
+      // from the Stokes Q and U values in images 4,5.
+      //
+      if (n_images==N_MHD_SCALAR) {
+        double norm;
+        for (int ix=0;ix<num_pixels;ix++) {
+          norm = sqrt(img_array[PROJ_B_STOKESQ][ix]*img_array[PROJ_B_STOKESQ][ix]+
+                      img_array[PROJ_B_STOKESU][ix]*img_array[PROJ_B_STOKESU][ix]);
+          img_array[PROJ_BXabs][ix] =
+            norm*cos(0.5*atan2(img_array[PROJ_B_STOKESU][ix],img_array[PROJ_B_STOKESQ][ix]));
+          img_array[PROJ_BYabs][ix] =
+            norm*sin(0.5*atan2(img_array[PROJ_B_STOKESU][ix],img_array[PROJ_B_STOKESQ][ix]));
+        }
+      }
+      // ***************************************************************
+
+      //
+      // Now see if we got all the mass in the simulation domain:
+      //  
+      tot_mass *= cell_area;
+      //cout <<"\t\tANGLE, TOTAL MASS FROM PROJECTION, SUMMATION: "<<angle<<"\t"<<tot_mass;
+      //tot_mass=0;
+      //  //double posIMG[3], posSIM[3];
+      //cell *c=grid->FirstPt();
+      //do {
+      //  tot_mass += c->P[RO];
+      //  //IMG.get_image_Ipos(c->pos,posIMG);
+      //  //IMG.get_sim_Dpos(posIMG, posSIM);
+      //  //rep.printVec("CELL POS:",c->pos,3);
+      //  //rep.printVec("IMG  POS:",posIMG,3);
+      //  //rep.printVec("SIM  POS:",posSIM,3);
+      //  //rep.printVec("IMG OOOO:",IMG.s_origin_img,2);
+      //} while ( (c=grid->NextPt(c))!=0);
+      //tot_mass *= grid->DV();
+      //cout <<"\t"<<tot_mass<<endl;
+
+#ifdef SUBTRACT_MEAN
+      //
+      // Here we want to subtract off the mean density and neutral
+      // density from the images, to avoid linear gradients from the
+      // cubic domain being projected at an angle.
+      // We assume the "top" of the image is upstream undisturbed gas
+      // and subtract the values in the top row from all rows below.
+      //
+      // Again, only do this for rank 0 with the gathered image.
+      //
+      if (myrank==0) {
+        switch (what_to_integrate) {
+        case I_D:
+        case I_NtD:
+          //
+          // Here we just do the first (and only) image.
+          //
+          for (int iy=0; iy<rank0_npix[1]; iy++)
+            for (int ix=0; ix<rank0_npix[0]; ix++)
+              img_array[0][rank0_npix[0]*iy+ix] -= img_array[0][rank0_npix[0]*(rank0_npix[1]-1)+ix];
+          break;
+        case I_ALL_SCALARS:
+          //
+          // if we are on the first image, then we need to get the top
+          // row of pixels and store them in mean_array[img][x-pix]
+          //
+          if (ifile==0) {
+            for (int ix=0; ix<rank0_npix[0]; ix++) {
+              mean_array[IMG_DENSITY][ix] = img_array[IMG_DENSITY][rank0_npix[0]*(rank0_npix[1]-1)+ix];
+              mean_array[IMG_NtD][ix] = img_array[IMG_NtD][rank0_npix[0]*(rank0_npix[1]-1)+ix];
+            }
+            //rep.printVec("rho",mean_array[0],npix[0]);
+            //rep.printVec("NH ",mean_array[1],npix[0]);
+          }
+
+          //
+          // Here we need to subtract from the first and second images.
+          //
+          for (int iy=0; iy<rank0_npix[1]; iy++) {
+            for (int ix=0; ix<rank0_npix[0]; ix++) {
+              //if (!isfinite(img_array[0][npix[0]*iy+ix]) ||
+              //    !isfinite(mean_array[0][ix])) {
+              //  cout <<"not finite! "<<img_array[0][npix[0]*iy+ix];
+              //  cout<<"  "<<mean_array[0][ix]<<"\n";
+              //}
+              img_array[IMG_DENSITY][rank0_npix[0]*iy+ix] -= mean_array[IMG_DENSITY][ix];
+              img_array[IMG_NtD][rank0_npix[0]*iy+ix] -= mean_array[IMG_NtD][ix];
+              //img_array[0][npix[0]*iy+ix] -= img_array[0][npix[0]*(npix[1]-1)+ix];
+              //img_array[1][npix[0]*iy+ix] -= img_array[1][npix[0]*(npix[1]-1)+ix];
+            }
+          }
+          break;
+        default:
+          // default action is to do nothing.
+          break;
+        }
+      } // if myrank==0
 #endif // SUBTRACT_MEAN
 
-    //
-    // If we got a P-V data-cube, also construct a 2D image projected
-    // along the perpendicular direction.
-    //
-    if (myrank==0) {
-      if (what_to_integrate==I_VEL_LOS || what_to_integrate==I_VX) {
-        int ix=0, iy=0, iz=0;
-        for (long int v=0;v<nels; v++) {
-          im2[rank0_npix[0]*iz+ix] += im1[v];
-          ix++;
-          if (ix>=rank0_npix[0]) {ix=0; iy++;}
-          if (iy>=rank0_npix[1]) {iy=0; iz++;}
+      //
+      // If we got a P-V data-cube, also construct a 2D image projected
+      // along the perpendicular direction.
+      //
+      if (myrank==0) {
+        if (what_to_integrate==I_VEL_LOS || what_to_integrate==I_VX) {
+          int ix=0, iy=0, iz=0;
+          for (long int v=0;v<nels; v++) {
+            im2[rank0_npix[0]*iz+ix] += im1[v];
+            ix++;
+            if (ix>=rank0_npix[0]) {ix=0; iy++;}
+            if (iy>=rank0_npix[1]) {iy=0; iz++;}
+          }
         }
+      } // if myrank==0 
+
+      // save image data for this level in imgmaster.
+      for (int im=0;im<n_images;im++) {
+        for (int v=0;v<nels; v++) imgmaster[im][lv][v] = img_array[im][v];
       }
-    } // if myrank==0
+
+    } // loop over levels.
 
 #ifdef TESTING
     cout <<"--------------- Finished Analysing this step ----------\n";
@@ -978,6 +1003,7 @@ int main(int argc, char **argv)
     // Rank 0 always has local Xmin equal to global Xmin, so it works
     // for multiple cores.
     //
+    grid = G[0];
     double im_xmin[3], o2[3];
     pion_flt origin[3];
     for (int v=0; v<3;v++) {
@@ -987,19 +1013,22 @@ int main(int argc, char **argv)
     }
     CI.get_ipos_as_double(o2,o2);
     for (int v=0; v<3;v++) origin[v]=o2[v];
-    IMG.get_image_Dpos(origin,origin);
+    IMG[0]->get_image_Dpos(origin,origin);
     for (int v=0; v<3;v++) im_xmin[v] = -origin[v]*grid->DX();
+#ifdef TESTING
     rep.printVec("sim origin in units of dx",origin,3);
+#endif // TESTING
 
+    grid = G[SimPM.grid_nlevels -1];
     double im_dx[3] = {grid->DX(), grid->DX(), grid->DX()};
     if (what_to_integrate==I_VEL_LOS || what_to_integrate==I_VX) {
       im_xmin[2] = v_min;
       im_dx[2]   = bin_size;
     }
-//#ifdef TESTING
+#ifdef TESTING
     rep.printVec("IMG XMIN:",im_xmin,3);
     rep.printVec("IMG DX:  ",im_dx,3);
-//#endif // TESTING
+#endif // TESTING
 
 
     //**********************
@@ -1054,7 +1083,7 @@ int main(int argc, char **argv)
             case PROJ_X10p0: im_name[im] = "Proj_XRAY_g10p0keV"; break;
             case PROJ_HA:   im_name[im] = "Proj_Halpha"; break;
             case PROJ_NII:  im_name[im] = "Proj_NII_ll6584"; break;
-            case PROJ_BREMS20CM: im_name[im] = "Proj_BREMS20CM"; break;
+            case PROJ_BREMS6GHZ: im_name[im] = "Proj_BREMS6GHZ"; break;
             case PROJ_B_STOKESQ: im_name[im] = "Proj_B_STOKESQ"; break;
             case PROJ_B_STOKESU: im_name[im] = "Proj_B_STOKESU"; break;
             case PROJ_BXabs:     im_name[im] = "Proj_BXabs"; break;
@@ -1070,33 +1099,110 @@ int main(int argc, char **argv)
       }
 
       //
-      // Write N images, depending on what we were asked to output:
+      // Full image at the resolution of the finest image.
+      //
+      int gnpix[3]; // number of pixels for full img
+      size_t gnumpix=rank0_num_pixels; // total pix count full img
+      int ipx=1; // num level-pixels per full-img pixel.
+      for (int i=0;i<3;i++) gnpix[i] = rank0_npix[i];
+      for (int lv=1;lv<SimPM.grid_nlevels;lv++) {
+        gnumpix *= 4;
+        ipx*=2;
+        for (int i=0;i<3;i++) gnpix[i] *= 2;
+      }
+      // Add root grid.
+      double *global_image = mem.myalloc(global_image,gnumpix);
+      //
+      // Loop over all images.
       //
       for (int outputs=0;outputs<n_images;outputs++) {
-        im  = img_array[outputs];
+        // Make a global image by summing results from all levels.
+        im = imgmaster[outputs][0];
+#ifdef TESTING
+        cout <<"ipx="<<ipx<<", npix= ["<<rank0_npix[0]<<", ";
+        cout <<rank0_npix[1]<<"], \n";
+        cout <<"big-img pix= ["<<gnpix[0]<<", "<<gnpix[1];
+        cout <<"], tot="<<gnumpix<<"\n";
+#endif // TESTING
+        // level 0 first: populate the grid.
+        for (int j=0; j<rank0_npix[1]; j++) {
+          for (int i=0; i<rank0_npix[0]; i++) {
+            for (int ky=0; ky<ipx; ky++) {
+              for (int kx=0; kx<ipx; kx++) {
+                global_image[rank0_npix[0]*ipx*(ipx*j+ky)+ipx*i+kx]
+                    = im[rank0_npix[0]*j+i];
+              }
+            }
+          }
+        }
+        int sz=ipx;
+        for (int lv=1; lv<SimPM.grid_nlevels; lv++) {
+#ifdef TESTING
+          cout <<"populating level "<<lv<<" data onto image.\n";
+#endif // TESTING
+          // find lower-left corner of nested grid.
+          grid = G[lv];
+          sz /= 2;
+          double lv_xmin[3];
+          int corner[3];
+          im = imgmaster[outputs][lv];
+          for (int v=0; v<3;v++) origin[v]=o2[v];
+          IMG[lv]->get_image_Dpos(origin,origin);
+          for (int v=0; v<3;v++) lv_xmin[v] = -origin[v]*grid->DX();
+#ifdef TESTING
+          rep.printVec("sim origin in units of dx",origin,3);
+          rep.printVec("level origin in units of dx",origin,3);
+          rep.printVec("sim xmin",im_xmin,3);
+          rep.printVec("level xmin",lv_xmin,3);
+#endif // TESTING
+          for (int v=0; v<3;v++) {
+            corner[v] = static_cast<int>(round(
+                              (lv_xmin[v]-im_xmin[v])*sz*ONE_PLUS_EPS/grid->DX()));
+            //corner[v] = static_cast<int>(
+            //                  (lv_xmin[v]-im_xmin[v])*sz*ONE_PLUS_EPS/grid->DX());
+            //cout<<(lv_xmin[v]-im_xmin[v])*sz*ONE_PLUS_EPS/grid->DX() <<" , ";
+          }
+          //cout <<"\n";
+#ifdef TESTING
+          rep.printVec("corner for level",corner,3);
+#endif // TESTING
+          for (int j=0; j<rank0_npix[1]; j++) {
+            for (int i=0; i<rank0_npix[0]; i++) {
+              for (int ky=0; ky<sz; ky++) {
+                for (int kx=0; kx<sz; kx++) {
+                  global_image[rank0_npix[0]*ipx*(corner[1]+sz*j+ky)+corner[0]+sz*i+kx]
+                      += im[rank0_npix[0]*j+i];
+                  //cout <<ct<<", "<<j<<", "<<i<<", ";
+                  //cout <<rank0_npix[0]*ipx*(ipx*j+ky)+ipx*i+kx;
+                  //cout <<", "<< rank0_npix[0]*j+i<<"\n";
+                  //ct++;
+                }
+              }
+            }
+          }
+        } // loop over levels 1->n-1
 
         switch (what_to_integrate) {
         case I_D: case I_NtD: case I_HA: case I_ALL_SCALARS:
-          err = imio.write_image_to_file(filehandle, op_filetype, im,
-                                        rank0_num_pixels, 2, rank0_npix,
-                                        im_name[outputs],
-                                        im_xmin, im_dx,
-                                        SimPM.simtime, SimPM.timestep
-                                        );
+          err = imio.write_image_to_file(
+              filehandle, op_filetype, global_image,
+              static_cast<long int>(gnumpix), 2,
+              gnpix,im_name[outputs],im_xmin, im_dx,
+              SimPM.simtime, SimPM.timestep);
           break;
         case I_VEL_LOS: case I_VX:
-          err = imio.write_image_to_file(filehandle, op_filetype, im,
-                                        rank0_num_pixels*Nbins, 3, rank0_npix,
-                                        im_name[outputs],
-                                        im_xmin, im_dx,
-                                        SimPM.simtime, SimPM.timestep
-                                        );
+          rep.error("Code no longer works for PPV datacubes",1);
+          err = imio.write_image_to_file(
+              filehandle, op_filetype, im, rank0_num_pixels*Nbins,
+              3, rank0_npix, im_name[outputs], im_xmin, im_dx,
+              SimPM.simtime, SimPM.timestep);
           break;
         default:
           rep.error("bad what-to-integrate integer...",what_to_integrate);
         }
         if (err) rep.error("Failed to write image to file",err);
-      }
+      } // loop over images
+      global_image = mem.myfree(global_image);
 
       //
       // Also write a 2D P-V diagram summed along the perpendicular
@@ -1148,11 +1254,15 @@ int main(int argc, char **argv)
   cout <<"-------------------------------------------------------\n";
   cout <<"--------------- Clearing up and Exiting ---------------\n";
 
-  if (im) im = mem.myfree(im);
-  im1 = mem.myfree(im1);
-  im2 = mem.myfree(im2);
-  for (int v=0;v<n_images;v++)
-    img_array[v] = mem.myfree(img_array[v]);
+  if (n_images<2 && im)   im = mem.myfree(im);
+  if (im1) im1 = mem.myfree(im1);
+  if (im2) im2 = mem.myfree(im2);
+  if (n_images>1) {
+    for (int v=0;v<n_images;v++) {
+      //cout <<"v="<<v<<" freeing image "<<img_array[v]<<"\n";
+      if (img_array[v]) img_array[v] = mem.myfree(img_array[v]);
+    }
+  }
   img_array=mem.myfree(img_array);
   what2int=mem.myfree(what2int);
 #ifdef SUBTRACT_MEAN
@@ -1160,15 +1270,15 @@ int main(int argc, char **argv)
   mean_array[1]=mem.myfree(mean_array[1]);
   mean_array=mem.myfree(mean_array);
 #endif // SUBTRACT_MEAN
-  //
-  // Need to delete extra cell position before deleting grid.
-  //
-  IMG.delete_cell_positions();
 
-  if(grid!=0) {
-    cout << "\t Deleting Grid Data..." << "\n";
-    delete grid; grid=0;
-  }
+  // Need to delete extra cell position before deleting grids
+  for (int i=0; i<SimPM.grid_nlevels; i++)
+    IMG[i]->delete_cell_positions();
+
+  //if(grid!=0) {
+  //  cout << "\t Deleting Grid Data..." << "\n";
+  //  delete grid; grid=0;
+  //}
   if (MP)     {delete MP; MP=0;}
 
   COMM->finalise();

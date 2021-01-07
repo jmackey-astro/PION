@@ -3,7 +3,7 @@
 # Author: Jonathan Mackey
 # Date:   2010.XX.XX
 # Description:
-#  Compilation script for the parallel version of the code.
+#  Compilation script for the parallel version of PION.
 # 
 # Modifications:
 # - 2010.11.09 JM: Added options for Phalanx at UCL
@@ -21,6 +21,7 @@
 # - 2014.04.14 JM: Section for Judge at JSC.
 # - 2015.01.14 JM: Section for Juropatest system at JSC.
 # - 2016.05.04 JM: Added FIONN to list of machines
+# - 2020.11.25 JM: Updated regularly for new machines and settings.
 
 #
 # We first need to set MAKE_UNAME which is an identifier for the computer
@@ -65,7 +66,15 @@ fi
 
 if [ "$LINUX" == "YES" ]; then
 
-  if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
+  if [ "$id" == "Ubuntu" ] && [ "$ver" == "20.04" ]; then
+    echo "Detected Ubuntu 20.04: Note system Silo library has a bug, you must install yourself using the script in PION/extra_libraries"
+    MAKE_UNAME=debian10
+    export CXX=mpicxx
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE3"
+    export PION_OPTIMISE=HIGH
+    NCORES=$nc
+    #NCORES=1
+  elif [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
     echo "Detected Ubuntu 18.04: Note system Silo library has a bug, you must install yourself using the script in PION/extra_libraries"
     MAKE_UNAME=ubuntu18
     export CXX=mpicxx

@@ -27,7 +27,7 @@
 ///    constants.h
 /// - 2015.07.13 JM: Multithreaded add_integration_pts_to_pixels
 /// - 2015.08.05 JM: Added pion_flt datatype for low-memory cells.
-/// - 2015.10.13 JM: added 20cm Bremsstrahlung and Emission measure
+/// - 2015.10.13 JM: added 6GHz Bremsstrahlung and Emission measure
 /// - 2018.01.25 JM: test that cells are on-grid before adding them
 ///    as neighbours (new now that boundary cells are always created)
 //
@@ -205,7 +205,7 @@ coordinate_conversion::coordinate_conversion(
   sim_dxP = gptr->DX();
   if (gptr->Ndim() !=3) rep.error("Need 3D sim for projections",gptr->Ndim());
 
-  sim_dxI = CI.get_integer_cell_size();
+  sim_dxI = gptr->idx();
   CI.get_ipos_vec(sim_xminP, sim_xminI);
   CI.get_ipos_vec(sim_xmaxP, sim_xmaxI);
   for (int v=0; v<3; v++) {
@@ -415,11 +415,9 @@ void coordinate_conversion::get_image_Ipos(
       pion_flt *im_pos   ///< converted position in image coords.
       )
 {
-  //
   // first get delta, the distance between the left hand edge of the sim and 
   // the point in question.  Then divide by dx to get it in units of number of cells, 
   // which is the image unit.
-  //
   pion_flt delta[3];
   for (int v=0;v<3;v++) {
     if (ss[v]>0)
@@ -427,14 +425,11 @@ void coordinate_conversion::get_image_Ipos(
     else 
       delta[v] = static_cast<pion_flt>(sim_xmaxI[sa[v]] - spos[sa[v]])/sim_dxI;
   }
-  //
   // Now we have this, I can use simple geometry to get from the sim 'origin' to
   // the point in question.
-  //
   im_pos[XX] = s_origin_img[XX] + delta[XX]*costheta - delta[ZZ]*sintheta;
   im_pos[YY] = delta[YY];
   im_pos[ZZ] = s_origin_img[ZZ] + delta[XX]*sintheta + delta[ZZ]*costheta;
-
   return;
 }
 
@@ -817,7 +812,11 @@ void image::find_surrounding_cells(
 	ngb[3] = 0;
     }
 
-    for (int v=0;v<4;v++) if (!ngb[v]->isgd) ngb[v]=0;
+    for (int v=0;v<4;v++) if (ngb[v] && !ngb[v]->isgd)   ngb[v]=0;
+    // if no cells are leaves, then set all ngb pointers to zero.
+    //int r=0;
+    for (int v=0;v<4;v++) if (ngb[v] && !ngb[v]->isleaf) ngb[v]=0; // r++;
+    //if (r>=2) for (int v=0;v<4;v++) ngb[v]=0;
 
     //
     // Debug info:
@@ -1123,18 +1122,18 @@ void image::calculate_pixel(
     *tot_mass += ans;
     im[px->ipix] = ans;
   }
-  else if (what_to_integrate==I_BREMS20CM) {
+  else if (what_to_integrate==I_BREMS6GHZ) {
     //
-    // Bremsstrahlung at 20cm:
+    // Bremsstrahlung at 6GHz:
     // Point quantity in units MJy/sr/cm
     // Projected quantity in MJy/sr
     //
-    ans = get_point_Bremsstrahlung20cm(&(px->int_pts.p[0]), SimPM.gamma);
+    ans = get_point_Bremsstrahlung6GHz(&(px->int_pts.p[0]), SimPM.gamma);
     for (int v=1; v<(npt-1); v++) {
       wt = 6-wt;
-      ans += wt *get_point_Bremsstrahlung20cm(&(px->int_pts.p[v]), SimPM.gamma);
+      ans += wt *get_point_Bremsstrahlung6GHz(&(px->int_pts.p[v]), SimPM.gamma);
     }
-    ans += get_point_Bremsstrahlung20cm(&(px->int_pts.p[npt-1]), SimPM.gamma);
+    ans += get_point_Bremsstrahlung6GHz(&(px->int_pts.p[npt-1]), SimPM.gamma);
     ans *= hh/3.0;
     *tot_mass += ans;
     im[px->ipix] = ans;
@@ -1481,7 +1480,7 @@ void image::calculate_pixel(
   else if (what_to_integrate==I_X00p1) {
     integrate_xray_emission(px,SimPM.ftr,0,SimPM.gamma,*tot_mass,ans);
     im[px->ipix] = ans;
-  }
+  } // I_X00p1
 
   else if (what_to_integrate==I_X00p2) {
     integrate_xray_emission(px,SimPM.ftr,1,SimPM.gamma,*tot_mass,ans);
@@ -1532,12 +1531,12 @@ void image::calculate_pixel(
 
 
 void image::integrate_xray_emission(
-      struct pixel *pix, ///< pointer to pixel
+      struct pixel *pix,  ///< pointer to pixel
       const int ftr,      ///< tracer variable of H+ fraction (if exists).
-      const int index,      ///< which x-ray band to calculate (index in array)
-      const double gamma,   ///< EOS gamma
-      double &tot_mass,       ///< [OUT] tot_mass counter (not really used here)
-      double &ans        ///< [OUT] answer to return.
+      const int index,    ///< which x-ray band to calculate (index in array)
+      const double gamma, ///< EOS gamma
+      double &tot_mass,   ///< [OUT] tot_mass counter (not really used here)
+      double &ans         ///< [OUT] answer to return.
       )
 {
   // we ignore absorption for now, just sum up the emission.
@@ -1953,7 +1952,8 @@ double point_velocity::get_point_los_velocity(
 {
   double val=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) val += pt->wt[v] *(sx*pt->ngb[v]->P[vx]*st
+    if (pt->ngb[v] && pt->ngb[v]->isleaf)
+      val += pt->wt[v] *(sx*pt->ngb[v]->P[vx]*st
                                       +sz*pt->ngb[v]->P[vz]*ct);
   }
   //  cout <<"sx="<<sx<<" sz="<<sz;
@@ -1980,7 +1980,8 @@ double point_velocity::get_point_perp_velocity(
 {
   double val=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) val += pt->wt[v] *(sx*pt->ngb[v]->P[vx]*ct
+    if (pt->ngb[v] && pt->ngb[v]->isleaf)
+      val += pt->wt[v] *(sx*pt->ngb[v]->P[vx]*ct
                                       -sz*pt->ngb[v]->P[vz]*st);
   }
   //cout <<"sx="<<sx<<" sz="<<sz<<" ct="<<ct<<" st="<<st<<" val="<<val;
@@ -2009,7 +2010,7 @@ double point_velocity::get_point_VX(
   //
   double val=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
+    if (pt->ngb[v] && pt->ngb[v]->isleaf) {
       val += pt->wt[v] *pt->ngb[v]->P[VX];
       //cout <<"vx="<<sx*pt->ngb[v]->P[VX]<<endl;
     }

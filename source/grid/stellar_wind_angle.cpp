@@ -235,7 +235,7 @@ void stellar_wind_angle::setup_tables()
 // Integrand for integral in delta function
 double stellar_wind_angle::integrand(
 	double theta, // Co-latitude angle (radians)
-	double omega, // Omega (v_rot/v_esc)
+	double omega, // Omega (v_rot/v_crit)
 	double Teff // Teff (K)
     )
 {
@@ -298,7 +298,7 @@ double  stellar_wind_angle::integrate_Simpson(
 
 // Phi' function
 double stellar_wind_angle::fn_phi(
-	double omega, // omega (v_rot/v_esc)
+	double omega, // omega (v_rot/v_crit)
 	double theta, // Co-latitude angle (radians)
 	double Teff // Teff (K)
 	)
@@ -316,7 +316,7 @@ double stellar_wind_angle::fn_phi(
 
 // Alpha function
 double stellar_wind_angle::fn_alpha(
-	double omega, // Omega (v_rot/v_esc)
+	double omega, // Omega (v_rot/v_crit)
 	double theta, // Co-latitude angle (radians)
 	double Teff // Teff (K)
 	)
@@ -337,7 +337,7 @@ double stellar_wind_angle::fn_alpha(
 
 // Delta function
 double stellar_wind_angle::fn_delta(
-	double omega, // Omega (v_rot/v_esc)
+	double omega, // Omega (v_rot/v_crit)
 	double Teff // Teff (K)
 	)
 {
@@ -356,15 +356,14 @@ double stellar_wind_angle::fn_delta(
 // Terminal wind velocity function
 double stellar_wind_angle::fn_v_inf(
 	double omega, // Omega (v_rot/v_crit)
-	double v_esc, // Escape velocity (cm/s)
-	double theta, // Co-latitude angle (radians)
-	double Teff // Teff (K)
+	double v_inf, // terminal velocity at pole (cm/s)
+	double theta  // Co-latitude angle (radians)
 	)
 {
 
   omega = std::min(omega,0.999);
   return std::max(0.5e5,
-    beta(Teff) * v_esc * pow_fast(1.0 - omega*sin(theta), c_gamma));
+    v_inf * pow_fast(1.0 - omega*sin(theta), c_gamma));
 }
 
 
@@ -376,8 +375,8 @@ double stellar_wind_angle::fn_v_inf(
 
 // Analytic wind density function
 double stellar_wind_angle::fn_density(
-	double omega, // Omega (v_rot/v_esc)
-	double v_esc, // Escape velocity (cm/s)
+	double omega, // Omega (v_rot/v_crit)
+	double v_inf, // terminal velocity at pole (cm/s)
 	double mdot, // Mass loss rate (g/s)
 	double radius, // Radius (cm)
 	double theta, // Co-latitude angle (radians)
@@ -388,7 +387,7 @@ double stellar_wind_angle::fn_density(
                  * fn_delta(omega, Teff)
                  * pow_fast(1.0 - omega*sin(theta), c_xi) ) /
             (8.0 * pconst.pi() * pow_fast(radius, 2.0)
-                 *  fn_v_inf(omega, v_esc, theta, Teff));
+                 *  fn_v_inf(omega, v_inf, theta));
 }
 
 
@@ -399,8 +398,8 @@ double stellar_wind_angle::fn_density(
 
 // Interpolated wind density function
 double stellar_wind_angle::fn_density_interp(
-	double omega, // Omega (v_rot/v_esc)
-	double v_esc, // Escape velocity (cm/s)
+	double omega, // Omega (v_rot/v_crit)
+	double v_inf, // terminal velocity at pole (cm/s)
 	double mdot, // Mass loss rate (g/s)
 	double radius, // Radius (cm)
 	double theta, // Co-latitude angle (radians)
@@ -449,19 +448,19 @@ double stellar_wind_angle::fn_density_interp(
   double result = (mdot * alpha_interp * delta_interp *
                           pow_fast(1.0 - omega*sin(theta), c_xi));
   result /= (8.0 * pconst.pi() * pow_fast(radius, 2.0) *
-                          fn_v_inf(omega, v_esc, theta, Teff));
+                          fn_v_inf(omega, v_inf, theta));
 
 #ifdef TESTING
   if (!isfinite(result)) {
     cout <<delta_interp <<"  "<< alpha_interp <<"  "<< result;
-    cout <<"  "<<fn_v_inf(omega, v_esc, theta, Teff)<< "  ";
+    cout <<"  "<<fn_v_inf(omega, v_inf, theta)<< "  ";
     cout <<omega<<"\n";
     cout <<"  "<< mdot;
     cout <<"  "<< alpha_interp;
     cout <<"  "<< delta_interp;
     cout <<"  "<< pow_fast(1.0 - omega*sin(theta), c_xi);
     cout <<"  "<< pow_fast(radius, 2.0);
-    cout <<"  "<< fn_v_inf(omega, v_esc, theta, Teff);
+    cout <<"  "<< fn_v_inf(omega, v_inf, theta);
     cout <<"  "<< radius;
     cout <<"  "<< "\n";
   }
@@ -489,7 +488,7 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   // be reset to this reference state.
   //
   bool set_rho=true;
-  if (wc->dist < 0.75*WS->radius) {
+  if (wc->dist < 0.75*WS->radius && ndim>1) {
     wc->p[RO] = 1.0e-31;
     wc->p[PG] = 1.0e-31;
     set_rho=false;
@@ -506,7 +505,7 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   if (set_rho) {
     wc->p[RO] = fn_density_interp(
             std::min(0.9999,WS->v_rot/WS->vcrit),
-            WS->v_esc, WS->Mdot, wc->dist, wc->theta, WS->Tw);
+            WS->Vinf, WS->Mdot, wc->dist, wc->theta, WS->Tw);
     //
     // Set pressure based on wind density/temperature at the stellar radius,
     // assuming adiabatic expansion outside Rstar, and that we don't care what
@@ -519,14 +518,14 @@ void stellar_wind_angle::set_wind_cell_reference_state(
     //
     wc->p[PG] = WS->Tw*pconst.kB()/pconst.m_p(); // taking mu = 1
     wc->p[PG] *= pow_fast(fn_density_interp(std::min(0.9999,WS->v_rot/WS->vcrit),
-                          WS->v_esc, WS->Mdot, WS->Rstar, wc->theta, WS->Tw),
+                          WS->Vinf, WS->Mdot, WS->Rstar, wc->theta, WS->Tw),
                           1.0-eos_gamma);
     wc->p[PG] *= pow_fast(wc->p[RO], eos_gamma);
   }
 
   // calculate terminal wind velocity
   double Vinf = fn_v_inf(std::min(0.9999,WS->v_rot/WS->vcrit),
-                         WS->v_esc, wc->theta, WS->Tw);
+                         WS->Vinf, wc->theta);
 
   cell *c = wc->c;
   double x,y,z,xf,yf;
@@ -713,11 +712,11 @@ void stellar_wind_angle::set_wind_cell_reference_state(
 
 
 int stellar_wind_angle::add_evolving_source(
-      const double *pos,        ///< position (physical units).
-      const double  rad,        ///< radius (physical units).
-      const int    type,        ///< type (must be WINDTYPE_ANGLE).
-      pion_flt *trv,        ///< Any (constant) wind tracer values.
-      const string infile,      ///< file name to read data from.
+      const double *pos,   ///< position (physical units).
+      const double  rad,   ///< radius (physical units).
+      const int    type,   ///< type (must be WINDTYPE_ANGLE).
+      pion_flt *trv,       ///< Any (constant) wind tracer values.
+      const string infile, ///< file name to read data from.
       const int enhance,   ///< enhance mdot based on rotation (0=no,1=yes).
       const double time_offset, ///< time offset = [t(sim)-t(wind_file)] (seconds)
       const double t_now,       ///< current sim time, to see if src is active.
@@ -777,7 +776,7 @@ int stellar_wind_angle::add_evolving_source(
   // Decide if the wind src is active yet.  If it is, then
   // set up a constant wind source for updating its properties.
   //
-  double mdot=0.0, vesc=0.0, Twind=0.0, vrot=0.0, rstar=0.0, vcrt=0.0;
+  double mdot=0.0, vinf=0.0, Twind=0.0, vrot=0.0, rstar=0.0, vcrt=0.0;
   double xh=0.0, xhe=0.0, xc=0.0, xn=0.0, xo=0.0, xz=0.0, xd=0.0;
 
   if ( ((t_now+temp->update_freq)>temp->tstart ||
@@ -785,12 +784,12 @@ int stellar_wind_angle::add_evolving_source(
        && t_now<temp->tfinish) {
     temp->is_active = true;
     // Get the current values for wind properties.
-    interpolate.root_find_linear_vec(temp->time_evo, temp->Teff_evo, t_now, Twind);
-    interpolate.root_find_linear_vec(temp->time_evo, temp->Mdot_evo, t_now, mdot);
-    interpolate.root_find_linear_vec(temp->time_evo, temp->vesc_evo, t_now, vesc);
-    interpolate.root_find_linear_vec(temp->time_evo, temp->vrot_evo, t_now, vrot);
-    interpolate.root_find_linear_vec(temp->time_evo, temp->vcrt_evo,t_now, vcrt);
-    interpolate.root_find_linear_vec(temp->time_evo, temp->R_evo, t_now, rstar);
+    interpolate.root_find_linear_vec(temp->time_evo,temp->Teff_evo,t_now,Twind);
+    interpolate.root_find_linear_vec(temp->time_evo,temp->Mdot_evo,t_now,mdot);
+    interpolate.root_find_linear_vec(temp->time_evo,temp->vinf_evo,t_now,vinf);
+    interpolate.root_find_linear_vec(temp->time_evo,temp->vrot_evo,t_now,vrot);
+    interpolate.root_find_linear_vec(temp->time_evo,temp->vcrt_evo,t_now,vcrt);
+    interpolate.root_find_linear_vec(temp->time_evo,temp->R_evo,   t_now,rstar);
 
     // get tracer values for elements.
     interpolate.root_find_linear_vec(temp->time_evo, temp->X_H_evo, t_now, xh);
@@ -810,7 +809,7 @@ int stellar_wind_angle::add_evolving_source(
     cout <<", tstart=";
     cout <<temp->tstart<<". Setting wind source to INACTIVE.\n";
     temp->is_active = false;
-    mdot=-100.0; vesc=-100.0; vrot=-100.0; Twind=-100.0;
+    mdot=-100.0; vinf=-100.0; vrot=-100.0; Twind=-100.0;
   }
 
   // set tracer values for elements
@@ -832,7 +831,7 @@ int stellar_wind_angle::add_evolving_source(
   //
   // Now add source using rotating star version.
   //
-  add_rotating_source(pos,rad,type,mdot, vesc, vrot, vcrt,Twind,
+  add_rotating_source(pos,rad,type,mdot, vinf, vrot, vcrt,Twind,
                       rstar,Bstar,trv);
   temp->ws = wlist.back();
 
@@ -852,7 +851,7 @@ int stellar_wind_angle::add_rotating_source(
       const double rad,   ///< radius (cm)
       const int type,      ///< type (2=lat-dep.)
       const double mdot,   ///< Mdot (g/s)
-      const double vesc,   ///< Vesc (cm/s)
+      const double vinf,   ///< Vinf (cm/s)
       const double vrot,   ///< Vrot (cm/s)
       const double vcrit,   ///< Vcrit (cm/s)
       const double Twind,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
@@ -888,8 +887,7 @@ int stellar_wind_angle::add_rotating_source(
 
   // all inputs in cgs units.
   ws->Mdot  = mdot;
-  ws->v_esc = vesc;
-  ws->Vinf  = 0.0; // not used in the rotating wind
+  ws->Vinf  = vinf;
   ws->v_rot = vrot;
   ws->vcrit = vcrit;
 
@@ -980,20 +978,19 @@ void stellar_wind_angle::update_source(
   //
   // Now we update Mdot, Vinf, Teff by linear interpolation.
   //
-  double mdot=0.0, vesc=0.0, Twind=0.0, vrot=0.0, rstar=0.0, vcrit=0.0;
+  double mdot=0.0, vinf=0.0, Twind=0.0, vrot=0.0, rstar=0.0, vcrit=0.0;
   double xh=0.0, xhe=0.0, xc=0.0, xn=0.0, xo=0.0, xz=0.0, xd=0.0;
 
-  interpolate.root_find_linear_vec(wd->time_evo, wd->Teff_evo, t_now, Twind);
-  interpolate.root_find_linear_vec(wd->time_evo, wd->Mdot_evo, t_now, mdot);
-  interpolate.root_find_linear_vec(wd->time_evo, wd->vesc_evo, t_now, vesc);
-  interpolate.root_find_linear_vec(wd->time_evo, wd->vrot_evo, t_now, vrot);
-  interpolate.root_find_linear_vec(wd->time_evo, wd->vcrt_evo,t_now, vcrit);
-  interpolate.root_find_linear_vec(wd->time_evo, wd->R_evo, t_now, rstar);
+  interpolate.root_find_linear_vec(wd->time_evo,wd->Teff_evo,t_now,Twind);
+  interpolate.root_find_linear_vec(wd->time_evo,wd->Mdot_evo,t_now,mdot);
+  interpolate.root_find_linear_vec(wd->time_evo,wd->vinf_evo,t_now,vinf);
+  interpolate.root_find_linear_vec(wd->time_evo,wd->vrot_evo,t_now,vrot);
+  interpolate.root_find_linear_vec(wd->time_evo,wd->vcrt_evo,t_now,vcrit);
+  interpolate.root_find_linear_vec(wd->time_evo,wd->R_evo, t_now, rstar);
 
   // all in cgs units already.
   wd->ws->Mdot = mdot;
-  wd->ws->v_esc = vesc;
-  wd->ws->Vinf = 0.0;
+  wd->ws->Vinf = vinf;
   wd->ws->v_rot = vrot;
   wd->ws->vcrit = vcrit;
   wd->ws->Tw   = Twind;
