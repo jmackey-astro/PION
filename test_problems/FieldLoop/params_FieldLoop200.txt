@@ -5,10 +5,19 @@ ndim 2
 eqn glm-mhd
 coordinates cartesian
 solver 4
+OrderOfAccSpace 2
+OrderOfAccTime  2
 
-# Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
-# MHDShockCloud ShockTube...}
 ics FieldLoop
+OutputFile FieldLoop200
+OutputPath ./
+OutputFileType silo
+
+StartTime 0.0
+FinishTime 2.0
+OutputFrequency 25
+OutputCriterion 1
+OPfreqTime 1.0
 
 # Which physics to use
 EP_dynamics     1
@@ -26,49 +35,36 @@ EP_Hydrogen_MassFrac 1.0
 EP_Helium_MassFrac   0.0
 EP_Metal_MassFrac    0.0
 
-# Output FileName Base
-OutputFile FieldLoop200
 
-# Number and type of tracers.
 ntracer 0
 chem_code none
 
-# Smooth Data by n cells? (n<=0 means no).
 smooth -1
-# Add noise at level of f% to Data? (f<=0 means no).
 noise -1.0
 
 ## Grid Parameters
 # Number of gridpoints in each direction (note cells must be cubic!)
-# INT
 NGridX  200
 NGridY  100
 NGridZ  1
-# Boundaries of Simulation box:
 Xmin -1.0
 Ymin -0.5
 Zmin 0.0
-# Max values of x,y,z
 Xmax 1.0
 Ymax 0.5
 Zmax 1.0
 
+grid_nlevels 1
+grid_aspect_ratio_XX 2
+grid_aspect_ratio_YY 1
+grid_aspect_ratio_ZZ 1
+NG_centre_XX 0.0
+NG_centre_XY 0.0
+NG_centre_ZZ 0.0
+NG_refine_XX 0
+NG_refine_YY 0
+NG_refine_ZZ 0
 
-# Data Output Path
-OutputPath ../results/
-# Output File Type = {text,fits,ftab,both,...}
-OutputFileType silo
-# Output data to file every nth timestep. (n=0 means only at the end).
-OutputFrequency 25
-OutputCriterion 1
-OPfreqTime 1.0
-
-# Start time
-StartTime 0.0
-FinishTime 2.0
-# Order of Accuracy (1=1st order; 2=2nd order)
-OrderOfAccSpace 2
-OrderOfAccTime  2
 
 # Type of Boundary Condition
 BC_XN periodic

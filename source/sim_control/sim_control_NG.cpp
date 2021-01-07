@@ -433,7 +433,7 @@ void sim_control_NG::calculate_magnetic_pressure(
   double magp=0.0, cellvol=0.0;
   static double init_magp=-1.0;
     
-  for (int l=SimPM.grid_nlevels-1; l>=0; l++) {
+  for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
 
     cell *c=grid[l]->FirstPt();
     do {

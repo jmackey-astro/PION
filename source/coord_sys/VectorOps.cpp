@@ -31,11 +31,11 @@ using namespace std;
 
 BaseVectorOps::~BaseVectorOps() {}
 
+// ##################################################################
+// ##################################################################
+
 //#define AVG_FALLE
 #define AVG_MINMOD
-
-// ##################################################################
-// ##################################################################
 
 double BaseVectorOps::AvgFalle(
         const double a,
@@ -45,13 +45,12 @@ double BaseVectorOps::AvgFalle(
   // If the slopes have different signs, then set the slope to zero.
   // If the slopes are both very small, then set slope to zero.
   if (a*b <= VERY_TINY_VALUE) return(0.0);
-  // If the slopes are both very small, then set slope to zero.
-  //  else if ( temp <= 2*MACHINEACCURACY) return(0.);
 #if   defined AVG_FALLE
-  // If we get to here, then they are both the same sign, and finite,
+  // both are the same sign, and finite,
   // so take the van Albada average.
   else return(a*b*(a+b)/(a*a+b*b));
 #elif defined AVG_MINMOD
+  // or the MinMod average
   double r=a/b;
   return (r>0.0) ? min(r,1.0)*b : 0.0; 
 #else
