@@ -212,8 +212,9 @@ coordinate_conversion::coordinate_conversion(
     sim_rangeI[v] = sim_xmaxI[v]-sim_xminI[v];
     sim_ncell[v]  = sim_rangeI[v]/sim_dxI;
     // SANITY CHECK!
-    //if (sim_ncell[v] != SimPM.NG[v])
-    //  rep.error("Cells dont match at all!!!", sim_ncell[v]-SimPM.NG[v]);
+    if (sim_ncell[v] != gptr->NG(static_cast<axes>(v)))
+      rep.error("Cells dont match at all!!!",
+                sim_ncell[v]-gptr->NG(static_cast<axes>(v)));
   }
   rep.printVec("xminI",sim_xminI,3);
   rep.printVec("xmaxI",sim_xmaxI,3);
@@ -356,7 +357,7 @@ bool coordinate_conversion::point_in_Isim_domain(
 {
   bool inside=true;
   for (int v=0;v<3;v++) {
-    if (x[v]<=sim_xminI[v] || x[v]>=sim_xmaxI[v]) inside=false;
+    if (x[v]<sim_xminI[v] || x[v]>sim_xmaxI[v]) inside=false;
   }
   return inside;
 }

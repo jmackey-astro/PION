@@ -16,6 +16,10 @@ Within the Makefile are directives for "debian9", "ubuntu18",
 "ubuntu16", "OSX" and "SUPERMUC".  If you have a different OS then
 either modify the Makefile yourself or contact the authors.
 
+X-ray table was generated using Xspec 12 APEC model with Asplund
+abundances, and is in units erg.cm^{3}.s^{-1}, and should be divided
+by 4pi to get an emissivity per solid angle.
+
 run with, e.g.,
 ./projection2D /path/to/data/ FILENAME_0000.000 30 IMGFILE 3 0
 

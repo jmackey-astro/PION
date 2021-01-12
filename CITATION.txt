@@ -1,7 +1,7 @@
 
 If you use PION for your research, please cite it appropriately as follows:
 
-+ A code-release paper is in preparation (for 2020).  In the meantime please cite one or more of the following papers, depending on which physical processes you use:
++ A code-release paper is in preparation (for 2021).  In the meantime please cite one or more of the following papers, depending on which physical processes you use:
     + Radiative Transfer: "Accuracy and efficiency of raytracing photoionisation algorithms," Mackey, 2012, A&A, 539, A147.
     + MHD: "Effects of magnetic fields on photoionized pillars and globules," Mackey & Lim, 2011, MNRAS, 412, Issue 3, pp. 2079-2094.
     + Hydrodynamics: "Dynamical Models for the Formation of Elephant Trunks in H II Regions," Mackey & Lim, 2010, MNRAS, 403, 714-730.

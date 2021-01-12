@@ -602,7 +602,7 @@ int main(int argc, char **argv)
     what2int[PROJ_X00p3] = I_X00p3;
     what2int[PROJ_X00p5] = I_X00p5;
     what2int[PROJ_X01p0] = I_X01p0;
-    what2int[PROJ_X02p0] = I_X01p0;
+    what2int[PROJ_X02p0] = I_X02p0;
     what2int[PROJ_X05p0] = I_X05p0;
     what2int[PROJ_X10p0] = I_X10p0;
     if (SIMeqns==2) { 
