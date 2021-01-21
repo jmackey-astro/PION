@@ -679,9 +679,9 @@ double FV_solver_base::select_Hcorr_eta(
 
 
 
+// ##################################################################
+// ##################################################################
 
-// ##################################################################
-// ##################################################################
 
 
 #ifdef THERMAL_CONDUCTION
@@ -695,20 +695,18 @@ int FV_solver_base::set_thermal_conduction_Edot(
   //
   //cout <<"IntUniformFV::calc_conduction_dt_and_Edot()\n\tcalculating Temperature.\n";
   //
-  // First we need to calculate the temperature in every cell.  We do
-  // this first for grid cells, and then we will calculate it for boundary
-  // data later as they are encountered.  Temperature is stored in dU[RHO] --
-  // We will reset it to zero at the end of this function.
+  // First we need to calculate the temperature in every cell.  This
+  // is stored in dU[RHO] -- reset to zero at the end of function.
   //
   if (!MP) {
     rep.error("Why do conductivity without having Microphysics?",MP);
   }
-  cell *c = grid->FirstPt();
+  cell *c = grid->FirstPt_All();
   do {
     //cout <<"dU[RHO]="<<c->dU[RHO];
     c->dU[RHO] = MP->Temperature(c->Ph,SimPM.gamma);
     //cout <<", replaced with T="<<c->dU[RHO]<<"\n";
-  } while ((c=grid->NextPt(c)) !=0);
+  } while ((c=grid->NextPt_All(c)) !=0);
   
   //cout <<"\tT calculated, now calculating divQ.\n";
   // 
@@ -770,19 +768,6 @@ int FV_solver_base::set_thermal_conduction_Edot(
         // eta[] values as we go.
         //
         do {
-          //
-          // Check if we have boundary data, b/c we need to set T for these cells.
-          //
-          if (!cpt->isgd) {
-            //cout <<"\tBoundary cpt dU[RHO]="<<cpt->dU[RHO];
-            cpt->dU[RHO] = MP->Temperature(cpt->Ph,SimPM.gamma);
-            //cout <<", replaced with T="<<cpt->dU[RHO]<<"\n";
-          }
-          if (!npt->isgd) {
-            //cout <<"\tBoundary npt dU[RHO]="<<npt->dU[RHO];
-            npt->dU[RHO] = MP->Temperature(npt->Ph,SimPM.gamma);
-            //cout <<", replaced with T="<<npt->dU[RHO]<<"\n";
-          }
           //
           // Now use the Slavin & Cox (1992) formula for conduction to get
           // the conductive heat flux from cpt to npt in direction posdir[idim].

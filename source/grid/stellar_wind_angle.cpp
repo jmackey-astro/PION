@@ -149,7 +149,7 @@ void stellar_wind_angle::setup_tables()
     //
 
     // Temperature ranges from Eldridge et al. (2006, MN, 367, 186) (K) + upper and lower Teff limits
-    double T0 = 1000.0, T1 = 3600.0, T2 = 6000.0, T3 = 8000.0, T4 = 10000.0, T5 = 20000.0, T6 = 22000.0, T7 = 51000.0;
+    double T0 = 1000.0, T1 = 3600.0, T2 = 6000.0, T3 = 8000.0, T4 = 10000.0, T5 = 20000.0, T6 = 22000.0, T7 = 150000.0;
 
     Teff_vec.resize(npts_Teff);
     
@@ -440,7 +440,7 @@ double stellar_wind_angle::fn_density_interp(
   alpha_input[0] = omega;
   alpha_input[1] = theta;
   alpha_input[2] = Teff;
-      
+
   alpha_interp = root_find_trilinear_vec(omega_vec, theta_vec,
                   Teff_vec, alpha_vec, alpha_vec_size, alpha_input);
 
@@ -891,7 +891,7 @@ int stellar_wind_angle::add_rotating_source(
   ws->v_rot = vrot;
   ws->vcrit = vcrit;
 
-  ws->Tw    = Twind;
+  ws->Tw    = std::min(Twind, Teff_vec.back());
   ws->Rstar = Rstar;
   ws->Bstar = Bstar;
 
@@ -993,7 +993,7 @@ void stellar_wind_angle::update_source(
   wd->ws->Vinf = vinf;
   wd->ws->v_rot = vrot;
   wd->ws->vcrit = vcrit;
-  wd->ws->Tw   = Twind;
+  wd->ws->Tw   = std::min(Twind, Teff_vec.back());
   wd->ws->Rstar = rstar;
 
   // get tracer values for elements.
