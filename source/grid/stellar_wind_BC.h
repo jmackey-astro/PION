@@ -37,16 +37,11 @@
 #include "tools/reporting.h"
 
 
-//
 // Defines for type of wind:
-// 0=constant,
-// 1= switch on slowly over 100kyr,
-// 2=move boundary outwards over time (with v_inf),
-// 3=evolving in time according to a stellar evolution model.
-//
-#define WINDTYPE_CONSTANT 0
-#define WINDTYPE_EVOLVING 1
-#define WINDTYPE_ANGLE 2
+#define WINDTYPE_CONSTANT 0 # spherically symmetric, constant in time
+#define WINDTYPE_EVOLVING 1 # spherically symmetric, with evolution
+#define WINDTYPE_ANGLE    2 # Langer et al. (1999) model implemented
+#define WINDTYPE_LATDEP   3 # Modification of LGM99, original work
 
 
 
