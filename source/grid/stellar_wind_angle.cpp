@@ -87,20 +87,6 @@ stellar_wind_angle::~stellar_wind_angle()
 // ##################################################################
 
 
-// Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
-// (also added fn to stellar_wind - probably already inherited from stellar_wind_evolution?)
-double stellar_wind_angle::pow_fast(
-	double a,
-	double b
-	)
-{
-	return exp(b*log(a));
-}
-
-
-// ##################################################################
-// ##################################################################
-
 
 // Generate interpolating tables for wind density function
 void stellar_wind_angle::setup_tables()
@@ -139,7 +125,7 @@ void stellar_wind_angle::setup_tables()
     
     // Iterate omega values - log spacing - spacing decreases as omega approaches 1
     for (int j = 0; j < npts_omega; j++)
-      omega_vec[j] = 1 - pow_fast(10, log_mu_vec[j]);
+      omega_vec[j] = 1 - pconst.pow_fast(10, log_mu_vec[j]);
 
     //cout << "- Omega vector generated" << "\n";
 
@@ -239,7 +225,7 @@ double stellar_wind_angle::integrand(
 	double Teff // Teff (K)
     )
 {
-	return fn_alpha(omega, theta, Teff) * pow_fast(1.0 - omega*sin(theta), c_xi) * sin(theta);
+	return fn_alpha(omega, theta, Teff) * pconst.pow_fast(1.0 - omega*sin(theta), c_xi) * sin(theta);
 } 
 
 
@@ -303,7 +289,7 @@ double stellar_wind_angle::fn_phi(
 	double Teff // Teff (K)
 	)
 {
-  double ans = (omega/(22.0*pconst.sqrt2()*beta(Teff))) * sin(theta) * pow_fast(1.0 - omega*sin(theta), -c_gamma);
+  double ans = (omega/(22.0*pconst.sqrt2()*beta(Teff))) * sin(theta) * pconst.pow_fast(1.0 - omega*sin(theta), -c_gamma);
   return std::min(ans,0.5*pconst.pi()*ONE_MINUS_EPS);
 }
 
@@ -321,8 +307,8 @@ double stellar_wind_angle::fn_alpha(
 	double Teff // Teff (K)
 	)
 {
-  return  pow_fast(cos(fn_phi(omega, theta, Teff))
-        + pow_fast(tan(theta),-2.0)
+  return  pconst.pow_fast(cos(fn_phi(omega, theta, Teff))
+        + pconst.pow_fast(tan(theta),-2.0)
 	* (1.0 + c_gamma*( omega*sin(theta) / (1.0 - omega*sin(theta)) ))
         * fn_phi(omega, theta, Teff)
         * sin(fn_phi(omega, theta, Teff)), -1.0 );
@@ -341,7 +327,7 @@ double stellar_wind_angle::fn_delta(
 	double Teff // Teff (K)
 	)
 {
-	return 2.0*pow_fast(
+	return 2.0*pconst.pow_fast(
           integrate_Simpson(0.001, pconst.pi()/2.0, 230, omega, Teff),
           -1.0);
 } // 230 points determined to give sufficient accuracy
@@ -363,7 +349,7 @@ double stellar_wind_angle::fn_v_inf(
 
   omega = std::min(omega,0.999);
   return std::max(0.5e5,
-    v_inf * pow_fast(1.0 - omega*sin(theta), c_gamma));
+    v_inf * pconst.pow_fast(1.0 - omega*sin(theta), c_gamma));
 }
 
 
@@ -385,8 +371,8 @@ double stellar_wind_angle::fn_density(
 {
     return (mdot * fn_alpha(omega, theta, Teff)
                  * fn_delta(omega, Teff)
-                 * pow_fast(1.0 - omega*sin(theta), c_xi) ) /
-            (8.0 * pconst.pi() * pow_fast(radius, 2.0)
+                 * pconst.pow_fast(1.0 - omega*sin(theta), c_xi) ) /
+            (8.0 * pconst.pi() * pconst.pow_fast(radius, 2.0)
                  *  fn_v_inf(omega, v_inf, theta));
 }
 
@@ -446,8 +432,8 @@ double stellar_wind_angle::fn_density_interp(
 
   // Return interpolated density
   double result = (mdot * alpha_interp * delta_interp *
-                          pow_fast(1.0 - omega*sin(theta), c_xi));
-  result /= (8.0 * pconst.pi() * pow_fast(radius, 2.0) *
+                          pconst.pow_fast(1.0 - omega*sin(theta), c_xi));
+  result /= (8.0 * pconst.pi() * pconst.pow_fast(radius, 2.0) *
                           fn_v_inf(omega, v_inf, theta));
 
 #ifdef TESTING
@@ -458,8 +444,8 @@ double stellar_wind_angle::fn_density_interp(
     cout <<"  "<< mdot;
     cout <<"  "<< alpha_interp;
     cout <<"  "<< delta_interp;
-    cout <<"  "<< pow_fast(1.0 - omega*sin(theta), c_xi);
-    cout <<"  "<< pow_fast(radius, 2.0);
+    cout <<"  "<< pconst.pow_fast(1.0 - omega*sin(theta), c_xi);
+    cout <<"  "<< pconst.pow_fast(radius, 2.0);
     cout <<"  "<< fn_v_inf(omega, v_inf, theta);
     cout <<"  "<< radius;
     cout <<"  "<< "\n";
@@ -517,10 +503,10 @@ void stellar_wind_angle::set_wind_cell_reference_state(
     // So then p(r) = p_star (rho(r)/rho_star)^gamma
     //
     wc->p[PG] = WS->Tw*pconst.kB()/pconst.m_p(); // taking mu = 1
-    wc->p[PG] *= pow_fast(fn_density_interp(std::min(0.9999,WS->v_rot/WS->vcrit),
+    wc->p[PG] *= pconst.pow_fast(fn_density_interp(std::min(0.9999,WS->v_rot/WS->vcrit),
                           WS->Vinf, WS->Mdot, WS->Rstar, wc->theta, WS->Tw),
                           1.0-eos_gamma);
-    wc->p[PG] *= pow_fast(wc->p[RO], eos_gamma);
+    wc->p[PG] *= pconst.pow_fast(wc->p[RO], eos_gamma);
   }
 
   // calculate terminal wind velocity
@@ -577,8 +563,8 @@ void stellar_wind_angle::set_wind_cell_reference_state(
 
     // add non-radial component to x/y-dir from rotation.
     // J is hardcoded to be parallel to z-axis
-    xf = -WS->v_rot * WS->Rstar * y / pow_fast(wc->dist,2);
-    yf =  WS->v_rot * WS->Rstar * x / pow_fast(wc->dist,2);
+    xf = -WS->v_rot * WS->Rstar * y / pconst.pow_fast(wc->dist,2);
+    yf =  WS->v_rot * WS->Rstar * x / pconst.pow_fast(wc->dist,2);
     wc->p[VX] += xf;
     wc->p[VY] += yf;
     xf /= Vinf * x / wc->dist; // fraction of x-vel in non-radial dir.
@@ -826,7 +812,7 @@ int stellar_wind_angle::add_evolving_source(
   // TODO: Decide how to set this better!  For now pick B=10G at
   //       radius 10 R_sun, and scale with R^-2 for constant flux.
   //
-  double Bstar= 10.0*pow_fast(10.0*pconst.Rsun()/rstar,2.0);
+  double Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
 
   //
   // Now add source using rotating star version.
@@ -1017,7 +1003,7 @@ void stellar_wind_angle::update_source(
   // TODO: Decide how to set this better!  For now pick B=10G at
   //       radius 10 R_sun, and scale with R^-2 for constant flux.
   //
-  wd->ws->Bstar= 10.0*pow_fast(10.0*pconst.Rsun()/rstar,2.0);
+  wd->ws->Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
   
   //
   // Now re-assign state vector of each wind-boundary-cell with

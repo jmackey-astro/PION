@@ -83,12 +83,6 @@ class stellar_wind_latdep
       pion_flt *  ///< Tracer values of wind (if any)
       );
 
-  /// Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
-  double pow_fast(
-	double, ///< a
-	double ///< b
-	);
-
   /// setup tables for interpolation.
   void setup_tables();
 

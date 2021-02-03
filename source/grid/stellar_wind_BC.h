@@ -38,10 +38,10 @@
 
 
 // Defines for type of wind:
-#define WINDTYPE_CONSTANT 0 # spherically symmetric, constant in time
-#define WINDTYPE_EVOLVING 1 # spherically symmetric, with evolution
-#define WINDTYPE_ANGLE    2 # Langer et al. (1999) model implemented
-#define WINDTYPE_LATDEP   3 # Modification of LGM99, original work
+#define WINDTYPE_CONSTANT 0 // spherically symmetric, constant in time
+#define WINDTYPE_EVOLVING 1 // spherically symmetric, with evolution
+#define WINDTYPE_ANGLE    2 // Langer et al. (1999) model implemented
+#define WINDTYPE_LATDEP   3 // Modification of LGM99, original work
 
 
 
@@ -261,12 +261,6 @@ class stellar_wind {
         int *   ///< type of wind (=0 for now) (output)
         );
 
-  // Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
-  double pow_fast(
-		double a,
-		double b
-		);
-
   // --------------------------------------------------------------
 
  protected:
@@ -461,6 +455,45 @@ class stellar_wind_evolution : virtual public stellar_wind {
       struct evolving_wind_data *, ///< source to update.
       const double, ///< current simulation time.
       const double  ///< EOS Gamma
+      );
+
+  /// Vink et al. (2000) mass-loss recipe for the hot side of the
+  /// bistability jump.
+  double Mdot_Vink_hot(
+      const double, ///< luminosity (Lsun)
+      const double, ///< mass (Msun)
+      const double, ///< T_eff (K)
+      const double, ///< Metallicity wrt solar
+      const double  ///< beta of wind on hot side of BSJ
+      );
+    
+  /// Vink et al. (2000) mass-loss recipe for the cool side of the
+  /// bistability jump.
+  double Mdot_Vink_cool(
+      const double, ///< luminosity (Lsun)
+      const double, ///< mass (Msun)
+      const double, ///< T_eff (K)
+      const double, ///< Metallicity wrt solar
+      const double  ///< beta of wind on cool side of BSJ
+      );
+    
+  ///  Nieuwenhuijzen, H.; de Jager, C. 1990, A&A, 231, 134 (eqn 2)
+  double Mdot_Nieuwenhuijzen(
+      const double, ///< luminosity (Lsun)
+      const double, ///< mass (Msun)
+      const double, ///< Radius (Rsun)
+      const double  ///< Metallicity wrt solar
+      );
+
+  /// Implementation of the Brott et al. (2011) mass-loss recipe.
+  /// This uses beta=2.6 for hot side of bistability jump, and 1.3
+  /// for the cool side, and Nieuwenhuijzen & de Jager for RSG.
+  double Mdot_Brott(
+      const double, ///< luminosity (Lsun)
+      const double, ///< mass (Msun)
+      const double, ///< T_eff (K)
+      const double, ///< Radius (Rsun)
+      const double  ///< Metallicity wrt solar
       );
 
   ///
