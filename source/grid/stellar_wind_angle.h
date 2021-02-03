@@ -73,6 +73,7 @@ class stellar_wind_angle
       const double,   ///< radius (cm)
       const int,      ///< type (2=lat-dep.)
       const double,   ///< Mdot (g/s)
+      const double,   ///< Md0, equiv. non-rotating star (g/s)
       const double,   ///< Vinf (cm/s)
       const double,   ///< Vrot (cm/s)
       const double,   ///< Vcrit (cm/s)

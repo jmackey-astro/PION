@@ -976,7 +976,7 @@ int stellar_wind_evolution::read_evolution_file(
   //
   FILE *wf = 0;
   wf = fopen(infile.c_str(), "r");
-  if (!wf) rep.error("can't open wind file, stellar_wind_angle",wf);
+  if (!wf) rep.error("can't open wind file, stellar_wind_evo",wf);
 
   // Skip first two lines
   char line[512];
@@ -1368,8 +1368,10 @@ double stellar_wind_evolution::Mdot_Nieuwenhuijzen(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 double stellar_wind_evolution::Mdot_Brott(
@@ -1398,8 +1400,16 @@ double stellar_wind_evolution::Mdot_Brott(
     mdc = Mdot_Nieuwenhuijzen(L,M,R,Z);
     md = std::max(mdh,mdc);
   }
-  return md;
+  return md * pconst.Msun() / pconst.year();
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 
 

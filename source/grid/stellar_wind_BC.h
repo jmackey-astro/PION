@@ -82,6 +82,7 @@ struct wind_source {
     dpos[MAX_DIM], ///< physical position of source
     radius, ///< radius of fixed region (in cm).
     Mdot,   ///< mass loss rate  (g/s)
+    Md0,    ///< Mdot equiv. non-rotating star (lat-dep.wind) (g/s)
     Vinf,   ///< terminal wind velocity (cm/s)
     v_rot,  ///< stellar rotational velocity (cm/s)
     v_esc,  ///< wind escape velocity (cm/s)
@@ -169,6 +170,7 @@ class stellar_wind {
       const double,   ///< radius of boundary region (cm)
       const int,      ///< type (2=lat-dep.)
       const double,   ///< Mdot (g/s)
+      const double,   ///< Md0, equiv. non-rotating star (g/s)
       const double,   ///< Vesc (cm/s)
       const double,   ///< Vrot (cm/s)
       const double,   ///< Vcrit (cm/s)
@@ -488,6 +490,7 @@ class stellar_wind_evolution : virtual public stellar_wind {
   /// Implementation of the Brott et al. (2011) mass-loss recipe.
   /// This uses beta=2.6 for hot side of bistability jump, and 1.3
   /// for the cool side, and Nieuwenhuijzen & de Jager for RSG.
+  /// Returns mass-loss rate in g/s
   double Mdot_Brott(
       const double, ///< luminosity (Lsun)
       const double, ///< mass (Msun)

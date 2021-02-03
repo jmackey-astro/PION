@@ -10,6 +10,7 @@
 #include "sim_params.h"
 #include "grid/stellar_wind_BC.h"
 #include "grid/stellar_wind_angle.h"
+#include "grid/stellar_wind_latdep.h"
 #include "tools/mem_manage.h"
 using namespace std;
 
@@ -74,6 +75,9 @@ int stellar_wind_bc::BC_assign_STWIND(
   for (int isw=0; isw<Ns; isw++) {
     if (SWP.params[isw]->type ==WINDTYPE_ANGLE) wtype=2;
   }
+  for (int isw=0; isw<Ns; isw++) {
+    if (SWP.params[isw]->type ==WINDTYPE_LATDEP) wtype=3;
+  }
 
   //
   // check values of xi.  At the moment we assume it is the same for
@@ -107,6 +111,12 @@ int stellar_wind_bc::BC_assign_STWIND(
             par.ntracer, par.ftr, par.tracers, par.coord_sys, par.eqntype,
             par.EP.MinTemperature, par.starttime, par.finishtime,
             xi);
+    }
+    else if (wtype==3) {
+      //cout <<"Setting up stellar_wind_angle class\n";
+      grid->Wind = new stellar_wind_latdep(par.ndim, par.nvar,
+            par.ntracer, par.ftr, par.tracers, par.coord_sys, par.eqntype,
+            par.EP.MinTemperature, par.starttime, par.finishtime);
     }
   }
 

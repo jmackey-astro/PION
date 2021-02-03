@@ -817,7 +817,7 @@ int stellar_wind_angle::add_evolving_source(
   //
   // Now add source using rotating star version.
   //
-  add_rotating_source(pos,rad,type,mdot, vinf, vrot, vcrt,Twind,
+  add_rotating_source(pos,rad,type,mdot,0.0, vinf, vrot, vcrt,Twind,
                       rstar,Bstar,trv);
   temp->ws = wlist.back();
 
@@ -837,6 +837,7 @@ int stellar_wind_angle::add_rotating_source(
       const double rad,   ///< radius (cm)
       const int type,      ///< type (2=lat-dep.)
       const double mdot,   ///< Mdot (g/s)
+      const double,   ///< Md0, equiv. non-rotating star (g/s)
       const double vinf,   ///< Vinf (cm/s)
       const double vrot,   ///< Vrot (cm/s)
       const double vcrit,   ///< Vcrit (cm/s)
