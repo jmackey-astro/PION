@@ -33,7 +33,8 @@ class stellar_wind_latdep
       const int, ///< eqn_type
       const double, ///< minimum temperature allowed
       const double, ///< Simulation start time.
-      const double ///< Simulation finish time.
+      const double, ///< Simulation finish time.
+      const double  ///< exponent of wind equatorial enhancement
       );
 
   ///

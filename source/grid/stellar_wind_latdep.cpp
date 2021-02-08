@@ -45,7 +45,8 @@ stellar_wind_latdep::stellar_wind_latdep(
       const int eq, ///< eqn_type
       const double mt, ///< Minimum temperature allowed on grid
       const double ss, ///< Simulation start time.
-      const double sf ///< Simulation finish time.
+      const double sf, ///< Simulation finish time.
+      const double xi  ///< exponent of wind equatorial enhancement
       )
 : stellar_wind(nd,nv,nt,ft,tr,cs,eq,mt),
   stellar_wind_evolution(nd,nv,nt,ft,tr,cs,eq,mt,ss,sf)
@@ -53,7 +54,7 @@ stellar_wind_latdep::stellar_wind_latdep(
 {
   // Constants for wind functions
   stellar_wind_latdep::c_gamma = 0.35;
-  stellar_wind_latdep::c_xi    = 0.8;
+  stellar_wind_latdep::c_xi    = xi;
   
   // Number of points in theta, Omega and Teff vectors
   stellar_wind_latdep::Ntheta = 25;
@@ -133,7 +134,7 @@ void stellar_wind_latdep::setup_tables()
   vinf_vsize[1] = NOmega;
 
   // set up interpolating table for wind density lat-dependence,
-  // f(theta,Omega) = sin(theta)/(1-Omega*sin(theta))^0.8
+  // f(theta,Omega) = sin(theta)*(1-Omega*sin(theta))^xi
   // to get rho(r,theta,Omega) via 2D interpolation.
   f_vec.resize(Ntheta);
   for (int i=0; i<Ntheta; i++) f_vec[i].resize(NOmega);
@@ -173,7 +174,7 @@ double stellar_wind_latdep::f(
 	double Omega  // Omega (v_rot/v_crit)
     )
 {
-  return sin(theta)*pconst.pow_fast(1.0-Omega*sin(theta),-0.8);
+  return sin(theta)*pconst.pow_fast(1.0-Omega*sin(theta),c_xi);
 } 
 
 
@@ -552,6 +553,7 @@ int stellar_wind_latdep::add_evolving_source(
   // They are stored in local data.
   //
   struct evolving_wind_data *temp=0;
+  double om=0.0;
   temp = mem.myalloc(temp,1);
   int err = read_evolution_file(infile,temp);
   if (err) rep.error("couldn't read wind evolution file",infile);
@@ -559,6 +561,15 @@ int stellar_wind_latdep::add_evolving_source(
   // assign data for v_esc from v_crit.
   for (int i=0; i<temp->Npt; i++)
     temp->vesc_evo.push_back(temp->vcrt_evo[i]*pconst.sqrt2());
+
+  // optionally enhance Mdot artificially
+  if (enhance) {
+    cout <<"Enhancing Mdot by factor of 2 at Omega=1\n";
+    for (int i=0; i<temp->Npt; i++) {
+      om = temp->vrot_evo[i]/temp->vcrt_evo[i];
+      if (om>0.5) temp->Mdot_evo[i] *= 2.0*om;
+    }
+  }
 
   // set offsets and scaling for evolutionary time (all in seconds)
   temp->offset = time_offset/t_scalefactor;

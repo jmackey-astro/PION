@@ -116,7 +116,8 @@ int stellar_wind_bc::BC_assign_STWIND(
       //cout <<"Setting up stellar_wind_angle class\n";
       grid->Wind = new stellar_wind_latdep(par.ndim, par.nvar,
             par.ntracer, par.ftr, par.tracers, par.coord_sys, par.eqntype,
-            par.EP.MinTemperature, par.starttime, par.finishtime);
+            par.EP.MinTemperature, par.starttime, par.finishtime,
+            xi);
     }
   }
 
