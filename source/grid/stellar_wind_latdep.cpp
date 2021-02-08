@@ -90,9 +90,9 @@ void stellar_wind_latdep::setup_tables()
 
   // Min, mid and max values of theta - 5pts between min and mid,
   // 20pts between mid and max
-  double t_min = 0.1;
+  double t_min = 0.00;
   double t_mid = 60.0;
-  double t_max = 89.9;
+  double t_max = 90.0;
   
   theta_vec.resize(Ntheta);
   for (int k = 0; k < Ntheta; k++) {
@@ -858,6 +858,7 @@ void stellar_wind_latdep::update_source(
   double Z = (xc+xn+xo+xz+xd) / 0.014;
   wd->ws->Md0 = Mdot_Brott(Lstar/pconst.Lsun(), Mstar/pconst.Msun(),
                           Twind, rstar/pconst.Rsun(), Z);
+  wd->ws->Md0 = std::min(wd->ws->Md0,wd->ws->Mdot); // just in case
   //if (vrot/vcrit>0.8)
   //  cout <<"Mdot="<<mdot<<", md0 = "<<wd->ws->Md0<<", Z="<<Z<<"\n";
 
