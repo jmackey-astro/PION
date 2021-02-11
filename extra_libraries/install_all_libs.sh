@@ -12,8 +12,10 @@
 mkdir include
 mkdir bin
 mkdir lib
+mkdir lib64
+mkdir share
+mkdir cmake
 
-MAKE_UNAME=standard
 NCORES=4
 export CC=gcc
 export CXX=g++
@@ -28,132 +30,16 @@ COMPILE_FITS=yes
 
 export WGET='wget'
 
-#################################
-## First try debian-based linux #
-#################################
-id=`lsb_release -s -i`
-ver=`lsb_release -s -r`
-code=`lsb_release -s -c`
-nc=`nproc --all`
+source /usr/share/Modules/init/bash
+#module purge
+module load cmake3
+module load gcc
+#module load cmake3/3.12.3
+#module load python py/intel
+#module load python numpy
+module list
 
-if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
-  echo "Detected Ubuntu 18.04 (bionic): compiling extra libraries"
-  MAKE_UNAME=ubuntu18
-  export CXX=g++
-  export CC=gcc
-  export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
-  export PION_OPTIMISE=HIGH
-  NCORES=$nc
-  export CC=gcc
-  export CXX=g++
-  export FC=gfortran
-  SHARED=YES
-  HDF5=YES
-  HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
-  COMPILE_SILO=yes
-  COMPILE_SUNDIALS=yes
-  COMPILE_FITS=no
-
-elif [  "$id" == "Ubuntu" ] && [ "$ver" == "16.04" ]; then
-  echo "Detected Ubuntu 16.04 (xenial): compiling extra libraries"
-  MAKE_UNAME=ubuntu16
-  export CXX=g++
-  export CC=gcc
-  export FC=gfortran
-  export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
-  export PION_OPTIMISE=HIGH
-  NCORES=$nc
-  SHARED=YES
-  HDF5=YES
-  HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
-  COMPILE_SILO=yes
-  COMPILE_SUNDIALS=yes
-  COMPILE_FITS=yes
-
-elif [ "$id" == "Debian" ] && [ "$code" == "stretch" ]; then
-  echo "Detected Debian 9 (stretch), use system libs for SILO, FITS, GSL, SUNDIALS!"
-  echo "No need to compile extra libraries"
-  echo "run  apt install libcfitsio-bin libcfitsio-dev libsilo-dev libsilo-bin python-silo libsundials-dev openmpi-bin openmpi-common curl libhdf5-serial-dev git libgsl-dev"
-  echo "Then cd to serial/parallel binary directory and run  bash compile_code.sh"
-  exit
-
-elif [ "$id" == "Debian" ] && [ "$code" == "buster" ]; then
-  echo "Detected Debian 10 (buster), use system libs for SILO, FITS, GSL, SUNDIALS!"
-  echo "No need to compile extra libraries"
-  echo "run  apt install libcfitsio-bin libcfitsio-dev libsilo-dev libsilo-bin python-silo libsundials-dev openmpi-bin openmpi-common curl libhdf5-serial-dev git libgsl-dev"
-  echo "Then cd to serial/parallel binary directory and run  bash compile_code.sh"
-  exit
-
-elif [ "$id" == "ManjaroLinux" ]; then
-  echo "Detected ManjaroLinux, using local libs for SILO FITS SUNDIALS"
-  echo "Assuming using system libs for MPI and GSL"
-  MAKE_UNAME=ManjaroLinux
-  export CXX=g++
-  export CC=gcc
-  export FC=gfortran
-  export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
-  export PION_OPTIMISE=HIGH
-  NCORES=$nc
-  SHARED=YES
-  HDF5=NO
-  HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
-  COMPILE_SILO=yes
-  COMPILE_SUNDIALS=no
-  COMPILE_FITS=no
-
-else
-  echo "Failed to find a known version of Linux: checking for other OS types."
-fi
-#################################
-
-##############################
-### TEST FOR KAY.ICHEC.IE  ###
-##############################
-case $HOSTNAME in
-  login[0-9].kay.ichec.ie)
-    echo "Compiling on KAY/ICHEC"
-    source /usr/share/Modules/init/bash
-    #module purge
-    module load cmake3
-    module load intel/2018u4
-    #module load cmake3/3.12.3
-    #module load python py/intel
-    #module load python numpy
-    module list
-    MAKE_UNAME=KAY
-    NCORES=8
-    export CC=icc
-    export CXX=icpc
-    export FC=ifort
-    SHARED=NO
-    ;;
-esac
-#######################
-
-#################################
-### TEST FOR OS X (DARWIN)    ###
-#################################
-DDD=`uname -a | grep "Darwin"`
-if [ ! -z "$DDD" ]; then
-  export CXX=g++
-  export CC=gcc
-  export FC=gfortran
-  echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
-  MAKE_UNAME=osx
-  NCORES=4
-  SHARED=NO
-  COMPILE_SILO=yes
-  COMPILE_SUNDIALS=no
-  COMPILE_FITS=no
-  echo "Installing SILO library: SUNDIALS and CFITSIO can be installed via macports or homebrew"
-  echo "If you want to install SUNDIALS and CFITSIO then change lines 128 and 129 of this script"
-fi
-#################################
-
-
-export MAKE_UNAME
 export NCORES
-echo "COMPILING WITH MACHINE: ${MAKE_UNAME}. Compilers: CC=$CC FC=$FC CXX=$CXX"
 CURDIR=`pwd`
 
 ##################################
@@ -167,9 +53,9 @@ then
   echo "********************************"
 #################################
 # Change these for new versions:
-  FILE=silo-4.10.2-bsd.tar.gz
+  FILE=silo-4.10.2-bsd.tgz
   SRC_DIR=silo-4.10.2-bsd
-  REMOTE_URL=https://wci.llnl.gov/content/assets/docs/simulation/computer-codes/silo/silo-4.10.2/silo-4.10.2-bsd.tar.gz
+  REMOTE_URL=https://wci.llnl.gov/sites/wci/files/2021-01/silo-4.10.2-bsd.tgz
 #################################
 
 
@@ -180,15 +66,11 @@ then
           echo "********************************"
           echo "*** DOWNLOADING SILO LIBRARY ***"
           echo "********************************"
-          if [ $MAKE_UNAME == "osx" ]; then
-            curl  $REMOTE_URL -o $FILE
-          else
-            $WGET --no-check-certificate $REMOTE_URL -O $FILE
-            if [ $? != 0 ]; then
-              echo ** failed to download with wget, trying curl instead **
-              rm $FILE
-              curl $REMOTE_URL -o $FILE
-            fi
+          $WGET --no-check-certificate $REMOTE_URL -O $FILE
+          if [ $? != 0 ]; then
+            echo ** failed to download with wget, trying curl instead **
+            rm $FILE
+            curl $REMOTE_URL -o $FILE
           fi
           # check it downloaded.
           if [ ! -f $FILE ]; then
@@ -208,47 +90,17 @@ then
   echo "***Path = $BASE_PATH ***"
   cd $SRC_DIR
   make clean
-#
-  if [ "$MAKE_UNAME" == "KAY" ]
-  then
-    echo " ****** KAY.ICHEC.IE no shared libs, no python ****** "
-    ./configure --prefix=${BASE_PATH} \
-   --disable-browser \
-   --disable-fortran \
-   --disable-silex \
-   --disable-shared \
-   --disable-pythonmodule
-  elif [ "$MAKE_UNAME" == "ManjaroLinux" ]
-  then
-    ./configure --prefix=${BASE_PATH} \
-   --disable-browser \
-   --disable-fortran \
-   --disable-silex \
-   --disable-shared \
-   --enable-pythonmodule \
-   --without-hdf5
-  elif [ "$SHARED" == "NO" ]
-  then
-    echo " ****** NOT COMPILING SHARED LIBRARIES ****** "
-    ./configure --prefix=${BASE_PATH} \
-   --disable-browser \
-   --disable-fortran \
-   --disable-silex \
-   --disable-shared \
-   --enable-pythonmodule
-  else
-    echo " ****** COMPILING SHARED LIBRARIES ****** "
-    ./configure --prefix=${BASE_PATH} \
-   --disable-fortran \
-   --disable-silex \
-   --enable-pythonmodule \
-   --with-hdf5=$HDF5_LIBS
-  fi
+
+  ./configure --prefix=${BASE_PATH} \
+    --disable-browser \
+    --disable-fortran \
+    --disable-silex \
+    --disable-pythonmodule
 
   echo "********************************"
   echo "*** RUNNING MAKE ***"
   echo "********************************"
-  make -j$NCORES
+  make -j $NCORES
   echo "********************************"
   echo "*** INSTALLING SILO LIBRARY ***"
   echo "********************************"
@@ -265,7 +117,7 @@ fi
 ##################################
 if [ "$COMPILE_SUNDIALS" == "yes" ]
 then
-  bash install_sundials5.sh
+  bash install_sundials.sh
 fi
 
 ##################################
@@ -290,11 +142,7 @@ then
     echo "*******************************"
     echo "*** DOWNLOADING FITS LIBRARY ***"
     echo "*******************************"
-    if [ $MAKE_UNAME == "osx" ]; then
-      curl  $REMOTE_URL -o $FILE
-    else
-      $WGET --no-check-certificate $REMOTE_URL -O $FILE
-    fi
+    $WGET --no-check-certificate $REMOTE_URL -O $FILE
     # check it downloaded.
     if [ ! -f $FILE ]; then
       echo "File not found! : $FILE"
@@ -328,4 +176,3 @@ then
 fi
 
 cd $CURDIR
-
