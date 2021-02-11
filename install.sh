@@ -8,7 +8,7 @@ BASE_DIR=`pwd`
 
 echo "************** INSTALLING LIBRARIES **************"
 cd ${BASE_DIR}/extra_libraries/
-rm -rf bin lib include
+rm -rf bin lib lib64 include share
 bash ./install_all_libs.sh
 echo "************** ----------------------------- *************"
 echo "************** FINISHED INSTALLING LIBRARIES **************"
@@ -31,6 +31,3 @@ echo "If, not, then run the steps in install.sh one-by-one to see \
 what the problem is."
 
 exit
-
-
-

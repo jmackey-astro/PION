@@ -1,13 +1,9 @@
-
-PION
--------
+# PION
 
 PION is open source software primarily for simulation of nebulae around stars, but also for other astrophysical applications.  It has an open development model, where anyone can download and use the software, change it to suit their needs, and contribute changes back to the user community.
 
 
-
-Information
-=============
+## Information
 
  * The PION homepage is at [https://www.pion.ie](https://www.pion.ie), with documentation including a quick-start guide at [https://www.pion.ie/docs/](https://www.pion.ie/docs/).
 
@@ -20,9 +16,76 @@ Information
  * Contact [info@pion.ie](mailto:info@pion.ie) for help and information
 
 
+## Build Instructions
 
-Developers
-==============
+To configure and build Pion, a C++14 compatible compiler is required, and CMake >= 3.0. For developers, it is recommended to create a script similar to the following example in the root directory of the project for repeated building of the project. 
+
+```
+#!/bin/sh
+
+script="${BASH_SOURCE[0]:-${(%):-%x}}"
+script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
+#deps_dir="${script_dir}/extra_libraries"
+#modules_path="/path/to/modules"
+build_dir="${script_dir}/build"
+
+# (optionally) load any modules
+#module load cmake3
+#module load gcc
+#module load gsl/gcc
+#module load openmpi/gcc/4.0.5
+
+# Help Cmake find libraries if necessary
+#CMAKE_PREFIX_PATH="${modules_path}/gsl/gcc/2.5;${deps_dir};${CMAKE_PREFIX_PATH}"
+#SUNDIALS_DIR="${deps_dir}/share/sundials"
+#SILO_DIR="${deps_dir}"
+
+mkdir -p ${build_dir}
+pushd ${build_dir}
+
+cmake \
+    #-DCMAKE_BUILD_TYPE=Debug \
+    #-DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}" \
+    #-DSUNDIALS_DIR="${SUNDIALS_DIR}" \
+    #-DSILO_DIR="${SILO_DIR}" \
+    [more options below] \
+    "${script_dir}"
+
+make -j 4
+
+popd # build_dir
+```
+
+To install execute `make -C ${build_dir} install`.
+
+### Useful Options
+
+#### Setting Compile/Link Flags
+Option | Effect
+------ | ------
+`-DCMAKE_BUILD_TYPE=...`   | Set to `Release` or `Debug` for release or debug builds. Sets a number of flags by default.
+`-DCMAKE_CXX_COMPILER=...` | Set the C++ compiler.
+`-DCMAKE_CXX_FLAGS=...`    | Set the flags to pass to the C++ compiler explicitly. Overrides the default flags.
+
+#### Enabling/Disabling Aspects of Pion
+Option | Effect
+------ | ------
+`-DPION_NESTED_GRID=...`| Set to `ON` to build nested grid simulations (default `ON`).
+`-DPION_UNIFORM_GRID=...`| Set to `ON` to build uniform grid simulations (default `OFF`).
+`-DPION_PARALLEL_=...`  | Set to `ON` to enable MPI for the Pion build, or `OFF` to disable MPI (default `ON`).
+`-DPION_USE_SILO=...`   | Set to `ON` to use Silo for handling data I/O (default `ON`).
+
+#### Setting installation directories
+Option | Effect
+------ | ------
+`-DCMAKE_INSTALL_PREFIX=...` | Set the root install directory for the compiled libraries and programs. 
+`-DPION_INSTALL_BINDIR=...`  |  Set the install directory for Pion executables. Use a relative path to set the path relative to `${CMAKE_INSTALL_PREFIX}` (default `bin`).
+`-DPION_INSTALL_LIBDIR=...`  |  Set the install diretory for Pion libraries. Use a relative path to set the path relative to `${CMAKE_INSTALL_PREFIX}` (default `lib`).
+`-DPION_INSTALL_INCLUDEDIR=...`  |  Set the install diretory for Pion header files. Use a relative path to set the path relative to `${CMAKE_INSTALL_PREFIX}` (default `include`).
+`-DPION_INSTALL_DATADIR=...`  |  Set the install diretory for Pion data (eg. CMake scripts). Use a relative path to set the path relative to `${CMAKE_INSTALL_PREFIX}` (default `share`).
+
+
+## Developers
 
 The following people have contributed to the development of PION:
 
@@ -36,8 +99,7 @@ The following people have contributed to the development of PION:
   * Davit Zargaryan
 
 
-License
-===========
+## License
 
 PION is distributed under a BSD3 License.  Downloading, using, modifying and/or re-distributing the software implies acceptance of the License.  See [LICENSE.md](https://git.dias.ie/massive-stars-software/pion/-/blob/master/LICENSE.md).
 
