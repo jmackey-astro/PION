@@ -53,7 +53,7 @@ option(
 option(
     PION_USE_SILO
     "Use the Silo library for data I/O. Default is enabled."
-    ON
+    OFF
 )
 
 option(
@@ -106,10 +106,13 @@ endif(PION_USE_SILO)
 
 if(PION_USE_FITS)
     find_package(FITS REQUIRED)
+    find_package(ZLIB REQUIRED)
+    find_package(CURL REQUIRED)
+    find_package(BZip2 REQUIRED)
 endif(PION_USE_FITS)
 
 if(PION_PARALLEL)
-    find_package(MPI REQUIRED)
+    find_package(MPI REQUIRED COMPONENTS CXX)
 endif(PION_PARALLEL)
 
 

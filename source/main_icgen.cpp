@@ -1,10 +1,11 @@
 /// \file icgen.cpp
 /// \brief Program to generate Initial Conditions for a uniform grid
 /// \author Jonathan Mackey
-/// 
+///
 /// Modifications:
 ///  - 2007-06-28 Started to write an ND shocktube function.  Need to test it.
-///  - 2007-07-17 ND MHD shock-cloud interaction problem added to list.  Works well.
+///  - 2007-07-17 ND MHD shock-cloud interaction problem added to list.  Works
+///  well.
 ///  - 2007-07-24 Added passive tracer variable support.
 ///  - 2007-08 to 2008-02 Added more functions.
 ///  - 2009-12-18 Added in Laser Ablation check.
@@ -46,247 +47,264 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-#include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "tools/reporting.h"
 #include "tools/timer.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
-#endif // TESTING
+#endif  // TESTING
 
-#include "ics/icgen_base.h"
-#include "ics/icgen.h"
 #include "ics/get_sim_info.h"
+#include "ics/icgen.h"
+#include "ics/icgen_base.h"
 
 #include "dataIO/dataio_base.h"
 #ifdef FITS
 #include "dataIO/dataio_fits.h"
-#endif // if FITS
+#endif  // if FITS
 #ifdef SILO
 #include "dataIO/dataio_silo.h"
-#endif // if SILO
+#endif  // if SILO
 
-#include "grid/uniform_grid.h"
 #include "grid/setup_fixed_grid.h"
+#include "grid/uniform_grid.h"
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_base.h"
 
 #include <sstream>
 using namespace std;
 
-
-
 // ##################################################################
 // ##################################################################
 
-
-
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
 
-  if (argc<2) {
-    cerr<<"Error, please give a filename to read IC parameters from.\n";
-    cerr<<"Usage <icgen> <paramfile> [ic-filetype]\n";
-    return(1);
-  }
-
-  int err=0;
-  string *args=0;
-  args = new string [argc];
-  for (int i=0;i<argc;i++) args[i] = argv[i];
-  // Redirect stdout/stderr if required.
-  for (int i=0;i<argc; i++) {
-    if (args[i].find("redirect=") != string::npos) {
-      string outpath = (args[i].substr(9));
-      cout <<"Redirecting stdout to "<<outpath<<"info.txt"<<"\n";
-      rep.redirect(outpath); // Redirects cout and cerr to text files in the directory specified.
+    if (argc < 2) {
+        cerr << "Error, please give a filename to read IC parameters from.\n";
+        cerr << "Usage <icgen> <paramfile> [ic-filetype]\n";
+        return (1);
     }
-  }
 
-  class DataIOBase   *dataio=0;
-  class get_sim_info *siminfo=0;
-  class ICsetup_base *ic=0;
-  class ReadParams   *rp=0;
-  class MCMDcontrol ppar; // unused for serial code.
-  class SimParams SimPM;
-  MP=0;  // global microphysics class pointer.
+    int err      = 0;
+    string* args = 0;
+    args         = new string[argc];
+    for (int i = 0; i < argc; i++)
+        args[i] = argv[i];
+    // Redirect stdout/stderr if required.
+    for (int i = 0; i < argc; i++) {
+        if (args[i].find("redirect=") != string::npos) {
+            string outpath = (args[i].substr(9));
+            cout << "Redirecting stdout to " << outpath << "info.txt"
+                 << "\n";
+            rep.redirect(outpath);  // Redirects cout and cerr to text files in
+                                    // the directory specified.
+        }
+    }
 
-  string pfile = argv[1];
-  string icftype;
-  if (argc>2) icftype=argv[2];
-  else icftype="fits"; // This is the default for now.
-  
-  siminfo=0; siminfo = new class get_sim_info ();
-  if (!siminfo) rep.error("Sim Info class init error",siminfo);
-  err = 0;
-  err += siminfo->read_gridparams(pfile, SimPM);
-  if (err) rep.error("Read Grid Params Error",err);
-  delete siminfo; siminfo=0;
+    class DataIOBase* dataio    = 0;
+    class get_sim_info* siminfo = 0;
+    class ICsetup_base* ic      = 0;
+    class ReadParams* rp        = 0;
+    class MCMDcontrol ppar;  // unused for serial code.
+    class SimParams SimPM;
+    MP = 0;  // global microphysics class pointer.
 
-  SimPM.levels.clear();
-  SimPM.levels.resize(1);
-  SimPM.grid_nlevels=1;
-  SimPM.levels[0].parent=0;
-  SimPM.levels[0].child=0;
-  SimPM.levels[0].Ncell = SimPM.Ncell;
-  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].NG[v] = SimPM.NG[v];
-  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Range[v] = SimPM.Range[v];
-  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmin[v] = SimPM.Xmin[v];
-  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmax[v] = SimPM.Xmax[v];
-  SimPM.levels[0].dx = SimPM.Range[XX]/SimPM.NG[XX];
-  SimPM.levels[0].simtime = SimPM.simtime;
-  SimPM.levels[0].dt = 0.0;
-  SimPM.levels[0].multiplier = 1;
+    string pfile = argv[1];
+    string icftype;
+    if (argc > 2)
+        icftype = argv[2];
+    else
+        icftype = "fits";  // This is the default for now.
 
-  class setup_fixed_grid *SimSetup =0;
-  SimSetup = new setup_fixed_grid();
+    siminfo = 0;
+    siminfo = new class get_sim_info();
+    if (!siminfo) rep.error("Sim Info class init error", siminfo);
+    err = 0;
+    err += siminfo->read_gridparams(pfile, SimPM);
+    if (err) rep.error("Read Grid Params Error", err);
+    delete siminfo;
+    siminfo = 0;
 
-  //
-  // Set up the Xmin/Xmax/Range/dx of each level in the NG grid
-  //
-  //SimSetup->setup_NG_grid_levels(SimPM);
+    SimPM.levels.clear();
+    SimPM.levels.resize(1);
+    SimPM.grid_nlevels     = 1;
+    SimPM.levels[0].parent = 0;
+    SimPM.levels[0].child  = 0;
+    SimPM.levels[0].Ncell  = SimPM.Ncell;
+    for (int v = 0; v < MAX_DIM; v++)
+        SimPM.levels[0].NG[v] = SimPM.NG[v];
+    for (int v = 0; v < MAX_DIM; v++)
+        SimPM.levels[0].Range[v] = SimPM.Range[v];
+    for (int v = 0; v < MAX_DIM; v++)
+        SimPM.levels[0].Xmin[v] = SimPM.Xmin[v];
+    for (int v = 0; v < MAX_DIM; v++)
+        SimPM.levels[0].Xmax[v] = SimPM.Xmax[v];
+    SimPM.levels[0].dx         = SimPM.Range[XX] / SimPM.NG[XX];
+    SimPM.levels[0].simtime    = SimPM.simtime;
+    SimPM.levels[0].dt         = 0.0;
+    SimPM.levels[0].multiplier = 1;
 
-  vector<class GridBaseClass *> grid;
+    class setup_fixed_grid* SimSetup = 0;
+    SimSetup                         = new setup_fixed_grid();
 
-  //
-  // Now we have read in parameters from the file, so set up a grid.
-  //
-  int l=0;
-  grid.resize(1);
-  SimPM.grid_nlevels=1;
-  // Now set up the grid structure.
-  err = SimSetup->setup_grid(grid,SimPM);
-  SimPM.dx = grid[0]->DX();
-  if (!grid[0]) rep.error("Grid setup failed",grid[0]);
-  
-  //
-  // read in what kind of ICs we are setting up.
-  //
-  rp = new ReadParams;
-  if (!rp) rep.error("icgen:: initialising RP",rp);
-  err += rp->read_paramfile(pfile);
-  if (err) rep.error("Error reading parameterfile", pfile);
-  string seek="ics";
-  string ics = rp->find_parameter(seek);
-  setup_ics_type(ics,&ic);
-  ic->set_SimPM(&SimPM);
+    //
+    // Set up the Xmin/Xmax/Range/dx of each level in the NG grid
+    //
+    // SimSetup->setup_NG_grid_levels(SimPM);
 
+    vector<class GridBaseClass*> grid;
 
-  if (SimPM.EP.cooling && !SimPM.EP.chemistry) {
-    // don't need to set up the class, because it just does cooling and
-    // there is no need to equilibrate anything.
-  }
-  else if (SimPM.ntracer>0 && (SimPM.EP.cooling || SimPM.EP.chemistry)) {
-    cout <<"MAIN: setting up microphysics module\n";
-    SimSetup->setup_microphysics(SimPM);
-    if (!MP) rep.error("microphysics init",MP);
-  }
-  // ----------------------------------------------------------------
+    //
+    // Now we have read in parameters from the file, so set up a grid.
+    //
+    int l = 0;
+    grid.resize(1);
+    SimPM.grid_nlevels = 1;
+    // Now set up the grid structure.
+    err      = SimSetup->setup_grid(grid, SimPM);
+    SimPM.dx = grid[0]->DX();
+    if (!grid[0]) rep.error("Grid setup failed", grid[0]);
 
-  //
-  // Set up the boundary conditions and data
-  //
-  SimSetup->boundary_conditions(SimPM,grid);
-  if (err) rep.error("icgen Couldn't set up boundaries.",err);
-  err += SimSetup->setup_raytracing(SimPM, grid[0]);
-  err += SimSetup->setup_evolving_RT_sources(SimPM);
-  err += SimSetup->update_evolving_RT_sources(SimPM,SimPM.simtime,grid[0]->RT);
-  if (err) rep.error("icgen: Failed to setup raytracer and/or microphysics",err);
+    //
+    // read in what kind of ICs we are setting up.
+    //
+    rp = new ReadParams;
+    if (!rp) rep.error("icgen:: initialising RP", rp);
+    err += rp->read_paramfile(pfile);
+    if (err) rep.error("Error reading parameterfile", pfile);
+    string seek = "ics";
+    string ics  = rp->find_parameter(seek);
+    setup_ics_type(ics, &ic);
+    ic->set_SimPM(&SimPM);
 
-  // ----------------------------------------------------------------
-  // call "setup" to set up the data on the computational grid.
-  err += ic->setup_data(rp,grid[0]);
-  if (err) rep.error("Initial conditions setup failed.",err);
-  // ----------------------------------------------------------------
+    if (SimPM.EP.cooling && !SimPM.EP.chemistry) {
+        // don't need to set up the class, because it just does cooling and
+        // there is no need to equilibrate anything.
+    }
+    else if (SimPM.ntracer > 0 && (SimPM.EP.cooling || SimPM.EP.chemistry)) {
+        cout << "MAIN: setting up microphysics module\n";
+        SimSetup->setup_microphysics(SimPM);
+        if (!MP) rep.error("microphysics init", MP);
+    }
+    // ----------------------------------------------------------------
 
-  err = SimSetup->assign_boundary_data(SimPM,0,grid[0]);
-  rep.errorTest("icgen::assign_boundary_data",0,err);
-
-  // ----------------------------------------------------------------
-  // if data initialised ok, maybe we need to equilibrate the 
-  // chemistry...
-  //
-  if (SimPM.ntracer>0 && (SimPM.EP.chemistry)) {
-    cout <<"MAIN: equilibrating the chemical species.\n";
-    if (!MP) rep.error("microphysics init",MP);
-
-    // first avoid cooling the gas in getting to equilbrium, by
-    // setting update_erg to false.
-    bool uerg = SimPM.EP.update_erg;
-    SimPM.EP.update_erg = false;
-    err = ic->equilibrate_MP(grid[0],MP,rp,SimPM);
+    //
+    // Set up the boundary conditions and data
+    //
+    SimSetup->boundary_conditions(SimPM, grid);
+    if (err) rep.error("icgen Couldn't set up boundaries.", err);
+    err += SimSetup->setup_raytracing(SimPM, grid[0]);
+    err += SimSetup->setup_evolving_RT_sources(SimPM);
+    err +=
+        SimSetup->update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
     if (err)
-      rep.error("setting chemical states to equilibrium failed",err);
+        rep.error("icgen: Failed to setup raytracer and/or microphysics", err);
 
-    SimPM.EP.update_erg = uerg;
-    cout <<"MAIN: finished equilibrating the chemical species.\n";
-  }
-  // ----------------------------------------------------------------
+    // ----------------------------------------------------------------
+    // call "setup" to set up the data on the computational grid.
+    err += ic->setup_data(rp, grid[0]);
+    if (err) rep.error("Initial conditions setup failed.", err);
+    // ----------------------------------------------------------------
 
+    err = SimSetup->assign_boundary_data(SimPM, 0, grid[0]);
+    rep.errorTest("icgen::assign_boundary_data", 0, err);
 
-  cout <<"IC file-type is "<<icftype<<"\n";
-  seek="OutputFile";
-  string icfile   = rp->find_parameter(seek);
-  if (icfile=="") {
-    cout <<"WARNING: no filename for ic file.  writing to IC_temp.****\n";
-    icfile = "IC_temp";
-  }
+    // ----------------------------------------------------------------
+    // if data initialised ok, maybe we need to equilibrate the
+    // chemistry...
+    //
+    if (SimPM.ntracer > 0 && (SimPM.EP.chemistry)) {
+        cout << "MAIN: equilibrating the chemical species.\n";
+        if (!MP) rep.error("microphysics init", MP);
 
-  dataio = 0; // zero the class pointer.
-  if (icftype=="text") {
-    cout <<"WRITING ASCII TEXT FILE: ";
-    cout << icfile << "\n";
-  }
+        // first avoid cooling the gas in getting to equilbrium, by
+        // setting update_erg to false.
+        bool uerg           = SimPM.EP.update_erg;
+        SimPM.EP.update_erg = false;
+        err                 = ic->equilibrate_MP(grid[0], MP, rp, SimPM);
+        if (err)
+            rep.error("setting chemical states to equilibrium failed", err);
 
-#ifdef FITS    
-  if (icftype=="fits") {
-    cout <<"WRITING FITS FILE: ";
-    cout << icfile << "\n";
-    dataio = 0; dataio = new DataIOFits (SimPM);
-  }
-#endif // if fits.
+        SimPM.EP.update_erg = uerg;
+        cout << "MAIN: finished equilibrating the chemical species.\n";
+    }
+    // ----------------------------------------------------------------
+
+    cout << "IC file-type is " << icftype << "\n";
+    seek          = "OutputFile";
+    string icfile = rp->find_parameter(seek);
+    if (icfile == "") {
+        cout << "WARNING: no filename for ic file.  writing to IC_temp.****\n";
+        icfile = "IC_temp";
+    }
+
+    dataio = 0;  // zero the class pointer.
+    if (icftype == "text") {
+        cout << "WRITING ASCII TEXT FILE: ";
+        cout << icfile << "\n";
+    }
+
+#ifdef FITS
+    if (icftype == "fits") {
+        cout << "WRITING FITS FILE: ";
+        cout << icfile << "\n";
+        dataio = 0;
+        dataio = new DataIOFits(SimPM);
+    }
+#endif  // if fits.
 
 #ifdef SILO
-  if (icftype=="silo") {
-    cout <<"WRITING SILO FILE: ";
-    //    icfile = icfile+".silo";
-    cout <<icfile <<"\n";
-    dataio=0; dataio=new dataio_silo (SimPM, "DOUBLE");
-  }
-#endif // if SILO defined.
-  if (!dataio) rep.error("IO class initialisation: ",icftype);
-  err = dataio->OutputData(icfile,grid, SimPM, 0);
-  if (err) rep.error("File write error",err);
-  delete dataio; dataio=0;
-  cout <<icftype<<" FILE WRITTEN... exiting\n";
+    if (icftype == "silo") {
+        cout << "WRITING SILO FILE: ";
+        //    icfile = icfile+".silo";
+        cout << icfile << "\n";
+        dataio = 0;
+        dataio = new dataio_silo(SimPM, "DOUBLE");
+    }
+#endif  // if SILO defined.
+    if (!dataio) rep.error("IO class initialisation: ", icftype);
+    err = dataio->OutputData(icfile, grid, SimPM, 0);
+    if (err) rep.error("File write error", err);
+    delete dataio;
+    dataio = 0;
+    cout << icftype << " FILE WRITTEN... exiting\n";
 
-  // delete everything and return
-  if (MP)   {delete MP; MP=0;}
-  if (rp)   {delete rp; rp=0;} // Delete the read_parameters class.
-  if (ic)   {delete ic; ic=0;}
-  if (SimSetup) {delete SimSetup; SimSetup =0;}
-  delete grid[0];
+    // delete everything and return
+    if (MP) {
+        delete MP;
+        MP = 0;
+    }
+    if (rp) {
+        delete rp;
+        rp = 0;
+    }  // Delete the read_parameters class.
+    if (ic) {
+        delete ic;
+        ic = 0;
+    }
+    if (SimSetup) {
+        delete SimSetup;
+        SimSetup = 0;
+    }
+    delete grid[0];
 
-  //
-  // Also delete any dynamic memory in the stellarwind_list in
-  // global.h, since we may have added wind sources in the
-  // read-params functions.
-  //
-  while (SWP.params.size()>0) {
-    int i=static_cast<int>(SWP.params.size())-1;
-    struct stellarwind_params *temp = SWP.params[i];
-    SWP.params.pop_back();   // remove struct from list.
-    temp = mem.myfree(temp); // delete struct.
-  }
+    //
+    // Also delete any dynamic memory in the stellarwind_list in
+    // global.h, since we may have added wind sources in the
+    // read-params functions.
+    //
+    while (SWP.params.size() > 0) {
+        int i = static_cast<int>(SWP.params.size()) - 1;
+        struct stellarwind_params* temp = SWP.params[i];
+        SWP.params.pop_back();    // remove struct from list.
+        temp = mem.myfree(temp);  // delete struct.
+    }
 
-  delete [] args; args=0;
-  return err;
+    delete[] args;
+    args = 0;
+    return err;
 }
 
-
 // ##################################################################
 // ##################################################################
-
-
-
-
-

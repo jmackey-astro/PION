@@ -1,19 +1,22 @@
 /// \file sim_control.cpp
-/// 
+///
 /// \brief Simulation Control Class Member Function definitions.
-/// 
+///
 /// \author Jonathan Mackey
-/// 
-/// This file contains the definitions of the member functions for sim_control 
+///
+/// This file contains the definitions of the member functions for sim_control
 /// class, which is the basic 1st/2nd order Finite Volume Solver according to
-/// the method outlined in Falle, Komissarov, \& Joarder (1998), MNRAS, 297, 265.
-/// 
-/// 
+/// the method outlined in Falle, Komissarov, \& Joarder (1998), MNRAS, 297,
+/// 265.
+///
+///
 /// Modifications:
 /// - 2007-06-26 Hunted for bugs, but they were in another file.
 /// - 2007-07-13 New Class structure implemented.
-/// - 2007-07-16 New Class structure works (modified from Friday a little).  Same as old, but a bit faster.
-/// - 2007-07-17 2D riemann problem initial setup improved (area averaged interface cells).
+/// - 2007-07-16 New Class structure works (modified from Friday a little). Same
+/// as old, but a bit faster.
+/// - 2007-07-17 2D riemann problem initial setup improved (area averaged
+/// interface cells).
 /// - 2007-07-24 Added passive tracer variable support.
 /// - 2007-08-07 cylindrical coordinates working for 2d axi-symmetry.
 /// - 2007-10-11 Cleaning up.
@@ -52,7 +55,8 @@
 ///    checkpoint file to restart from.
 /// - 2010.07.23 JM: New RSP source position class interface.
 /// - 2010.09.27 JM: took out comments and old ifdefs from dU_column().
-/// - 2010.09.30 JM: Added div(V) calculation to calc_dU() function for viscosity.
+/// - 2010.09.30 JM: Added div(V) calculation to calc_dU() function for
+/// viscosity.
 /// - 2010.10.01 JM: Spherical coordinates(1D only) for Euler equations.
 ///       Cut out testing myalloc/myfree
 /// - 2010.10.04 JM: Moved the field-loop magnetic pressure output to
@@ -92,30 +96,35 @@
 /// - 2011.02.25 JM: New setup_raytracing() and update_microphysics() functions.
 ///    The interface is simpler, and the logic is much clearer, and it should
 ///    now work for multiple sources.
-/// - 2011.03.21 JM: moved cell setup_extra_data() to its own function, to save 
+/// - 2011.03.21 JM: moved cell setup_extra_data() to its own function, to save
 ///    on copy-paste for the parallel version.
-///    Rewrote setup_raytracing() and atomised update_microphysics() so there are
-///    now a few new functions to deal with the different kinds of radiative
+///    Rewrote setup_raytracing() and atomised update_microphysics() so there
+///    are now a few new functions to deal with the different kinds of radiative
 ///    transfer we want to do.
-/// - 2011.04.06 JM: Added thermal-conduction timestep limiting and flux calculation.
+/// - 2011.04.06 JM: Added thermal-conduction timestep limiting and flux
+/// calculation.
 /// - 2011.04.14 JM: Added MPv2 microphysics integration class.
-/// - 2011.04.17 JM: minor debugging additions/subtractions for the new RT update.
+/// - 2011.04.17 JM: minor debugging additions/subtractions for the new RT
+/// update.
 /// - 2011.04.18 JM: more debugging.  nearly done now.
-/// - 2011.04.22 JM: bugs for multiple point sources fixed.  Also removed isfinite
-///    checks for ints.  the intel compiler bugs out with them!  I guess they are
-///    redundant if an int doesn't have a bit combination for NAN or INF.
+/// - 2011.04.22 JM: bugs for multiple point sources fixed.  Also removed
+/// isfinite
+///    checks for ints.  the intel compiler bugs out with them!  I guess they
+///    are redundant if an int doesn't have a bit combination for NAN or INF.
 /// - 2011.04.29 JM: changed logic: replaced some if (c->isbd) to if (!c->isgd)
 ///  because the two are no longer mutually exclusive (grid data can be internal
 ///  boundary data also.  Added a check in update_microphysics so that if a cell
 ///  is boundary data it is not updated (and in microphysics calc_timestep).
-/// - 2011.05.02 JM: Added set_multifreq_source_properties() call to 
+/// - 2011.05.02 JM: Added set_multifreq_source_properties() call to
 ///    setup_microphysics() function.
-/// - 2011.06.21 JM: Added option of 2nd-order-in-time ray-tracing/microphysics with
+/// - 2011.06.21 JM: Added option of 2nd-order-in-time ray-tracing/microphysics
+/// with
 ///    two microphysics updates per step.
 /// - 2011.10.13 JM: Added MPv4 class.
-/// - 2011.10.14 JM: Removed raytracer_shielding class, updated RT interface a lot.
+/// - 2011.10.14 JM: Removed raytracer_shielding class, updated RT interface a
+/// lot.
 /// - 2011.10.22 JM: The new MP/RT interface is now default (old #deffed code
-///    is now removed as of SVN369).  Improved RT interface, and simplified the 
+///    is now removed as of SVN369).  Improved RT interface, and simplified the
 ///    logic again, so it should now be easier to add to.
 /// - 2012.01.16 JM: Added setup_evolving_RT_sources() and
 ///    update_evolving_RT_sources() for stellar evolution models.
@@ -143,149 +152,140 @@
 /// - 2015.01.26 JM: CHANGED FILENAME TO SIM_CONTROL.CPP
 /// - 2017.08.24 JM: moved evolving_RT_sources functions to setup.
 /// - 2018.01.24 JM: worked on making SimPM non-global
-/// - 2018.05.** JM: moved most functions to new classes for calculating timestep,
+/// - 2018.05.** JM: moved most functions to new classes for calculating
+/// timestep,
 ///    updating boundaries, and time integration.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
+#include "constants.h"
+#include "dataIO/dataio_base.h"
+#include "microphysics/microphysics_base.h"
+#include "raytracing/raytracer_SC.h"
+#include "sim_control.h"
 #include "tools/command_line_interface.h"
 #include "tools/reporting.h"
 #include "tools/timer.h"
-#include "constants.h"
-#include "microphysics/microphysics_base.h"
-#include "raytracing/raytracer_SC.h"
-#include "dataIO/dataio_base.h"
-#include "sim_control.h"
 
-
+#include <fstream>
 #include <iostream>
 #include <sstream>
-#include <fstream>
 #include <sys/time.h>
 #include <time.h>
 using namespace std;
 
-
 // ##################################################################
 // ##################################################################
 
-
-sim_control::sim_control()
-{
-}
-
-
+sim_control::sim_control() {}
 
 // ##################################################################
 // ##################################################################
-
 
 sim_control::~sim_control()
 {
 #ifdef TESTING
-  cout << "(sim_control::Destructor)\n";
+    cout << "(sim_control::Destructor)\n";
 #endif
 }
 
-
-
 // ##################################################################
 // ##################################################################
-
-
-
 
 /*****************************************************************/
 /*********************** TIME INTEGRATION ************************/
 /*****************************************************************/
 int sim_control::Time_Int(
-      vector<class GridBaseClass *> &grid  ///< grid pointers.
-      )
+    vector<class GridBaseClass*>& grid  ///< grid pointers.
+)
 {
-  cout <<"------------------------------------------------------------\n";
-  cout <<"(sim_control::Time_Int) STARTING TIME INTEGRATION."<<"\n";
-  cout <<"------------------------------------------------------------\n";
-  int err=0;
-  SimPM.maxtime=false;
-  clk.start_timer("time_int"); double tsf=0;
-  class MCMDcontrol ppar; // unused for serial code.
-  err = update_evolving_RT_sources(SimPM,SimPM.simtime,grid[0]->RT);
-  rep.errorTest("TIME_INT:: initial RT src update()",0,err);
-  err = RT_all_sources(SimPM,grid[0],0);
-  rep.errorTest("TIME_INT:: initial RT()",0,err);
-  err+= output_data(grid);
-  rep.errorTest("TIME_INT:: initial save",0,err);
+    cout << "------------------------------------------------------------\n";
+    cout << "(sim_control::Time_Int) STARTING TIME INTEGRATION."
+         << "\n";
+    cout << "------------------------------------------------------------\n";
+    int err       = 0;
+    SimPM.maxtime = false;
+    clk.start_timer("time_int");
+    double tsf = 0;
+    class MCMDcontrol ppar;  // unused for serial code.
+    err = update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
+    rep.errorTest("TIME_INT:: initial RT src update()", 0, err);
+    err = RT_all_sources(SimPM, grid[0], 0);
+    rep.errorTest("TIME_INT:: initial RT()", 0, err);
+    err += output_data(grid);
+    rep.errorTest("TIME_INT:: initial save", 0, err);
 
-  while (SimPM.maxtime==false) {
+    while (SimPM.maxtime == false) {
 
-#if defined (CHECK_MAGP)
-    calculate_magnetic_pressure(grid[0]);
-#elif defined (BLAST_WAVE_CHECK)
-    calculate_blastwave_radius(grid[0]);
+#if defined(CHECK_MAGP)
+        calculate_magnetic_pressure(grid[0]);
+#elif defined(BLAST_WAVE_CHECK)
+        calculate_blastwave_radius(grid[0]);
 #endif
-    //
-    // Update RT sources and do raytracing.
-    //
-    err = update_evolving_RT_sources(SimPM,SimPM.simtime,grid[0]->RT);
-    rep.errorTest("TIME_INT::update_RT_sources()",0,err);
-    err = RT_all_sources(SimPM,grid[0],0);
-    rep.errorTest("TIME_INT:: loop RT()",0,err);
+        //
+        // Update RT sources and do raytracing.
+        //
+        err = update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
+        rep.errorTest("TIME_INT::update_RT_sources()", 0, err);
+        err = RT_all_sources(SimPM, grid[0], 0);
+        rep.errorTest("TIME_INT:: loop RT()", 0, err);
 
-    //clk.start_timer("advance_time");
-    // step forward by dt.
-    SimPM.levels[0].last_dt = SimPM.last_dt;
-    err += calculate_timestep(SimPM, grid[0],spatial_solver,0);
-    rep.errorTest("TIME_INT::calc_timestep()",0,err);
+        // clk.start_timer("advance_time");
+        // step forward by dt.
+        SimPM.levels[0].last_dt = SimPM.last_dt;
+        err += calculate_timestep(SimPM, grid[0], spatial_solver, 0);
+        rep.errorTest("TIME_INT::calc_timestep()", 0, err);
 
-    advance_time(0, grid[0]);
-    //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
+        advance_time(0, grid[0]);
+        // cout <<"advance_time took "<<clk.stop_timer("advance_time")<<"
+        // secs.\n";
 
-#if ! defined (CHECK_MAGP)
-#if ! defined (BLAST_WAVE_CHECK)
-    cout <<"New time: "<<SimPM.simtime;
-    cout <<"\t dt="<<SimPM.dt;
-    cout <<"\t steps: "<<SimPM.timestep;
-    tsf=clk.time_so_far("time_int");
-    cout <<"\t runtime: "<<tsf<<" s"<<"\n";
+#if !defined(CHECK_MAGP)
+#if !defined(BLAST_WAVE_CHECK)
+        cout << "New time: " << SimPM.simtime;
+        cout << "\t dt=" << SimPM.dt;
+        cout << "\t steps: " << SimPM.timestep;
+        tsf = clk.time_so_far("time_int");
+        cout << "\t runtime: " << tsf << " s"
+             << "\n";
 #endif
 #endif
-    err += check_energy_cons(grid[0]);
+        err += check_energy_cons(grid[0]);
 
-    err+= output_data(grid);
-    if (err!=0) {
-      cerr<<"(TIME_INT::output_data) err!=0 Something went wrong\n";
-      return(1);
+        err += output_data(grid);
+        if (err != 0) {
+            cerr << "(TIME_INT::output_data) err!=0 Something went wrong\n";
+            return (1);
+        }
+
+        err += check_eosim();
+        if (err != 0) {
+            cerr << "(TIME_INT::) err!=0 Something went wrong\n";
+            return (1);
+        }
     }
-    
-    err+= check_eosim();
-    if (err!=0) {
-      cerr<<"(TIME_INT::) err!=0 Something went wrong\n";
-      return(1);
-    }
-  }
 
-  cout <<"(sim_control::Time_Int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM.\n";
+    cout << "(sim_control::Time_Int) TIME_INT FINISHED.  MOVING ON TO FINALISE "
+            "SIM.\n";
 
-  tsf=clk.time_so_far("time_int");
-  cout <<"TOTALS ###: Nsteps: "<<SimPM.timestep<<" wall-time: ";
-  cout <<tsf<<" time/step: "<<tsf/static_cast<double>(SimPM.timestep)<<"\n";
-  cout <<"STEPS: "<<SimPM.timestep;
-  cout.setf( ios_base::scientific );
-  cout.precision(6);
-  cout <<"\t"<<tsf<<"\t"<<tsf/static_cast<double>(SimPM.timestep);
-  cout <<"\t"<<static_cast<double>(SimPM.timestep*SimPM.Ncell)/tsf<<"\n";
-  cout <<"------------------------------------------------------------\n";
+    tsf = clk.time_so_far("time_int");
+    cout << "TOTALS ###: Nsteps: " << SimPM.timestep << " wall-time: ";
+    cout << tsf << " time/step: " << tsf / static_cast<double>(SimPM.timestep)
+         << "\n";
+    cout << "STEPS: " << SimPM.timestep;
+    cout.setf(ios_base::scientific);
+    cout.precision(6);
+    cout << "\t" << tsf << "\t" << tsf / static_cast<double>(SimPM.timestep);
+    cout << "\t" << static_cast<double>(SimPM.timestep * SimPM.Ncell) / tsf
+         << "\n";
+    cout << "------------------------------------------------------------\n";
 
-  return(0);
+    return (0);
 }
 
-
-
 // ##################################################################
 // ##################################################################
-
-
 
 #ifdef CHECK_MAGP
 ///
@@ -293,34 +293,30 @@ int sim_control::Time_Int(
 /// pressure on the full domain and outputs it to screen
 ///
 void sim_control::calculate_magnetic_pressure(
-      class GridBaseClass *grid  ///< address of vector of grid pointers.
-      )
+    class GridBaseClass* grid  ///< address of vector of grid pointers.
+)
 {
-  //
-  // Calculate the total magnetic pressure on the domain, normalised to the
-  // initial value.
-  //
-  double magp=0.0, cellvol=0.0;
-  static double init_magp=-1.0;
-    
-  cell *c=grid->FirstPt();
-  do {
-    if (!c->isbd) 
-      magp += (spatial_solver->Ptot(c->P,0.0) - c->P[PG]) *
-                spatial_solver->CellVolume(c,grid->DX());
-  } while ( (c =grid->NextPt(c)) !=0);
-  if (init_magp<0) init_magp = magp;
-  cout <<SimPM.simtime<<"\t"<<magp/init_magp<<"\t"<<magp<<"\n";
-  return;
+    //
+    // Calculate the total magnetic pressure on the domain, normalised to the
+    // initial value.
+    //
+    double magp = 0.0, cellvol = 0.0;
+    static double init_magp = -1.0;
+
+    cell* c = grid->FirstPt();
+    do {
+        if (!c->isbd)
+            magp += (spatial_solver->Ptot(c->P, 0.0) - c->P[PG])
+                    * spatial_solver->CellVolume(c, grid->DX());
+    } while ((c = grid->NextPt(c)) != 0);
+    if (init_magp < 0) init_magp = magp;
+    cout << SimPM.simtime << "\t" << magp / init_magp << "\t" << magp << "\n";
+    return;
 }
-#endif // CHECK_MAGP
-
-
+#endif  // CHECK_MAGP
 
 // ##################################################################
 // ##################################################################
-
-
 
 #ifdef BLAST_WAVE_CHECK
 ///
@@ -328,149 +324,137 @@ void sim_control::calculate_magnetic_pressure(
 /// and output to screen.
 ///
 void sim_control::calculate_blastwave_radius(
-      class GridBaseClass *grid  ///< address of vector of grid pointers.
-      )
+    class GridBaseClass* grid  ///< address of vector of grid pointers.
+)
 {
-  //
-  // Calculate the blast wave outer shock position.
-  //
-  double shockpos=0.0;
-  static double old_pos=0.0;
-  //bool shock_found = false;
-  //  static double last_dt=0.0;
+    //
+    // Calculate the blast wave outer shock position.
+    //
+    double shockpos       = 0.0;
+    static double old_pos = 0.0;
+    // bool shock_found = false;
+    //  static double last_dt=0.0;
 
-  //if (shock_found) continue;
-  cell *c=grid->LastPt();
-  if (fabs(c->P[VX])>=1.0e4) {
-    cout<<"grid does not contain shock.\n";
-    shockpos = CI.get_dpos(c,Rsph);
-  }
-  else {
-    do {
-      c = grid->NextPt(c,RNsph);
-      //cout <<c->id<<", vx="<<c->P[VX]<<"\n";
-    } while ( c!=0 && fabs(c->P[VX])<1.0e4);
-    if (c && fabs(c->P[VX] >= 1.0e4)) {
-      shockpos = CI.get_dpos(c,Rsph);
-      //shock_found=true;
+    // if (shock_found) continue;
+    cell* c = grid->LastPt();
+    if (fabs(c->P[VX]) >= 1.0e4) {
+        cout << "grid does not contain shock.\n";
+        shockpos = CI.get_dpos(c, Rsph);
     }
-  }
-  
-  if (pconst.equalD(old_pos,0.0))
+    else {
+        do {
+            c = grid->NextPt(c, RNsph);
+            // cout <<c->id<<", vx="<<c->P[VX]<<"\n";
+        } while (c != 0 && fabs(c->P[VX]) < 1.0e4);
+        if (c && fabs(c->P[VX] >= 1.0e4)) {
+            shockpos = CI.get_dpos(c, Rsph);
+            // shock_found=true;
+        }
+    }
+
+    if (pconst.equalD(old_pos, 0.0)) old_pos = shockpos;
+    cout << SimPM.simtime << "\t" << shockpos;
+    // cout <<"\t"<<(shockpos-old_pos)/(SimPM.dt+TINYVALUE);
+    cout << "\n";
     old_pos = shockpos;
-  cout <<SimPM.simtime<<"\t"<<shockpos;
-  //cout <<"\t"<<(shockpos-old_pos)/(SimPM.dt+TINYVALUE);
-  cout <<"\n";
-  old_pos=shockpos;
-  return;
+    return;
 }
-#endif // BLAST_WAVE_CHECK
-
-
+#endif  // BLAST_WAVE_CHECK
 
 // ##################################################################
 // ##################################################################
-
-
 
 int sim_control::check_eosim()
 {
-  //  cout <<"Checking eosim.";
-  //  cout <<"finishtime="<<SimPM.finishtime<<"\n";
+    //  cout <<"Checking eosim.";
+    //  cout <<"finishtime="<<SimPM.finishtime<<"\n";
 
-  if (SimPM.finishtime >0) {
-    if (SimPM.simtime >= SimPM.finishtime ) {
-      SimPM.maxtime=true;
-      cout <<"finishtime="<<SimPM.finishtime<<"\n";
-      return(0);
+    if (SimPM.finishtime > 0) {
+        if (SimPM.simtime >= SimPM.finishtime) {
+            SimPM.maxtime = true;
+            cout << "finishtime=" << SimPM.finishtime << "\n";
+            return (0);
+        }
     }
-  }
-  else {
-    cout <<"finishtime="<<SimPM.finishtime<<"\n";
-    rep.error("Don't know how to check for end of simulation.",2);
-  }  
+    else {
+        cout << "finishtime=" << SimPM.finishtime << "\n";
+        rep.error("Don't know how to check for end of simulation.", 2);
+    }
 
-  return(0);
+    return (0);
 }
 
 // ##################################################################
 // ##################################################################
 
-
-
-int sim_control::check_energy_cons(
-      class GridBaseClass *grid
-      )
+int sim_control::check_energy_cons(class GridBaseClass* grid)
 {
-#ifdef TEST_CONSERVATION 
-  // Energy, and Linear Momentum in x-direction.
-  pion_flt u[SimPM.nvar];
-  nowERG=0.;
-  nowMMX = 0.;
-  nowMMY = 0.;
-  nowMMZ = 0.;
-  nowMASS = 0.0;
-  double totmom=0.0;
+#ifdef TEST_CONSERVATION
+    // Energy, and Linear Momentum in x-direction.
+    pion_flt u[SimPM.nvar];
+    nowERG        = 0.;
+    nowMMX        = 0.;
+    nowMMY        = 0.;
+    nowMMZ        = 0.;
+    nowMASS       = 0.0;
+    double totmom = 0.0;
 
-  class cell *cpt = grid->FirstPt();
-  double dR=grid->DX();
-  double dv = 0.0;
-  do {
-    dv = spatial_solver->CellVolume(cpt,dR);
-    spatial_solver->PtoU(cpt->P,u,SimPM.gamma);
-    nowERG += u[ERG]*dv;
-    nowMMX += u[MMX]*dv;
-    nowMMY += u[MMY]*dv;
-    nowMMZ += u[MMZ]*dv;
-    nowMASS += u[RHO]*dv;
-    totmom += sqrt( u[MMX]*u[MMX]  + u[MMY]*u[MMY] + u[MMZ]*u[MMZ] )
-              *dv;
-  } while ( (cpt =grid->NextPt(cpt)) !=0);
-  cout <<"(conserved quantities) ["<< nowERG <<", ";
-  cout << nowMMX <<", ";
-  cout << nowMMY <<", ";
-  cout << nowMMZ <<", ";
-  cout << nowMASS <<"]\n";
-  cout <<"(relative error      ) ["<< (nowERG-initERG)/(initERG) <<", ";
-  cout << (nowMMX-initMMX)/(totmom) <<", ";
-  cout << (nowMMY-initMMY)/(totmom) <<", ";
-  cout << (nowMMZ-initMMZ)/(totmom) <<", ";
-  cout << (nowMASS-initMASS)/initMASS <<"]\n";
-  
-#endif // TEST_CONSERVATION
-  return(0);
+    class cell* cpt = grid->FirstPt();
+    double dR       = grid->DX();
+    double dv       = 0.0;
+    do {
+        dv = spatial_solver->CellVolume(cpt, dR);
+        spatial_solver->PtoU(cpt->P, u, SimPM.gamma);
+        nowERG += u[ERG] * dv;
+        nowMMX += u[MMX] * dv;
+        nowMMY += u[MMY] * dv;
+        nowMMZ += u[MMZ] * dv;
+        nowMASS += u[RHO] * dv;
+        totmom +=
+            sqrt(u[MMX] * u[MMX] + u[MMY] * u[MMY] + u[MMZ] * u[MMZ]) * dv;
+    } while ((cpt = grid->NextPt(cpt)) != 0);
+    cout << "(conserved quantities) [" << nowERG << ", ";
+    cout << nowMMX << ", ";
+    cout << nowMMY << ", ";
+    cout << nowMMZ << ", ";
+    cout << nowMASS << "]\n";
+    cout << "(relative error      ) [" << (nowERG - initERG) / (initERG)
+         << ", ";
+    cout << (nowMMX - initMMX) / (totmom) << ", ";
+    cout << (nowMMY - initMMY) / (totmom) << ", ";
+    cout << (nowMMZ - initMMZ) / (totmom) << ", ";
+    cout << (nowMASS - initMASS) / initMASS << "]\n";
+
+#endif  // TEST_CONSERVATION
+    return (0);
 }
 
-
 // ##################################################################
 // ##################################################################
-
 
 /*****************************************************************/
 /*********************** FINISH SIMULATION ***********************/
 /*****************************************************************/
 int sim_control::Finalise(
-      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
-      )
+    vector<class GridBaseClass*>& grid  ///< address of vector of grid pointers.
+)
 {
-  int err=0;
-  cout <<"------------------------------------------------------------\n";
-  cout <<"(sim_control::Finalise) FINALISING SIMULATION."<<"\n";
-  err += check_energy_cons(grid[0]);
-  err+= output_data(grid);
-  rep.errorTest("(FINALISE::output_data) Something went wrong",0,err);
-  cout <<"\tSimTime = "<<SimPM.simtime<<"   #timesteps = "<<SimPM.timestep<<"\n";
+    int err = 0;
+    cout << "------------------------------------------------------------\n";
+    cout << "(sim_control::Finalise) FINALISING SIMULATION."
+         << "\n";
+    err += check_energy_cons(grid[0]);
+    err += output_data(grid);
+    rep.errorTest("(FINALISE::output_data) Something went wrong", 0, err);
+    cout << "\tSimTime = " << SimPM.simtime
+         << "   #timesteps = " << SimPM.timestep << "\n";
 #ifdef TESTING
-  cout <<"(sim_control::Finalise) DONE.\n";
+    cout << "(sim_control::Finalise) DONE.\n";
 #endif
-  cout <<"------------------------------------------------------------\n";
-  return(0);
+    cout << "------------------------------------------------------------\n";
+    return (0);
 }
 
-
 /*************************************************************************/
 /*************************************************************************/
 /*************************************************************************/
-  
-
-

@@ -1,6 +1,6 @@
 /// \file parameter_defs.h
 /// \author Jonathan Mackey
-/// 
+///
 /// modified:\n
 /// - 2007-10-25 Got class structure that works for parallel output.
 /// - 2007-10-26 parallel fits-io class reads data from single and multiple
@@ -40,193 +40,191 @@
 //
 // datatypes for reading/writing parameters
 //
-#define MY_INT    1
+#define MY_INT 1
 #define MY_DOUBLE 2
 #define MY_STRING 3
-#define MY_FLOAT  4
-#define MY_LONG   5
-#define MY_DDIMARR 6 // double 3d array (MAX_NDIM)
-#define MY_IDIMARR 7 // integer 3d array (MAX_NDIM)
-#define MY_DVARARR 8 // double Nd array (MAX_NVAR)
+#define MY_FLOAT 4
+#define MY_LONG 5
+#define MY_DDIMARR 6  // double 3d array (MAX_NDIM)
+#define MY_IDIMARR 7  // integer 3d array (MAX_NDIM)
+#define MY_DVARARR 8  // double Nd array (MAX_NVAR)
 
 ///
 /// base parameter class, each parameter gets an instance of a derived
 /// class with the base class interface.
 ///
 class pm_base {
-public:
-  virtual ~pm_base() {}
-   /// sets value of data pointed to by ptr to value in argument.
-  virtual void assign_val(void *)=0;
-  virtual void set_to_default()=0;   ///< sets value of data to default value.
-  virtual void set_ptr(void *)=0;    ///< changes pointer to new address.
-  virtual void show_val()=0;   ///< returns value pointed to by ptr.
-  virtual void * get_ptr()=0;  ///< returns address of ptr.
-  virtual void set_default_val(void *)=0; ///< sets default value to fn. argument.
-  string name;   ///< string identifier for parameter.
-  int type;      ///< type of data int,long,dbl,array,string,etc.
-  bool critical; ///< true if parameter is required.
+  public:
+    virtual ~pm_base() {}
+    /// sets value of data pointed to by ptr to value in argument.
+    virtual void assign_val(void*) = 0;
+    virtual void
+    set_to_default()            = 0;  ///< sets value of data to default value.
+    virtual void set_ptr(void*) = 0;  ///< changes pointer to new address.
+    virtual void show_val()     = 0;  ///< returns value pointed to by ptr.
+    virtual void* get_ptr()     = 0;  ///< returns address of ptr.
+    virtual void set_default_val(
+        void*) = 0;  ///< sets default value to fn. argument.
+    string name;     ///< string identifier for parameter.
+    int type;        ///< type of data int,long,dbl,array,string,etc.
+    bool critical;   ///< true if parameter is required.
 };
 
 ///
 /// parameter class for Integer parameters
 ///
 class pm_int : public pm_base {
-public:
-  pm_int();
-  pm_int(const string );
-  pm_int(const string, int *);
-  pm_int(const string, ///< name
-	 int *,        ///< data pointer
-	 const int     ///< default value
-	 );
-  void assign_val(void *);
-  void set_ptr(void *);
-  void * get_ptr();
-  void show_val();
-  void set_to_default();
-  void set_default_val(void *);
+  public:
+    pm_int();
+    pm_int(const string);
+    pm_int(const string, int*);
+    pm_int(
+        const string,  ///< name
+        int*,          ///< data pointer
+        const int      ///< default value
+    );
+    void assign_val(void*);
+    void set_ptr(void*);
+    void* get_ptr();
+    void show_val();
+    void set_to_default();
+    void set_default_val(void*);
+
   protected:
-  int *ptr;
-  int defval;
+    int* ptr;
+    int defval;
 };
 
 ///
 /// parameter class for Double parameters
 ///
 class pm_double : public pm_base {
-public:
-  pm_double();
-  pm_double(const string );
-  pm_double(const string, double *);
-  pm_double(const string,
-	    double *,
-	    const double
-	    );
-  void assign_val(void *val);
-  void set_ptr(void *); 
-  void * get_ptr();
-  void show_val();
-  void set_to_default();
-  void set_default_val(void *);
-protected:
-  double *ptr;
-  double defval;
+  public:
+    pm_double();
+    pm_double(const string);
+    pm_double(const string, double*);
+    pm_double(const string, double*, const double);
+    void assign_val(void* val);
+    void set_ptr(void*);
+    void* get_ptr();
+    void show_val();
+    void set_to_default();
+    void set_default_val(void*);
+
+  protected:
+    double* ptr;
+    double defval;
 };
 
 ///
 /// parameter class for FLOAT parameters
 ///
 class pm_float : public pm_base {
-public:
-  pm_float();
-  pm_float(const string );
-  pm_float(const string, float *);
-  pm_float(const string,
-	   float *,
-	   const float
-	   );
-  void assign_val(void *);
-  void set_ptr(void *); 
-  void * get_ptr();
-  void show_val();
-  void set_to_default();
-  void set_default_val(void *);
-protected:
-  float *ptr;
-  float defval;
+  public:
+    pm_float();
+    pm_float(const string);
+    pm_float(const string, float*);
+    pm_float(const string, float*, const float);
+    void assign_val(void*);
+    void set_ptr(void*);
+    void* get_ptr();
+    void show_val();
+    void set_to_default();
+    void set_default_val(void*);
+
+  protected:
+    float* ptr;
+    float defval;
 };
 
 ///
 /// parameter class for LONG-INT parameters
 ///
 class pm_long : public pm_base {
-public:
-  pm_long();
-  pm_long(const string );
-  pm_long(const string, long int *);
-  pm_long(const string ,
-	  long int *,
-	  long int
-	  );
-  void assign_val(void *);
-  void set_ptr(void *); 
-  void * get_ptr();
-  void show_val();
-  void set_to_default();
-  void set_default_val(void *);
-protected:
-  long int *ptr;
-  long int defval;
+  public:
+    pm_long();
+    pm_long(const string);
+    pm_long(const string, long int*);
+    pm_long(const string, long int*, long int);
+    void assign_val(void*);
+    void set_ptr(void*);
+    void* get_ptr();
+    void show_val();
+    void set_to_default();
+    void set_default_val(void*);
+
+  protected:
+    long int* ptr;
+    long int defval;
 };
 
 ///
 /// parameter class for STRING parameters
 ///
 class pm_string : public pm_base {
-public:
-  pm_string();
-  pm_string(const string );
-  pm_string(const string, string *);
-  pm_string(const string,
-	    string *,
-	    const string
-	    );
-  void assign_val(void *);
-  void set_ptr(void *); 
-  void * get_ptr();
-  void show_val();
-  void set_to_default();
-  void set_default_val(void *);
-protected:
-  string *ptr;
-  string defval;
+  public:
+    pm_string();
+    pm_string(const string);
+    pm_string(const string, string*);
+    pm_string(const string, string*, const string);
+    void assign_val(void*);
+    void set_ptr(void*);
+    void* get_ptr();
+    void show_val();
+    void set_to_default();
+    void set_default_val(void*);
+
+  protected:
+    string* ptr;
+    string defval;
 };
 
 ///
 /// parameter class for DOUBLE ARRAY [MAX_DIM] parameters
 ///
 class pm_ddimarr : public pm_base {
-public:
-  pm_ddimarr();
-  pm_ddimarr(const string);
-  pm_ddimarr(const string, double *);
-  pm_ddimarr(const string, double *, const double *);
-  ~pm_ddimarr();
+  public:
+    pm_ddimarr();
+    pm_ddimarr(const string);
+    pm_ddimarr(const string, double*);
+    pm_ddimarr(const string, double*, const double*);
+    ~pm_ddimarr();
 
-  void assign_val(void *);
-  void set_ptr(void *); 
-  void * get_ptr();
-  void show_val();
-  void set_to_default();
-  void set_default_val(void *);
-protected:
-  double *ptr;
-  int len;
-  double *defval;
+    void assign_val(void*);
+    void set_ptr(void*);
+    void* get_ptr();
+    void show_val();
+    void set_to_default();
+    void set_default_val(void*);
+
+  protected:
+    double* ptr;
+    int len;
+    double* defval;
 };
 
 ///
 /// parameter class for INT ARRAY [MAX_DIM] parameters
 ///
 class pm_idimarr : public pm_base {
-public:
-  pm_idimarr();
-  pm_idimarr(const string);
-  pm_idimarr(const string, int *);
-  pm_idimarr(const string, int *, const int *);
-  ~pm_idimarr();
+  public:
+    pm_idimarr();
+    pm_idimarr(const string);
+    pm_idimarr(const string, int*);
+    pm_idimarr(const string, int*, const int*);
+    ~pm_idimarr();
 
-  void assign_val(void *);
-  void set_ptr(void *); 
-  void * get_ptr();
-  void show_val();
-  void set_to_default();
-  void set_default_val(void *);
-protected:
-  int *ptr;
-  int len;
-  int *defval;
+    void assign_val(void*);
+    void set_ptr(void*);
+    void* get_ptr();
+    void show_val();
+    void set_to_default();
+    void set_default_val(void*);
+
+  protected:
+    int* ptr;
+    int len;
+    int* defval;
 };
 
 ///
@@ -235,27 +233,26 @@ protected:
 /// in functionality_flags.h
 ///
 class pm_dvararr : public pm_base {
-public:
-  pm_dvararr();
-  pm_dvararr(const string );
-  pm_dvararr(const string, pion_flt *);
-  pm_dvararr(const string, pion_flt *, const pion_flt *);
-  ~pm_dvararr();
+  public:
+    pm_dvararr();
+    pm_dvararr(const string);
+    pm_dvararr(const string, pion_flt*);
+    pm_dvararr(const string, pion_flt*, const pion_flt*);
+    ~pm_dvararr();
 
-  void assign_val(void *);
-  void set_ptr(void *);
-  void * get_ptr();
-  void show_val();
-  void set_to_default();
-  void set_default_val(void *);
-protected:
-  pion_flt *ptr;
-  int len;
-  pion_flt *defval;
+    void assign_val(void*);
+    void set_ptr(void*);
+    void* get_ptr();
+    void show_val();
+    void set_to_default();
+    void set_default_val(void*);
+
+  protected:
+    pion_flt* ptr;
+    int len;
+    pion_flt* defval;
 };
 // -----------------------------------------------------------
 // -----------------------------------------------------------
 
-
-
-#endif // PARAMETER_DEFS_H
+#endif  // PARAMETER_DEFS_H

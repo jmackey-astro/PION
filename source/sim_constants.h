@@ -7,7 +7,6 @@
 /// Modifications:
 /// - 2015.01.10 JM: Wrote file, moved constants from global.h
 
-
 #ifndef SIM_CONSTANTS_H
 #define SIM_CONSTANTS_H
 
@@ -20,5 +19,4 @@
 ///
 #define MAX_NVAR 70
 
-
-#endif // SIM_CONSTANTS_H
+#endif  // SIM_CONSTANTS_H

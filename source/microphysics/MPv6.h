@@ -18,7 +18,6 @@
 /// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
 /// - 2015.07.07 JM: New trtype array structure in constructor.
 
-
 #ifndef MPV6_H
 #define MPV6_H
 
@@ -27,51 +26,47 @@
 
 #include "microphysics/MPv3.h"
 
-class MPv6
-  :
-  public MPv3
-{
+class MPv6 : public MPv3 {
   public:
-  ///
-  /// Constructor
-  ///
-  MPv6(
-      const int,  ///< grid dimensions
-      const int,  ///< Coordinate System flag
-      const int,  ///< Total number of variables in state vector
-      const int,  ///< Number of tracer variables in state vector.
-      const std::string *, ///< List of what the tracer variables mean.
-      struct which_physics *, ///< extra physics stuff.
-      struct rad_sources *,    ///< radiation sources.
-      const double  ///< EOS Gamma
-      );
+    ///
+    /// Constructor
+    ///
+    MPv6(
+        const int,              ///< grid dimensions
+        const int,              ///< Coordinate System flag
+        const int,              ///< Total number of variables in state vector
+        const int,              ///< Number of tracer variables in state vector.
+        const std::string*,     ///< List of what the tracer variables mean.
+        struct which_physics*,  ///< extra physics stuff.
+        struct rad_sources*,    ///< radiation sources.
+        const double            ///< EOS Gamma
+    );
 
-  ///
-  /// Destructor
-  ///
-  ~MPv6();
+    ///
+    /// Destructor
+    ///
+    ~MPv6();
 
-
-  //---------------------------------------------------------------------------
-  //-------------- FUNCTIONS DERIVED FROM BASE CLASS FOLLOW -------------------
-  //---------------------------------------------------------------------------
+    //---------------------------------------------------------------------------
+    //-------------- FUNCTIONS DERIVED FROM BASE CLASS FOLLOW
+    //-------------------
+    //---------------------------------------------------------------------------
   public:
-  ///
-  /// calculate dy/dt for the vector of y-values.
-  ///
-  virtual int ydot(
-          double,         ///< current time (probably not needed for rate equations)
-          const N_Vector, ///< current Y-value
-          N_Vector,       ///< vector for Y-dot values
-          const double *  ///< extra user-data vector, P, for evaluating ydot(y,t,p)
-          );
+    ///
+    /// calculate dy/dt for the vector of y-values.
+    ///
+    virtual int ydot(
+        double,  ///< current time (probably not needed for rate equations)
+        const N_Vector,  ///< current Y-value
+        N_Vector,        ///< vector for Y-dot values
+        const double*    ///< extra user-data vector, P, for evaluating
+                         ///< ydot(y,t,p)
+    );
 
-  //---------------------------------------------------------------------------
-  //-------------- END OF FUNCTIONS DERIVED FROM BASE CLASS -------------------
-  //---------------------------------------------------------------------------
+    //---------------------------------------------------------------------------
+    //-------------- END OF FUNCTIONS DERIVED FROM BASE CLASS
+    //-------------------
+    //---------------------------------------------------------------------------
 };
 
-#endif // MPV6_H
-
-
-
+#endif  // MPV6_H

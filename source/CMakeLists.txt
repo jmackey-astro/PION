@@ -69,7 +69,7 @@ if(PION_UNIFORM_GRID)
     add_executable(
         pion-ug
 
-        mainMPI.cpp
+        main_MPI.cpp
         sim_params.cpp
         constants.cpp
     ) 
@@ -77,7 +77,7 @@ if(PION_UNIFORM_GRID)
     add_executable(
         icgen-ug
 
-        main_icgen_parallel.cpp
+        main_icgen_MPI.cpp
         sim_params.cpp
         constants.cpp
     ) 
