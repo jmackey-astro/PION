@@ -4,9 +4,9 @@
 /// \date 2010.12.27
 ///
 /// This file sets defines which can enable or disable large sections
-/// of code for compilation.  The idea is to allow very efficient 
-/// code to be compiled for production runs.  It can also be used to 
-/// switch on/off code which is currently under development and may 
+/// of code for compilation.  The idea is to allow very efficient
+/// code to be compiled for production runs.  It can also be used to
+/// switch on/off code which is currently under development and may
 /// not even compile without errors.
 ///
 /// Modifications:
@@ -14,7 +14,7 @@
 /// - 2010.12.27 JM: Created.
 /// - 2012.01.26 JM: Added flags for disabling complilation of microphysics
 ///    modules.
-/// - 2012.04.19 JM: Added PUREHYDROGEN class (this should get its own 
+/// - 2012.04.19 JM: Added PUREHYDROGEN class (this should get its own
 ///    microphysics derived class soon).
 ///
 
@@ -54,7 +54,6 @@
 #define USE_PDR_COOLING
 //#define PUREHYDROGEN ///< in MPv3, disables all He+metal terms.
 
-
 //
 // These flags set the timestep-limiting option for MPv3 and
 // MPv4.  Only modify them if you know what you are doing.
@@ -64,9 +63,8 @@
 //#define MPV3_DTLIMIT 3
 #define MPV4_DTLIMIT 5
 
-
 ///
-/// With this enabled, we reset negative pressures such that the 
+/// With this enabled, we reset negative pressures such that the
 /// temperature is 10K, rather than a fixed pressure floor value.
 /// N.B. This must be unset for sims with no MP-> module, because
 /// it calls the MP->Temperature() function!
@@ -74,7 +72,7 @@
 #define SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 
 ///
-/// This prevents the timestep increasing by more than 30% per step, 
+/// This prevents the timestep increasing by more than 30% per step,
 /// which is reputed to help with stability (can't remember refs).
 ///
 #define TIMESTEP_LIMITING
@@ -82,7 +80,6 @@
 // -------------------------------------------------------------------
 // Flags for parts of code under development.
 // -------------------------------------------------------------------
-
 
 ///
 /// Flag for whether to do thermal conduction or not...
@@ -104,5 +101,4 @@
 // and tested.
 // -------------------------------------------------------------------
 
-
-#endif //FUNCTIONALITY_FLAGS_H
+#endif  // FUNCTIONALITY_FLAGS_H

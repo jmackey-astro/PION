@@ -22,25 +22,31 @@ endfunction()
 
 if(NOT SUNDIALS_FOUND)
     find_path( SUNDIALS_INCLUDE_DIR
-        HINTS ./
+        HINTS /
             /usr/
             ${CMAKE_INSALL_PREFIX}/
             ${CMAKE_INSALL_PREFIX}/../
             ${CMAKE_PREFIX_PATH}/
             ${SUNDIALS_DIR}/
-        PATH_SUFFIXES include include/sundials sundials/include
+        PATH_SUFFIXES include
+                    include/sundials
+                    include/x86_64-linux-gnu
+                    include/x86_64-linux-gnu/sundials
         NAMES sundials_config.h
         DOC "Sundials headers"
     )
     find_sundials_version()    
     find_library( SUNDIALS_LIBRARY
-        HINTS ./
+        HINTS /
             /usr/
             ${CMAKE_INSTALL_PREFIX}/
             ${CMAKE_INSTALL_PREFIX}/../
             ${CMAKE_PREFIX_PATH}/
             ${SUNDIALS_DIR}/
-        PATH_SUFFIXES lib lib64 sundials/lib sundials/lib64 lib/sundials lib64/sundials
+        PATH_SUFFIXES lib lib64
+                    lib/sundials lib64/sundials
+                    lib/x86_64-linux-gnu lib64/x86_64-linux-gnu
+                    lib/x86_64-linux-gnu/sundials lib64/x86_64-linux-gnu/sundials
         NAMES libsundials_cvode.a libsundials_cvode.so
         DOC "Sundials libraries"
     )

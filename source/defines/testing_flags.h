@@ -15,7 +15,6 @@
 #ifndef TESTING_FLAGS_H
 #define TESTING_FLAGS_H
 
-
 #define REPORT_RANK0  // only reports stdout from rank 0.
 #define C2F_FULLSTEP  // Coarse-to-fine boundaries updated every 2 steps
 
@@ -26,8 +25,8 @@
 //#define TEST_COMMS           // debugging info for MPI
 //#define TEST_CONSERVATION    // test mass/mom/energy conservation
 //#define TEST_INF             // test for infinity/nan
-//#define TEST_SYMMETRY // dangerous for real simulations (assumes units for rho,v)
-//#define RT_TESTING ///< Enable this for debugging info on raytracing.
+//#define TEST_SYMMETRY // dangerous for real simulations (assumes units for
+// rho,v) #define RT_TESTING ///< Enable this for debugging info on raytracing.
 
 //
 // Various defines for testing bits of the code (lots of sdtout).
@@ -46,19 +45,17 @@
 //
 //#define FUNCTION_ID
 
-
 //#define RSTESTING ///< If testing the Riemann Solvers.
 
-//#define AVFALLE_TESTING ///< This is for testing the FKJ98 Art.Viscosity Function.
-
-
+//#define AVFALLE_TESTING ///< This is for testing the FKJ98 Art.Viscosity
+// Function.
 
 ///
 /// Sets fixed x-sections for ionisation and recombination,
 /// and disables timestep limiting in first 3 steps.
 ///
 //#define RT_TEST_PROBS
-#define RT_TESTING_OUTPUTCOL ///< output column density info to files.
+#define RT_TESTING_OUTPUTCOL  ///< output column density info to files.
 
 /// for the field loop advection test problem only.
 //#define CHECK_MAGP
@@ -66,7 +63,6 @@
 /// for a 1D spherical blast wave test problem only.
 //#define BLAST_WAVE_CHECK
 
-
 //#define GRIDV2
 
-#endif // TESTING_FLAGS_H
+#endif  // TESTING_FLAGS_H
