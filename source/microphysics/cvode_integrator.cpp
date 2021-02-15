@@ -326,10 +326,10 @@ int cvode_solver::integrate_cvode_step(
             // for (int v=0;v<n_eq-1;v++) cout << NV_Ith_S(Y_Input,v)<<", ";
             // cout << NV_Ith_S(Y_Input,n_eq-1) <<"]\n";
 #endif  // CVODE_DEBUG
-            //
-            // step failed, so don't copy yout to y, do shrink the timestep,
-            // and don't update t.
-            //
+        //
+        // step failed, so don't copy yout to y, do shrink the timestep,
+        // and don't update t.
+        //
             dt *= 0.5;
             t_temp = t_now;
             fail_ct++;

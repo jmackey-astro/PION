@@ -353,9 +353,9 @@ class MPv10 :
     std::vector<int>
         y_ion_index_local;  ///< index matching y_ion fraction in local vector.
 
-    std::vector<int> H_ion_index;  ///< Locates position of ion with N+1
-                                   ///< electrons missing, e.g. H_ion_index[0]
-                                   ///< -> H+ position. Used with MPv10::Tr().
+    std::vector<int> H_ion_index;   ///< Locates position of ion with N+1
+                                    ///< electrons missing, e.g. H_ion_index[0]
+                                    ///< -> H+ position. Used with MPv10::Tr().
     std::vector<int> He_ion_index;  ///""
 
     /// ===========================================================================
@@ -490,8 +490,8 @@ class MPv10 :
         mpv_G0_UV,  ///< UV heating flux, including attenuation, F*exp(-1.9Av).
         mpv_G0_IR,  ///< Heating due to UV flux re-radiated in IR and
                     ///< re-absorbed, F*exp(-0.05Av).
-        mpv_NIdot,    ///< photon luminosity of monochromatic ionising source
-                      ///< (ionising photons/s).
+        mpv_NIdot,  ///< photon luminosity of monochromatic ionising source
+                    ///< (ionising photons/s).
         mpv_delta_S;  ///< path length through current cell.
 };
 

@@ -128,14 +128,14 @@ class riemann_MHD :
     double ansBX;  ///< B_x is just a parameter, so set it at the start of the
                    ///< sovle function, and assign to this variable.
 
-    double ch,  ///< Hydrodynamical sound speed (in average state).
-        ca,     ///< Alfven speed (in average state).
-        cs,     ///< Slow magnetic wave speed (in average state).
-        cf,     ///< Fast magnetic wave speed (in average state).
-        bx,     ///< Normalised x-component of magnetic
-                ///< field,\f$=B_x/\sqrt{\rho}\f$.
-        bt,     ///< Normalised tangential component of magnetic
-             ///< field,\f$=\sqrt{(B_y^2+B_z^2)/\rho}\f$.
+    double ch,   ///< Hydrodynamical sound speed (in average state).
+        ca,      ///< Alfven speed (in average state).
+        cs,      ///< Slow magnetic wave speed (in average state).
+        cf,      ///< Fast magnetic wave speed (in average state).
+        bx,      ///< Normalised x-component of magnetic
+                 ///< field,\f$=B_x/\sqrt{\rho}\f$.
+        bt,      ///< Normalised tangential component of magnetic
+                 ///< field,\f$=\sqrt{(B_y^2+B_z^2)/\rho}\f$.
         betay,   ///< This is \f$B_y/\sqrt{B_y^2+B_z^2}\f$.
         betaz,   ///< This is \f$B_z/\sqrt{B_y^2+B_z^2}\f$.
         alphaf,  ///< The fast speed normalisation constant
@@ -276,7 +276,7 @@ class riemann_MHD :
     /// message
     ///
     void failerror(
-        int,    ///< Error code.
+        int,         ///< Error code.
         std::string  ///< Error message
     );
 

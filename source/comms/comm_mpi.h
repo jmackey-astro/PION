@@ -35,7 +35,7 @@ struct sent_info {
     int to_rank;          ///< recipient
     void* data;           ///< pointer to data.
     int type;             ///< type of data: COMM_CELLDATA=char array;
-               ///< COMM_DOUBLEDATA=double array.
+                          ///< COMM_DOUBLEDATA=double array.
 };
 
 struct recv_info {
@@ -46,7 +46,7 @@ struct recv_info {
     int to_rank;        ///< recipient
     void* data;         ///< pointer to data.
     int type;           ///< type of data: COMM_CELLDATA=char array;
-               ///< COMM_DOUBLEDATA=double array.
+                        ///< COMM_DOUBLEDATA=double array.
 };
 
 class comm_mpi : public comms_base {

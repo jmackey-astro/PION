@@ -134,9 +134,9 @@ class riemann_Euler : virtual public eqns_Euler, virtual public findroot {
     int failplr, failpst, failust, failrare, failcomp, faildens;
     double lineartol;  ///< (TESTING) How closely we require the linear solution
                        ///< to match the exact one.
-#endif          // RSTESTING
-    double cl;  ///< The hydro sound speed in the left state.
-    double cr;  ///< The hydro sound speed in the right state.
+#endif                 // RSTESTING
+    double cl;         ///< The hydro sound speed in the left state.
+    double cr;         ///< The hydro sound speed in the right state.
 
     ///
     /// Re-definition of the public root-finding function, for solving the jump

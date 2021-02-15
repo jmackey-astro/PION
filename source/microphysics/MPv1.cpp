@@ -1024,7 +1024,7 @@ int MP_Hydrogen::implicit_step(
                     e_rr = 0.0;  // Don't want to double count recombination
                                  // cooling, if it is already in the cooling
                                  // function!
-#endif  // NO_DOUBLECOUNTING
+#endif                           // NO_DOUBLECOUNTING
                 }
                 else
                     LL = 0.0;

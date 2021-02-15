@@ -110,8 +110,8 @@ class BaseVectorOps {
         const cell*,  ///< point for which to calculate curl
         const int,    ///< Which vector to take values from (P=0,Ph=1,dU=2)
         const int*,   ///< Indices of vector quantity (in state vector) to
-                     ///< calculate curl of. Should contain 3 elements, ordered
-                     ///< as x,y,z components.
+                      ///< calculate curl of. Should contain 3 elements, ordered
+                      ///< as x,y,z components.
         class GridBaseClass*,  ///< pointer to computational grid.
         pion_flt*              ///< Pointer to array to put curl vector.
         ) = 0;

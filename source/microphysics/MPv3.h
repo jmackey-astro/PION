@@ -575,8 +575,8 @@ class MPv3 :
         mpv_G0_UV,  ///< UV heating flux, including attenuation, F*exp(-1.9Av).
         mpv_G0_IR,  ///< Heating due to UV flux re-radiated in IR and
                     ///< re-absorbed, F*exp(-0.05Av).
-        mpv_NIdot,    ///< photon luminosity of monochromatic ionising source
-                      ///< (ionising photons/s).
+        mpv_NIdot,  ///< photon luminosity of monochromatic ionising source
+                    ///< (ionising photons/s).
         mpv_delta_S;  ///< path length through current cell.
 };
 

@@ -47,6 +47,7 @@ cmake \
     #-DCMAKE_BUILD_TYPE=Debug \
     #-DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}" \
     #-DSUNDIALS_DIR="${SUNDIALS_DIR}" \
+    #-DUSE_SILO=ON \
     #-DSILO_DIR="${SILO_DIR}" \
     [more options below] \
     "${script_dir}"
@@ -71,9 +72,10 @@ Option | Effect
 Option | Effect
 ------ | ------
 `-DPION_NESTED_GRID=...`| Set to `ON` to build nested grid simulations (default `ON`).
-`-DPION_UNIFORM_GRID=...`| Set to `ON` to build uniform grid simulations (default `OFF`).
-`-DPION_PARALLEL_=...`  | Set to `ON` to enable MPI for the Pion build, or `OFF` to disable MPI (default `ON`).
-`-DPION_USE_SILO=...`   | Set to `ON` to use Silo for handling data I/O (default `ON`).
+`-DPION_UNIFORM_GRID=...`| Set to `ON` to build uniform grid simulations (default `OFF).
+``-DPION_PARALLEL_=...`  | Set to `ON` to enable MPI for the Pion build, or `OFF` to disable MPI (default `ON`).
+`-DPION_USE_SILO=...`   | Set to `ON` to use Silo for handling data I/O (default `OFF`).
+`-DPION_USE_FITS=...`   | Set to `ON` to use Fits for handlin data I/O (default `OFF`).
 
 #### Setting installation directories
 Option | Effect

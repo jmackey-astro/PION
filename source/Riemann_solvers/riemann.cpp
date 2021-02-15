@@ -416,7 +416,7 @@ int riemann_Euler::JMs_riemann_solve(
                 break;
         }  // End of switch (mode) which determines what sort of solver to use.
     }      // End of IF we don't have two rarefactions/cavitation, then do the
-       // normal solution.
+           // normal solution.
 
     //
     // This checks to see if we *don't* have cavitation, in which case

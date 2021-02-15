@@ -281,13 +281,13 @@ class MPv1 : public microphysics_base, public Integrator_Base {
     struct which_physics ep;  ///< struct with flags for which extra physics we
                               ///< are or aren't doing.
 
-    int nvl;      ///< number of variables in local state vector.
-    int lv_nh;    ///< neutral hydrogen local variable index.
-    int lv_eint;  ///< internal energy local variable index.
-    int lv_Hp;    ///< ionised hydrogeen local variable index.
-    int lv_dtau;  ///< tracker variable for integral of optical depth.
-    int pv_Hp;    ///< tracker for element of Primitive vector that holds
-                ///< ionisation pot.
+    int nvl;             ///< number of variables in local state vector.
+    int lv_nh;           ///< neutral hydrogen local variable index.
+    int lv_eint;         ///< internal energy local variable index.
+    int lv_Hp;           ///< ionised hydrogeen local variable index.
+    int lv_dtau;         ///< tracker variable for integral of optical depth.
+    int pv_Hp;           ///< tracker for element of Primitive vector that holds
+                         ///< ionisation pot.
     double ion_pot;      ///< ionisation potential of Hydrogen (13.6eV).
     double path_length;  ///< for ionisation, the path length to use to
                          ///< calculate tau.

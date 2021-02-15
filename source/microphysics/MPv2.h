@@ -175,25 +175,25 @@ class mp_rates_ExpH_ImpMetals :
     //  double Hii_total_cooling(T);
 
   private:
-    double nH,   ///< total hydrogen number density at current cell.
-        Vshell,  ///< geometric factor in point source flux calculation (\sim
-                 ///< 4\pi R^2 dR).
-        NH0,    ///< column density of neutral hydrogen to front edge of cell.
-        dNH0,   ///< column density of neutral hydrogen through cell
-                ///< (=nH*dS*(1-x)).
-        G0_UV,  ///< UV heating flux, including attenuation, F*exp(-1.9Av).
-        G0_IR,  ///< Heating due to UV flux re-radiated in IR and re-absorbed,
-                ///< F*exp(-0.05Av).
-        NIdot,  ///< photon luminosity of monochromatic ionising source
-                ///< (ionising photons/s).
+    double nH,    ///< total hydrogen number density at current cell.
+        Vshell,   ///< geometric factor in point source flux calculation (\sim
+                  ///< 4\pi R^2 dR).
+        NH0,      ///< column density of neutral hydrogen to front edge of cell.
+        dNH0,     ///< column density of neutral hydrogen through cell
+                  ///< (=nH*dS*(1-x)).
+        G0_UV,    ///< UV heating flux, including attenuation, F*exp(-1.9Av).
+        G0_IR,    ///< Heating due to UV flux re-radiated in IR and re-absorbed,
+                  ///< F*exp(-0.05Av).
+        NIdot,    ///< photon luminosity of monochromatic ionising source
+                  ///< (ionising photons/s).
         delta_S,  ///< path length through current cell.
         gamma,    ///< EOS gamma (usually 5/3).
         gamma_minus_one, k_B, m_p;
     int n_eq,  ///< number of equations (and hence variables) to solve.
         n_xd,  ///< number of variables in extra-data void pointer for cvodes
                ///< (zero here).
-        diff,          ///< No diffuse sources --> 0, otherwise --> 1
-        ion,           ///< No ionising sources --> 0, otherwise --> 1
+        diff,  ///< No diffuse sources --> 0, otherwise --> 1
+        ion,   ///< No ionising sources --> 0, otherwise --> 1
         ion_src_type;  ///< Either RT_EFFECT_MFION or RT_EFFECT_PION_MONO.
 };
 

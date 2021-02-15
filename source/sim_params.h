@@ -176,7 +176,7 @@ class level {
     double last_dt;         ///< previous timestep at this level.
     int NG[MAX_DIM];  ///< Number of 'real' grid zones in each direction (Total
                       ///< for level).
-    int multiplier;          ///< 2^l, l=0=coarsest.
+    int multiplier;   ///< 2^l, l=0=coarsest.
     class MCMDcontrol MCMD;  ///< domain decomposition on this level
 };
 // *******************************************************************
@@ -224,8 +224,8 @@ class SimParams {
     // Grid data
     int NG[MAX_DIM];  ///< Number of 'real' grid zones in each direction (Total
                       ///< for sim) (top level).
-    long int Ncell;  ///< Total number of 'real' grid zones (within the range)
-                     ///< (Total for sim) (top level).
+    long int Ncell;   ///< Total number of 'real' grid zones (within the range)
+                      ///< (Total for sim) (top level).
     double Range[MAX_DIM];  ///< Size of domain in x,y,z-direction (top level).
     double Xmin[MAX_DIM];   ///< Min value of x,y,z in domain (top level).
     double Xmax[MAX_DIM];   ///< Max value of x,y,z in domain (top level).
@@ -278,10 +278,10 @@ class SimParams {
     std::string outFileBase;  ///< Filename, with path, to write data to.
     int opfreq;               ///< Output file every 'opfreq'th timestep.
     int op_criterion;         ///< =0 for per n-steps, =1 for per n-years.
-    double next_optime;  ///< if op_criterion=1, then this is the next time an
-                         ///< output will happen.
-    double opfreq_time;  ///< if op_criterion=1, then this is the output
-                         ///< frequency in seconds.
+    double next_optime;   ///< if op_criterion=1, then this is the next time an
+                          ///< output will happen.
+    double opfreq_time;   ///< if op_criterion=1, then this is the output
+                          ///< frequency in seconds.
     int checkpoint_freq;  ///< how often to output a checkpoint file (#
                           ///< timesteps).
 

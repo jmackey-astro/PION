@@ -19,30 +19,47 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 
 if(PION_NESTED_GRID)
-    add_executable(
-        pion-ng
+    if(PION_PARALLEL)
+        add_executable(
+            pion-ng
 
-        main_NG_MPI.cpp
-        sim_params.cpp
-        constants.cpp
-    ) 
+            main_NG_MPI.cpp
+            sim_params.cpp
+            constants.cpp
+        ) 
+        add_executable(
+            icgen-ng
 
-    add_executable(
-        icgen-ng
+            main_icgen_NG_MPI.cpp
+            sim_params.cpp
+            constants.cpp
+        ) 
+    else()
+        add_executable(
+            pion-ng
 
-        main_icgen_NG_MPI.cpp
-        sim_params.cpp
-        constants.cpp
-    ) 
+            main_NG.cpp
+            sim_params.cpp
+            constants.cpp
+        ) 
+        add_executable(
+            icgen-ng
+
+            main_icgen_NG.cpp
+            sim_params.cpp
+            constants.cpp
+        )
+    endif(PION_PARALLEL)
 
     target_compile_features(pion-ng PUBLIC cxx_std_14)
     target_compile_features(icgen-ng PUBLIC cxx_std_14)
 
     # pion-ng internal dependencies
     target_link_libraries(pion-ng PUBLIC 
-        sim_control
+        nested_sim_control
         decomposition
         raytracing
+        nested_boundaries
     )
 
     # icgen-ng internal dependencies
@@ -50,6 +67,7 @@ if(PION_NESTED_GRID)
         ics
         decomposition
         raytracing
+        nested_boundaries
     )
 
     #
@@ -66,21 +84,37 @@ if(PION_NESTED_GRID)
 endif(PION_NESTED_GRID)
 
 if(PION_UNIFORM_GRID)
-    add_executable(
-        pion-ug
+    if(PION_PARALLEL)
+        add_executable(
+            pion-ug
 
-        main_MPI.cpp
-        sim_params.cpp
-        constants.cpp
-    ) 
+            main_MPI.cpp
+            sim_params.cpp
+            constants.cpp
+        )
+        add_executable(
+            icgen-ug
 
-    add_executable(
-        icgen-ug
+            main_icgen_MPI.cpp
+            sim_params.cpp
+            constants.cpp
+        ) 
+    else()
+        add_executable(
+            pion-ug
 
-        main_icgen_MPI.cpp
-        sim_params.cpp
-        constants.cpp
-    ) 
+            main.cpp
+            sim_params.cpp
+            constants.cpp
+        )
+        add_executable(
+            icgen-ug
+
+            main_icgen.cpp
+            sim_params.cpp
+            constants.cpp
+        ) 
+    endif(PION_PARALLEL)
 
     target_compile_features(pion-ug PUBLIC cxx_std_14)
     target_compile_features(icgen-ug PUBLIC cxx_std_14)
@@ -90,6 +124,7 @@ if(PION_UNIFORM_GRID)
         sim_control
         decomposition
         raytracing
+        boundaries
     )
 
     # icgen-ug internal dependencies
@@ -97,6 +132,7 @@ if(PION_UNIFORM_GRID)
         ics
         decomposition
         raytracing
+        boundaries
     )
 
     #

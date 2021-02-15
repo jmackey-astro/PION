@@ -121,7 +121,7 @@ class dataio_text : public DataIOBase {
         double*,  ///< pointer to left state.
         double*,  ///< pointer to right state.
         double*   ///< pointer to left/right interface value (as a fraction of
-                 ///< the range).
+                  ///< the range).
     );
 
     /// Add a low level of pseudo-random noise to the data.

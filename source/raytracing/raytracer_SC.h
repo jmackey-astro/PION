@@ -224,7 +224,7 @@ class raytracer_USC_infinity : public RayTracingBase {
     );
 
     ///\brief Traces a 1D column from a starting cell, in a direction, to the
-    ///edge
+    /// edge
     /// of the grid. This function explicitly assumes rays parallel to the given
     /// direction.
 
