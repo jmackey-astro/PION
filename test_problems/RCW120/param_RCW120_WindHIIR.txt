@@ -173,8 +173,10 @@ WIND_0_radius       1.2055e17
 WIND_0_type         0
 WIND_0_mdot         1.55e-7
 WIND_0_vinf         2000.0
+WIND_0_vrot         100.0
 WIND_0_temp         37500.0
-WIND_0_Rstr         6.96e15
+WIND_0_Rstr         1.0e12
+WIND_0_Bsrf         10.0
 WIND_0_TR0          0.9999999
 WIND_0_TR1          1.0
 WIND_0_TR2          0.0
