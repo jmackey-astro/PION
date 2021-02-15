@@ -355,11 +355,11 @@ class MPv0 : public microphysics_base, public Integrator_Base {
                                  ///< vector matched to their index.
     std::map<string, int> lvar;  ///< List of variables in local state vector
                                  ///< (only microphysics vars).
-    int lv_nh;           ///< neutral hydrogen local variable index.
-    int lv_eint;         ///< internal energy local variable index.
-    int lv_hp;           ///< ionised hydrogeen local variable index.
-    int lv_elec;         ///< electron fraction local variable index.
-    int pv_elec;         ///< electron fraction state vector index.
+    int lv_nh;                   ///< neutral hydrogen local variable index.
+    int lv_eint;                 ///< internal energy local variable index.
+    int lv_hp;                   ///< ionised hydrogeen local variable index.
+    int lv_elec;                 ///< electron fraction local variable index.
+    int pv_elec;                 ///< electron fraction state vector index.
     int lv_dtau;         ///< tracker variable for integral of optical depth.
     double path_length;  ///< for ionisation, the path length to use to
                          ///< calculate tau.

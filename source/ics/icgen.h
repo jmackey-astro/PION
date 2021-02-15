@@ -394,7 +394,7 @@ class IC_photevap_random_clumps : public ICsetup_base {
     int setup_perc();  ///< setup data now that we have all info from file.
     int setup_perc_fixedmass();  ///< setup clumps for fixed total mass on grid.
     int clumps_random_setup();   ///< setup clumps (original version, random
-                                ///< total mass).
+                                 ///< total mass).
     int clumps_random_setup_fixedmass();  ///< setup clumps (fixed total mass).
 #ifdef PARALLEL
     int clumps_random_setup_pllel();  ///< Setup clumps in parallel (orig.
@@ -416,16 +416,16 @@ struct random_clump_data {
                   ///< (0=top-hat, 1=Gaussian)
     int random_seed;  ///< Seed to use for generating clumps.
     double* border;   ///< 2*ndim doubles saying what fraction of the domain in
-                     ///< each direction has no clumps.
-    double density,  ///< mean number density of gas to go into clumps (within
-                     ///< clumpy region).
-        total_mass,  ///< total mass to draw clumps from.
-        min_mass,    ///< min. fraction of total mass that a clump can have (for
-                     ///< fixed mass clumps).
-        max_mass,    ///< max. fraction of total mass that a clump can have (for
-                     ///< fixed mass clumps).
-        min_size,    ///< min fraction of Y-Range for clump radius.
-        max_size;    ///< max fraction of Y-Range for clump radius.
+                      ///< each direction has no clumps.
+    double density,   ///< mean number density of gas to go into clumps (within
+                      ///< clumpy region).
+        total_mass,   ///< total mass to draw clumps from.
+        min_mass,  ///< min. fraction of total mass that a clump can have (for
+                   ///< fixed mass clumps).
+        max_mass,  ///< max. fraction of total mass that a clump can have (for
+                   ///< fixed mass clumps).
+        min_size,  ///< min fraction of Y-Range for clump radius.
+        max_size;  ///< max fraction of Y-Range for clump radius.
     struct clump* cl;  ///< pointer to info for each of the N random clumps.
 };
 
@@ -477,8 +477,8 @@ class IC_photevap_multi_clumps : public ICsetup_base {
     int coords;  ///< coord sys used
     int eqns;  ///< set to 1 for euler eqns, 2 for mhd equations (including all
                ///< divB cleaning methods)
-    double ambdens;  ///< ambient gas density (after taking clump mass out of
-                     ///< total mass).
+    double ambdens;     ///< ambient gas density (after taking clump mass out of
+                        ///< total mass).
     double ambdivider;  ///< dividing x-value between the two ambient medium
                         ///< states.
     double gamma;       ///< eos gamma;
@@ -558,8 +558,8 @@ class IC_spherical_clump : public ICsetup_base {
         SC_BZ;                ///< magnetic field (optional).
     int SC_pressure_profile,  ///< cloud pressure scaling 1=isothermal,
                               ///< 2=constant pressure.
-        SC_density_profile;  ///< cloud density profile: 0=top-hat,
-                             ///< 1=isothermal, 2=Gaussian.
+        SC_density_profile;   ///< cloud density profile: 0=top-hat,
+                              ///< 1=isothermal, 2=Gaussian.
 };
 
 // ##################################################################

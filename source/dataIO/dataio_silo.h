@@ -146,9 +146,9 @@ class dataio_silo : public DataIOBase {
     ///
     int silo_coordsys;
 
-    string silofile;    ///< filename to write data to.
-    int silo_filetype;  ///< What sort of file to write, can be DB_PDB or
-                        ///< DB_HDF5, among others.
+    string silofile;         ///< filename to write data to.
+    int silo_filetype;       ///< What sort of file to write, can be DB_PDB or
+                             ///< DB_HDF5, among others.
     int ndim;                ///< Dimensionality of Grid.
     int vec_length;          ///< Length of Vectors (always 3d for now).
     unsigned int strlength;  ///< length of character arrays in class.

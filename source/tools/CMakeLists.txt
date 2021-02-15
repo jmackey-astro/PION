@@ -8,7 +8,8 @@ add_library(
     timer.cpp
 )
 
-target_link_libraries(tools PUBLIC 
-    GSL::gsl
-    comms
-)
+target_link_libraries(tools PUBLIC GSL::gsl)
+
+if(PION_PARALLEL)
+    target_link_libraries(tools PUBLIC comms)
+endif(PION_PARALLEL)

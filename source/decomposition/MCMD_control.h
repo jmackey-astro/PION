@@ -71,7 +71,7 @@ class MCMDcontrol {
     bool WriteSingleFile;  ///< If you want all the processors to write to one
                            ///< file, set this
     bool WriteFullImage;   ///< If you want multiple fits files, but each one is
-                          ///< the full domain size
+                           ///< the full domain size
 
     ///
     /// Decompose the domain into blocks for each processor, and set up

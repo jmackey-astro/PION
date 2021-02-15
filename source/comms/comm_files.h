@@ -39,7 +39,7 @@ struct sent_info {
     int from_rank;   ///< sender.
     int to_rank;     ///< recipient
     int type;        ///< type of data: COMM_CELLDATA=char array;
-               ///< COMM_DOUBLEDATA=double array.
+                     ///< COMM_DOUBLEDATA=double array.
 };
 
 struct recv_info {
@@ -48,7 +48,7 @@ struct recv_info {
     int from_rank;   ///< sender.
     int to_rank;     ///< recipient
     int type;        ///< type of data: COMM_CELLDATA=char array;
-               ///< COMM_DOUBLEDATA=double array.
+                     ///< COMM_DOUBLEDATA=double array.
 };
 
 class comm_files : public comms_base {
@@ -238,9 +238,9 @@ class comm_files : public comms_base {
     int nproc;
     int barrier_count;  ///< counter to uniquely identify each barrier we come
                         ///< up against.
-    std::string dir;       ///< directory name for filecomms.
-    std::string ini;       ///< name for file that root generates on init().
-    std::string bar;       ///< name for barrier file.
+    std::string dir;    ///< directory name for filecomms.
+    std::string ini;    ///< name for file that root generates on init().
+    std::string bar;    ///< name for barrier file.
     std::string go_order;  ///< name for file telling slaves to go.
     std::string
         go_response;  ///< name for file slaves create to respond to go order.

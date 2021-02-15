@@ -36,7 +36,7 @@ enum BoundaryTypes {
     INFLOW     = 3,  ///< inflow bcs., value on boundary doesn't change.
     REFLECTING = 4,  ///< reflecting bcs., hard wall.
     FIXED      = 5,  ///< fixed bcs, means every point on boundary has same
-                ///< unchanging value.
+                     ///< unchanging value.
     JETBC      = 6,  ///< A jet boundary, internal boundary.
     JETREFLECT = 7,  ///< Sort-of reflection for bi-directional jet,
                      ///< where normal B field passes through, but tangential is

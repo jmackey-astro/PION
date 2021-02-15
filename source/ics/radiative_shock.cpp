@@ -142,8 +142,8 @@ int IC_radiative_shock::setup_RadiativeShock()
 
     cout << "\t\tSetting up radiative shock problem with v=" << vsh;
     cout << ", rho=" << rho0 << ", T=" << T0 << " ...\n";
-    double mu = 1.27;  // 1.2; // mean mass per particle -- rough guess, good
-                       // for neutral H, He.
+    double mu = 1.27;   // 1.2; // mean mass per particle -- rough guess, good
+                        // for neutral H, He.
     double x  = 0.101;  // initial ionisation fraction...
     double pg = rho0 * (1. + x) * pconst.kB() * T0 / mu / pconst.m_p();
 

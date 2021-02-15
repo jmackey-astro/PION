@@ -127,10 +127,10 @@ class FV_solver_mhd_ideal_adi :
         class cell* c,    ///< cell to update.
         const pion_flt*,  ///< Initial Primitive State Vector.
         pion_flt*,        ///< Update vector dU
-        pion_flt*,  ///< Final Primitive state vector (can be same as initial
-                    ///< vec.).
-        pion_flt*,  ///< Tracks change of energy if I have to correct for
-                    ///< negative pressure
+        pion_flt*,     ///< Final Primitive state vector (can be same as initial
+                       ///< vec.).
+        pion_flt*,     ///< Tracks change of energy if I have to correct for
+                       ///< negative pressure
         const double,  ///< gas EOS gamma.
         const double,  ///< Min Temperature allowed on grid.
         const double   ///< Cell timestep dt.
@@ -277,10 +277,10 @@ class FV_solver_mhd_mixedGLM_adi :
         class cell* c,    ///< cell to update.
         const pion_flt*,  ///< Initial Primitive State Vector.
         pion_flt*,        ///< Update vector dU
-        pion_flt*,  ///< Final Primitive state vector (can be same as initial
-                    ///< vec.).
-        pion_flt*,  ///< Tracks change of energy if I have to correct for
-                    ///< negative pressure
+        pion_flt*,     ///< Final Primitive state vector (can be same as initial
+                       ///< vec.).
+        pion_flt*,     ///< Tracks change of energy if I have to correct for
+                       ///< negative pressure
         const double,  ///< gas EOS gamma.
         const double,  ///< Min Temperature allowed on grid.
         const double   ///< Cell timestep dt.
