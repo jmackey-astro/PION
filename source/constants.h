@@ -124,6 +124,12 @@ class constants {
         const double
         );
 
+  /// Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
+  double pow_fast(
+	double, ///< a
+	double ///< b
+	);
+
 };
 
 extern class constants pconst;

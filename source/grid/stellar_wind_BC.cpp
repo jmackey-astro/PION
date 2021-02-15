@@ -121,21 +121,6 @@ stellar_wind::~stellar_wind()
 // ##################################################################
 
 
-// Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
-// only works for all b when a>0
-double stellar_wind::pow_fast(
-	double a,
-	double b
-	)
-{
-	return exp(b*log(a));
-}
-
-
-// ##################################################################
-// ##################################################################
-
-
 
 int stellar_wind::add_source(
       const double *pos, ///< position (cm, w.r.t. grid origin)
@@ -462,7 +447,7 @@ void stellar_wind::set_wind_cell_reference_state(
     wc->p[VX] = WS->Vinf * x / wc->dist;
     wc->p[VY] = WS->Vinf * y / wc->dist;
     // J is hardcoded to be parallel to positive z-axis
-    wc->p[VZ] = WS->v_rot *  WS->Rstar * y / pow_fast(wc->dist,2);
+    wc->p[VZ] = WS->v_rot *  WS->Rstar * y / pconst.pow_fast(wc->dist,2);
     break;
 
   case 3:
@@ -472,8 +457,8 @@ void stellar_wind::set_wind_cell_reference_state(
 
     // add non-radial component to x/y-dir from rotation.
     // J is hardcoded to be parallel to positive z-axis
-    wc->p[VX] += -WS->v_rot * WS->Rstar * y / pow_fast(wc->dist,2);
-    wc->p[VY] +=  WS->v_rot * WS->Rstar * x / pow_fast(wc->dist,2);
+    wc->p[VX] += -WS->v_rot * WS->Rstar * y / pconst.pow_fast(wc->dist,2);
+    wc->p[VY] +=  WS->v_rot * WS->Rstar * x / pconst.pow_fast(wc->dist,2);
     break;
 
   default:
@@ -991,7 +976,7 @@ int stellar_wind_evolution::read_evolution_file(
   //
   FILE *wf = 0;
   wf = fopen(infile.c_str(), "r");
-  if (!wf) rep.error("can't open wind file, stellar_wind_angle",wf);
+  if (!wf) rep.error("can't open wind file, stellar_wind_evo",wf);
 
   // Skip first two lines
   char line[512];
@@ -1029,7 +1014,7 @@ int stellar_wind_evolution::read_evolution_file(
 
     // Stellar radius
     radi = sqrt( lumi/ (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*
-                                                pow_fast(teff, 4.0)));
+                                                pconst.pow_fast(teff, 4.0)));
     data->R_evo.push_back(radi);
     
     data->Mdot_evo.push_back(mdot);
@@ -1177,7 +1162,7 @@ int stellar_wind_evolution::add_evolving_source(
   // TODO: Decide how to set this better!  For now pick B=10G at
   //       radius 10 R_sun, and scale with R^-2 for constant flux.
   //
-  double Bstar= 10.0*pow_fast(10.0*pconst.Rsun()/rstar,2.0);
+  double Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
 
   // Now add source using constant wind version.
   stellar_wind::add_source(pos,rad,type,mdot,vinf,vrot,Twind,rstar,Bstar,trv);
@@ -1269,7 +1254,7 @@ void stellar_wind_evolution::update_source(
   // TODO: Decide how to set this better!  For now pick B=10G at
   //       radius 10 R_sun, and scale with R^-2 for constant flux.
   //
-  wd->ws->Bstar= 10.0*pow_fast(10.0*pconst.Rsun()/rstar,2.0);
+  wd->ws->Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
   
   //
   // Now re-assign state vector of each wind-boundary-cell with
@@ -1326,6 +1311,103 @@ int stellar_wind_evolution::set_cell_values(
 
 // ##################################################################
 // ##################################################################
+
+double stellar_wind_evolution::Mdot_Vink_hot(
+      const double L, ///< luminosity (Lsun)
+      const double M , ///< mass (Msun)
+      const double T, ///< T_eff (K)
+      const double Z, ///< Metallicity wrt solar
+      const double b  ///< beta of wind on hot side of BSJ
+      )
+{
+  double md = -6.697
+             +2.194*log10(L*1e-5)
+             -1.313*log10(M/30.0)
+             -1.226*log10(b/2.0)
+             +0.933*log10(T/4.0e4)
+             -10.92*pow(log10(T/4.0e4),2)
+             +0.85*log10(Z);
+  return exp(pconst.ln10()*md);
+}
+
+// ##################################################################
+// ##################################################################
+
+double stellar_wind_evolution::Mdot_Vink_cool(
+      const double L, ///< luminosity (Lsun)
+      const double M , ///< mass (Msun)
+      const double T, ///< T_eff (K)
+      const double Z, ///< Metallicity wrt solar
+      const double b  ///< beta of wind on hot side of BSJ
+      )
+{
+  double md = -6.688
+              +2.210*log10(L*1e-5)
+              -1.339*log10(M/30.0)
+              -1.601*log10(b/2.0)
+              +1.070*log10(T/2.0e4)
+              +0.850*log10(Z);
+  return exp(pconst.ln10()*md);
+}
+
+// ##################################################################
+// ##################################################################
+
+double stellar_wind_evolution::Mdot_Nieuwenhuijzen(
+      const double L, ///< luminosity (Lsun)
+      const double M, ///< mass (Msun)
+      const double R, ///< Radius (Rsun)
+      const double Z  ///< Metallicity wrt solar
+      )
+{
+  double md = -14.02 
+              +1.24*log10(L)
+              +0.16*log10(M)
+              +0.81*log10(R);
+  return exp(pconst.ln10()*md) * Z;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+double stellar_wind_evolution::Mdot_Brott(
+      const double L, ///< luminosity (Lsun)
+      const double M, ///< mass (Msun)
+      const double T, ///< T_eff (K)
+      const double R, ///< Radius (Rsun)
+      const double Z  ///< Metallicity wrt solar
+      )
+{
+  double Tn=22.5e3;
+  double Tp=27.1e3;
+  double betaH = 2.6; // wind velocity multiplier on hot side
+  double betaC = 1.3; // wind velocity multiplier on cool side
+  double md=0.0, mdc=0.0, mdh=0.0;
+  if      (T>Tp) {
+    md = Mdot_Vink_hot(L,M,T,Z,betaH);
+  }
+  else if (T>Tn) {
+    mdh = Mdot_Vink_hot(L,M,T,Z,betaH);
+    mdc = Mdot_Vink_cool(L,M,T,Z,betaH);
+    md = mdc + (T-Tn)*(mdh-mdc)/(Tp-Tn);
+  }
+  else {
+    mdh = Mdot_Vink_cool(L,M,T,Z,betaH);
+    mdc = Mdot_Nieuwenhuijzen(L,M,R,Z);
+    md = std::max(mdh,mdc);
+  }
+  return md * pconst.Msun() / pconst.year();
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 

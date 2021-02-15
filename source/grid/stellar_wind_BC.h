@@ -37,16 +37,11 @@
 #include "tools/reporting.h"
 
 
-//
 // Defines for type of wind:
-// 0=constant,
-// 1= switch on slowly over 100kyr,
-// 2=move boundary outwards over time (with v_inf),
-// 3=evolving in time according to a stellar evolution model.
-//
-#define WINDTYPE_CONSTANT 0
-#define WINDTYPE_EVOLVING 1
-#define WINDTYPE_ANGLE 2
+#define WINDTYPE_CONSTANT 0 // spherically symmetric, constant in time
+#define WINDTYPE_EVOLVING 1 // spherically symmetric, with evolution
+#define WINDTYPE_ANGLE    2 // Langer et al. (1999) model implemented
+#define WINDTYPE_LATDEP   3 // Modification of LGM99, original work
 
 
 
@@ -87,6 +82,7 @@ struct wind_source {
     dpos[MAX_DIM], ///< physical position of source
     radius, ///< radius of fixed region (in cm).
     Mdot,   ///< mass loss rate  (g/s)
+    Md0,    ///< Mdot equiv. non-rotating star (lat-dep.wind) (g/s)
     Vinf,   ///< terminal wind velocity (cm/s)
     v_rot,  ///< stellar rotational velocity (cm/s)
     v_esc,  ///< wind escape velocity (cm/s)
@@ -174,6 +170,7 @@ class stellar_wind {
       const double,   ///< radius of boundary region (cm)
       const int,      ///< type (2=lat-dep.)
       const double,   ///< Mdot (g/s)
+      const double,   ///< Md0, equiv. non-rotating star (g/s)
       const double,   ///< Vesc (cm/s)
       const double,   ///< Vrot (cm/s)
       const double,   ///< Vcrit (cm/s)
@@ -265,12 +262,6 @@ class stellar_wind {
         const int, ///< src id
         int *   ///< type of wind (=0 for now) (output)
         );
-
-  // Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
-  double pow_fast(
-		double a,
-		double b
-		);
 
   // --------------------------------------------------------------
 
@@ -466,6 +457,46 @@ class stellar_wind_evolution : virtual public stellar_wind {
       struct evolving_wind_data *, ///< source to update.
       const double, ///< current simulation time.
       const double  ///< EOS Gamma
+      );
+
+  /// Vink et al. (2000) mass-loss recipe for the hot side of the
+  /// bistability jump.
+  double Mdot_Vink_hot(
+      const double, ///< luminosity (Lsun)
+      const double, ///< mass (Msun)
+      const double, ///< T_eff (K)
+      const double, ///< Metallicity wrt solar
+      const double  ///< beta of wind on hot side of BSJ
+      );
+    
+  /// Vink et al. (2000) mass-loss recipe for the cool side of the
+  /// bistability jump.
+  double Mdot_Vink_cool(
+      const double, ///< luminosity (Lsun)
+      const double, ///< mass (Msun)
+      const double, ///< T_eff (K)
+      const double, ///< Metallicity wrt solar
+      const double  ///< beta of wind on cool side of BSJ
+      );
+    
+  ///  Nieuwenhuijzen, H.; de Jager, C. 1990, A&A, 231, 134 (eqn 2)
+  double Mdot_Nieuwenhuijzen(
+      const double, ///< luminosity (Lsun)
+      const double, ///< mass (Msun)
+      const double, ///< Radius (Rsun)
+      const double  ///< Metallicity wrt solar
+      );
+
+  /// Implementation of the Brott et al. (2011) mass-loss recipe.
+  /// This uses beta=2.6 for hot side of bistability jump, and 1.3
+  /// for the cool side, and Nieuwenhuijzen & de Jager for RSG.
+  /// Returns mass-loss rate in g/s
+  double Mdot_Brott(
+      const double, ///< luminosity (Lsun)
+      const double, ///< mass (Msun)
+      const double, ///< T_eff (K)
+      const double, ///< Radius (Rsun)
+      const double  ///< Metallicity wrt solar
       );
 
   ///
