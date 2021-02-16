@@ -65,92 +65,90 @@ mp_only_cooling::mp_only_cooling(
     CoolingFn(ephys->cooling),
     nv_prim(nv)
 {
-    if (!EP->update_erg) {
-        rep.error(
-            "requested cooling microphysics but no energy update",
-            DONT_CALL_ME);
-    }
-    Integrator_Base::Set_Nvar(1);
+  if (!EP->update_erg) {
+    rep.error(
+        "requested cooling microphysics but no energy update", DONT_CALL_ME);
+  }
+  Integrator_Base::Set_Nvar(1);
 
-    //
-    // Mean masses per species/atom: we assume cosmic abundances which gives
-    // rho \simeq 1.40 m_p n_H.  For fully ionised gas we have
-    //  n_i \simeq 1.1 n_H (from helium).
-    //  n_e \simeq 1.2 n_H (from doubly ionised helium)
-    //  n_tot \simeq 2.3 n_H (summing the previous lines).
-    // So we define muH=1.4mp, mue=1.167mp, mui=1.273mp, mutot=0.609mp
-    //
-    Mu             = 1.40 * pconst.m_p();
-    Mu_tot         = 0.609 * pconst.m_p();
-    Mu_tot_over_kB = Mu_tot / pconst.kB();
-    Mu_elec        = 1.167 * pconst.m_p();
-    Mu_ion         = 1.273 * pconst.m_p();
-    inv_Mu2        = 1.0 / (Mu * Mu);
-    inv_Mu2_elec_H = 1.0 / (Mu_elec * Mu);
+  //
+  // Mean masses per species/atom: we assume cosmic abundances which gives
+  // rho \simeq 1.40 m_p n_H.  For fully ionised gas we have
+  //  n_i \simeq 1.1 n_H (from helium).
+  //  n_e \simeq 1.2 n_H (from doubly ionised helium)
+  //  n_tot \simeq 2.3 n_H (summing the previous lines).
+  // So we define muH=1.4mp, mue=1.167mp, mui=1.273mp, mutot=0.609mp
+  //
+  Mu             = 1.40 * pconst.m_p();
+  Mu_tot         = 0.609 * pconst.m_p();
+  Mu_tot_over_kB = Mu_tot / pconst.kB();
+  Mu_elec        = 1.167 * pconst.m_p();
+  Mu_ion         = 1.273 * pconst.m_p();
+  inv_Mu2        = 1.0 / (Mu * Mu);
+  inv_Mu2_elec_H = 1.0 / (Mu_elec * Mu);
 
-    //
-    // Next select which cooling function to set up.
-    //
-    cooling_flag = EP->cooling;
+  //
+  // Next select which cooling function to set up.
+  //
+  cooling_flag = EP->cooling;
 
-    switch (cooling_flag) {
-        case KI02:
-        case DMcC:
-        case SD93_CIE:
-        case SD93_PLUS_HEATING:
-            setup_SD93_cie();
-            break;
-        case WSS09_CIE_PLUS_HEATING:
-        case WSS09_CIE_ONLY_COOLING:
-            setup_WSS09_CIE();
-            break;
-        case WSS09_CIE_LINE_HEAT_COOL:
-            cout << "\tRequested fully ionized gas with WSS09 cooling at high";
-            cout << " temperatures,\n\tand photoionized gas at nebular";
-            cout << " temperatures, with T_eq approx 8000 K.\n";
-            setup_WSS09_CIE_OnlyMetals();
-            break;
-        default:
-            rep.error("Invalid cooling flag in mp_only_cooling", cooling_flag);
-            break;
-    }
+  switch (cooling_flag) {
+    case KI02:
+    case DMcC:
+    case SD93_CIE:
+    case SD93_PLUS_HEATING:
+      setup_SD93_cie();
+      break;
+    case WSS09_CIE_PLUS_HEATING:
+    case WSS09_CIE_ONLY_COOLING:
+      setup_WSS09_CIE();
+      break;
+    case WSS09_CIE_LINE_HEAT_COOL:
+      cout << "\tRequested fully ionized gas with WSS09 cooling at high";
+      cout << " temperatures,\n\tand photoionized gas at nebular";
+      cout << " temperatures, with T_eq approx 8000 K.\n";
+      setup_WSS09_CIE_OnlyMetals();
+      break;
+    default:
+      rep.error("Invalid cooling flag in mp_only_cooling", cooling_flag);
+      break;
+  }
 
-    // generate lookup tables for WSS09_CIE_LINE_HEAT_COOL function.
-    gen_mpoc_lookup_tables();
+  // generate lookup tables for WSS09_CIE_LINE_HEAT_COOL function.
+  gen_mpoc_lookup_tables();
 
 #ifdef TESTING
-    ostringstream opfile;
-    opfile << "coolingNOCHEM_" << cooling_flag << ".txt";
-    ofstream outf(opfile.str().c_str());
-    if (!outf.is_open()) rep.error("couldn't open outfile", 1);
-    outf
-        << "Cooling Curve Data: Temperature(K) Rate(erg/cm^3/s) (n=1 per cc)\n";
-    outf.setf(ios_base::scientific);
-    outf.precision(6);
-    double t = 1.0e0;
-    do {
-        outf << t << "\t" << Edot(2.34e-24, t) << "\n";
-        t *= 1.05;
-    } while (t < 1.0e10);
-    outf.close();
+  ostringstream opfile;
+  opfile << "coolingNOCHEM_" << cooling_flag << ".txt";
+  ofstream outf(opfile.str().c_str());
+  if (!outf.is_open()) rep.error("couldn't open outfile", 1);
+  outf << "Cooling Curve Data: Temperature(K) Rate(erg/cm^3/s) (n=1 per cc)\n";
+  outf.setf(ios_base::scientific);
+  outf.precision(6);
+  double t = 1.0e0;
+  do {
+    outf << t << "\t" << Edot(2.34e-24, t) << "\n";
+    t *= 1.05;
+  } while (t < 1.0e10);
+  outf.close();
 #endif
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
-    MaxT_allowed = EP->MaxTemperature;
-    MinT_allowed = EP->MinTemperature;
-    if (MinT_allowed < 1.0 || MinT_allowed > 1.0e6) MinT_allowed = 1.0;
-    if (MaxT_allowed < 1.0e2 || MaxT_allowed > 3.0e10) MaxT_allowed = 1.0e8;
-        // cout <<"\t\tAllowed Temperature range: T_min="<<MinT_allowed<<"
-        // T_max="; cout <<MaxT_allowed<<" (MAKE SURE THIS IS SET
-        // APPROPRIATELY!\n";
+  MaxT_allowed = EP->MaxTemperature;
+  MinT_allowed = EP->MinTemperature;
+  if (MinT_allowed < 1.0 || MinT_allowed > 1.0e6) MinT_allowed = 1.0;
+  if (MaxT_allowed < 1.0e2 || MaxT_allowed > 3.0e10) MaxT_allowed = 1.0e8;
+    // cout <<"\t\tAllowed Temperature range: T_min="<<MinT_allowed<<"
+    // T_max="; cout <<MaxT_allowed<<" (MAKE SURE THIS IS SET
+    // APPROPRIATELY!\n";
 #else
-    rep.error(
-        "Please set SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE in "
-        "defines/functionality_flags.h if using cooling",
-        123);
+  rep.error(
+      "Please set SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE in "
+      "defines/functionality_flags.h if using cooling",
+      123);
 #endif  // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 
-    return;
+  return;
 }
 
 // ##################################################################
@@ -170,49 +168,49 @@ int mp_only_cooling::TimeUpdateMP(
     double* Tf             ///< final temperature.
 )
 {
-    mp_only_cooling::rho   = p_in[RO];
-    mp_only_cooling::gamma = g;
-    for (int v = 0; v < nv_prim; v++)
-        p_out[v] = p_in[v];
+  mp_only_cooling::rho   = p_in[RO];
+  mp_only_cooling::gamma = g;
+  for (int v = 0; v < nv_prim; v++)
+    p_out[v] = p_in[v];
 
-    for (int v = 0; v < nv_prim; v++) {
-        if (!isfinite(p_out[v])) {
-            rep.printVec("pout", p_in, nv_prim);
-            rep.error("p_out[v]", v);
-        }
+  for (int v = 0; v < nv_prim; v++) {
+    if (!isfinite(p_out[v])) {
+      rep.printVec("pout", p_in, nv_prim);
+      rep.error("p_out[v]", v);
     }
+  }
 
-    double Eint0 = p_in[PG] / (gamma - 1.0);
-    double T     = p_out[PG] * Mu_tot_over_kB / p_out[RO];
-    if (T < MinT_allowed) {
-        Set_Temp(p_out, MinT_allowed, gamma);
-        T = MinT_allowed;
-    }
-    if (T > MaxT_allowed) {
-        Set_Temp(p_out, MaxT_allowed, gamma);
-        T = MaxT_allowed;
-    }
-    double Eint = Eint0;
-    double tout = 0.0;
+  double Eint0 = p_in[PG] / (gamma - 1.0);
+  double T     = p_out[PG] * Mu_tot_over_kB / p_out[RO];
+  if (T < MinT_allowed) {
+    Set_Temp(p_out, MinT_allowed, gamma);
+    T = MinT_allowed;
+  }
+  if (T > MaxT_allowed) {
+    Set_Temp(p_out, MaxT_allowed, gamma);
+    T = MaxT_allowed;
+  }
+  double Eint = Eint0;
+  double tout = 0.0;
 
-    int err = Int_Adaptive_RKCK(1, &Eint, 0.0, dt, 1.0e-2, &Eint, &tout);
-    if (err) {
-        rep.printVec("p_in", p_in, nv_prim);
-        cout << "Ein = " << Eint0 << ", T=" << T << ", Eout=" << Eint
-             << ", dt=" << dt << ", tout=" << tout << "\n";
-        rep.error("mp_only_cooling integration failed.", err);
-    }
-    p_out[PG] = Eint * (gamma - 1);
-    *Tf       = p_out[PG] * Mu_tot_over_kB / p_out[RO];
-    if (*Tf > MaxT_allowed) {
-        p_out[PG] *= MaxT_allowed / (*Tf);
-        *Tf = MaxT_allowed;
-    }
-    else if (*Tf < MinT_allowed) {
-        p_out[PG] *= MinT_allowed / (*Tf);
-        *Tf = MinT_allowed;
-    }
-    return 0;
+  int err = Int_Adaptive_RKCK(1, &Eint, 0.0, dt, 1.0e-2, &Eint, &tout);
+  if (err) {
+    rep.printVec("p_in", p_in, nv_prim);
+    cout << "Ein = " << Eint0 << ", T=" << T << ", Eout=" << Eint
+         << ", dt=" << dt << ", tout=" << tout << "\n";
+    rep.error("mp_only_cooling integration failed.", err);
+  }
+  p_out[PG] = Eint * (gamma - 1);
+  *Tf       = p_out[PG] * Mu_tot_over_kB / p_out[RO];
+  if (*Tf > MaxT_allowed) {
+    p_out[PG] *= MaxT_allowed / (*Tf);
+    *Tf = MaxT_allowed;
+  }
+  else if (*Tf < MinT_allowed) {
+    p_out[PG] *= MinT_allowed / (*Tf);
+    *Tf = MinT_allowed;
+  }
+  return 0;
 }
 
 // ##################################################################
@@ -224,8 +222,8 @@ int mp_only_cooling::dPdt(
     double* R         ///< Rate Vector to write to.
 )
 {
-    R[0] = Edot(rho, P[0] * (gamma - 1.0) * Mu_tot_over_kB / rho);
-    return 0;
+  R[0] = Edot(rho, P[0] * (gamma - 1.0) * Mu_tot_over_kB / rho);
+  return 0;
 }
 
 // ##################################################################
@@ -238,20 +236,20 @@ int mp_only_cooling::Set_Temp(
 )
 {
 #ifdef TESTING
-    //
-    // check for bad input
-    //
-    if (T <= 0.0) {
-        cout << "mp_only_cooling::Set_Temp() Requested negative ";
-        cout << "temperature! T=" << T << "\n";
-        return 1;
-    }
+  //
+  // check for bad input
+  //
+  if (T <= 0.0) {
+    cout << "mp_only_cooling::Set_Temp() Requested negative ";
+    cout << "temperature! T=" << T << "\n";
+    return 1;
+  }
 #endif  // TESTING
-    // cout <<"\n\t\t***** Set_Temp(): p="<<p_in[PG]<<", rho="<< p_in[RO];
-    // cout <<", T="<<T<<", new p="<<p_in[RO]*T/Mu_tot_over_kB<<"\n";
-    p_in[PG] = p_in[RO] * T / Mu_tot_over_kB;
+  // cout <<"\n\t\t***** Set_Temp(): p="<<p_in[PG]<<", rho="<< p_in[RO];
+  // cout <<", T="<<T<<", new p="<<p_in[RO]*T/Mu_tot_over_kB<<"\n";
+  p_in[PG] = p_in[RO] * T / Mu_tot_over_kB;
 
-    return 0;
+  return 0;
 }
 
 // ##################################################################
@@ -262,7 +260,7 @@ double mp_only_cooling::Temperature(
     const double           ///< eos gamma
 )
 {
-    return p_in[PG] * Mu_tot_over_kB / p_in[RO];
+  return p_in[PG] * Mu_tot_over_kB / p_in[RO];
 }
 
 // ##################################################################
@@ -272,8 +270,8 @@ double mp_only_cooling::get_n_elec(
     const pion_flt* p_in  ///< primitive state vector.
 )
 {
-    // H and He are fully ionized
-    return p_in[RO] / Mu_elec;
+  // H and He are fully ionized
+  return p_in[RO] / Mu_elec;
 }
 
 // ##################################################################
@@ -283,8 +281,8 @@ double mp_only_cooling::get_n_Hplus(
     const pion_flt* p_in  ///< primitive state vector.
 )
 {
-    // fully ionized hydrogen
-    return p_in[RO] / Mu;
+  // fully ionized hydrogen
+  return p_in[RO] / Mu;
 }
 
 // ##################################################################
@@ -294,8 +292,8 @@ double mp_only_cooling::get_n_Hneutral(
     const pion_flt* p_in  ///< primitive state vector.
 )
 {
-    // Assume neutral fraction of 1e-12 (arbitrary)
-    return 1.0e-12 * p_in[RO] / Mu;
+  // Assume neutral fraction of 1e-12 (arbitrary)
+  return 1.0e-12 * p_in[RO] / Mu;
 }
 
 // ##################################################################
@@ -309,34 +307,34 @@ double mp_only_cooling::timescales(
     const bool             ///< set to true if including photo-ionsation time.
 )
 {
-    if (!tc) return 1.0e99;
+  if (!tc) return 1.0e99;
 
-    //
-    // First get temperature and internal energy density.
-    //
-    double Eint    = p_in[PG] / (gam - 1.0);
-    double T       = p_in[PG] * Mu_tot_over_kB / p_in[RO];
-    double mintime = 1.0e99;
-    double rate    = 0.0;
+  //
+  // First get temperature and internal energy density.
+  //
+  double Eint    = p_in[PG] / (gam - 1.0);
+  double T       = p_in[PG] * Mu_tot_over_kB / p_in[RO];
+  double mintime = 1.0e99;
+  double rate    = 0.0;
 
+  //
+  // we skip the cooling time if the temperature is already near the
+  // minimum allowed.
+  //
+  // We get the cooling rate per unit volume, first for the actual
+  // temperature, and then for T/2, and we take the max. of this.
+  //
+  if (T >= 1.1 * MinT_allowed) {
+    rate =
+        max(fabs(Edot(p_in[RO], T)),
+            fabs(Edot(p_in[RO], max(MinT_allowed, 0.5 * T))));
     //
-    // we skip the cooling time if the temperature is already near the
-    // minimum allowed.
+    // Cooling time is then the energy per unit volume divided by the rate.
     //
-    // We get the cooling rate per unit volume, first for the actual
-    // temperature, and then for T/2, and we take the max. of this.
-    //
-    if (T >= 1.1 * MinT_allowed) {
-        rate =
-            max(fabs(Edot(p_in[RO], T)),
-                fabs(Edot(p_in[RO], max(MinT_allowed, 0.5 * T))));
-        //
-        // Cooling time is then the energy per unit volume divided by the rate.
-        //
-        mintime = min(mintime, Eint / rate);
-    }
+    mintime = min(mintime, Eint / rate);
+  }
 
-    return mintime;
+  return mintime;
 }
 
 // ##################################################################
@@ -347,40 +345,39 @@ double mp_only_cooling::Edot(
     const double T     ///< Temperature (K)
 )
 {
-    double rate = 0.0;
-    switch (cooling_flag) {
-        case KI02:
-            // this function returns rate as positive if cooling, so change
-            // sign.
-            rate = -CoolingRate(T, 0.0, rho / Mu, 0.0, 0.0);
-            break;
+  double rate = 0.0;
+  switch (cooling_flag) {
+    case KI02:
+      // this function returns rate as positive if cooling, so change
+      // sign.
+      rate = -CoolingRate(T, 0.0, rho / Mu, 0.0, 0.0);
+      break;
 
-        case SD93_CIE:
-            rate = Edot_SD93CIE_cool(rho, T);
-            break;
+    case SD93_CIE:
+      rate = Edot_SD93CIE_cool(rho, T);
+      break;
 
-        case SD93_PLUS_HEATING:
-            rate = Edot_SD93CIE_heat_cool(rho, T);
-            break;
+    case SD93_PLUS_HEATING:
+      rate = Edot_SD93CIE_heat_cool(rho, T);
+      break;
 
-        case WSS09_CIE_ONLY_COOLING:
-            rate = Edot_WSS09CIE_cool(rho, T);
-            break;
+    case WSS09_CIE_ONLY_COOLING:
+      rate = Edot_WSS09CIE_cool(rho, T);
+      break;
 
-        case WSS09_CIE_PLUS_HEATING:
-            rate = Edot_WSS09CIE_heat_cool(rho, T);
-            break;
+    case WSS09_CIE_PLUS_HEATING:
+      rate = Edot_WSS09CIE_heat_cool(rho, T);
+      break;
 
-        case WSS09_CIE_LINE_HEAT_COOL:
-            rate = Edot_WSS09CIE_heat_cool_metallines(rho, T);
-            break;
+    case WSS09_CIE_LINE_HEAT_COOL:
+      rate = Edot_WSS09CIE_heat_cool_metallines(rho, T);
+      break;
 
-        default:
-            rep.error(
-                "bad cooling flag in mp_only_cooling::Edot", cooling_flag);
-            break;
-    }
-    return rate;
+    default:
+      rep.error("bad cooling flag in mp_only_cooling::Edot", cooling_flag);
+      break;
+  }
+  return rate;
 }
 
 // ##################################################################
@@ -391,7 +388,7 @@ double mp_only_cooling::Edot_SD93CIE_cool(
     const double T     ///< Temperature (K)
 )
 {
-    return -(rho * rho / Mu_elec / Mu_ion) * cooling_rate_SD93CIE(T);
+  return -(rho * rho / Mu_elec / Mu_ion) * cooling_rate_SD93CIE(T);
 }
 
 // ##################################################################
@@ -406,9 +403,9 @@ double mp_only_cooling::Edot_SD93CIE_heat_cool(
     const double T     ///< Temperature (K)
 )
 {
-    return (rho * rho)
-           * (2.733e-21 * exp(-0.782991 * log(T)) / Mu_elec / Mu
-              - cooling_rate_SD93CIE(T) / Mu_elec / Mu_ion);
+  return (rho * rho)
+         * (2.733e-21 * exp(-0.782991 * log(T)) / Mu_elec / Mu
+            - cooling_rate_SD93CIE(T) / Mu_elec / Mu_ion);
 }
 
 // ##################################################################
@@ -420,7 +417,7 @@ double mp_only_cooling::Edot_WSS09CIE_cool(
     const double T     ///< Temperature (K)
 )
 {
-    return 2e-26 * rho / Mu - (rho * rho / Mu / Mu) * cooling_rate_SD93CIE(T);
+  return 2e-26 * rho / Mu - (rho * rho / Mu / Mu) * cooling_rate_SD93CIE(T);
 }
 
 // ##################################################################
@@ -435,9 +432,9 @@ double mp_only_cooling::Edot_WSS09CIE_heat_cool(
     const double T     ///< Temperature (K)
 )
 {
-    return (rho * rho)
-           * (2.733e-21 * exp(-0.782991 * log(T)) / Mu_elec / Mu
-              - cooling_rate_SD93CIE(T) / Mu / Mu);
+  return (rho * rho)
+         * (2.733e-21 * exp(-0.782991 * log(T)) / Mu_elec / Mu
+            - cooling_rate_SD93CIE(T) / Mu / Mu);
 }
 
 // ##################################################################
@@ -448,34 +445,33 @@ double mp_only_cooling::Edot_WSS09CIE_heat_cool_metallines(
     const double T     ///< Temperature (K)
 )
 {
-    // Get T-vector index
-    int iT     = 0;
-    double dT  = 0.0;
-    size_t ihi = lt.NT - 1, ilo = 0, imid = 0;
-    do {
-        imid = ilo + floor((ihi - ilo) / 2.0);
-        if (lt.T[imid] < T)
-            ilo = imid;
-        else
-            ihi = imid;
-    } while (ihi - ilo > 1);
-    iT          = ilo;
-    dT          = T - lt.T[iT];
-    double rho2 = rho * rho, rate = 0.0;
-    // Henney et al. (2009) forbidden lines (eq. A9)
-    rate = -(lt.C_fbdn[iT] + dT * lt.s_C_fbdn[iT]) * rho2 * inv_Mu2_elec_H;
-    // take stronger rate between Henney A9 and the WSS09 CIE rate.
-    rate = min(rate, -(lt.C_cie[iT] + dT * lt.s_C_cie[iT]) * rho2 * inv_Mu2);
-    // Hydrogen cooling due to recombinations and Bremsstrahlung.
-    rate -= (lt.C_rrh[iT] + dT * lt.s_C_rrh[iT]) * rho2 * inv_Mu2_elec_H;
-    // Helium Bremsstrahlung (using eq.5.15b from Rybicki &
-    // Lightman (1978), p.162, with Z=2, n(He)/n(H)=0.1, g_B=1.2
-    rate -= (lt.C_ffhe[iT] + dT * lt.s_C_ffhe[iT]) * rho2 * inv_Mu2_elec_H;
-    // heating rate = 5eV*RRR*n(e-)*n(H+) = 8.01e-12*Hii_rrr(T)*n^2
-    // assuming all hydrogen is ionised.
-    rate +=
-        8.01e-12 * (lt.rrhp[iT] + dT * lt.s_rrhp[iT]) * rho2 * inv_Mu2_elec_H;
-    return rate;
+  // Get T-vector index
+  int iT     = 0;
+  double dT  = 0.0;
+  size_t ihi = lt.NT - 1, ilo = 0, imid = 0;
+  do {
+    imid = ilo + floor((ihi - ilo) / 2.0);
+    if (lt.T[imid] < T)
+      ilo = imid;
+    else
+      ihi = imid;
+  } while (ihi - ilo > 1);
+  iT          = ilo;
+  dT          = T - lt.T[iT];
+  double rho2 = rho * rho, rate = 0.0;
+  // Henney et al. (2009) forbidden lines (eq. A9)
+  rate = -(lt.C_fbdn[iT] + dT * lt.s_C_fbdn[iT]) * rho2 * inv_Mu2_elec_H;
+  // take stronger rate between Henney A9 and the WSS09 CIE rate.
+  rate = min(rate, -(lt.C_cie[iT] + dT * lt.s_C_cie[iT]) * rho2 * inv_Mu2);
+  // Hydrogen cooling due to recombinations and Bremsstrahlung.
+  rate -= (lt.C_rrh[iT] + dT * lt.s_C_rrh[iT]) * rho2 * inv_Mu2_elec_H;
+  // Helium Bremsstrahlung (using eq.5.15b from Rybicki &
+  // Lightman (1978), p.162, with Z=2, n(He)/n(H)=0.1, g_B=1.2
+  rate -= (lt.C_ffhe[iT] + dT * lt.s_C_ffhe[iT]) * rho2 * inv_Mu2_elec_H;
+  // heating rate = 5eV*RRR*n(e-)*n(H+) = 8.01e-12*Hii_rrr(T)*n^2
+  // assuming all hydrogen is ionised.
+  rate += 8.01e-12 * (lt.rrhp[iT] + dT * lt.s_rrhp[iT]) * rho2 * inv_Mu2_elec_H;
+  return rate;
 }
 
 // ##################################################################
@@ -483,60 +479,58 @@ double mp_only_cooling::Edot_WSS09CIE_heat_cool_metallines(
 
 void mp_only_cooling::gen_mpoc_lookup_tables()
 {
-    //  Start by generating the logarithmic temperature scale:
-    lt.NT        = 200;
-    double temp1 = 0.0, temp2 = 0.0, temp3 = 0.0;
-    lt.dlogT =
-        (log10(EP->MaxTemperature) - log10(EP->MinTemperature)) / (lt.NT - 1);
-    lt.T.resize(lt.NT);
-    for (size_t i = 0; i < lt.NT; i++) {
-        lt.T[i] = pow(10.0, log10(EP->MinTemperature) + i * lt.dlogT);
-    }
+  //  Start by generating the logarithmic temperature scale:
+  lt.NT        = 200;
+  double temp1 = 0.0, temp2 = 0.0, temp3 = 0.0;
+  lt.dlogT =
+      (log10(EP->MaxTemperature) - log10(EP->MinTemperature)) / (lt.NT - 1);
+  lt.T.resize(lt.NT);
+  for (size_t i = 0; i < lt.NT; i++) {
+    lt.T[i] = pow(10.0, log10(EP->MinTemperature) + i * lt.dlogT);
+  }
 
-    lt.rrhp.resize(lt.NT);
-    lt.C_rrh.resize(lt.NT);
-    lt.C_ffhe.resize(lt.NT);
-    lt.C_fbdn.resize(lt.NT);
-    lt.C_cie.resize(lt.NT);
-    // lt.C_dust.resize(lt.NT);
+  lt.rrhp.resize(lt.NT);
+  lt.C_rrh.resize(lt.NT);
+  lt.C_ffhe.resize(lt.NT);
+  lt.C_fbdn.resize(lt.NT);
+  lt.C_cie.resize(lt.NT);
+  // lt.C_dust.resize(lt.NT);
 
-    for (size_t i = 0; i < lt.NT; i++) {
-        lt.rrhp[i]   = Hii_rad_recomb_rate(lt.T[i]);
-        lt.C_rrh[i]  = Hii_total_cooling(lt.T[i]);
-        lt.C_ffhe[i] = 6.72e-28 * sqrt(lt.T[i]);
-        lt.C_fbdn[i] =
-            1.20e-22
-            * exp(-33610.0 / lt.T[i] - (2180.0 * 2180.0 / lt.T[i] / lt.T[i]))
-            * exp(-lt.T[i] * lt.T[i] / 5.0e10);
-        lt.C_cie[i] = cooling_rate_SD93CIE(lt.T[i]);
-        // lt.C_dust[i] = 1.0e-17 * exp(1.5*log(lt.T[i]/2.5e8));
-    }
+  for (size_t i = 0; i < lt.NT; i++) {
+    lt.rrhp[i]   = Hii_rad_recomb_rate(lt.T[i]);
+    lt.C_rrh[i]  = Hii_total_cooling(lt.T[i]);
+    lt.C_ffhe[i] = 6.72e-28 * sqrt(lt.T[i]);
+    lt.C_fbdn[i] =
+        1.20e-22
+        * exp(-33610.0 / lt.T[i] - (2180.0 * 2180.0 / lt.T[i] / lt.T[i]))
+        * exp(-lt.T[i] * lt.T[i] / 5.0e10);
+    lt.C_cie[i] = cooling_rate_SD93CIE(lt.T[i]);
+    // lt.C_dust[i] = 1.0e-17 * exp(1.5*log(lt.T[i]/2.5e8));
+  }
 
-    lt.s_rrhp.resize(lt.NT);
-    lt.s_C_rrh.resize(lt.NT);
-    lt.s_C_ffhe.resize(lt.NT);
-    lt.s_C_fbdn.resize(lt.NT);
-    lt.s_C_cie.resize(lt.NT);
-    // lt.s_C_dust.resize(lt.NT);
-    for (size_t i = 0; i < lt.NT - 1; i++) {
-        lt.s_rrhp[i] = (lt.rrhp[i + 1] - lt.rrhp[i]) / (lt.T[i + 1] - lt.T[i]);
-        lt.s_C_rrh[i] =
-            (lt.C_rrh[i + 1] - lt.C_rrh[i]) / (lt.T[i + 1] - lt.T[i]);
-        lt.s_C_ffhe[i] =
-            (lt.C_ffhe[i + 1] - lt.C_ffhe[i]) / (lt.T[i + 1] - lt.T[i]);
-        lt.s_C_fbdn[i] =
-            (lt.C_fbdn[i + 1] - lt.C_fbdn[i]) / (lt.T[i + 1] - lt.T[i]);
-        lt.s_C_cie[i] =
-            (lt.C_cie[i + 1] - lt.C_cie[i]) / (lt.T[i + 1] - lt.T[i]);
-        // lt.s_C_dust[i] = (lt.C_dust[i+1]-lt.C_dust[i]) / (lt.T[i+1]-lt.T[i]);
-    }
-    lt.s_rrhp[lt.NT - 1]   = 0.0;
-    lt.s_C_rrh[lt.NT - 1]  = 0.0;
-    lt.s_C_ffhe[lt.NT - 1] = 0.0;
-    lt.s_C_fbdn[lt.NT - 1] = 0.0;
-    lt.s_C_cie[lt.NT - 1]  = 0.0;
-    // lt.s_C_dust[lt.NT-1] = 0.0;
-    return;
+  lt.s_rrhp.resize(lt.NT);
+  lt.s_C_rrh.resize(lt.NT);
+  lt.s_C_ffhe.resize(lt.NT);
+  lt.s_C_fbdn.resize(lt.NT);
+  lt.s_C_cie.resize(lt.NT);
+  // lt.s_C_dust.resize(lt.NT);
+  for (size_t i = 0; i < lt.NT - 1; i++) {
+    lt.s_rrhp[i]  = (lt.rrhp[i + 1] - lt.rrhp[i]) / (lt.T[i + 1] - lt.T[i]);
+    lt.s_C_rrh[i] = (lt.C_rrh[i + 1] - lt.C_rrh[i]) / (lt.T[i + 1] - lt.T[i]);
+    lt.s_C_ffhe[i] =
+        (lt.C_ffhe[i + 1] - lt.C_ffhe[i]) / (lt.T[i + 1] - lt.T[i]);
+    lt.s_C_fbdn[i] =
+        (lt.C_fbdn[i + 1] - lt.C_fbdn[i]) / (lt.T[i + 1] - lt.T[i]);
+    lt.s_C_cie[i] = (lt.C_cie[i + 1] - lt.C_cie[i]) / (lt.T[i + 1] - lt.T[i]);
+    // lt.s_C_dust[i] = (lt.C_dust[i+1]-lt.C_dust[i]) / (lt.T[i+1]-lt.T[i]);
+  }
+  lt.s_rrhp[lt.NT - 1]   = 0.0;
+  lt.s_C_rrh[lt.NT - 1]  = 0.0;
+  lt.s_C_ffhe[lt.NT - 1] = 0.0;
+  lt.s_C_fbdn[lt.NT - 1] = 0.0;
+  lt.s_C_cie[lt.NT - 1]  = 0.0;
+  // lt.s_C_dust[lt.NT-1] = 0.0;
+  return;
 }
 
 // ##################################################################

@@ -32,40 +32,39 @@
 #include "equations/eqns_hydro_adiabatic.h"
 
 class Riemann_FVS_Euler : virtual public eqns_Euler {
-  public:
-    Riemann_FVS_Euler(
-        const int,    ///< Length of State Vectors, nvar
-        const double  ///< Gamma for state vector.
-    );
+public:
+  Riemann_FVS_Euler(
+      const int,    ///< Length of State Vectors, nvar
+      const double  ///< Gamma for state vector.
+  );
 
-    ///
-    /// Destructor: deletes dynamically allocated data.
-    ///
-    ~Riemann_FVS_Euler();
+  ///
+  /// Destructor: deletes dynamically allocated data.
+  ///
+  ~Riemann_FVS_Euler();
 
-    ///
-    /// Gets the solution to the Riemann Problem.
-    ///
-    int FVS_flux(
-        const pion_flt*,  ///< Left Primitive var. state vector.
-        const pion_flt*,  ///< Right Primitive var. state vector.
-        pion_flt*,        ///< Result Flux vector.
-        pion_flt*,        ///< Interface state (for viscosity)
-        const double      ///< Gas constant gamma (unused b/c g=constant)
-    );
+  ///
+  /// Gets the solution to the Riemann Problem.
+  ///
+  int FVS_flux(
+      const pion_flt*,  ///< Left Primitive var. state vector.
+      const pion_flt*,  ///< Right Primitive var. state vector.
+      pion_flt*,        ///< Result Flux vector.
+      pion_flt*,        ///< Interface state (for viscosity)
+      const double      ///< Gas constant gamma (unused b/c g=constant)
+  );
 
-  private:
-    const int
-        rs_nvar;  ///< length of state vectors in solver (ignore tracers!).
+private:
+  const int rs_nvar;  ///< length of state vectors in solver (ignore tracers!).
 
-    pion_flt *fpos, *fneg;  ///< split flux vectors.
+  pion_flt *fpos, *fneg;  ///< split flux vectors.
 
-    void Roe_average_state(
-        const pion_flt*,  ///< state 1
-        const pion_flt*,  ///< state 2
-        const double,     ///< gamma
-        pion_flt*         ///< Roe-averaged state
-    );
+  void Roe_average_state(
+      const pion_flt*,  ///< state 1
+      const pion_flt*,  ///< state 2
+      const double,     ///< gamma
+      pion_flt*         ///< Roe-averaged state
+  );
 };
 
 #endif  // RIEMANN_FVS_HYDRO_H

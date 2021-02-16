@@ -54,84 +54,83 @@ MPv9::MPv9(
     m_p(GS.m_p()),
     nv_prim(nv)
 {
-    cout << "Welcome to MPv9: the low metallicity chemistry solver!\n";
-    //
-    // Note this is only called once at the start of the simulation so there is
-    // no need to be efficient.
-    //
+  cout << "Welcome to MPv9: the low metallicity chemistry solver!\n";
+  //
+  // Note this is only called once at the start of the simulation so there is
+  // no need to be efficient.
+  //
 
-    //
-    // set flags for what processes we are and aren't doing.
-    //
-    ep.dynamics          = ephys->dynamics;
-    ep.cooling           = ephys->cooling;
-    ep.chemistry         = ephys->chemistry;
-    ep.coll_ionisation   = ephys->coll_ionisation;
-    ep.rad_recombination = ephys->rad_recombination;
-    ep.phot_ionisation   = ephys->phot_ionisation;
-    ep.raytracing        = ephys->raytracing;
-    ep.update_erg        = ephys->update_erg;
-    if (!ep.chemistry) {
-        ep.coll_ionisation = ep.rad_recombination = ep.phot_ionisation = 0;
-    }
-    //  cout <<"\t\tExtra Physics flags set.\n";
+  //
+  // set flags for what processes we are and aren't doing.
+  //
+  ep.dynamics          = ephys->dynamics;
+  ep.cooling           = ephys->cooling;
+  ep.chemistry         = ephys->chemistry;
+  ep.coll_ionisation   = ephys->coll_ionisation;
+  ep.rad_recombination = ephys->rad_recombination;
+  ep.phot_ionisation   = ephys->phot_ionisation;
+  ep.raytracing        = ephys->raytracing;
+  ep.update_erg        = ephys->update_erg;
+  if (!ep.chemistry) {
+    ep.coll_ionisation = ep.rad_recombination = ep.phot_ionisation = 0;
+  }
+  //  cout <<"\t\tExtra Physics flags set.\n";
 
-    //
-    // Set up tracer variables.  We will get the tracers from
-    // Harpreet's module function.  This leaves open the option to have
-    // extra passive tracers for other purposes.
-    //
-    cout << "\t\tSetting up Tracer Variables.";
-    get_problem_size(&Yvector_length, &Nspecies);
-    Nspecies = Yvector_length - 1;
+  //
+  // Set up tracer variables.  We will get the tracers from
+  // Harpreet's module function.  This leaves open the option to have
+  // extra passive tracers for other purposes.
+  //
+  cout << "\t\tSetting up Tracer Variables.";
+  get_problem_size(&Yvector_length, &Nspecies);
+  Nspecies = Yvector_length - 1;
 
-    //
-    // Local state vector.  We have density, internal energy,
-    // shielding factor, the Y-values, and that's it.
-    //
-    Yi.resize(Yvector_length);
-    Yf.resize(Yvector_length);
-    MPv9::density        = -1.0;  // mass density.
-    MPv9::Eint           = -1.0;  // internal energy per unit volume.
-    MPv9::Column_density = -1.0;  // mass column density, int(rho*dx)
-    MPv9::col_data_set   = false;
-    cout << " Nspecies = " << Nspecies << ", Vec-len=" << Yvector_length
-         << "\n";
+  //
+  // Local state vector.  We have density, internal energy,
+  // shielding factor, the Y-values, and that's it.
+  //
+  Yi.resize(Yvector_length);
+  Yf.resize(Yvector_length);
+  MPv9::density        = -1.0;  // mass density.
+  MPv9::Eint           = -1.0;  // internal energy per unit volume.
+  MPv9::Column_density = -1.0;  // mass column density, int(rho*dx)
+  MPv9::col_data_set   = false;
+  cout << " Nspecies = " << Nspecies << ", Vec-len=" << Yvector_length << "\n";
 
 //#define TEST_KVECTOR
 #ifdef TEST_KVECTOR
-    Column_density = 0.0;
-    density        = 2.4e-24;
-    double flux    = 0.0;
-    double P[3];
-    Y_init(Yi);
-    conversion_JMcode(density, Column_density, P);
-    calculate_X(Yi, X);
-    double T_now = 1.0e3;
-    ofstream outf("Kvector.txt");
-    if (!outf.is_open()) rep.error("couldn't open outfile", 1);
-    outf << "## Temperature(K) K[0] K[1] ... \n";
-    outf.setf(ios_base::scientific);
-    outf.precision(3);
-    do {
-        // calculate_T(Yi,X,P[0],T_now);
-        calculate_K(K, flux, T_now, flux);
-        cout << "current temperature is " << T_now;
-        outf << T_now << " ";
-        for (int v = 0; v < 56; v++)
-            outf << K[v] << " ";
-        outf << "\n";
-        T_now *= 1.1;
-    } while (T_now < 1.0e7);
-    outf.close();
-    rep.error("Bugging out", 2);
+  Column_density = 0.0;
+  density        = 2.4e-24;
+  double flux    = 0.0;
+  double P[3];
+  Y_init(Yi);
+  conversion_JMcode(density, Column_density, P);
+  calculate_X(Yi, X);
+  double T_now = 1.0e3;
+  ofstream outf("Kvector.txt");
+  if (!outf.is_open()) rep.error("couldn't open outfile", 1);
+  outf << "## Temperature(K) K[0] K[1] ... \n";
+  outf.setf(ios_base::scientific);
+  outf.precision(3);
+  do {
+    // calculate_T(Yi,X,P[0],T_now);
+    calculate_K(K, flux, T_now, flux);
+    cout << "current temperature is " << T_now;
+    outf << T_now << " ";
+    for (int v = 0; v < 56; v++)
+      outf << K[v] << " ";
+    outf << "\n";
+    T_now *= 1.1;
+  } while (T_now < 1.0e7);
+  outf.close();
+  rep.error("Bugging out", 2);
 #endif  // TEST_KVECTOR
 
-    //
-    // All done
-    //
-    cout << "MPv9: set up finished. Returning.\n";
-    return;
+  //
+  // All done
+  //
+  cout << "MPv9: set up finished. Returning.\n";
+  return;
 }
 
 // ##################################################################
@@ -139,9 +138,9 @@ MPv9::MPv9(
 
 MPv9::~MPv9()
 {
-    Yi.clear();
-    Yf.clear();
-    return;
+  Yi.clear();
+  Yf.clear();
+  return;
 }
 
 // ##################################################################
@@ -153,21 +152,21 @@ double MPv9::Temperature(
 )
 {
 #ifdef THREADS
-    rep.error("MPv9::Temperature() not thread-safe!", 1);
+  rep.error("MPv9::Temperature() not thread-safe!", 1);
 #endif
-    //
-    // put data from p_in into local vectors.
-    //
-    double ttt = 0.0;
-    convert_prim2local(pv, g);
-    Column_density = 0.0;
-    vector<double> col(5);
-    double P[3];
-    conversion_JMcode(  // Yi,
-        density, col, P);
-    calculate_X(Yi, X);
-    calculate_T(Yi, X, P[0], ttt);
-    return ttt;
+  //
+  // put data from p_in into local vectors.
+  //
+  double ttt = 0.0;
+  convert_prim2local(pv, g);
+  Column_density = 0.0;
+  vector<double> col(5);
+  double P[3];
+  conversion_JMcode(  // Yi,
+      density, col, P);
+  calculate_X(Yi, X);
+  calculate_T(Yi, X, P[0], ttt);
+  return ttt;
 }
 
 // ##################################################################
@@ -182,35 +181,35 @@ int MPv9::Set_Temp(
     const double g            ///< eos gamma.
 )
 {
-    //
-    // First calculate current temperature:
-    //
-    double T_now = 0.0;
-    convert_prim2local(p_in, g);
-    Column_density = 0.0;
-    vector<double> col(5);
-    double P[3];
-    conversion_JMcode(  // Yi,
-        density, col, P);
-    calculate_X(Yi, X);
-    calculate_T(Yi, X, P[0], T_now);
-    cout << "current temperature is " << T_now;
-    //
-    // Now multiply current internal energy by ratio of current to required
-    // temperatures.  E = (g-1)*n*k*Ti*(Tf/Ti)
-    //
-    cout << ", corr. to E_int=" << Yi[Yvector_length - 1];
-    Yi[Yvector_length - 1] *= T_required / T_now;
-    cout << ", resetting to E_int=" << Yi[Yvector_length - 1];
-    cout << " which corresponds to T=" << T_required;
-    //
-    // Now convert back to primitive variables (this uses Yf as the source
-    // of microphysics quantities, so first copy Yi to Yf).
-    //
-    Yf = Yi;
-    cout << "; Yf[E]=" << Yf[Yvector_length - 1] << "\n";
-    convert_local2prim(p_in, p_in, gamma);
-    return 0;
+  //
+  // First calculate current temperature:
+  //
+  double T_now = 0.0;
+  convert_prim2local(p_in, g);
+  Column_density = 0.0;
+  vector<double> col(5);
+  double P[3];
+  conversion_JMcode(  // Yi,
+      density, col, P);
+  calculate_X(Yi, X);
+  calculate_T(Yi, X, P[0], T_now);
+  cout << "current temperature is " << T_now;
+  //
+  // Now multiply current internal energy by ratio of current to required
+  // temperatures.  E = (g-1)*n*k*Ti*(Tf/Ti)
+  //
+  cout << ", corr. to E_int=" << Yi[Yvector_length - 1];
+  Yi[Yvector_length - 1] *= T_required / T_now;
+  cout << ", resetting to E_int=" << Yi[Yvector_length - 1];
+  cout << " which corresponds to T=" << T_required;
+  //
+  // Now convert back to primitive variables (this uses Yf as the source
+  // of microphysics quantities, so first copy Yi to Yf).
+  //
+  Yf = Yi;
+  cout << "; Yf[E]=" << Yf[Yvector_length - 1] << "\n";
+  convert_local2prim(p_in, p_in, gamma);
+  return 0;
 }
 
 // ##################################################################
@@ -218,34 +217,34 @@ int MPv9::Set_Temp(
 
 int MPv9::convert_prim2local(const double* p_in, const double gam)
 {
-    density = p_in[RO];
-    Eint    = p_in[PG] / (gam - 1.0);
+  density = p_in[RO];
+  Eint    = p_in[PG] / (gam - 1.0);
 
 #ifdef MP_DEBUG
-    if (p_in[PG] <= 0. || !isfinite(p_in[PG])) {
-        cout << "neg.pres. input to MP: e=" << Eint << endl;
-        rep.error("Negative/infinite pressure input to RT solver!", p_in[PG]);
-    }
-    if (density <= 0.0) {
-        rep.error("Negative density input to microphysics!", density);
-    }
+  if (p_in[PG] <= 0. || !isfinite(p_in[PG])) {
+    cout << "neg.pres. input to MP: e=" << Eint << endl;
+    rep.error("Negative/infinite pressure input to RT solver!", p_in[PG]);
+  }
+  if (density <= 0.0) {
+    rep.error("Negative density input to microphysics!", density);
+  }
 #endif  // MP_DEBUG
 
-    //
-    // Now convert all the other variables.  Maybe just copy from pv_XXX to
-    // lv_XXX for tracers.
-    //
-    for (int v = 0; v < Nspecies; v++) {
-        Yi[v] = p_in[SimPM.ftr + v];
+  //
+  // Now convert all the other variables.  Maybe just copy from pv_XXX to
+  // lv_XXX for tracers.
+  //
+  for (int v = 0; v < Nspecies; v++) {
+    Yi[v] = p_in[SimPM.ftr + v];
 #ifdef MP_DEBUG
-        if (!isfinite(Yi[v])) {
-            rep.error("INF/NAN input to microphysics Yi", v);
-        }
-#endif  // MP_DEBUG
+    if (!isfinite(Yi[v])) {
+      rep.error("INF/NAN input to microphysics Yi", v);
     }
-    Yi[Yvector_length - 1] = Eint;
+#endif  // MP_DEBUG
+  }
+  Yi[Yvector_length - 1] = Eint;
 
-    return 0;
+  return 0;
 }
 
 // ##################################################################
@@ -254,33 +253,33 @@ int MPv9::convert_prim2local(const double* p_in, const double gam)
 int MPv9::convert_local2prim(
     const double* p_in, double* p_out, const double gam)
 {
-    //
-    // This is so we don't forget the velocity, B-field, etc.
-    //
-    for (int v = 0; v < nv_prim; v++)
-        p_out[v] = p_in[v];
-    //
-    // convert output internal energy to gas pressure:
-    //
-    p_out[PG] = Yf[Yvector_length - 1] * (gam - 1.0);
+  //
+  // This is so we don't forget the velocity, B-field, etc.
+  //
+  for (int v = 0; v < nv_prim; v++)
+    p_out[v] = p_in[v];
+  //
+  // convert output internal energy to gas pressure:
+  //
+  p_out[PG] = Yf[Yvector_length - 1] * (gam - 1.0);
 #ifdef MP_DEBUG
-    if (!isfinite(p_out[PG])) {
-        rep.error("INF/NAN output from microphysics Eint", p_out[PG]);
-    }
+  if (!isfinite(p_out[PG])) {
+    rep.error("INF/NAN output from microphysics Eint", p_out[PG]);
+  }
 #endif  // MP_DEBUG
 
-    //
-    // Now copy all the new tracer vales to p_out[]
-    //
-    for (int v = 0; v < Nspecies; v++) {
-        p_out[SimPM.ftr + v] = Yf[v];
+  //
+  // Now copy all the new tracer vales to p_out[]
+  //
+  for (int v = 0; v < Nspecies; v++) {
+    p_out[SimPM.ftr + v] = Yf[v];
 #ifdef MP_DEBUG
-        if (!isfinite(Yf[v])) {
-            rep.error("INF/NAN output from microphysics Yf", v);
-        }
-#endif  // MP_DEBUG
+    if (!isfinite(Yf[v])) {
+      rep.error("INF/NAN output from microphysics Yf", v);
     }
-    return 0;
+#endif  // MP_DEBUG
+  }
+  return 0;
 }
 
 // ##################################################################
@@ -294,61 +293,61 @@ int MPv9::TimeUpdateMP(
     const int sw_int,
     double* ttt)
 {
-    int err     = 0;
-    MPv9::gamma = g;
+  int err     = 0;
+  MPv9::gamma = g;
 
-    //
-    // put data from p_in into local vectors.
-    //
-    err += convert_prim2local(p_in, gamma);
-    Column_density = 0.0;
-    vector<double> cols(5, 1.0e50);
+  //
+  // put data from p_in into local vectors.
+  //
+  err += convert_prim2local(p_in, gamma);
+  Column_density = 0.0;
+  vector<double> cols(5, 1.0e50);
 
 #ifdef MP_DEBUG
-    //
-    // TESTING !!!
-    //
-    double P[3];
-    conversion_JMcode(density, col, P);
-    calculate_X(Yi, X);
-    calculate_T(Yi, X, P[0], *ttt);
-    if (*ttt < SimPM.EP.MinTemperature) {
-        cout << "Input temperature to MP is too low!  T_in=" << *ttt << "\n";
-    }
-    //
-    // TESTING !!!
-    //
+  //
+  // TESTING !!!
+  //
+  double P[3];
+  conversion_JMcode(density, col, P);
+  calculate_X(Yi, X);
+  calculate_T(Yi, X, P[0], *ttt);
+  if (*ttt < SimPM.EP.MinTemperature) {
+    cout << "Input temperature to MP is too low!  T_in=" << *ttt << "\n";
+  }
+  //
+  // TESTING !!!
+  //
 #endif  // MP_DEBUG
 
-    //
-    // CHANGE THIS FUNCTION TO MATCH WHATEVER HARPREET WANTS
-    //
-    // Interface_with_JMs_code(density,Column_density,Yi, junk, Yf);
-    // int interface_JMcode(
-    //		     std::vector<double> &, // Yi,
-    //		     std::vector<double> & , //Yf,
-    //		     double, // rho ,
-    //		     double, //rho_dx
-    //		     double,//tf-dynamic timestep
-    //		     double //flux
-    //		     );
+  //
+  // CHANGE THIS FUNCTION TO MATCH WHATEVER HARPREET WANTS
+  //
+  // Interface_with_JMs_code(density,Column_density,Yi, junk, Yf);
+  // int interface_JMcode(
+  //		     std::vector<double> &, // Yi,
+  //		     std::vector<double> & , //Yf,
+  //		     double, // rho ,
+  //		     double, //rho_dx
+  //		     double,//tf-dynamic timestep
+  //		     double //flux
+  //		     );
 
-    err += interface_JMcode(Yi, Yf, density, cols, dt, 0.0);
-    // if (err) cout <<"\n\nerror\n\n";
+  err += interface_JMcode(Yi, Yf, density, cols, dt, 0.0);
+  // if (err) cout <<"\n\nerror\n\n";
 
-    Eint = Yf[Yvector_length - 1];
-    //
-    // Return gas temperature -- but we will just do the internal energy.
-    // This isn't really needed for anything.
-    //
-    *ttt = Eint;
+  Eint = Yf[Yvector_length - 1];
+  //
+  // Return gas temperature -- but we will just do the internal energy.
+  // This isn't really needed for anything.
+  //
+  *ttt = Eint;
 
-    //
-    // put updated state vector into p_out.
-    //
-    err += convert_local2prim(p_in, p_out, gamma);
+  //
+  // put updated state vector into p_out.
+  //
+  err += convert_local2prim(p_in, p_out, gamma);
 
-    return err;
+  return err;
 }
 
 // ##################################################################
@@ -373,63 +372,63 @@ int MPv9::TimeUpdateMP_RTnew(
     double* ttt  ///< final temperature (not strictly needed).
 )
 {
-    int err     = 0;
-    MPv9::gamma = g;
+  int err     = 0;
+  MPv9::gamma = g;
 
-    //
-    // put data from p_in into local vectors.
-    //
-    err += convert_prim2local(p_in, gamma);
+  //
+  // put data from p_in into local vectors.
+  //
+  err += convert_prim2local(p_in, gamma);
 
-    //
-    // column densities:  Here we just consider UV radiation from diffuse
-    // sources, so any other sources are just ignored.
-    //
+  //
+  // column densities:  Here we just consider UV radiation from diffuse
+  // sources, so any other sources are just ignored.
+  //
 #ifdef MP_DEBUG
-    if (heating_srcs.size() != static_cast<unsigned int>(N_heating_srcs)) {
-        rep.error(
-            "Update: N_heating_srcs doesn't match vector size in Harpreet's "
-            "MP integrator",
-            heating_srcs.size());
-    }
-    if (ionising_srcs.size() != static_cast<unsigned int>(N_ionising_srcs)) {
-        rep.error(
-            "Update: N_ionising_srcs doesn't match vector size in Harpreet's "
-            "MP integrator",
-            ionising_srcs.size());
-    }
+  if (heating_srcs.size() != static_cast<unsigned int>(N_heating_srcs)) {
+    rep.error(
+        "Update: N_heating_srcs doesn't match vector size in Harpreet's "
+        "MP integrator",
+        heating_srcs.size());
+  }
+  if (ionising_srcs.size() != static_cast<unsigned int>(N_ionising_srcs)) {
+    rep.error(
+        "Update: N_ionising_srcs doesn't match vector size in Harpreet's "
+        "MP integrator",
+        ionising_srcs.size());
+  }
 #endif  // MP_DEBUG
 
-    //
-    // This array hold the column densities, organised as follows:
-    //  -- the neutral H column density to point source,
-    //  -- the total column density to point sourc,
-    //  -- and the H2 column density to point sourc,
-    //  -- distance to point source
-    //  -- minimum column density to diffuse radiation.
-    //
-    vector<double> cols(5, 1.0e100);
-    get_column_densities(
-        N_heating_srcs, heating_srcs, N_ionising_srcs, ionising_srcs, cols);
+  //
+  // This array hold the column densities, organised as follows:
+  //  -- the neutral H column density to point source,
+  //  -- the total column density to point sourc,
+  //  -- and the H2 column density to point sourc,
+  //  -- distance to point source
+  //  -- minimum column density to diffuse radiation.
+  //
+  vector<double> cols(5, 1.0e100);
+  get_column_densities(
+      N_heating_srcs, heating_srcs, N_ionising_srcs, ionising_srcs, cols);
 
-    //
-    // CHANGE THIS FUNCTION TO MATCH WHATEVER HARPREET WANTS (last arg is
-    // UV-flux)
-    //
-    err = interface_JMcode(Yi, Yf, density, cols, dt, 0.0);
+  //
+  // CHANGE THIS FUNCTION TO MATCH WHATEVER HARPREET WANTS (last arg is
+  // UV-flux)
+  //
+  err = interface_JMcode(Yi, Yf, density, cols, dt, 0.0);
 
-    //
-    // Return gas temperature -- but we will just do the internal energy.
-    // This isn't really needed for anything.
-    //
-    Eint = Yf[Yvector_length - 1];
-    *ttt = Eint;
-    //
-    // put updated state vector into p_out.
-    //
-    err += convert_local2prim(p_in, p_out, gamma);
+  //
+  // Return gas temperature -- but we will just do the internal energy.
+  // This isn't really needed for anything.
+  //
+  Eint = Yf[Yvector_length - 1];
+  *ttt = Eint;
+  //
+  // put updated state vector into p_out.
+  //
+  err += convert_local2prim(p_in, p_out, gamma);
 
-    return err;
+  return err;
 }
 
 // ##################################################################
@@ -444,109 +443,108 @@ void MPv9::get_column_densities(
     ///< list of ionising src column densities and source properties.
     std::vector<double>& cols)
 {
-    //
-    // The "cols" array hold the column densities, organised as follows:
-    //  -- the neutral H column density to point source,
-    //  -- the total column density to point sourc,
-    //  -- and the H2 column density to point sourc,
-    //  -- distance to point source
-    //  -- minimum column density to diffuse radiation.
-    //
+  //
+  // The "cols" array hold the column densities, organised as follows:
+  //  -- the neutral H column density to point source,
+  //  -- the total column density to point sourc,
+  //  -- and the H2 column density to point sourc,
+  //  -- distance to point source
+  //  -- minimum column density to diffuse radiation.
+  //
 
+  //
+  // First see if we have already setup column density data, and if not, set
+  // it up.
+  //
+  if (!col_data_set) {
+    have_pt_src   = false;
+    have_diff_r   = false;
+    ion_src_index = -1;
+    uvh_src_index = -1;
+    dis_src_index = -1;
     //
-    // First see if we have already setup column density data, and if not, set
-    // it up.
+    // UV heating from point source; must at minimum have UV heating from a
+    // point source.
     //
-    if (!col_data_set) {
-        have_pt_src   = false;
-        have_diff_r   = false;
-        ion_src_index = -1;
-        uvh_src_index = -1;
-        dis_src_index = -1;
-        //
-        // UV heating from point source; must at minimum have UV heating from a
-        // point source.
-        //
-        for (int v = 0; v < N_heating_srcs; v++) {
-            if (heating_srcs[v].type == RT_SRC_SINGLE
-                && SimPM.RS.sources[heating_srcs[v].id].opacity_src
-                       == RT_OPACITY_TOTAL) {
-                uvh_src_index = v;
-                have_pt_src   = true;
-            }
-            //
-            // We have at most one ionising source:
-            //
-            if (N_ionising_srcs > 1)
-                rep.error("MP_LOWZ, too many ionising srcs.", N_ionising_srcs);
-            if (N_ionising_srcs == 1) {
-                ion_src_index = 0;
-                if (!have_pt_src)
-                    rep.error("Need UVH src with PION src, MP_LOWZ", 0);
-            }
-            //
-            // And dissociating source.  This is packaged with UV heating
-            // sources for now, but that is a hack, and I would like to update
-            // all of this at some point so that the raytracer just has a point
-            // source and does all of the column densities together.
-            //
-            for (int v = 0; v < N_heating_srcs; v++) {
-                if (heating_srcs[v].type == RT_SRC_SINGLE
-                    && SimPM.RS.sources[heating_srcs[v].id].opacity_src
-                           == RT_OPACITY_TRACER) {
-                    dis_src_index = v;
-                }
-            }
-            //
-            // Now diffuse radiation:
-            //
-            ds_index.clear();
-            for (int v = 0; v < N_heating_srcs; v++) {
-                if (heating_srcs[v].type == RT_SRC_DIFFUSE) {
-                    ds_index.push_back(v);
-                }
-            }
-            if (ds_index.size() >= 1) have_diff_r = true;
-            //
-            // finished, so set the bool indicator to avoid this step next time
-            // the function is called.
-            //
-            col_data_set = true;
+    for (int v = 0; v < N_heating_srcs; v++) {
+      if (heating_srcs[v].type == RT_SRC_SINGLE
+          && SimPM.RS.sources[heating_srcs[v].id].opacity_src
+                 == RT_OPACITY_TOTAL) {
+        uvh_src_index = v;
+        have_pt_src   = true;
+      }
+      //
+      // We have at most one ionising source:
+      //
+      if (N_ionising_srcs > 1)
+        rep.error("MP_LOWZ, too many ionising srcs.", N_ionising_srcs);
+      if (N_ionising_srcs == 1) {
+        ion_src_index = 0;
+        if (!have_pt_src) rep.error("Need UVH src with PION src, MP_LOWZ", 0);
+      }
+      //
+      // And dissociating source.  This is packaged with UV heating
+      // sources for now, but that is a hack, and I would like to update
+      // all of this at some point so that the raytracer just has a point
+      // source and does all of the column densities together.
+      //
+      for (int v = 0; v < N_heating_srcs; v++) {
+        if (heating_srcs[v].type == RT_SRC_SINGLE
+            && SimPM.RS.sources[heating_srcs[v].id].opacity_src
+                   == RT_OPACITY_TRACER) {
+          dis_src_index = v;
         }
-    }
-
-    //
-    // Now actually set the column densities in the cols() array.
-    // We assume the values are initialised to something large, so we don't have
-    // to set them if there is no source.
-    //
-    if (have_pt_src) {
-        if (ion_src_index >= 0) cols[0] = ionising_srcs[ion_src_index].Column;
-        if (dis_src_index >= 0) cols[2] = heating_srcs[dis_src_index].Column;
-        // UV-heating source certainly exists, so use it to set distance.
-        cols[1] = heating_srcs[uvh_src_index].Column;
-        //
-        // Distance to source.  For R>>dR, Vshell=4.Pi.R^2.dR, and dS=dR, so R
-        // is easy to obtain.  This is not exact for R~dR, but close enough.
-        //
-        cols[3] = sqrt(
-            heating_srcs[uvh_src_index].Vshell
-            / (4.0 * M_PI * heating_srcs[uvh_src_index].dS));
-    }
-    if (have_diff_r) {
-        for (size_t v = 0; v < ds_index.size(); v++) {
-            Column_density = min(
-                Column_density, heating_srcs[ds_index[v]].Column
-                                    + 0.5 * heating_srcs[ds_index[v]].DelCol);
+      }
+      //
+      // Now diffuse radiation:
+      //
+      ds_index.clear();
+      for (int v = 0; v < N_heating_srcs; v++) {
+        if (heating_srcs[v].type == RT_SRC_DIFFUSE) {
+          ds_index.push_back(v);
         }
-        cols[4] = Column_density;
+      }
+      if (ds_index.size() >= 1) have_diff_r = true;
+      //
+      // finished, so set the bool indicator to avoid this step next time
+      // the function is called.
+      //
+      col_data_set = true;
     }
+  }
 
-    // cout <<"MPv9: cols = [";
-    // for (int v=0;v<5;v++) cout <<cols[v]<<", ";
-    // cout <<"\n";
+  //
+  // Now actually set the column densities in the cols() array.
+  // We assume the values are initialised to something large, so we don't have
+  // to set them if there is no source.
+  //
+  if (have_pt_src) {
+    if (ion_src_index >= 0) cols[0] = ionising_srcs[ion_src_index].Column;
+    if (dis_src_index >= 0) cols[2] = heating_srcs[dis_src_index].Column;
+    // UV-heating source certainly exists, so use it to set distance.
+    cols[1] = heating_srcs[uvh_src_index].Column;
+    //
+    // Distance to source.  For R>>dR, Vshell=4.Pi.R^2.dR, and dS=dR, so R
+    // is easy to obtain.  This is not exact for R~dR, but close enough.
+    //
+    cols[3] = sqrt(
+        heating_srcs[uvh_src_index].Vshell
+        / (4.0 * M_PI * heating_srcs[uvh_src_index].dS));
+  }
+  if (have_diff_r) {
+    for (size_t v = 0; v < ds_index.size(); v++) {
+      Column_density =
+          min(Column_density, heating_srcs[ds_index[v]].Column
+                                  + 0.5 * heating_srcs[ds_index[v]].DelCol);
+    }
+    cols[4] = Column_density;
+  }
 
-    return;
+  // cout <<"MPv9: cols = [";
+  // for (int v=0;v<5;v++) cout <<cols[v]<<", ";
+  // cout <<"\n";
+
+  return;
 }
 
 // ##################################################################
@@ -565,16 +563,15 @@ int MPv9::TimeUpdate_RTsinglesrc(
     double* deltau  ///< return optical depth through cell in this variable.
 )
 {
-    if (!ep.phot_ionisation)
-        rep.error(
-            "RT requested, but phot_ionisation not set!", ep.phot_ionisation);
+  if (!ep.phot_ionisation)
+    rep.error("RT requested, but phot_ionisation not set!", ep.phot_ionisation);
 
-    //
-    // This is more complicated, and should only be called by the ray-tracer.
-    // See MP_Hydrogen to see how to code it!
-    //
-    rep.error("Don't call me!!!", 999);
-    return 1;
+  //
+  // This is more complicated, and should only be called by the ray-tracer.
+  // See MP_Hydrogen to see how to code it!
+  //
+  rep.error("Don't call me!!!", 999);
+  return 1;
 }
 
 // ##################################################################
@@ -592,19 +589,19 @@ double MPv9::timescales(
     const bool f_photoion  ///< set to true if including photo-ionsation time.
 )
 {
-    double mintime = 1.0e99;
-    std::vector<struct rt_source_data> temp;
-    mintime = timescales_RT(p_in, 0, temp, 0, temp, gam);
+  double mintime = 1.0e99;
+  std::vector<struct rt_source_data> temp;
+  mintime = timescales_RT(p_in, 0, temp, 0, temp, gam);
 
 #ifdef MP_DEBUG
-    // cout <<"hd_step_size dt="<<mintime<<"\n";
-    if (!isfinite(mintime))
-        rep.error(
-            "mp_lowz::timescales() hd_step_size dt returned NAN/INF", mintime);
-    if (mintime < 1000.0) cout << "small mintime! mintime=" << mintime << "\n";
+  // cout <<"hd_step_size dt="<<mintime<<"\n";
+  if (!isfinite(mintime))
+    rep.error(
+        "mp_lowz::timescales() hd_step_size dt returned NAN/INF", mintime);
+  if (mintime < 1000.0) cout << "small mintime! mintime=" << mintime << "\n";
 #endif  // MP_DEBUG
 
-    return mintime;
+  return mintime;
 }
 
 // ##################################################################
@@ -627,59 +624,58 @@ double MPv9::timescales_RT(
     const double gam  ///< EOS gamma
 )
 {
-    int err     = 0;
-    MPv9::gamma = gam;
+  int err     = 0;
+  MPv9::gamma = gam;
 
-    //
-    // put data from p_in into local vectors.
-    //
-    err += convert_prim2local(p_in, gamma);
+  //
+  // put data from p_in into local vectors.
+  //
+  err += convert_prim2local(p_in, gamma);
 
-    //
-    // column densities:  Here we just consider UV radiation from diffuse
-    // sources, so any other sources are just ignored.
-    //
+  //
+  // column densities:  Here we just consider UV radiation from diffuse
+  // sources, so any other sources are just ignored.
+  //
 #ifdef MP_DEBUG
-    if (heating_srcs.size() != static_cast<unsigned int>(N_heating_srcs)) {
-        rep.error(
-            "Timescales: N_heating_srcs doesn't match vector size in "
-            "Harpreet's MP integrator",
-            heating_srcs.size());
-    }
-    if (ionising_srcs.size() != static_cast<unsigned int>(N_ionising_srcs)) {
-        rep.error(
-            "Timescales: N_ionising_srcs doesn't match vector size in "
-            "Harpreet's MP integrator",
-            ionising_srcs.size());
-    }
+  if (heating_srcs.size() != static_cast<unsigned int>(N_heating_srcs)) {
+    rep.error(
+        "Timescales: N_heating_srcs doesn't match vector size in "
+        "Harpreet's MP integrator",
+        heating_srcs.size());
+  }
+  if (ionising_srcs.size() != static_cast<unsigned int>(N_ionising_srcs)) {
+    rep.error(
+        "Timescales: N_ionising_srcs doesn't match vector size in "
+        "Harpreet's MP integrator",
+        ionising_srcs.size());
+  }
 #endif  // MP_DEBUG
-    //
-    // This array hold the column densities, organised as follows:
-    //  -- the neutral H column density to point source,
-    //  -- the total column density to point sourc,
-    //  -- and the H2 column density to point sourc,
-    //  -- distance to point source
-    //  -- minimum column density to diffuse radiation.
-    //
-    vector<double> cols(5, 1.0e100);
-    get_column_densities(
-        N_heating_srcs, heating_srcs, N_ionising_srcs, ionising_srcs, cols);
+  //
+  // This array hold the column densities, organised as follows:
+  //  -- the neutral H column density to point source,
+  //  -- the total column density to point sourc,
+  //  -- and the H2 column density to point sourc,
+  //  -- distance to point source
+  //  -- minimum column density to diffuse radiation.
+  //
+  vector<double> cols(5, 1.0e100);
+  get_column_densities(
+      N_heating_srcs, heating_srcs, N_ionising_srcs, ionising_srcs, cols);
 
 #ifdef RT_TESTING
-    // cout <<"column density="<<Column_density<<"\n";
+  // cout <<"column density="<<Column_density<<"\n";
 #endif  // RT_TESTING
-    //
-    // Call Harpreet's get_timescales function for (Yi,density,Eint);
-    //
-    double mintime = 1.0e99;
-    mintime        = hd_step_size(Yi, density, cols);
+  //
+  // Call Harpreet's get_timescales function for (Yi,density,Eint);
+  //
+  double mintime = 1.0e99;
+  mintime        = hd_step_size(Yi, density, cols);
 
-    if (mintime <= 0.0) {
-        rep.error(
-            "Harpreet's timescales function. negative chem time.", mintime);
-    }
+  if (mintime <= 0.0) {
+    rep.error("Harpreet's timescales function. negative chem time.", mintime);
+  }
 
-    return mintime;
+  return mintime;
 }
 
 // ##################################################################
@@ -692,21 +688,21 @@ int MPv9::Init_ionfractions(
                      ///< at. (-ve means use pressure)
 )
 {
-    //
-    // We should have Nspecies tracers, so put them in a vector.
-    //
-    Y_init(Yi);
-    cout << "Yi = [";
-    for (int v = 0; v < Nspecies; v++) {
-        cout << Yi[v] << ", ";
-    }
-    cout << "]\n";
+  //
+  // We should have Nspecies tracers, so put them in a vector.
+  //
+  Y_init(Yi);
+  cout << "Yi = [";
+  for (int v = 0; v < Nspecies; v++) {
+    cout << Yi[v] << ", ";
+  }
+  cout << "]\n";
 
-    for (int v = 0; v < Nspecies; v++) {
-        p[SimPM.ftr + v] = Yi[v];
-    }
+  for (int v = 0; v < Nspecies; v++) {
+    p[SimPM.ftr + v] = Yi[v];
+  }
 
-    return 0;
+  return 0;
 }
 
 // ##################################################################

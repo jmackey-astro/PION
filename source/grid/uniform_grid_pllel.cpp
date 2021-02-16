@@ -91,23 +91,23 @@ UniformGridParallel::UniformGridParallel(
 {
 
 #ifdef TESTING
-    cout << "UniformGridParallel constructor.\n";
-    rep.printVec("Local Xmin", xn, nd);
-    rep.printVec("Local Xmax", xp, nd);
-    rep.printVec("Local Npt ", nc, nd);
+  cout << "UniformGridParallel constructor.\n";
+  rep.printVec("Local Xmin", xn, nd);
+  rep.printVec("Local Xmax", xp, nd);
+  rep.printVec("Local Npt ", nc, nd);
 
-    rep.printVec("SIM Xmin ", Sim_xmin, G_ndim);
-    rep.printVec("SIM Xmax ", Sim_xmax, G_ndim);
-    rep.printVec("SIM Range", Sim_range, G_ndim);
+  rep.printVec("SIM Xmin ", Sim_xmin, G_ndim);
+  rep.printVec("SIM Xmax ", Sim_xmax, G_ndim);
+  rep.printVec("SIM Range", Sim_range, G_ndim);
 
-    rep.printVec("SIM iXmin ", Sim_ixmin, G_ndim);
-    rep.printVec("SIM iXmax ", Sim_ixmax, G_ndim);
-    rep.printVec("SIM iRange", Sim_irange, G_ndim);
+  rep.printVec("SIM iXmin ", Sim_ixmin, G_ndim);
+  rep.printVec("SIM iXmax ", Sim_ixmax, G_ndim);
+  rep.printVec("SIM iRange", Sim_irange, G_ndim);
 
-    cout << "UniformGridParallel constructor done.\n";
+  cout << "UniformGridParallel constructor done.\n";
 #endif
 
-    return;
+  return;
 }
 
 //-------------------------------------------------------------
@@ -146,15 +146,15 @@ uniform_grid_cyl_parallel::uniform_grid_cyl_parallel(
         nd, nv, eqt, nbc, xn, xp, nc, lev_xn, lev_xp, sim_xn, sim_xp)
 {
 #ifdef TESTING
-    cout << "uniform_grid_cyl_parallel:: cyl. uniform PARALLEL grid";
-    cout << " G_ndim=" << G_ndim << " and G_nvar=" << G_nvar << "\n";
+  cout << "uniform_grid_cyl_parallel:: cyl. uniform PARALLEL grid";
+  cout << " G_ndim=" << G_ndim << " and G_nvar=" << G_nvar << "\n";
 #endif
-    if (G_ndim > 2) rep.error("Need to write code for 3 dimensions", G_ndim);
+  if (G_ndim > 2) rep.error("Need to write code for 3 dimensions", G_ndim);
 
 #ifdef TESTING
-    cout << "cylindrical grid: dR=" << G_dx << "\n";
+  cout << "cylindrical grid: dR=" << G_dx << "\n";
 #endif
-    return;
+  return;
 }
 
 // ##################################################################
@@ -163,7 +163,7 @@ uniform_grid_cyl_parallel::uniform_grid_cyl_parallel(
 uniform_grid_cyl_parallel::~uniform_grid_cyl_parallel()
 {
 #ifdef TESTING
-    cout << "uniform_grid_cyl_parallel destructor. Present and correct!\n";
+  cout << "uniform_grid_cyl_parallel destructor. Present and correct!\n";
 #endif
 }
 
@@ -172,15 +172,15 @@ uniform_grid_cyl_parallel::~uniform_grid_cyl_parallel()
 
 double uniform_grid_cyl_parallel::iR_cov(const cell* c)
 {
-    //
-    // integer and physical units have different origins, so I need a
-    // function to get R_com() in integer units, measured from the
-    // integer coord-sys. origin.
-    //
-    // cout <<" Cell radius: "<< R_com(c,G_dx)/CI.phys_per_int() +G_ixmin[Rcyl];
-    // rep.printVec("  cell centre",c->pos,G_ndim);
-    return (R_com(c, G_dx) - Sim_xmin[Rcyl]) / CI.phys_per_int()
-           + Sim_ixmin[Rcyl];
+  //
+  // integer and physical units have different origins, so I need a
+  // function to get R_com() in integer units, measured from the
+  // integer coord-sys. origin.
+  //
+  // cout <<" Cell radius: "<< R_com(c,G_dx)/CI.phys_per_int() +G_ixmin[Rcyl];
+  // rep.printVec("  cell centre",c->pos,G_ndim);
+  return (R_com(c, G_dx) - Sim_xmin[Rcyl]) / CI.phys_per_int()
+         + Sim_ixmin[Rcyl];
 }
 
 // ##################################################################
@@ -223,15 +223,15 @@ uniform_grid_sph_parallel::uniform_grid_sph_parallel(
         nd, nv, eqt, nbc, xn, xp, nc, lev_xn, lev_xp, sim_xn, sim_xp)
 {
 #ifdef TESTING
-    cout << "uniform_grid_sph_parallel:: sph. uniform PARALLEL grid";
-    cout << " G_ndim=" << G_ndim << " and G_nvar=" << G_nvar << "\n";
+  cout << "uniform_grid_sph_parallel:: sph. uniform PARALLEL grid";
+  cout << " G_ndim=" << G_ndim << " and G_nvar=" << G_nvar << "\n";
 #endif
-    if (G_ndim != 1) rep.error("Need to write code for >1 dimension", G_ndim);
+  if (G_ndim != 1) rep.error("Need to write code for >1 dimension", G_ndim);
 
 #ifdef TESTING
-    cout << "spherical grid: dr=" << G_dx << "\n";
+  cout << "spherical grid: dr=" << G_dx << "\n";
 #endif
-    return;
+  return;
 }
 
 // ##################################################################
@@ -240,7 +240,7 @@ uniform_grid_sph_parallel::uniform_grid_sph_parallel(
 uniform_grid_sph_parallel::~uniform_grid_sph_parallel()
 {
 #ifdef TESTING
-    cout << "uniform_grid_sph_parallel destructor. Present and correct!\n";
+  cout << "uniform_grid_sph_parallel destructor. Present and correct!\n";
 #endif
 }
 
@@ -249,13 +249,13 @@ uniform_grid_sph_parallel::~uniform_grid_sph_parallel()
 
 double uniform_grid_sph_parallel::iR_cov(const cell* c)
 {
-    //
-    // integer and physical units have different origins, so I need a
-    // function to get R_com() in integer units, measured from the
-    // integer coord-sys. origin.
-    //
-    return (R_com(c, G_dx) - Sim_xmin[Rsph]) / CI.phys_per_int()
-           + Sim_ixmin[Rsph];
+  //
+  // integer and physical units have different origins, so I need a
+  // function to get R_com() in integer units, measured from the
+  // integer coord-sys. origin.
+  //
+  return (R_com(c, G_dx) - Sim_xmin[Rsph]) / CI.phys_per_int()
+         + Sim_ixmin[Rsph];
 }
 
 // ##################################################################

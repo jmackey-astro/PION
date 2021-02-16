@@ -19,21 +19,21 @@
 /// Implements reflecting boundaries for a uniform grid.
 ///
 class reflecting_bc {
-  protected:
-    /// Assigns data to a reflecting boundary.
-    virtual int BC_assign_REFLECTING(
-        class SimParams&,      ///< pointer to simulation parameters
-        class GridBaseClass*,  ///< pointer to grid.
-        boundary_data*);
+protected:
+  /// Assigns data to a reflecting boundary.
+  virtual int BC_assign_REFLECTING(
+      class SimParams&,      ///< pointer to simulation parameters
+      class GridBaseClass*,  ///< pointer to grid.
+      boundary_data*);
 
-    /// Updates data on a reflecting boundary.
-    virtual int BC_update_REFLECTING(
-        class SimParams&,      ///< pointer to simulation parameters
-        class GridBaseClass*,  ///< pointer to grid.
-        boundary_data*,        ///< Boundary to update.
-        const int,             ///< current fractional step being taken.
-        const int              ///< final step.
-    );
+  /// Updates data on a reflecting boundary.
+  virtual int BC_update_REFLECTING(
+      class SimParams&,      ///< pointer to simulation parameters
+      class GridBaseClass*,  ///< pointer to grid.
+      boundary_data*,        ///< Boundary to update.
+      const int,             ///< current fractional step being taken.
+      const int              ///< final step.
+  );
 };
 
 #endif  // REFLECTING_BOUNDARIES_H

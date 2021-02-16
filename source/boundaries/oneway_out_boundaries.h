@@ -22,31 +22,31 @@
 /// permitted.
 ///
 class oneway_out_bc : virtual public outflow_bc {
-  protected:
-    ///
-    /// Assigns data on a one-way outflow (zero gradient) boundary.
-    /// If the flow is off-domain, then I use zero-gradient, but if flow
-    /// is onto domain then I set the boundary cells to have zero normal
-    /// velocity.
-    ///
-    int BC_assign_ONEWAY_OUT(
-        class SimParams&,      ///< pointer to simulation parameters
-        class GridBaseClass*,  ///< pointer to grid.
-        boundary_data*);
+protected:
+  ///
+  /// Assigns data on a one-way outflow (zero gradient) boundary.
+  /// If the flow is off-domain, then I use zero-gradient, but if flow
+  /// is onto domain then I set the boundary cells to have zero normal
+  /// velocity.
+  ///
+  int BC_assign_ONEWAY_OUT(
+      class SimParams&,      ///< pointer to simulation parameters
+      class GridBaseClass*,  ///< pointer to grid.
+      boundary_data*);
 
-    ///
-    /// Update the one-way outflow (zero gradient) boundary.
-    /// If the flow is off-domain, then use zero-gradient, but if flow
-    /// is onto domain then set the boundary cells to have zero normal
-    /// velocity.
-    ///
-    int BC_update_ONEWAY_OUT(
-        class SimParams&,      ///< pointer to simulation parameters
-        class GridBaseClass*,  ///< pointer to grid.
-        boundary_data*,        ///< Boundary to update.
-        const int,             ///< current fractional step being taken.
-        const int              ///< final step.
-    );
+  ///
+  /// Update the one-way outflow (zero gradient) boundary.
+  /// If the flow is off-domain, then use zero-gradient, but if flow
+  /// is onto domain then set the boundary cells to have zero normal
+  /// velocity.
+  ///
+  int BC_update_ONEWAY_OUT(
+      class SimParams&,      ///< pointer to simulation parameters
+      class GridBaseClass*,  ///< pointer to grid.
+      boundary_data*,        ///< Boundary to update.
+      const int,             ///< current fractional step being taken.
+      const int              ///< final step.
+  );
 };
 
 #endif  // ONEWAY_OUT_BOUNDARIES_H

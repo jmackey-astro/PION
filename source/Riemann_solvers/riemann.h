@@ -81,159 +81,159 @@
 /// these modes is small, of the order of one percent.
 ///
 class riemann_Euler : virtual public eqns_Euler, virtual public findroot {
-  public:
-    /// Constructor; assigns memory for arrays.
-    ///
-    /// Assumes an ideal gas equation of state.  The eos gamma
-    /// is passed in to the public solve function.
-    ///
-    riemann_Euler(
-        const int,        ///< Length of State Vectors, nvar
-        const pion_flt*,  ///< Mean values of primitive variables on
-                          ///< grid [vector, length nvar]
-        const double      ///< Gamma for state vector.
-    );
+public:
+  /// Constructor; assigns memory for arrays.
+  ///
+  /// Assumes an ideal gas equation of state.  The eos gamma
+  /// is passed in to the public solve function.
+  ///
+  riemann_Euler(
+      const int,        ///< Length of State Vectors, nvar
+      const pion_flt*,  ///< Mean values of primitive variables on
+                        ///< grid [vector, length nvar]
+      const double      ///< Gamma for state vector.
+  );
 
-    /// \brief Destructor: deletes dynamically allocated data.
-    ~riemann_Euler();
+  /// \brief Destructor: deletes dynamically allocated data.
+  ~riemann_Euler();
 
-    ///
-    /// Gets the solution to the Riemann Problem, either a linearised,
-    /// exact, or hybrid solution depending on the 4th argument.
-    ///
-    int JMs_riemann_solve(
-        const pion_flt*,  ///< Left Primitive var. state vector.
-        const pion_flt*,  ///< Right Primitive var. state vector.
-        pion_flt*,        ///< Result Primitive var. state vector.
-        const int,        ///< Solve Type (1=LinearRS,2=ExactRS,3=HybridRS)
-        const double      ///< Gas constant gamma.
-    );
+  ///
+  /// Gets the solution to the Riemann Problem, either a linearised,
+  /// exact, or hybrid solution depending on the 4th argument.
+  ///
+  int JMs_riemann_solve(
+      const pion_flt*,  ///< Left Primitive var. state vector.
+      const pion_flt*,  ///< Right Primitive var. state vector.
+      pion_flt*,        ///< Result Primitive var. state vector.
+      const int,        ///< Solve Type (1=LinearRS,2=ExactRS,3=HybridRS)
+      const double      ///< Gas constant gamma.
+  );
 
-    /// \brief Prints out info on what the solver has done, and how well it's
-    /// done it.
-    void testing();
+  /// \brief Prints out info on what the solver has done, and how well it's
+  /// done it.
+  void testing();
 
-  protected:
-  private:
-    const int rs_nvar;   ///< length of state vectors required for the Riemann
-                         ///< solver, i.e.5.
-    pion_flt* rs_left;   ///< Local copy of the left state.
-    pion_flt* rs_right;  ///< Local copy of the right state.
-    pion_flt* rs_pstar;  ///< Local copy of result state.
-    pion_flt* rs_meanp;  ///< The average state.
-    long int linct;      ///< Counter for how many linear solves we have done.
-    long int exact;      ///< Counter for how many exact solves we have done.
-    long int total;      ///< counter for how many solves the instance has done.
-    long int samestate;  ///< Debugging counter, for counting how many solves
-                         ///< had the same left and right state.
+protected:
+private:
+  const int rs_nvar;   ///< length of state vectors required for the Riemann
+                       ///< solver, i.e.5.
+  pion_flt* rs_left;   ///< Local copy of the left state.
+  pion_flt* rs_right;  ///< Local copy of the right state.
+  pion_flt* rs_pstar;  ///< Local copy of result state.
+  pion_flt* rs_meanp;  ///< The average state.
+  long int linct;      ///< Counter for how many linear solves we have done.
+  long int exact;      ///< Counter for how many exact solves we have done.
+  long int total;      ///< counter for how many solves the instance has done.
+  long int samestate;  ///< Debugging counter, for counting how many solves
+                       ///< had the same left and right state.
 #ifdef RSTESTING
-    pion_flt* linearpstar;  ///< (TESTING) Testing variable, for the result
-                            ///< state from the linear solver.
-    int fails;  ///< Counter for how many linear solves weren't good enough when
-                ///< linearOK() thought they should have been.
-    int failplr, failpst, failust, failrare, failcomp, faildens;
-    double lineartol;  ///< (TESTING) How closely we require the linear solution
-                       ///< to match the exact one.
-#endif                 // RSTESTING
-    double cl;         ///< The hydro sound speed in the left state.
-    double cr;         ///< The hydro sound speed in the right state.
+  pion_flt* linearpstar;  ///< (TESTING) Testing variable, for the result
+                          ///< state from the linear solver.
+  int fails;  ///< Counter for how many linear solves weren't good enough when
+              ///< linearOK() thought they should have been.
+  int failplr, failpst, failust, failrare, failcomp, faildens;
+  double lineartol;  ///< (TESTING) How closely we require the linear solution
+                     ///< to match the exact one.
+#endif               // RSTESTING
+  double cl;         ///< The hydro sound speed in the left state.
+  double cr;         ///< The hydro sound speed in the right state.
 
-    ///
-    /// Re-definition of the public root-finding function, for solving the jump
-    /// conditions across hydrodynamic discontinuities.
-    ///
-    virtual int FR_find_root(
-        pion_flt*,       ///< pointer to result
-        const pion_flt,  ///< parameter 1
-        const pion_flt,  ///< parameter 2
-        const pion_flt,  ///< parameter 3
-        const pion_flt,  ///< parameter 4
-        const pion_flt   ///< parameter 5
-    );
+  ///
+  /// Re-definition of the public root-finding function, for solving the jump
+  /// conditions across hydrodynamic discontinuities.
+  ///
+  virtual int FR_find_root(
+      pion_flt*,       ///< pointer to result
+      const pion_flt,  ///< parameter 1
+      const pion_flt,  ///< parameter 2
+      const pion_flt,  ///< parameter 3
+      const pion_flt,  ///< parameter 4
+      const pion_flt   ///< parameter 5
+  );
 
-    ///
-    /// Re-definition of the funtion to find the root of.
-    /// Input an x value and this returns f(x).  The aim of this class
-    /// is to find the x value for which f(x)=0, so we are trying to
-    /// minimize the return value of this function.
-    ///
-    virtual pion_flt FR_root_function(const pion_flt  ///< x-value
-    );
+  ///
+  /// Re-definition of the funtion to find the root of.
+  /// Input an x value and this returns f(x).  The aim of this class
+  /// is to find the x value for which f(x)=0, so we are trying to
+  /// minimize the return value of this function.
+  ///
+  virtual pion_flt FR_root_function(const pion_flt  ///< x-value
+  );
 
-    /// \brief The hydrodynamics 1D linear riemann solver.
-    ///
-    /// Simple hydro linear riemann solver.
-    /// Currently uses straight average for the average state.
-    /// \retval 0 success
-    /// \retval 1 failure
-    ///
-    int linear_solver();
+  /// \brief The hydrodynamics 1D linear riemann solver.
+  ///
+  /// Simple hydro linear riemann solver.
+  /// Currently uses straight average for the average state.
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
+  int linear_solver();
 
-    /// \brief Decides whether or not the linear solver result is ok.
-    ///
-    /// This is an important part of the solver, as I want the check to
-    /// be fast, but also to catch problem cases well, and also to make sure
-    /// that the overwhelming majority of solves are linear and not exact
-    /// (for speed).
-    ///
-    /// \note I am currently testing a number of ideas.
-    /// \retval 0 success
-    /// \retval 1 failure
-    ///
-    int linearOK();
+  /// \brief Decides whether or not the linear solver result is ok.
+  ///
+  /// This is an important part of the solver, as I want the check to
+  /// be fast, but also to catch problem cases well, and also to make sure
+  /// that the overwhelming majority of solves are linear and not exact
+  /// (for speed).
+  ///
+  /// \note I am currently testing a number of ideas.
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
+  int linearOK();
 
-    /// \brief The hydrodynamics 1D exact riemann solver.
-    ///
-    /// The best iterative exact solver I can come up with.  It is
-    /// very robust, but doesn't handle cavitation.  The public solve
-    /// function is expected to catch cavitation and treat it separately
-    /// by calling solve_cavitation().
-    ///
-    /// This solver returns the resolved state, and chooses the value of
-    /// rho_star depending on whether the contact moves to the left or
-    /// to the right.\n
-    /// It then calls check_wave_locations(), which checks where the resolved
-    /// state is w.r.t. the origin, and gets the correct state at x=0 if it is
-    /// not the resolved state (e.g. if x=0 is within the rarefaction).
-    /// \retval 0 success
-    /// \retval 1 failure
-    ///
-    int exact_solver();
+  /// \brief The hydrodynamics 1D exact riemann solver.
+  ///
+  /// The best iterative exact solver I can come up with.  It is
+  /// very robust, but doesn't handle cavitation.  The public solve
+  /// function is expected to catch cavitation and treat it separately
+  /// by calling solve_cavitation().
+  ///
+  /// This solver returns the resolved state, and chooses the value of
+  /// rho_star depending on whether the contact moves to the left or
+  /// to the right.\n
+  /// It then calls check_wave_locations(), which checks where the resolved
+  /// state is w.r.t. the origin, and gets the correct state at x=0 if it is
+  /// not the resolved state (e.g. if x=0 is within the rarefaction).
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
+  int exact_solver();
 
-    /// \brief Given resolved state (from exact solver) and left/right states,
-    /// checks where x=0 is.
-    ///
-    /// This function takes p* and the left and right states, and checks where
-    /// x=0 is in relation to the waves.  For example if a shock is swept
-    /// downstream past the origin by a strong flow, then the solution will not
-    /// be the starred state but the left or right state.  This function finds
-    /// where x=0 is in relation to the waves, and assigns pstar[] to the
-    /// appropriate value. It can open up rarefaction fans and put in the exact
-    /// values. \retval 0 success \retval 1 failure
-    ///
-    int check_wave_locations();
+  /// \brief Given resolved state (from exact solver) and left/right states,
+  /// checks where x=0 is.
+  ///
+  /// This function takes p* and the left and right states, and checks where
+  /// x=0 is in relation to the waves.  For example if a shock is swept
+  /// downstream past the origin by a strong flow, then the solution will not
+  /// be the starred state but the left or right state.  This function finds
+  /// where x=0 is in relation to the waves, and assigns pstar[] to the
+  /// appropriate value. It can open up rarefaction fans and put in the exact
+  /// values. \retval 0 success \retval 1 failure
+  ///
+  int check_wave_locations();
 
-    /// \brief Solves for when I know we have cavitation.
-    ///
-    /// There is a simple test for cavitation, and if it occurs, then you can
-    /// just write down the solution without doing an iterative solve.  So
-    /// that's what this function does.  If you know you have cavitation, call
-    /// this function and it will give the correct solution at x=0. \retval 0
-    /// success \retval 1 failure
-    ///
-    int solve_cavitation();
+  /// \brief Solves for when I know we have cavitation.
+  ///
+  /// There is a simple test for cavitation, and if it occurs, then you can
+  /// just write down the solution without doing an iterative solve.  So
+  /// that's what this function does.  If you know you have cavitation, call
+  /// this function and it will give the correct solution at x=0. \retval 0
+  /// success \retval 1 failure
+  ///
+  int solve_cavitation();
 
-    /// \brief Solves for when I know we have a double rarefaction.
-    ///
-    /// There is a condition for the left and right states which tells us that
-    /// we definitely have a double rarefaction.  In this case there is an exact
-    /// closed- form solution which we can write down.  So if you evaluate this
-    /// condition and determine that you have double rarefaction (and not
-    /// cavitation, which is a more restictive condition), then call this
-    /// function and it gives back the correct solution at x=0. \retval 0
-    /// success \retval 1 failure
-    ///
-    int solve_rarerare();
+  /// \brief Solves for when I know we have a double rarefaction.
+  ///
+  /// There is a condition for the left and right states which tells us that
+  /// we definitely have a double rarefaction.  In this case there is an exact
+  /// closed- form solution which we can write down.  So if you evaluate this
+  /// condition and determine that you have double rarefaction (and not
+  /// cavitation, which is a more restictive condition), then call this
+  /// function and it gives back the correct solution at x=0. \retval 0
+  /// success \retval 1 failure
+  ///
+  int solve_rarerare();
 };
 
 #endif

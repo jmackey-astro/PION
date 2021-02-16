@@ -28,34 +28,33 @@
 #include "equations/eqns_hydro_adiabatic.h"
 
 class Riemann_Roe_Hydro_PV : virtual public eqns_Euler {
-  public:
-    ///
-    /// Constructor: doesn't do much.
-    ///
-    Riemann_Roe_Hydro_PV(
-        const int,    ///< Length of State Vectors, nvar
-        const double  ///< Gamma for state vector.
-    );
+public:
+  ///
+  /// Constructor: doesn't do much.
+  ///
+  Riemann_Roe_Hydro_PV(
+      const int,    ///< Length of State Vectors, nvar
+      const double  ///< Gamma for state vector.
+  );
 
-    ///
-    /// Destructor: deletes dynamically allocated data.
-    ///
-    ~Riemann_Roe_Hydro_PV();
+  ///
+  /// Destructor: deletes dynamically allocated data.
+  ///
+  ~Riemann_Roe_Hydro_PV();
 
-    ///
-    /// Primitive variable linearised solver for the Euler Equations,
-    /// using the Roe avergae, see Toro (1999).
-    ///
-    int Roe_prim_var_solver(
-        const pion_flt*,  ///< input left state
-        const pion_flt*,  ///< input right state
-        const double,     ///< input EOS gamma
-        pion_flt*         ///< output pstar.
-    );
+  ///
+  /// Primitive variable linearised solver for the Euler Equations,
+  /// using the Roe avergae, see Toro (1999).
+  ///
+  int Roe_prim_var_solver(
+      const pion_flt*,  ///< input left state
+      const pion_flt*,  ///< input right state
+      const double,     ///< input EOS gamma
+      pion_flt*         ///< output pstar.
+  );
 
-  private:
-    const int
-        rs_nvar;  ///< length of state vectors in solver (ignore tracers!).
+private:
+  const int rs_nvar;  ///< length of state vectors in solver (ignore tracers!).
 };
 
 #endif  // ROE_HYDRO_PRIMITIVEVAR_SOLVER_H

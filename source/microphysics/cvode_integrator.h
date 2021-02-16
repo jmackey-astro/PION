@@ -106,116 +106,116 @@ int Jacobian_for_cvode(
 
 class cvode_solver {
 
-  public:
-    friend int Ydot_for_cvode(
-        double,    ///< current time
-        N_Vector,  ///< current Y-value
-        N_Vector,  ///< vector for Y-dot values
-        void*      ///< extra user-data vector, P, for evaluating ydot(y,t,p)
-    );
+public:
+  friend int Ydot_for_cvode(
+      double,    ///< current time
+      N_Vector,  ///< current Y-value
+      N_Vector,  ///< vector for Y-dot values
+      void*      ///< extra user-data vector, P, for evaluating ydot(y,t,p)
+  );
 
-    friend int Jacobian_for_cvode(
-        int,       ///< N (not sure what this is for! Must be internal)
-        double,    ///< time, t
-        N_Vector,  ///< y
-        N_Vector,  ///< ydot
-        CVMatrix,  ///< Jacobian matrix
-        void*,     ///< extra user-data vector, P, for evaluating ydot(y,t,p)
-        N_Vector,  ///< temp vector, must be for internal use
-        N_Vector,  ///< temp vector, must be for internal use
-        N_Vector   ///< temp vector, must be for internal use
-    );
+  friend int Jacobian_for_cvode(
+      int,       ///< N (not sure what this is for! Must be internal)
+      double,    ///< time, t
+      N_Vector,  ///< y
+      N_Vector,  ///< ydot
+      CVMatrix,  ///< Jacobian matrix
+      void*,     ///< extra user-data vector, P, for evaluating ydot(y,t,p)
+      N_Vector,  ///< temp vector, must be for internal use
+      N_Vector,  ///< temp vector, must be for internal use
+      N_Vector   ///< temp vector, must be for internal use
+  );
 
-    cvode_solver();
-    ~cvode_solver();
+  cvode_solver();
+  ~cvode_solver();
 
-    /// This initialises the solver with a user-supplied Jacobian function.
-    ///
-    int setup_cvode_solver();
+  /// This initialises the solver with a user-supplied Jacobian function.
+  ///
+  int setup_cvode_solver();
 
-    ///
-    /// This initialises the solver without using a Jacobian function.
-    /// This is the function I have used so far.
-    ///
-    int setup_cvode_solver_without_Jacobian();
+  ///
+  /// This initialises the solver without using a Jacobian function.
+  /// This is the function I have used so far.
+  ///
+  int setup_cvode_solver_without_Jacobian();
 
-    ///
-    /// Takes a step dt, returning a non-zero error code if fails.
-    ///
-    int integrate_cvode_step(
-        N_Vector,  ///< input vector (may be overwritten during integration!)
-        void*,     ///< parameters for user_data (pointer to instance of this
-                   ///< class!)
-        double,    ///< start time.
-        double,    ///< time-step.
-        N_Vector   ///< output vector.
-    );
+  ///
+  /// Takes a step dt, returning a non-zero error code if fails.
+  ///
+  int integrate_cvode_step(
+      N_Vector,  ///< input vector (may be overwritten during integration!)
+      void*,     ///< parameters for user_data (pointer to instance of this
+                 ///< class!)
+      double,    ///< start time.
+      double,    ///< time-step.
+      N_Vector   ///< output vector.
+  );
 
-  private:
-    N_Vector abstol;  ///< vector of absolute error tolerances for y-elements.
+private:
+  N_Vector abstol;  ///< vector of absolute error tolerances for y-elements.
 #ifndef CVODE2
-    N_Vector vsetup;
-    CVMatrix msetup;
-    SUNLinearSolver LS;
+  N_Vector vsetup;
+  CVMatrix msetup;
+  SUNLinearSolver LS;
 #endif
 
-    void* cvode_mem;         ///< pointer to memory allocation for the solver.
-    int n_eq;                ///< number of equations to solve.
-    int n_xd;                ///< number of elements in user-data array.
-    bool have_setup_cvodes;  ///< flag to make sure we only set up CVODES once.
+  void* cvode_mem;         ///< pointer to memory allocation for the solver.
+  int n_eq;                ///< number of equations to solve.
+  int n_xd;                ///< number of elements in user-data array.
+  bool have_setup_cvodes;  ///< flag to make sure we only set up CVODES once.
 
-    //---------------------------------------------------------------------------
-    //------------ STUFF TO BE DEFINED IN DERVIED CLASS FOLLOWS
-    //-----------------
-    //---------------------------------------------------------------------------
-  public:
-    ///
-    /// calculate dy/dt for the vector of y-values (NOT IMPLEMENTED HERE).
-    ///
-    virtual int ydot(
-        double,          ///< current time
-        const N_Vector,  ///< current Y-value
-        N_Vector,        ///< vector for Y-dot values
-        const double*    ///< extra user-data vector, P
-        ) = 0;
+  //---------------------------------------------------------------------------
+  //------------ STUFF TO BE DEFINED IN DERVIED CLASS FOLLOWS
+  //-----------------
+  //---------------------------------------------------------------------------
+public:
+  ///
+  /// calculate dy/dt for the vector of y-values (NOT IMPLEMENTED HERE).
+  ///
+  virtual int ydot(
+      double,          ///< current time
+      const N_Vector,  ///< current Y-value
+      N_Vector,        ///< vector for Y-dot values
+      const double*    ///< extra user-data vector, P
+      ) = 0;
 
-    ///
-    /// Calculate the Jacobian matrix d(dy_i/dt)/dy_j for a vector of y-values.
-    /// (NOT IMPLEMENTED HERE).
-    ///
-    virtual int Jacobian(
+  ///
+  /// Calculate the Jacobian matrix d(dy_i/dt)/dy_j for a vector of y-values.
+  /// (NOT IMPLEMENTED HERE).
+  ///
+  virtual int Jacobian(
 #if defined CVODE2
-        int,  ///< N (not sure what this is for!)
+      int,  ///< N (not sure what this is for!)
 #endif
-        double,          ///< time, t
-        const N_Vector,  ///< current Y-value
-        const N_Vector,  ///< vector for Y-dot values
-        const double*,   ///< extra user-data vector, P
-        CVMatrix         ///< Jacobian matrix
-        ) = 0;
+      double,          ///< time, t
+      const N_Vector,  ///< current Y-value
+      const N_Vector,  ///< vector for Y-dot values
+      const double*,   ///< extra user-data vector, P
+      CVMatrix         ///< Jacobian matrix
+      ) = 0;
 
-    ///
-    /// Get the number of extra parameters and the number of equations.
-    /// (NOT IMPLEMENTED HERE).
-    ///
-    virtual void get_problem_size(
-        int*,  ///< number of equations
-        int*   ///< number of parameters in user_data vector.
-        ) = 0;
+  ///
+  /// Get the number of extra parameters and the number of equations.
+  /// (NOT IMPLEMENTED HERE).
+  ///
+  virtual void get_problem_size(
+      int*,  ///< number of equations
+      int*   ///< number of parameters in user_data vector.
+      ) = 0;
 
-  protected:
-    ///
-    /// set the relative and absolute error tolerances
-    ///
-    virtual void get_error_tolerances(
-        double*,  ///< relative error tolerance (single value)
-        double[]  ///< absolute error tolerance (array)
-        ) = 0;
+protected:
+  ///
+  /// set the relative and absolute error tolerances
+  ///
+  virtual void get_error_tolerances(
+      double*,  ///< relative error tolerance (single value)
+      double[]  ///< absolute error tolerance (array)
+      ) = 0;
 
-    //---------------------------------------------------------------------------
-    //------------ END OF STUFF TO BE DEFINED IN DERVIED CLASS
-    //------------------
-    //---------------------------------------------------------------------------
+  //---------------------------------------------------------------------------
+  //------------ END OF STUFF TO BE DEFINED IN DERVIED CLASS
+  //------------------
+  //---------------------------------------------------------------------------
 };
 
 #endif  // CVODE_INTEGRATOR_H

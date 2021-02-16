@@ -66,106 +66,106 @@ using namespace std;
 int main(int argc, char** argv)
 {
 
-    //
-    // Set up simulation controller class.
-    //
-    class sim_control* sim_control = 0;
-    sim_control                    = new class sim_control();
-    if (!sim_control)
-        rep.error("(pion) Couldn't initialise sim_control", sim_control);
+  //
+  // Set up simulation controller class.
+  //
+  class sim_control* sim_control = 0;
+  sim_control                    = new class sim_control();
+  if (!sim_control)
+    rep.error("(pion) Couldn't initialise sim_control", sim_control);
 
-    //
-    // Check that command-line arguments are sufficient.
-    //
-    if (argc < 2) {
-        sim_control->print_command_line_options(argc, argv);
-        rep.error("Bad arguments", argc);
-    }
+  //
+  // Check that command-line arguments are sufficient.
+  //
+  if (argc < 2) {
+    sim_control->print_command_line_options(argc, argv);
+    rep.error("Bad arguments", argc);
+  }
 
-    int err      = 0;
-    string* args = 0;
-    args         = new string[argc];
-    for (int i = 0; i < argc; i++)
-        args[i] = argv[i];
+  int err      = 0;
+  string* args = 0;
+  args         = new string[argc];
+  for (int i = 0; i < argc; i++)
+    args[i] = argv[i];
 
-    // Set up reporting class.
-    for (int i = 0; i < argc; i++) {
-        if (args[i].find("redirect=") != string::npos) {
-            string outpath = (args[i].substr(9));
-            cout << "Redirecting stdout to " << outpath << "info.txt"
-                 << "\n";
-            // Redirects cout and cerr to text files in the directory specified.
-            rep.redirect(outpath);
-        }
+  // Set up reporting class.
+  for (int i = 0; i < argc; i++) {
+    if (args[i].find("redirect=") != string::npos) {
+      string outpath = (args[i].substr(9));
+      cout << "Redirecting stdout to " << outpath << "info.txt"
+           << "\n";
+      // Redirects cout and cerr to text files in the directory specified.
+      rep.redirect(outpath);
     }
-    cout << "-------------------------------------------------------\n";
-    cout << "---------   pion UG SERIAL v2.0  running   ------------\n";
-    cout << "-------------------------------------------------------\n\n";
+  }
+  cout << "-------------------------------------------------------\n";
+  cout << "---------   pion UG SERIAL v2.0  running   ------------\n";
+  cout << "-------------------------------------------------------\n\n";
 
-    // Set what type of file to open: 1=parameterfile, 2/5=restartfile.
-    int ft;
-    if (args[1].find(".silo") != string::npos) {
-        cout << "(pion) reading ICs from SILO IC file " << args[1] << "\n";
-        ft = 5;
-    }
-    else if (args[1].find(".fits") != string::npos) {
-        cout << "(pion) reading ICs from Fits ICfile " << args[1] << "\n";
-        ft = 2;
-    }
-    else {
-        cout << "(pion) IC file not fits/silo: assuming text parameterfile "
-             << args[1] << "\n";
-        ft = 1;
-    }
+  // Set what type of file to open: 1=parameterfile, 2/5=restartfile.
+  int ft;
+  if (args[1].find(".silo") != string::npos) {
+    cout << "(pion) reading ICs from SILO IC file " << args[1] << "\n";
+    ft = 5;
+  }
+  else if (args[1].find(".fits") != string::npos) {
+    cout << "(pion) reading ICs from Fits ICfile " << args[1] << "\n";
+    ft = 2;
+  }
+  else {
+    cout << "(pion) IC file not fits/silo: assuming text parameterfile "
+         << args[1] << "\n";
+    ft = 1;
+  }
 
-    //
-    // set up vector of grids.
-    //
-    vector<class GridBaseClass*> grid;
+  //
+  // set up vector of grids.
+  //
+  vector<class GridBaseClass*> grid;
 
-    //
-    // Initialise the grid.
-    // inputs are infile_name, infile_type, nargs, *args[]
-    //
-    err = sim_control->Init(args[1], ft, argc, args, grid);
-    if (err != 0) {
-        cerr << "(*pion*) err!=0 from Init"
-             << "\n";
-        delete sim_control;
-        return 1;
-    }
-    //
-    // Integrate forward in time until the end of the calculation.
-    //
-    err += sim_control->Time_Int(grid);
-    if (err != 0) {
-        cerr << "(*pion*) err!=0 from Time_Int"
-             << "\n";
-        delete sim_control;
-        // delete grid;
-        return 1;
-    }
-    //
-    // Finalise and exit.
-    //
-    err += sim_control->Finalise(grid);
-    if (err != 0) {
-        cerr << "(*pion*) err!=0 from Finalise"
-             << "\n";
-        delete sim_control;
-        // delete grid;
-        return 1;
-    }
-
+  //
+  // Initialise the grid.
+  // inputs are infile_name, infile_type, nargs, *args[]
+  //
+  err = sim_control->Init(args[1], ft, argc, args, grid);
+  if (err != 0) {
+    cerr << "(*pion*) err!=0 from Init"
+         << "\n";
     delete sim_control;
-    sim_control = 0;
-    delete grid[0];
-    delete[] args;
-    args = 0;
+    return 1;
+  }
+  //
+  // Integrate forward in time until the end of the calculation.
+  //
+  err += sim_control->Time_Int(grid);
+  if (err != 0) {
+    cerr << "(*pion*) err!=0 from Time_Int"
+         << "\n";
+    delete sim_control;
+    // delete grid;
+    return 1;
+  }
+  //
+  // Finalise and exit.
+  //
+  err += sim_control->Finalise(grid);
+  if (err != 0) {
+    cerr << "(*pion*) err!=0 from Finalise"
+         << "\n";
+    delete sim_control;
+    // delete grid;
+    return 1;
+  }
 
-    cout << "-------------------------------------------------------\n";
-    cout << "---------   pion v.1.0  finished  ---------------------\n";
-    cout << "-------------------------------------------------------\n";
+  delete sim_control;
+  sim_control = 0;
+  delete grid[0];
+  delete[] args;
+  args = 0;
 
-    return 0;
+  cout << "-------------------------------------------------------\n";
+  cout << "---------   pion v.1.0  finished  ---------------------\n";
+  cout << "-------------------------------------------------------\n";
+
+  return 0;
 }

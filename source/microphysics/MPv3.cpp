@@ -231,11 +231,11 @@ void MPv3::get_error_tolerances(
     double atol[]    ///< absolute error tolerances
 )
 {
-    *reltol       = JM_RELTOL;
-    atol[lv_H0]   = JM_MINNEU;  ///< minimum neutral fraction I care about.
-    atol[lv_eint] = JM_MINERG;  ///< E_{int}: for n=1.0, T=1.0e4, ==>
-                                ///< E=2.07e-12, so say 1e-17?
-    return;
+  *reltol       = JM_RELTOL;
+  atol[lv_H0]   = JM_MINNEU;  ///< minimum neutral fraction I care about.
+  atol[lv_eint] = JM_MINERG;  ///< E_{int}: for n=1.0, T=1.0e4, ==>
+                              ///< E=2.07e-12, so say 1e-17?
+  return;
 }
 
 // ##################################################################
@@ -246,9 +246,9 @@ void MPv3::get_problem_size(
     int* np   ///< number of parameters in user_data vector.
 )
 {
-    *ne = N_equations;
-    *np = N_extradata;
-    return;
+  *ne = N_equations;
+  *np = N_extradata;
+  return;
 }
 
 // ##################################################################
@@ -270,297 +270,294 @@ MPv3::MPv3(
     coord_sys(csys)
 {
 #ifdef MPV3_DEBUG
-    cout
-        << "\n------------------------------------------------------------------"
-           "---\n";
-    cout << "MPv3: a microphysics class.\n";
+  cout << "\n------------------------------------------------------------------"
+          "---\n";
+  cout << "MPv3: a microphysics class.\n";
 #endif
 
-    // ----------------------------------------------------------------
-    // ------- Set up tracer variables (find which one is H+). --------
-    // ----------------------------------------------------------------
+  // ----------------------------------------------------------------
+  // ------- Set up tracer variables (find which one is H+). --------
+  // ----------------------------------------------------------------
 #ifdef MPV3_DEBUG
-    cout << "\t\tSetting up Tracer Variables.  Assuming tracers are last ";
-    cout << ntracer << " variables in state vec.\n";
+  cout << "\t\tSetting up Tracer Variables.  Assuming tracers are last ";
+  cout << ntracer << " variables in state vec.\n";
 #endif
-    int len = ntracer;
+  int len = ntracer;
 
-    //
-    // Find H+ fraction in tracer variable list.
-    //
-    int ftr = nv_prim - ntracer;  // first tracer variable.
-    string s;
-    pv_Hp   = -1;
-    pv_WIND = -1;
+  //
+  // Find H+ fraction in tracer variable list.
+  //
+  int ftr = nv_prim - ntracer;  // first tracer variable.
+  string s;
+  pv_Hp   = -1;
+  pv_WIND = -1;
 
-    for (int i = 0; i < len; i++) {
-        s = tracers[i];  // Get 'i'th tracer variable.
-        if (s == "H1+___" || s == "HII__" || s == "H1+" || s == "HII") {
-            pv_Hp = ftr + i;
+  for (int i = 0; i < len; i++) {
+    s = tracers[i];  // Get 'i'th tracer variable.
+    if (s == "H1+___" || s == "HII__" || s == "H1+" || s == "HII") {
+      pv_Hp = ftr + i;
 #ifdef MPV3_DEBUG
-            cout << "\t\tGot H+ as the " << pv_Hp
-                 << "th element of P[] (zero offset).\n";
+      cout << "\t\tGot H+ as the " << pv_Hp
+           << "th element of P[] (zero offset).\n";
 #endif
-        }
-        if (s == "WIND") {
-            pv_WIND = ftr + i;
-#ifdef MPV3_DEBUG
-            cout << "\t\tGot WIND tracer as the " << pv_WIND;
-            cout << "th element of P[] (zero offset).\n";
-#endif
-        }
     }
-    if (pv_Hp < 0)
-        rep.error("No H ionisation fraction found in tracer list", tracers[0]);
+    if (s == "WIND") {
+      pv_WIND = ftr + i;
+#ifdef MPV3_DEBUG
+      cout << "\t\tGot WIND tracer as the " << pv_WIND;
+      cout << "th element of P[] (zero offset).\n";
+#endif
+    }
+  }
+  if (pv_Hp < 0)
+    rep.error("No H ionisation fraction found in tracer list", tracers[0]);
 
-        // ================================================================
-        // ================================================================
+    // ================================================================
+    // ================================================================
 #ifdef TESTING
-    cout << "MPv3:: EP and RS: " << EP << "\t" << RS << endl;
+  cout << "MPv3:: EP and RS: " << EP << "\t" << RS << endl;
 #endif
 
-    // ----------------------------------------------------------------
-    // --- Set up local variables: ion fraction and internal energy density.
-    // ----------------------------------------------------------------
-    k_B = pconst.kB();   // Boltzmann constant.
-    m_p = pconst.m_p();  // Proton mass.
+  // ----------------------------------------------------------------
+  // --- Set up local variables: ion fraction and internal energy density.
+  // ----------------------------------------------------------------
+  k_B = pconst.kB();   // Boltzmann constant.
+  m_p = pconst.m_p();  // Proton mass.
 
-    //
-    // Get the mean mass per H atom from the He and Z mass fractions.
-    // Assume metal content is low enough to ignore it.
-    //
-    double X        = 1.0 - EP->Helium_MassFrac;
-    mean_mass_per_H = m_p / X;
-    //
-    // Assume He is singly ionised whenever H is, and no metals exist
-    // as far as number density of electrons/ions are concerned.
-    //
-    JM_NION  = 1.0 + 0.25 * EP->Helium_MassFrac / X;
-    JM_NELEC = 1.0 + 0.25 * EP->Helium_MassFrac / X;
+  //
+  // Get the mean mass per H atom from the He and Z mass fractions.
+  // Assume metal content is low enough to ignore it.
+  //
+  double X        = 1.0 - EP->Helium_MassFrac;
+  mean_mass_per_H = m_p / X;
+  //
+  // Assume He is singly ionised whenever H is, and no metals exist
+  // as far as number density of electrons/ions are concerned.
+  //
+  JM_NION  = 1.0 + 0.25 * EP->Helium_MassFrac / X;
+  JM_NELEC = 1.0 + 0.25 * EP->Helium_MassFrac / X;
 #ifdef HE_INERT
-    // JM_NION is the number of neutral atoms per H atom
-    JM_NION  = 1.0 + 0.25 * EP->Helium_MassFrac / X;
-    JM_NELEC = 1.0;                             // if He is always neutral.
-#endif                                          // HE_INERT
-    METALLICITY = EP->Metal_MassFrac / 0.0142;  // in units of solar.
+  // JM_NION is the number of neutral atoms per H atom
+  JM_NION  = 1.0 + 0.25 * EP->Helium_MassFrac / X;
+  JM_NELEC = 1.0;                             // if He is always neutral.
+#endif                                        // HE_INERT
+  METALLICITY = EP->Metal_MassFrac / 0.0142;  // in units of solar.
 #ifdef MPV3_DEBUG
-    cout << "Metallicity = " << METALLICITY << " of solar (0.0142)\n";
+  cout << "Metallicity = " << METALLICITY << " of solar (0.0142)\n";
 #endif
 
-    setup_local_vectors();
-    gamma_minus_one = eos_gamma - 1.0;
-    Min_NeutralFrac = JM_MINNEU;
-    Max_NeutralFrac = 1.0 - JM_MINNEU;
+  setup_local_vectors();
+  gamma_minus_one = eos_gamma - 1.0;
+  Min_NeutralFrac = JM_MINNEU;
+  Max_NeutralFrac = 1.0 - JM_MINNEU;
 
-    //
-    // initialise all the radiation variables to values that limit their heating
-    // and cooling abilities.
-    //
-    mpv_nH       = 1.0;  // Hydrogen number density (density of H+ and H)
-    mpv_Vshell   = 1.0e54;
-    mpv_Tau0     = 1.0e6;
-    mpv_dTau0    = 1.0;
-    mpv_G0_UV    = 0.0;
-    mpv_G0_IR    = 0.0;
-    mpv_delta_S  = 0.0;
-    mpv_NIdot    = 0.0;
-    ion_src_type = -1;
-    N_ion_srcs   = 0;
-    N_diff_srcs  = 0;
-    // ================================================================
-    // ================================================================
+  //
+  // initialise all the radiation variables to values that limit their heating
+  // and cooling abilities.
+  //
+  mpv_nH       = 1.0;  // Hydrogen number density (density of H+ and H)
+  mpv_Vshell   = 1.0e54;
+  mpv_Tau0     = 1.0e6;
+  mpv_dTau0    = 1.0;
+  mpv_G0_UV    = 0.0;
+  mpv_G0_IR    = 0.0;
+  mpv_delta_S  = 0.0;
+  mpv_NIdot    = 0.0;
+  ion_src_type = -1;
+  N_ion_srcs   = 0;
+  N_diff_srcs  = 0;
+  // ================================================================
+  // ================================================================
 
-    // ----------------------------------------------------------------
-    // Set flags for whether we have diffuse and ionising radiation sources.
-    // ----------------------------------------------------------------
+  // ----------------------------------------------------------------
+  // Set flags for whether we have diffuse and ionising radiation sources.
+  // ----------------------------------------------------------------
+  for (int isrc = 0; isrc < RS->Nsources; isrc++) {
+    // diffuse source at infinity, or point source for UV heating.
+    if ((RS->sources[isrc].type == RT_SRC_DIFFUSE)
+        || (RS->sources[isrc].type == RT_SRC_SINGLE
+            && RS->sources[isrc].effect == RT_EFFECT_UV_HEATING))
+      N_diff_srcs++;
+    // point source with monochromatic or multi-frequency ionising photons.
+    if (RS->sources[isrc].type == RT_SRC_SINGLE
+        && (RS->sources[isrc].effect == RT_EFFECT_PION_MONO
+            || RS->sources[isrc].effect == RT_EFFECT_MFION)) {
+      N_ion_srcs++;
+      //
+      // Set the source type and Luminosity for the ionising source:
+      //
+      mpv_NIdot = RS->sources[isrc].strength;
+      if (RS->sources[isrc].effect == RT_EFFECT_PION_MONO)
+        ion_src_type = RT_EFFECT_PION_MONO;
+      else
+        ion_src_type = RT_EFFECT_MFION;
+    }
+  }
+#ifdef MPV3_DEBUG
+  cout << "\t\tMPv3: got " << N_diff_srcs << " diffuse and ";
+  cout << N_ion_srcs << " ionising sources.\n";
+#endif
+  // ================================================================
+  // ================================================================
+
+  // ----------------------------------------------------------------
+  // ----------------------- DIFFUSE RADIATION ----------------------
+  // Set up solid angles for diffuse radiation, if needed.
+  // ----------------------------------------------------------------
+  if (N_diff_srcs > 0) setup_diffuse_RT_angle();
+  // ================================================================
+  // ================================================================
+
+  // ----------------------------------------------------------------
+  // ----------------------------------------------------------------
+  // ------------------------- IONISING SOURCE ----------------------
+  if (N_ion_srcs) {
+    if (N_ion_srcs > 1)
+      rep.error("too many ionising source in MPv3()", N_ion_srcs);
+    //
+    // Need to set up the multifrequency tables if needed.
+    // Monochromatic sources don't need any setup.
+    //
     for (int isrc = 0; isrc < RS->Nsources; isrc++) {
-        // diffuse source at infinity, or point source for UV heating.
-        if ((RS->sources[isrc].type == RT_SRC_DIFFUSE)
-            || (RS->sources[isrc].type == RT_SRC_SINGLE
-                && RS->sources[isrc].effect == RT_EFFECT_UV_HEATING))
-            N_diff_srcs++;
-        // point source with monochromatic or multi-frequency ionising photons.
-        if (RS->sources[isrc].type == RT_SRC_SINGLE
-            && (RS->sources[isrc].effect == RT_EFFECT_PION_MONO
-                || RS->sources[isrc].effect == RT_EFFECT_MFION)) {
-            N_ion_srcs++;
-            //
-            // Set the source type and Luminosity for the ionising source:
-            //
-            mpv_NIdot = RS->sources[isrc].strength;
-            if (RS->sources[isrc].effect == RT_EFFECT_PION_MONO)
-                ion_src_type = RT_EFFECT_PION_MONO;
-            else
-                ion_src_type = RT_EFFECT_MFION;
-        }
+      if ((RS->sources[isrc].type == RT_SRC_SINGLE)
+          && (RS->sources[isrc].effect == RT_EFFECT_MFION)
+          && (RS->sources[isrc].EvoFile == "NOFILE")) {
+        int err =
+            set_multifreq_source_properties(&RS->sources[isrc], &mpv_NIdot);
+        if (err)
+          rep.error(
+              "multifreq photoionisation setup failed in MPv3 const.", err);
+      }
     }
+  }
+  // ================================================================
+  // ================================================================
+
+  // ----------------------------------------------------------------
+  // We want to set up the CIE cooling function for metals-only from WSS09
+  // (i.e. with H+He cooling subtracted out).
+  // ----------------------------------------------------------------
+  setup_WSS09_CIE_OnlyMetals();
+  // ================================================================
+  // ================================================================
+  gen_mpv3_lookup_tables();
+
+  // ----------------------------------------------------------------
+  // --------------------------- CVODES ----------------------------
+  // Initialise the CVODES solver memory etc.
+  // ----------------------------------------------------------------
+  setup_cvode_solver_without_Jacobian();
+  // ================================================================
+  // ================================================================
+
+  // ----------------------------------------------------------------
+  // ---------- output cooling rates for various temperatures -------
+  // ----------------------------------------------------------------
 #ifdef MPV3_DEBUG
-    cout << "\t\tMPv3: got " << N_diff_srcs << " diffuse and ";
-    cout << N_ion_srcs << " ionising sources.\n";
-#endif
-    // ================================================================
-    // ================================================================
+  double p[nv_prim], P[nvl], temp1 = 0.0, ne = 0.0;
+  vector<rt_source_data> rt;
+  N_ion_srcs = 0;
+  p[RO]      = 2.338e-24;
+  p[PG]      = 1.0e-12;
+  p[pv_Hp]   = 0.99;
+  if (pv_WIND >= 0) p[pv_WIND] = 0.1;
+  mpv_nH = 1.0e0;
 
-    // ----------------------------------------------------------------
-    // ----------------------- DIFFUSE RADIATION ----------------------
-    // Set up solid angles for diffuse radiation, if needed.
-    // ----------------------------------------------------------------
-    if (N_diff_srcs > 0) setup_diffuse_RT_angle();
-    // ================================================================
-    // ================================================================
-
-    // ----------------------------------------------------------------
-    // ----------------------------------------------------------------
-    // ------------------------- IONISING SOURCE ----------------------
-    if (N_ion_srcs) {
-        if (N_ion_srcs > 1)
-            rep.error("too many ionising source in MPv3()", N_ion_srcs);
-        //
-        // Need to set up the multifrequency tables if needed.
-        // Monochromatic sources don't need any setup.
-        //
-        for (int isrc = 0; isrc < RS->Nsources; isrc++) {
-            if ((RS->sources[isrc].type == RT_SRC_SINGLE)
-                && (RS->sources[isrc].effect == RT_EFFECT_MFION)
-                && (RS->sources[isrc].EvoFile == "NOFILE")) {
-                int err = set_multifreq_source_properties(
-                    &RS->sources[isrc], &mpv_NIdot);
-                if (err)
-                    rep.error(
-                        "multifreq photoionisation setup failed in MPv3 const.",
-                        err);
-            }
-        }
-    }
-    // ================================================================
-    // ================================================================
-
-    // ----------------------------------------------------------------
-    // We want to set up the CIE cooling function for metals-only from WSS09
-    // (i.e. with H+He cooling subtracted out).
-    // ----------------------------------------------------------------
-    setup_WSS09_CIE_OnlyMetals();
-    // ================================================================
-    // ================================================================
-    gen_mpv3_lookup_tables();
-
-    // ----------------------------------------------------------------
-    // --------------------------- CVODES ----------------------------
-    // Initialise the CVODES solver memory etc.
-    // ----------------------------------------------------------------
-    setup_cvode_solver_without_Jacobian();
-    // ================================================================
-    // ================================================================
-
-    // ----------------------------------------------------------------
-    // ---------- output cooling rates for various temperatures -------
-    // ----------------------------------------------------------------
-#ifdef MPV3_DEBUG
-    double p[nv_prim], P[nvl], temp1 = 0.0, ne = 0.0;
-    vector<rt_source_data> rt;
-    N_ion_srcs = 0;
-    p[RO]      = 2.338e-24;
-    p[PG]      = 1.0e-12;
-    p[pv_Hp]   = 0.99;
-    if (pv_WIND >= 0) p[pv_WIND] = 0.1;
-    mpv_nH = 1.0e0;
-
-    string opfile("cooling_MPv3.txt");
-    ofstream outf(opfile.c_str());
-    if (!outf.is_open()) rep.error("couldn't open outfile", 1);
-    outf << "Cooling Curve Data: Temperature(K) Rates(erg/cm^3/s) x=0.99999,";
-    outf << " x=0.00001, x=0.5 (n=1 per cc)\n";
-    outf.setf(ios_base::scientific);
-    outf.precision(6);
-    double T = EP->MinTemperature, Edi = 0.0, Edn = 0.0, Edpi = 0.0, junk = 0.0;
-    setup_radiation_source_parameters(p, P, 0, rt, 0, rt);
+  string opfile("cooling_MPv3.txt");
+  ofstream outf(opfile.c_str());
+  if (!outf.is_open()) rep.error("couldn't open outfile", 1);
+  outf << "Cooling Curve Data: Temperature(K) Rates(erg/cm^3/s) x=0.99999,";
+  outf << " x=0.00001, x=0.5 (n=1 per cc)\n";
+  outf.setf(ios_base::scientific);
+  outf.precision(6);
+  double T = EP->MinTemperature, Edi = 0.0, Edn = 0.0, Edpi = 0.0, junk = 0.0;
+  setup_radiation_source_parameters(p, P, 0, rt, 0, rt);
+  do {
+    // Get T-vector index
+    int iT     = 0;
+    size_t ihi = lt.NT - 1, ilo = 0, imid = 0;
     do {
-        // Get T-vector index
-        int iT     = 0;
-        size_t ihi = lt.NT - 1, ilo = 0, imid = 0;
-        do {
-            imid = ilo + floor((ihi - ilo) / 2.0);
-            if (lt.T[imid] < T)
-                ilo = imid;
-            else
-                ihi = imid;
-        } while (ihi - ilo > 1);
-        iT        = ilo;
-        double dT = T - lt.T[iT];
+      imid = ilo + floor((ihi - ilo) / 2.0);
+      if (lt.T[imid] < T)
+        ilo = imid;
+      else
+        ihi = imid;
+    } while (ihi - ilo > 1);
+    iT        = ilo;
+    double dT = T - lt.T[iT];
 
-        // Get ne-vector index
-        int ie = 0;
-        ne     = 0.5;
-        ihi = lt.NT - 1, ilo = 0, imid = 0;
-        do {
-            imid = ilo + floor((ihi - ilo) / 2.0);
-            if (lt.ne[imid] < ne)
-                ilo = imid;
-            else
-                ihi = imid;
-        } while (ihi - ilo > 1);
-        ie         = ilo;
-        double dne = ne - lt.ne[ie];
+    // Get ne-vector index
+    int ie = 0;
+    ne     = 0.5;
+    ihi = lt.NT - 1, ilo = 0, imid = 0;
+    do {
+      imid = ilo + floor((ihi - ilo) / 2.0);
+      if (lt.ne[imid] < ne)
+        ilo = imid;
+      else
+        ihi = imid;
+    } while (ihi - ilo > 1);
+    ie         = ilo;
+    double dne = ne - lt.ne[ie];
 
-        p[pv_Hp] = 0.99999;
-        Set_Temp(p, T, junk);
-        NV_Ith_S(y_in, lv_H0)   = 1.0 - p[pv_Hp];
-        NV_Ith_S(y_in, lv_eint) = p[PG] / gamma_minus_one;
-        ydot(0, y_in, y_out, 0);
-        Edi = NV_Ith_S(y_out, lv_eint);
+    p[pv_Hp] = 0.99999;
+    Set_Temp(p, T, junk);
+    NV_Ith_S(y_in, lv_H0)   = 1.0 - p[pv_Hp];
+    NV_Ith_S(y_in, lv_eint) = p[PG] / gamma_minus_one;
+    ydot(0, y_in, y_out, 0);
+    Edi = NV_Ith_S(y_out, lv_eint);
 
-        p[pv_Hp] = 0.05;
-        Set_Temp(p, T, junk);
-        NV_Ith_S(y_in, lv_H0)   = 1.0 - p[pv_Hp];
-        NV_Ith_S(y_in, lv_eint) = p[PG] / gamma_minus_one;
-        ydot(0, y_in, y_out, 0);
-        Edpi = NV_Ith_S(y_out, lv_eint);
+    p[pv_Hp] = 0.05;
+    Set_Temp(p, T, junk);
+    NV_Ith_S(y_in, lv_H0)   = 1.0 - p[pv_Hp];
+    NV_Ith_S(y_in, lv_eint) = p[PG] / gamma_minus_one;
+    ydot(0, y_in, y_out, 0);
+    Edpi = NV_Ith_S(y_out, lv_eint);
 
-        p[pv_Hp] = 0.00001;
-        Set_Temp(p, T, junk);
-        NV_Ith_S(y_in, lv_H0)   = 1.0 - p[pv_Hp];
-        NV_Ith_S(y_in, lv_eint) = p[PG] / gamma_minus_one;
-        ydot(0, y_in, y_out, 0);
-        Edn = NV_Ith_S(y_out, lv_eint);
+    p[pv_Hp] = 0.00001;
+    Set_Temp(p, T, junk);
+    NV_Ith_S(y_in, lv_H0)   = 1.0 - p[pv_Hp];
+    NV_Ith_S(y_in, lv_eint) = p[PG] / gamma_minus_one;
+    ydot(0, y_in, y_out, 0);
+    Edn = NV_Ith_S(y_out, lv_eint);
 
-        outf << T << "\t" << Edi / mpv_nH / mpv_nH;
-        outf << "  " << Edn / mpv_nH / mpv_nH;
-        outf << "  " << Edpi / mpv_nH / mpv_nH;
+    outf << T << "\t" << Edi / mpv_nH / mpv_nH;
+    outf << "  " << Edn / mpv_nH / mpv_nH;
+    outf << "  " << Edpi / mpv_nH / mpv_nH;
 
-        outf << "  " << lt.cirh[iT] + dT * lt.s_cirh[iT];
-        outf << "  " << lt.C_cih0[iT] + dT * lt.s_C_cih0[iT];
-        outf << "  " << (lt.rrhp[iT] + dT * lt.s_rrhp[iT]);
-        outf << "  " << (lt.C_rrh[iT] + dT * lt.s_C_rrh[iT]);
-        outf << "  " << (lt.C_ffhe[iT] + dT * lt.s_C_ffhe[iT]);
-        outf << "  " << (lt.C_cxh0[iT] + dT * lt.s_C_cxh0[iT]);
-        outf << "  "
-             << lt.H_pah[iT][ie] + dT * lt.st_H_pah[iT][ie]
-                    + dne * lt.se_H_pah[iT][ie];
-        outf << "  " << (lt.C_fbdn[iT] + dT * lt.s_C_fbdn[iT]);
-        outf << "  " << (lt.C_cie[iT] + dT * lt.s_C_cie[iT]);
-        outf << "  " << (lt.C_cxch[iT] + dT * lt.s_C_cxch[iT]);
-        outf << "  " << (lt.C_cxo[iT] + dT * lt.s_C_cxo[iT]);
-        outf << "  " << (lt.C_cxce[iT] + dT * lt.s_C_cxce[iT]);
-        outf << "  "
-             << lt.C_pah[iT][ie] + dT * lt.st_C_pah[iT][ie]
-                    + dne * lt.se_C_pah[iT][ie];
-        outf << "  " << (lt.C_dust[iT] + dT * lt.s_C_dust[iT]);
-        // outf <<"  "<< ;
-        outf << "\n";
-        T *= 1.02;
-    } while (T < min(1.0e5, EP->MaxTemperature));
-    outf.close();
+    outf << "  " << lt.cirh[iT] + dT * lt.s_cirh[iT];
+    outf << "  " << lt.C_cih0[iT] + dT * lt.s_C_cih0[iT];
+    outf << "  " << (lt.rrhp[iT] + dT * lt.s_rrhp[iT]);
+    outf << "  " << (lt.C_rrh[iT] + dT * lt.s_C_rrh[iT]);
+    outf << "  " << (lt.C_ffhe[iT] + dT * lt.s_C_ffhe[iT]);
+    outf << "  " << (lt.C_cxh0[iT] + dT * lt.s_C_cxh0[iT]);
+    outf << "  "
+         << lt.H_pah[iT][ie] + dT * lt.st_H_pah[iT][ie]
+                + dne * lt.se_H_pah[iT][ie];
+    outf << "  " << (lt.C_fbdn[iT] + dT * lt.s_C_fbdn[iT]);
+    outf << "  " << (lt.C_cie[iT] + dT * lt.s_C_cie[iT]);
+    outf << "  " << (lt.C_cxch[iT] + dT * lt.s_C_cxch[iT]);
+    outf << "  " << (lt.C_cxo[iT] + dT * lt.s_C_cxo[iT]);
+    outf << "  " << (lt.C_cxce[iT] + dT * lt.s_C_cxce[iT]);
+    outf << "  "
+         << lt.C_pah[iT][ie] + dT * lt.st_C_pah[iT][ie]
+                + dne * lt.se_C_pah[iT][ie];
+    outf << "  " << (lt.C_dust[iT] + dT * lt.s_C_dust[iT]);
+    // outf <<"  "<< ;
+    outf << "\n";
+    T *= 1.02;
+  } while (T < min(1.0e5, EP->MaxTemperature));
+  outf.close();
 #endif  // Debug
         // ================================================================
         // ================================================================
 
 #ifdef MPV3_DEBUG
-    cout << "MPv3: Constructor finished and returning.\n";
-    cout
-        << "--------------------------------------------------------------------"
-           "-\n\n";
+  cout << "MPv3: Constructor finished and returning.\n";
+  cout << "--------------------------------------------------------------------"
+          "-\n\n";
 #endif
-    return;
+  return;
 }
 
 // ##################################################################
@@ -568,18 +565,18 @@ MPv3::MPv3(
 
 void MPv3::setup_local_vectors()
 {
-    //
-    // This is in a function so it can be replaced in an inherited class.
-    //
-    nvl         = 2;  // two local variables to integrate
-    N_extradata = 0;
-    N_equations = 2;
-    y_in        = N_VNew_Serial(N_equations);
-    y_out       = N_VNew_Serial(N_equations);
-    lv_H0       = 0;  // x(H0) is the first element in the array
-    lv_eint     = 1;  // E_{int} is the second element.
-    // cout<<"!!!!!!!!!!!!!!!!!! nvl="<<nvl<<"\n";
-    return;
+  //
+  // This is in a function so it can be replaced in an inherited class.
+  //
+  nvl         = 2;  // two local variables to integrate
+  N_extradata = 0;
+  N_equations = 2;
+  y_in        = N_VNew_Serial(N_equations);
+  y_out       = N_VNew_Serial(N_equations);
+  lv_H0       = 0;  // x(H0) is the first element in the array
+  lv_eint     = 1;  // E_{int} is the second element.
+  // cout<<"!!!!!!!!!!!!!!!!!! nvl="<<nvl<<"\n";
+  return;
 }
 
 // ##################################################################
@@ -587,69 +584,69 @@ void MPv3::setup_local_vectors()
 
 void MPv3::setup_diffuse_RT_angle()
 {
+  //
+  // Set up solid angles for diffuse radiation.
+  //
+  diff_angle.clear();
+  if (coord_sys == COORD_CRT && ndim == 3) {
+    diff_angle.resize(6);
+    for (int v = 0; v < 6; v++)
+      diff_angle[v] = 4.0 * M_PI / 6.0;
+  }
+  else if (coord_sys == COORD_CRT && ndim == 2) {
+    diff_angle.resize(4);
+    for (int v = 0; v < 4; v++)
+      diff_angle[v] = 2.0 * M_PI / 4.0;
+  }
+  else if (coord_sys == COORD_CRT && ndim == 1) {
+    diff_angle.resize(2);
+    for (int v = 0; v < 2; v++)
+      diff_angle[v] = 1.0;
+  }
+  else if (coord_sys == COORD_CYL && ndim == 2) {
+    diff_angle.resize(3);
     //
-    // Set up solid angles for diffuse radiation.
+    // for each source in turn, we get its direction and set the angle
+    // accordingly.
     //
-    diff_angle.clear();
-    if (coord_sys == COORD_CRT && ndim == 3) {
-        diff_angle.resize(6);
-        for (int v = 0; v < 6; v++)
-            diff_angle[v] = 4.0 * M_PI / 6.0;
-    }
-    else if (coord_sys == COORD_CRT && ndim == 2) {
-        diff_angle.resize(4);
-        for (int v = 0; v < 4; v++)
-            diff_angle[v] = 2.0 * M_PI / 4.0;
-    }
-    else if (coord_sys == COORD_CRT && ndim == 1) {
-        diff_angle.resize(2);
-        for (int v = 0; v < 2; v++)
-            diff_angle[v] = 1.0;
-    }
-    else if (coord_sys == COORD_CYL && ndim == 2) {
-        diff_angle.resize(3);
-        //
-        // for each source in turn, we get its direction and set the angle
-        // accordingly.
-        //
-        int count = 0;
-        int dir   = -1;
-        for (int isrc = 0; isrc < RS->Nsources; isrc++) {
-            if (RS->sources[isrc].type == RT_SRC_DIFFUSE) {
-                for (int v = 0; v < ndim; v++) {
-                    if (RS->sources[isrc].pos[v] > 1.0e99) dir = 2 * v + 1;
-                    if (RS->sources[isrc].pos[v] < -1.0e99) dir = 2 * v;
-                }
-                if (dir < 0) rep.error("Diffuse source not at infinity!", isrc);
-                //
-                // if direction is in Z then angle is as for 3D, and if R+ then
-                // 4x3D values.
-                //
-                if (dir == ZNcyl || dir == ZPcyl)
-                    diff_angle[count] = 4.0 * M_PI / 6.0;
-                else if (dir == RPcyl)
-                    diff_angle[count] = 16.0 * M_PI / 6.0;
-                else
-                    rep.error("Bad source direction", dir);
-                count++;
-            }
+    int count = 0;
+    int dir   = -1;
+    for (int isrc = 0; isrc < RS->Nsources; isrc++) {
+      if (RS->sources[isrc].type == RT_SRC_DIFFUSE) {
+        for (int v = 0; v < ndim; v++) {
+          if (RS->sources[isrc].pos[v] > 1.0e99) dir = 2 * v + 1;
+          if (RS->sources[isrc].pos[v] < -1.0e99) dir = 2 * v;
         }
+        if (dir < 0) rep.error("Diffuse source not at infinity!", isrc);
+        //
+        // if direction is in Z then angle is as for 3D, and if R+ then
+        // 4x3D values.
+        //
+        if (dir == ZNcyl || dir == ZPcyl)
+          diff_angle[count] = 4.0 * M_PI / 6.0;
+        else if (dir == RPcyl)
+          diff_angle[count] = 16.0 * M_PI / 6.0;
+        else
+          rep.error("Bad source direction", dir);
+        count++;
+      }
+    }
 #ifdef MPV3_DEBUG
-        cout << "Angles for diffuse sources: [" << diff_angle[0] << ", ";
-        cout << diff_angle[1] << ", " << diff_angle[2] << "]\n";
+    cout << "Angles for diffuse sources: [" << diff_angle[0] << ", ";
+    cout << diff_angle[1] << ", " << diff_angle[2] << "]\n";
 #endif
-    }
-    else if (coord_sys == COORD_SPH && ndim == 1) {
-        //
-        // for spherical symmetry the only diffuse source is at infinity
-        //
-        diff_angle.resize(1);
-        diff_angle[0] = 4.0 * M_PI;
-    }
-    else {
-        rep.error("Unhandled coord-sys/ndim combination", ndim);
-    }
-    return;
+  }
+  else if (coord_sys == COORD_SPH && ndim == 1) {
+    //
+    // for spherical symmetry the only diffuse source is at infinity
+    //
+    diff_angle.resize(1);
+    diff_angle[0] = 4.0 * M_PI;
+  }
+  else {
+    rep.error("Unhandled coord-sys/ndim combination", ndim);
+  }
+  return;
 }
 
 // ##################################################################
@@ -657,12 +654,12 @@ void MPv3::setup_diffuse_RT_angle()
 
 MPv3::~MPv3()
 {
-    diff_angle.clear();
-    //
-    // Free vector memory
-    //
-    N_VDestroy_Serial(y_in);
-    N_VDestroy_Serial(y_out);
+  diff_angle.clear();
+  //
+  // Free vector memory
+  //
+  N_VDestroy_Serial(y_in);
+  N_VDestroy_Serial(y_out);
 }
 
 // ##################################################################
@@ -670,15 +667,15 @@ MPv3::~MPv3()
 
 int MPv3::Tr(const string s)
 {
-    if (s == "H1+___" || s == "HII__" || s == "H1+" || s == "HII") {
-        return pv_Hp;
-    }
-    if (s == "WIND") {
-        return pv_WIND;
-    }
-    else {
-        return -1;
-    }
+  if (s == "H1+___" || s == "HII__" || s == "H1+" || s == "HII") {
+    return pv_Hp;
+  }
+  if (s == "WIND") {
+    return pv_WIND;
+  }
+  else {
+    return -1;
+  }
 }
 
 // ##################################################################
@@ -689,84 +686,84 @@ int MPv3::set_multifreq_source_properties(
     double* str  ///< O/P source strength in different energy bins.
 )
 {
-    // cout <<"MPv3: updating radiation source properties\n";
-    //
-    // Some sanity checks:
-    // - make sure source is multi-freq and ionising
-    // - make sure Rstar and Tstar are positive and finite
-    //
-    if (rsi->effect != RT_EFFECT_MFION)
-        rep.error("Source is not multi-frequency!", rsi->id);
-    if (rsi->Rstar < 0 || !isfinite(rsi->Rstar))
-        rep.error("Source has bad Rstar parameter", rsi->Rstar);
-    if (rsi->Tstar < 0 || !isfinite(rsi->Tstar))
-        rep.error("Source has bad Tstar parameter", rsi->Tstar);
+  // cout <<"MPv3: updating radiation source properties\n";
+  //
+  // Some sanity checks:
+  // - make sure source is multi-freq and ionising
+  // - make sure Rstar and Tstar are positive and finite
+  //
+  if (rsi->effect != RT_EFFECT_MFION)
+    rep.error("Source is not multi-frequency!", rsi->id);
+  if (rsi->Rstar < 0 || !isfinite(rsi->Rstar))
+    rep.error("Source has bad Rstar parameter", rsi->Rstar);
+  if (rsi->Tstar < 0 || !isfinite(rsi->Tstar))
+    rep.error("Source has bad Tstar parameter", rsi->Tstar);
 
-    //
-    // mincol is the minimum Tau we care about, maxcol is the max Tau
-    // we care about, Emax is the max. energy (in ergs) to integrate
-    // to in the fit.  I think 1000eV is a bit excessive...
-    //
-    double mincol = 1.0e-3, maxcol = 1.0e6, Emax = 1000.0 * 1.602e-12;
-    int Nspl = 50, Nsub = 800;
+  //
+  // mincol is the minimum Tau we care about, maxcol is the max Tau
+  // we care about, Emax is the max. energy (in ergs) to integrate
+  // to in the fit.  I think 1000eV is a bit excessive...
+  //
+  double mincol = 1.0e-3, maxcol = 1.0e6, Emax = 1000.0 * 1.602e-12;
+  int Nspl = 50, Nsub = 800;
 
 #ifdef HE_INERT
-    //
-    // If He is always neutral, then we can't have any He-ionising
-    // photons, so just integrate up to its first ionisation energy.
-    //
-    Emax = 24.59 * 1.602e-12;
+  //
+  // If He is always neutral, then we can't have any He-ionising
+  // photons, so just integrate up to its first ionisation energy.
+  //
+  Emax = 24.59 * 1.602e-12;
 #else
-    Emax = 54.41778 * 1.602e-12;  // assume nothing doubly-ionized He.
-    // Emax = 100.0*1.602e-12;  // This is better for cosmology RT tests.
+  Emax = 54.41778 * 1.602e-12;  // assume nothing doubly-ionized He.
+  // Emax = 100.0*1.602e-12;  // This is better for cosmology RT tests.
 #endif  // HE_INERT
 
+  //
+  // JMackey (2019):
+  // For ionisation rate, we need to rescale the Blackbody luminosity so
+  // that it is much smaller for T<30000K, b/c the actual ionising photon
+  // luminosity of these stars is much less than indicated by BB curve.
+  // I took data from Table 1 of Diaz-Miller, Franco, & Shore,
+  // (1998,ApJ,501,192), compared them to the ionising photon luminosity
+  // of a BB with the same radius and Teff, and got the following scaling
+  // factor, using file conversion.py in code_misc/testing/planck_fn/
+  // The radius is fitted vs. ionizing photon luminosity, the scaling
+  // is then applied to the luminosity of the star.
+  //
+  double Lcorr = 1.0, Rcorr = 1.0;
+  if (rsi->Tstar < 33979.25687) {
+    // Luminosity is in erg/s (rsi->strength); the fit is logspace
+    // in solar units.  Converted to linear units, the relation is:
+    //   L(corrected) = L * 10**(-2*21.09342323) * T**(2.0*4.65513741)
+    // or
+    //   L(corrected) = 6.50359577123e-43 * L * T**9.31027482
+    // for T<33979.25687 K.
     //
-    // JMackey (2019):
-    // For ionisation rate, we need to rescale the Blackbody luminosity so
-    // that it is much smaller for T<30000K, b/c the actual ionising photon
-    // luminosity of these stars is much less than indicated by BB curve.
-    // I took data from Table 1 of Diaz-Miller, Franco, & Shore,
-    // (1998,ApJ,501,192), compared them to the ionising photon luminosity
-    // of a BB with the same radius and Teff, and got the following scaling
-    // factor, using file conversion.py in code_misc/testing/planck_fn/
-    // The radius is fitted vs. ionizing photon luminosity, the scaling
-    // is then applied to the luminosity of the star.
+    Lcorr = 6.50359577123e-43 * pow(rsi->Tstar, 9.31027482);
+    Rcorr = sqrt(Lcorr);
+    // Rcorr = sqrt(rsi->strength*Lcorr/
+    //  (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*pow(rsi->Tstar, 4.0))
+    //  ) /pconst.Rsun();
+    // cout <<"Rstar="<<Rcorr<<", rsi->Rstar="<<rsi->Rstar<<",
+    // sqrt(Lcorr)="<<sqrt(Lcorr)<<"\t"; Rcorr /= rsi->Rstar; cout
+    // <<"Lcorr="<<Lcorr<<", Rcorr="<<Rcorr<<"\n";
     //
-    double Lcorr = 1.0, Rcorr = 1.0;
-    if (rsi->Tstar < 33979.25687) {
-        // Luminosity is in erg/s (rsi->strength); the fit is logspace
-        // in solar units.  Converted to linear units, the relation is:
-        //   L(corrected) = L * 10**(-2*21.09342323) * T**(2.0*4.65513741)
-        // or
-        //   L(corrected) = 6.50359577123e-43 * L * T**9.31027482
-        // for T<33979.25687 K.
-        //
-        Lcorr = 6.50359577123e-43 * pow(rsi->Tstar, 9.31027482);
-        Rcorr = sqrt(Lcorr);
-        // Rcorr = sqrt(rsi->strength*Lcorr/
-        //  (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*pow(rsi->Tstar, 4.0))
-        //  ) /pconst.Rsun();
-        // cout <<"Rstar="<<Rcorr<<", rsi->Rstar="<<rsi->Rstar<<",
-        // sqrt(Lcorr)="<<sqrt(Lcorr)<<"\t"; Rcorr /= rsi->Rstar; cout
-        // <<"Lcorr="<<Lcorr<<", Rcorr="<<Rcorr<<"\n";
-        //
-        // Now need to multiply rsi->strength and rsi->Rstar by the two
-        // correction factors when setting up the tables.
-    }
-    // cout <<"MPv3: Updating Source: T="<<rsi->Tstar<<", L=";
-    // cout <<rsi->strength*Lcorr<<", R=";
-    // cout <<rsi->Rstar*pconst.Rsun()*Rcorr<<"\n";
+    // Now need to multiply rsi->strength and rsi->Rstar by the two
+    // correction factors when setting up the tables.
+  }
+  // cout <<"MPv3: Updating Source: T="<<rsi->Tstar<<", L=";
+  // cout <<rsi->strength*Lcorr<<", R=";
+  // cout <<rsi->Rstar*pconst.Rsun()*Rcorr<<"\n";
 
-    //
-    // Call the function in hydrogen_photoion.
-    //
-    Setup_photoionisation_rate_table(
-        rsi->Tstar, rsi->Rstar * pconst.Rsun() * Rcorr, rsi->strength * Lcorr,
-        mincol, maxcol, Emax, Nsub, Nspl);
+  //
+  // Call the function in hydrogen_photoion.
+  //
+  Setup_photoionisation_rate_table(
+      rsi->Tstar, rsi->Rstar * pconst.Rsun() * Rcorr, rsi->strength * Lcorr,
+      mincol, maxcol, Emax, Nsub, Nspl);
 
-    *str = rsi->strength;  // this doesn't do much.
-    return 0;
+  *str = rsi->strength;  // this doesn't do much.
+  return 0;
 }
 
 // ##################################################################
@@ -778,12 +775,12 @@ double MPv3::get_temperature(
     const double xp   ///< x(H+)
 )
 {
-    //
-    // returns gas temperature according to E=nkT/(g-1) with n=nH*(1.1+1.1*x),
-    // appropriate for a gas with 10% Helium by number, and if He is singly
-    // ionised whenever H is ionised (n_i=1.1n_H, n_e=1.1n_H).
-    //
-    return gamma_minus_one * E / (k_B * get_ntot(nH, xp));
+  //
+  // returns gas temperature according to E=nkT/(g-1) with n=nH*(1.1+1.1*x),
+  // appropriate for a gas with 10% Helium by number, and if He is singly
+  // ionised whenever H is ionised (n_i=1.1n_H, n_e=1.1n_H).
+  //
+  return gamma_minus_one * E / (k_B * get_ntot(nH, xp));
 }
 
 // ##################################################################
@@ -794,7 +791,7 @@ double MPv3::get_ntot(
     const double xp   ///< x(H+)
 )
 {
-    return (JM_NION + JM_NELEC * xp) * nH;
+  return (JM_NION + JM_NELEC * xp) * nH;
 }
 
 // ##################################################################
@@ -803,11 +800,11 @@ double MPv3::get_ntot(
 double MPv3::get_n_elec(const pion_flt* pv  ///< primitive state vector.
 )
 {
-    double P[nvl];
-    convert_prim2local(pv, P);
-    // cout <<"nH="<<mpv_nH<<" y(H+)="<<(1.0-P[lv_H0]);
-    // cout <<", scale="<<JM_NELEC<<"\n";
-    return mpv_nH * (1.0 - P[lv_H0]) * JM_NELEC;
+  double P[nvl];
+  convert_prim2local(pv, P);
+  // cout <<"nH="<<mpv_nH<<" y(H+)="<<(1.0-P[lv_H0]);
+  // cout <<", scale="<<JM_NELEC<<"\n";
+  return mpv_nH * (1.0 - P[lv_H0]) * JM_NELEC;
 }
 
 // ##################################################################
@@ -816,9 +813,9 @@ double MPv3::get_n_elec(const pion_flt* pv  ///< primitive state vector.
 double MPv3::get_n_Hplus(const pion_flt* pv  ///< primitive state vector.
 )
 {
-    double P[nvl];
-    convert_prim2local(pv, P);
-    return mpv_nH * (1.0 - P[lv_H0]);
+  double P[nvl];
+  convert_prim2local(pv, P);
+  return mpv_nH * (1.0 - P[lv_H0]);
 }
 
 // ##################################################################
@@ -829,13 +826,13 @@ double MPv3::get_n_ion(
     const pion_flt* pv  ///< primitive state vector.
 )
 {
-    if (ion != "H1+") {
-        cout << "Bad ion! " << ion << "\n";
-        return -1.0e99;
-    }
-    double P[nvl];
-    convert_prim2local(pv, P);
-    return mpv_nH * (1.0 - P[lv_H0]) * JM_NION;
+  if (ion != "H1+") {
+    cout << "Bad ion! " << ion << "\n";
+    return -1.0e99;
+  }
+  double P[nvl];
+  convert_prim2local(pv, P);
+  return mpv_nH * (1.0 - P[lv_H0]) * JM_NION;
 }
 
 // ##################################################################
@@ -844,9 +841,9 @@ double MPv3::get_n_ion(
 double MPv3::get_n_Hneutral(const pion_flt* pv  ///< primitive state vector.
 )
 {
-    double P[nvl];
-    convert_prim2local(pv, P);
-    return mpv_nH * P[lv_H0];
+  double P[nvl];
+  convert_prim2local(pv, P);
+  return mpv_nH * P[lv_H0];
 }
 
 // ##################################################################
@@ -856,70 +853,69 @@ int MPv3::convert_prim2local(
     const pion_flt* p_in,  ///< primitive vector (length nv_prim)
     double* p_local)
 {
-    //
-    // Set internal energy density, H+ fraction, and number density of H.
-    //
-    p_local[lv_eint] = p_in[PG] / (gamma_minus_one);
-    p_local[lv_H0]   = 1.0 - p_in[pv_Hp];
+  //
+  // Set internal energy density, H+ fraction, and number density of H.
+  //
+  p_local[lv_eint] = p_in[PG] / (gamma_minus_one);
+  p_local[lv_H0]   = 1.0 - p_in[pv_Hp];
 #ifdef DUSTCOOL
-    if (pv_WIND > 0)
-        f_dust = max(0.0, min(1.0, 1 - 0 - p_in[pv_WIND]));
-    else
-        f_dust = 0.0;
+  if (pv_WIND > 0)
+    f_dust = max(0.0, min(1.0, 1 - 0 - p_in[pv_WIND]));
+  else
+    f_dust = 0.0;
 #endif
-    mpv_nH = p_in[RO] / mean_mass_per_H;
+  mpv_nH = p_in[RO] / mean_mass_per_H;
 
 #ifdef MPV3_DEBUG
-    //
-    // Check for negative ion fraction, and set to a minimum value if found.
-    //
-    if (p_local[lv_H0] > 1.0) {
-        cout << "MPv3::convert_prim2local: negative ion fraction input: ";
-        cout << "x(H0)=" << p_local[lv_H0] << ", resetting to "
-             << Max_NeutralFrac << "\n";
-        p_local[lv_H0] = Max_NeutralFrac;
-    }
-    //
-    // Check for bad values:
-    //
-    if (p_local[lv_H0] > 1.01 || p_local[lv_H0] < -0.01) {
-        cout << "MPv3::convert_prim2local: bad ion fraction: ";
-        cout << "x(H0)=" << p_local[lv_H0] << ", resetting to [0,1]\n";
-    }
+  //
+  // Check for negative ion fraction, and set to a minimum value if found.
+  //
+  if (p_local[lv_H0] > 1.0) {
+    cout << "MPv3::convert_prim2local: negative ion fraction input: ";
+    cout << "x(H0)=" << p_local[lv_H0] << ", resetting to " << Max_NeutralFrac
+         << "\n";
+    p_local[lv_H0] = Max_NeutralFrac;
+  }
+  //
+  // Check for bad values:
+  //
+  if (p_local[lv_H0] > 1.01 || p_local[lv_H0] < -0.01) {
+    cout << "MPv3::convert_prim2local: bad ion fraction: ";
+    cout << "x(H0)=" << p_local[lv_H0] << ", resetting to [0,1]\n";
+  }
 #endif
 
-    //
-    // Set x(H0) to be within the required range (not too close to zero or 1).
-    //
-    p_local[lv_H0] = max(Min_NeutralFrac, min(Max_NeutralFrac, p_local[lv_H0]));
+  //
+  // Set x(H0) to be within the required range (not too close to zero or 1).
+  //
+  p_local[lv_H0] = max(Min_NeutralFrac, min(Max_NeutralFrac, p_local[lv_H0]));
 
-    //
-    // Check for negative pressure (note this shouldn't happen, so we output a
-    // warning) and set to 10K if we find it.
-    //
-    if (p_local[lv_eint] <= 0.0) {
+  //
+  // Check for negative pressure (note this shouldn't happen, so we output a
+  // warning) and set to 10K if we find it.
+  //
+  if (p_local[lv_eint] <= 0.0) {
 #ifdef MPV3_DEBUG
-        cout << "MPv3::convert_prim2local: negative pressure input: p=";
-        cout << p_local[lv_eint] << ", setting to " << EP->MinTemperature
-             << "K.\n";
+    cout << "MPv3::convert_prim2local: negative pressure input: p=";
+    cout << p_local[lv_eint] << ", setting to " << EP->MinTemperature << "K.\n";
 #endif
-        p_local[lv_eint] = get_ntot(mpv_nH, p_in[pv_Hp]) * k_B
-                           * EP->MinTemperature / (gamma_minus_one);
-    }
+    p_local[lv_eint] = get_ntot(mpv_nH, p_in[pv_Hp]) * k_B * EP->MinTemperature
+                       / (gamma_minus_one);
+  }
 
 #ifdef MPV3_DEBUG
-    //
-    // Check for NAN/INF
-    //
-    for (int v = 0; v < 2; v++) {
-        if (!isfinite(p_local[v]))
-            rep.error("INF/NAN input to microphysics", p_local[v]);
-    }
-    if (mpv_nH < 0.0 || !isfinite(mpv_nH))
-        rep.error("Bad density input to MPv3::convert_prim2local", mpv_nH);
+  //
+  // Check for NAN/INF
+  //
+  for (int v = 0; v < 2; v++) {
+    if (!isfinite(p_local[v]))
+      rep.error("INF/NAN input to microphysics", p_local[v]);
+  }
+  if (mpv_nH < 0.0 || !isfinite(mpv_nH))
+    rep.error("Bad density input to MPv3::convert_prim2local", mpv_nH);
 #endif  // MPV3_DEBUG
 
-    return 0;
+  return 0;
 }
 
 // ##################################################################
@@ -931,60 +927,58 @@ int MPv3::convert_local2prim(
     pion_flt* p_out        ///< updated primitive vector
 )
 {
-    for (int v = 0; v < nv_prim; v++)
-        p_out[v] = p_in[v];
+  for (int v = 0; v < nv_prim; v++)
+    p_out[v] = p_in[v];
 
-    p_out[PG]    = p_local[lv_eint] * (gamma_minus_one);
-    p_out[pv_Hp] = 1.0 - p_local[lv_H0];
+  p_out[PG]    = p_local[lv_eint] * (gamma_minus_one);
+  p_out[pv_Hp] = 1.0 - p_local[lv_H0];
 
 #ifdef MPV3_DEBUG
-    if (p_out[pv_Hp] < -10.0 * JM_RELTOL
-        || p_out[pv_Hp] > 1.0 * (1.0 + JM_RELTOL) || !isfinite(p_out[pv_Hp])) {
-        rep.printVec("p_in", p_in, nv_prim);
-        rep.printVec("p_out", p_out, nv_prim);
-        rep.printVec("p_local", p_local, nvl);
-        rep.error(
-            "Bad output H+ value in MPv3::convert_local2prim",
-            p_out[pv_Hp] - 1.0);
-    }
-    if (p_out[PG] < 0.0 || !isfinite(p_out[PG]))
-        rep.error("Bad output pressure in MPv3::convert_local2prim", p_out[PG]);
+  if (p_out[pv_Hp] < -10.0 * JM_RELTOL || p_out[pv_Hp] > 1.0 * (1.0 + JM_RELTOL)
+      || !isfinite(p_out[pv_Hp])) {
+    rep.printVec("p_in", p_in, nv_prim);
+    rep.printVec("p_out", p_out, nv_prim);
+    rep.printVec("p_local", p_local, nvl);
+    rep.error(
+        "Bad output H+ value in MPv3::convert_local2prim", p_out[pv_Hp] - 1.0);
+  }
+  if (p_out[PG] < 0.0 || !isfinite(p_out[PG]))
+    rep.error("Bad output pressure in MPv3::convert_local2prim", p_out[PG]);
 #endif  // MPV3_DEBUG
 
-    //
-    // Set xHp to be within the required range (not too close to zero or 1).
-    //
-    p_out[pv_Hp] =
-        max(Min_NeutralFrac,
-            min(Max_NeutralFrac, static_cast<double>(p_out[pv_Hp])));
+  //
+  // Set xHp to be within the required range (not too close to zero or 1).
+  //
+  p_out[pv_Hp] = max(
+      Min_NeutralFrac, min(Max_NeutralFrac, static_cast<double>(p_out[pv_Hp])));
 
-    //
-    // Set output pressure to be within required temperature range (use the
-    // possibly corrected x(H+) from p_out[]).
-    //
-    double T = get_temperature(mpv_nH, p_local[lv_eint], p_out[pv_Hp]);
-    if (T > 1.01 * EP->MaxTemperature) {
-        Set_Temp(p_out, EP->MaxTemperature, 0);
+  //
+  // Set output pressure to be within required temperature range (use the
+  // possibly corrected x(H+) from p_out[]).
+  //
+  double T = get_temperature(mpv_nH, p_local[lv_eint], p_out[pv_Hp]);
+  if (T > 1.01 * EP->MaxTemperature) {
+    Set_Temp(p_out, EP->MaxTemperature, 0);
 #ifdef MPV3_DEBUG
-        cout << "MPv3::convert_local2prim() HIGH temperature encountered. ";
-        cout << "T=" << T << ", obtained from nH=" << mpv_nH
-             << ", eint=" << p_local[lv_eint];
-        cout << ", x=" << p_out[pv_Hp]
-             << "...  limiting to T=" << EP->MaxTemperature << "\n";
+    cout << "MPv3::convert_local2prim() HIGH temperature encountered. ";
+    cout << "T=" << T << ", obtained from nH=" << mpv_nH
+         << ", eint=" << p_local[lv_eint];
+    cout << ", x=" << p_out[pv_Hp]
+         << "...  limiting to T=" << EP->MaxTemperature << "\n";
 #endif  // MPV3_DEBUG
-    }
-    if (T < 0.99 * EP->MinTemperature) {
-        Set_Temp(p_out, EP->MinTemperature, 0);
+  }
+  if (T < 0.99 * EP->MinTemperature) {
+    Set_Temp(p_out, EP->MinTemperature, 0);
 #ifdef MPV3_DEBUG
-        cout << "MPv3::convert_local2prim() LOW  temperature encountered. ";
-        cout << "T=" << T << ", obtained from nH=" << mpv_nH
-             << ", eint=" << p_local[lv_eint];
-        cout << ", x=" << p_out[pv_Hp]
-             << "...  limiting to T=" << EP->MinTemperature << "\n";
+    cout << "MPv3::convert_local2prim() LOW  temperature encountered. ";
+    cout << "T=" << T << ", obtained from nH=" << mpv_nH
+         << ", eint=" << p_local[lv_eint];
+    cout << ", x=" << p_out[pv_Hp]
+         << "...  limiting to T=" << EP->MinTemperature << "\n";
 #endif  // MPV3_DEBUG
-    }
+  }
 
-    return 0;
+  return 0;
 }
 
 // ##################################################################
@@ -995,30 +989,29 @@ double MPv3::Temperature(
     const double         ///< eos gamma
 )
 {
-    //
-    // Check for negative pressure/density!  If either is found, return -1.0e99.
-    //
-    if (pv[RO] <= 0.0 || pv[PG] <= 0.0) {
-        // cout <<"MPv3::Temperature() negative rho="<<pv[RO]<<" or
-        // p="<<pv[PG]<<"\n";
-        return -1.0e99;
-    }
+  //
+  // Check for negative pressure/density!  If either is found, return -1.0e99.
+  //
+  if (pv[RO] <= 0.0 || pv[PG] <= 0.0) {
+    // cout <<"MPv3::Temperature() negative rho="<<pv[RO]<<" or
+    // p="<<pv[PG]<<"\n";
+    return -1.0e99;
+  }
 #ifdef TEST_INF
-    for (int v = 0; v < nv_prim; v++) {
-        if (!isfinite(pv[v])) {
-            cout << "NAN in MPv3::Temperature(): " << v << " " << pv[v] << "\n";
-            rep.printVec("prim vec", pv, nv_prim);
-            return -1.0e99;
-        }
+  for (int v = 0; v < nv_prim; v++) {
+    if (!isfinite(pv[v])) {
+      cout << "NAN in MPv3::Temperature(): " << v << " " << pv[v] << "\n";
+      rep.printVec("prim vec", pv, nv_prim);
+      return -1.0e99;
     }
+  }
 #endif
-    //
-    // generate vector of (nH,y(H0),Eint), and get Temperature from it.
-    //
-    double P[nvl];
-    convert_prim2local(pv, P);
-    return get_temperature(
-        pv[RO] / mean_mass_per_H, P[lv_eint], 1.0 - P[lv_H0]);
+  //
+  // generate vector of (nH,y(H0),Eint), and get Temperature from it.
+  //
+  double P[nvl];
+  convert_prim2local(pv, P);
+  return get_temperature(pv[RO] / mean_mass_per_H, P[lv_eint], 1.0 - P[lv_H0]);
 }
 
 // ##################################################################
@@ -1030,20 +1023,20 @@ int MPv3::Set_Temp(
     const double     ///< eos gamma.
 )
 {
-    //
-    // Check for negative pressure.  If density<0 then we should bug
-    // out because there is no way to set a temperature, but if p<0 we
-    // can just overwrite it.
-    //
-    if (p_pv[PG] <= 0.0) {
-        // cout <<"MP_Hydrogen::Set_Temp() correcting negative pressure.\n";
-        p_pv[PG] = 1.0e-12;  // Need p>0 for prim-to-local conversion.
-    }
-    double P[nvl];
-    int err    = convert_prim2local(p_pv, P);
-    P[lv_eint] = get_ntot(mpv_nH, p_pv[pv_Hp]) * k_B * T / (gamma_minus_one);
-    err += convert_local2prim(P, p_pv, p_pv);
-    return err;
+  //
+  // Check for negative pressure.  If density<0 then we should bug
+  // out because there is no way to set a temperature, but if p<0 we
+  // can just overwrite it.
+  //
+  if (p_pv[PG] <= 0.0) {
+    // cout <<"MP_Hydrogen::Set_Temp() correcting negative pressure.\n";
+    p_pv[PG] = 1.0e-12;  // Need p>0 for prim-to-local conversion.
+  }
+  double P[nvl];
+  int err    = convert_prim2local(p_pv, P);
+  P[lv_eint] = get_ntot(mpv_nH, p_pv[pv_Hp]) * k_B * T / (gamma_minus_one);
+  err += convert_local2prim(P, p_pv, p_pv);
+  return err;
 }
 
 // ##################################################################
@@ -1056,29 +1049,29 @@ void MPv3::get_dtau(
     pion_flt* dtau         ///< output dtau vector
 )
 {
-    // dTau for MPv3 is n(H0)*sigma(H0)*ds at 13.6eV for the ionizing
-    // source, and n(H)*sigma(dust)*ds in UV for UV heating source.
-    double yh0 = 0.0;
-    switch (s->s->effect) {
-        case RT_EFFECT_PION_MONO:
-        case RT_EFFECT_MFION:
-            yh0 = max(Min_NeutralFrac, min(Max_NeutralFrac, 1.0 - p_in[pv_Hp]));
-            *dtau = p_in[RO] * yh0 / mean_mass_per_H
-                    * Hi_monochromatic_photo_ion_xsection(JUST_IONISED) * ds;
-            break;
+  // dTau for MPv3 is n(H0)*sigma(H0)*ds at 13.6eV for the ionizing
+  // source, and n(H)*sigma(dust)*ds in UV for UV heating source.
+  double yh0 = 0.0;
+  switch (s->s->effect) {
+    case RT_EFFECT_PION_MONO:
+    case RT_EFFECT_MFION:
+      yh0   = max(Min_NeutralFrac, min(Max_NeutralFrac, 1.0 - p_in[pv_Hp]));
+      *dtau = p_in[RO] * yh0 / mean_mass_per_H
+              * Hi_monochromatic_photo_ion_xsection(JUST_IONISED) * ds;
+      break;
 
-        case RT_EFFECT_UV_HEATING:
-            // cout <<"uv heating: "<< s->s->id <<"  ";
-            *dtau = p_in[RO] * 5.348e-22 * METALLICITY / mean_mass_per_H * ds;
-            // cout << *dtau <<"\n";
-            break;
+    case RT_EFFECT_UV_HEATING:
+      // cout <<"uv heating: "<< s->s->id <<"  ";
+      *dtau = p_in[RO] * 5.348e-22 * METALLICITY / mean_mass_per_H * ds;
+      // cout << *dtau <<"\n";
+      break;
 
-        default:
-            cout << "id=" << s->s->id << ", effect=" << s->s->effect << "\n";
-            rep.error("Bad source effect in MPv3::get_dtau()", s->s->effect);
-            break;
-    }
-    return;
+    default:
+      cout << "id=" << s->s->id << ", effect=" << s->s->effect << "\n";
+      rep.error("Bad source effect in MPv3::get_dtau()", s->s->effect);
+      break;
+  }
+  return;
 }
 
 // ##################################################################
@@ -1093,13 +1086,13 @@ int MPv3::TimeUpdateMP(
     double* random_stuff   ///< Vector of extra data (column densities, etc.).
 )
 {
-    //
-    // Call the new update function, but with zero radiation sources.
-    //
-    std::vector<struct rt_source_data> temp;
-    int err = TimeUpdateMP_RTnew(
-        p_in, 0, temp, 0, temp, p_out, dt, 0, 0, random_stuff);
-    return err;
+  //
+  // Call the new update function, but with zero radiation sources.
+  //
+  std::vector<struct rt_source_data> temp;
+  int err =
+      TimeUpdateMP_RTnew(p_in, 0, temp, 0, temp, p_out, dt, 0, 0, random_stuff);
+  return err;
 }
 
 // ##################################################################
@@ -1122,81 +1115,77 @@ int MPv3::TimeUpdateMP_RTnew(
     double* random_stuff  ///< final temperature (not strictly needed).
 )
 {
-    //
-    // First set local variables for state vector and radiation source
-    // properties.
-    //
-    int err = 0;
-    double P[nvl];
-    err = convert_prim2local(p_in, P);
-    if (err) {
-        rep.error("Bad input state to MPv3::TimeUpdateMP_RTnew()", err);
-    }
-    setup_radiation_source_parameters(
-        p_in, P, N_heat, heat_src, N_ion, ion_src);
+  //
+  // First set local variables for state vector and radiation source
+  // properties.
+  //
+  int err = 0;
+  double P[nvl];
+  err = convert_prim2local(p_in, P);
+  if (err) {
+    rep.error("Bad input state to MPv3::TimeUpdateMP_RTnew()", err);
+  }
+  setup_radiation_source_parameters(p_in, P, N_heat, heat_src, N_ion, ion_src);
 
-    for (int v = 0; v < nvl; v++)
-        NV_Ith_S(y_in, v) = P[v];
-    //
-    // Calculate y-dot[] to see if anything is changing significantly over dt
-    //
-    double maxdelta = 0.0;
-    err             = ydot(0, y_in, y_out, 0);
-    if (err)
-        rep.error(
-            "dYdt() returned an error in MPv3::TimeUpdateMP_RTnew()", err);
+  for (int v = 0; v < nvl; v++)
+    NV_Ith_S(y_in, v) = P[v];
+  //
+  // Calculate y-dot[] to see if anything is changing significantly over dt
+  //
+  double maxdelta = 0.0;
+  err             = ydot(0, y_in, y_out, 0);
+  if (err)
+    rep.error("dYdt() returned an error in MPv3::TimeUpdateMP_RTnew()", err);
+  for (int v = 0; v < nvl; v++) {
+    maxdelta = max(maxdelta, fabs(NV_Ith_S(y_out, v) * dt / NV_Ith_S(y_in, v)));
+  }
+
+  //
+  // Now if nothing is changing much, just to a forward Euler integration.
+  //
+  if (maxdelta < EULER_CUTOFF) {
     for (int v = 0; v < nvl; v++) {
-        maxdelta =
-            max(maxdelta, fabs(NV_Ith_S(y_out, v) * dt / NV_Ith_S(y_in, v)));
+      NV_Ith_S(y_out, v) = NV_Ith_S(y_in, v) + dt * NV_Ith_S(y_out, v);
     }
-
-    //
-    // Now if nothing is changing much, just to a forward Euler integration.
-    //
-    if (maxdelta < EULER_CUTOFF) {
-        for (int v = 0; v < nvl; v++) {
-            NV_Ith_S(y_out, v) = NV_Ith_S(y_in, v) + dt * NV_Ith_S(y_out, v);
-        }
-    }
-    //
-    // Otherwise do the implicit CVODE integration
-    //
-    else {
-        err = integrate_cvode_step(y_in, 0, 0.0, dt, y_out);
-        if (err) {
-            rep.printVec("Plocal", P, nvl);
-            rep.printVec("Pprim ", p_in, nv_prim);
-            for (int v = 0; v < nvl; v++)
-                P[v] = NV_Ith_S(y_out, v);
-            rep.printVec("Pfinal", P, nvl);
-            cout << "ds=" << mpv_delta_S << ", vs=" << mpv_Vshell
-                 << ", tao0=" << mpv_Tau0 << ", dtau=" << mpv_dTau0 << "\n";
-            cout.flush();
-            rep.error(
-                "integration failed again: MPv3::TimeUpdateMP_RTnew()", err);
-        }
-    }
-
-    //
-    // Now put the result into p_out[] and return.
-    //
-    for (int v = 0; v < nvl; v++)
+  }
+  //
+  // Otherwise do the implicit CVODE integration
+  //
+  else {
+    err = integrate_cvode_step(y_in, 0, 0.0, dt, y_out);
+    if (err) {
+      rep.printVec("Plocal", P, nvl);
+      rep.printVec("Pprim ", p_in, nv_prim);
+      for (int v = 0; v < nvl; v++)
         P[v] = NV_Ith_S(y_out, v);
-    err = convert_local2prim(P, p_in, p_out);
-#ifdef TEST_INF
-    for (int v = 0; v < nv_prim; v++) {
-        if (!isfinite(p_in[v]) || !isfinite(p_out[v])) {
-            cout << "NAN in MPv3 update: " << v << "\n";
-            rep.printVec("Pin ", p_in, nv_prim);
-            rep.printVec("Pout", p_out, nv_prim);
-            rep.printVec("Ploc ", P, nvl);
-            // rep.error("NAN in MPv3",P[2]);
-            return 1;
-        }
+      rep.printVec("Pfinal", P, nvl);
+      cout << "ds=" << mpv_delta_S << ", vs=" << mpv_Vshell
+           << ", tao0=" << mpv_Tau0 << ", dtau=" << mpv_dTau0 << "\n";
+      cout.flush();
+      rep.error("integration failed again: MPv3::TimeUpdateMP_RTnew()", err);
     }
+  }
+
+  //
+  // Now put the result into p_out[] and return.
+  //
+  for (int v = 0; v < nvl; v++)
+    P[v] = NV_Ith_S(y_out, v);
+  err = convert_local2prim(P, p_in, p_out);
+#ifdef TEST_INF
+  for (int v = 0; v < nv_prim; v++) {
+    if (!isfinite(p_in[v]) || !isfinite(p_out[v])) {
+      cout << "NAN in MPv3 update: " << v << "\n";
+      rep.printVec("Pin ", p_in, nv_prim);
+      rep.printVec("Pout", p_out, nv_prim);
+      rep.printVec("Ploc ", P, nvl);
+      // rep.error("NAN in MPv3",P[2]);
+      return 1;
+    }
+  }
 #endif
 
-    return err;
+  return err;
 }
 
 // ##################################################################
@@ -1211,14 +1200,14 @@ double MPv3::timescales(
 )
 {
 #ifdef MPV3_DEBUG
-    if (RS->Nsources != 0) {
-        cout << "WARNING: MPv3::timescales() using non-RT version!\n";
-    }
+  if (RS->Nsources != 0) {
+    cout << "WARNING: MPv3::timescales() using non-RT version!\n";
+  }
 #endif  // MPV3_DEBUG
-    std::vector<struct rt_source_data> temp;
-    double tmin = timescales_RT(p_in, 0, temp, 0, temp, 0.0);
-    temp.clear();
-    return tmin;
+  std::vector<struct rt_source_data> temp;
+  double tmin = timescales_RT(p_in, 0, temp, 0, temp, 0.0);
+  temp.clear();
+  return tmin;
 }
 
 // ##################################################################
@@ -1242,83 +1231,82 @@ double MPv3::timescales_RT(
     const double  ///< EOS gamma.
 )
 {
-    int err = 0;
-    //
-    // First convert to local variables.
-    //
-    double P[nvl];
-    err = convert_prim2local(p_in, P);
-    if (err) {
-        rep.error("Bad input state to MPv3::timescales_RT()", err);
-    }
-    NV_Ith_S(y_in, lv_H0)   = P[lv_H0];
-    NV_Ith_S(y_in, lv_eint) = P[lv_eint];
+  int err = 0;
+  //
+  // First convert to local variables.
+  //
+  double P[nvl];
+  err = convert_prim2local(p_in, P);
+  if (err) {
+    rep.error("Bad input state to MPv3::timescales_RT()", err);
+  }
+  NV_Ith_S(y_in, lv_H0)   = P[lv_H0];
+  NV_Ith_S(y_in, lv_eint) = P[lv_eint];
 
-    //
-    // Next set the radiation properties of the current cell.
-    //
-    setup_radiation_source_parameters(
-        p_in, P, N_heat, heat_src, N_ion, ion_src);
+  //
+  // Next set the radiation properties of the current cell.
+  //
+  setup_radiation_source_parameters(p_in, P, N_heat, heat_src, N_ion, ion_src);
 
-    //
-    // Now calculate y-dot[]...
-    //
-    err = ydot(0, y_in, y_out, 0);
-    if (err) {
-        rep.error("dYdt() returned an error in MPv3::timescales_RT()", err);
-    }
+  //
+  // Now calculate y-dot[]...
+  //
+  err = ydot(0, y_in, y_out, 0);
+  if (err) {
+    rep.error("dYdt() returned an error in MPv3::timescales_RT()", err);
+  }
 
-    //
-    // And finally get the smallest timescale over which things are varying.
-    //
-    double t = HUGEVALUE;
-    //
-    // First get the ionisation timescale, limited to dt = 0.25/|xdot|.
-    // Tests have shown this is good enough, and that a restriction on the
-    // energy change (heating timescale) is not required for accurately tracking
-    // ionisation fronts (although it may be needed for cooling!). For testing
-    // purposes there are ifdefs to allow the code to use a relative change in
-    // neutral fraction and/or the relative change in energy as the timestep
-    // criterion, rather than the default of absolute change in neutral
-    // fraction.
-    //
+  //
+  // And finally get the smallest timescale over which things are varying.
+  //
+  double t = HUGEVALUE;
+  //
+  // First get the ionisation timescale, limited to dt = 0.25/|xdot|.
+  // Tests have shown this is good enough, and that a restriction on the
+  // energy change (heating timescale) is not required for accurately tracking
+  // ionisation fronts (although it may be needed for cooling!). For testing
+  // purposes there are ifdefs to allow the code to use a relative change in
+  // neutral fraction and/or the relative change in energy as the timestep
+  // criterion, rather than the default of absolute change in neutral
+  // fraction.
+  //
 #ifdef USE_RELATIVE_NEUFRAC_DTLIMIT
-    t =
-        min(t, DTFRAC * max(5.0e-2, NV_Ith_S(y_in, lv_H0))
-                   / (fabs(NV_Ith_S(y_out, lv_H0)) + TINYVALUE));
-    // cout <<"using neutral fraction.\n";
+  t =
+      min(t, DTFRAC * max(5.0e-2, NV_Ith_S(y_in, lv_H0))
+                 / (fabs(NV_Ith_S(y_out, lv_H0)) + TINYVALUE));
+  // cout <<"using neutral fraction.\n";
 #else
-    t = min(t, DTFRAC / (fabs(NV_Ith_S(y_out, lv_H0)) + TINYVALUE));
-    // if (t<1.0e8) {
-    //  cout <<"limit by dx: dt=";
-    //  cout <<DTFRAC/(fabs(NV_Ith_S(y_out, lv_H0))+TINYVALUE)<<"\t";
-    //  cout <<"... lvH0 = "<<NV_Ith_S(y_in, lv_H0)<<"... ydot =
-    //  "<<NV_Ith_S(y_out, lv_H0)<<" \n"; rep.printVec("p_in",p_in,nv_prim);
-    //}
+  t = min(t, DTFRAC / (fabs(NV_Ith_S(y_out, lv_H0)) + TINYVALUE));
+  // if (t<1.0e8) {
+  //  cout <<"limit by dx: dt=";
+  //  cout <<DTFRAC/(fabs(NV_Ith_S(y_out, lv_H0))+TINYVALUE)<<"\t";
+  //  cout <<"... lvH0 = "<<NV_Ith_S(y_in, lv_H0)<<"... ydot =
+  //  "<<NV_Ith_S(y_out, lv_H0)<<" \n"; rep.printVec("p_in",p_in,nv_prim);
+  //}
 #endif
 
 #ifdef MPV3_DEBUG
-    if (t < 3.16e9) {
-        cout << "MP timescales: xdot=" << NV_Ith_S(y_out, lv_H0);
-        cout << ", Edot=" << NV_Ith_S(y_out, lv_eint) << " t_x=" << t;
-    }
+  if (t < 3.16e9) {
+    cout << "MP timescales: xdot=" << NV_Ith_S(y_out, lv_H0);
+    cout << ", Edot=" << NV_Ith_S(y_out, lv_eint) << " t_x=" << t;
+  }
 #endif  // MPV3_DEBUG
 
 #ifdef ENERGY_CHANGE_TIMESTEP_LIMIT
-    //
-    // Now cooling/heating time to limit to X% change in energy).
-    //
-    t = min(
-        t, DTFRAC * P[lv_eint] / (fabs(NV_Ith_S(y_out, lv_eint)) + TINYVALUE));
+  //
+  // Now cooling/heating time to limit to X% change in energy).
+  //
+  t = min(
+      t, DTFRAC * P[lv_eint] / (fabs(NV_Ith_S(y_out, lv_eint)) + TINYVALUE));
 #endif
 
 #ifdef MPV3_DEBUG
-    if (t < 3.16e9) {
-        cout << " and min(t_x,t_e)=" << t << ",  ";
-        rep.printVec("P[1-x,E]", P, nvl);
-    }
+  if (t < 3.16e9) {
+    cout << " and min(t_x,t_e)=" << t << ",  ";
+    rep.printVec("P[1-x,E]", P, nvl);
+  }
 #endif  // MPV3_DEBUG
-    return t;
+  return t;
 }
 
 // ##################################################################
@@ -1335,23 +1323,22 @@ double MPv3::total_cooling_rate(
     const double  ///< EOS gamma.
 )
 {
-    double P[nvl];
-    int err = convert_prim2local(p_in, P);
-    if (err) {
-        rep.error("Bad input state to MPv3::total_cooling_rate()", err);
-    }
-    NV_Ith_S(y_in, lv_H0)   = P[lv_H0];
-    NV_Ith_S(y_in, lv_eint) = P[lv_eint];
+  double P[nvl];
+  int err = convert_prim2local(p_in, P);
+  if (err) {
+    rep.error("Bad input state to MPv3::total_cooling_rate()", err);
+  }
+  NV_Ith_S(y_in, lv_H0)   = P[lv_H0];
+  NV_Ith_S(y_in, lv_eint) = P[lv_eint];
 
-    // set the radiation properties of the current cell.
-    setup_radiation_source_parameters(
-        p_in, P, N_heat, heat_src, N_ion, ion_src);
-    // Now calculate y-dot[]...
-    err = ydot(0, y_in, y_out, 0);
-    if (err) {
-        rep.error("dYdt(): error in MPv3::total_cooling_rate()()", err);
-    }
-    return NV_Ith_S(y_out, lv_eint);
+  // set the radiation properties of the current cell.
+  setup_radiation_source_parameters(p_in, P, N_heat, heat_src, N_ion, ion_src);
+  // Now calculate y-dot[]...
+  err = ydot(0, y_in, y_out, 0);
+  if (err) {
+    rep.error("dYdt(): error in MPv3::total_cooling_rate()()", err);
+  }
+  return NV_Ith_S(y_out, lv_eint);
 }
 
 // ##################################################################
@@ -1364,25 +1351,25 @@ double MPv3::get_recombination_rate(
 )
 {
 #ifdef FUNCTION_ID
-    cout << "MPv3::get_recombination_rate()\n";
+  cout << "MPv3::get_recombination_rate()\n";
 #endif  // FUNCTION_ID
-    double rate = 0.0;
-    double P[nvl];
-    //
-    // First convert to local variables.
-    //
-    convert_prim2local(p_in, P);
-    //
-    // Now get rate
-    //
-    rate =
-        Hii_rad_recomb_rate(get_temperature(mpv_nH, P[lv_eint], 1.0 - P[lv_H0]))
-        * mpv_nH * mpv_nH * (1.0 - P[lv_H0]) * (1.0 - P[lv_H0]) * JM_NELEC;
+  double rate = 0.0;
+  double P[nvl];
+  //
+  // First convert to local variables.
+  //
+  convert_prim2local(p_in, P);
+  //
+  // Now get rate
+  //
+  rate =
+      Hii_rad_recomb_rate(get_temperature(mpv_nH, P[lv_eint], 1.0 - P[lv_H0]))
+      * mpv_nH * mpv_nH * (1.0 - P[lv_H0]) * (1.0 - P[lv_H0]) * JM_NELEC;
 
 #ifdef FUNCTION_ID
-    cout << "MPv3::get_recombination_rate()\n";
+  cout << "MPv3::get_recombination_rate()\n";
 #endif  // FUNCTION_ID
-    return rate;
+  return rate;
 }
 
 // ##################################################################
@@ -1399,190 +1386,184 @@ void MPv3::setup_radiation_source_parameters(
     ///< list of ionising src column densities and source properties.
 )
 {
-    //-------------------- RADIATION SOURCE INFO -----------------------
-    //
-    // First deal with the column densities and source strengths to get the UV
-    // heating and EUV ionisation+heating rates.
-    //
+  //-------------------- RADIATION SOURCE INFO -----------------------
+  //
+  // First deal with the column densities and source strengths to get the UV
+  // heating and EUV ionisation+heating rates.
+  //
 #ifdef MPV3_DEBUG
-    if (heat_src.size() != static_cast<unsigned int>(N_heat)) {
-        rep.error(
-            "Timescales: N_heating_srcs doesn't match vector size in MP3",
-            heat_src.size());
-    }
-    if (ion_src.size() != static_cast<unsigned int>(N_ion)) {
-        rep.error(
-            "Timescales: N_ionising_srcs doesn't match vector size in MP3",
-            ion_src.size());
-    }
+  if (heat_src.size() != static_cast<unsigned int>(N_heat)) {
+    rep.error(
+        "Timescales: N_heating_srcs doesn't match vector size in MP3",
+        heat_src.size());
+  }
+  if (ion_src.size() != static_cast<unsigned int>(N_ion)) {
+    rep.error(
+        "Timescales: N_ionising_srcs doesn't match vector size in MP3",
+        ion_src.size());
+  }
 #endif  // MPV3_DEBUG
 
-    //
-    // We need:
-    // - nH  (already obtained and set in convert_prim2local())
-    // - mpv_Vshell
-    // - mpv_Tau0
-    // - mpv_dTau0
-    // - mpv_G0_UV
-    // - mpv_G0_IR
-    // - mpv_delta_S
-    //
+  //
+  // We need:
+  // - nH  (already obtained and set in convert_prim2local())
+  // - mpv_Vshell
+  // - mpv_Tau0
+  // - mpv_dTau0
+  // - mpv_G0_UV
+  // - mpv_G0_IR
+  // - mpv_delta_S
+  //
 
-    //-------------------- VSHELL AND DELTA_S -----------------------
+  //-------------------- VSHELL AND DELTA_S -----------------------
+  //
+  // We set mpv_Vshell to huge value so that if there is no source,
+  // it will divide the effect to zero (if it gets used).
+  //
+  mpv_delta_S = 0.0;
+  mpv_Vshell  = 1.0e200;
+  if (N_ion > 0) {
+    mpv_delta_S = ion_src[0].dS;
+    mpv_Vshell  = ion_src[0].Vshell;
+  }
+  if (N_ion == 0 && N_heat > 0) {
     //
-    // We set mpv_Vshell to huge value so that if there is no source,
-    // it will divide the effect to zero (if it gets used).
+    // if no ionising sources, there may still be a point UV-heating source
+    // which we need mpv_Vshell for.  here DelCol = rho*ds.
     //
-    mpv_delta_S = 0.0;
-    mpv_Vshell  = 1.0e200;
-    if (N_ion > 0) {
-        mpv_delta_S = ion_src[0].dS;
-        mpv_Vshell  = ion_src[0].Vshell;
-    }
-    if (N_ion == 0 && N_heat > 0) {
-        //
-        // if no ionising sources, there may still be a point UV-heating source
-        // which we need mpv_Vshell for.  here DelCol = rho*ds.
-        //
-        for (int v = 0; v < N_heat; v++) {
-            if (heat_src[v].type == RT_SRC_SINGLE) {
+    for (int v = 0; v < N_heat; v++) {
+      if (heat_src[v].type == RT_SRC_SINGLE) {
 #ifdef MPV3_DEBUG
-                if (P[lv_H0] > 0.01) {
-                    cout << "setup_rad_src_params: heating:  ds="
-                         << heat_src[v].DelCol[0] / p_in[RO];
-                    cout << ", mpv_Vshell=" << heat_src[v].Vshell << "\n";
-                }
-#endif  // MPV3_DEBUG
-                mpv_delta_S = heat_src[v].dS;
-                mpv_Vshell  = heat_src[v].Vshell;
-            }
+        if (P[lv_H0] > 0.01) {
+          cout << "setup_rad_src_params: heating:  ds="
+               << heat_src[v].DelCol[0] / p_in[RO];
+          cout << ", mpv_Vshell=" << heat_src[v].Vshell << "\n";
         }
+#endif  // MPV3_DEBUG
+        mpv_delta_S = heat_src[v].dS;
+        mpv_Vshell  = heat_src[v].Vshell;
+      }
     }
-    //-------------------- VSHELL AND DELTA_S -----------------------
+  }
+  //-------------------- VSHELL AND DELTA_S -----------------------
 
-    //-------------------- mpv_Tau0 and mpv_dTau0 -----------------------
-    //
-    // If the point source is ionising, we need N(H0), dN(H0).  The
-    // luminosity is already set in the MP class constructor by a call to
-    // Setup_photoionisation_rate_table(Tstar,Rstar,etc).
-    // Most H-ionising photons can't ionise He, so best that it doesn't
-    // contribute to the opacity.
-    // Column and DelCol are Tau and delta-Tau, to the cell and through
-    // the cell, respectively.
-    //
-    //
-    if (N_ion > 0) {
-        mpv_Tau0  = ion_src[0].Column[0];
-        mpv_dTau0 = ion_src[0].DelCol[0];
-    }
-    else {
-        mpv_Tau0  = 0.0;
-        mpv_dTau0 = 0.0;
-    }
-    //-------------------- mpv_Tau0 and mpv_dTau0 -----------------------
+  //-------------------- mpv_Tau0 and mpv_dTau0 -----------------------
+  //
+  // If the point source is ionising, we need N(H0), dN(H0).  The
+  // luminosity is already set in the MP class constructor by a call to
+  // Setup_photoionisation_rate_table(Tstar,Rstar,etc).
+  // Most H-ionising photons can't ionise He, so best that it doesn't
+  // contribute to the opacity.
+  // Column and DelCol are Tau and delta-Tau, to the cell and through
+  // the cell, respectively.
+  //
+  //
+  if (N_ion > 0) {
+    mpv_Tau0  = ion_src[0].Column[0];
+    mpv_dTau0 = ion_src[0].DelCol[0];
+  }
+  else {
+    mpv_Tau0  = 0.0;
+    mpv_dTau0 = 0.0;
+  }
+  //-------------------- mpv_Tau0 and mpv_dTau0 -----------------------
 
-    //-------------------- mpv_G0_UV and mpv_G0_IR -----------------------
+  //-------------------- mpv_G0_UV and mpv_G0_IR -----------------------
+  //
+  // Hard-coded to assume UV radiation opacity comes from dust with
+  // sigma=5e-22 cm2, and that the input is \int \rho ds, integrated
+  // to the front edge of the cell. Diffuse radiation strength is an
+  // intensity (i.e. per solid angle), so the total flux going into
+  // the solver will be roughly: sum(I(Omega)*delta-Omega)exp(-1.9Av)
+  // This comes from Henney et al. (2009) eq. A3.
+  //
+  // Column = Av to cell from source, DelCol is delta-Av through cell
+  // TODO: Check value of 1.9 for extinction.
+  //
+  mpv_G0_UV = 0.0;
+  mpv_G0_IR = 0.0;
+  if (N_heat > 0) {
+    double temp  = 0.0;
+    int i_diff   = 0;
+    double Av_UV = 1.90;
+    double Av_IR = 0.05;
+
+    for (int v = 0; v < N_heat; v++) {
+      if (heat_src[v].type == RT_SRC_DIFFUSE) {
+        temp = heat_src[v].strength[0] * diff_angle[i_diff];
+#ifdef MPV3_DEBUG
+        cout << "setup_rad_src_params:\tdiffuse src: id=" << heat_src[v].id
+             << " 1.9Av=" << Av_UV * heat_src[v].Column[0];
+        cout << ", strength=" << heat_src[v].strength[0]
+             << ", angle=" << diff_angle[i_diff];
+        cout << ": attenuated flux="
+             << temp * exp(-Av_UV * heat_src[v].Column[0]) << "\n";
+#endif  // MPV3_DEBUG
+        mpv_G0_UV += temp * exp(-Av_UV * heat_src[v].Column[0]);
+        mpv_G0_IR += temp * exp(-Av_IR * heat_src[v].Column[0]);
+        i_diff++;
+#ifdef MPV3_DEBUG
+        cout << "UV_diff_flux=" << temp * exp(-Av_UV * heat_src[v].Column[0]);
+        cout << " Col=" << heat_src[v].Column[0]
+             << " Av=" << Av_UV * heat_src[v].Column[0] / 1.9 << "\n";
+#endif  // MPV3_DEBUG
+      }
+      else {
+        //
+        // This source must be a point source of UV heating.
+        // In this case the strength is
+        // the photon luminosity, so flux = L*ds*exp(-1.9Av)/mpv_Vshell
+        //
+        // cout <<"heat_src[v].strength "<<heat_src[v].strength[0];
+        temp = heat_src[v].strength[0] * mpv_delta_S / heat_src[v].Vshell;
+#ifdef MPV3_DEBUG
+        cout << "setup_rad_src_params:\tpoint   src: id=";
+        cout << heat_src[v].id << " 1.9Av=" << Av_UV * heat_src[v].Column[0];
+        cout << ", strength=" << heat_src[v].strength[0]
+             << ", ds=" << mpv_delta_S;
+        cout << ", mpv_Vshell=" << heat_src[v].Vshell;
+        cout << ": attenuated flux=";
+        cout << temp * exp(-Av_UV * heat_src[v].Column[0]) << "\n";
+#endif  // MPV3_DEBUG
+        mpv_G0_UV += temp * exp(-Av_UV * heat_src[v].Column[0]);
+        mpv_G0_IR += temp * exp(-Av_IR * heat_src[v].Column[0]);
+#ifdef MPV3_DEBUG
+        cout << "UV_ptsc_flux=" << temp * exp(-Av_UV * heat_src[v].Column[0])
+             << "\n";
+        cout << "UV_ptsc_flux=" << temp * exp(-Av_UV * heat_src[v].Column[0]);
+        cout << " Col=" << heat_src[v].Column[0] << " Av=";
+        cout << Av_UV * heat_src[v].Column[0] / 1.9 << "\n";
+#endif  // MPV3_DEBUG
+      }
+    }  // loop over heating sources.
     //
-    // Hard-coded to assume UV radiation opacity comes from dust with
-    // sigma=5e-22 cm2, and that the input is \int \rho ds, integrated
-    // to the front edge of the cell. Diffuse radiation strength is an
-    // intensity (i.e. per solid angle), so the total flux going into
-    // the solver will be roughly: sum(I(Omega)*delta-Omega)exp(-1.9Av)
-    // This comes from Henney et al. (2009) eq. A3.
+    // now divide by 1.2e7 to get it normalised correctly for Will's
+    // equation A3.
     //
-    // Column = Av to cell from source, DelCol is delta-Av through cell
-    // TODO: Check value of 1.9 for extinction.
-    //
+    mpv_G0_UV /= 1.2e7;
+    mpv_G0_IR /= 1.2e7;
+    // cout <<"  "<<mpv_G0_UV<<"  "<<mpv_G0_IR<<"\n";
+#ifdef MPV3_DEBUG
+    if (mpv_G0_UV > 1.0) {
+      cout << "\tTotal UV attenuated flux = " << mpv_G0_UV
+           << " in units of 1.2e7 phot/cm2/s\n";
+    }
+#endif  // MPV3_DEBUG
+  }     // If there are UV heating sources
+  else {
     mpv_G0_UV = 0.0;
     mpv_G0_IR = 0.0;
-    if (N_heat > 0) {
-        double temp  = 0.0;
-        int i_diff   = 0;
-        double Av_UV = 1.90;
-        double Av_IR = 0.05;
-
-        for (int v = 0; v < N_heat; v++) {
-            if (heat_src[v].type == RT_SRC_DIFFUSE) {
-                temp = heat_src[v].strength[0] * diff_angle[i_diff];
-#ifdef MPV3_DEBUG
-                cout << "setup_rad_src_params:\tdiffuse src: id="
-                     << heat_src[v].id
-                     << " 1.9Av=" << Av_UV * heat_src[v].Column[0];
-                cout << ", strength=" << heat_src[v].strength[0]
-                     << ", angle=" << diff_angle[i_diff];
-                cout << ": attenuated flux="
-                     << temp * exp(-Av_UV * heat_src[v].Column[0]) << "\n";
-#endif  // MPV3_DEBUG
-                mpv_G0_UV += temp * exp(-Av_UV * heat_src[v].Column[0]);
-                mpv_G0_IR += temp * exp(-Av_IR * heat_src[v].Column[0]);
-                i_diff++;
-#ifdef MPV3_DEBUG
-                cout << "UV_diff_flux="
-                     << temp * exp(-Av_UV * heat_src[v].Column[0]);
-                cout << " Col=" << heat_src[v].Column[0]
-                     << " Av=" << Av_UV * heat_src[v].Column[0] / 1.9 << "\n";
-#endif  // MPV3_DEBUG
-            }
-            else {
-                //
-                // This source must be a point source of UV heating.
-                // In this case the strength is
-                // the photon luminosity, so flux = L*ds*exp(-1.9Av)/mpv_Vshell
-                //
-                // cout <<"heat_src[v].strength "<<heat_src[v].strength[0];
-                temp =
-                    heat_src[v].strength[0] * mpv_delta_S / heat_src[v].Vshell;
-#ifdef MPV3_DEBUG
-                cout << "setup_rad_src_params:\tpoint   src: id=";
-                cout << heat_src[v].id
-                     << " 1.9Av=" << Av_UV * heat_src[v].Column[0];
-                cout << ", strength=" << heat_src[v].strength[0]
-                     << ", ds=" << mpv_delta_S;
-                cout << ", mpv_Vshell=" << heat_src[v].Vshell;
-                cout << ": attenuated flux=";
-                cout << temp * exp(-Av_UV * heat_src[v].Column[0]) << "\n";
-#endif  // MPV3_DEBUG
-                mpv_G0_UV += temp * exp(-Av_UV * heat_src[v].Column[0]);
-                mpv_G0_IR += temp * exp(-Av_IR * heat_src[v].Column[0]);
-#ifdef MPV3_DEBUG
-                cout << "UV_ptsc_flux="
-                     << temp * exp(-Av_UV * heat_src[v].Column[0]) << "\n";
-                cout << "UV_ptsc_flux="
-                     << temp * exp(-Av_UV * heat_src[v].Column[0]);
-                cout << " Col=" << heat_src[v].Column[0] << " Av=";
-                cout << Av_UV * heat_src[v].Column[0] / 1.9 << "\n";
-#endif  // MPV3_DEBUG
-            }
-        }  // loop over heating sources.
-        //
-        // now divide by 1.2e7 to get it normalised correctly for Will's
-        // equation A3.
-        //
-        mpv_G0_UV /= 1.2e7;
-        mpv_G0_IR /= 1.2e7;
-        // cout <<"  "<<mpv_G0_UV<<"  "<<mpv_G0_IR<<"\n";
-#ifdef MPV3_DEBUG
-        if (mpv_G0_UV > 1.0) {
-            cout << "\tTotal UV attenuated flux = " << mpv_G0_UV
-                 << " in units of 1.2e7 phot/cm2/s\n";
-        }
-#endif  // MPV3_DEBUG
-    }   // If there are UV heating sources
-    else {
-        mpv_G0_UV = 0.0;
-        mpv_G0_IR = 0.0;
-    }
-    //-------------------- mpv_G0_UV and mpv_G0_IR -----------------------
+  }
+  //-------------------- mpv_G0_UV and mpv_G0_IR -----------------------
 
 #ifdef RT_TESTING
-    // if (P[lv_H0]>0.01) {
-    cout << "MPv3: ionising: ds=" << mpv_delta_S
-         << ", mpv_Vshell=" << mpv_Vshell;
-    cout << ": mpv_Tau0=" << mpv_Tau0 << ", mpv_dTau0=" << mpv_dTau0
-         << ", nH=" << mpv_nH << "\n";
-    //}
+  // if (P[lv_H0]>0.01) {
+  cout << "MPv3: ionising: ds=" << mpv_delta_S << ", mpv_Vshell=" << mpv_Vshell;
+  cout << ": mpv_Tau0=" << mpv_Tau0 << ", mpv_dTau0=" << mpv_dTau0
+       << ", nH=" << mpv_nH << "\n";
+  //}
 #endif
-    return;
+  return;
 }
 
 // ##################################################################
@@ -1595,356 +1576,351 @@ int MPv3::ydot(
     const double*          ///< extra user-data vector (UNUSED)
 )
 {
-    //
-    // fixes min-neutral-fraction to Min_NeutralFrac
-    //
-    double OneMinusX = max(NV_Ith_S(y_now, lv_H0), Min_NeutralFrac);
-    double E_in      = NV_Ith_S(y_now, lv_eint);
-    double x_in      = 1.0 - OneMinusX;
+  //
+  // fixes min-neutral-fraction to Min_NeutralFrac
+  //
+  double OneMinusX = max(NV_Ith_S(y_now, lv_H0), Min_NeutralFrac);
+  double E_in      = NV_Ith_S(y_now, lv_eint);
+  double x_in      = 1.0 - OneMinusX;
 
-    // First get the temperature.
-    double T = get_temperature(mpv_nH, E_in, x_in);
+  // First get the temperature.
+  double T = get_temperature(mpv_nH, E_in, x_in);
 
-    // now get electron density
-    double ne    = JM_NELEC * x_in * mpv_nH;
-    double expnh = exp(-mpv_nH / 1.0e4);
-    // We set a minimum electron density based on the idea that Carbon is singly
-    // ionised in low density gas.  y(C)=1.5e-4 in the gas phase (by number)
-    // (Sofia,1997), with an exponential cutoff at high densities.
-    ne += mpv_nH * 1.5e-4 * METALLICITY * expnh;
+  // now get electron density
+  double ne    = JM_NELEC * x_in * mpv_nH;
+  double expnh = exp(-mpv_nH / 1.0e4);
+  // We set a minimum electron density based on the idea that Carbon is singly
+  // ionised in low density gas.  y(C)=1.5e-4 in the gas phase (by number)
+  // (Sofia,1997), with an exponential cutoff at high densities.
+  ne += mpv_nH * 1.5e-4 * METALLICITY * expnh;
 
-    //  int iT = -1;
-    //  do {iT++;} while (T >= lt.T[iT]);
-    //  if (iT>0) iT--;
-    //  double dT = T - lt.T[iT];
-    //  //cout <<"T="<<T<<", T[it]="<<lt.T[iT]<<", T[it+1]="<<lt.T[iT+1]<<"\n";
-    //
-    //  int ie = -1;
-    //  do {ie++;} while (ne >= lt.ne[ie]);
-    //  if (ie>0) ie--;
-    //  double dne = ne - lt.ne[ie];
+  //  int iT = -1;
+  //  do {iT++;} while (T >= lt.T[iT]);
+  //  if (iT>0) iT--;
+  //  double dT = T - lt.T[iT];
+  //  //cout <<"T="<<T<<", T[it]="<<lt.T[iT]<<", T[it+1]="<<lt.T[iT+1]<<"\n";
+  //
+  //  int ie = -1;
+  //  do {ie++;} while (ne >= lt.ne[ie]);
+  //  if (ie>0) ie--;
+  //  double dne = ne - lt.ne[ie];
 
-    // Get T-vector index
-    int iT     = 0;
-    size_t ihi = lt.NT - 1, ilo = 0, imid = 0;
-    do {
-        imid = ilo + floor((ihi - ilo) / 2.0);
-        if (lt.T[imid] < T)
-            ilo = imid;
-        else
-            ihi = imid;
-    } while (ihi - ilo > 1);
-    iT        = ilo;
-    double dT = T - lt.T[iT];
-    // cout <<"T="<<T<<", T[it]="<<lt.T[iT]<<", T[it+1]="<<lt.T[iT+1]<<"\n";
+  // Get T-vector index
+  int iT     = 0;
+  size_t ihi = lt.NT - 1, ilo = 0, imid = 0;
+  do {
+    imid = ilo + floor((ihi - ilo) / 2.0);
+    if (lt.T[imid] < T)
+      ilo = imid;
+    else
+      ihi = imid;
+  } while (ihi - ilo > 1);
+  iT        = ilo;
+  double dT = T - lt.T[iT];
+  // cout <<"T="<<T<<", T[it]="<<lt.T[iT]<<", T[it+1]="<<lt.T[iT+1]<<"\n";
 
-    // Get ne-vector index
-    int ie = 0;
-    ihi = lt.NT - 1, ilo = 0, imid = 0;
-    do {
-        imid = ilo + floor((ihi - ilo) / 2.0);
-        if (lt.ne[imid] < ne)
-            ilo = imid;
-        else
-            ihi = imid;
-    } while (ihi - ilo > 1);
-    ie         = ilo;
-    double dne = ne - lt.ne[ie];
-    // cout <<"ne="<<ne<<", ne[ie]="<<lt.ne[ie]<<",
-    // ne[ie+1]="<<lt.ne[ie+1]<<"\n";
+  // Get ne-vector index
+  int ie = 0;
+  ihi = lt.NT - 1, ilo = 0, imid = 0;
+  do {
+    imid = ilo + floor((ihi - ilo) / 2.0);
+    if (lt.ne[imid] < ne)
+      ilo = imid;
+    else
+      ihi = imid;
+  } while (ihi - ilo > 1);
+  ie         = ilo;
+  double dne = ne - lt.ne[ie];
+  // cout <<"ne="<<ne<<", ne[ie]="<<lt.ne[ie]<<",
+  // ne[ie+1]="<<lt.ne[ie+1]<<"\n";
 
 #ifdef TEST_INF
-    if (!isfinite(mpv_nH) || !isfinite(mpv_delta_S) || !isfinite(mpv_Tau0)
-        || !isfinite(mpv_Vshell) || !isfinite(E_in) || !isfinite(OneMinusX)) {
-        cout << "NAN in ydot: " << mpv_nH << "  " << mpv_delta_S;
-        cout << "  " << mpv_Tau0 << "  " << mpv_Vshell << "  ";
-        cout << E_in << "  " << OneMinusX << "\n";
-    }
+  if (!isfinite(mpv_nH) || !isfinite(mpv_delta_S) || !isfinite(mpv_Tau0)
+      || !isfinite(mpv_Vshell) || !isfinite(E_in) || !isfinite(OneMinusX)) {
+    cout << "NAN in ydot: " << mpv_nH << "  " << mpv_delta_S;
+    cout << "  " << mpv_Tau0 << "  " << mpv_Vshell << "  ";
+    cout << E_in << "  " << OneMinusX << "\n";
+  }
 #endif
 
-    double temp1 = 0.0, temp2 = 0.0;
-    double oneminusx_dot = 0.0;  // oneminusx_dot is in units of 1/s
-    double Edot          = 0.0;
-    // Edot is calculated in units of erg/s per H nucleon, multiplied by mpv_nH
-    // at the end.
+  double temp1 = 0.0, temp2 = 0.0;
+  double oneminusx_dot = 0.0;  // oneminusx_dot is in units of 1/s
+  double Edot          = 0.0;
+  // Edot is calculated in units of erg/s per H nucleon, multiplied by mpv_nH
+  // at the end.
 
-    //
-    // collisional ionisation of H, with its associated cooling.
-    // scales with n_e*nH0
-    //
-    temp1 = lt.cirh[iT] + dT * lt.s_cirh[iT];
-    oneminusx_dot -=
-        temp1 * ne * OneMinusX;  // the nH is divided out on both sides.
+  //
+  // collisional ionisation of H, with its associated cooling.
+  // scales with n_e*nH0
+  //
+  temp1 = lt.cirh[iT] + dT * lt.s_cirh[iT];
+  oneminusx_dot -=
+      temp1 * ne * OneMinusX;  // the nH is divided out on both sides.
 
-    temp2 = lt.C_cih0[iT] + dT * lt.s_C_cih0[iT];
-    Edot -= temp2 * ne * OneMinusX;
-    // cout <<"CI-CR="<< temp2*ne*OneMinusX<<"\n";
-    // if (x_in>0.98 && T>2000.0) cout <<T<<"  "<< temp2*ne*OneMinusX <<"  ";
+  temp2 = lt.C_cih0[iT] + dT * lt.s_C_cih0[iT];
+  Edot -= temp2 * ne * OneMinusX;
+  // cout <<"CI-CR="<< temp2*ne*OneMinusX<<"\n";
+  // if (x_in>0.98 && T>2000.0) cout <<T<<"  "<< temp2*ne*OneMinusX <<"  ";
 
+  //
+  // photo-ionisation of H: photoionisation rate uses equation 18 in Mellema
+  // et al. 2006 (C2-ray paper), noting that their Gamma is the rate per
+  // neutral H, so we multiply by 1-x, as in their equation 11.
+  //
+  if (N_ion_srcs) {
     //
-    // photo-ionisation of H: photoionisation rate uses equation 18 in Mellema
-    // et al. 2006 (C2-ray paper), noting that their Gamma is the rate per
-    // neutral H, so we multiply by 1-x, as in their equation 11.
+    // set current cell dTau0
     //
-    if (N_ion_srcs) {
+    temp1 = mpv_nH * mpv_delta_S * OneMinusX
+            * Hi_monochromatic_photo_ion_xsection(JUST_IONISED);
+
+    switch (ion_src_type) {
+      case RT_EFFECT_MFION:
         //
-        // set current cell dTau0
+        // Rather than divide the discretised rate by n(H0) and then
+        // multiply by (1-x) to get oneminusx_dot, we simply divide by
+        // n(H) since this is more numerically stable.  To do this, n(H)
+        // is passed to the rate function instead of n(H0).
         //
-        temp1 = mpv_nH * mpv_delta_S * OneMinusX
-                * Hi_monochromatic_photo_ion_xsection(JUST_IONISED);
+        // Also, instead of using mpv_dTau0 for the cell optical depth,
+        // we use the current optical depth (nH*mpv_delta_S*OneMinusX)
+        // so that we allow the photoionisation rate to decrease as the
+        // number of neutral atoms decreases during the timestep.  This
+        // is more stable.
+        //
+        oneminusx_dot -= Hi_discrete_multifreq_photoion_rate(
+            mpv_Tau0, temp1, mpv_nH, mpv_delta_S, mpv_Vshell);
+        Edot += Hi_discrete_multifreq_photoheating_rate(
+            mpv_Tau0, temp1, mpv_nH, mpv_delta_S, mpv_Vshell);
+        // if (x_in>0.98 && T>2000.0) cout <<"PI-heat "<<
+        // Hi_discrete_multifreq_photoheating_rate(mpv_Tau0, temp1,
+        // mpv_nH, mpv_delta_S, mpv_Vshell)<<"\n";
+        break;
 
-        switch (ion_src_type) {
-            case RT_EFFECT_MFION:
-                //
-                // Rather than divide the discretised rate by n(H0) and then
-                // multiply by (1-x) to get oneminusx_dot, we simply divide by
-                // n(H) since this is more numerically stable.  To do this, n(H)
-                // is passed to the rate function instead of n(H0).
-                //
-                // Also, instead of using mpv_dTau0 for the cell optical depth,
-                // we use the current optical depth (nH*mpv_delta_S*OneMinusX)
-                // so that we allow the photoionisation rate to decrease as the
-                // number of neutral atoms decreases during the timestep.  This
-                // is more stable.
-                //
-                oneminusx_dot -= Hi_discrete_multifreq_photoion_rate(
-                    mpv_Tau0, temp1, mpv_nH, mpv_delta_S, mpv_Vshell);
-                Edot += Hi_discrete_multifreq_photoheating_rate(
-                    mpv_Tau0, temp1, mpv_nH, mpv_delta_S, mpv_Vshell);
-                // if (x_in>0.98 && T>2000.0) cout <<"PI-heat "<<
-                // Hi_discrete_multifreq_photoheating_rate(mpv_Tau0, temp1,
-                // mpv_nH, mpv_delta_S, mpv_Vshell)<<"\n";
-                break;
-
-            case RT_EFFECT_PION_MONO:
-                //
-                // hardcoded for a hv-13.6eV = 5.0eV monochromatic source.
-                //
+      case RT_EFFECT_PION_MONO:
+        //
+        // hardcoded for a hv-13.6eV = 5.0eV monochromatic source.
+        //
 #define PHOTON_ENERGY 2.98e-11  // 5 eV
 #define EXCESS_ENERGY 8.01e-12
-                //#define PHOTON_ENERGY 2.24e-11
-                //#define EXCESS_ENERGY 0.64e-12
-                //#define PHOTON_ENERGY 2.499e-11  // 2 eV
-                //#define EXCESS_ENERGY 3.204e-12
-                temp1 = Hi_discrete_mono_photoion_rate(
-                    mpv_Tau0, temp1, mpv_nH, mpv_NIdot, PHOTON_ENERGY,
-                    mpv_delta_S, mpv_Vshell);
-                oneminusx_dot -= temp1;
-                Edot += temp1 * EXCESS_ENERGY;
-                // cout <<"PI-HR="<<temp1*EXCESS_ENERGY<<"\n";
-                break;
+        //#define PHOTON_ENERGY 2.24e-11
+        //#define EXCESS_ENERGY 0.64e-12
+        //#define PHOTON_ENERGY 2.499e-11  // 2 eV
+        //#define EXCESS_ENERGY 3.204e-12
+        temp1 = Hi_discrete_mono_photoion_rate(
+            mpv_Tau0, temp1, mpv_nH, mpv_NIdot, PHOTON_ENERGY, mpv_delta_S,
+            mpv_Vshell);
+        oneminusx_dot -= temp1;
+        Edot += temp1 * EXCESS_ENERGY;
+        // cout <<"PI-HR="<<temp1*EXCESS_ENERGY<<"\n";
+        break;
 
-            default:
-                rep.error("Bad ion_src_type in dYdt()", ion_src_type);
-                break;
-        }  // switch
-    }
+      default:
+        rep.error("Bad ion_src_type in dYdt()", ion_src_type);
+        break;
+    }  // switch
+  }
 
-    // radiative recombination of H+
-    oneminusx_dot += (lt.rrhp[iT] + dT * lt.s_rrhp[iT]) * x_in * ne;
-    // Total H+ cooling: recombination plus free-free
-    Edot -= (lt.C_rrh[iT] + dT * lt.s_C_rrh[iT]) * x_in * ne;
-    // if (x_in>0.98 && T>2000.0) cout <<"HII-TC="<<(lt.C_rrh[iT] +
-    // dT*lt.s_C_rrh[iT]) *x_in*ne <<"\n";
+  // radiative recombination of H+
+  oneminusx_dot += (lt.rrhp[iT] + dT * lt.s_rrhp[iT]) * x_in * ne;
+  // Total H+ cooling: recombination plus free-free
+  Edot -= (lt.C_rrh[iT] + dT * lt.s_C_rrh[iT]) * x_in * ne;
+  // if (x_in>0.98 && T>2000.0) cout <<"HII-TC="<<(lt.C_rrh[iT] +
+  // dT*lt.s_C_rrh[iT]) *x_in*ne <<"\n";
 
-    // Add Helium free-free
+  // Add Helium free-free
 #ifndef HE_INERT
-    // Only if He is ionised, otherwise it has no free-free.
-    Edot -= (lt.C_ffhe[iT] + dT * lt.s_C_ffhe[iT]) * x_in * ne;
+  // Only if He is ionised, otherwise it has no free-free.
+  Edot -= (lt.C_ffhe[iT] + dT * lt.s_C_ffhe[iT]) * x_in * ne;
 // if (x_in>0.98 && T>2000.0) cout <<"He FF "<< (lt.C_ffhe[iT] +
 // dT*lt.s_C_ffhe[iT]) *x_in*ne<<"\n";
 #endif  // HE_INERT
 
-    // collisional excitation cooling of H0 Aggarwal (1983) and
-    // Raga+(1997,ApJS).
-    Edot -= (lt.C_cxh0[iT] + dT * lt.s_C_cxh0[iT]) * OneMinusX * ne;
-    // if (x_in>0.98 && T>2000.0) cout <<"CE-CR="<<(lt.C_cxh0[iT] +
-    // dT*lt.s_C_cxh0[iT])*OneMinusX*ne<<"\n";
+  // collisional excitation cooling of H0 Aggarwal (1983) and
+  // Raga+(1997,ApJS).
+  Edot -= (lt.C_cxh0[iT] + dT * lt.s_C_cxh0[iT]) * OneMinusX * ne;
+  // if (x_in>0.98 && T>2000.0) cout <<"CE-CR="<<(lt.C_cxh0[iT] +
+  // dT*lt.s_C_cxh0[iT])*OneMinusX*ne<<"\n";
+  //
+  // --------- END OF HYDROGEN COOLING, MOVING TO METAL COOLING --------
+  //
+  //
+  // Now we get to the less certain elements of the cooling/heating function.
+  // First we do the heating:
+  //
+  if (N_diff_srcs) {
     //
-    // --------- END OF HYDROGEN COOLING, MOVING TO METAL COOLING --------
+    // UV heating due to both diffuse radiation and point source radiation.
+    // The quantity mpv_G0_UV is as defined in Henney et al. (2009) Appendix
+    // A1, Eq.A3, and is set in set_parameters_for_current step()
     //
-    //
-    // Now we get to the less certain elements of the cooling/heating function.
-    // First we do the heating:
-    //
-    if (N_diff_srcs) {
-        //
-        // UV heating due to both diffuse radiation and point source radiation.
-        // The quantity mpv_G0_UV is as defined in Henney et al. (2009) Appendix
-        // A1, Eq.A3, and is set in set_parameters_for_current step()
-        //
-        // cout <<"adding diffuse heating! ";
-        Edot += 1.9e-26 * METALLICITY * mpv_G0_UV
-                / (1.0 + 6.4 * (mpv_G0_UV / mpv_nH));
-        // if (x_in>0.98 && T>2000.0)cout
-        // <<"DfUV="<<1.9e-26*METALLICITY*mpv_G0_UV/(1.0+6.4*(mpv_G0_UV/mpv_nH));
-
-        //
-        // IR heating (HAdCM09 eq.A6) from point source and/or diffuse
-        // radiation. There is a different G0 parameter because the attenuation
-        // is according to exp(-0.05Av) rather than before where the coefficient
-        // was 1.9.
-        //
-        temp1 = 1.0 + 3.0e4 / mpv_nH;
-        temp1 = temp1 * temp1;
-        Edot += 7.7e-32 * METALLICITY * mpv_G0_IR / temp1;
-        // if (x_in>0.98 && T>2000.0)cout
-        // <<"DfIR="<<7.7e-32*METALLICITY*mpv_G0_IR/temp1<<"\n";
-    }
-
-    // Cosmic ray heating (HAdCM09 eq.A7).
-    Edot += 5.0e-28 * OneMinusX;
-    // if (x_in>0.98 && T>2000.0)cout <<"CR-HR="<<5.0e-28*OneMinusX<<"\n";
-    // Cosmic Ray ionisation rate (Wolfire+,2003,eq.16) in solar neighbourhood.
-    oneminusx_dot -= 1.8e-17 * OneMinusX;
-
-    // Diffuse UV Heating rate (Wolfire+,2003,eq.20,21, Fig.10,b).
-    // Using the first term of eq.19, with
-    // phi_{PAH}=0.5 and G_0=1.7.  multiply by the neutral fraction OneMinusX
-    // because this heating term is only calculated for warm neutral medium.
-    temp1 =
-        lt.H_pah[iT][ie] + dT * lt.st_H_pah[iT][ie] + dne * lt.se_H_pah[iT][ie];
-    Edot += OneMinusX * temp1;
-    // if (x_in>0.98 && T>2000.0) cout <<"PAH-HR="<< OneMinusX * temp1<<"\n";
+    // cout <<"adding diffuse heating! ";
+    Edot +=
+        1.9e-26 * METALLICITY * mpv_G0_UV / (1.0 + 6.4 * (mpv_G0_UV / mpv_nH));
+    // if (x_in>0.98 && T>2000.0)cout
+    // <<"DfUV="<<1.9e-26*METALLICITY*mpv_G0_UV/(1.0+6.4*(mpv_G0_UV/mpv_nH));
 
     //
-    // COOLING: First forbidden line cooling of e.g. OII,OIII, dominant in
-    // HII regions.  This is collisionally excited lines of photoionised metals.
-    // (HAdCM09 eq.A9) I have exponentially damped this at high temperatures
-    // Oxygen abundance set to 5.37e-4 from
-    // Asplund+(2009,ARAA), times 0.77 to account for 23% of O in solid dust.
+    // IR heating (HAdCM09 eq.A6) from point source and/or diffuse
+    // radiation. There is a different G0 parameter because the attenuation
+    // is according to exp(-0.05Av) rather than before where the coefficient
+    // was 1.9.
     //
-    temp1 = (lt.C_fbdn[iT] + dT * lt.s_C_fbdn[iT]) * x_in * ne;
+    temp1 = 1.0 + 3.0e4 / mpv_nH;
+    temp1 = temp1 * temp1;
+    Edot += 7.7e-32 * METALLICITY * mpv_G0_IR / temp1;
+    // if (x_in>0.98 && T>2000.0)cout
+    // <<"DfIR="<<7.7e-32*METALLICITY*mpv_G0_IR/temp1<<"\n";
+  }
 
-    //
-    // Now the Wiersma et al (2009,MN393,99) (metals-only) CIE cooling curve. We
-    // take the actual cooling rate to be the max of SD93-CIE and the previous
-    // two terms.
-    //
-    temp2 = (lt.C_cie[iT] + dT * lt.s_C_cie[iT]) * x_in * x_in * mpv_nH;
-    // This is the CII cooling by electron collisions.
-    // This rate has a very low critical density (Goldsmith, Langer et al.,
-    // 2012ApJS..203...13G), at n_c=20 cm^{-3} at 1000K, so we use their
-    // temperature scaling and divide by density according to
-    // rate = rate/(1.0 + 0.05*nH*(T/2000K)^(-0.37))
-    temp2 +=
-        (lt.C_cxce[iT][ie] + dT * lt.st_C_cxce[iT][ie]
-         + dne * lt.se_C_cxce[iT][ie]);
-    Edot -= max(temp1, temp2);
-    // if (x_in>0.98 && T>2000.0) cout <<"High-T"<< max(temp1,temp2)<<"\n";
+  // Cosmic ray heating (HAdCM09 eq.A7).
+  Edot += 5.0e-28 * OneMinusX;
+  // if (x_in>0.98 && T>2000.0)cout <<"CR-HR="<<5.0e-28*OneMinusX<<"\n";
+  // Cosmic Ray ionisation rate (Wolfire+,2003,eq.16) in solar neighbourhood.
+  oneminusx_dot -= 1.8e-17 * OneMinusX;
 
-    // Instead of the PDR cooling from Henney, use Wolfire's eq.C1,C3 for
-    // collisional cooling of CII and OI by neutral H atoms.  In eq.C3 I have
-    // absorbed the (100K)^{-0.4} into the prefactor, and used x^a=exp(a*ln(x)).
-    // I have cut off equation C1 at high densities to be consistent with the
-    // ion fraction of C that I assumed above for the electron density.
-    //
-    Edot -= (lt.C_cxch[iT] + dT * lt.s_C_cxch[iT]) * mpv_nH * OneMinusX * expnh;
-    Edot -= (lt.C_cxo[iT] + dT * lt.s_C_cxo[iT]) * mpv_nH * OneMinusX;
-    // if (x_in>0.98 && T>2000.0) cout <<"CII-HI "<< (lt.C_cxch[iT] +
-    // dT*lt.s_C_cxch[iT])*mpv_nH*OneMinusX*expnh <<"\n"; if (x_in>0.98 &&
-    // T>2000.0) cout <<"OI-HI  "<< (lt.C_cxo[iT]  + dT*lt.s_C_cxo[iT]
-    // )*mpv_nH*OneMinusX <<"\n";
+  // Diffuse UV Heating rate (Wolfire+,2003,eq.20,21, Fig.10,b).
+  // Using the first term of eq.19, with
+  // phi_{PAH}=0.5 and G_0=1.7.  multiply by the neutral fraction OneMinusX
+  // because this heating term is only calculated for warm neutral medium.
+  temp1 =
+      lt.H_pah[iT][ie] + dT * lt.st_H_pah[iT][ie] + dne * lt.se_H_pah[iT][ie];
+  Edot += OneMinusX * temp1;
+  // if (x_in>0.98 && T>2000.0) cout <<"PAH-HR="<< OneMinusX * temp1<<"\n";
 
-    //
-    // PAH cooling: eq. 21 in Wolfire+,2003.  I think they should have
-    // multiplied their equation by 1.3 for the increased PAH abundance...
-    //
-    Edot -=
-        (lt.C_pah[iT][ie] + dT * lt.st_C_pah[iT][ie]
-         + dne * lt.se_C_pah[iT][ie]);
-    // if (x_in>0.98 && T>2000.0) cout <<"PAH-C "<<(lt.C_pah[iT][ie] +
-    // dT*lt.st_C_pah[iT][ie] + dne*lt.se_C_pah[iT][ie]) <<"\n";
+  //
+  // COOLING: First forbidden line cooling of e.g. OII,OIII, dominant in
+  // HII regions.  This is collisionally excited lines of photoionised metals.
+  // (HAdCM09 eq.A9) I have exponentially damped this at high temperatures
+  // Oxygen abundance set to 5.37e-4 from
+  // Asplund+(2009,ARAA), times 0.77 to account for 23% of O in solid dust.
+  //
+  temp1 = (lt.C_fbdn[iT] + dT * lt.s_C_fbdn[iT]) * x_in * ne;
+
+  //
+  // Now the Wiersma et al (2009,MN393,99) (metals-only) CIE cooling curve. We
+  // take the actual cooling rate to be the max of SD93-CIE and the previous
+  // two terms.
+  //
+  temp2 = (lt.C_cie[iT] + dT * lt.s_C_cie[iT]) * x_in * x_in * mpv_nH;
+  // This is the CII cooling by electron collisions.
+  // This rate has a very low critical density (Goldsmith, Langer et al.,
+  // 2012ApJS..203...13G), at n_c=20 cm^{-3} at 1000K, so we use their
+  // temperature scaling and divide by density according to
+  // rate = rate/(1.0 + 0.05*nH*(T/2000K)^(-0.37))
+  temp2 +=
+      (lt.C_cxce[iT][ie] + dT * lt.st_C_cxce[iT][ie]
+       + dne * lt.se_C_cxce[iT][ie]);
+  Edot -= max(temp1, temp2);
+  // if (x_in>0.98 && T>2000.0) cout <<"High-T"<< max(temp1,temp2)<<"\n";
+
+  // Instead of the PDR cooling from Henney, use Wolfire's eq.C1,C3 for
+  // collisional cooling of CII and OI by neutral H atoms.  In eq.C3 I have
+  // absorbed the (100K)^{-0.4} into the prefactor, and used x^a=exp(a*ln(x)).
+  // I have cut off equation C1 at high densities to be consistent with the
+  // ion fraction of C that I assumed above for the electron density.
+  //
+  Edot -= (lt.C_cxch[iT] + dT * lt.s_C_cxch[iT]) * mpv_nH * OneMinusX * expnh;
+  Edot -= (lt.C_cxo[iT] + dT * lt.s_C_cxo[iT]) * mpv_nH * OneMinusX;
+  // if (x_in>0.98 && T>2000.0) cout <<"CII-HI "<< (lt.C_cxch[iT] +
+  // dT*lt.s_C_cxch[iT])*mpv_nH*OneMinusX*expnh <<"\n"; if (x_in>0.98 &&
+  // T>2000.0) cout <<"OI-HI  "<< (lt.C_cxo[iT]  + dT*lt.s_C_cxo[iT]
+  // )*mpv_nH*OneMinusX <<"\n";
+
+  //
+  // PAH cooling: eq. 21 in Wolfire+,2003.  I think they should have
+  // multiplied their equation by 1.3 for the increased PAH abundance...
+  //
+  Edot -=
+      (lt.C_pah[iT][ie] + dT * lt.st_C_pah[iT][ie] + dne * lt.se_C_pah[iT][ie]);
+  // if (x_in>0.98 && T>2000.0) cout <<"PAH-C "<<(lt.C_pah[iT][ie] +
+  // dT*lt.st_C_pah[iT][ie] + dne*lt.se_C_pah[iT][ie]) <<"\n";
 
 #ifdef DUSTCOOL
-    // Dust cooling in hot gas (following Everett & Churchwell (2010)
-    // figure 9, which is calculated from CLOUDY).
-    if (pv_WIND > 0) {
-        Edot -= ne * x_in * f_dust * (lt.C_dust[iT] + dT * lt.s_C_dust[iT]);
-        // if (x_in>0.98 && T>2000.0) cout <<"DUST-C "<<
-        // ne*x_in*f_dust*(lt.C_dust[iT] + dT*lt.s_C_dust[iT])<<"\n";
-    }
+  // Dust cooling in hot gas (following Everett & Churchwell (2010)
+  // figure 9, which is calculated from CLOUDY).
+  if (pv_WIND > 0) {
+    Edot -= ne * x_in * f_dust * (lt.C_dust[iT] + dT * lt.s_C_dust[iT]);
+    // if (x_in>0.98 && T>2000.0) cout <<"DUST-C "<<
+    // ne*x_in*f_dust*(lt.C_dust[iT] + dT*lt.s_C_dust[iT])<<"\n";
+  }
 #endif
 
-    //
-    // Multiply Edot by nH to get units of energy loss/gain per unit
-    // volume per second.
-    //
-    Edot *= mpv_nH;
+  //
+  // Multiply Edot by nH to get units of energy loss/gain per unit
+  // volume per second.
+  //
+  Edot *= mpv_nH;
 #ifdef HIGHDENS_CUTOFF
-    if (Edot < 0.0) Edot *= exp(-mpv_nH * mpv_nH / 1.0e6);
+  if (Edot < 0.0) Edot *= exp(-mpv_nH * mpv_nH / 1.0e6);
 #endif  // HIGHDENS_CUTOFF
 
-    //
-    // We want to limit cooling as we approach the minimum temperature, so we
-    // scale the rate to linearly approach zero as we reach Tmin.
-    //
-    if (Edot < 0.0 && T < 2.0 * EP->MinTemperature) {
-        Edot = min(0.0, (Edot) * (T - EP->MinTemperature) / EP->MinTemperature);
-    }
+  //
+  // We want to limit cooling as we approach the minimum temperature, so we
+  // scale the rate to linearly approach zero as we reach Tmin.
+  //
+  if (Edot < 0.0 && T < 2.0 * EP->MinTemperature) {
+    Edot = min(0.0, (Edot) * (T - EP->MinTemperature) / EP->MinTemperature);
+  }
 
-    NV_Ith_S(y_dot, lv_H0)   = oneminusx_dot;
-    NV_Ith_S(y_dot, lv_eint) = Edot;
+  NV_Ith_S(y_dot, lv_H0)   = oneminusx_dot;
+  NV_Ith_S(y_dot, lv_eint) = Edot;
 
 #ifdef TEST_INF
-    if (!isfinite(Edot) || !isfinite(oneminusx_dot)) {
-        cout << "NAN returns from ydot: " << oneminusx_dot;
-        cout << "  " << Edot << " T=" << T << "\n";
-        cout << "ydot INPUTS: " << mpv_nH << "  " << mpv_delta_S;
-        cout << "  " << mpv_Tau0 << "  " << mpv_Vshell << "  ";
-        cout << E_in << "  " << OneMinusX << "\n";
-    }
-    if (mpv_Vshell < 1.0e45) {
-        cout << "ydot dodgy Vshell INPUTS: " << mpv_nH << "  " << mpv_delta_S;
-        cout << "  " << mpv_Tau0 << "  " << mpv_Vshell << "\n";
-    }
+  if (!isfinite(Edot) || !isfinite(oneminusx_dot)) {
+    cout << "NAN returns from ydot: " << oneminusx_dot;
+    cout << "  " << Edot << " T=" << T << "\n";
+    cout << "ydot INPUTS: " << mpv_nH << "  " << mpv_delta_S;
+    cout << "  " << mpv_Tau0 << "  " << mpv_Vshell << "  ";
+    cout << E_in << "  " << OneMinusX << "\n";
+  }
+  if (mpv_Vshell < 1.0e45) {
+    cout << "ydot dodgy Vshell INPUTS: " << mpv_nH << "  " << mpv_delta_S;
+    cout << "  " << mpv_Tau0 << "  " << mpv_Vshell << "\n";
+  }
 #endif
 
-    if (1 == 0 && x_in > 0.98 && T > 6000.0) {
-        cout << T << "  ";
-        cout << ne << "  ";
-        cout << ne * ne << "  ";
-        cout << (lt.rrhp[iT] + dT * lt.s_rrhp[iT]) * x_in * ne * 1.5 * 1.602e-12
-             << "  ";
-        temp1 = mpv_nH * mpv_delta_S * OneMinusX
-                * Hi_monochromatic_photo_ion_xsection(JUST_IONISED);
-        cout << Hi_discrete_multifreq_photoheating_rate(
-                    mpv_Tau0, temp1, mpv_nH, mpv_delta_S, mpv_Vshell)
-             << "  ";
-        cout << 1.9e-26 * METALLICITY * mpv_G0_UV
-                    / (1.0 + 6.4 * (mpv_G0_UV / mpv_nH))
-             << "  ";
-        cout << 7.7e-32 * METALLICITY * mpv_G0_IR / pow(1.0 + 3.0e4 / mpv_nH, 2)
-             << "  ";
-        cout << 5.0e-28 * OneMinusX << "  ";
-        cout << (lt.H_pah[iT][ie] + dT * lt.st_H_pah[iT][ie]
-                 + dne * lt.se_H_pah[iT][ie])
-                    * temp1
-             << "  ";
-        cout << -(lt.C_cih0[iT] + dT * lt.s_C_cih0[iT]) * ne * OneMinusX
-             << "  ";
-        cout << -(lt.C_rrh[iT] + dT * lt.s_C_rrh[iT]) * x_in * ne << "  ";
-        cout << -(lt.C_cxh0[iT] + dT * lt.s_C_cxh0[iT]) * OneMinusX * ne
-             << "  ";
-        cout << -(lt.C_fbdn[iT] + dT * lt.s_C_fbdn[iT]) * x_in * ne << "  ";
-        cout << -(lt.C_cie[iT] + dT * lt.s_C_cie[iT]) * x_in * x_in * mpv_nH
-             << "  ";
-        cout << -(lt.C_cxce[iT][ie] + dT * lt.st_C_cxce[iT][ie]
-                  + dne * lt.se_C_cxce[iT][ie])
-             << "  ";
-        cout << -(lt.C_cxch[iT] + dT * lt.s_C_cxch[iT]) * mpv_nH * OneMinusX
-                    * expnh
-             << "  ";
-        cout << -(lt.C_cxo[iT] + dT * lt.s_C_cxo[iT]) * mpv_nH * OneMinusX
-             << "  ";
-        cout << -(lt.C_pah[iT][ie] + dT * lt.st_C_pah[iT][ie]
-                  + dne * lt.se_C_pah[iT][ie])
-             << "  ";
-        // cout << - <<"  ";
-        cout << "\n";
-    }
+  if (1 == 0 && x_in > 0.98 && T > 6000.0) {
+    cout << T << "  ";
+    cout << ne << "  ";
+    cout << ne * ne << "  ";
+    cout << (lt.rrhp[iT] + dT * lt.s_rrhp[iT]) * x_in * ne * 1.5 * 1.602e-12
+         << "  ";
+    temp1 = mpv_nH * mpv_delta_S * OneMinusX
+            * Hi_monochromatic_photo_ion_xsection(JUST_IONISED);
+    cout << Hi_discrete_multifreq_photoheating_rate(
+                mpv_Tau0, temp1, mpv_nH, mpv_delta_S, mpv_Vshell)
+         << "  ";
+    cout << 1.9e-26 * METALLICITY * mpv_G0_UV
+                / (1.0 + 6.4 * (mpv_G0_UV / mpv_nH))
+         << "  ";
+    cout << 7.7e-32 * METALLICITY * mpv_G0_IR / pow(1.0 + 3.0e4 / mpv_nH, 2)
+         << "  ";
+    cout << 5.0e-28 * OneMinusX << "  ";
+    cout << (lt.H_pah[iT][ie] + dT * lt.st_H_pah[iT][ie]
+             + dne * lt.se_H_pah[iT][ie])
+                * temp1
+         << "  ";
+    cout << -(lt.C_cih0[iT] + dT * lt.s_C_cih0[iT]) * ne * OneMinusX << "  ";
+    cout << -(lt.C_rrh[iT] + dT * lt.s_C_rrh[iT]) * x_in * ne << "  ";
+    cout << -(lt.C_cxh0[iT] + dT * lt.s_C_cxh0[iT]) * OneMinusX * ne << "  ";
+    cout << -(lt.C_fbdn[iT] + dT * lt.s_C_fbdn[iT]) * x_in * ne << "  ";
+    cout << -(lt.C_cie[iT] + dT * lt.s_C_cie[iT]) * x_in * x_in * mpv_nH
+         << "  ";
+    cout << -(lt.C_cxce[iT][ie] + dT * lt.st_C_cxce[iT][ie]
+              + dne * lt.se_C_cxce[iT][ie])
+         << "  ";
+    cout << -(lt.C_cxch[iT] + dT * lt.s_C_cxch[iT]) * mpv_nH * OneMinusX * expnh
+         << "  ";
+    cout << -(lt.C_cxo[iT] + dT * lt.s_C_cxo[iT]) * mpv_nH * OneMinusX << "  ";
+    cout << -(lt.C_pah[iT][ie] + dT * lt.st_C_pah[iT][ie]
+              + dne * lt.se_C_pah[iT][ie])
+         << "  ";
+    // cout << - <<"  ";
+    cout << "\n";
+  }
 
-    return 0;
+  return 0;
 }
 
 // ##################################################################
@@ -1952,188 +1928,183 @@ int MPv3::ydot(
 
 void MPv3::gen_mpv3_lookup_tables()
 {
-    //  Start by generating the logarithmic temperature scale:
-    lt.NT        = 200;
-    double temp1 = 0.0, temp2 = 0.0, temp3 = 0.0;
-    lt.dlogT =
-        (log10(EP->MaxTemperature) - log10(EP->MinTemperature)) / (lt.NT - 1);
-    lt.dlogne = 12.0 / (lt.NT - 1);  // ne from 1e-6 to 1e6.
-    lt.T.resize(lt.NT);
-    lt.ne.resize(lt.NT);
-    for (size_t i = 0; i < lt.NT; i++) {
-        lt.T[i]  = pow(10.0, log10(EP->MinTemperature) + i * lt.dlogT);
-        lt.ne[i] = pow(10.0, -6.0 + i * lt.dlogne);
-    }
+  //  Start by generating the logarithmic temperature scale:
+  lt.NT        = 200;
+  double temp1 = 0.0, temp2 = 0.0, temp3 = 0.0;
+  lt.dlogT =
+      (log10(EP->MaxTemperature) - log10(EP->MinTemperature)) / (lt.NT - 1);
+  lt.dlogne = 12.0 / (lt.NT - 1);  // ne from 1e-6 to 1e6.
+  lt.T.resize(lt.NT);
+  lt.ne.resize(lt.NT);
+  for (size_t i = 0; i < lt.NT; i++) {
+    lt.T[i]  = pow(10.0, log10(EP->MinTemperature) + i * lt.dlogT);
+    lt.ne[i] = pow(10.0, -6.0 + i * lt.dlogne);
+  }
 
-    // collisional ionization of H
-    lt.cirh.resize(lt.NT);
-    lt.C_cih0.resize(lt.NT);
-    lt.rrhp.resize(lt.NT);
-    lt.C_rrh.resize(lt.NT);
-    lt.C_ffhe.resize(lt.NT);
-    lt.C_cxh0.resize(lt.NT);
-    lt.C_fbdn.resize(lt.NT);
+  // collisional ionization of H
+  lt.cirh.resize(lt.NT);
+  lt.C_cih0.resize(lt.NT);
+  lt.rrhp.resize(lt.NT);
+  lt.C_rrh.resize(lt.NT);
+  lt.C_ffhe.resize(lt.NT);
+  lt.C_cxh0.resize(lt.NT);
+  lt.C_fbdn.resize(lt.NT);
 
-    lt.C_cie.resize(lt.NT);
-    lt.C_cxch.resize(lt.NT);
-    lt.C_cxo.resize(lt.NT);
-    // lt.C_cxce.resize(lt.NT);
-    lt.C_dust.resize(lt.NT);
+  lt.C_cie.resize(lt.NT);
+  lt.C_cxch.resize(lt.NT);
+  lt.C_cxo.resize(lt.NT);
+  // lt.C_cxce.resize(lt.NT);
+  lt.C_dust.resize(lt.NT);
 
-    for (size_t i = 0; i < lt.NT; i++) {
-        Hi_coll_ion_rates(lt.T[i], &temp1, &temp2);
-        lt.cirh[i]   = temp1;
-        lt.C_cih0[i] = temp2;
-        lt.rrhp[i]   = Hii_rad_recomb_rate(lt.T[i]);
-        lt.C_rrh[i]  = Hii_total_cooling(lt.T[i]);
-        lt.C_ffhe[i] = 1.68e-27 * (JM_NION - 1.0) * sqrt(lt.T[i]);
-        lt.C_cxh0[i] = Hi_coll_excitation_cooling_rate(lt.T[i])
-                       * exp(-lt.T[i] * lt.T[i] / 5.0e10);
-        lt.C_fbdn[i] =
-            1.20e-22 * METALLICITY * 1.0
-            * exp(-33610.0 / lt.T[i] - (2180.0 * 2180.0 / lt.T[i] / lt.T[i]))
-            * exp(-lt.T[i] * lt.T[i] / 5.0e10);
-        lt.C_cie[i]  = METALLICITY * cooling_rate_SD93CIE(lt.T[i]);
-        lt.C_cxch[i] = 3.15e-27 * METALLICITY * exp(-92.0 / lt.T[i]);
-        lt.C_cxo[i] =
-            3.96e-28 * METALLICITY * exp(0.4 * log(lt.T[i]) - 228.0 / lt.T[i]);
-        // lt.C_cxce[i]
-        // = 1.4e-23*METALLICITY*exp(-0.5*log(lt.T[i])-92.0/lt.T[i]);
-        lt.C_dust[i] = 1.0e-17 * exp(1.5 * log(lt.T[i] / 2.5e8));
-    }
+  for (size_t i = 0; i < lt.NT; i++) {
+    Hi_coll_ion_rates(lt.T[i], &temp1, &temp2);
+    lt.cirh[i]   = temp1;
+    lt.C_cih0[i] = temp2;
+    lt.rrhp[i]   = Hii_rad_recomb_rate(lt.T[i]);
+    lt.C_rrh[i]  = Hii_total_cooling(lt.T[i]);
+    lt.C_ffhe[i] = 1.68e-27 * (JM_NION - 1.0) * sqrt(lt.T[i]);
+    lt.C_cxh0[i] = Hi_coll_excitation_cooling_rate(lt.T[i])
+                   * exp(-lt.T[i] * lt.T[i] / 5.0e10);
+    lt.C_fbdn[i] =
+        1.20e-22 * METALLICITY * 1.0
+        * exp(-33610.0 / lt.T[i] - (2180.0 * 2180.0 / lt.T[i] / lt.T[i]))
+        * exp(-lt.T[i] * lt.T[i] / 5.0e10);
+    lt.C_cie[i]  = METALLICITY * cooling_rate_SD93CIE(lt.T[i]);
+    lt.C_cxch[i] = 3.15e-27 * METALLICITY * exp(-92.0 / lt.T[i]);
+    lt.C_cxo[i] =
+        3.96e-28 * METALLICITY * exp(0.4 * log(lt.T[i]) - 228.0 / lt.T[i]);
+    // lt.C_cxce[i]
+    // = 1.4e-23*METALLICITY*exp(-0.5*log(lt.T[i])-92.0/lt.T[i]);
+    lt.C_dust[i] = 1.0e-17 * exp(1.5 * log(lt.T[i] / 2.5e8));
+  }
 
-    // PAH cooling/heating and CII-e cooling depend non-linearly on ne,
-    // so 2D lookup table
-    lt.H_pah.resize(lt.NT);
-    for (size_t i = 0; i < lt.NT; i++)
-        lt.H_pah[i].resize(lt.NT);
-    lt.C_pah.resize(lt.NT);
-    for (size_t i = 0; i < lt.NT; i++)
-        lt.C_pah[i].resize(lt.NT);
-    lt.C_cxce.resize(lt.NT);
-    for (size_t i = 0; i < lt.NT; i++)
-        lt.C_cxce[i].resize(lt.NT);
+  // PAH cooling/heating and CII-e cooling depend non-linearly on ne,
+  // so 2D lookup table
+  lt.H_pah.resize(lt.NT);
+  for (size_t i = 0; i < lt.NT; i++)
+    lt.H_pah[i].resize(lt.NT);
+  lt.C_pah.resize(lt.NT);
+  for (size_t i = 0; i < lt.NT; i++)
+    lt.C_pah[i].resize(lt.NT);
+  lt.C_cxce.resize(lt.NT);
+  for (size_t i = 0; i < lt.NT; i++)
+    lt.C_cxce[i].resize(lt.NT);
 
-    for (size_t i = 0; i < lt.NT; i++) {
-        for (size_t j = 0; j < lt.NT; j++) {
-            lt.H_pah[i][j] =
-                1.083e-25 * METALLICITY
-                / (1.0 + 9.77e-3 * pow(sqrt(lt.T[i]) / lt.ne[j], 0.73));
-
-            lt.C_pah[i][j] = 3.02e-30 * METALLICITY
-                             * exp(0.94 * log(lt.T[i])
-                                   + 0.74 * pow(lt.T[i], -0.068)
-                                         * log(3.4 * sqrt(lt.T[i]) / lt.ne[j]))
-                             * lt.ne[j];
-
-            lt.C_cxce[i][j] =
-                1.4e-23 * METALLICITY
-                * exp(-0.5 * log(lt.T[i]) - 92.0 / lt.T[i]) * lt.ne[j]
-                / (1.0 + 0.05 * lt.ne[j] * pow(lt.T[i] / 2000.0, -0.37));
-        }
-    }
-
-    lt.s_cirh.resize(lt.NT);
-    lt.s_C_cih0.resize(lt.NT);
-    lt.s_rrhp.resize(lt.NT);
-    lt.s_C_rrh.resize(lt.NT);
-    lt.s_C_ffhe.resize(lt.NT);
-    lt.s_C_cxh0.resize(lt.NT);
-    lt.s_C_fbdn.resize(lt.NT);
-    lt.s_C_cie.resize(lt.NT);
-    lt.s_C_cxch.resize(lt.NT);
-    lt.s_C_cxo.resize(lt.NT);
-    // lt.s_C_cxce.resize(lt.NT);
-    lt.s_C_dust.resize(lt.NT);
-    for (size_t i = 0; i < lt.NT - 1; i++) {
-        lt.s_cirh[i] = (lt.cirh[i + 1] - lt.cirh[i]) / (lt.T[i + 1] - lt.T[i]);
-        lt.s_C_cih0[i] =
-            (lt.C_cih0[i + 1] - lt.C_cih0[i]) / (lt.T[i + 1] - lt.T[i]);
-        lt.s_rrhp[i] = (lt.rrhp[i + 1] - lt.rrhp[i]) / (lt.T[i + 1] - lt.T[i]);
-        lt.s_C_rrh[i] =
-            (lt.C_rrh[i + 1] - lt.C_rrh[i]) / (lt.T[i + 1] - lt.T[i]);
-        lt.s_C_ffhe[i] =
-            (lt.C_ffhe[i + 1] - lt.C_ffhe[i]) / (lt.T[i + 1] - lt.T[i]);
-        lt.s_C_cxh0[i] =
-            (lt.C_cxh0[i + 1] - lt.C_cxh0[i]) / (lt.T[i + 1] - lt.T[i]);
-        lt.s_C_fbdn[i] =
-            (lt.C_fbdn[i + 1] - lt.C_fbdn[i]) / (lt.T[i + 1] - lt.T[i]);
-        lt.s_C_cie[i] =
-            (lt.C_cie[i + 1] - lt.C_cie[i]) / (lt.T[i + 1] - lt.T[i]);
-        lt.s_C_cxch[i] =
-            (lt.C_cxch[i + 1] - lt.C_cxch[i]) / (lt.T[i + 1] - lt.T[i]);
-        lt.s_C_cxo[i] =
-            (lt.C_cxo[i + 1] - lt.C_cxo[i]) / (lt.T[i + 1] - lt.T[i]);
-        // lt.s_C_cxce[i] = (lt.C_cxce[i+1]-lt.C_cxce[i]) / (lt.T[i+1]-lt.T[i]);
-        lt.s_C_dust[i] =
-            (lt.C_dust[i + 1] - lt.C_dust[i]) / (lt.T[i + 1] - lt.T[i]);
-    }
-    lt.s_cirh[lt.NT - 1]   = 0.0;
-    lt.s_C_cih0[lt.NT - 1] = 0.0;
-    lt.s_rrhp[lt.NT - 1]   = 0.0;
-    lt.s_C_rrh[lt.NT - 1]  = 0.0;
-    lt.s_C_ffhe[lt.NT - 1] = 0.0;
-    lt.s_C_cxh0[lt.NT - 1] = 0.0;
-    lt.s_C_fbdn[lt.NT - 1] = 0.0;
-    lt.s_C_cie[lt.NT - 1]  = 0.0;
-    lt.s_C_cxch[lt.NT - 1] = 0.0;
-    lt.s_C_cxo[lt.NT - 1]  = 0.0;
-    // lt.s_C_cxce[lt.NT-1] = 0.0;
-    lt.s_C_dust[lt.NT - 1] = 0.0;
-
-    // slopes for bilinear interpolation
-    lt.st_H_pah.resize(lt.NT);
-    for (size_t i = 0; i < lt.NT; i++)
-        lt.st_H_pah[i].resize(lt.NT);
-    lt.se_H_pah.resize(lt.NT);
-    for (size_t i = 0; i < lt.NT; i++)
-        lt.se_H_pah[i].resize(lt.NT);
-    lt.st_C_pah.resize(lt.NT);
-    for (size_t i = 0; i < lt.NT; i++)
-        lt.st_C_pah[i].resize(lt.NT);
-    lt.se_C_pah.resize(lt.NT);
-    for (size_t i = 0; i < lt.NT; i++)
-        lt.se_C_pah[i].resize(lt.NT);
-    lt.st_C_cxce.resize(lt.NT);
-    for (size_t i = 0; i < lt.NT; i++)
-        lt.st_C_cxce[i].resize(lt.NT);
-    lt.se_C_cxce.resize(lt.NT);
-    for (size_t i = 0; i < lt.NT; i++)
-        lt.se_C_cxce[i].resize(lt.NT);
-    for (size_t i = 0; i < lt.NT - 1; i++) {
-        for (size_t j = 0; j < lt.NT - 1; j++) {
-            lt.st_H_pah[i][j] =
-                (lt.H_pah[i + 1][j] - lt.H_pah[i][j]) / (lt.T[i + 1] - lt.T[i]);
-            lt.se_H_pah[i][j] = (lt.H_pah[i][j + 1] - lt.H_pah[i][j])
-                                / (lt.ne[j + 1] - lt.ne[j]);
-            lt.st_C_pah[i][j] =
-                (lt.C_pah[i + 1][j] - lt.C_pah[i][j]) / (lt.T[i + 1] - lt.T[i]);
-            lt.se_C_pah[i][j] = (lt.C_pah[i][j + 1] - lt.C_pah[i][j])
-                                / (lt.ne[j + 1] - lt.ne[j]);
-            lt.st_C_cxce[i][j] = (lt.C_cxce[i + 1][j] - lt.C_cxce[i][j])
-                                 / (lt.T[i + 1] - lt.T[i]);
-            lt.se_C_cxce[i][j] = (lt.C_cxce[i][j + 1] - lt.C_cxce[i][j])
-                                 / (lt.ne[j + 1] - lt.ne[j]);
-        }
-    }
-    for (size_t i = 0; i < lt.NT; i++) {
-        lt.st_H_pah[i][lt.NT - 1]  = 0.0;
-        lt.se_H_pah[i][lt.NT - 1]  = 0.0;
-        lt.st_C_pah[i][lt.NT - 1]  = 0.0;
-        lt.se_C_pah[i][lt.NT - 1]  = 0.0;
-        lt.st_C_cxce[i][lt.NT - 1] = 0.0;
-        lt.se_C_cxce[i][lt.NT - 1] = 0.0;
-    }
+  for (size_t i = 0; i < lt.NT; i++) {
     for (size_t j = 0; j < lt.NT; j++) {
-        lt.st_H_pah[lt.NT - 1][j]  = 0.0;
-        lt.se_H_pah[lt.NT - 1][j]  = 0.0;
-        lt.st_C_pah[lt.NT - 1][j]  = 0.0;
-        lt.se_C_pah[lt.NT - 1][j]  = 0.0;
-        lt.st_C_cxce[lt.NT - 1][j] = 0.0;
-        lt.se_C_cxce[lt.NT - 1][j] = 0.0;
-    }
+      lt.H_pah[i][j] = 1.083e-25 * METALLICITY
+                       / (1.0 + 9.77e-3 * pow(sqrt(lt.T[i]) / lt.ne[j], 0.73));
 
-    return;
+      lt.C_pah[i][j] = 3.02e-30 * METALLICITY
+                       * exp(0.94 * log(lt.T[i])
+                             + 0.74 * pow(lt.T[i], -0.068)
+                                   * log(3.4 * sqrt(lt.T[i]) / lt.ne[j]))
+                       * lt.ne[j];
+
+      lt.C_cxce[i][j] =
+          1.4e-23 * METALLICITY * exp(-0.5 * log(lt.T[i]) - 92.0 / lt.T[i])
+          * lt.ne[j] / (1.0 + 0.05 * lt.ne[j] * pow(lt.T[i] / 2000.0, -0.37));
+    }
+  }
+
+  lt.s_cirh.resize(lt.NT);
+  lt.s_C_cih0.resize(lt.NT);
+  lt.s_rrhp.resize(lt.NT);
+  lt.s_C_rrh.resize(lt.NT);
+  lt.s_C_ffhe.resize(lt.NT);
+  lt.s_C_cxh0.resize(lt.NT);
+  lt.s_C_fbdn.resize(lt.NT);
+  lt.s_C_cie.resize(lt.NT);
+  lt.s_C_cxch.resize(lt.NT);
+  lt.s_C_cxo.resize(lt.NT);
+  // lt.s_C_cxce.resize(lt.NT);
+  lt.s_C_dust.resize(lt.NT);
+  for (size_t i = 0; i < lt.NT - 1; i++) {
+    lt.s_cirh[i] = (lt.cirh[i + 1] - lt.cirh[i]) / (lt.T[i + 1] - lt.T[i]);
+    lt.s_C_cih0[i] =
+        (lt.C_cih0[i + 1] - lt.C_cih0[i]) / (lt.T[i + 1] - lt.T[i]);
+    lt.s_rrhp[i]  = (lt.rrhp[i + 1] - lt.rrhp[i]) / (lt.T[i + 1] - lt.T[i]);
+    lt.s_C_rrh[i] = (lt.C_rrh[i + 1] - lt.C_rrh[i]) / (lt.T[i + 1] - lt.T[i]);
+    lt.s_C_ffhe[i] =
+        (lt.C_ffhe[i + 1] - lt.C_ffhe[i]) / (lt.T[i + 1] - lt.T[i]);
+    lt.s_C_cxh0[i] =
+        (lt.C_cxh0[i + 1] - lt.C_cxh0[i]) / (lt.T[i + 1] - lt.T[i]);
+    lt.s_C_fbdn[i] =
+        (lt.C_fbdn[i + 1] - lt.C_fbdn[i]) / (lt.T[i + 1] - lt.T[i]);
+    lt.s_C_cie[i] = (lt.C_cie[i + 1] - lt.C_cie[i]) / (lt.T[i + 1] - lt.T[i]);
+    lt.s_C_cxch[i] =
+        (lt.C_cxch[i + 1] - lt.C_cxch[i]) / (lt.T[i + 1] - lt.T[i]);
+    lt.s_C_cxo[i] = (lt.C_cxo[i + 1] - lt.C_cxo[i]) / (lt.T[i + 1] - lt.T[i]);
+    // lt.s_C_cxce[i] = (lt.C_cxce[i+1]-lt.C_cxce[i]) / (lt.T[i+1]-lt.T[i]);
+    lt.s_C_dust[i] =
+        (lt.C_dust[i + 1] - lt.C_dust[i]) / (lt.T[i + 1] - lt.T[i]);
+  }
+  lt.s_cirh[lt.NT - 1]   = 0.0;
+  lt.s_C_cih0[lt.NT - 1] = 0.0;
+  lt.s_rrhp[lt.NT - 1]   = 0.0;
+  lt.s_C_rrh[lt.NT - 1]  = 0.0;
+  lt.s_C_ffhe[lt.NT - 1] = 0.0;
+  lt.s_C_cxh0[lt.NT - 1] = 0.0;
+  lt.s_C_fbdn[lt.NT - 1] = 0.0;
+  lt.s_C_cie[lt.NT - 1]  = 0.0;
+  lt.s_C_cxch[lt.NT - 1] = 0.0;
+  lt.s_C_cxo[lt.NT - 1]  = 0.0;
+  // lt.s_C_cxce[lt.NT-1] = 0.0;
+  lt.s_C_dust[lt.NT - 1] = 0.0;
+
+  // slopes for bilinear interpolation
+  lt.st_H_pah.resize(lt.NT);
+  for (size_t i = 0; i < lt.NT; i++)
+    lt.st_H_pah[i].resize(lt.NT);
+  lt.se_H_pah.resize(lt.NT);
+  for (size_t i = 0; i < lt.NT; i++)
+    lt.se_H_pah[i].resize(lt.NT);
+  lt.st_C_pah.resize(lt.NT);
+  for (size_t i = 0; i < lt.NT; i++)
+    lt.st_C_pah[i].resize(lt.NT);
+  lt.se_C_pah.resize(lt.NT);
+  for (size_t i = 0; i < lt.NT; i++)
+    lt.se_C_pah[i].resize(lt.NT);
+  lt.st_C_cxce.resize(lt.NT);
+  for (size_t i = 0; i < lt.NT; i++)
+    lt.st_C_cxce[i].resize(lt.NT);
+  lt.se_C_cxce.resize(lt.NT);
+  for (size_t i = 0; i < lt.NT; i++)
+    lt.se_C_cxce[i].resize(lt.NT);
+  for (size_t i = 0; i < lt.NT - 1; i++) {
+    for (size_t j = 0; j < lt.NT - 1; j++) {
+      lt.st_H_pah[i][j] =
+          (lt.H_pah[i + 1][j] - lt.H_pah[i][j]) / (lt.T[i + 1] - lt.T[i]);
+      lt.se_H_pah[i][j] =
+          (lt.H_pah[i][j + 1] - lt.H_pah[i][j]) / (lt.ne[j + 1] - lt.ne[j]);
+      lt.st_C_pah[i][j] =
+          (lt.C_pah[i + 1][j] - lt.C_pah[i][j]) / (lt.T[i + 1] - lt.T[i]);
+      lt.se_C_pah[i][j] =
+          (lt.C_pah[i][j + 1] - lt.C_pah[i][j]) / (lt.ne[j + 1] - lt.ne[j]);
+      lt.st_C_cxce[i][j] =
+          (lt.C_cxce[i + 1][j] - lt.C_cxce[i][j]) / (lt.T[i + 1] - lt.T[i]);
+      lt.se_C_cxce[i][j] =
+          (lt.C_cxce[i][j + 1] - lt.C_cxce[i][j]) / (lt.ne[j + 1] - lt.ne[j]);
+    }
+  }
+  for (size_t i = 0; i < lt.NT; i++) {
+    lt.st_H_pah[i][lt.NT - 1]  = 0.0;
+    lt.se_H_pah[i][lt.NT - 1]  = 0.0;
+    lt.st_C_pah[i][lt.NT - 1]  = 0.0;
+    lt.se_C_pah[i][lt.NT - 1]  = 0.0;
+    lt.st_C_cxce[i][lt.NT - 1] = 0.0;
+    lt.se_C_cxce[i][lt.NT - 1] = 0.0;
+  }
+  for (size_t j = 0; j < lt.NT; j++) {
+    lt.st_H_pah[lt.NT - 1][j]  = 0.0;
+    lt.se_H_pah[lt.NT - 1][j]  = 0.0;
+    lt.st_C_pah[lt.NT - 1][j]  = 0.0;
+    lt.se_C_pah[lt.NT - 1][j]  = 0.0;
+    lt.st_C_cxce[lt.NT - 1][j] = 0.0;
+    lt.se_C_cxce[lt.NT - 1][j] = 0.0;
+  }
+
+  return;
 }
 
 // ##################################################################

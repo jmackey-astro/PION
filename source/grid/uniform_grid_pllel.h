@@ -37,30 +37,30 @@ using namespace std;
 ///
 class UniformGridParallel : virtual public UniformGrid {
 
-  public:
-    ///
-    /// Constructor. Sets up a grid in the same way as the serial grid.
-    ///
-    UniformGridParallel(
-        int,      ///< ndim
-        int,      ///< nvar
-        int,      ///< equation type
-        int,      ///< number of boundary cells to use.
-        double*,  ///< local xmin
-        double*,  ///< local xmax
-        int*,     ///< local number of grid zones
-        double*,  ///< array of min. x/y/z for level.
-        double*,  ///< array of max. x/y/z for level.
-        double*,  ///< array of min. x/y/z for full simulation.
-        double*   ///< array of max. x/y/z for full simulation.
-    );
+public:
+  ///
+  /// Constructor. Sets up a grid in the same way as the serial grid.
+  ///
+  UniformGridParallel(
+      int,      ///< ndim
+      int,      ///< nvar
+      int,      ///< equation type
+      int,      ///< number of boundary cells to use.
+      double*,  ///< local xmin
+      double*,  ///< local xmax
+      int*,     ///< local number of grid zones
+      double*,  ///< array of min. x/y/z for level.
+      double*,  ///< array of max. x/y/z for level.
+      double*,  ///< array of min. x/y/z for full simulation.
+      double*   ///< array of max. x/y/z for full simulation.
+  );
 
-    ///
-    /// Deletes the grid.
-    ///
-    ~UniformGridParallel() { return; }
+  ///
+  /// Deletes the grid.
+  ///
+  ~UniformGridParallel() { return; }
 
-  protected:
+protected:
 };
 
 // ##################################################################
@@ -79,36 +79,36 @@ class UniformGridParallel : virtual public UniformGrid {
 class uniform_grid_cyl_parallel :
     virtual public UniformGridParallel,
     virtual public uniform_grid_cyl {
-  public:
-    ///
-    /// The constructor won't do very much:
-    ///
-    uniform_grid_cyl_parallel(
-        int,      ///< ndim, length of position vector.
-        int,      ///< nvar, length of state vectors.
-        int,      ///< eqntype, which equations we are using (needed by BCs).
-        int,      ///< number of boundary cells to use.
-        double*,  ///< array of minimum values of x,y,z.
-        double*,  ///< array of maximum values of x,y,z.
-        int*,     ///< array of number of cells in x,y,z directions.
-        double*,  ///< array of min. x/y/z for level.
-        double*,  ///< array of max. x/y/z for level.
-        double*,  ///< array of min. x/y/z for full simulation.
-        double*   ///< array of max. x/y/z for full simulation.
-    );
+public:
+  ///
+  /// The constructor won't do very much:
+  ///
+  uniform_grid_cyl_parallel(
+      int,      ///< ndim, length of position vector.
+      int,      ///< nvar, length of state vectors.
+      int,      ///< eqntype, which equations we are using (needed by BCs).
+      int,      ///< number of boundary cells to use.
+      double*,  ///< array of minimum values of x,y,z.
+      double*,  ///< array of maximum values of x,y,z.
+      int*,     ///< array of number of cells in x,y,z directions.
+      double*,  ///< array of min. x/y/z for level.
+      double*,  ///< array of max. x/y/z for level.
+      double*,  ///< array of min. x/y/z for full simulation.
+      double*   ///< array of max. x/y/z for full simulation.
+  );
 
-    ///
-    /// Nor will the destructor
-    ///
-    ~uniform_grid_cyl_parallel();
+  ///
+  /// Nor will the destructor
+  ///
+  ~uniform_grid_cyl_parallel();
 
-    ///
-    /// Returns the centre of volume of a cell (in the radial
-    /// direction) in the dimensionless integer coordinate system.
-    /// It is redefined here because we need the radius calculated from
-    /// the global simulation Xmin[Rcyl], not the grid Xmin.
-    ///
-    virtual double iR_cov(const cell*);
+  ///
+  /// Returns the centre of volume of a cell (in the radial
+  /// direction) in the dimensionless integer coordinate system.
+  /// It is redefined here because we need the radius calculated from
+  /// the global simulation Xmin[Rcyl], not the grid Xmin.
+  ///
+  virtual double iR_cov(const cell*);
 };
 
 // ##################################################################
@@ -127,36 +127,36 @@ class uniform_grid_cyl_parallel :
 class uniform_grid_sph_parallel :
     virtual public UniformGridParallel,
     virtual public uniform_grid_sph {
-  public:
-    ///
-    /// The constructor won't do very much:
-    ///
-    uniform_grid_sph_parallel(
-        int,      ///< ndim, length of position vector.
-        int,      ///< nvar, length of state vectors.
-        int,      ///< eqntype, which equations we are using (needed by BCs).
-        int,      ///< number of boundary cells to use.
-        double*,  ///< array of minimum values of x,y,z.
-        double*,  ///< array of maximum values of x,y,z.
-        int*,     ///< array of number of cells in x,y,z directions.
-        double*,  ///< array of min. x/y/z for level.
-        double*,  ///< array of max. x/y/z for level.
-        double*,  ///< array of min. x/y/z for full simulation.
-        double*   ///< array of max. x/y/z for full simulation.
-    );
+public:
+  ///
+  /// The constructor won't do very much:
+  ///
+  uniform_grid_sph_parallel(
+      int,      ///< ndim, length of position vector.
+      int,      ///< nvar, length of state vectors.
+      int,      ///< eqntype, which equations we are using (needed by BCs).
+      int,      ///< number of boundary cells to use.
+      double*,  ///< array of minimum values of x,y,z.
+      double*,  ///< array of maximum values of x,y,z.
+      int*,     ///< array of number of cells in x,y,z directions.
+      double*,  ///< array of min. x/y/z for level.
+      double*,  ///< array of max. x/y/z for level.
+      double*,  ///< array of min. x/y/z for full simulation.
+      double*   ///< array of max. x/y/z for full simulation.
+  );
 
-    ///
-    /// Nor will the destructor
-    ///
-    ~uniform_grid_sph_parallel();
+  ///
+  /// Nor will the destructor
+  ///
+  ~uniform_grid_sph_parallel();
 
-    ///
-    /// Returns the centre of volume of a cell (in the radial
-    /// direction) in the dimensionless integer coordinate system.
-    /// It is re-defined here because we need the radius calculated from
-    /// the global simulation Xmin[Rcyl], not the grid Xmin.
-    ///
-    virtual double iR_cov(const cell*);
+  ///
+  /// Returns the centre of volume of a cell (in the radial
+  /// direction) in the dimensionless integer coordinate system.
+  /// It is re-defined here because we need the radius calculated from
+  /// the global simulation Xmin[Rcyl], not the grid Xmin.
+  ///
+  virtual double iR_cov(const cell*);
 };
 
 // ##################################################################

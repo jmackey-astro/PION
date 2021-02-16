@@ -19,21 +19,21 @@
 /// Implements inflow boundaries for a uniform grid.
 ///
 class inflow_bc {
-  protected:
-    /// Assigns data to a inflow (fixed) boundary.
-    virtual int BC_assign_INFLOW(
-        class SimParams&,      ///< pointer to simulation parameters
-        class GridBaseClass*,  ///< pointer to grid.
-        boundary_data*);
+protected:
+  /// Assigns data to a inflow (fixed) boundary.
+  virtual int BC_assign_INFLOW(
+      class SimParams&,      ///< pointer to simulation parameters
+      class GridBaseClass*,  ///< pointer to grid.
+      boundary_data*);
 
-    /// Updates data on a inflow boundary, data fixed to initial values
-    virtual int BC_update_INFLOW(
-        class SimParams&,      ///< pointer to simulation parameters
-        class GridBaseClass*,  ///< pointer to grid.
-        boundary_data*,        ///< Boundary to update.
-        const int,             ///< current fractional step being taken.
-        const int              ///< final step.
-    );
+  /// Updates data on a inflow boundary, data fixed to initial values
+  virtual int BC_update_INFLOW(
+      class SimParams&,      ///< pointer to simulation parameters
+      class GridBaseClass*,  ///< pointer to grid.
+      boundary_data*,        ///< Boundary to update.
+      const int,             ///< current fractional step being taken.
+      const int              ///< final step.
+  );
 };
 
 #endif  // INFLOW_BOUNDARIES_H

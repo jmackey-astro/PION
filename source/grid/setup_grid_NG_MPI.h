@@ -40,63 +40,63 @@ class setup_grid_NG_MPI :
     virtual public setup_NG_grid,
     virtual public setup_fixed_grid_pllel,
     virtual public NG_MPI_BC89flux {
-  public:
-    setup_grid_NG_MPI();
-    ~setup_grid_NG_MPI();
+public:
+  setup_grid_NG_MPI();
+  ~setup_grid_NG_MPI();
 
-    ///
-    /// Populate the array SimPM.levels with Xmin,Xmax,Range,dx,etc.
-    ///
-    void setup_NG_grid_levels(
-        class SimParams&  ///< pointer to simulation parameters
-    );
+  ///
+  /// Populate the array SimPM.levels with Xmin,Xmax,Range,dx,etc.
+  ///
+  void setup_NG_grid_levels(
+      class SimParams&  ///< pointer to simulation parameters
+  );
 
-    ///
-    /// Sets up a NG grid.
-    ///
-    int setup_grid(
-        vector<class GridBaseClass*>&,  ///< vector of grids.
-        class SimParams&                ///< pointer to simulation parameters
-    );
+  ///
+  /// Sets up a NG grid.
+  ///
+  int setup_grid(
+      vector<class GridBaseClass*>&,  ///< vector of grids.
+      class SimParams&                ///< pointer to simulation parameters
+  );
 
-    ///
-    /// Decide if I need to setup RT class and, if so, set up a
-    /// raytracer associated with each grid.
-    ///
-    int setup_raytracing(
-        class SimParams&,              ///< pointer to simulation parameters
-        vector<class GridBaseClass*>&  ///< address of vector of grid.
-    );
+  ///
+  /// Decide if I need to setup RT class and, if so, set up a
+  /// raytracer associated with each grid.
+  ///
+  int setup_raytracing(
+      class SimParams&,              ///< pointer to simulation parameters
+      vector<class GridBaseClass*>&  ///< address of vector of grid.
+  );
 
-    ///
-    /// Determines what kind of boundary conditions are needed and
-    /// creates the boundary data structures.  Asks the grid to create
-    /// grid cells for the external boundaries, and label internal
-    /// boundary cells as such.
-    ///
-    int boundary_conditions(
-        class SimParams&,              ///< pointer to simulation parameters
-        vector<class GridBaseClass*>&  ///< address of vector of grid.
-    );
+  ///
+  /// Determines what kind of boundary conditions are needed and
+  /// creates the boundary data structures.  Asks the grid to create
+  /// grid cells for the external boundaries, and label internal
+  /// boundary cells as such.
+  ///
+  int boundary_conditions(
+      class SimParams&,              ///< pointer to simulation parameters
+      vector<class GridBaseClass*>&  ///< address of vector of grid.
+  );
 
-    //---------------------------------------
-  protected:
-    //---------------------------------------
+  //---------------------------------------
+protected:
+  //---------------------------------------
 
-    ///
-    /// Set the boundary conditions string and initialise BC_bd
-    ///
-    virtual int setup_boundary_structs(
-        class SimParams&,      ///< reference to SimParams list.
-        class GridBaseClass*,  ///< pointer to grid.
-        const int              ///< level of grid in NG
-    );
+  ///
+  /// Set the boundary conditions string and initialise BC_bd
+  ///
+  virtual int setup_boundary_structs(
+      class SimParams&,      ///< reference to SimParams list.
+      class GridBaseClass*,  ///< pointer to grid.
+      const int              ///< level of grid in NG
+  );
 
-    /// function to setup parallel data-I/O class.
-    void setup_dataio_class(
-        class SimParams&,  ///< pointer to simulation parameters
-        const int          ///< type of I/O: 2=fits,5=silo
-    );
+  /// function to setup parallel data-I/O class.
+  void setup_dataio_class(
+      class SimParams&,  ///< pointer to simulation parameters
+      const int          ///< type of I/O: 2=fits,5=silo
+  );
 
 };  // setup_grid_NG_MPI
 

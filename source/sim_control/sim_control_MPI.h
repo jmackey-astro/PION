@@ -28,61 +28,61 @@
 class sim_control_pllel :
     virtual public sim_control,
     virtual public setup_fixed_grid_pllel {
-  public:
-    sim_control_pllel();
-    ~sim_control_pllel();
+public:
+  sim_control_pllel();
+  ~sim_control_pllel();
 
-    ///
-    /// initialisation.
-    ///
-    /// This function checks if we are reading from single or multiple files,
-    /// modifies the input file string accordingly, checks the file exists,
-    /// and then calls the sim_control::Init() function.
-    ///
-    /// \retval 0 success
-    /// \retval 1 failure
-    ///
-    virtual int Init(
-        string,   ///< Name of input file.
-        int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...).
-        int,      ///< Number of command-line arguments.
-        string*,  ///< Pointer to array of command-line arguments.
-        vector<class GridBaseClass*>&  ///< address of vector of grid pointers.
-    );
+  ///
+  /// initialisation.
+  ///
+  /// This function checks if we are reading from single or multiple files,
+  /// modifies the input file string accordingly, checks the file exists,
+  /// and then calls the sim_control::Init() function.
+  ///
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
+  virtual int Init(
+      string,   ///< Name of input file.
+      int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...).
+      int,      ///< Number of command-line arguments.
+      string*,  ///< Pointer to array of command-line arguments.
+      vector<class GridBaseClass*>&  ///< address of vector of grid pointers.
+  );
 
-    ///
-    /// Time integration
-    ///
-    /// This is the main driver of the code -- It does the time integration
-    /// until the stopping condition is reached and then returns.
-    /// It calls a sequence of functions to advance the time by one timestep,
-    /// all in a loop which runs until end-of-sim is reached.
-    ///
-    /// Parallel version has an AllReduce operation, where I check if the
-    /// runtime of any processor is more than a fixed walltime, and if so set
-    /// eosim to true and finish.  Some supercomputers have a maximum runtime
-    /// limit for their simulations, and this allows to have a snapshot near the
-    /// end of the allowed runtime.
-    ///
-    virtual int Time_Int(
-        vector<class GridBaseClass*>&  ///< address of vector of grid pointers.
-    );
+  ///
+  /// Time integration
+  ///
+  /// This is the main driver of the code -- It does the time integration
+  /// until the stopping condition is reached and then returns.
+  /// It calls a sequence of functions to advance the time by one timestep,
+  /// all in a loop which runs until end-of-sim is reached.
+  ///
+  /// Parallel version has an AllReduce operation, where I check if the
+  /// runtime of any processor is more than a fixed walltime, and if so set
+  /// eosim to true and finish.  Some supercomputers have a maximum runtime
+  /// limit for their simulations, and this allows to have a snapshot near the
+  /// end of the allowed runtime.
+  ///
+  virtual int Time_Int(
+      vector<class GridBaseClass*>&  ///< address of vector of grid pointers.
+  );
 
-  protected:
-    ///
-    /// Calculate the appropriate timestep for all processors
-    ///
-    /// For a uniform grid, all cells have the same timestep equal to the
-    /// minimum of all calculated steps.  This function calls the
-    /// calc_timestep() function for the local grid, and then gets the min of
-    /// all processor's local timesteps, and uses that as the timestep.
-    ///
-    int calculate_timestep(
-        class SimParams&,       ///< pointer to simulation parameters
-        class GridBaseClass*,   ///< pointer to grid.
-        class FV_solver_base*,  ///< solver/equations class
-        const int               ///< level in NG grid (if applicable)
-    );
+protected:
+  ///
+  /// Calculate the appropriate timestep for all processors
+  ///
+  /// For a uniform grid, all cells have the same timestep equal to the
+  /// minimum of all calculated steps.  This function calls the
+  /// calc_timestep() function for the local grid, and then gets the min of
+  /// all processor's local timesteps, and uses that as the timestep.
+  ///
+  int calculate_timestep(
+      class SimParams&,       ///< pointer to simulation parameters
+      class GridBaseClass*,   ///< pointer to grid.
+      class FV_solver_base*,  ///< solver/equations class
+      const int               ///< level in NG grid (if applicable)
+  );
 
 };  // sim_control_pllel
 

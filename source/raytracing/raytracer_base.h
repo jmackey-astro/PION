@@ -47,14 +47,14 @@ enum Quadrants { Q1 = 0, Q2 = 1, Q4 = 2, Q3 = 3 };
 /// circle in the x-y plane, starting with (XP,YP).
 ///
 enum Octants {
-    OCT1 = 0,
-    OCT2 = 1,
-    OCT4 = 2,
-    OCT3 = 3,
-    OCT5 = 4,
-    OCT6 = 5,
-    OCT8 = 6,
-    OCT7 = 7
+  OCT1 = 0,
+  OCT2 = 1,
+  OCT4 = 2,
+  OCT3 = 3,
+  OCT5 = 4,
+  OCT6 = 5,
+  OCT8 = 6,
+  OCT7 = 7
 };
 
 // ##################################################################
@@ -69,90 +69,90 @@ enum Octants {
 /// later.
 ///
 class RayTracingBase {
-  public:
-    virtual ~RayTracingBase() {}  ///< non-virtual destructor.
+public:
+  virtual ~RayTracingBase() {}  ///< non-virtual destructor.
 
-    ///
-    /// \brief Adds a source to the list of sources to trace.
-    ///
-    /// Returns the sources id, which starts at zero and increases
-    /// linearly.  So if we have 10 sources, and add another source,
-    /// its id will be 10.  Note the ID is contained in the rad_src_info
-    /// struct though, so each particular class may not have consecutively
-    /// numbered sources.
-    ///
-    virtual int Add_Source(struct rad_src_info*  ///< ptr to source info.
-                           ) = 0;
+  ///
+  /// \brief Adds a source to the list of sources to trace.
+  ///
+  /// Returns the sources id, which starts at zero and increases
+  /// linearly.  So if we have 10 sources, and add another source,
+  /// its id will be 10.  Note the ID is contained in the rad_src_info
+  /// struct though, so each particular class may not have consecutively
+  /// numbered sources.
+  ///
+  virtual int Add_Source(struct rad_src_info*  ///< ptr to source info.
+                         ) = 0;
 
-    ///
-    /// Processes a single source's effect on the grid over a timestep.
-    ///
-    virtual int RayTrace_SingleSource(
-        const int,     ///< Source id
-        const double,  ///< Timestep
-        const double   ///< EOS Gamma.
-        ) = 0;
+  ///
+  /// Processes a single source's effect on the grid over a timestep.
+  ///
+  virtual int RayTrace_SingleSource(
+      const int,     ///< Source id
+      const double,  ///< Timestep
+      const double   ///< EOS Gamma.
+      ) = 0;
 
-    ///
-    /// Just calculate the column densities required for RT.
-    ///
-    virtual int RayTrace_Column_Density(
-        const int,     ///< Source id
-        const double,  ///< Timestep
-        const double   ///< EOS Gamma.
-        ) = 0;
+  ///
+  /// Just calculate the column densities required for RT.
+  ///
+  virtual int RayTrace_Column_Density(
+      const int,     ///< Source id
+      const double,  ///< Timestep
+      const double   ///< EOS Gamma.
+      ) = 0;
 
-    /// \brief Prints list of sources with id, location, strength.
-    virtual void Print_SourceList() = 0;
+  /// \brief Prints list of sources with id, location, strength.
+  virtual void Print_SourceList() = 0;
 
-    /// \brief Returns the number of sources to track.
-    virtual int NSources() = 0;
+  /// \brief Returns the number of sources to track.
+  virtual int NSources() = 0;
 
-    ///
-    /// Returns whether we are doing an implicit (==0) or an explicit (==1)
-    /// integration of the raytracing/microphysics.
-    ///
-    virtual int type_of_RT_integration() = 0;
+  ///
+  /// Returns whether we are doing an implicit (==0) or an explicit (==1)
+  /// integration of the raytracing/microphysics.
+  ///
+  virtual int type_of_RT_integration() = 0;
 
-    ///
-    /// This sets the number of ionising and UV heating sources of radiation,
-    /// and makes sure the rt_source_data structs are populated correctly.
-    /// It can be used to change the radiation sources if e.g. the luminosity
-    /// changes over time.
-    ///
-    virtual void update_RT_source_properties(
-        const struct rad_src_info*  ///< ptr to source info.
-        ) = 0;
+  ///
+  /// This sets the number of ionising and UV heating sources of radiation,
+  /// and makes sure the rt_source_data structs are populated correctly.
+  /// It can be used to change the radiation sources if e.g. the luminosity
+  /// changes over time.
+  ///
+  virtual void update_RT_source_properties(
+      const struct rad_src_info*  ///< ptr to source info.
+      ) = 0;
 
-    /// Returns the number of ionising sources
-    virtual int N_ionising_sources() = 0;
+  /// Returns the number of ionising sources
+  virtual int N_ionising_sources() = 0;
 
-    /// Returns the number of UV heating sources
-    virtual int N_heating_sources() = 0;
+  /// Returns the number of UV heating sources
+  virtual int N_heating_sources() = 0;
 
-    ///
-    /// This function copies the ionising source data into two
-    /// vectors of structs which are returned by reference.
-    /// If rt-testing flags are set it will check that the input vector matches
-    /// the number of sources to add to the list, but otherwise there is no
-    /// checking.
-    ///
-    virtual int populate_ionising_src_list(
-        std::vector<struct rt_source_data>&  ///< list of data for ionising
-                                             ///< sources
-        ) = 0;
+  ///
+  /// This function copies the ionising source data into two
+  /// vectors of structs which are returned by reference.
+  /// If rt-testing flags are set it will check that the input vector matches
+  /// the number of sources to add to the list, but otherwise there is no
+  /// checking.
+  ///
+  virtual int populate_ionising_src_list(
+      std::vector<struct rt_source_data>&  ///< list of data for ionising
+                                           ///< sources
+      ) = 0;
 
-    ///
-    /// This function copies the UV-heating source data into two
-    /// vectors of structs which are returned by reference.
-    /// If rt-testing flags are set it will check that the input vector matches
-    /// the number of sources to add to the list, but otherwise there is no
-    /// checking.
-    ///
-    virtual int populate_UVheating_src_list(
-        std::vector<struct rt_source_data>&  ///< list of data for UV-heating
-                                             ///< sources
-        ) = 0;
+  ///
+  /// This function copies the UV-heating source data into two
+  /// vectors of structs which are returned by reference.
+  /// If rt-testing flags are set it will check that the input vector matches
+  /// the number of sources to add to the list, but otherwise there is no
+  /// checking.
+  ///
+  virtual int populate_UVheating_src_list(
+      std::vector<struct rt_source_data>&  ///< list of data for UV-heating
+                                           ///< sources
+      ) = 0;
 };
 
 // ##################################################################

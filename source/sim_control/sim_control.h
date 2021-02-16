@@ -72,69 +72,69 @@
 /// Simulation
 ///
 class sim_control : virtual public time_integrator {
-  public:
-    sim_control();           ///< Simple constructor, initialises value.
-    virtual ~sim_control();  ///< Deletes any dynamic memory, if not already
-                             ///< done.
+public:
+  sim_control();           ///< Simple constructor, initialises value.
+  virtual ~sim_control();  ///< Deletes any dynamic memory, if not already
+                           ///< done.
 
-    ///
-    /// Time integration
-    ///
-    /// This is the main part of the code -- It does the time integration
-    /// until the stopping condition is reached and then returns.
-    /// It calls a sequence of functions to advance the time by one timestep
-    /// repeatedly until end-of-sim is reached.
-    ///
-    virtual int Time_Int(
-        vector<class GridBaseClass*>&  ///< address of vector of grid pointers.
-    );
+  ///
+  /// Time integration
+  ///
+  /// This is the main part of the code -- It does the time integration
+  /// until the stopping condition is reached and then returns.
+  /// It calls a sequence of functions to advance the time by one timestep
+  /// repeatedly until end-of-sim is reached.
+  ///
+  virtual int Time_Int(
+      vector<class GridBaseClass*>&  ///< address of vector of grid pointers.
+  );
 
-    ///
-    /// finalise the simulation, clean up, delete data.
-    /// This function finished the simulation gracefully (hopefully!).
-    ///
-    virtual int Finalise(
-        vector<class GridBaseClass*>&  ///< address of vector of grid pointers.
-    );
+  ///
+  /// finalise the simulation, clean up, delete data.
+  /// This function finished the simulation gracefully (hopefully!).
+  ///
+  virtual int Finalise(
+      vector<class GridBaseClass*>&  ///< address of vector of grid pointers.
+  );
 
-    //---------------------------------------
-  protected:
+  //---------------------------------------
+protected:
 #ifdef CHECK_MAGP
-    ///
-    /// This is only for a test problem -- it checks the magnetic
-    /// pressure on the full domain and outputs it to screen
-    ///
-    virtual void calculate_magnetic_pressure(
-        class GridBaseClass*  ///< address of grid pointer.
-    );
+  ///
+  /// This is only for a test problem -- it checks the magnetic
+  /// pressure on the full domain and outputs it to screen
+  ///
+  virtual void calculate_magnetic_pressure(
+      class GridBaseClass*  ///< address of grid pointer.
+  );
 #endif  // CHECK_MAGP
 
 #ifdef BLAST_WAVE_CHECK
-    ///
-    /// If running a spherical blast wave, calculate the shock
-    /// position and output to screen.
-    ///
-    virtual void calculate_blastwave_radius(
-        class GridBaseClass*  ///< address of grid pointer.
-    );
+  ///
+  /// If running a spherical blast wave, calculate the shock
+  /// position and output to screen.
+  ///
+  virtual void calculate_blastwave_radius(
+      class GridBaseClass*  ///< address of grid pointer.
+  );
 #endif  // BLAST_WAVE_CHECK
 
-    /// Check if sim should stop.
-    ///
-    /// For shock tube problems, I stop the simulation whenever a disturbance
-    /// reaches the edge of the domain.  Most problems set the finishtime to
-    /// some value, and the end-of-sim criteria is if the current simtime has
-    /// reached finishtime or not. \retval 0 success \retval 1 failure
-    ///
-    int check_eosim();  // Checks for end of simulation.
+  /// Check if sim should stop.
+  ///
+  /// For shock tube problems, I stop the simulation whenever a disturbance
+  /// reaches the edge of the domain.  Most problems set the finishtime to
+  /// some value, and the end-of-sim criteria is if the current simtime has
+  /// reached finishtime or not. \retval 0 success \retval 1 failure
+  ///
+  int check_eosim();  // Checks for end of simulation.
 
-    ///
-    /// Checks Total energy relative to initial value, and prints a
-    /// message if not.
-    ///
-    int check_energy_cons(
-        class GridBaseClass*  ///< address of vector of grid pointers.
-    );
+  ///
+  /// Checks Total energy relative to initial value, and prints a
+  /// message if not.
+  ///
+  int check_energy_cons(
+      class GridBaseClass*  ///< address of vector of grid pointers.
+  );
 
 };  // sim_control
 

@@ -35,13 +35,13 @@
 
 /// \brief MHD Waves Enum */
 enum waves {
-    FN = 0,  ///< Negative Fast Magnetic Wave
-    AN = 1,  ///< Negative Alfven Wave
-    SN = 2,  ///< Negative Slow Magnetic Wave
-    CT = 3,  ///< Contact Discontinuity
-    SP = 4,  ///< Positive Slow Magnetic Wave
-    AP = 5,  ///< Positive Alfven Wave
-    FP = 6   ///< Positive Fast Magnetic Wave
+  FN = 0,  ///< Negative Fast Magnetic Wave
+  AN = 1,  ///< Negative Alfven Wave
+  SN = 2,  ///< Negative Slow Magnetic Wave
+  CT = 3,  ///< Contact Discontinuity
+  SP = 4,  ///< Positive Slow Magnetic Wave
+  AP = 5,  ///< Positive Alfven Wave
+  FP = 6   ///< Positive Fast Magnetic Wave
 };
 
 /// \brief MHD Riemann Solver Primitive Variables Vector
@@ -57,14 +57,14 @@ enum waves {
 /// in a for loop.
 ///
 enum rsvars {
-    RRO = 0,  ///< Density
-    RPG = 1,  ///< Gas pressure
-    RVX = 2,  ///< x-velocity
-    RVY = 3,  ///< y-velocity
-    RVZ = 4,  ///< z-velocity
-    RBY = 5,  ///< y-magnetic field
-    RBZ = 6,  ///< z-magnetic field
-    RBX = 7   ///< x-magnetic field (not needed except as a parameter)
+  RRO = 0,  ///< Density
+  RPG = 1,  ///< Gas pressure
+  RVX = 2,  ///< x-velocity
+  RVY = 3,  ///< y-velocity
+  RVZ = 4,  ///< z-velocity
+  RBY = 5,  ///< y-magnetic field
+  RBZ = 6,  ///< z-magnetic field
+  RBX = 7   ///< x-magnetic field (not needed except as a parameter)
 };
 
 /// \brief Adiabatic MHD linear Riemann Solver.
@@ -82,219 +82,218 @@ enum rsvars {
 class riemann_MHD :
     // virtual public riemann_base,
     virtual public eqns_mhd_ideal {
-  public:
-    /// \brief Constructor
-    ///
-    /// This sets up memory for the various state vectors needed for the solver.
-    /// Also receives mean values of problems it is likely to encounter, for
-    /// reference purposes, when deciding whether a quantity is 'small' or not.
-    ///
-    riemann_MHD(
-        const int,        ///< Length of state vectors, nvar.
-        const pion_flt*,  ///< Mean values of primitive variables on grid
-                          ///< [vector, length nvar]
-        const double      ///< Gamma for state vector.
-    );
+public:
+  /// \brief Constructor
+  ///
+  /// This sets up memory for the various state vectors needed for the solver.
+  /// Also receives mean values of problems it is likely to encounter, for
+  /// reference purposes, when deciding whether a quantity is 'small' or not.
+  ///
+  riemann_MHD(
+      const int,        ///< Length of state vectors, nvar.
+      const pion_flt*,  ///< Mean values of primitive variables on grid
+                        ///< [vector, length nvar]
+      const double      ///< Gamma for state vector.
+  );
 
-    /// \brief Destructor: deletes dynamically allocated arrays.
-    ~riemann_MHD();
+  /// \brief Destructor: deletes dynamically allocated arrays.
+  ~riemann_MHD();
 
-    /// Public solve function: called to solve the riemann problem
-    ///
-    /// This function is the only public interface to the solver.  It takes in
-    /// pointers to the left and right state vectors, and a pointer to the
-    /// resulting state vector.
-    ///
-    /// \retval 0 success
-    /// \retval 1 fatal failure in method, so should bug out and exit code.
-    /// \retval 2 non-fatal failure, e.g. got negative pressure so return vacuum
-    /// conditions.
-    ///
-    int JMs_riemann_solve(
-        const pion_flt*,  ///< Left state vector.
-        const pion_flt*,  ///< Right state vector.
-        pion_flt*,        ///< Result state vector.
-        const int,        ///< mode to solve (FLUX_RSlinear is only option!)
-        const double      ///< Gas eos constant gamma.
-    );
+  /// Public solve function: called to solve the riemann problem
+  ///
+  /// This function is the only public interface to the solver.  It takes in
+  /// pointers to the left and right state vectors, and a pointer to the
+  /// resulting state vector.
+  ///
+  /// \retval 0 success
+  /// \retval 1 fatal failure in method, so should bug out and exit code.
+  /// \retval 2 non-fatal failure, e.g. got negative pressure so return vacuum
+  /// conditions.
+  ///
+  int JMs_riemann_solve(
+      const pion_flt*,  ///< Left state vector.
+      const pion_flt*,  ///< Right state vector.
+      pion_flt*,        ///< Result state vector.
+      const int,        ///< mode to solve (FLUX_RSlinear is only option!)
+      const double      ///< Gas eos constant gamma.
+  );
 
-  private:
-    int RS_mode;  ///< Mode of solution, only mode=1 works so far, for the
-                  ///< linear solver.
+private:
+  int RS_mode;  ///< Mode of solution, only mode=1 works so far, for the
+                ///< linear solver.
 
-    int RS_nvar;  ///< The number of active variables/waves in the Riemann
-                  ///< problem. Hard-coded to seven for simplicity.
+  int RS_nvar;  ///< The number of active variables/waves in the Riemann
+                ///< problem. Hard-coded to seven for simplicity.
 
-    double ansBX;  ///< B_x is just a parameter, so set it at the start of the
-                   ///< sovle function, and assign to this variable.
+  double ansBX;  ///< B_x is just a parameter, so set it at the start of the
+                 ///< sovle function, and assign to this variable.
 
-    double ch,   ///< Hydrodynamical sound speed (in average state).
-        ca,      ///< Alfven speed (in average state).
-        cs,      ///< Slow magnetic wave speed (in average state).
-        cf,      ///< Fast magnetic wave speed (in average state).
-        bx,      ///< Normalised x-component of magnetic
-                 ///< field,\f$=B_x/\sqrt{\rho}\f$.
-        bt,      ///< Normalised tangential component of magnetic
-                 ///< field,\f$=\sqrt{(B_y^2+B_z^2)/\rho}\f$.
-        betay,   ///< This is \f$B_y/\sqrt{B_y^2+B_z^2}\f$.
-        betaz,   ///< This is \f$B_z/\sqrt{B_y^2+B_z^2}\f$.
-        alphaf,  ///< The fast speed normalisation constant
-                 ///< \f$=(a^2-c_s^2)/(c_f^2-c_s^2)\f$.
-        alphas;  ///< The slow speed normalisation constant
-                 ///< \f$=(c_f^2-a^2)/(c_f^2-c_s^2)\f$.
+  double ch,   ///< Hydrodynamical sound speed (in average state).
+      ca,      ///< Alfven speed (in average state).
+      cs,      ///< Slow magnetic wave speed (in average state).
+      cf,      ///< Fast magnetic wave speed (in average state).
+      bx,      ///< Normalised x-component of magnetic
+               ///< field,\f$=B_x/\sqrt{\rho}\f$.
+      bt,      ///< Normalised tangential component of magnetic
+               ///< field,\f$=\sqrt{(B_y^2+B_z^2)/\rho}\f$.
+      betay,   ///< This is \f$B_y/\sqrt{B_y^2+B_z^2}\f$.
+      betaz,   ///< This is \f$B_z/\sqrt{B_y^2+B_z^2}\f$.
+      alphaf,  ///< The fast speed normalisation constant
+               ///< \f$=(a^2-c_s^2)/(c_f^2-c_s^2)\f$.
+      alphas;  ///< The slow speed normalisation constant
+               ///< \f$=(c_f^2-a^2)/(c_f^2-c_s^2)\f$.
 
-    pion_flt* RS_pdiff;     ///< Difference between left and right states (for
-                            ///< calculation).
-    pion_flt* RS_evalue;    ///< The eignevalues of the matrix \f$\bar{A}\f$.
-    pion_flt* RS_strength;  ///< The wavestrengths for each wave.
+  pion_flt* RS_pdiff;     ///< Difference between left and right states (for
+                          ///< calculation).
+  pion_flt* RS_evalue;    ///< The eignevalues of the matrix \f$\bar{A}\f$.
+  pion_flt* RS_strength;  ///< The wavestrengths for each wave.
 
-    /// Left state vector (local copy)
-    pion_flt* RS_left;
-    /// Right state vector (local copy)
-    pion_flt* RS_right;
-    /// Resolved state vector (local copy)
-    pion_flt* RS_pstar;
-    /// Mean state vector
-    pion_flt* RS_meanp;
+  /// Left state vector (local copy)
+  pion_flt* RS_left;
+  /// Right state vector (local copy)
+  pion_flt* RS_right;
+  /// Resolved state vector (local copy)
+  pion_flt* RS_pstar;
+  /// Mean state vector
+  pion_flt* RS_meanp;
 
-    /// The elements of the 7 left eigenvectors... evec[E-val][Element]
-    pion_flt RS_leftevec[7][7];
-    /// The elements of the 7 right eigenvectors...evec[E-val][Element]
-    pion_flt RS_rightevec[7][7];
+  /// The elements of the 7 left eigenvectors... evec[E-val][Element]
+  pion_flt RS_leftevec[7][7];
+  /// The elements of the 7 right eigenvectors...evec[E-val][Element]
+  pion_flt RS_rightevec[7][7];
 
-    long int
-        onaxis,     ///< Debugging counters for checking eigenvectors are right.
-        offaxis,    ///< Debugging counters for checking eigenvectors are right.
-        samestate,  ///< Debugging counter, for counting how many solves had the
+  long int onaxis,  ///< Debugging counters for checking eigenvectors are right.
+      offaxis,      ///< Debugging counters for checking eigenvectors are right.
+      samestate,    ///< Debugging counter, for counting how many solves had the
                     ///< same left and right state.
-        totalsolve;  ///< Counter for total number of Riemann Problems solved.
+      totalsolve;   ///< Counter for total number of Riemann Problems solved.
 
-    ///
-    /// Small number slightly larger than roundoff error for double
-    /// precision. Used to make numbers positive when they should be,
-    /// but aren't b/c of roundoff. For my machine, double precision
-    /// accuracy is about 2e-16, so set this to 1.e-15.
-    ///
-    double smallB;
+  ///
+  /// Small number slightly larger than roundoff error for double
+  /// precision. Used to make numbers positive when they should be,
+  /// but aren't b/c of roundoff. For my machine, double precision
+  /// accuracy is about 2e-16, so set this to 1.e-15.
+  ///
+  double smallB;
 
-    /// Very small number, used to check that B_t is not zero.
-    double tinyB;
+  /// Very small number, used to check that B_t is not zero.
+  double tinyB;
 
-    /// \brief assigns the data passed to the solver, to class member variables.
-    ///
-    /// Make sure the state vectors are in the format expected by the riemann
-    /// solver!!!
-    ///
-    void assign_data(
-        const pion_flt*,  ///< Pointer to left state vector
-        const pion_flt*   ///< Pointer to right state vector
-    );
+  /// \brief assigns the data passed to the solver, to class member variables.
+  ///
+  /// Make sure the state vectors are in the format expected by the riemann
+  /// solver!!!
+  ///
+  void assign_data(
+      const pion_flt*,  ///< Pointer to left state vector
+      const pion_flt*   ///< Pointer to right state vector
+  );
 
-    /// \brief  Calculates the average state vector, e.g. (P_L+P_R)/2
-    ///
-    /// This could have a number of ways of calculating an average state,
-    /// but for now I just do a straight mean of the left and right states.
-    ///
-    void get_average_state();
+  /// \brief  Calculates the average state vector, e.g. (P_L+P_R)/2
+  ///
+  /// This could have a number of ways of calculating an average state,
+  /// but for now I just do a straight mean of the left and right states.
+  ///
+  void get_average_state();
 
-    /// \brief Calculates the sound speeds for the left and right states.
-    ///
-    /// Calculates sound speeds (c_h, c_a, c_s, c_f)
-    ///
-    int get_sound_speeds();
+  /// \brief Calculates the sound speeds for the left and right states.
+  ///
+  /// Calculates sound speeds (c_h, c_a, c_s, c_f)
+  ///
+  int get_sound_speeds();
 
-    /// \brief  Calculates the eignevalues of the matrix \f$\bar{A}\f$
-    ///
-    /// These are the seven wavespeeds.  For a linear solver they are not the
-    /// real wavespeeds, but speeds calculated from the average state which are
-    /// assumed to apply everywhere.
-    ///
-    void get_eigenvalues();
+  /// \brief  Calculates the eignevalues of the matrix \f$\bar{A}\f$
+  ///
+  /// These are the seven wavespeeds.  For a linear solver they are not the
+  /// real wavespeeds, but speeds calculated from the average state which are
+  /// assumed to apply everywhere.
+  ///
+  void get_eigenvalues();
 
-    /// \brief  Check and output the values of the evectors and their dot
-    /// products
-    ///
-    ///
-    int check_evectors();
+  /// \brief  Check and output the values of the evectors and their dot
+  /// products
+  ///
+  ///
+  int check_evectors();
 
-    /// \brief  This constructs evectors using some idea I came up with
-    ///
-    /// The vectors are from Falle et al., but I tried to be a bit smarter with
-    /// the normalisation.  I can't remember, but I don't think it worked any
-    /// better than Falle's norm.
-    ///
-    int my_evectors();
+  /// \brief  This constructs evectors using some idea I came up with
+  ///
+  /// The vectors are from Falle et al., but I tried to be a bit smarter with
+  /// the normalisation.  I can't remember, but I don't think it worked any
+  /// better than Falle's norm.
+  ///
+  int my_evectors();
 
-    /// \brief  This constructs evectors using the Roe and Balsara
-    /// normalisation.
-    ///
-    /// Mostly Roe and Balsara norm, but the Alfven waves are still the same as
-    /// in Falle et al.
-    ///
-    int RoeBalsara_evectors();
+  /// \brief  This constructs evectors using the Roe and Balsara
+  /// normalisation.
+  ///
+  /// Mostly Roe and Balsara norm, but the Alfven waves are still the same as
+  /// in Falle et al.
+  ///
+  int RoeBalsara_evectors();
 
-    /// \brief Evaluates dot product to two vectors
-    ///
-    /// Pass in the two vectors and their length.
-    ///
-    /// \retval value of dot product if successful.
-    ///
-    double dot_product(
-        pion_flt*,  ///< Pointer to Vector 1.
-        pion_flt*,  ///< Pointer to Vector 2.
-        int         ///< Length of vectors.
-    );
+  /// \brief Evaluates dot product to two vectors
+  ///
+  /// Pass in the two vectors and their length.
+  ///
+  /// \retval value of dot product if successful.
+  ///
+  double dot_product(
+      pion_flt*,  ///< Pointer to Vector 1.
+      pion_flt*,  ///< Pointer to Vector 2.
+      int         ///< Length of vectors.
+  );
 
-    /// \brief Calculates the wave strengths alpha_i
-    ///
-    /// The equation is easily derived, and is given in Falle et al., just after
-    /// eq.8 as
-    /// \f$ \alpha_i = \frac{\mathbf{l}^{[i]}\cdot\mathbf{(P_R-P_L)}}
-    ///           {\mathbf{l}^{[i]}\cdot \mathbf{r}^{[i]}}\;. \f$
-    ///
-    /// \retval 0 success
-    /// \retval 1 failure
-    ///
-    void calculate_wave_strengths();
+  /// \brief Calculates the wave strengths alpha_i
+  ///
+  /// The equation is easily derived, and is given in Falle et al., just after
+  /// eq.8 as
+  /// \f$ \alpha_i = \frac{\mathbf{l}^{[i]}\cdot\mathbf{(P_R-P_L)}}
+  ///           {\mathbf{l}^{[i]}\cdot \mathbf{r}^{[i]}}\;. \f$
+  ///
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
+  void calculate_wave_strengths();
 
-    /// \brief  Calculates pdiff[]= (P_L-P_R) for use in getting P*
-    /// \retval 0 success
-    /// \retval 1 failure
-    ///
-    void getPdiff();
+  /// \brief  Calculates pdiff[]= (P_L-P_R) for use in getting P*
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
+  void getPdiff();
 
-    /// \brief Gets the appropriate value of P* from left and right and makes
-    /// sure they match.
-    ///
-    ///
-    /// \retval 0 success
-    /// \retval 1 failure
-    ///
-    int get_pstar();
+  /// \brief Gets the appropriate value of P* from left and right and makes
+  /// sure they match.
+  ///
+  ///
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
+  int get_pstar();
 
-    /// \brief Checks the error code, and if it's non-zero, prints it and a
-    /// message
-    ///
-    void failerror(
-        int,         ///< Error code.
-        std::string  ///< Error message
-    );
+  /// \brief Checks the error code, and if it's non-zero, prints it and a
+  /// message
+  ///
+  void failerror(
+      int,         ///< Error code.
+      std::string  ///< Error message
+  );
 
-    /// \brief Changes the order of variables so they are back to the code order
-    ///
-    /// The riemann solver orders the variables according to the enum rsvars,
-    /// while the main code orders them according to the enum primitive, so this
-    /// function changes the order of the B-field elements from rsvars to
-    /// primitive.
-    ///
-    ///
-    void solver2codevars(pion_flt*  ///< Vector to convert.
-    );
+  /// \brief Changes the order of variables so they are back to the code order
+  ///
+  /// The riemann solver orders the variables according to the enum rsvars,
+  /// while the main code orders them according to the enum primitive, so this
+  /// function changes the order of the B-field elements from rsvars to
+  /// primitive.
+  ///
+  ///
+  void solver2codevars(pion_flt*  ///< Vector to convert.
+  );
 
-    /// \brief Change order of variables in state vector from code to solver
-    /// variables.
-    void code2solvervars(pion_flt*  ///< Vector to convert.
-    );
+  /// \brief Change order of variables in state vector from code to solver
+  /// variables.
+  void code2solvervars(pion_flt*  ///< Vector to convert.
+  );
 };
 
 #endif

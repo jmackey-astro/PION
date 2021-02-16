@@ -99,10 +99,10 @@ DataIOFits::DataIOFits(
     ) :
     DataIOBase(SimPM)
 {
-    cout << "Setting up DataIOFits class.\n";
-    DataIOFits::eqn      = 0;
-    DataIOFits::gp       = 0;
-    DataIOFits::file_ptr = 0;
+  cout << "Setting up DataIOFits class.\n";
+  DataIOFits::eqn      = 0;
+  DataIOFits::gp       = 0;
+  DataIOFits::file_ptr = 0;
 }
 
 // ##################################################################
@@ -110,9 +110,9 @@ DataIOFits::DataIOFits(
 
 DataIOFits::~DataIOFits()
 {
-    cout << "Deleting DataIOFits class.\n";
-    DataIOFits::eqn = 0;
-    DataIOFits::gp  = 0;
+  cout << "Deleting DataIOFits class.\n";
+  DataIOFits::eqn = 0;
+  DataIOFits::gp  = 0;
 }
 
 // ##################################################################
@@ -120,8 +120,8 @@ DataIOFits::~DataIOFits()
 
 void DataIOFits::SetSolver(FV_solver_base* solver)
 {
-    cout << "DataIOFits::SetSolver() Setting solver pointer.\n";
-    DataIOFits::eqn = solver;
+  cout << "DataIOFits::SetSolver() Setting solver pointer.\n";
+  DataIOFits::eqn = solver;
 }
 
 // ##################################################################
@@ -134,204 +134,202 @@ int DataIOFits::OutputData(
     const long int file_counter  ///< number to stamp file with (e.g. timestep)
 )
 {
-    string fname    = "DataIOFits::OutputData";
-    int nvar        = SimPM.nvar;
-    string* extname = 0;
-    if (SimPM.ntracer > 5)
-        rep.error("OutputFitsData:: only accepts <=5 tracers!", SimPM.ntracer);
+  string fname    = "DataIOFits::OutputData";
+  int nvar        = SimPM.nvar;
+  string* extname = 0;
+  if (SimPM.ntracer > 5)
+    rep.error("OutputFitsData:: only accepts <=5 tracers!", SimPM.ntracer);
 #ifdef RT_TESTING_OUTPUTCOL
-    // save column densities
-    if (SimPM.RS.Nsources > 0) {
-        for (int si = 0; si < SimPM.RS.Nsources; si++) {
-            nvar += SimPM.RS.sources[si].NTau;
-        }
+  // save column densities
+  if (SimPM.RS.Nsources > 0) {
+    for (int si = 0; si < SimPM.RS.Nsources; si++) {
+      nvar += SimPM.RS.sources[si].NTau;
     }
+  }
 #endif  // RT_TESTING_OUTPUTCOL
 
-    if (SimPM.eqntype == EQEUL || SimPM.eqntype == EQEUL_ISO
-        || SimPM.eqntype == EQEUL_EINT) {
-        extname         = mem.myalloc(extname, nvar + 1);
-        string pvar[10] = {"GasDens", "GasPres", "GasVX", "GasVY", "GasVZ",
-                           "TR0",     "TR1",     "TR2",   "TR3",   "TR4"};
-        for (int i = 0; i < SimPM.nvar; i++)
-            extname[i] = pvar[i];
-        if (DataIOFits::eqn != 0 && MP == 0) {
-            extname[nvar] = "Eint";
-            nvar += 1;
-        }
-        else if (MP != 0) {
-            extname[nvar] = "Temp";
-            nvar += 1;
-        }
+  if (SimPM.eqntype == EQEUL || SimPM.eqntype == EQEUL_ISO
+      || SimPM.eqntype == EQEUL_EINT) {
+    extname         = mem.myalloc(extname, nvar + 1);
+    string pvar[10] = {"GasDens", "GasPres", "GasVX", "GasVY", "GasVZ",
+                       "TR0",     "TR1",     "TR2",   "TR3",   "TR4"};
+    for (int i = 0; i < SimPM.nvar; i++)
+      extname[i] = pvar[i];
+    if (DataIOFits::eqn != 0 && MP == 0) {
+      extname[nvar] = "Eint";
+      nvar += 1;
     }
-    else if (SimPM.eqntype == EQMHD || SimPM.eqntype == EQFCD) {
-        extname         = mem.myalloc(extname, nvar + 3);
-        string pvar[13] = {"GasDens", "GasPres", "GasVX", "GasVY", "GasVZ",
-                           "Bx",      "By",      "Bz",    "TR0",   "TR1",
-                           "TR2",     "TR3",     "TR4"};
-        for (int i = 0; i < SimPM.nvar; i++)
-            extname[i] = pvar[i];
-        if (DataIOFits::eqn != 0 && MP == 0) {
-            extname[nvar]     = "Eint";
-            extname[nvar + 1] = "divB";
-            extname[nvar + 2] = "Ptot";
-            nvar += 3;
-        }
-        else if (DataIOFits::eqn != 0 && MP != 0) {
-            extname[nvar]     = "Temp";
-            extname[nvar + 1] = "divB";
-            extname[nvar + 2] = "Ptot";
-            nvar += 3;
-        }
-        else if (MP != 0) {
-            extname[nvar] = "Temp";
-            nvar += 1;
-        }
+    else if (MP != 0) {
+      extname[nvar] = "Temp";
+      nvar += 1;
     }
-    else if (SimPM.eqntype == EQGLM) {
-        extname         = mem.myalloc(extname, nvar + 3);
-        string pvar[14] = {"GasDens", "GasPres", "GasVX", "GasVY", "GasVZ",
-                           "Bx",      "By",      "Bz",    "psi",   "TR0",
-                           "TR1",     "TR2",     "TR3",   "TR4"};
-        for (int i = 0; i < SimPM.nvar; i++)
-            extname[i] = pvar[i];
-        cout << "EQN=" << DataIOFits::eqn << ", MP=" << MP << "\n";
-        if (DataIOFits::eqn != 0 && MP == 0) {
-            extname[nvar]     = "Eint";
-            extname[nvar + 1] = "divB";
-            extname[nvar + 2] = "Ptot";
-            nvar += 3;
-        }
-        else if (DataIOFits::eqn != 0 && MP != 0) {
-            extname[nvar]     = "Temp";
-            extname[nvar + 1] = "divB";
-            extname[nvar + 2] = "Ptot";
-            nvar += 3;
-        }
-        else if (MP != 0) {
-            extname[nvar] = "Temp";
-            nvar += 1;
-        }
+  }
+  else if (SimPM.eqntype == EQMHD || SimPM.eqntype == EQFCD) {
+    extname         = mem.myalloc(extname, nvar + 3);
+    string pvar[13] = {"GasDens", "GasPres", "GasVX", "GasVY", "GasVZ",
+                       "Bx",      "By",      "Bz",    "TR0",   "TR1",
+                       "TR2",     "TR3",     "TR4"};
+    for (int i = 0; i < SimPM.nvar; i++)
+      extname[i] = pvar[i];
+    if (DataIOFits::eqn != 0 && MP == 0) {
+      extname[nvar]     = "Eint";
+      extname[nvar + 1] = "divB";
+      extname[nvar + 2] = "Ptot";
+      nvar += 3;
     }
-    else {
-        extname = mem.myalloc(extname, 10);
-        rep.error("What equations?!", SimPM.eqntype);
+    else if (DataIOFits::eqn != 0 && MP != 0) {
+      extname[nvar]     = "Temp";
+      extname[nvar + 1] = "divB";
+      extname[nvar + 2] = "Ptot";
+      nvar += 3;
     }
+    else if (MP != 0) {
+      extname[nvar] = "Temp";
+      nvar += 1;
+    }
+  }
+  else if (SimPM.eqntype == EQGLM) {
+    extname         = mem.myalloc(extname, nvar + 3);
+    string pvar[14] = {"GasDens", "GasPres", "GasVX", "GasVY", "GasVZ",
+                       "Bx",      "By",      "Bz",    "psi",   "TR0",
+                       "TR1",     "TR2",     "TR3",   "TR4"};
+    for (int i = 0; i < SimPM.nvar; i++)
+      extname[i] = pvar[i];
+    cout << "EQN=" << DataIOFits::eqn << ", MP=" << MP << "\n";
+    if (DataIOFits::eqn != 0 && MP == 0) {
+      extname[nvar]     = "Eint";
+      extname[nvar + 1] = "divB";
+      extname[nvar + 2] = "Ptot";
+      nvar += 3;
+    }
+    else if (DataIOFits::eqn != 0 && MP != 0) {
+      extname[nvar]     = "Temp";
+      extname[nvar + 1] = "divB";
+      extname[nvar + 2] = "Ptot";
+      nvar += 3;
+    }
+    else if (MP != 0) {
+      extname[nvar] = "Temp";
+      nvar += 1;
+    }
+  }
+  else {
+    extname = mem.myalloc(extname, 10);
+    rep.error("What equations?!", SimPM.eqntype);
+  }
 
 #ifdef RT_TESTING_OUTPUTCOL
-    // save column densities
-    if (SimPM.RS.Nsources > 0) {
-        if (extname[SimPM.nvar] != "")
-            rep.error("Tau not writeable!", extname[SimPM.nvar]);
-        //
-        // Loop over all sources, and all variables for each source:
-        //
-        ostringstream var;
-        unsigned int ivar = SimPM.nvar;
-        for (int v = 0; v < SimPM.RS.Nsources; v++) {
-            for (int iT = 0; iT < SimPM.RS.sources[v].NTau; iT++) {
-                var.str("");
-                var << "Col_Src_" << v << "_T" << iT;
-                extname[ivar] = var.str();
-                ivar++;
-            }  // loop over Tau variables for source v.
-        }      // loop over Nsources
-    }          // if RT
-#endif         // RT_TESTING_OUTPUTCOL
-
-    if (!cg[0])
-        rep.error("DataIOFits::OutputData() null pointer to grid!", cg[0]);
-    DataIOFits::gp = cg[0];
-
-    fitsfile* ff = 0;
-    int status = 0, err = 0;
+  // save column densities
+  if (SimPM.RS.Nsources > 0) {
+    if (extname[SimPM.nvar] != "")
+      rep.error("Tau not writeable!", extname[SimPM.nvar]);
     //
-    // Choose filename based on the basename and the counter passed to
-    // this function.
+    // Loop over all sources, and all variables for each source:
     //
-    string outfile = choose_filename(outfilebase, file_counter);
-    ostringstream temp;
+    ostringstream var;
+    unsigned int ivar = SimPM.nvar;
+    for (int v = 0; v < SimPM.RS.Nsources; v++) {
+      for (int iT = 0; iT < SimPM.RS.sources[v].NTau; iT++) {
+        var.str("");
+        var << "Col_Src_" << v << "_T" << iT;
+        extname[ivar] = var.str();
+        ivar++;
+      }  // loop over Tau variables for source v.
+    }    // loop over Nsources
+  }      // if RT
+#endif   // RT_TESTING_OUTPUTCOL
+
+  if (!cg[0])
+    rep.error("DataIOFits::OutputData() null pointer to grid!", cg[0]);
+  DataIOFits::gp = cg[0];
+
+  fitsfile* ff = 0;
+  int status = 0, err = 0;
+  //
+  // Choose filename based on the basename and the counter passed to
+  // this function.
+  //
+  string outfile = choose_filename(outfilebase, file_counter);
+  ostringstream temp;
+  temp.str("");
+
+  // -------------------------------------------------------
+  // -------------------------------------------------------
+  // cout <<"DataIOFits::OutputData() writing file.";
+  // cout <<":\t writing to file "<<outfile;
+
+  if (file_exists(outfile)) {
+    // cout <<":\t file exists... overwriting!... ";
     temp.str("");
+    temp << "!" << outfile;
+    outfile = temp.str();
+  }
 
-    // -------------------------------------------------------
-    // -------------------------------------------------------
-    // cout <<"DataIOFits::OutputData() writing file.";
-    // cout <<":\t writing to file "<<outfile;
+  // Create fits file.
+  fits_create_file(&ff, outfile.c_str(), &status);
+  if (status) rep.error("Creating new file went bad.", status);
+  status = 0;
 
-    if (file_exists(outfile)) {
-        // cout <<":\t file exists... overwriting!... ";
-        temp.str("");
-        temp << "!" << outfile;
-        outfile = temp.str();
-    }
+  // write fits header
+  //  err += write_fits_header(ff);
+  // if(err) rep.error("DataIOFits::OutputData() couldn't write fits
+  // header",err);
 
-    // Create fits file.
-    fits_create_file(&ff, outfile.c_str(), &status);
-    if (status) rep.error("Creating new file went bad.", status);
-    status = 0;
+  // --------------------------------------------------------
+  //
+  // create HDU for header
+  //
+  fits_create_img(ff, DOUBLE_IMG, 0, 0, &status);
+  if (status) {
+    fits_report_error(stderr, status);
+  }
+  //
+  // set file pointer for the header writing function.
+  //
+  file_ptr = ff;
+  err      = write_simulation_parameters(SimPM);
+  if (err)
+    rep.error("DataIOFits::OutputData() couldn't write fits header", err);
+  ff = file_ptr;
+  // --------------------------------------------------------
 
-    // write fits header
-    //  err += write_fits_header(ff);
-    // if(err) rep.error("DataIOFits::OutputData() couldn't write fits
-    // header",err);
+  //
+  // for each image, create image and write my portion of it.
+  //
+  for (int i = 0; i < nvar; i++) {
+    // cout
+    // <<extname[i]<<"\t"<<SimPM.Xmin[0]<<"\t"<<SimPM.Xmax[0]<<"\t"<<SimPM.NG[0]<<"\t"<<SimPM.Ncell<<"\n";
+    // cout
+    // <<extname[i]<<"\t"<<SimPM.Xmin[1]<<"\t"<<SimPM.Xmax[1]<<"\t"<<SimPM.NG[1]<<"\t"<<SimPM.Ncell<<"\n";
+    // cout
+    // <<extname[i]<<"\t"<<SimPM.Xmin[2]<<"\t"<<SimPM.Xmax[2]<<"\t"<<SimPM.NG[2]<<"\t"<<SimPM.Ncell<<"\n";
+    err += create_fits_image(ff, extname[i], SimPM.ndim, SimPM.NG);
+    double* data = 0;
+    err += put_variable_into_data_array(SimPM, extname[i], SimPM.Ncell, &data);
+    err += write_fits_image(
+        ff, extname[i], SimPM.Xmin, SimPM.Xmin, gp->DX(), SimPM.ndim, SimPM.NG,
+        SimPM.Ncell, data);
+    data = mem.myfree(data);
+  }
+  if (err)
+    rep.error("DataIOFits::OutputData() Serial Image Writing went bad", err);
 
-    // --------------------------------------------------------
-    //
-    // create HDU for header
-    //
-    fits_create_img(ff, DOUBLE_IMG, 0, 0, &status);
-    if (status) {
-        fits_report_error(stderr, status);
-    }
-    //
-    // set file pointer for the header writing function.
-    //
-    file_ptr = ff;
-    err      = write_simulation_parameters(SimPM);
-    if (err)
-        rep.error("DataIOFits::OutputData() couldn't write fits header", err);
-    ff = file_ptr;
-    // --------------------------------------------------------
+  // Close file
+  err += fits_close_file(ff, &status);
+  //  release_lock(outfile);
+  //  cout <<": file written.\n";
+  // -------------------------------------------------------
+  // -------------------------------------------------------
 
-    //
-    // for each image, create image and write my portion of it.
-    //
-    for (int i = 0; i < nvar; i++) {
-        // cout
-        // <<extname[i]<<"\t"<<SimPM.Xmin[0]<<"\t"<<SimPM.Xmax[0]<<"\t"<<SimPM.NG[0]<<"\t"<<SimPM.Ncell<<"\n";
-        // cout
-        // <<extname[i]<<"\t"<<SimPM.Xmin[1]<<"\t"<<SimPM.Xmax[1]<<"\t"<<SimPM.NG[1]<<"\t"<<SimPM.Ncell<<"\n";
-        // cout
-        // <<extname[i]<<"\t"<<SimPM.Xmin[2]<<"\t"<<SimPM.Xmax[2]<<"\t"<<SimPM.NG[2]<<"\t"<<SimPM.Ncell<<"\n";
-        err += create_fits_image(ff, extname[i], SimPM.ndim, SimPM.NG);
-        double* data = 0;
-        err +=
-            put_variable_into_data_array(SimPM, extname[i], SimPM.Ncell, &data);
-        err += write_fits_image(
-            ff, extname[i], SimPM.Xmin, SimPM.Xmin, gp->DX(), SimPM.ndim,
-            SimPM.NG, SimPM.Ncell, data);
-        data = mem.myfree(data);
-    }
-    if (err)
-        rep.error(
-            "DataIOFits::OutputData() Serial Image Writing went bad", err);
+  extname = mem.myfree(extname);
 
-    // Close file
-    err += fits_close_file(ff, &status);
-    //  release_lock(outfile);
-    //  cout <<": file written.\n";
-    // -------------------------------------------------------
-    // -------------------------------------------------------
+  if (status) {
+    fits_report_error(stderr, status);
+    fits_clear_errmsg();
+    return (status);
+  }
 
-    extname = mem.myfree(extname);
-
-    if (status) {
-        fits_report_error(stderr, status);
-        fits_clear_errmsg();
-        return (status);
-    }
-
-    return err;
+  return err;
 }
 
 // ##################################################################
@@ -342,51 +340,50 @@ int DataIOFits::ReadHeader(
     class SimParams& SimPM  ///< pointer to simulation parameters
 )
 {
-    int err    = 0;
-    int status = 0;
-    fitsfile* ff;
-    //  cout <<"DataIOFits::ReadHeader() opening fits file to read header...";
-    err = fits_open_file(&ff, infile.c_str(), READONLY, &status);
-    if (status) {
-        fits_report_error(stderr, status);
-        return (err);
-    }
-
-    //  cout <<"done. Now reading header.\n";
-    //  err += read_fits_header(ff);
-    //  if (err)
-    //   rep.error("DataIOFits::ReadHeader() read fits header failed.",err);
-
-    //
-    // Get to first hdu, which is always the header
-    //
-    int num = -1;
-    fits_get_hdu_num(ff, &num);
-    /* int fits_moveabs_hdu(ff, hdu-wanted, int *hdutype [IMAGE_HDU], &status);
-     */
-    if (num != 1) ffmahd(ff, 1, 0, &status);
-    if (status) {
-        fits_report_error(stderr, status);
-        return (err);
-    }
-    //
-    // set file pointer for the header reading function.
-    //
-    file_ptr = ff;
-    err += read_simulation_parameters(SimPM);
-    if (err)
-        rep.error("DataIOFits::ReadHeader() read fits header failed.", err);
-    ff = file_ptr;
-    //
-    // Now should be done, so close file and move on.
-    //
-    err += fits_close_file(ff, &status);
-    if (status) {
-        fits_report_error(stderr, status);
-        return (err);
-    }
-
+  int err    = 0;
+  int status = 0;
+  fitsfile* ff;
+  //  cout <<"DataIOFits::ReadHeader() opening fits file to read header...";
+  err = fits_open_file(&ff, infile.c_str(), READONLY, &status);
+  if (status) {
+    fits_report_error(stderr, status);
     return (err);
+  }
+
+  //  cout <<"done. Now reading header.\n";
+  //  err += read_fits_header(ff);
+  //  if (err)
+  //   rep.error("DataIOFits::ReadHeader() read fits header failed.",err);
+
+  //
+  // Get to first hdu, which is always the header
+  //
+  int num = -1;
+  fits_get_hdu_num(ff, &num);
+  /* int fits_moveabs_hdu(ff, hdu-wanted, int *hdutype [IMAGE_HDU], &status);
+   */
+  if (num != 1) ffmahd(ff, 1, 0, &status);
+  if (status) {
+    fits_report_error(stderr, status);
+    return (err);
+  }
+  //
+  // set file pointer for the header reading function.
+  //
+  file_ptr = ff;
+  err += read_simulation_parameters(SimPM);
+  if (err) rep.error("DataIOFits::ReadHeader() read fits header failed.", err);
+  ff = file_ptr;
+  //
+  // Now should be done, so close file and move on.
+  //
+  err += fits_close_file(ff, &status);
+  if (status) {
+    fits_report_error(stderr, status);
+    return (err);
+  }
+
+  return (err);
 }
 
 // ##################################################################
@@ -397,52 +394,52 @@ int DataIOFits::WriteHeader(
     class SimParams& SimPM  ///< pointer to simulation parameters
 )
 {
-    int err    = 0;
-    int status = 0;
-    fitsfile* ff;
-    err = fits_open_file(&ff, fname.c_str(), READWRITE, &status);
-    if (status) {
-        fits_report_error(stderr, status);
-        return (err);
-    }
-    //
-    // Get to first hdu, which is always the header
-    //
-    int num = -1;
-    fits_get_hdu_num(ff, &num);
-    /* int fits_moveabs_hdu(ff, hdu-wanted, int *hdutype [IMAGE_HDU], &status);
-     */
-    if (num != 1) ffmahd(ff, 1, 0, &status);
-    if (status) {
-        fits_report_error(stderr, status);
-        //
-        // Maybe header doesn't exist?  In this case create HDU for header
-        //
-        fits_create_img(ff, DOUBLE_IMG, 0, 0, &status);
-        if (status) {
-            fits_report_error(stderr, status);
-            return status;
-        }
-    }
-
-    //
-    // set file pointer for the header writing function; then write the header.
-    //
-    file_ptr = ff;
-    err      = write_simulation_parameters(SimPM);
-    if (err)
-        rep.error("DataIOFits::WriteHeader() couldn't write fits header", err);
-    ff = file_ptr;
-
-    //
-    // close file and return.
-    //
-    err = fits_close_file(ff, &status);
-    if (status) {
-        fits_report_error(stderr, status);
-        return (err);
-    }
+  int err    = 0;
+  int status = 0;
+  fitsfile* ff;
+  err = fits_open_file(&ff, fname.c_str(), READWRITE, &status);
+  if (status) {
+    fits_report_error(stderr, status);
     return (err);
+  }
+  //
+  // Get to first hdu, which is always the header
+  //
+  int num = -1;
+  fits_get_hdu_num(ff, &num);
+  /* int fits_moveabs_hdu(ff, hdu-wanted, int *hdutype [IMAGE_HDU], &status);
+   */
+  if (num != 1) ffmahd(ff, 1, 0, &status);
+  if (status) {
+    fits_report_error(stderr, status);
+    //
+    // Maybe header doesn't exist?  In this case create HDU for header
+    //
+    fits_create_img(ff, DOUBLE_IMG, 0, 0, &status);
+    if (status) {
+      fits_report_error(stderr, status);
+      return status;
+    }
+  }
+
+  //
+  // set file pointer for the header writing function; then write the header.
+  //
+  file_ptr = ff;
+  err      = write_simulation_parameters(SimPM);
+  if (err)
+    rep.error("DataIOFits::WriteHeader() couldn't write fits header", err);
+  ff = file_ptr;
+
+  //
+  // close file and return.
+  //
+  err = fits_close_file(ff, &status);
+  if (status) {
+    fits_report_error(stderr, status);
+    return (err);
+  }
+  return (err);
 }
 
 // ##################################################################
@@ -454,162 +451,159 @@ int DataIOFits::ReadData(
     class SimParams& SimPM             ///< pointer to simulation parameters
 )
 {
-    string fname = "DataIOFits::ReadData";
+  string fname = "DataIOFits::ReadData";
 
-    if (!cg[0])
-        rep.error("DataIOFits::ReadData() null pointer to grid!", cg[0]);
-    DataIOFits::gp = cg[0];
+  if (!cg[0]) rep.error("DataIOFits::ReadData() null pointer to grid!", cg[0]);
+  DataIOFits::gp = cg[0];
 
-    int err    = 0;
-    int status = 0;
-    fitsfile* ff;
-    // cout <<"DataIOFits::ReadData() opening fits file to read data...";
-    err = fits_open_file(&ff, infile.c_str(), READONLY, &status);
-    if (status) {
+  int err    = 0;
+  int status = 0;
+  fitsfile* ff;
+  // cout <<"DataIOFits::ReadData() opening fits file to read data...";
+  err = fits_open_file(&ff, infile.c_str(), READONLY, &status);
+  if (status) {
+    fits_report_error(stderr, status);
+    return (err);
+  }
+  // cout <<"done.\n";
+  // Move to first data hdu; should be 2nd hdu;
+  int num;
+  fits_get_hdu_num(ff, &num);
+  if (num != 1) err += ffmahd(ff, 1, 0, &status);
+  if (status) {
+    fits_report_error(stderr, status);
+    return (err);
+  }
+  err += ffmrhd(ff, 1, 0, &status);
+  fits_get_hdu_num(ff, &num);
+  //  cout <<"Current hdu: "<<num<<"\t and err="<<err<<"\n";
+  // -------------------------------------------------------
+
+  int nvar    = SimPM.nvar;
+  string* var = 0;
+  if (SimPM.ntracer > 5)
+    rep.error(
+        "DataIOFits::ReadData() only handles up to 5 tracer variables! "
+        "Add more if needed.",
+        SimPM.ntracer);
+  if (SimPM.eqntype == EQEUL || SimPM.eqntype == EQEUL_ISO
+      || SimPM.eqntype == EQEUL_EINT) {
+    var = mem.myalloc(var, 10);
+    if (SimPM.nvar > 10)
+      rep.error("DataIOFits::ReadData() need more tracers.", SimPM.nvar);
+    string t[10] = {"GasDens", "GasPres", "GasVX", "GasVY", "GasVZ",
+                    "TR0",     "TR1",     "TR2",   "TR3",   "TR4"};
+    for (int i = 0; i < 10; i++)
+      var[i] = t[i];
+  }
+  else if (
+      SimPM.eqntype == EQMHD || SimPM.eqntype == EQGLM
+      || SimPM.eqntype == EQFCD) {
+    var = mem.myalloc(var, 14);
+    if (SimPM.nvar > 14)
+      rep.error("DataIOFits::ReadData() need more tracers.", SimPM.nvar);
+    string t[14] = {"GasDens", "GasPres", "GasVX", "GasVY", "GasVZ",
+                    "Bx",      "By",      "Bz",    "psi",   "TR0",
+                    "TR1",     "TR2",     "TR3",   "TR4"};
+    for (int i = 0; i < 14; i++)
+      var[i] = t[i];
+  }
+  else {
+    var = mem.myalloc(var, 10);
+    rep.error("What equations?!", SimPM.eqntype);
+  }
+  // -------------------------------------------
+  // Loop over all Variables and read from file.
+  // -------------------------------------------
+  char temp[32];
+  for (int i = 0; i < nvar; i++) {
+    strcpy(temp, var[i].c_str());
+    int v = 0;
+    if (var[i] == "GasDens")
+      v = static_cast<int>(RO);
+    else if (var[i] == "GasPres")
+      v = static_cast<int>(PG);
+    else if (var[i] == "GasVX")
+      v = static_cast<int>(VX);
+    else if (var[i] == "GasVY")
+      v = static_cast<int>(VY);
+    else if (var[i] == "GasVZ")
+      v = static_cast<int>(VZ);
+    else if (var[i] == "Bx")
+      v = static_cast<int>(BX);
+    else if (var[i] == "By")
+      v = static_cast<int>(BY);
+    else if (var[i] == "Bz")
+      v = static_cast<int>(BZ);
+    else if (var[i] == "psi")
+      v = static_cast<int>(SI);
+    else if (var[i] == "TR0") {
+      v = SimPM.ftr;
+      cout << "reading from first tracer var: " << v << "\n";
+    }
+    else if (var[i] == "TR1")
+      v = SimPM.ftr + 1;
+    else if (var[i] == "TR2")
+      v = SimPM.ftr + 2;
+    else if (var[i] == "TR3")
+      v = SimPM.ftr + 3;
+    else if (var[i] == "TR4")
+      v = SimPM.ftr + 4;
+    else
+      rep.error("Bad variable index in fits read routine", var[i]);
+    err += fits_movnam_hdu(ff, ANY_HDU, temp, 0, &status);
+
+    if (err != 0) {
+      // If can't find variable, set them all to zero.
+      cell* c = gp->FirstPt();
+      do {
+        c->P[v] = 0.;
+      } while ((c = gp->NextPt(c)) != 0);
+      if (status) {
         fits_report_error(stderr, status);
-        return (err);
+      }
+      err = 0;
+      fits_clear_errmsg();
+      status = 0;
+      cout << "couldn't get data for variable " << temp
+           << "; will set data to zero and hope for the best.\n";
     }
-    // cout <<"done.\n";
-    // Move to first data hdu; should be 2nd hdu;
-    int num;
-    fits_get_hdu_num(ff, &num);
-    if (num != 1) err += ffmahd(ff, 1, 0, &status);
-    if (status) {
-        fits_report_error(stderr, status);
-        return (err);
-    }
-    err += ffmrhd(ff, 1, 0, &status);
-    fits_get_hdu_num(ff, &num);
-    //  cout <<"Current hdu: "<<num<<"\t and err="<<err<<"\n";
-    // -------------------------------------------------------
 
-    int nvar    = SimPM.nvar;
-    string* var = 0;
-    if (SimPM.ntracer > 5)
-        rep.error(
-            "DataIOFits::ReadData() only handles up to 5 tracer variables! "
-            "Add more if needed.",
-            SimPM.ntracer);
-    if (SimPM.eqntype == EQEUL || SimPM.eqntype == EQEUL_ISO
-        || SimPM.eqntype == EQEUL_EINT) {
-        var = mem.myalloc(var, 10);
-        if (SimPM.nvar > 10)
-            rep.error("DataIOFits::ReadData() need more tracers.", SimPM.nvar);
-        string t[10] = {"GasDens", "GasPres", "GasVX", "GasVY", "GasVZ",
-                        "TR0",     "TR1",     "TR2",   "TR3",   "TR4"};
-        for (int i = 0; i < 10; i++)
-            var[i] = t[i];
-    }
-    else if (
-        SimPM.eqntype == EQMHD || SimPM.eqntype == EQGLM
-        || SimPM.eqntype == EQFCD) {
-        var = mem.myalloc(var, 14);
-        if (SimPM.nvar > 14)
-            rep.error("DataIOFits::ReadData() need more tracers.", SimPM.nvar);
-        string t[14] = {"GasDens", "GasPres", "GasVX", "GasVY", "GasVZ",
-                        "Bx",      "By",      "Bz",    "psi",   "TR0",
-                        "TR1",     "TR2",     "TR3",   "TR4"};
-        for (int i = 0; i < 14; i++)
-            var[i] = t[i];
-    }
     else {
-        var = mem.myalloc(var, 10);
-        rep.error("What equations?!", SimPM.eqntype);
-    }
-    // -------------------------------------------
-    // Loop over all Variables and read from file.
-    // -------------------------------------------
-    char temp[32];
-    for (int i = 0; i < nvar; i++) {
-        strcpy(temp, var[i].c_str());
-        int v = 0;
-        if (var[i] == "GasDens")
-            v = static_cast<int>(RO);
-        else if (var[i] == "GasPres")
-            v = static_cast<int>(PG);
-        else if (var[i] == "GasVX")
-            v = static_cast<int>(VX);
-        else if (var[i] == "GasVY")
-            v = static_cast<int>(VY);
-        else if (var[i] == "GasVZ")
-            v = static_cast<int>(VZ);
-        else if (var[i] == "Bx")
-            v = static_cast<int>(BX);
-        else if (var[i] == "By")
-            v = static_cast<int>(BY);
-        else if (var[i] == "Bz")
-            v = static_cast<int>(BZ);
-        else if (var[i] == "psi")
-            v = static_cast<int>(SI);
-        else if (var[i] == "TR0") {
-            v = SimPM.ftr;
-            cout << "reading from first tracer var: " << v << "\n";
-        }
-        else if (var[i] == "TR1")
-            v = SimPM.ftr + 1;
-        else if (var[i] == "TR2")
-            v = SimPM.ftr + 2;
-        else if (var[i] == "TR3")
-            v = SimPM.ftr + 3;
-        else if (var[i] == "TR4")
-            v = SimPM.ftr + 4;
-        else
-            rep.error("Bad variable index in fits read routine", var[i]);
-        err += fits_movnam_hdu(ff, ANY_HDU, temp, 0, &status);
+      // Variable found, check we're at the right hdu and read data.
+      fits_get_hdu_num(ff, &num);
+      // cout <<"Current hdu: "<<num<<"\t i="<<i<<" and var[i] =
+      // "<<var[i]<<"\n";
+      //  cout <<"\t\tDataIOFits::ReadData() Reading fits image.\n";
+      //  cout <<"\t\t reading from file "<<infile<<"\n";
+      err += check_fits_image_dimensions(ff, var[i], SimPM.ndim, SimPM.NG);
+      if (err) rep.error("image wrong size.", err);
+      //      cout <<"***************ncell = "<<SimPM.Ncell<<"\n";
+      err += read_fits_image(
+          SimPM, ff, var[i], SimPM.Xmin, SimPM.Xmin, SimPM.NG, SimPM.Ncell);
+      if (err) rep.error("error reading image.", err);
+      //  cout <<"\t\tDataIOFits::ReadData() Got fits image.\n";
+    }  // got real hdu and read data.
 
-        if (err != 0) {
-            // If can't find variable, set them all to zero.
-            cell* c = gp->FirstPt();
-            do {
-                c->P[v] = 0.;
-            } while ((c = gp->NextPt(c)) != 0);
-            if (status) {
-                fits_report_error(stderr, status);
-            }
-            err = 0;
-            fits_clear_errmsg();
-            status = 0;
-            cout << "couldn't get data for variable " << temp
-                 << "; will set data to zero and hope for the best.\n";
-        }
+  }  // Loop over all Primitive Variables
 
-        else {
-            // Variable found, check we're at the right hdu and read data.
-            fits_get_hdu_num(ff, &num);
-            // cout <<"Current hdu: "<<num<<"\t i="<<i<<" and var[i] =
-            // "<<var[i]<<"\n";
-            //  cout <<"\t\tDataIOFits::ReadData() Reading fits image.\n";
-            //  cout <<"\t\t reading from file "<<infile<<"\n";
-            err +=
-                check_fits_image_dimensions(ff, var[i], SimPM.ndim, SimPM.NG);
-            if (err) rep.error("image wrong size.", err);
-            //      cout <<"***************ncell = "<<SimPM.Ncell<<"\n";
-            err += read_fits_image(
-                SimPM, ff, var[i], SimPM.Xmin, SimPM.Xmin, SimPM.NG,
-                SimPM.Ncell);
-            if (err) rep.error("error reading image.", err);
-            //  cout <<"\t\tDataIOFits::ReadData() Got fits image.\n";
-        }  // got real hdu and read data.
+  var = mem.myfree(var);
+  //  cout <<"Closing fits file. err="<<err<<"\n";
+  fits_close_file(ff, &status);
+  if (status) {
+    fits_report_error(stderr, status);
+    fits_clear_errmsg();
+  }
+  //  cout <<"Closed fits file. err="<<err<<"\n";
 
-    }  // Loop over all Primitive Variables
+  // Now assign Ph to be equal to P for each cell.
+  cell* cpt = gp->FirstPt();
+  do {
+    for (int v = 0; v < nvar; v++)
+      cpt->Ph[v] = cpt->P[v];
+  } while ((cpt = gp->NextPt(cpt)) != 0);
 
-    var = mem.myfree(var);
-    //  cout <<"Closing fits file. err="<<err<<"\n";
-    fits_close_file(ff, &status);
-    if (status) {
-        fits_report_error(stderr, status);
-        fits_clear_errmsg();
-    }
-    //  cout <<"Closed fits file. err="<<err<<"\n";
-
-    // Now assign Ph to be equal to P for each cell.
-    cell* cpt = gp->FirstPt();
-    do {
-        for (int v = 0; v < nvar; v++)
-            cpt->Ph[v] = cpt->P[v];
-    } while ((cpt = gp->NextPt(cpt)) != 0);
-
-    return err;
+  return err;
 }
 
 // ##################################################################
@@ -623,24 +617,24 @@ std::string DataIOFits::choose_filename(
     const int file_counter    ///< file counter to use (e.g. timestep).
 )
 {
-    //
-    // Choose filename based on the basename and the counter passed to
-    // this function.
-    //
-    string outfile;
-    ostringstream temp;
-    temp.str("");
-    temp << fbase;
-    temp << ".";
-    if (file_counter >= 0) {
-        temp.width(Ndigits);
-        temp.fill('0');
-        temp << file_counter << ".";
-    }
-    temp << "fits";
-    outfile = temp.str();
-    temp.str("");
-    return outfile;
+  //
+  // Choose filename based on the basename and the counter passed to
+  // this function.
+  //
+  string outfile;
+  ostringstream temp;
+  temp.str("");
+  temp << fbase;
+  temp << ".";
+  if (file_counter >= 0) {
+    temp.width(Ndigits);
+    temp.fill('0');
+    temp << file_counter << ".";
+  }
+  temp << "fits";
+  outfile = temp.str();
+  temp.str("");
+  return outfile;
 }
 
 // ##################################################################
@@ -648,82 +642,82 @@ std::string DataIOFits::choose_filename(
 
 int DataIOFits::read_header_param(class pm_base* p)
 {
-    int err = 0, status = 0;
-    char key[128];
+  int err = 0, status = 0;
+  char key[128];
+  //
+  // We read data to a temp var and copy it into the address held
+  // by the parameter class.
+  //
+  int i = p->type;
+  strcpy(key, p->name.c_str());
+  if (i == MY_INT) {
+    int x;
+    err += fits_read_key(file_ptr, TINT, key, &x, 0, &status);
+    p->assign_val(&x);
+  }
+  else if (i == MY_DOUBLE) {
+    double x;
+    err += fits_read_key(file_ptr, TDOUBLE, key, &x, 0, &status);
+    p->assign_val(&x);
+  }
+  else if (i == MY_FLOAT) {
+    float x;
+    err += fits_read_key(file_ptr, TFLOAT, key, &x, 0, &status);
+    p->assign_val(&x);
+  }
+  else if (i == MY_LONG) {
+    long int x;
+    err += fits_read_key(file_ptr, TLONG, key, &x, 0, &status);
+    p->assign_val(&x);
+  }
+  else if (i == MY_STRING) {
+    char x[128];
+    err += fits_read_key(file_ptr, TSTRING, key, x, 0, &status);
+    string temp(x);
+    p->assign_val(&temp);
+  }
+  else if (i == MY_DDIMARR) {
     //
-    // We read data to a temp var and copy it into the address held
-    // by the parameter class.
+    // Easier to give each element of an array its own numbered name.
     //
-    int i = p->type;
-    strcpy(key, p->name.c_str());
-    if (i == MY_INT) {
-        int x;
-        err += fits_read_key(file_ptr, TINT, key, &x, 0, &status);
-        p->assign_val(&x);
+    double x[MAX_DIM];
+    for (int v = 0; v < MAX_DIM; v++) {
+      ostringstream temp2;
+      temp2 << p->name << v;
+      strcpy(key, (temp2.str()).c_str());
+      err += fits_read_key(file_ptr, TDOUBLE, key, &(x[v]), 0, &status);
     }
-    else if (i == MY_DOUBLE) {
-        double x;
-        err += fits_read_key(file_ptr, TDOUBLE, key, &x, 0, &status);
-        p->assign_val(&x);
+    p->assign_val(x);
+  }
+  else if (i == MY_IDIMARR) {
+    int x[MAX_DIM];
+    for (int v = 0; v < MAX_DIM; v++) {
+      ostringstream temp2;
+      temp2 << p->name << v;
+      strcpy(key, (temp2.str()).c_str());
+      err += fits_read_key(file_ptr, TINT, key, &(x[v]), 0, &status);
     }
-    else if (i == MY_FLOAT) {
-        float x;
-        err += fits_read_key(file_ptr, TFLOAT, key, &x, 0, &status);
-        p->assign_val(&x);
+    p->assign_val(x);
+  }
+  else if (i == MY_DVARARR) {
+    double x[MAX_NVAR];
+    for (int v = 0; v < MAX_NVAR; v++) {
+      ostringstream temp2;
+      temp2 << p->name << v;
+      strcpy(key, (temp2.str()).c_str());
+      err += fits_read_key(file_ptr, TDOUBLE, key, &(x[v]), 0, &status);
     }
-    else if (i == MY_LONG) {
-        long int x;
-        err += fits_read_key(file_ptr, TLONG, key, &x, 0, &status);
-        p->assign_val(&x);
-    }
-    else if (i == MY_STRING) {
-        char x[128];
-        err += fits_read_key(file_ptr, TSTRING, key, x, 0, &status);
-        string temp(x);
-        p->assign_val(&temp);
-    }
-    else if (i == MY_DDIMARR) {
-        //
-        // Easier to give each element of an array its own numbered name.
-        //
-        double x[MAX_DIM];
-        for (int v = 0; v < MAX_DIM; v++) {
-            ostringstream temp2;
-            temp2 << p->name << v;
-            strcpy(key, (temp2.str()).c_str());
-            err += fits_read_key(file_ptr, TDOUBLE, key, &(x[v]), 0, &status);
-        }
-        p->assign_val(x);
-    }
-    else if (i == MY_IDIMARR) {
-        int x[MAX_DIM];
-        for (int v = 0; v < MAX_DIM; v++) {
-            ostringstream temp2;
-            temp2 << p->name << v;
-            strcpy(key, (temp2.str()).c_str());
-            err += fits_read_key(file_ptr, TINT, key, &(x[v]), 0, &status);
-        }
-        p->assign_val(x);
-    }
-    else if (i == MY_DVARARR) {
-        double x[MAX_NVAR];
-        for (int v = 0; v < MAX_NVAR; v++) {
-            ostringstream temp2;
-            temp2 << p->name << v;
-            strcpy(key, (temp2.str()).c_str());
-            err += fits_read_key(file_ptr, TDOUBLE, key, &(x[v]), 0, &status);
-        }
-        p->assign_val(x);
-    }
+    p->assign_val(x);
+  }
 
-    if (status) {
-        cout << "\t" << p->name << ":  ERROR READING VAR!";
-        cout << " err=" << err << " status=" << status << "\n";
-    }
-    // else {
-    //   cout <<"\t"<<p->name<<":  "; p->show_val(); cout <<"\n";
-    // }
-    return status;
+  if (status) {
+    cout << "\t" << p->name << ":  ERROR READING VAR!";
+    cout << " err=" << err << " status=" << status << "\n";
+  }
+  // else {
+  //   cout <<"\t"<<p->name<<":  "; p->show_val(); cout <<"\n";
+  // }
+  return status;
 }
 
 // ##################################################################
@@ -731,75 +725,75 @@ int DataIOFits::read_header_param(class pm_base* p)
 
 int DataIOFits::write_header_param(class pm_base* p)
 {
-    int err = 0, status = 0;
-    char key[128];
-    int i = p->type;
-    strcpy(key, p->name.c_str());
+  int err = 0, status = 0;
+  char key[128];
+  int i = p->type;
+  strcpy(key, p->name.c_str());
 
-    if (i == MY_INT) {
-        int* x = static_cast<int*>(p->get_ptr());
-        err += fits_update_key(file_ptr, TINT, key, x, 0, &status);
+  if (i == MY_INT) {
+    int* x = static_cast<int*>(p->get_ptr());
+    err += fits_update_key(file_ptr, TINT, key, x, 0, &status);
+  }
+  else if (i == MY_DOUBLE) {
+    double* x = static_cast<double*>(p->get_ptr());
+    err += fits_update_key(file_ptr, TDOUBLE, key, x, 0, &status);
+  }
+  else if (i == MY_FLOAT) {
+    float* x = static_cast<float*>(p->get_ptr());
+    err += fits_update_key(file_ptr, TFLOAT, key, x, 0, &status);
+  }
+  else if (i == MY_LONG) {
+    long int* x = static_cast<long int*>(p->get_ptr());
+    err += fits_update_key(file_ptr, TLONG, key, x, 0, &status);
+  }
+  else if (i == MY_STRING) {
+    //
+    // strings are harder -- need to get pointer and copy to char[]
+    //
+    string x(*(static_cast<string*>(p->get_ptr())));
+    char temp[128];
+    strcpy(temp, x.c_str());
+    err += fits_update_key(file_ptr, TSTRING, key, temp, 0, &status);
+  }
+  else if (i == MY_DDIMARR) {
+    double* x = static_cast<double*>(p->get_ptr());
+    //
+    // Easier to give each element of an array its own numbered name.
+    //
+    for (int v = 0; v < MAX_DIM; v++) {
+      ostringstream temp2;
+      temp2 << p->name << v;
+      strcpy(key, (temp2.str()).c_str());
+      err += fits_update_key(file_ptr, TDOUBLE, key, &(x[v]), 0, &status);
     }
-    else if (i == MY_DOUBLE) {
-        double* x = static_cast<double*>(p->get_ptr());
-        err += fits_update_key(file_ptr, TDOUBLE, key, x, 0, &status);
+  }
+  else if (i == MY_IDIMARR) {
+    int* x = static_cast<int*>(p->get_ptr());
+    for (int v = 0; v < MAX_DIM; v++) {
+      ostringstream temp2;
+      temp2 << p->name << v;
+      strcpy(key, (temp2.str()).c_str());
+      err += fits_update_key(file_ptr, TINT, key, &(x[v]), 0, &status);
     }
-    else if (i == MY_FLOAT) {
-        float* x = static_cast<float*>(p->get_ptr());
-        err += fits_update_key(file_ptr, TFLOAT, key, x, 0, &status);
+  }
+  else if (i == MY_DVARARR) {
+    double* x = static_cast<double*>(p->get_ptr());
+    for (int v = 0; v < MAX_NVAR; v++) {
+      ostringstream temp2;
+      temp2 << p->name << v;
+      strcpy(key, (temp2.str()).c_str());
+      err += fits_update_key(file_ptr, TDOUBLE, key, &(x[v]), 0, &status);
     }
-    else if (i == MY_LONG) {
-        long int* x = static_cast<long int*>(p->get_ptr());
-        err += fits_update_key(file_ptr, TLONG, key, x, 0, &status);
-    }
-    else if (i == MY_STRING) {
-        //
-        // strings are harder -- need to get pointer and copy to char[]
-        //
-        string x(*(static_cast<string*>(p->get_ptr())));
-        char temp[128];
-        strcpy(temp, x.c_str());
-        err += fits_update_key(file_ptr, TSTRING, key, temp, 0, &status);
-    }
-    else if (i == MY_DDIMARR) {
-        double* x = static_cast<double*>(p->get_ptr());
-        //
-        // Easier to give each element of an array its own numbered name.
-        //
-        for (int v = 0; v < MAX_DIM; v++) {
-            ostringstream temp2;
-            temp2 << p->name << v;
-            strcpy(key, (temp2.str()).c_str());
-            err += fits_update_key(file_ptr, TDOUBLE, key, &(x[v]), 0, &status);
-        }
-    }
-    else if (i == MY_IDIMARR) {
-        int* x = static_cast<int*>(p->get_ptr());
-        for (int v = 0; v < MAX_DIM; v++) {
-            ostringstream temp2;
-            temp2 << p->name << v;
-            strcpy(key, (temp2.str()).c_str());
-            err += fits_update_key(file_ptr, TINT, key, &(x[v]), 0, &status);
-        }
-    }
-    else if (i == MY_DVARARR) {
-        double* x = static_cast<double*>(p->get_ptr());
-        for (int v = 0; v < MAX_NVAR; v++) {
-            ostringstream temp2;
-            temp2 << p->name << v;
-            strcpy(key, (temp2.str()).c_str());
-            err += fits_update_key(file_ptr, TDOUBLE, key, &(x[v]), 0, &status);
-        }
-    }
+  }
 
-    if (status) {
-        cout << "\t" << p->name << ":  ERROR WRITING VAR!";
-        cout << " err=" << err << " status=" << status << "\n";
-    }
-    // else {
-    //   cout <<"\t"<<p->name<<":  "; p->show_val(); cout <<"\n";
-    // }
-    return status;
+  if (status) {
+    cout << "\t" << p->name << ":  ERROR WRITING VAR!";
+    cout << " err=" << err << " status=" << status << "\n";
+  }
+  // else {
+  //   cout <<"\t"<<p->name<<":  "; p->show_val(); cout <<"\n";
+  // }
+  return status;
 }
 
 // ##################################################################
@@ -812,135 +806,135 @@ int DataIOFits::put_variable_into_data_array(
     double** data            ///< pointer to uninitialised data.
 )
 {
-    (*data) = mem.myalloc((*data), ntot);
+  (*data) = mem.myalloc((*data), ntot);
 
-    // Choose variable to write to, based on name string.
-    int v  = 0;
-    bool B = false;  // set to true if a B-field variable, so we can
-                     // scale correctly to Gauss.
-    if (name == "GasDens")
-        v = static_cast<int>(RO);
-    else if (name == "GasPres")
-        v = static_cast<int>(PG);
-    else if (name == "GasVX")
-        v = static_cast<int>(VX);
-    else if (name == "GasVY")
-        v = static_cast<int>(VY);
-    else if (name == "GasVZ")
-        v = static_cast<int>(VZ);
-    else if (name == "Bx") {
-        v = static_cast<int>(BX);
-        B = true;
-    }
-    else if (name == "By") {
-        v = static_cast<int>(BY);
-        B = true;
-    }
-    else if (name == "Bz") {
-        v = static_cast<int>(BZ);
-        B = true;
-    }
-    else if (name == "psi")
-        v = static_cast<int>(SI);
-    else if (name == "TR0") {
-        v = SimPM.ftr; /*cout <<"first tracer, v="<<v<<"\n";*/
-    }
-    else if (name == "TR1")
-        v = SimPM.ftr + 1;
-    else if (name == "TR2")
-        v = SimPM.ftr + 2;
-    else if (name == "TR3")
-        v = SimPM.ftr + 3;
-    else if (name == "TR4")
-        v = SimPM.ftr + 4;
-    else if (name == "Eint")
-        v = -1;
-    else if (name == "divB")
-        v = -2;
-    else if (name == "Ptot")
-        v = -3;
-    else if (name == "Temp")
-        v = -5;
-    else if (name.find("Col_Src") != string::npos)
-        v = -4;
-    else
-        rep.error("Bad variable index in fits write routine", name);
+  // Choose variable to write to, based on name string.
+  int v  = 0;
+  bool B = false;  // set to true if a B-field variable, so we can
+                   // scale correctly to Gauss.
+  if (name == "GasDens")
+    v = static_cast<int>(RO);
+  else if (name == "GasPres")
+    v = static_cast<int>(PG);
+  else if (name == "GasVX")
+    v = static_cast<int>(VX);
+  else if (name == "GasVY")
+    v = static_cast<int>(VY);
+  else if (name == "GasVZ")
+    v = static_cast<int>(VZ);
+  else if (name == "Bx") {
+    v = static_cast<int>(BX);
+    B = true;
+  }
+  else if (name == "By") {
+    v = static_cast<int>(BY);
+    B = true;
+  }
+  else if (name == "Bz") {
+    v = static_cast<int>(BZ);
+    B = true;
+  }
+  else if (name == "psi")
+    v = static_cast<int>(SI);
+  else if (name == "TR0") {
+    v = SimPM.ftr; /*cout <<"first tracer, v="<<v<<"\n";*/
+  }
+  else if (name == "TR1")
+    v = SimPM.ftr + 1;
+  else if (name == "TR2")
+    v = SimPM.ftr + 2;
+  else if (name == "TR3")
+    v = SimPM.ftr + 3;
+  else if (name == "TR4")
+    v = SimPM.ftr + 4;
+  else if (name == "Eint")
+    v = -1;
+  else if (name == "divB")
+    v = -2;
+  else if (name == "Ptot")
+    v = -3;
+  else if (name == "Temp")
+    v = -5;
+  else if (name.find("Col_Src") != string::npos)
+    v = -4;
+  else
+    rep.error("Bad variable index in fits write routine", name);
 
-    // cout <<"saving data variable "<<name<<"\n";
+  // cout <<"saving data variable "<<name<<"\n";
 
-    long int ct = 0;
-    double norm = sqrt(4.0 * M_PI);
-    cell* c     = gp->FirstPt();
-    if (v >= 0) {
-        do {
-            (*data)[ct] = c->P[v];
+  long int ct = 0;
+  double norm = sqrt(4.0 * M_PI);
+  cell* c     = gp->FirstPt();
+  if (v >= 0) {
+    do {
+      (*data)[ct] = c->P[v];
 #ifdef NEW_B_NORM
-            // re-scale B-field to Gauss by multiplying by sqrt(4pi)
-            if (B) (*data)[ct] *= norm;
+      // re-scale B-field to Gauss by multiplying by sqrt(4pi)
+      if (B) (*data)[ct] *= norm;
 #endif
-            ct++;
-        } while ((c = gp->NextPt(c)) != 0);
-    }
+      ct++;
+    } while ((c = gp->NextPt(c)) != 0);
+  }
 
-    else if (v == -1) {  // internal energy
-        do {
-            (*data)[ct] = eqn->eint(c->P, SimPM.gamma);
-            ct++;
-        } while ((c = gp->NextPt(c)) != 0);
-    }
+  else if (v == -1) {  // internal energy
+    do {
+      (*data)[ct] = eqn->eint(c->P, SimPM.gamma);
+      ct++;
+    } while ((c = gp->NextPt(c)) != 0);
+  }
 
-    else if (v == -5) {  // temperature
-        do {
-            (*data)[ct] = MP->Temperature(c->P, SimPM.gamma);
-            ct++;
-        } while ((c = gp->NextPt(c)) != 0);
-    }
+  else if (v == -5) {  // temperature
+    do {
+      (*data)[ct] = MP->Temperature(c->P, SimPM.gamma);
+      ct++;
+    } while ((c = gp->NextPt(c)) != 0);
+  }
 
-    else if (v == -2) {  // divB
-        int* vars = 0;
-        vars      = mem.myalloc(vars, 3);
-        vars[0]   = static_cast<int>(BX);
-        vars[1]   = static_cast<int>(BY);
-        vars[2]   = static_cast<int>(BZ);
-        do {
-            (*data)[ct] = eqn->Divergence(c, 0, vars, gp);
+  else if (v == -2) {  // divB
+    int* vars = 0;
+    vars      = mem.myalloc(vars, 3);
+    vars[0]   = static_cast<int>(BX);
+    vars[1]   = static_cast<int>(BY);
+    vars[2]   = static_cast<int>(BZ);
+    do {
+      (*data)[ct] = eqn->Divergence(c, 0, vars, gp);
 #ifdef NEW_B_NORM
-            // re-scale B-field to Gauss by multiplying by sqrt(4pi)
-            (*data)[ct] *= norm;
+      // re-scale B-field to Gauss by multiplying by sqrt(4pi)
+      (*data)[ct] *= norm;
 #endif
-            ct++;
-        } while ((c = gp->NextPt(c)) != 0);
-        vars = mem.myfree(vars);
-    }
+      ct++;
+    } while ((c = gp->NextPt(c)) != 0);
+    vars = mem.myfree(vars);
+  }
 
-    else if (v == -3) {  // total pressure.
-        do {
-            (*data)[ct] = eqn->Ptot(c->P, SimPM.gamma);
-            ct++;
-        } while ((c = gp->NextPt(c)) != 0);
-    }
+  else if (v == -3) {  // total pressure.
+    do {
+      (*data)[ct] = eqn->Ptot(c->P, SimPM.gamma);
+      ct++;
+    } while ((c = gp->NextPt(c)) != 0);
+  }
 
-    else if (v == -4) {
-        //
-        // optical depth variable: parse source id, and which Tau var we
-        // want to output from the variable name.
-        //
-        int Si = atoi(name.substr(8).c_str());
-        int Ti = atoi(name.substr(11).c_str());
-        double Tau[MAX_TAU];
-        do {
-            CI.get_col(c, Si, Tau);
-            (*data)[ct] = Tau[Ti];
-            ct++;
-        } while ((c = gp->NextPt(c)) != 0);
-    }
+  else if (v == -4) {
+    //
+    // optical depth variable: parse source id, and which Tau var we
+    // want to output from the variable name.
+    //
+    int Si = atoi(name.substr(8).c_str());
+    int Ti = atoi(name.substr(11).c_str());
+    double Tau[MAX_TAU];
+    do {
+      CI.get_col(c, Si, Tau);
+      (*data)[ct] = Tau[Ti];
+      ct++;
+    } while ((c = gp->NextPt(c)) != 0);
+  }
 
-    else
-        rep.error("Don't understand what variable to write.", v);
+  else
+    rep.error("Don't understand what variable to write.", v);
 
-    if (ct != ntot)
-        rep.error("Counting cells in put_variable_into_data()", ct - ntot);
-    return 0;
+  if (ct != ntot)
+    rep.error("Counting cells in put_variable_into_data()", ct - ntot);
+  return 0;
 }
 
 // ##################################################################
@@ -955,90 +949,89 @@ int DataIOFits::read_fits_image(
     int* npt,
     long int ntot)
 {
-    double* data = 0;
-    data         = mem.myalloc(data, ntot);
+  double* data = 0;
+  data         = mem.myalloc(data, ntot);
 
-    int err = utility_fitsio::read_fits_image_to_data(
-        ff, name, SimPM.ndim, localxmin, globalxmin, gp->DX(), npt, ntot,
-        TDOUBLE, static_cast<void*>(data));
-    if (err)
-        rep.error(
-            " DataIOFits::read_fits_image() Failed to read image from file",
-            err);
+  int err = utility_fitsio::read_fits_image_to_data(
+      ff, name, SimPM.ndim, localxmin, globalxmin, gp->DX(), npt, ntot, TDOUBLE,
+      static_cast<void*>(data));
+  if (err)
+    rep.error(
+        " DataIOFits::read_fits_image() Failed to read image from file", err);
 
-    // Choose variable to read to, based on name string, whose hdu is the
-    // currently open hdu.
-    int v  = 0;
-    bool B = false;  // set to true if a B-field variable, so we can
-                     // scale correctly to Gauss.
-    if (name == "GasDens")
-        v = static_cast<int>(RO);
-    else if (name == "GasPres")
-        v = static_cast<int>(PG);
-    else if (name == "GasVX")
-        v = static_cast<int>(VX);
-    else if (name == "GasVY")
-        v = static_cast<int>(VY);
-    else if (name == "GasVZ")
-        v = static_cast<int>(VZ);
-    else if (name == "Bx") {
-        v = static_cast<int>(BX);
-        B = true;
-    }
-    else if (name == "By") {
-        v = static_cast<int>(BY);
-        B = true;
-    }
-    else if (name == "Bz") {
-        v = static_cast<int>(BZ);
-        B = true;
-    }
-    else if (name == "psi")
-        v = static_cast<int>(SI);
-    else if (name == "TR0") {
-        v = SimPM.ftr; /*cout <<"first tracer, v="<<v<<"\n";*/
-    }
-    else if (name == "TR1")
-        v = SimPM.ftr + 1;
-    else if (name == "TR2")
-        v = SimPM.ftr + 2;
-    else if (name == "TR3")
-        v = SimPM.ftr + 3;
-    else if (name == "TR4")
-        v = SimPM.ftr + 4;
-    //  else if (name=="Eint")     v=-1;
-    //  else if (name=="divB")     v=-2;
-    //  else if (name=="Ptot")     v=-3;
-    else
-        rep.error("Bad variable index in fits write routine", name);
-    if (v >= SimPM.nvar)
-        rep.error(
-            "reading variable, but no element in vector free for it.",
-            v - SimPM.nvar);
+  // Choose variable to read to, based on name string, whose hdu is the
+  // currently open hdu.
+  int v  = 0;
+  bool B = false;  // set to true if a B-field variable, so we can
+                   // scale correctly to Gauss.
+  if (name == "GasDens")
+    v = static_cast<int>(RO);
+  else if (name == "GasPres")
+    v = static_cast<int>(PG);
+  else if (name == "GasVX")
+    v = static_cast<int>(VX);
+  else if (name == "GasVY")
+    v = static_cast<int>(VY);
+  else if (name == "GasVZ")
+    v = static_cast<int>(VZ);
+  else if (name == "Bx") {
+    v = static_cast<int>(BX);
+    B = true;
+  }
+  else if (name == "By") {
+    v = static_cast<int>(BY);
+    B = true;
+  }
+  else if (name == "Bz") {
+    v = static_cast<int>(BZ);
+    B = true;
+  }
+  else if (name == "psi")
+    v = static_cast<int>(SI);
+  else if (name == "TR0") {
+    v = SimPM.ftr; /*cout <<"first tracer, v="<<v<<"\n";*/
+  }
+  else if (name == "TR1")
+    v = SimPM.ftr + 1;
+  else if (name == "TR2")
+    v = SimPM.ftr + 2;
+  else if (name == "TR3")
+    v = SimPM.ftr + 3;
+  else if (name == "TR4")
+    v = SimPM.ftr + 4;
+  //  else if (name=="Eint")     v=-1;
+  //  else if (name=="divB")     v=-2;
+  //  else if (name=="Ptot")     v=-3;
+  else
+    rep.error("Bad variable index in fits write routine", name);
+  if (v >= SimPM.nvar)
+    rep.error(
+        "reading variable, but no element in vector free for it.",
+        v - SimPM.nvar);
 
-    // assign data to grid points, to the variable determined above.
-    double nulval = -1.e99;
-    long int ct   = 0;
-    cell* c       = gp->FirstPt();
-    double norm   = 1.0 / sqrt(4.0 * M_PI);
-    do {
-        c->P[v] = data[ct];
+  // assign data to grid points, to the variable determined above.
+  double nulval = -1.e99;
+  long int ct   = 0;
+  cell* c       = gp->FirstPt();
+  double norm   = 1.0 / sqrt(4.0 * M_PI);
+  do {
+    c->P[v] = data[ct];
 #ifdef NEW_B_NORM
-        // rescale B field to code units
-        if (B) c->P[v] *= norm;
+    // rescale B field to code units
+    if (B) c->P[v] *= norm;
 #endif
-        if (pconst.equalD(data[ct], nulval)) {
-            cout << "(dataio::read data: ERROR: var=" << v
-                 << " and data=" << data[ct] << "\n";
-            rep.error("Read null value from file! pixel count follows", ct);
-        }
-        ct++;
-    } while ((c = gp->NextPt(c)) != 0);
-    if (ct != ntot) rep.error("Counting cells in read_fits_image()", ct - ntot);
+    if (pconst.equalD(data[ct], nulval)) {
+      cout << "(dataio::read data: ERROR: var=" << v << " and data=" << data[ct]
+           << "\n";
+      rep.error("Read null value from file! pixel count follows", ct);
+    }
+    ct++;
+  } while ((c = gp->NextPt(c)) != 0);
+  if (ct != ntot) rep.error("Counting cells in read_fits_image()", ct - ntot);
 
-    data = mem.myfree(data);
+  data = mem.myfree(data);
 
-    return 0;
+  return 0;
 }
 
 // ##################################################################

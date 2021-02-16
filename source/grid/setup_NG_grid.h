@@ -32,70 +32,70 @@ class setup_NG_grid :
     virtual public setup_fixed_grid,
     virtual public assign_update_bcs_NG,
     virtual public NG_BC89flux {
-  public:
-    setup_NG_grid();
-    virtual ~setup_NG_grid();
+public:
+  setup_NG_grid();
+  virtual ~setup_NG_grid();
 
-    ///
-    /// Populate the array SimPM.levels with Xmin,Xmax,Range,dx,etc.
-    ///
-    virtual void setup_NG_grid_levels(
-        class SimParams&  ///< pointer to simulation parameters
-    );
+  ///
+  /// Populate the array SimPM.levels with Xmin,Xmax,Range,dx,etc.
+  ///
+  virtual void setup_NG_grid_levels(
+      class SimParams&  ///< pointer to simulation parameters
+  );
 
-    ///
-    /// Sets up a NG grid.
-    ///
-    virtual int setup_grid(
-        vector<class GridBaseClass*>&,  ///< grid pointers.
-        class SimParams&                ///< pointer to simulation parameters
-    );
+  ///
+  /// Sets up a NG grid.
+  ///
+  virtual int setup_grid(
+      vector<class GridBaseClass*>&,  ///< grid pointers.
+      class SimParams&                ///< pointer to simulation parameters
+  );
 
-    ///
-    /// Decide if I need to setup RT class and, if so, set up a
-    /// raytracer associated with each grid.
-    ///
-    virtual int setup_raytracing(
-        class SimParams&,              ///< simulation parameters
-        vector<class GridBaseClass*>&  ///< grid pointers.
-    );
+  ///
+  /// Decide if I need to setup RT class and, if so, set up a
+  /// raytracer associated with each grid.
+  ///
+  virtual int setup_raytracing(
+      class SimParams&,              ///< simulation parameters
+      vector<class GridBaseClass*>&  ///< grid pointers.
+  );
 
-    ///
-    /// Determines what kind of boundary conditions are needed and
-    /// creates the boundary data structures.  Asks the grid to create
-    /// grid cells for the external boundaries, and label internal
-    /// boundary cells as such.
-    ///
-    virtual int boundary_conditions(
-        class SimParams&,              ///< pointer to simulation parameters
-        vector<class GridBaseClass*>&  ///< grid pointers.
-    );
+  ///
+  /// Determines what kind of boundary conditions are needed and
+  /// creates the boundary data structures.  Asks the grid to create
+  /// grid cells for the external boundaries, and label internal
+  /// boundary cells as such.
+  ///
+  virtual int boundary_conditions(
+      class SimParams&,              ///< pointer to simulation parameters
+      vector<class GridBaseClass*>&  ///< grid pointers.
+  );
 
-    //---------------------------------------
-  protected:
-    //---------------------------------------
+  //---------------------------------------
+protected:
+  //---------------------------------------
 
-    /// function to setup data-I/O class.
-    virtual void setup_dataio_class(
-        class SimParams&,  ///< pointer to simulation parameters
-        const int          ///< type of I/O: 1=text,2=fits,5=silo
-    );
+  /// function to setup data-I/O class.
+  virtual void setup_dataio_class(
+      class SimParams&,  ///< pointer to simulation parameters
+      const int          ///< type of I/O: 1=text,2=fits,5=silo
+  );
 
-    ///
-    /// Set the boundary conditions string and initialise BC_bd
-    ///
-    virtual int setup_boundary_structs(
-        class SimParams&,      ///< reference to SimParams list.
-        class GridBaseClass*,  ///< pointer to grid.
-        const int              ///< level of grid in NG
-    );
+  ///
+  /// Set the boundary conditions string and initialise BC_bd
+  ///
+  virtual int setup_boundary_structs(
+      class SimParams&,      ///< reference to SimParams list.
+      class GridBaseClass*,  ///< pointer to grid.
+      const int              ///< level of grid in NG
+  );
 
-    /// set flag for cells if they are not leaf cells (i.e. if there is
-    /// a finer-level grid that covers the same volume).
-    virtual void set_leaf_cells(
-        vector<class GridBaseClass*>&,  ///< grid pointers.
-        class SimParams&                ///< pointer to simulation parameters
-    );
+  /// set flag for cells if they are not leaf cells (i.e. if there is
+  /// a finer-level grid that covers the same volume).
+  virtual void set_leaf_cells(
+      vector<class GridBaseClass*>&,  ///< grid pointers.
+      class SimParams&                ///< pointer to simulation parameters
+  );
 
 };  // setup_NG_grid
 

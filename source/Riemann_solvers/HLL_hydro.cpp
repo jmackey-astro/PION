@@ -33,22 +33,22 @@ HLL_hydro::HLL_hydro(
     eqns_Euler(nv)
 {
 #ifdef TESTING
-    cout << "(HLL_hydro::HLL_hydro) Initialising HLL Solver Class.\n";
-    if (eq_nvar < 5) {
-        rep.error("#elements!=5, QUIT.", eq_nvar);
-    }
+  cout << "(HLL_hydro::HLL_hydro) Initialising HLL Solver Class.\n";
+  if (eq_nvar < 5) {
+    rep.error("#elements!=5, QUIT.", eq_nvar);
+  }
 #endif
 
-    HD_lambda = mem.myalloc(HD_lambda, 2);    // wave speeds (only 2 for HLL)
-    HD_UL     = mem.myalloc(HD_UL, eq_nvar);  // conserved
-    HD_UR     = mem.myalloc(HD_UR, eq_nvar);
-    HD_FL     = mem.myalloc(HD_FL, eq_nvar);  // flux
-    HD_FR     = mem.myalloc(HD_FR, eq_nvar);
+  HD_lambda = mem.myalloc(HD_lambda, 2);    // wave speeds (only 2 for HLL)
+  HD_UL     = mem.myalloc(HD_UL, eq_nvar);  // conserved
+  HD_UR     = mem.myalloc(HD_UR, eq_nvar);
+  HD_FL     = mem.myalloc(HD_FL, eq_nvar);  // flux
+  HD_FR     = mem.myalloc(HD_FR, eq_nvar);
 
 #ifdef TESTING
-    cout << "(HLL_hydro::HLL_hydro) All set.\n";
+  cout << "(HLL_hydro::HLL_hydro) All set.\n";
 #endif
-    return;
+  return;
 }
 
 // ##################################################################
@@ -58,21 +58,21 @@ HLL_hydro::~HLL_hydro()
 {
 
 #ifdef TESTING
-    cout << "(HLL_hydro::HLL_hydro) Commencing Destruction."
-         << "\n";
+  cout << "(HLL_hydro::HLL_hydro) Commencing Destruction."
+       << "\n";
 #endif
 
-    HD_lambda = mem.myfree(HD_lambda);  // wave speeds (one entropy, two Alfvén)
-    HD_UL     = mem.myfree(HD_UL);      // conserved
-    HD_UR     = mem.myfree(HD_UR);
-    HD_FL     = mem.myfree(HD_FL);  // flux
-    HD_FR     = mem.myfree(HD_FR);
+  HD_lambda = mem.myfree(HD_lambda);  // wave speeds (one entropy, two Alfvén)
+  HD_UL     = mem.myfree(HD_UL);      // conserved
+  HD_UR     = mem.myfree(HD_UR);
+  HD_FL     = mem.myfree(HD_FL);  // flux
+  HD_FR     = mem.myfree(HD_FR);
 
 #ifdef TESTING
-    cout << "(riemann_MHD::riemann_MHD) Mission Accomplished."
-         << "\n";
+  cout << "(riemann_MHD::riemann_MHD) Mission Accomplished."
+       << "\n";
 #endif
-    return;
+  return;
 }
 
 // ###################################################################
@@ -85,15 +85,15 @@ void HLL_hydro::HLL_signal_speeds(
     double& Sl,  ///< outputs
     double& Sr)
 {
-    //
-    // compute wave speeds (m05 eq 3)
-    //
-    double cf_l   = chydro(Pl, eq_gamma);
-    double cf_r   = chydro(Pr, eq_gamma);
-    double cf_max = max(cf_l, cf_r);
-    Sl            = min(Pl[eqVX], Pr[eqVX]) - cf_max;  // (m05 eq 67)
-    Sr            = max(Pl[eqVX], Pr[eqVX]) + cf_max;  //
-    return;
+  //
+  // compute wave speeds (m05 eq 3)
+  //
+  double cf_l   = chydro(Pl, eq_gamma);
+  double cf_r   = chydro(Pr, eq_gamma);
+  double cf_max = max(cf_l, cf_r);
+  Sl            = min(Pl[eqVX], Pr[eqVX]) - cf_max;  // (m05 eq 67)
+  Sr            = max(Pl[eqVX], Pr[eqVX]) + cf_max;  //
+  return;
 }
 
 // ###################################################################
@@ -108,46 +108,45 @@ int HLL_hydro::hydro_HLL_flux_solver(
 )
 {
 
-    //
-    // compute conserved U and Flux (m05 eq 3)
-    //
-    PtoU(Pl, HD_UL, eq_gamma);
-    PtoU(Pr, HD_UR, eq_gamma);
+  //
+  // compute conserved U and Flux (m05 eq 3)
+  //
+  PtoU(Pl, HD_UL, eq_gamma);
+  PtoU(Pr, HD_UR, eq_gamma);
 
-    PUtoFlux(Pl, HD_UL, HD_FL);
-    PUtoFlux(Pr, HD_UR, HD_FR);
+  PUtoFlux(Pl, HD_UL, HD_FL);
+  PUtoFlux(Pr, HD_UR, HD_FR);
 
-    //
-    // compute wave speeds (m05 eq 3)
-    //
-    HLL_signal_speeds(
-        Pl, Pr, eq_gamma, HD_lambda[0],
-        HD_lambda[1]);  // Pl,Pr,g,Sl,Sr
-    if (HD_lambda[0] > 0) {
-        for (int v = 0; v < eq_nvar; v++)
-            out_flux[v] = HD_FL[v];
-    }
-    else if (HD_lambda[1] < 0) {
-        for (int v = 0; v < eq_nvar; v++)
-            out_flux[v] = HD_FR[v];
-    }
-    else {
-        for (int v = 0; v < eq_nvar; v++) {
-            out_flux[v] =
-                (HD_lambda[1] * HD_FL[v] - HD_lambda[0] * HD_FR[v]
-                 + HD_lambda[1] * HD_lambda[0] * (HD_UR[v] - HD_UL[v]))
-                / (HD_lambda[1] - HD_lambda[0]);
-        }
-    }
-
-    // inteface state: first in conserved variables.
+  //
+  // compute wave speeds (m05 eq 3)
+  //
+  HLL_signal_speeds(
+      Pl, Pr, eq_gamma, HD_lambda[0],
+      HD_lambda[1]);  // Pl,Pr,g,Sl,Sr
+  if (HD_lambda[0] > 0) {
+    for (int v = 0; v < eq_nvar; v++)
+      out_flux[v] = HD_FL[v];
+  }
+  else if (HD_lambda[1] < 0) {
+    for (int v = 0; v < eq_nvar; v++)
+      out_flux[v] = HD_FR[v];
+  }
+  else {
     for (int v = 0; v < eq_nvar; v++) {
-        out_ustar[v] = (HD_lambda[1] * HD_UR[v] - HD_lambda[0] * HD_UL[v]
-                        + HD_FL[v] - HD_FR[v])
-                       / (HD_lambda[1] - HD_lambda[0]);
+      out_flux[v] = (HD_lambda[1] * HD_FL[v] - HD_lambda[0] * HD_FR[v]
+                     + HD_lambda[1] * HD_lambda[0] * (HD_UR[v] - HD_UL[v]))
+                    / (HD_lambda[1] - HD_lambda[0]);
     }
+  }
 
-    return 0;
+  // inteface state: first in conserved variables.
+  for (int v = 0; v < eq_nvar; v++) {
+    out_ustar[v] = (HD_lambda[1] * HD_UR[v] - HD_lambda[0] * HD_UL[v] + HD_FL[v]
+                    - HD_FR[v])
+                   / (HD_lambda[1] - HD_lambda[0]);
+  }
+
+  return 0;
 }
 
 // ###################################################################

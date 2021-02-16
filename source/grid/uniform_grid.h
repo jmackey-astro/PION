@@ -100,458 +100,457 @@ using namespace std;
 class UniformGrid :
     virtual public GridBaseClass,
     virtual public VectorOps_Cart {
-  protected:
-    ///
-    /// Pointer to last point on grid (opposite corner of grid to
-    /// FirstPt()); the point with the most positive coordinates in
-    /// each direction.
-    ///
-    cell* G_lpt;
-
-    ///
-    /// Pointer to last point on grid (including ghost cells) (opposite
-    /// corner of grid to FirstPt())
-    ///
-    cell* G_lpt_all;
-
-    ///
-    /// Grid Data, pointer to first grid cell; the point with the most
-    /// negative coordinates in each direction.
-    ///
-    cell* G_fpt;
-
-    ///
-    /// Grid Data, pointer to first grid cell (including ghost cells).
-    ///
-    cell* G_fpt_all;
-
-    const int G_ndim;     ///< Dimensionality of Grid
-    const int G_nvar;     ///< Number of variables in state vector
-    const int G_eqntype;  ///< Which equations we are using.
-    int G_coordsys;       ///< coordinate system (cart/cyl/sph)
-    int G_ntracer;        ///< number of tracer fields.
-    int G_ftr;            ///< index of first tracer field.
-    int* G_ng;            ///< number of grid points in each direction.
-    size_t G_ncell;       ///< Total number of grid points (excl. boundary)
-    int* G_nbc;           ///< depth of boundary layer in each dir [2*ndim]
-    /// number of grid points in each dir, including boundary cells
-    int* G_ng_all;
-    /// Total number of grid points, including boundary points.
-    size_t G_ncell_all;
-
-    double* G_range;      ///< Size of domain in x,y,z-direction.
-    double* G_xmin;       ///< Min value of x,y,z in domain.
-    double* G_xmax;       ///< Max value of x,y,z in domain.
-    double* G_range_all;  ///< as G_range but including boundary data.
-    double* G_xmin_all;   ///< as G_xmin but including boundary data.
-    double* G_xmax_all;   ///< as G_xmax but including boundary data.
-
-    int*
-        G_irange;  ///< Size of domain in x,y,z-direction (integer coordinates).
-    int* G_ixmin;  ///< Min value of x,y,z in domain (integer coordinates).
-    int* G_ixmax;  ///< Max value of x,y,z in domain (integer coordinates).
-    int* G_irange_all;  ///< as G_irange but including boundary data.
-    int* G_ixmin_all;   ///< as G_ixmin but including boundary data.
-    int* G_ixmax_all;   ///< as G_ixmax but including boundary data.
-
-    double G_dx;  ///< Linear side length of (uniform, cube-shaped, cartesian)
-                  ///< grid cells.
-    int G_idx;    ///< diameter of grid cells in integer units.
-    double G_dA;  ///< Area of one surface of the (uniform, cube-shaped,
-                  ///< cartesian) grid cells.
-    double G_dV;  ///< Volume of one cube-shaped, cartesian grid cell (same for
-                  ///< all cells).
-
-    double* Sim_range;  ///< Size of full domain in x,y,z-direction.
-    double* Sim_xmin;   ///< Min value of x,y,z in full domain.
-    double* Sim_xmax;   ///< Max value of x,y,z in full domain.
-    int* Sim_irange;    ///< Size of full domain: int coords
-    int* Sim_ixmin;     ///< Min value of x,y,z in full domain: int coords
-    int* Sim_ixmax;     ///< Max value of x,y,z in full domain: int coords
-
-    double* L_range;  ///< Size of level domain in x,y,z-direction.
-    double* L_xmin;   ///< Min value of x,y,z in level domain.
-    double* L_xmax;   ///< Max value of x,y,z in level domain.
-    int* L_irange;    ///< Size of level domain: int coords
-    int* L_ixmin;     ///< Min value of x,y,z in level domain: int coords
-    int* L_ixmax;     ///< Max value of x,y,z in level domain: int coords
-
-    ///
-    /// Set cell dimensions based on grid properties.
-    ///
-    int set_cell_size();
-
-    ///
-    /// Allocate memory for grid data.
-    /// This is for allocating the initial array and putting it into
-    /// whatever structure is required.  Assigns IDs to the grid
-    /// points. Sets the npt and npt_all pointers to the next cell.
-    ///
-    int allocate_grid_data();
-
-    ///
-    /// Assign positions to each grid point, pointers to neighbours.
-    ///
-    int assign_grid_structure();
-
-    int BC_nbd;  ///< Number of Boundaries.
-                 /// Depth of boundary cells.
-                 // const int BC_nbc;
-
-  public:
-    ///
-    /// Constructor.
-    ///  - Checks input parameters are reasonable.
-    ///  - Allocates data for the grid.
-    ///  - Sets up pointers to first element, and all neighbours.
-    ///
-    UniformGrid(
-        int,      ///< ndim, length of position vector.
-        int,      ///< nvar, length of state vectors.
-        int,      ///< eqntype, which equations we are using (needed by BCs).
-        int,      ///< number of boundary cells to use.
-        double*,  ///< array of minimum values of x,y,z for this grid.
-        double*,  ///< array of maximum values of x,y,z for this grid.
-        int*,     ///< array of number of cells in x,y,z directions.
-        double*,  ///< array of min. x/y/z for level.
-        double*,  ///< array of max. x/y/z for level.
-        double*,  ///< array of min. x/y/z for full simulation.
-        double*   ///< array of max. x/y/z for full simulation.
-    );
-
-    ///
-    /// Destructor, deletes boundaries and grid data.
-    ///
-    virtual ~UniformGrid();
-
-    // ---------- QUERY BASIC GRID PROPERTIES -------------------------
-
-    /// Returns the diameter of a grid cell.
-    virtual double DX() const { return (G_dx); }
-    size_t Ncell() const { return G_ncell; }  ///< number of cells on grid
-    size_t Ncell_all() const
-    {
-        return G_ncell_all;
-    }  ///< number of grid+ghost cells
-
-    ///
-    /// Returns cell diameter for a given cell along a given axis.
-    ///
-    virtual double DX(
-        const cell*,     ///< cell to get dx for
-        const enum axes  ///< axis along which to get dx.
-        ) const
-    {
-        return G_dx;
-    }
-
-    /// Returns dimensionality of grid.
-    virtual int Ndim() const { return (G_ndim); }
-
-    /// Returns length of state vectors.
-    virtual int Nvar() const { return (G_nvar); }
-
-    /// Returns number of grid cells along given axis, excluding
-    /// boundary cells.
-    virtual int NG(const enum axes ax  ///< axis of grid.
-                   ) const
-    {
-        return G_ng[ax];
-    }
-
-    /// Returns number of grid cells along given axis, including
-    /// boundary cells.
-    virtual int NG_All(const enum axes ax  ///< axis of grid.
-                       ) const
-    {
-        return G_ng_all[ax];
-    }
-
-    /// Returns x/y/z lower boundary of grid in code units.
-    virtual double Xmin(enum axes a) const { return (G_xmin[a]); }
-
-    /// Returns x/y/z upper boundary of grid in code units.
-    virtual double Xmax(enum axes a) const { return (G_xmax[a]); }
-
-    /// Returns x/y/z range of grid in code units.
-    virtual double Range(enum axes a) const { return (G_range[a]); }
-
-    /// Returns Simulation xyz lower bounds (code units)
-    virtual double SIM_Xmin(enum axes a) const { return (Sim_xmin[a]); }
-
-    /// Returns Simulation xyz upper bounds (code units)
-    virtual double SIM_Xmax(enum axes a) const { return (Sim_xmax[a]); }
-
-    /// Returns Simulation range (code units)
-    virtual double SIM_Range(enum axes a) const { return (Sim_range[a]); }
-
-    /// Returns Level xyz lower bounds (code units)
-    virtual double level_Xmin(enum axes a) const { return (L_xmin[a]); }
-
-    /// Returns Level xyz upper bounds (code units)
-    virtual double level_Xmax(enum axes a) const { return (L_xmax[a]); }
-
-    /// Returns Level range (code units)
-    virtual double level_Range(enum axes a) const { return (L_range[a]); }
-
-    /// Returns x/y/z min of grid in integer coords.
-    virtual double Xmin_all(enum axes a) const { return (G_xmin_all[a]); }
-
-    /// Returns x/y/z max of grid in integer coords.
-    virtual double Xmax_all(enum axes a) const { return (G_xmax_all[a]); }
-
-    /// Returns x/y/z range of grid in integer coords.
-    virtual double Range_all(enum axes a) const { return (G_range_all[a]); }
-
-    /// Returns x/y/z lower boundary of grid in integer coords.
-    virtual int iXmin(enum axes a) const { return (G_ixmin[a]); }
-
-    /// Returns x/y/z upper boundary of grid in integer coords.
-    virtual int iXmax(enum axes a) const { return (G_ixmax[a]); }
-
-    /// Returns x/y/z range of grid in integer coords.
-    virtual int iRange(enum axes a) const { return (G_irange[a]); }
-
-    /// Returns x/y/z min of grid in integer coords.
-    virtual int iXmin_all(enum axes a) const { return (G_ixmin_all[a]); }
-
-    /// Returns x/y/z max of grid in integer coords.
-    virtual int iXmax_all(enum axes a) const { return (G_ixmax_all[a]); }
-
-    /// Returns x/y/z range of grid in integer coords.
-    virtual int iRange_all(enum axes a) const { return (G_irange_all[a]); }
-
-    /// Returns Simulation x,y,z lower bounds in cell integer coords
-    virtual int SIM_iXmin(enum axes a) const { return (Sim_ixmin[a]); }
-
-    /// Returns Simulation x,y,z upper bounds in cell integer coords
-    virtual int SIM_iXmax(enum axes a) const { return (Sim_ixmax[a]); }
-
-    /// Returns Simulation x,y,z range in cell integer coords
-    virtual int SIM_iRange(enum axes a) const { return (Sim_irange[a]); }
-
-    /// Returns Level x,y,z lower bounds in cell integer coords
-    virtual int level_iXmin(enum axes a) const { return (L_ixmin[a]); }
-
-    /// Returns Level x,y,z upper bounds in cell integer coords
-    virtual int level_iXmax(enum axes a) const { return (L_ixmax[a]); }
-
-    /// Returns Level x,y,z range in cell integer coords
-    virtual int level_iRange(enum axes a) const { return (L_irange[a]); }
-
-    /// Return depth of boundary data in given direction
-    virtual int boundary_depth(enum direction d) const
-    {
-        return G_nbc[static_cast<int>(d)];
-    }
-
-    /// Return cell size in integer units
-    int idx() const { return G_idx; }
-
-    virtual double CellVolume(const cell* c, const double)
-    {
-        return VectorOps_Cart::CellVolume(c, G_dx);
-    }
-
-    virtual double CellInterface(
-        const cell* c,        ///< Cell
-        const direction dir,  ///< outward normal to interface.
-        const double)
-    {
-        return VectorOps_Cart::CellInterface(c, dir, G_dx);
-    }
-
-    // ---------- QUERY BASIC GRID PROPERTIES -------------------------
-
-    // ---------- ACCESSING AND MOVING FROM CELL TO CELL --------------
-    ///
-    /// Returns pointer to the first grid point (ex. boundary data).
-    ///
-    virtual cell* FirstPt();
-
-    ///
-    /// Returns pointer to the first grid point (inc. boundary data).
-    ///
-    virtual cell* FirstPt_All();
-
-    ///
-    /// Returns pointer to the last grid point (ex. boundary data).
-    ///
-    virtual cell* LastPt();
-
-    ///
-    /// Returns pointer to the last grid point (inc. boundary data).
-    ///
-    virtual cell* LastPt_All();
-
-    ///
-    /// returns a pointer to a neighbouring cell in the given
-    /// direction.
-    ///
-    /// This function is designed to be fast, so it does no range
-    /// checking on the direction, to make sure the pointer exists.  It
-    /// will do something unexpected if 2*Ndim<dir, as it will access a
-    /// random piece of memory.  It returns whatever is in
-    /// cell->ngb[direction] i.e. the neighbour if it exists or 0 if it
-    /// doesn't.
-    ///
-    virtual cell* NextPt(
-        const cell* c,            ///< Current cell.
-        const enum direction dir  ///< direction of neighbour.
-    )
-    {
-        return (c->ngb[dir]);
-    }
-
-    ///
-    /// returns a pointer to the next cell (ex. boundary data).
-    ///
-    virtual cell* NextPt(const cell* c) { return (c->npt); }
-
-    ///
-    /// returns a pointer to the next cell (inc. boundary data).
-    ///
-    virtual cell* NextPt_All(const cell* c) { return (c->npt_all); }
-
-    ///
-    /// Like NextPt(cell,dir), but in reverse direction.
-    ///
-    virtual class cell* PrevPt(
-        const class cell*,  ///< Current Point.
-        enum direction      ///< Direction to go in.
-    );
-
-    // ---------- ACCESSING AND MOVING FROM CELL TO CELL --------------
-
-    ///
-    /// Returns the opposite direction to the one passed in to the function.
-    ///
-    virtual enum direction OppDir(enum direction);
-
-    ///
-    /// Sets up grid cells on each boundary, and any extra boundaries
-    /// specified (internal, e.g. stellar wind).
-    ///
-    virtual int SetupBCs(
-        class SimParams&  ///< List of simulation params (including BCs)
-    );
-
-    ///
-    /// prints all the cells in the given boundary data pointer.
-    ///
-    int BC_printBCdata(boundary_data*);
-
-    ///
-    /// Destructor for all the boundary data, BC_bd.
-    ///
-    void BC_deleteBoundaryData();
-
-    ///
-    /// Destructor for a boundary data struct.
-    ///
-    void BC_deleteBoundaryData(boundary_data*);
-
-    ///
-    /// Calculate distance between two points, where the two position
-    /// are interpreted in the appropriate geometry.
-    /// This function takes input in physical units, and outputs in
-    /// physical units.
-    ///
-    virtual double distance(
-        const double*,  ///< position 1 (physical)
-        const double*   ///< position 2 (physical)
-    );
-
-    ///
-    /// Calculate distance between two points, where the two position
-    /// are interpreted in the appropriate geometry.
-    /// This function takes input in code integer units, and outputs in
-    /// integer units (but obviously the answer is not an integer).
-    ///
-    virtual double idistance(
-        const int*,  ///< position 1 (integer)
-        const int*   ///< position 2 (integer)
-    );
-
-    ///
-    /// Calculate distance between two cell--centres (will be between
-    /// centre-of-volume of cells if non-cartesian geometry).
-    /// Result returned in physical units (e.g. centimetres).
-    ///
-    virtual double distance_cell2cell(
-        const cell*,  ///< cell 1
-        const cell*   ///< cell 2
-    );
-
-    ///
-    /// Calculate distance between two cell--centres (will be between
-    /// centre-of-volume of cells if non-cartesian geometry).
-    /// Result returned in grid--integer units (one cell has a diameter
-    /// two units).
-    ///
-    virtual double idistance_cell2cell(
-        const cell*,  ///< cell 1
-        const cell*   ///< cell 2
-    );
-
-    ///
-    /// Calculate distance between a cell-vertex and a cell--centres
-    /// (will be between centre-of-volume of cells if non-cartesian
-    /// geometry).  Here both input and output are physical units.
-    ///
-    virtual double distance_vertex2cell(
-        const double*,  ///< vertex (physical)
-        const cell*     ///< cell
-    );
-
-    ///
-    /// As distance_vertex2cell(double[],cell) but for a single component
-    /// of the position vector, and not the absolute value.  It returns
-    /// the *cell* coordinate minus the *vertex* coordinate.
-    ///
-    virtual double difference_vertex2cell(
-        const double*,  ///< vertex (double)
-        const cell*,    ///< cell
-        const axes      ///< Axis to calculate.
-    );
-
-    ///
-    /// Calculate distance between a cell-vertex and a cell--centres
-    /// (will be between centre-of-volume of cells if non-cartesian
-    /// geometry).  Here both input and output are code-integer units.
-    ///
-    virtual double idistance_vertex2cell(
-        const int*,  ///< vertex (integer)
-        const cell*  ///< cell
-    );
-
-    ///
-    /// As idistance_vertex2cell(int,cell) but for a single component
-    /// of the position vector, and not the absolute value.  It returns
-    /// the *cell* coordinate minus the *vertex* coordinate.
-    ///
-    virtual double idifference_vertex2cell(
-        const int*,   ///< vertex (integer)
-        const cell*,  ///< cell
-        const axes    ///< Axis to calculate.
-    );
-
-    ///
-    /// As idifference_vertex2cell(int,cell,axis) but for the coordinate
-    /// difference between two cell positions along a given axis.
-    /// It returns *cell2* coordinate minus *cell1* coordinate.
-    ///
-    virtual double idifference_cell2cell(
-        const cell*,  ///< cell 1
-        const cell*,  ///< cell 2
-        const axes    ///< Axis.
-    );
-
-    ///
-    /// Returns true if the position is on the grid, false otherwise
-    ///
-    bool point_on_grid(const double*  ///< position
-    );
+protected:
+  ///
+  /// Pointer to last point on grid (opposite corner of grid to
+  /// FirstPt()); the point with the most positive coordinates in
+  /// each direction.
+  ///
+  cell* G_lpt;
+
+  ///
+  /// Pointer to last point on grid (including ghost cells) (opposite
+  /// corner of grid to FirstPt())
+  ///
+  cell* G_lpt_all;
+
+  ///
+  /// Grid Data, pointer to first grid cell; the point with the most
+  /// negative coordinates in each direction.
+  ///
+  cell* G_fpt;
+
+  ///
+  /// Grid Data, pointer to first grid cell (including ghost cells).
+  ///
+  cell* G_fpt_all;
+
+  const int G_ndim;     ///< Dimensionality of Grid
+  const int G_nvar;     ///< Number of variables in state vector
+  const int G_eqntype;  ///< Which equations we are using.
+  int G_coordsys;       ///< coordinate system (cart/cyl/sph)
+  int G_ntracer;        ///< number of tracer fields.
+  int G_ftr;            ///< index of first tracer field.
+  int* G_ng;            ///< number of grid points in each direction.
+  size_t G_ncell;       ///< Total number of grid points (excl. boundary)
+  int* G_nbc;           ///< depth of boundary layer in each dir [2*ndim]
+  /// number of grid points in each dir, including boundary cells
+  int* G_ng_all;
+  /// Total number of grid points, including boundary points.
+  size_t G_ncell_all;
+
+  double* G_range;      ///< Size of domain in x,y,z-direction.
+  double* G_xmin;       ///< Min value of x,y,z in domain.
+  double* G_xmax;       ///< Max value of x,y,z in domain.
+  double* G_range_all;  ///< as G_range but including boundary data.
+  double* G_xmin_all;   ///< as G_xmin but including boundary data.
+  double* G_xmax_all;   ///< as G_xmax but including boundary data.
+
+  int* G_irange;  ///< Size of domain in x,y,z-direction (integer coordinates).
+  int* G_ixmin;   ///< Min value of x,y,z in domain (integer coordinates).
+  int* G_ixmax;   ///< Max value of x,y,z in domain (integer coordinates).
+  int* G_irange_all;  ///< as G_irange but including boundary data.
+  int* G_ixmin_all;   ///< as G_ixmin but including boundary data.
+  int* G_ixmax_all;   ///< as G_ixmax but including boundary data.
+
+  double G_dx;  ///< Linear side length of (uniform, cube-shaped, cartesian)
+                ///< grid cells.
+  int G_idx;    ///< diameter of grid cells in integer units.
+  double G_dA;  ///< Area of one surface of the (uniform, cube-shaped,
+                ///< cartesian) grid cells.
+  double G_dV;  ///< Volume of one cube-shaped, cartesian grid cell (same for
+                ///< all cells).
+
+  double* Sim_range;  ///< Size of full domain in x,y,z-direction.
+  double* Sim_xmin;   ///< Min value of x,y,z in full domain.
+  double* Sim_xmax;   ///< Max value of x,y,z in full domain.
+  int* Sim_irange;    ///< Size of full domain: int coords
+  int* Sim_ixmin;     ///< Min value of x,y,z in full domain: int coords
+  int* Sim_ixmax;     ///< Max value of x,y,z in full domain: int coords
+
+  double* L_range;  ///< Size of level domain in x,y,z-direction.
+  double* L_xmin;   ///< Min value of x,y,z in level domain.
+  double* L_xmax;   ///< Max value of x,y,z in level domain.
+  int* L_irange;    ///< Size of level domain: int coords
+  int* L_ixmin;     ///< Min value of x,y,z in level domain: int coords
+  int* L_ixmax;     ///< Max value of x,y,z in level domain: int coords
+
+  ///
+  /// Set cell dimensions based on grid properties.
+  ///
+  int set_cell_size();
+
+  ///
+  /// Allocate memory for grid data.
+  /// This is for allocating the initial array and putting it into
+  /// whatever structure is required.  Assigns IDs to the grid
+  /// points. Sets the npt and npt_all pointers to the next cell.
+  ///
+  int allocate_grid_data();
+
+  ///
+  /// Assign positions to each grid point, pointers to neighbours.
+  ///
+  int assign_grid_structure();
+
+  int BC_nbd;  ///< Number of Boundaries.
+               /// Depth of boundary cells.
+               // const int BC_nbc;
+
+public:
+  ///
+  /// Constructor.
+  ///  - Checks input parameters are reasonable.
+  ///  - Allocates data for the grid.
+  ///  - Sets up pointers to first element, and all neighbours.
+  ///
+  UniformGrid(
+      int,      ///< ndim, length of position vector.
+      int,      ///< nvar, length of state vectors.
+      int,      ///< eqntype, which equations we are using (needed by BCs).
+      int,      ///< number of boundary cells to use.
+      double*,  ///< array of minimum values of x,y,z for this grid.
+      double*,  ///< array of maximum values of x,y,z for this grid.
+      int*,     ///< array of number of cells in x,y,z directions.
+      double*,  ///< array of min. x/y/z for level.
+      double*,  ///< array of max. x/y/z for level.
+      double*,  ///< array of min. x/y/z for full simulation.
+      double*   ///< array of max. x/y/z for full simulation.
+  );
+
+  ///
+  /// Destructor, deletes boundaries and grid data.
+  ///
+  virtual ~UniformGrid();
+
+  // ---------- QUERY BASIC GRID PROPERTIES -------------------------
+
+  /// Returns the diameter of a grid cell.
+  virtual double DX() const { return (G_dx); }
+  size_t Ncell() const { return G_ncell; }  ///< number of cells on grid
+  size_t Ncell_all() const
+  {
+    return G_ncell_all;
+  }  ///< number of grid+ghost cells
+
+  ///
+  /// Returns cell diameter for a given cell along a given axis.
+  ///
+  virtual double DX(
+      const cell*,     ///< cell to get dx for
+      const enum axes  ///< axis along which to get dx.
+      ) const
+  {
+    return G_dx;
+  }
+
+  /// Returns dimensionality of grid.
+  virtual int Ndim() const { return (G_ndim); }
+
+  /// Returns length of state vectors.
+  virtual int Nvar() const { return (G_nvar); }
+
+  /// Returns number of grid cells along given axis, excluding
+  /// boundary cells.
+  virtual int NG(const enum axes ax  ///< axis of grid.
+                 ) const
+  {
+    return G_ng[ax];
+  }
+
+  /// Returns number of grid cells along given axis, including
+  /// boundary cells.
+  virtual int NG_All(const enum axes ax  ///< axis of grid.
+                     ) const
+  {
+    return G_ng_all[ax];
+  }
+
+  /// Returns x/y/z lower boundary of grid in code units.
+  virtual double Xmin(enum axes a) const { return (G_xmin[a]); }
+
+  /// Returns x/y/z upper boundary of grid in code units.
+  virtual double Xmax(enum axes a) const { return (G_xmax[a]); }
+
+  /// Returns x/y/z range of grid in code units.
+  virtual double Range(enum axes a) const { return (G_range[a]); }
+
+  /// Returns Simulation xyz lower bounds (code units)
+  virtual double SIM_Xmin(enum axes a) const { return (Sim_xmin[a]); }
+
+  /// Returns Simulation xyz upper bounds (code units)
+  virtual double SIM_Xmax(enum axes a) const { return (Sim_xmax[a]); }
+
+  /// Returns Simulation range (code units)
+  virtual double SIM_Range(enum axes a) const { return (Sim_range[a]); }
+
+  /// Returns Level xyz lower bounds (code units)
+  virtual double level_Xmin(enum axes a) const { return (L_xmin[a]); }
+
+  /// Returns Level xyz upper bounds (code units)
+  virtual double level_Xmax(enum axes a) const { return (L_xmax[a]); }
+
+  /// Returns Level range (code units)
+  virtual double level_Range(enum axes a) const { return (L_range[a]); }
+
+  /// Returns x/y/z min of grid in integer coords.
+  virtual double Xmin_all(enum axes a) const { return (G_xmin_all[a]); }
+
+  /// Returns x/y/z max of grid in integer coords.
+  virtual double Xmax_all(enum axes a) const { return (G_xmax_all[a]); }
+
+  /// Returns x/y/z range of grid in integer coords.
+  virtual double Range_all(enum axes a) const { return (G_range_all[a]); }
+
+  /// Returns x/y/z lower boundary of grid in integer coords.
+  virtual int iXmin(enum axes a) const { return (G_ixmin[a]); }
+
+  /// Returns x/y/z upper boundary of grid in integer coords.
+  virtual int iXmax(enum axes a) const { return (G_ixmax[a]); }
+
+  /// Returns x/y/z range of grid in integer coords.
+  virtual int iRange(enum axes a) const { return (G_irange[a]); }
+
+  /// Returns x/y/z min of grid in integer coords.
+  virtual int iXmin_all(enum axes a) const { return (G_ixmin_all[a]); }
+
+  /// Returns x/y/z max of grid in integer coords.
+  virtual int iXmax_all(enum axes a) const { return (G_ixmax_all[a]); }
+
+  /// Returns x/y/z range of grid in integer coords.
+  virtual int iRange_all(enum axes a) const { return (G_irange_all[a]); }
+
+  /// Returns Simulation x,y,z lower bounds in cell integer coords
+  virtual int SIM_iXmin(enum axes a) const { return (Sim_ixmin[a]); }
+
+  /// Returns Simulation x,y,z upper bounds in cell integer coords
+  virtual int SIM_iXmax(enum axes a) const { return (Sim_ixmax[a]); }
+
+  /// Returns Simulation x,y,z range in cell integer coords
+  virtual int SIM_iRange(enum axes a) const { return (Sim_irange[a]); }
+
+  /// Returns Level x,y,z lower bounds in cell integer coords
+  virtual int level_iXmin(enum axes a) const { return (L_ixmin[a]); }
+
+  /// Returns Level x,y,z upper bounds in cell integer coords
+  virtual int level_iXmax(enum axes a) const { return (L_ixmax[a]); }
+
+  /// Returns Level x,y,z range in cell integer coords
+  virtual int level_iRange(enum axes a) const { return (L_irange[a]); }
+
+  /// Return depth of boundary data in given direction
+  virtual int boundary_depth(enum direction d) const
+  {
+    return G_nbc[static_cast<int>(d)];
+  }
+
+  /// Return cell size in integer units
+  int idx() const { return G_idx; }
+
+  virtual double CellVolume(const cell* c, const double)
+  {
+    return VectorOps_Cart::CellVolume(c, G_dx);
+  }
+
+  virtual double CellInterface(
+      const cell* c,        ///< Cell
+      const direction dir,  ///< outward normal to interface.
+      const double)
+  {
+    return VectorOps_Cart::CellInterface(c, dir, G_dx);
+  }
+
+  // ---------- QUERY BASIC GRID PROPERTIES -------------------------
+
+  // ---------- ACCESSING AND MOVING FROM CELL TO CELL --------------
+  ///
+  /// Returns pointer to the first grid point (ex. boundary data).
+  ///
+  virtual cell* FirstPt();
+
+  ///
+  /// Returns pointer to the first grid point (inc. boundary data).
+  ///
+  virtual cell* FirstPt_All();
+
+  ///
+  /// Returns pointer to the last grid point (ex. boundary data).
+  ///
+  virtual cell* LastPt();
+
+  ///
+  /// Returns pointer to the last grid point (inc. boundary data).
+  ///
+  virtual cell* LastPt_All();
+
+  ///
+  /// returns a pointer to a neighbouring cell in the given
+  /// direction.
+  ///
+  /// This function is designed to be fast, so it does no range
+  /// checking on the direction, to make sure the pointer exists.  It
+  /// will do something unexpected if 2*Ndim<dir, as it will access a
+  /// random piece of memory.  It returns whatever is in
+  /// cell->ngb[direction] i.e. the neighbour if it exists or 0 if it
+  /// doesn't.
+  ///
+  virtual cell* NextPt(
+      const cell* c,            ///< Current cell.
+      const enum direction dir  ///< direction of neighbour.
+  )
+  {
+    return (c->ngb[dir]);
+  }
+
+  ///
+  /// returns a pointer to the next cell (ex. boundary data).
+  ///
+  virtual cell* NextPt(const cell* c) { return (c->npt); }
+
+  ///
+  /// returns a pointer to the next cell (inc. boundary data).
+  ///
+  virtual cell* NextPt_All(const cell* c) { return (c->npt_all); }
+
+  ///
+  /// Like NextPt(cell,dir), but in reverse direction.
+  ///
+  virtual class cell* PrevPt(
+      const class cell*,  ///< Current Point.
+      enum direction      ///< Direction to go in.
+  );
+
+  // ---------- ACCESSING AND MOVING FROM CELL TO CELL --------------
+
+  ///
+  /// Returns the opposite direction to the one passed in to the function.
+  ///
+  virtual enum direction OppDir(enum direction);
+
+  ///
+  /// Sets up grid cells on each boundary, and any extra boundaries
+  /// specified (internal, e.g. stellar wind).
+  ///
+  virtual int SetupBCs(
+      class SimParams&  ///< List of simulation params (including BCs)
+  );
+
+  ///
+  /// prints all the cells in the given boundary data pointer.
+  ///
+  int BC_printBCdata(boundary_data*);
+
+  ///
+  /// Destructor for all the boundary data, BC_bd.
+  ///
+  void BC_deleteBoundaryData();
+
+  ///
+  /// Destructor for a boundary data struct.
+  ///
+  void BC_deleteBoundaryData(boundary_data*);
+
+  ///
+  /// Calculate distance between two points, where the two position
+  /// are interpreted in the appropriate geometry.
+  /// This function takes input in physical units, and outputs in
+  /// physical units.
+  ///
+  virtual double distance(
+      const double*,  ///< position 1 (physical)
+      const double*   ///< position 2 (physical)
+  );
+
+  ///
+  /// Calculate distance between two points, where the two position
+  /// are interpreted in the appropriate geometry.
+  /// This function takes input in code integer units, and outputs in
+  /// integer units (but obviously the answer is not an integer).
+  ///
+  virtual double idistance(
+      const int*,  ///< position 1 (integer)
+      const int*   ///< position 2 (integer)
+  );
+
+  ///
+  /// Calculate distance between two cell--centres (will be between
+  /// centre-of-volume of cells if non-cartesian geometry).
+  /// Result returned in physical units (e.g. centimetres).
+  ///
+  virtual double distance_cell2cell(
+      const cell*,  ///< cell 1
+      const cell*   ///< cell 2
+  );
+
+  ///
+  /// Calculate distance between two cell--centres (will be between
+  /// centre-of-volume of cells if non-cartesian geometry).
+  /// Result returned in grid--integer units (one cell has a diameter
+  /// two units).
+  ///
+  virtual double idistance_cell2cell(
+      const cell*,  ///< cell 1
+      const cell*   ///< cell 2
+  );
+
+  ///
+  /// Calculate distance between a cell-vertex and a cell--centres
+  /// (will be between centre-of-volume of cells if non-cartesian
+  /// geometry).  Here both input and output are physical units.
+  ///
+  virtual double distance_vertex2cell(
+      const double*,  ///< vertex (physical)
+      const cell*     ///< cell
+  );
+
+  ///
+  /// As distance_vertex2cell(double[],cell) but for a single component
+  /// of the position vector, and not the absolute value.  It returns
+  /// the *cell* coordinate minus the *vertex* coordinate.
+  ///
+  virtual double difference_vertex2cell(
+      const double*,  ///< vertex (double)
+      const cell*,    ///< cell
+      const axes      ///< Axis to calculate.
+  );
+
+  ///
+  /// Calculate distance between a cell-vertex and a cell--centres
+  /// (will be between centre-of-volume of cells if non-cartesian
+  /// geometry).  Here both input and output are code-integer units.
+  ///
+  virtual double idistance_vertex2cell(
+      const int*,  ///< vertex (integer)
+      const cell*  ///< cell
+  );
+
+  ///
+  /// As idistance_vertex2cell(int,cell) but for a single component
+  /// of the position vector, and not the absolute value.  It returns
+  /// the *cell* coordinate minus the *vertex* coordinate.
+  ///
+  virtual double idifference_vertex2cell(
+      const int*,   ///< vertex (integer)
+      const cell*,  ///< cell
+      const axes    ///< Axis to calculate.
+  );
+
+  ///
+  /// As idifference_vertex2cell(int,cell,axis) but for the coordinate
+  /// difference between two cell positions along a given axis.
+  /// It returns *cell2* coordinate minus *cell1* coordinate.
+  ///
+  virtual double idifference_cell2cell(
+      const cell*,  ///< cell 1
+      const cell*,  ///< cell 2
+      const axes    ///< Axis.
+  );
+
+  ///
+  /// Returns true if the position is on the grid, false otherwise
+  ///
+  bool point_on_grid(const double*  ///< position
+  );
 };
 
 // ##################################################################
@@ -564,144 +563,144 @@ class UniformGrid :
 class uniform_grid_cyl :
     virtual public UniformGrid,
     virtual public VectorOps_Cyl {
-  public:
-    ///
-    /// Constructor:
-    ///  - Checks input parameters are reasonable.
-    ///  - All grid setup is done in the cartesian version.
-    ///
-    uniform_grid_cyl(
-        int,      ///< ndim, length of position vector.
-        int,      ///< nvar, length of state vectors.
-        int,      ///< eqntype, which equations we are using (needed by BCs).
-        int,      ///< number of boundary cells to use.
-        double*,  ///< array of minimum values of x,y,z for this grid.
-        double*,  ///< array of maximum values of x,y,z for this grid.
-        int*,     ///< array of number of cells in x,y,z directions.
-        double*,  ///< array of min. x/y/z for level.
-        double*,  ///< array of max. x/y/z for level.
-        double*,  ///< array of min. x/y/z for full simulation.
-        double*   ///< array of max. x/y/z for full simulation.
-    );
+public:
+  ///
+  /// Constructor:
+  ///  - Checks input parameters are reasonable.
+  ///  - All grid setup is done in the cartesian version.
+  ///
+  uniform_grid_cyl(
+      int,      ///< ndim, length of position vector.
+      int,      ///< nvar, length of state vectors.
+      int,      ///< eqntype, which equations we are using (needed by BCs).
+      int,      ///< number of boundary cells to use.
+      double*,  ///< array of minimum values of x,y,z for this grid.
+      double*,  ///< array of maximum values of x,y,z for this grid.
+      int*,     ///< array of number of cells in x,y,z directions.
+      double*,  ///< array of min. x/y/z for level.
+      double*,  ///< array of max. x/y/z for level.
+      double*,  ///< array of min. x/y/z for full simulation.
+      double*   ///< array of max. x/y/z for full simulation.
+  );
 
-    ///
-    /// Destructor: does nothing so far.
-    ~uniform_grid_cyl();
-    ///
-    /// Calculate distance between two points, where the two position
-    /// are interpreted in the appropriate geometry.
-    /// This function takes input in physical units, and outputs in
-    /// physical units.
-    ///
-    virtual double distance(
-        const double*,  ///< position 1 (physical)
-        const double*   ///< position 2 (physical)
-    );
+  ///
+  /// Destructor: does nothing so far.
+  ~uniform_grid_cyl();
+  ///
+  /// Calculate distance between two points, where the two position
+  /// are interpreted in the appropriate geometry.
+  /// This function takes input in physical units, and outputs in
+  /// physical units.
+  ///
+  virtual double distance(
+      const double*,  ///< position 1 (physical)
+      const double*   ///< position 2 (physical)
+  );
 
-    ///
-    /// Calculate distance between two points, where the two position
-    /// are interpreted in the appropriate geometry.
-    /// This function takes input in code integer units, and outputs in
-    /// integer units (but obviously the answer is not an integer).
-    ///
-    virtual double idistance(
-        const int*,  ///< position 1 (integer)
-        const int*   ///< position 2 (integer)
-    );
+  ///
+  /// Calculate distance between two points, where the two position
+  /// are interpreted in the appropriate geometry.
+  /// This function takes input in code integer units, and outputs in
+  /// integer units (but obviously the answer is not an integer).
+  ///
+  virtual double idistance(
+      const int*,  ///< position 1 (integer)
+      const int*   ///< position 2 (integer)
+  );
 
-    ///
-    /// Calculate distance between two cell--centres (will be between
-    /// centre-of-volume of cells if non-cartesian geometry).
-    /// Result returned in physical units (e.g. centimetres).
-    ///
-    virtual double distance_cell2cell(
-        const cell*,  ///< cell 1
-        const cell*   ///< cell 2
-    );
+  ///
+  /// Calculate distance between two cell--centres (will be between
+  /// centre-of-volume of cells if non-cartesian geometry).
+  /// Result returned in physical units (e.g. centimetres).
+  ///
+  virtual double distance_cell2cell(
+      const cell*,  ///< cell 1
+      const cell*   ///< cell 2
+  );
 
-    ///
-    /// Calculate distance between two cell--centres (will be between
-    /// centre-of-volume of cells if non-cartesian geometry).
-    /// Result returned in grid--integer units (one cell has a diameter
-    /// two units).
-    ///
-    virtual double idistance_cell2cell(
-        const cell*,  ///< cell 1
-        const cell*   ///< cell 2
-    );
+  ///
+  /// Calculate distance between two cell--centres (will be between
+  /// centre-of-volume of cells if non-cartesian geometry).
+  /// Result returned in grid--integer units (one cell has a diameter
+  /// two units).
+  ///
+  virtual double idistance_cell2cell(
+      const cell*,  ///< cell 1
+      const cell*   ///< cell 2
+  );
 
-    ///
-    /// Calculate distance between a cell-vertex and a cell--centres
-    /// (will be between centre-of-volume of cells if non-cartesian
-    /// geometry).  Here both input and output are physical units.
-    ///
-    virtual double distance_vertex2cell(
-        const double*,  ///< vertex (physical)
-        const cell*     ///< cell
-    );
+  ///
+  /// Calculate distance between a cell-vertex and a cell--centres
+  /// (will be between centre-of-volume of cells if non-cartesian
+  /// geometry).  Here both input and output are physical units.
+  ///
+  virtual double distance_vertex2cell(
+      const double*,  ///< vertex (physical)
+      const cell*     ///< cell
+  );
 
-    ///
-    /// As distance_vertex2cell(double[],cell) but for a single component
-    /// of the position vector, and not the absolute value.  It returns
-    /// the *cell* coordinate minus the *vertex* coordinate.
-    ///
-    virtual double difference_vertex2cell(
-        const double*,  ///< vertex (double)
-        const cell*,    ///< cell
-        const axes      ///< Axis to calculate.
-    );
+  ///
+  /// As distance_vertex2cell(double[],cell) but for a single component
+  /// of the position vector, and not the absolute value.  It returns
+  /// the *cell* coordinate minus the *vertex* coordinate.
+  ///
+  virtual double difference_vertex2cell(
+      const double*,  ///< vertex (double)
+      const cell*,    ///< cell
+      const axes      ///< Axis to calculate.
+  );
 
-    ///
-    /// Calculate distance between a cell-vertex and a cell--centres
-    /// (will be between centre-of-volume of cells if non-cartesian
-    /// geometry).  Here both input and output are code-integer units.
-    ///
-    virtual double idistance_vertex2cell(
-        const int*,  ///< vertex (integer)
-        const cell*  ///< cell
-    );
+  ///
+  /// Calculate distance between a cell-vertex and a cell--centres
+  /// (will be between centre-of-volume of cells if non-cartesian
+  /// geometry).  Here both input and output are code-integer units.
+  ///
+  virtual double idistance_vertex2cell(
+      const int*,  ///< vertex (integer)
+      const cell*  ///< cell
+  );
 
-    ///
-    /// As idistance_vertex2cell(int,cell) but for a single component
-    /// of the position vector, and not the absolute value.  It returns
-    /// the *cell* coordinate minus the *vertex* coordinate.
-    ///
-    virtual double idifference_vertex2cell(
-        const int*,   ///< vertex (integer)
-        const cell*,  ///< cell
-        const axes    ///< Axis to calculate.
-    );
+  ///
+  /// As idistance_vertex2cell(int,cell) but for a single component
+  /// of the position vector, and not the absolute value.  It returns
+  /// the *cell* coordinate minus the *vertex* coordinate.
+  ///
+  virtual double idifference_vertex2cell(
+      const int*,   ///< vertex (integer)
+      const cell*,  ///< cell
+      const axes    ///< Axis to calculate.
+  );
 
-    ///
-    /// As idifference_vertex2cell(int,cell,axis) but for the coordinate
-    /// difference between two cell positions along a given axis.
-    /// It returns *cell2* coordinate minus *cell1* coordinate.
-    ///
-    virtual double idifference_cell2cell(
-        const cell*,  ///< cell 1
-        const cell*,  ///< cell 2
-        const axes    ///< Axis.
-    );
+  ///
+  /// As idifference_vertex2cell(int,cell,axis) but for the coordinate
+  /// difference between two cell positions along a given axis.
+  /// It returns *cell2* coordinate minus *cell1* coordinate.
+  ///
+  virtual double idifference_cell2cell(
+      const cell*,  ///< cell 1
+      const cell*,  ///< cell 2
+      const axes    ///< Axis.
+  );
 
-    virtual double CellVolume(const cell* c, const double)
-    {
-        return VectorOps_Cyl::CellVolume(c, G_dx);
-    }
+  virtual double CellVolume(const cell* c, const double)
+  {
+    return VectorOps_Cyl::CellVolume(c, G_dx);
+  }
 
-    virtual double CellInterface(
-        const cell* c,        ///< Cell
-        const direction dir,  ///< outward normal to interface.
-        const double)
-    {
-        return VectorOps_Cyl::CellInterface(c, dir, G_dx);
-    }
+  virtual double CellInterface(
+      const cell* c,        ///< Cell
+      const direction dir,  ///< outward normal to interface.
+      const double)
+  {
+    return VectorOps_Cyl::CellInterface(c, dir, G_dx);
+  }
 
-  protected:
-    ///
-    /// Returns the centre of volume of a cell (in the radial
-    /// direction) in the dimensionless integer coordinate system.
-    ///
-    virtual double iR_cov(const cell*);
+protected:
+  ///
+  /// Returns the centre of volume of a cell (in the radial
+  /// direction) in the dimensionless integer coordinate system.
+  ///
+  virtual double iR_cov(const cell*);
 };
 
 // ##################################################################
@@ -714,146 +713,146 @@ class uniform_grid_cyl :
 class uniform_grid_sph :
     virtual public UniformGrid,
     virtual public VectorOps_Sph {
-  public:
-    ///
-    /// Constructor:
-    ///  - Checks input parameters are reasonable.
-    ///  - All grid setup is done in the cartesian version.
-    ///
-    uniform_grid_sph(
-        int,      ///< ndim, length of position vector.
-        int,      ///< nvar, length of state vectors.
-        int,      ///< eqntype, which equations we are using (needed by BCs).
-        int,      ///< number of boundary cells to use.
-        double*,  ///< array of minimum values of x,y,z for this grid.
-        double*,  ///< array of maximum values of x,y,z for this grid.
-        int*,     ///< array of number of cells in x,y,z directions.
-        double*,  ///< array of min. x/y/z for level.
-        double*,  ///< array of max. x/y/z for level.
-        double*,  ///< array of min. x/y/z for full simulation.
-        double*   ///< array of max. x/y/z for full simulation.
-    );
+public:
+  ///
+  /// Constructor:
+  ///  - Checks input parameters are reasonable.
+  ///  - All grid setup is done in the cartesian version.
+  ///
+  uniform_grid_sph(
+      int,      ///< ndim, length of position vector.
+      int,      ///< nvar, length of state vectors.
+      int,      ///< eqntype, which equations we are using (needed by BCs).
+      int,      ///< number of boundary cells to use.
+      double*,  ///< array of minimum values of x,y,z for this grid.
+      double*,  ///< array of maximum values of x,y,z for this grid.
+      int*,     ///< array of number of cells in x,y,z directions.
+      double*,  ///< array of min. x/y/z for level.
+      double*,  ///< array of max. x/y/z for level.
+      double*,  ///< array of min. x/y/z for full simulation.
+      double*   ///< array of max. x/y/z for full simulation.
+  );
 
-    ///
-    /// Destructor:
-    ///
-    ~uniform_grid_sph();
+  ///
+  /// Destructor:
+  ///
+  ~uniform_grid_sph();
 
-    ///
-    /// Calculate distance between two points, where the two position
-    /// are interpreted in the appropriate geometry.
-    /// This function takes input in physical units, and outputs in
-    /// physical units.
-    ///
-    virtual double distance(
-        const double*,  ///< position 1 (physical)
-        const double*   ///< position 2 (physical)
-    );
+  ///
+  /// Calculate distance between two points, where the two position
+  /// are interpreted in the appropriate geometry.
+  /// This function takes input in physical units, and outputs in
+  /// physical units.
+  ///
+  virtual double distance(
+      const double*,  ///< position 1 (physical)
+      const double*   ///< position 2 (physical)
+  );
 
-    ///
-    /// Calculate distance between two points, where the two position
-    /// are interpreted in the appropriate geometry.
-    /// This function takes input in code integer units, and outputs in
-    /// integer units (but obviously the answer is not an integer).
-    ///
-    virtual double idistance(
-        const int*,  ///< position 1 (integer)
-        const int*   ///< position 2 (integer)
-    );
+  ///
+  /// Calculate distance between two points, where the two position
+  /// are interpreted in the appropriate geometry.
+  /// This function takes input in code integer units, and outputs in
+  /// integer units (but obviously the answer is not an integer).
+  ///
+  virtual double idistance(
+      const int*,  ///< position 1 (integer)
+      const int*   ///< position 2 (integer)
+  );
 
-    ///
-    /// Calculate distance between two cell--centres (will be between
-    /// centre-of-volume of cells if non-cartesian geometry).
-    /// Result returned in physical units (e.g. centimetres).
-    ///
-    virtual double distance_cell2cell(
-        const cell*,  ///< cell 1
-        const cell*   ///< cell 2
-    );
+  ///
+  /// Calculate distance between two cell--centres (will be between
+  /// centre-of-volume of cells if non-cartesian geometry).
+  /// Result returned in physical units (e.g. centimetres).
+  ///
+  virtual double distance_cell2cell(
+      const cell*,  ///< cell 1
+      const cell*   ///< cell 2
+  );
 
-    ///
-    /// Calculate distance between two cell--centres (will be between
-    /// centre-of-volume of cells if non-cartesian geometry).
-    /// Result returned in grid--integer units (one cell has a diameter
-    /// two units).
-    ///
-    virtual double idistance_cell2cell(
-        const cell*,  ///< cell 1
-        const cell*   ///< cell 2
-    );
+  ///
+  /// Calculate distance between two cell--centres (will be between
+  /// centre-of-volume of cells if non-cartesian geometry).
+  /// Result returned in grid--integer units (one cell has a diameter
+  /// two units).
+  ///
+  virtual double idistance_cell2cell(
+      const cell*,  ///< cell 1
+      const cell*   ///< cell 2
+  );
 
-    ///
-    /// Calculate distance between a cell-vertex and a cell--centres
-    /// (will be between centre-of-volume of cells if non-cartesian
-    /// geometry).  Here both input and output are physical units.
-    ///
-    virtual double distance_vertex2cell(
-        const double*,  ///< vertex (physical)
-        const cell*     ///< cell
-    );
+  ///
+  /// Calculate distance between a cell-vertex and a cell--centres
+  /// (will be between centre-of-volume of cells if non-cartesian
+  /// geometry).  Here both input and output are physical units.
+  ///
+  virtual double distance_vertex2cell(
+      const double*,  ///< vertex (physical)
+      const cell*     ///< cell
+  );
 
-    ///
-    /// As distance_vertex2cell(double[],cell) but for a single component
-    /// of the position vector, and not the absolute value.  It returns
-    /// the *cell* coordinate minus the *vertex* coordinate.
-    ///
-    virtual double difference_vertex2cell(
-        const double*,  ///< vertex (double)
-        const cell*,    ///< cell
-        const axes      ///< Axis to calculate.
-    );
+  ///
+  /// As distance_vertex2cell(double[],cell) but for a single component
+  /// of the position vector, and not the absolute value.  It returns
+  /// the *cell* coordinate minus the *vertex* coordinate.
+  ///
+  virtual double difference_vertex2cell(
+      const double*,  ///< vertex (double)
+      const cell*,    ///< cell
+      const axes      ///< Axis to calculate.
+  );
 
-    ///
-    /// Calculate distance between a cell-vertex and a cell--centres
-    /// (will be between centre-of-volume of cells if non-cartesian
-    /// geometry).  Here both input and output are code-integer units.
-    ///
-    virtual double idistance_vertex2cell(
-        const int*,  ///< vertex (integer)
-        const cell*  ///< cell
-    );
+  ///
+  /// Calculate distance between a cell-vertex and a cell--centres
+  /// (will be between centre-of-volume of cells if non-cartesian
+  /// geometry).  Here both input and output are code-integer units.
+  ///
+  virtual double idistance_vertex2cell(
+      const int*,  ///< vertex (integer)
+      const cell*  ///< cell
+  );
 
-    ///
-    /// As idistance_vertex2cell(int,cell) but for a single component
-    /// of the position vector, and not the absolute value.  It returns
-    /// the *cell* coordinate minus the *vertex* coordinate.
-    ///
-    virtual double idifference_vertex2cell(
-        const int*,   ///< vertex (integer)
-        const cell*,  ///< cell
-        const axes    ///< Axis to calculate.
-    );
+  ///
+  /// As idistance_vertex2cell(int,cell) but for a single component
+  /// of the position vector, and not the absolute value.  It returns
+  /// the *cell* coordinate minus the *vertex* coordinate.
+  ///
+  virtual double idifference_vertex2cell(
+      const int*,   ///< vertex (integer)
+      const cell*,  ///< cell
+      const axes    ///< Axis to calculate.
+  );
 
-    ///
-    /// As idifference_vertex2cell(int,cell,axis) but for the coordinate
-    /// difference between two cell positions along a given axis.
-    /// It returns *cell2* coordinate minus *cell1* coordinate.
-    ///
-    virtual double idifference_cell2cell(
-        const cell*,  ///< cell 1
-        const cell*,  ///< cell 2
-        const axes    ///< Axis.
-    );
+  ///
+  /// As idifference_vertex2cell(int,cell,axis) but for the coordinate
+  /// difference between two cell positions along a given axis.
+  /// It returns *cell2* coordinate minus *cell1* coordinate.
+  ///
+  virtual double idifference_cell2cell(
+      const cell*,  ///< cell 1
+      const cell*,  ///< cell 2
+      const axes    ///< Axis.
+  );
 
-    virtual double CellVolume(const cell* c, const double)
-    {
-        return VectorOps_Sph::CellVolume(c, G_dx);
-    }
+  virtual double CellVolume(const cell* c, const double)
+  {
+    return VectorOps_Sph::CellVolume(c, G_dx);
+  }
 
-    virtual double CellInterface(
-        const cell* c,        ///< Cell
-        const direction dir,  ///< outward normal to interface.
-        const double)
-    {
-        return VectorOps_Sph::CellInterface(c, dir, G_dx);
-    }
+  virtual double CellInterface(
+      const cell* c,        ///< Cell
+      const direction dir,  ///< outward normal to interface.
+      const double)
+  {
+    return VectorOps_Sph::CellInterface(c, dir, G_dx);
+  }
 
-  protected:
-    ///
-    /// Returns the centre of volume of a cell (in the radial
-    /// direction) in the dimensionless integer coordinate system.
-    ///
-    virtual double iR_cov(const cell*);
+protected:
+  ///
+  /// Returns the centre of volume of a cell (in the radial
+  /// direction) in the dimensionless integer coordinate system.
+  ///
+  virtual double iR_cov(const cell*);
 };
 
 #endif  // UNIFORM_GRID_H

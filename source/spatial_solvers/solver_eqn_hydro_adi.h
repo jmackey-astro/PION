@@ -58,160 +58,160 @@ class FV_solver_Hydro_Euler :
     virtual public Riemann_Roe_Hydro_CV,
     virtual public HLL_hydro,
     virtual public VectorOps_Cart {
-  public:
-    FV_solver_Hydro_Euler(
-        const int,     ///< number of variables in state vector.
-        const int,     ///< number of space dimensions in grid.
-        const double,  ///< CFL number
-        const double,  ///< gas eos gamma.
-        pion_flt*,     ///< State vector of mean values for simulation.
-        const double,  ///< Artificial Viscosity Parameter etav.
-        const int      ///< Number of tracer variables.
-    );
+public:
+  FV_solver_Hydro_Euler(
+      const int,     ///< number of variables in state vector.
+      const int,     ///< number of space dimensions in grid.
+      const double,  ///< CFL number
+      const double,  ///< gas eos gamma.
+      pion_flt*,     ///< State vector of mean values for simulation.
+      const double,  ///< Artificial Viscosity Parameter etav.
+      const int      ///< Number of tracer variables.
+  );
 
-    ~FV_solver_Hydro_Euler();
-    long int counter;
+  ~FV_solver_Hydro_Euler();
+  long int counter;
 
-    ///
-    /// This calls the equations version and then adds conversion of tracer
-    /// variables.
-    ///
-    /// For passive tracers, the primitive variable is just a number,
-    /// such as the 'colour' of the gas, or where it started out.  The
-    /// conserved variable is the mass density of this.
-    ///
-    virtual void PtoU(
-        const pion_flt*,  ///< pointer to Primitive variables.
-        pion_flt*,        ///< pointer to conserved variables.
-        const double      ///< Gas constant gamma.
-    );
+  ///
+  /// This calls the equations version and then adds conversion of tracer
+  /// variables.
+  ///
+  /// For passive tracers, the primitive variable is just a number,
+  /// such as the 'colour' of the gas, or where it started out.  The
+  /// conserved variable is the mass density of this.
+  ///
+  virtual void PtoU(
+      const pion_flt*,  ///< pointer to Primitive variables.
+      pion_flt*,        ///< pointer to conserved variables.
+      const double      ///< Gas constant gamma.
+  );
 
-    ///
-    /// This calls the equations version and then adds conversion of tracer
-    /// variables.
-    ///
-    /// For passive tracers, the primitive variable is just a number,
-    /// such as the 'colour' of the gas, or where it started out.  The
-    /// conserved variable is the mass density of this.
-    ///
-    virtual int UtoP(
-        const pion_flt*,  ///< pointer to conserved variables.
-        pion_flt*,        ///< pointer to Primitive variables.
-        const double,     ///< minimum temperature/pressure allowed
-        const double      ///< Gas constant gamma.
-    );
+  ///
+  /// This calls the equations version and then adds conversion of tracer
+  /// variables.
+  ///
+  /// For passive tracers, the primitive variable is just a number,
+  /// such as the 'colour' of the gas, or where it started out.  The
+  /// conserved variable is the mass density of this.
+  ///
+  virtual int UtoP(
+      const pion_flt*,  ///< pointer to conserved variables.
+      pion_flt*,        ///< pointer to Primitive variables.
+      const double,     ///< minimum temperature/pressure allowed
+      const double      ///< Gas constant gamma.
+  );
 
-    ///
-    /// This calls the equations version and then adds conversion of tracer
-    /// variables.
-    ///
-    /// The flux of a passive tracer is equal to the mass flux times
-    /// the value of the primitive tracer variable.  I take the left
-    /// state tracer var. if the mass flux is to the right, and vice versa.
-    ///
-    virtual void PUtoFlux(
-        const pion_flt*,  ///< pointer to Primitive variables.
-        const pion_flt*,  ///< pointer to conserved variables.
-        pion_flt*         ///< Pointer to flux variable.
-    );
+  ///
+  /// This calls the equations version and then adds conversion of tracer
+  /// variables.
+  ///
+  /// The flux of a passive tracer is equal to the mass flux times
+  /// the value of the primitive tracer variable.  I take the left
+  /// state tracer var. if the mass flux is to the right, and vice versa.
+  ///
+  virtual void PUtoFlux(
+      const pion_flt*,  ///< pointer to Primitive variables.
+      const pion_flt*,  ///< pointer to conserved variables.
+      pion_flt*         ///< Pointer to flux variable.
+  );
 
-    ///
-    /// This calls the equations version and then adds conversion of tracer
-    /// variables.
-    ///
-    /// The flux of a passive tracer is equal to the mass flux times
-    /// the value of the primitive tracer variable.  I take the left
-    /// state tracer var. if the mass flux is to the right, and vice versa.
-    ///
-    virtual void UtoFlux(
-        const pion_flt*,  ///< Pointer to conserved variables state vector.
-        pion_flt*,        ///< Pointer to flux variable state vector.
-        const double      ///< Gas constant gamma.
-    );
+  ///
+  /// This calls the equations version and then adds conversion of tracer
+  /// variables.
+  ///
+  /// The flux of a passive tracer is equal to the mass flux times
+  /// the value of the primitive tracer variable.  I take the left
+  /// state tracer var. if the mass flux is to the right, and vice versa.
+  ///
+  virtual void UtoFlux(
+      const pion_flt*,  ///< Pointer to conserved variables state vector.
+      pion_flt*,        ///< Pointer to flux variable state vector.
+      const double      ///< Gas constant gamma.
+  );
 
-    /// Calculates Flux based on a left and right state vector (primitive).
-    int inviscid_flux(
-        class SimParams&,      ///< simulation parameters
-        class GridBaseClass*,  ///< pointer to grid
-        const double,          ///< cell-size dx (for LF method)
-        class cell*,           ///< Left state cell pointer
-        class cell*,           ///< Right state cell pointer
-        const pion_flt*,       ///< Left Primitive state vector.
-        const pion_flt*,       ///< Right Primitive state vector.
-        pion_flt*,             ///< Resultant Flux state vector.
-        pion_flt*,             ///< Resultant Pstar state vector.
-        const int,             ///< Which Riemann solver
-        const double           ///< Gas constant gamma.
-    );
+  /// Calculates Flux based on a left and right state vector (primitive).
+  int inviscid_flux(
+      class SimParams&,      ///< simulation parameters
+      class GridBaseClass*,  ///< pointer to grid
+      const double,          ///< cell-size dx (for LF method)
+      class cell*,           ///< Left state cell pointer
+      class cell*,           ///< Right state cell pointer
+      const pion_flt*,       ///< Left Primitive state vector.
+      const pion_flt*,       ///< Right Primitive state vector.
+      pion_flt*,             ///< Resultant Flux state vector.
+      pion_flt*,             ///< Resultant Pstar state vector.
+      const int,             ///< Which Riemann solver
+      const double           ///< Gas constant gamma.
+  );
 
-    ///
-    /// Adds the contribution from flux in the current direction to dU.
-    ///
-    virtual int dU_Cell(
-        class GridBaseClass*,
-        cell*,            ///< Current cell.
-        const axes,       ///< Which axis we are looking along.
-        const pion_flt*,  ///< Negative direction flux.
-        const pion_flt*,  ///< Positive direction flux.
-        const pion_flt*,  ///< slope vector for cell c.
-        const int,        ///< spatial order of accuracy.
-        const double,     ///< cell length dx.
-        const double      ///< cell TimeStep, dt.
-    );
+  ///
+  /// Adds the contribution from flux in the current direction to dU.
+  ///
+  virtual int dU_Cell(
+      class GridBaseClass*,
+      cell*,            ///< Current cell.
+      const axes,       ///< Which axis we are looking along.
+      const pion_flt*,  ///< Negative direction flux.
+      const pion_flt*,  ///< Positive direction flux.
+      const pion_flt*,  ///< slope vector for cell c.
+      const int,        ///< spatial order of accuracy.
+      const double,     ///< cell length dx.
+      const double      ///< cell TimeStep, dt.
+  );
 
-    ///
-    /// Geometric source terms (does nothing for Cartesian geometry).
-    ///
-    virtual void geometric_source(
-        cell*,            ///< Current cell.
-        const axes,       ///< Which axis we are looking along.
-        const pion_flt*,  ///< slope vector for cell c.
-        const int,        ///< spatial order of accuracy.
-        const double,     ///< cell length dx.
-        pion_flt*         ///< update vector to add source term to [OUTPUT]
-    )
-    {
-        return;
-    }
+  ///
+  /// Geometric source terms (does nothing for Cartesian geometry).
+  ///
+  virtual void geometric_source(
+      cell*,            ///< Current cell.
+      const axes,       ///< Which axis we are looking along.
+      const pion_flt*,  ///< slope vector for cell c.
+      const int,        ///< spatial order of accuracy.
+      const double,     ///< cell length dx.
+      pion_flt*         ///< update vector to add source term to [OUTPUT]
+  )
+  {
+    return;
+  }
 
-    ///
-    /// General Finite volume scheme for updating a cell's
-    /// primitive state vector, for homogeneous equations.
-    ///
-    virtual int CellAdvanceTime(
-        class cell*,      ///< current cell.
-        const pion_flt*,  ///< Initial Primitive State Vector.
-        pion_flt*,        ///< Update vector dU
-        pion_flt*,     ///< Final Primitive state vector (can be same as initial
-                       ///< vec.).
-        pion_flt*,     ///< Tracks change of energy if I have to correct for
-                       ///< negative pressure
-        const double,  ///< gas EOS gamma.
-        const double,  ///< Min Temperature allowed on grid.
-        const double   ///< Cell timestep dt.
-    );
+  ///
+  /// General Finite volume scheme for updating a cell's
+  /// primitive state vector, for homogeneous equations.
+  ///
+  virtual int CellAdvanceTime(
+      class cell*,      ///< current cell.
+      const pion_flt*,  ///< Initial Primitive State Vector.
+      pion_flt*,        ///< Update vector dU
+      pion_flt*,     ///< Final Primitive state vector (can be same as initial
+                     ///< vec.).
+      pion_flt*,     ///< Tracks change of energy if I have to correct for
+                     ///< negative pressure
+      const double,  ///< gas EOS gamma.
+      const double,  ///< Min Temperature allowed on grid.
+      const double   ///< Cell timestep dt.
+  );
 
-    ///
-    /// Given a cell, calculate the hydrodynamic timestep.
-    ///
-    virtual double CellTimeStep(
-        const cell*,   ///< pointer to cell
-        const double,  ///< gas EOS gamma.
-        const double   ///< Cell size dx.
-    );
+  ///
+  /// Given a cell, calculate the hydrodynamic timestep.
+  ///
+  virtual double CellTimeStep(
+      const cell*,   ///< pointer to cell
+      const double,  ///< gas EOS gamma.
+      const double   ///< Cell size dx.
+  );
 
-  protected:
-    ///
-    /// Falle et al. (1998) Artificial Viscosity Calculation.
-    ///
-    int AVFalle(
-        const pion_flt*,  ///< Left Primitive state vector.
-        const pion_flt*,  ///< Right Primitive state vector.
-        const pion_flt*,  ///< Resolved (P*) state vector.
-        pion_flt*,        ///< Pointer to associated Flux Vector.
-        const double,     ///< Artificial Viscosity parameter, etav.
-        const double      ///< gamma
-    );
+protected:
+  ///
+  /// Falle et al. (1998) Artificial Viscosity Calculation.
+  ///
+  int AVFalle(
+      const pion_flt*,  ///< Left Primitive state vector.
+      const pion_flt*,  ///< Right Primitive state vector.
+      const pion_flt*,  ///< Resolved (P*) state vector.
+      pion_flt*,        ///< Pointer to associated Flux Vector.
+      const double,     ///< Artificial Viscosity parameter, etav.
+      const double      ///< gamma
+  );
 };
 
 /// Solver for Euler equations in cylindrical coordinates with AV
@@ -219,35 +219,35 @@ class FV_solver_Hydro_Euler :
 class cyl_FV_solver_Hydro_Euler :
     virtual public FV_solver_Hydro_Euler,
     virtual public VectorOps_Cyl {
-  public:
-    ///
-    /// sets indices for tracer variables in state vector.
-    ///
-    cyl_FV_solver_Hydro_Euler(
-        const int,     ///< number of variables in state vector.
-        const int,     ///< number of space dimensions in grid.
-        const double,  ///< CFL number
-        const double,  ///< gas eos gamma.
-        pion_flt*,     ///< State vector of mean values for simulation.
-        const double,  ///< Artificial Viscosity Parameter etav.
-        const int      ///< Number of tracer variables.
-    );
+public:
+  ///
+  /// sets indices for tracer variables in state vector.
+  ///
+  cyl_FV_solver_Hydro_Euler(
+      const int,     ///< number of variables in state vector.
+      const int,     ///< number of space dimensions in grid.
+      const double,  ///< CFL number
+      const double,  ///< gas eos gamma.
+      pion_flt*,     ///< State vector of mean values for simulation.
+      const double,  ///< Artificial Viscosity Parameter etav.
+      const int      ///< Number of tracer variables.
+  );
 
-    ~cyl_FV_solver_Hydro_Euler();
+  ~cyl_FV_solver_Hydro_Euler();
 
-    ///
-    /// Geometric source terms.
-    /// Includes geometric source term p/R for 1st and 2nd order
-    /// spatial accuracy.
-    ///
-    virtual void geometric_source(
-        cell*,            ///< Current cell.
-        const axes,       ///< Which axis we are looking along.
-        const pion_flt*,  ///< slope vector for cell c.
-        const int,        ///< spatial order of accuracy.
-        const double,     ///< cell length dx.
-        pion_flt*         ///< update vector to add source term to [OUTPUT]
-    );
+  ///
+  /// Geometric source terms.
+  /// Includes geometric source term p/R for 1st and 2nd order
+  /// spatial accuracy.
+  ///
+  virtual void geometric_source(
+      cell*,            ///< Current cell.
+      const axes,       ///< Which axis we are looking along.
+      const pion_flt*,  ///< slope vector for cell c.
+      const int,        ///< spatial order of accuracy.
+      const double,     ///< cell length dx.
+      pion_flt*         ///< update vector to add source term to [OUTPUT]
+  );
 };
 
 ///
@@ -257,38 +257,38 @@ class cyl_FV_solver_Hydro_Euler :
 class sph_FV_solver_Hydro_Euler :
     virtual public FV_solver_Hydro_Euler,
     virtual public VectorOps_Sph {
-  public:
-    ///
-    /// sets indices for tracer variables in state vector.
-    ///
-    sph_FV_solver_Hydro_Euler(
-        const int,     ///< number of variables in state vector.
-        const int,     ///< number of space dimensions in grid.
-        const double,  ///< CFL number
-        const double,  ///< gas eos gamma.
-        pion_flt*,     ///< State vector of mean values for simulation.
-        const double,  ///< Artificial Viscosity Parameter etav.
-        const int      ///< Number of tracer variables.
-    );
+public:
+  ///
+  /// sets indices for tracer variables in state vector.
+  ///
+  sph_FV_solver_Hydro_Euler(
+      const int,     ///< number of variables in state vector.
+      const int,     ///< number of space dimensions in grid.
+      const double,  ///< CFL number
+      const double,  ///< gas eos gamma.
+      pion_flt*,     ///< State vector of mean values for simulation.
+      const double,  ///< Artificial Viscosity Parameter etav.
+      const int      ///< Number of tracer variables.
+  );
 
-    ~sph_FV_solver_Hydro_Euler();
+  ~sph_FV_solver_Hydro_Euler();
 
-    ///
-    /// Geometric source terms.
-    /// Includes geometric source term p/R for 1st and 2nd order
-    /// spatial accuracy.
-    ///
-    virtual void geometric_source(
-        cell*,            ///< Current cell.
-        const axes,       ///< Which axis we are looking along.
-        const pion_flt*,  ///< slope vector for cell c.
-        const int,        ///< spatial order of accuracy.
-        const double,     ///< cell length dx.
-        pion_flt*         ///< update vector to add source term to [OUTPUT]
-    );
+  ///
+  /// Geometric source terms.
+  /// Includes geometric source term p/R for 1st and 2nd order
+  /// spatial accuracy.
+  ///
+  virtual void geometric_source(
+      cell*,            ///< Current cell.
+      const axes,       ///< Which axis we are looking along.
+      const pion_flt*,  ///< slope vector for cell c.
+      const int,        ///< spatial order of accuracy.
+      const double,     ///< cell length dx.
+      pion_flt*         ///< update vector to add source term to [OUTPUT]
+  );
 
-    ///	Vector for corrector values (used to modify flux according to sCMA)
-    std::vector<double> corrector;
+  ///	Vector for corrector values (used to modify flux according to sCMA)
+  std::vector<double> corrector;
 };
 
 #endif  // SOLVER_EQN_HYDRO_ADI_H

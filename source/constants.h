@@ -32,92 +32,92 @@
 /// Masses of elements from http://www.ciaaw.org/atomic-weights.htm
 ///
 class constants {
-  public:
-    constants();
-    ~constants();
+public:
+  constants();
+  ~constants();
 
-    //
-    // Mathematics
-    //
-    inline double ln10() { return 2.3025850929940459; }
-    inline double pi() { return 3.14159265358979324; }
-    inline double halfpi() { return 0.5 * pi(); }
-    inline double root4pi() { return 3.5449077018110318; }
-    inline double sqrt2() { return 1.4142135623730950; }
-    //
-    // Physics
-    //
-    inline double c() { return 2.99792458e+10; }
-    inline double kB() { return 1.38064852e-16; }
-    inline double h() { return 6.62606957e-27; }
-    inline double StefanBoltzmannConst() { return 5.670367e-5; }
-    inline double eV() { return 1.6021766208e-12; }
-    ///
-    /// Unified atomic mass unit.
-    ///
-    inline double uamu() { return 1.660539040e-24; }
-    ///
-    /// proton mass (CODATA 2014)
-    ///
-    inline double m_p() { return 1.672621898e-24; }
-    ///
-    /// Hydrogen mass (IUPAC value is 1.0080+/-0.0002 * uamu).
-    ///
-    inline double m_H() { return 1.6738e-24; }
-    ///
-    /// Helium mass (CIAWW online table)
-    ///
-    inline double m_He() { return 6.6464768e-24; }
+  //
+  // Mathematics
+  //
+  inline double ln10() { return 2.3025850929940459; }
+  inline double pi() { return 3.14159265358979324; }
+  inline double halfpi() { return 0.5 * pi(); }
+  inline double root4pi() { return 3.5449077018110318; }
+  inline double sqrt2() { return 1.4142135623730950; }
+  //
+  // Physics
+  //
+  inline double c() { return 2.99792458e+10; }
+  inline double kB() { return 1.38064852e-16; }
+  inline double h() { return 6.62606957e-27; }
+  inline double StefanBoltzmannConst() { return 5.670367e-5; }
+  inline double eV() { return 1.6021766208e-12; }
+  ///
+  /// Unified atomic mass unit.
+  ///
+  inline double uamu() { return 1.660539040e-24; }
+  ///
+  /// proton mass (CODATA 2014)
+  ///
+  inline double m_p() { return 1.672621898e-24; }
+  ///
+  /// Hydrogen mass (IUPAC value is 1.0080+/-0.0002 * uamu).
+  ///
+  inline double m_H() { return 1.6738e-24; }
+  ///
+  /// Helium mass (CIAWW online table)
+  ///
+  inline double m_He() { return 6.6464768e-24; }
 
-    ///
-    /// Carbon mass (CIAWW online table)
-    /// 0.5*(12.0096 + 12.0116) uamu
-    ///
-    inline double m_C() { return 1.994374e-23; }
+  ///
+  /// Carbon mass (CIAWW online table)
+  /// 0.5*(12.0096 + 12.0116) uamu
+  ///
+  inline double m_C() { return 1.994374e-23; }
 
-    ///
-    /// Nitrogen mass 0.5*(14.00643 + 14.00728) uamu
-    /// (CIAWW online table)
-    ///
-    inline double m_N() { return 2.325892e-23; }
+  ///
+  /// Nitrogen mass 0.5*(14.00643 + 14.00728) uamu
+  /// (CIAWW online table)
+  ///
+  inline double m_N() { return 2.325892e-23; }
 
-    ///
-    /// Oxygen mass (CIAWW online table)
-    /// 0.5*(15.99903 + 15.99977) uamu
-    ///
-    inline double m_O() { return 2.6567628e-23; }
+  ///
+  /// Oxygen mass (CIAWW online table)
+  /// 0.5*(15.99903 + 15.99977) uamu
+  ///
+  inline double m_O() { return 2.6567628e-23; }
 
-    /// Gravitational constant (CODATA 2014)
-    ///
-    inline double G() { return 6.67408e-8; }
-    ///
-    /// Ionization potential of H (eV)
-    ///
-    inline double Eth_H() { return 2.178710264e-11; }
-    ///
-    /// Ionization potential of H, in Hertz.
-    ///
-    inline double NuTh_H() { return 3.28808819e+15; }
-    //
-    // Unit conversion
-    //
-    inline double K_per_eV() { return 1.16045221e4; }
-    inline double year() { return 3.1558150e7; }
-    inline double asec_per_rad() { return 206264.806; }
-    inline double sqasec_per_sr() { return 4.2545250225e10; }
-    //
-    // Astronomy
-    //
-    inline double Msun() { return 1.9891e33; }
-    inline double Lsun() { return 3.839e33; }
-    inline double Rsun() { return 6.955e10; }
-    inline double AU() { return 1.49597870700e+13; }
-    inline double parsec() { return 3.0856776e18; }
+  /// Gravitational constant (CODATA 2014)
+  ///
+  inline double G() { return 6.67408e-8; }
+  ///
+  /// Ionization potential of H (eV)
+  ///
+  inline double Eth_H() { return 2.178710264e-11; }
+  ///
+  /// Ionization potential of H, in Hertz.
+  ///
+  inline double NuTh_H() { return 3.28808819e+15; }
+  //
+  // Unit conversion
+  //
+  inline double K_per_eV() { return 1.16045221e4; }
+  inline double year() { return 3.1558150e7; }
+  inline double asec_per_rad() { return 206264.806; }
+  inline double sqasec_per_sr() { return 4.2545250225e10; }
+  //
+  // Astronomy
+  //
+  inline double Msun() { return 1.9891e33; }
+  inline double Lsun() { return 3.839e33; }
+  inline double Rsun() { return 6.955e10; }
+  inline double AU() { return 1.49597870700e+13; }
+  inline double parsec() { return 3.0856776e18; }
 
-    ///
-    /// tests if two doubles are equal to an accuracy of 1e-8.
-    ///
-    bool equalD(const double, const double);
+  ///
+  /// tests if two doubles are equal to an accuracy of 1e-8.
+  ///
+  bool equalD(const double, const double);
 };
 
 extern class constants pconst;
@@ -235,39 +235,39 @@ extern class constants pconst;
 /// they are in order.
 ///
 enum primitive {
-    RO = 0,  ///< Density
-    PG = 1,  ///< Gas pressure
-    VX = 2,  ///< x-velocity
-    VY = 3,  ///< y-velocity
-    VZ = 4,  ///< z-velocity
-    BX = 5,  ///< x-magnetic field
-    BY = 6,  ///< y-magnetic field
-    BZ = 7,  ///< z-magnetic field
-    SI = 8   ///< The GLM scalar field, psi.
+  RO = 0,  ///< Density
+  PG = 1,  ///< Gas pressure
+  VX = 2,  ///< x-velocity
+  VY = 3,  ///< y-velocity
+  VZ = 4,  ///< z-velocity
+  BX = 5,  ///< x-magnetic field
+  BY = 6,  ///< y-magnetic field
+  BZ = 7,  ///< z-magnetic field
+  SI = 8   ///< The GLM scalar field, psi.
 };
 //--------------------------------------------------------
 
 //--------------------------------------------------------
 /// \brief Conserved Variables Enum
 enum conserved {
-    RHO = 0,  ///< Density
-    ERG = 1,  ///< Total Energy
-    MMX = 2,  ///< x-momentum
-    MMY = 3,  ///< y-momentum
-    MMZ = 4,  ///< z-momentum
-    BBX = 5,  ///< x-magnetic field
-    BBY = 6,  ///< y-magnetic field
-    BBZ = 7,  ///< z-magnetic field
-    PSI = 8   ///< The GLM scalar field, psi.
+  RHO = 0,  ///< Density
+  ERG = 1,  ///< Total Energy
+  MMX = 2,  ///< x-momentum
+  MMY = 3,  ///< y-momentum
+  MMZ = 4,  ///< z-momentum
+  BBX = 5,  ///< x-magnetic field
+  BBY = 6,  ///< y-magnetic field
+  BBZ = 7,  ///< z-magnetic field
+  PSI = 8   ///< The GLM scalar field, psi.
 };
 //--------------------------------------------------------
 
 //--------------------------------------------------------
 /// \brief Enum for each Spatial Dimension.
 enum axes {
-    XX = 0,  ///< X-Direction.
-    YY = 1,  ///< Y-Direction.
-    ZZ = 2   ///< Z-Direction.
+  XX = 0,  ///< X-Direction.
+  YY = 1,  ///< Y-Direction.
+  ZZ = 2   ///< Z-Direction.
 };
 //--------------------------------------------------------
 
@@ -280,14 +280,14 @@ enum axes {
 /// Y and Z directions.
 ///
 enum direction {
-    NO = -1,  ///< No Direction.
-    XN = 0,   ///< Negative x-direction x-
-    XP = 1,   ///< Positive x-direction x+
-    YN = 2,   ///< Negative y-direction y-
-    YP = 3,   ///< Positive y-direction y+
-    ZN = 4,   ///< Negative z-direction z-
-    ZP = 5    ///< Positive z-direction z+
-};            // {x-,x+,y-,y+,z-,z+}
+  NO = -1,  ///< No Direction.
+  XN = 0,   ///< Negative x-direction x-
+  XP = 1,   ///< Positive x-direction x+
+  YN = 2,   ///< Negative y-direction y-
+  YP = 3,   ///< Positive y-direction y+
+  ZN = 4,   ///< Negative z-direction z-
+  ZP = 5    ///< Positive z-direction z+
+};          // {x-,x+,y-,y+,z-,z+}
 
 //
 // Space and Time Integration Order of Accuracy
@@ -300,13 +300,13 @@ enum direction {
 //
 #define AV_NONE 0  ///< No artificial viscosity.
 #define AV_FKJ98_1D                                                            \
-    1  ///< 1D linear viscosity of Falle, Komissarov, Joarder (1998).
+  1  ///< 1D linear viscosity of Falle, Komissarov, Joarder (1998).
 #define AV_LAPIDUS 2      ///< Lapidus-type viscosity (BROKEN).
 #define AV_HCORRECTION 3  ///< H-correction of Sanders et al. (1998).
 #define AV_HCORR_FKJ98                                                         \
-    4  ///< combination of the H-corr + FKJ98 (not needed really).
+  4  ///< combination of the H-corr + FKJ98 (not needed really).
 #define AV_VonNeuRicht                                                         \
-    5  ///< von Neumann & Richtmeyer (1950) multi-D viscosity.
+  5  ///< von Neumann & Richtmeyer (1950) multi-D viscosity.
 
 ///
 /// The pressure floor for the riemann solver and cell updates.
@@ -330,9 +330,9 @@ enum direction {
 // Method of calculating opacity and updating microphysics:
 //
 #define RT_UPDATE_IMPLICIT                                                     \
-    1  ///< C2-ray update, where time-integration happens during ray-trace.
+  1  ///< C2-ray update, where time-integration happens during ray-trace.
 #define RT_UPDATE_EXPLICIT                                                     \
-    2  ///< Only instantaneous column densities calculated during ray-trace.
+  2  ///< Only instantaneous column densities calculated during ray-trace.
 
 //
 // Types of source -- either a single source or one of 2*Ndim diffuse sources.
@@ -349,26 +349,26 @@ enum direction {
 #define RT_EFFECT_PHOTODISS 4   ///< photodissociation of molecules.
 #define RT_EFFECT_PION_EQM 5    ///< Assume photoion. equilibrium.
 #define RT_EFFECT_HHE_MFQ                                                      \
-    9  ///< Frank&Mellema H+He p-ion scheme (not fully implemented)
+  9  ///< Frank&Mellema H+He p-ion scheme (not fully implemented)
 
 //
 // Source of opacity
 //
 #define RT_OPACITY_TOTAL                                                       \
-    1  ///< opacity is proportional to total mass density, so just integrate
-       ///< rho*dr
+  1  ///< opacity is proportional to total mass density, so just integrate
+     ///< rho*dr
 #define RT_OPACITY_MINUS                                                       \
-    2  ///< opacity provided by tracer i: integrate rho*(1-y_i)*dr
+  2  ///< opacity provided by tracer i: integrate rho*(1-y_i)*dr
 #define RT_OPACITY_TRACER                                                      \
-    3  ///< opacity provided by tracer i: integrate rho*y_i*dr
+  3  ///< opacity provided by tracer i: integrate rho*y_i*dr
 #define RT_OPACITY_VSHELL                                                      \
-    4  ///< should never be used.  RT uses it internally to set Vshell in each
-       ///< cell.
+  4  ///< should never be used.  RT uses it internally to set Vshell in each
+     ///< cell.
 #define RT_OPACITY_HALPHA                                                      \
-    5  ///< Used only for analysis to calculate projected H-alpha emission.
+  5  ///< Used only for analysis to calculate projected H-alpha emission.
 #define RT_OPACITY_NII_FL                                                      \
-    6  ///< Used only for analysis to calculate projected [NII] forbidden line
-       ///< emission.
+  6  ///< Used only for analysis to calculate projected [NII] forbidden line
+     ///< emission.
 #define RT_OPACITY_RR 7   ///< Recombination rate (for ph-ion.eqm.)
 #define RT_OPACITY_HHE 9  ///< H0,He0,He+,Dust.
 #define RT_OPACITY_MP 10  ///< Get opacity from microphysics.

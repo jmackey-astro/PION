@@ -48,15 +48,15 @@ using namespace std;
 /// operators for the enums.
 waves& operator++(waves& d)
 {
-    return (d = waves(d + 1));
+  return (d = waves(d + 1));
 }
 conserved& operator++(conserved& d)
 {
-    return (d = conserved(d + 1));
+  return (d = conserved(d + 1));
 }
 rsvars& operator++(rsvars& d)
 {
-    return (d = rsvars(d + 1));
+  return (d = rsvars(d + 1));
 }
 
 // ##################################################################
@@ -74,57 +74,55 @@ riemann_MHD::riemann_MHD(
     eqns_mhd_ideal(nv)
 {
 #ifdef RS_TESTING
-    cout << "(riemann_MHD::riemann_MHD) Initialising Riemann Solver Class.\n";
-    if (eq_nvar < 8) {
-        rep.error(
-            "\tProblem with MHD Riemann Solver... Nelements!=8.  Quitting!!!",
-            eq_nvar);
-    }
+  cout << "(riemann_MHD::riemann_MHD) Initialising Riemann Solver Class.\n";
+  if (eq_nvar < 8) {
+    rep.error(
+        "\tProblem with MHD Riemann Solver... Nelements!=8.  Quitting!!!",
+        eq_nvar);
+  }
 #endif
 
-    RS_nvar =
-        7;  // Local state vector has length 7, because BX is not included.
-    eq_gamma =
-        g;  // gamma is passed to solve() function, which assigns it each time.
+  RS_nvar = 7;  // Local state vector has length 7, because BX is not included.
+  eq_gamma =
+      g;  // gamma is passed to solve() function, which assigns it each time.
 
-    RS_evalue   = mem.myalloc(RS_evalue, RS_nvar);
-    RS_pdiff    = mem.myalloc(RS_pdiff, RS_nvar);
-    RS_strength = mem.myalloc(RS_strength, RS_nvar);
+  RS_evalue   = mem.myalloc(RS_evalue, RS_nvar);
+  RS_pdiff    = mem.myalloc(RS_pdiff, RS_nvar);
+  RS_strength = mem.myalloc(RS_strength, RS_nvar);
 
-    RS_left  = mem.myalloc(RS_left, eq_nvar);
-    RS_right = mem.myalloc(RS_right, eq_nvar);
-    RS_meanp = mem.myalloc(RS_meanp, eq_nvar);
-    RS_pstar = mem.myalloc(RS_pstar, eq_nvar);
+  RS_left  = mem.myalloc(RS_left, eq_nvar);
+  RS_right = mem.myalloc(RS_right, eq_nvar);
+  RS_meanp = mem.myalloc(RS_meanp, eq_nvar);
+  RS_pstar = mem.myalloc(RS_pstar, eq_nvar);
 
-    //
-    // zero all the arrays
-    //
-    for (int v = 0; v < RS_nvar; v++) {
-        RS_pdiff[v] = RS_evalue[v] = RS_strength[v] = 0.;
-        for (int w = 0; w < RS_nvar; w++)
-            RS_leftevec[v][w] = RS_rightevec[v][w] = 0.;
-    }
-    for (int v = 0; v < eq_nvar; v++)
-        eq_refvec[v] = RS_pstar[v] = RS_left[v] = RS_right[v] = RS_meanp[v] =
-            0.0;
+  //
+  // zero all the arrays
+  //
+  for (int v = 0; v < RS_nvar; v++) {
+    RS_pdiff[v] = RS_evalue[v] = RS_strength[v] = 0.;
+    for (int w = 0; w < RS_nvar; w++)
+      RS_leftevec[v][w] = RS_rightevec[v][w] = 0.;
+  }
+  for (int v = 0; v < eq_nvar; v++)
+    eq_refvec[v] = RS_pstar[v] = RS_left[v] = RS_right[v] = RS_meanp[v] = 0.0;
 #ifdef RS_TESTING
-    cout << " Done."
-         << "\n";
+  cout << " Done."
+       << "\n";
 #endif
 
-    onaxis = offaxis = 0;
-    samestate        = 0;
-    totalsolve       = 0;
-    smallB = MACHINEACCURACY;  // This is a small number to use when roundoff
-                               // errors happen.
-    tinyB = smallB * smallB * smallB;  // Set it to be really insignificant.
+  onaxis = offaxis = 0;
+  samestate        = 0;
+  totalsolve       = 0;
+  smallB = MACHINEACCURACY;  // This is a small number to use when roundoff
+                             // errors happen.
+  tinyB = smallB * smallB * smallB;  // Set it to be really insignificant.
 
-    SetDirection(XX);  // Initially assume we are looking along the x-axis.
+  SetDirection(XX);  // Initially assume we are looking along the x-axis.
 
-    SetAvgState(state, eq_gamma);
+  SetAvgState(state, eq_gamma);
 
 #ifdef RS_TESTING
-    cout << "(riemann_MHD::riemann_MHD) Finished Setup.\n";
+  cout << "(riemann_MHD::riemann_MHD) Finished Setup.\n";
 #endif
 }
 
@@ -135,21 +133,21 @@ riemann_MHD::riemann_MHD(
 riemann_MHD::~riemann_MHD()
 {
 #ifdef RS_TESTING
-    cout << "(riemann_MHD::riemann_MHD) Class Destructing!!!"
-         << "\n";
-    cout << "\t Failed Tests: OnAxis: " << onaxis << " and OffAxis: " << offaxis
-         << "\n";
+  cout << "(riemann_MHD::riemann_MHD) Class Destructing!!!"
+       << "\n";
+  cout << "\t Failed Tests: OnAxis: " << onaxis << " and OffAxis: " << offaxis
+       << "\n";
 #endif  // TESTING
-    RS_evalue   = mem.myfree(RS_evalue);
-    RS_pdiff    = mem.myfree(RS_pdiff);
-    RS_strength = mem.myfree(RS_strength);
+  RS_evalue   = mem.myfree(RS_evalue);
+  RS_pdiff    = mem.myfree(RS_pdiff);
+  RS_strength = mem.myfree(RS_strength);
 
-    RS_left  = mem.myfree(RS_left);
-    RS_right = mem.myfree(RS_right);
-    RS_meanp = mem.myfree(RS_meanp);
-    RS_pstar = mem.myfree(RS_pstar);
+  RS_left  = mem.myfree(RS_left);
+  RS_right = mem.myfree(RS_right);
+  RS_meanp = mem.myfree(RS_meanp);
+  RS_pstar = mem.myfree(RS_pstar);
 
-    //  cout << "(riemann_MHD::riemann_MHD) Destructed successfully." << "\n";
+  //  cout << "(riemann_MHD::riemann_MHD) Destructed successfully." << "\n";
 }
 
 // ##################################################################
@@ -167,248 +165,242 @@ int riemann_MHD::JMs_riemann_solve(
     const int mode,  ///< Solve Type (1=LinearRS,2=ExactRS,3=HybridRS, 4=RoeRS)
     const double g)
 {
-    int err = 0;
+  int err = 0;
 
-    //
-    // First check that we know how to do the solver which
-    // was requested:
-    //
-    RS_mode = mode;
-    switch (RS_mode) {
-        case (FLUX_RSlinear):
-            // cout <<"\tMODE 1: All Linear Solves.\n";
-            break;
-        default:
-            rep.error("\tMODE i: Don't know what to do.", RS_mode);
-            break;
-    }
-    totalsolve++;
+  //
+  // First check that we know how to do the solver which
+  // was requested:
+  //
+  RS_mode = mode;
+  switch (RS_mode) {
+    case (FLUX_RSlinear):
+      // cout <<"\tMODE 1: All Linear Solves.\n";
+      break;
+    default:
+      rep.error("\tMODE i: Don't know what to do.", RS_mode);
+      break;
+  }
+  totalsolve++;
 
-    eq_gamma = g;
+  eq_gamma = g;
 
-    //
-    // Assign class variables for left and rights states from values passed
-    //
-    assign_data(l, r);
+  //
+  // Assign class variables for left and rights states from values passed
+  //
+  assign_data(l, r);
 
-    //
-    // Set the mean state vector:
-    //
-    get_average_state();
+  //
+  // Set the mean state vector:
+  //
+  get_average_state();
 
-    //
-    // BX: B_x is a parameter in the riemann solver. I set it to be the
-    // mean of the left and right states.  The mixed-GLM solver sets
-    // both left and right values of BX to be the resolved state from
-    // the GLM method solution.
-    //
-    RS_pstar[RBX] = ansBX = RS_meanp[RBX];
-    // cout <<"bx(in)="<<RS_pstar[RBX];
+  //
+  // BX: B_x is a parameter in the riemann solver. I set it to be the
+  // mean of the left and right states.  The mixed-GLM solver sets
+  // both left and right values of BX to be the resolved state from
+  // the GLM method solution.
+  //
+  RS_pstar[RBX] = ansBX = RS_meanp[RBX];
+  // cout <<"bx(in)="<<RS_pstar[RBX];
 
 #ifdef RS_TESTING
-    // cout <<"meanp[RBX]="<<RS_meanp[RBX];
-    // cout <<"  and 0.5(l+r)="<<0.5*(l[RBX]+r[RBX])<<"\n";
-    for (int i = 0; i < eq_nvar; i++) {
-        if (!isfinite(RS_left[i]) || !isfinite(RS_right[i])) {
-            rep.printVec("MHD Left ", RS_left, eq_nvar);
-            rep.printVec("MHD Right", RS_right, eq_nvar);
-            return (-100);
-        }
+  // cout <<"meanp[RBX]="<<RS_meanp[RBX];
+  // cout <<"  and 0.5(l+r)="<<0.5*(l[RBX]+r[RBX])<<"\n";
+  for (int i = 0; i < eq_nvar; i++) {
+    if (!isfinite(RS_left[i]) || !isfinite(RS_right[i])) {
+      rep.printVec("MHD Left ", RS_left, eq_nvar);
+      rep.printVec("MHD Right", RS_right, eq_nvar);
+      return (-100);
+    }
+  }
+#endif  // RS_TESTING
+
+  //
+  // First test if the left and right states are the same, and if they
+  // are then return the mean state (left[]+right[])/2
+  //
+  double diff = 0.;
+  for (int i = 0; i < RS_nvar; i++)
+    diff += fabs(RS_right[i] - RS_left[i]) / (fabs(eq_refvec[i]) + TINYVALUE);
+
+  if (diff < 1.e-6) {
+    samestate++;  // cout <<"same states: "<<samestate<<"\n";
+    //
+    // Assign pstar values to be the mean of left and right states.
+    //
+    for (int v = 0; v < RS_nvar; v++)
+      RS_pstar[v] = RS_meanp[v];
+
+#ifdef RS_TESTING
+    //
+    // Check for negative pressure/density!  This should never happen
+    // if we are just taking the mean of left and right states!
+    //
+    if (RS_pstar[RPG] < 0.) {
+      RS_pstar[RPG] = eq_refvec[RPG] * BASEPG;  // BASEPG is 1.e-8
+      cerr << "(reimannMHD::solve) Negative pressure in INPUT STATES!.\n";
+      cerr << "pstar[] = [";
+      for (int v = 0; v < (eq_nvar - 1); v++)
+        cerr << RS_pstar[v] << ", ";
+      cout << RS_pstar[eq_nvar - 1] << " ]"
+           << "\n";
+      rep.error("Negative pressure in INPUT STATES", RS_pstar[RPG]);
+    }
+    if (RS_pstar[RRO] < 0.) {
+      RS_pstar[RRO] = eq_refvec[RRO] * BASEPG;  // BASEPG is 1.e-8
+      cerr << "(reimannMHD::solve) Negative density in INPUT STATES!.\n";
+      cerr << "pstar[] = [";
+      for (int v = 0; v < (eq_nvar - 1); v++)
+        cerr << RS_pstar[v] << ", ";
+      cout << RS_pstar[eq_nvar - 1] << " ]"
+           << "\n";
+      rep.error("Negative density in INPUT STATES", RS_pstar[RRO]);
     }
 #endif  // RS_TESTING
 
     //
-    // First test if the left and right states are the same, and if they
-    // are then return the mean state (left[]+right[])/2
+    // Re-order velocity and field componenets for returning to code
     //
-    double diff = 0.;
-    for (int i = 0; i < RS_nvar; i++)
-        diff +=
-            fabs(RS_right[i] - RS_left[i]) / (fabs(eq_refvec[i]) + TINYVALUE);
-
-    if (diff < 1.e-6) {
-        samestate++;  // cout <<"same states: "<<samestate<<"\n";
-        //
-        // Assign pstar values to be the mean of left and right states.
-        //
-        for (int v = 0; v < RS_nvar; v++)
-            RS_pstar[v] = RS_meanp[v];
-
-#ifdef RS_TESTING
-        //
-        // Check for negative pressure/density!  This should never happen
-        // if we are just taking the mean of left and right states!
-        //
-        if (RS_pstar[RPG] < 0.) {
-            RS_pstar[RPG] = eq_refvec[RPG] * BASEPG;  // BASEPG is 1.e-8
-            cerr << "(reimannMHD::solve) Negative pressure in INPUT STATES!.\n";
-            cerr << "pstar[] = [";
-            for (int v = 0; v < (eq_nvar - 1); v++)
-                cerr << RS_pstar[v] << ", ";
-            cout << RS_pstar[eq_nvar - 1] << " ]"
-                 << "\n";
-            rep.error("Negative pressure in INPUT STATES", RS_pstar[RPG]);
-        }
-        if (RS_pstar[RRO] < 0.) {
-            RS_pstar[RRO] = eq_refvec[RRO] * BASEPG;  // BASEPG is 1.e-8
-            cerr << "(reimannMHD::solve) Negative density in INPUT STATES!.\n";
-            cerr << "pstar[] = [";
-            for (int v = 0; v < (eq_nvar - 1); v++)
-                cerr << RS_pstar[v] << ", ";
-            cout << RS_pstar[eq_nvar - 1] << " ]"
-                 << "\n";
-            rep.error("Negative density in INPUT STATES", RS_pstar[RRO]);
-        }
-#endif  // RS_TESTING
-
-        //
-        // Re-order velocity and field componenets for returning to code
-        //
-        // solver2codevars(RS_left); // don't care about this -- private data.
-        // solver2codevars(RS_right);// don't care about this -- private data.
-        solver2codevars(RS_pstar);
-        for (int v = 0; v < eq_nvar; v++)
-            ans[v] = RS_pstar[v];
-        // cout <<"  SS  bx(out)="<<ans[eqBX]<<"\t";
-        return 0;
-    }  // same state finished.
-
-    //*******************************************************************
-    // At this point, we need to solve a non-trivial Riemann problem.
-    // Now we do the main part of the solution.
-    // Follows S.2.1 in Falle, Komissarov & Joarder, 1998, MNRAS, 297, 265.
-    // ******************************************************************
-    switch (mode) {
-        case (1):  // Should push this out into a function called LinearSolve()
-                   // if I ever add a second mode.
-
-            err += get_sound_speeds();
-            if (err != 0) {
-                rep.error(
-                    "riemann_MHD::(get_sound_speeds) returned with error", err);
-            }
-            //    cout <<"Speeds: (ch2,ca2,ct2,cs2,cf2): ("<<ch*ch
-            //      << " ,"<<ca*ca<<" ,"<< bt*bt<< " ,"
-            //      <<cs*cs<< " ,"<<cf*cf<<" )\n";
-
-            get_eigenvalues();
-
-            err += RoeBalsara_evectors();
-            if (err != 0) {
-                rep.error(
-                    "riemann_MHD::(RoeBalsara_evectors) returned with error",
-                    err);
-            }
-
-#ifdef RS_TESTING
-            //
-            // This makes sure the eigenvectors are normalised and have the
-            // correct orthogonality properties.
-            //
-            err += check_evectors();
-            if (err != 0) {
-                cerr << "riemann_MHD::(check_evectors): ERROR code: " << err;
-                cerr << " Failing..."
-                     << "\n";
-                cerr << "Speeds: (ch2,ca2,ct2,cs2,cf2): (" << ch * ch << " ,"
-                     << ca * ca << " ," << bt * bt << " ," << cs * cs << " ,"
-                     << cf * cf << " )\n";
-                rep.printVec("Left state ", RS_left, eq_nvar);
-                rep.printVec("Right state", RS_right, eq_nvar);
-                rep.printVec("Pstar", RS_pstar, eq_nvar);
-                rep.error("riemann_MHD::(check_evectors)", err);
-            }
-#endif
-
-            calculate_wave_strengths();
-
-            err += get_pstar();
-            if (err != 0) {
-                rep.error("riemann_MHD::(get_pstar)  returned with error", err);
-            }
-            //  cout << "(riemann_MHD::solve) Got P*..." << "\n";
-            //  cout << "P* (Got Solution) rho: " << RS_pstar[RO];
-            //  cout << "  v: " <<  RS_pstar[VX];
-            //  cout << "   p: " << RS_pstar[PG] << "\n";
-
-            //
-            // Now we have gone through all these, so if we have a solution it
-            // should be the right one!  We could have negative pressure from
-            // very strong rarefactions though.
-            //
-            if (RS_pstar[RPG] < 0.) {
-                // cerr << "(reimannMHD::solve) Negative pressure... Returning
-                // "; cerr <<"vacuum conditions, leaving velocity unchanged.\n";
-                // rep.printVec("MHD Left ",RS_left,eq_nvar);
-                // rep.printVec("MHD Right",RS_right,eq_nvar);
-                // rep.printVec("MHD Pstar",RS_pstar,eq_nvar);
-                RS_pstar[RPG] = eq_refvec[RPG] * BASEPG;
-            }
-            if (RS_pstar[RRO] < 0.) {
-                RS_pstar[RRO] = eq_refvec[RRO] * BASEPG;
-                // cerr << "(reimannMHD::solve) Negative density... Returning ";
-                // cerr <<"vacuum conditions, leaving velocity unchanged.\n";
-                // rep.printVec("MHD Left ",RS_left,eq_nvar);
-                // rep.printVec("MHD Right",RS_right,eq_nvar);
-                // rep.printVec("MHD Pstar",RS_pstar,eq_nvar);
-                // rep.printVec("Evalues: ",RS_evalue,RS_nvar);
-            }
-            //  cout << "(riemann_MHD::solve) Success!" << "\n";
-            break;  // END CASE MODE=1
-
-        default:
-            cout
-                << "MODE not known.  Only know 1.  Please enter a valid mode.\n";
-            rep.error("Bad solve mode in riemann_MHD", mode);
-    }
-
-#ifdef RS_TESTING
-    if ((!pconst.equalD(RS_pstar[RBZ], 0.0) && eq_dir == XX)
-        || (!pconst.equalD(RS_pstar[RBY], 0.0) && eq_dir == YY)) {
-        cout << "*************** eqBBZ = " << eqBBZ << "  BBZ=" << BBZ;
-        cout << " **********************************\n";
-        rep.printVec("left : ", RS_left, eq_nvar);
-        rep.printVec("right: ", RS_right, eq_nvar);
-        rep.printVec("meanp: ", RS_meanp, eq_nvar);
-        rep.printVec("pstar: ", RS_pstar, eq_nvar);
-        // rep.printVec("flux : ",FS_flux ,eq_nvar);
-        rep.printVec("strength: ", RS_strength, RS_nvar);
-        rep.printVec("evalues : ", RS_evalue, RS_nvar);
-        rep.printVec("pdiff : ", RS_pdiff, RS_nvar);
-        cout.precision(8);
-        cout << "Bx=" << ansBX << "\t alphaf,s=" << alphaf << " " << alphas
-             << "\n";
-        cout.precision(6);
-        check_evectors();
-        cout << "*************************************************\n\n";
-    }
-#endif  // RS_TESTING
-
-    //
-    // Need to get pstar back into primitive var. form before returning
-    // from solve.
-    //
+    // solver2codevars(RS_left); // don't care about this -- private data.
+    // solver2codevars(RS_right);// don't care about this -- private data.
     solver2codevars(RS_pstar);
     for (int v = 0; v < eq_nvar; v++)
-        ans[v] = RS_pstar[v];
-        // cout <<"  bx(out)="<<ans[eqBX]<<"\t";
+      ans[v] = RS_pstar[v];
+    // cout <<"  SS  bx(out)="<<ans[eqBX]<<"\t";
+    return 0;
+  }  // same state finished.
+
+  //*******************************************************************
+  // At this point, we need to solve a non-trivial Riemann problem.
+  // Now we do the main part of the solution.
+  // Follows S.2.1 in Falle, Komissarov & Joarder, 1998, MNRAS, 297, 265.
+  // ******************************************************************
+  switch (mode) {
+    case (1):  // Should push this out into a function called LinearSolve()
+               // if I ever add a second mode.
+
+      err += get_sound_speeds();
+      if (err != 0) {
+        rep.error("riemann_MHD::(get_sound_speeds) returned with error", err);
+      }
+      //    cout <<"Speeds: (ch2,ca2,ct2,cs2,cf2): ("<<ch*ch
+      //      << " ,"<<ca*ca<<" ,"<< bt*bt<< " ,"
+      //      <<cs*cs<< " ,"<<cf*cf<<" )\n";
+
+      get_eigenvalues();
+
+      err += RoeBalsara_evectors();
+      if (err != 0) {
+        rep.error(
+            "riemann_MHD::(RoeBalsara_evectors) returned with error", err);
+      }
 
 #ifdef RS_TESTING
-    //
-    // Finally, check for NAN/INF
-    //
-    for (int i = 0; i < eq_nvar; i++) {
-        if (!isfinite(RS_left[i]) || !isfinite(RS_right[i])
-            || !isfinite(RS_pstar[i])) {
-            rep.printVec("MHD Left ", RS_left, eq_nvar);
-            rep.printVec("MHD Right", RS_right, eq_nvar);
-            rep.printVec("MHD Pstar", RS_pstar, eq_nvar);
-            return (-100);
-        }
-    }
+      //
+      // This makes sure the eigenvectors are normalised and have the
+      // correct orthogonality properties.
+      //
+      err += check_evectors();
+      if (err != 0) {
+        cerr << "riemann_MHD::(check_evectors): ERROR code: " << err;
+        cerr << " Failing..."
+             << "\n";
+        cerr << "Speeds: (ch2,ca2,ct2,cs2,cf2): (" << ch * ch << " ," << ca * ca
+             << " ," << bt * bt << " ," << cs * cs << " ," << cf * cf << " )\n";
+        rep.printVec("Left state ", RS_left, eq_nvar);
+        rep.printVec("Right state", RS_right, eq_nvar);
+        rep.printVec("Pstar", RS_pstar, eq_nvar);
+        rep.error("riemann_MHD::(check_evectors)", err);
+      }
 #endif
 
-    return (0);
+      calculate_wave_strengths();
+
+      err += get_pstar();
+      if (err != 0) {
+        rep.error("riemann_MHD::(get_pstar)  returned with error", err);
+      }
+      //  cout << "(riemann_MHD::solve) Got P*..." << "\n";
+      //  cout << "P* (Got Solution) rho: " << RS_pstar[RO];
+      //  cout << "  v: " <<  RS_pstar[VX];
+      //  cout << "   p: " << RS_pstar[PG] << "\n";
+
+      //
+      // Now we have gone through all these, so if we have a solution it
+      // should be the right one!  We could have negative pressure from
+      // very strong rarefactions though.
+      //
+      if (RS_pstar[RPG] < 0.) {
+        // cerr << "(reimannMHD::solve) Negative pressure... Returning
+        // "; cerr <<"vacuum conditions, leaving velocity unchanged.\n";
+        // rep.printVec("MHD Left ",RS_left,eq_nvar);
+        // rep.printVec("MHD Right",RS_right,eq_nvar);
+        // rep.printVec("MHD Pstar",RS_pstar,eq_nvar);
+        RS_pstar[RPG] = eq_refvec[RPG] * BASEPG;
+      }
+      if (RS_pstar[RRO] < 0.) {
+        RS_pstar[RRO] = eq_refvec[RRO] * BASEPG;
+        // cerr << "(reimannMHD::solve) Negative density... Returning ";
+        // cerr <<"vacuum conditions, leaving velocity unchanged.\n";
+        // rep.printVec("MHD Left ",RS_left,eq_nvar);
+        // rep.printVec("MHD Right",RS_right,eq_nvar);
+        // rep.printVec("MHD Pstar",RS_pstar,eq_nvar);
+        // rep.printVec("Evalues: ",RS_evalue,RS_nvar);
+      }
+      //  cout << "(riemann_MHD::solve) Success!" << "\n";
+      break;  // END CASE MODE=1
+
+    default:
+      cout << "MODE not known.  Only know 1.  Please enter a valid mode.\n";
+      rep.error("Bad solve mode in riemann_MHD", mode);
+  }
+
+#ifdef RS_TESTING
+  if ((!pconst.equalD(RS_pstar[RBZ], 0.0) && eq_dir == XX)
+      || (!pconst.equalD(RS_pstar[RBY], 0.0) && eq_dir == YY)) {
+    cout << "*************** eqBBZ = " << eqBBZ << "  BBZ=" << BBZ;
+    cout << " **********************************\n";
+    rep.printVec("left : ", RS_left, eq_nvar);
+    rep.printVec("right: ", RS_right, eq_nvar);
+    rep.printVec("meanp: ", RS_meanp, eq_nvar);
+    rep.printVec("pstar: ", RS_pstar, eq_nvar);
+    // rep.printVec("flux : ",FS_flux ,eq_nvar);
+    rep.printVec("strength: ", RS_strength, RS_nvar);
+    rep.printVec("evalues : ", RS_evalue, RS_nvar);
+    rep.printVec("pdiff : ", RS_pdiff, RS_nvar);
+    cout.precision(8);
+    cout << "Bx=" << ansBX << "\t alphaf,s=" << alphaf << " " << alphas << "\n";
+    cout.precision(6);
+    check_evectors();
+    cout << "*************************************************\n\n";
+  }
+#endif  // RS_TESTING
+
+  //
+  // Need to get pstar back into primitive var. form before returning
+  // from solve.
+  //
+  solver2codevars(RS_pstar);
+  for (int v = 0; v < eq_nvar; v++)
+    ans[v] = RS_pstar[v];
+    // cout <<"  bx(out)="<<ans[eqBX]<<"\t";
+
+#ifdef RS_TESTING
+  //
+  // Finally, check for NAN/INF
+  //
+  for (int i = 0; i < eq_nvar; i++) {
+    if (!isfinite(RS_left[i]) || !isfinite(RS_right[i])
+        || !isfinite(RS_pstar[i])) {
+      rep.printVec("MHD Left ", RS_left, eq_nvar);
+      rep.printVec("MHD Right", RS_right, eq_nvar);
+      rep.printVec("MHD Pstar", RS_pstar, eq_nvar);
+      return (-100);
+    }
+  }
+#endif
+
+  return (0);
 }
 
 // ##################################################################
@@ -416,31 +408,31 @@ int riemann_MHD::JMs_riemann_solve(
 
 void riemann_MHD::assign_data(const pion_flt* l, const pion_flt* r)
 {
-    //
-    // The Riemann problem has different state vector ordering, so we
-    // first copy the vectors to local arrays, and then re-order the
-    // local copies.
-    //
+  //
+  // The Riemann problem has different state vector ordering, so we
+  // first copy the vectors to local arrays, and then re-order the
+  // local copies.
+  //
 
 #ifdef RS_TESTING
-    if (l[eqRO] < TINYVALUE || l[eqPG] < TINYVALUE || r[eqRO] < TINYVALUE
-        || r[eqPG] < TINYVALUE)
-        rep.error(
-            "riemann_MHD::assign_data() Density/Pressure too small",
-            min(r[eqRO], r[eqPG]));
+  if (l[eqRO] < TINYVALUE || l[eqPG] < TINYVALUE || r[eqRO] < TINYVALUE
+      || r[eqPG] < TINYVALUE)
+    rep.error(
+        "riemann_MHD::assign_data() Density/Pressure too small",
+        min(r[eqRO], r[eqPG]));
 #endif  // RS_TESTING
 
-    //
-    // Copy each element in turn, and then re-order using a temp-array
-    // in code2solvervars()
-    //
-    for (int v = 0; v < eq_nvar; v++) {
-        RS_left[v]  = l[v];
-        RS_right[v] = r[v];
-    }
-    code2solvervars(RS_left);
-    code2solvervars(RS_right);
-    return;
+  //
+  // Copy each element in turn, and then re-order using a temp-array
+  // in code2solvervars()
+  //
+  for (int v = 0; v < eq_nvar; v++) {
+    RS_left[v]  = l[v];
+    RS_right[v] = r[v];
+  }
+  code2solvervars(RS_left);
+  code2solvervars(RS_right);
+  return;
 }
 
 // ##################################################################
@@ -448,30 +440,30 @@ void riemann_MHD::assign_data(const pion_flt* l, const pion_flt* r)
 
 void riemann_MHD::code2solvervars(pion_flt* statevec)
 {
-    //
-    // Need to re-order velocity and B-field elements.
-    // The Riemann Solver should never access elements with
-    // v>7, so we can ignore them.
+  //
+  // Need to re-order velocity and B-field elements.
+  // The Riemann Solver should never access elements with
+  // v>7, so we can ignore them.
 
-    pion_flt temp[8];
-    temp[0]       = statevec[eqRO];
-    temp[1]       = statevec[eqPG];
-    temp[2]       = statevec[eqVX];
-    temp[3]       = statevec[eqVY];
-    temp[4]       = statevec[eqVZ];
-    temp[5]       = statevec[eqBX];
-    temp[6]       = statevec[eqBY];
-    temp[7]       = statevec[eqBZ];
-    statevec[RRO] = temp[0];
-    statevec[RPG] = temp[1];
-    statevec[RVX] = temp[2];
-    statevec[RVY] = temp[3];
-    statevec[RVZ] = temp[4];
-    statevec[RBX] = temp[5];
-    statevec[RBY] = temp[6];
-    statevec[RBZ] = temp[7];
+  pion_flt temp[8];
+  temp[0]       = statevec[eqRO];
+  temp[1]       = statevec[eqPG];
+  temp[2]       = statevec[eqVX];
+  temp[3]       = statevec[eqVY];
+  temp[4]       = statevec[eqVZ];
+  temp[5]       = statevec[eqBX];
+  temp[6]       = statevec[eqBY];
+  temp[7]       = statevec[eqBZ];
+  statevec[RRO] = temp[0];
+  statevec[RPG] = temp[1];
+  statevec[RVX] = temp[2];
+  statevec[RVY] = temp[3];
+  statevec[RVZ] = temp[4];
+  statevec[RBX] = temp[5];
+  statevec[RBY] = temp[6];
+  statevec[RBZ] = temp[7];
 
-    return;
+  return;
 }
 
 // ##################################################################
@@ -479,33 +471,33 @@ void riemann_MHD::code2solvervars(pion_flt* statevec)
 
 void riemann_MHD::solver2codevars(pion_flt* statevec)
 {
-    pion_flt temp[8];
-    // Density, pressure.
-    // Velocities
-    // B-Field
-    temp[0] = statevec[RRO];
-    temp[1] = statevec[RPG];
-    temp[2] = statevec[RVX];
-    temp[3] = statevec[RVY];
-    temp[4] = statevec[RVZ];
-    temp[5] = statevec[RBX];
-    temp[6] = statevec[RBY];
-    temp[7] = statevec[RBZ];
+  pion_flt temp[8];
+  // Density, pressure.
+  // Velocities
+  // B-Field
+  temp[0] = statevec[RRO];
+  temp[1] = statevec[RPG];
+  temp[2] = statevec[RVX];
+  temp[3] = statevec[RVY];
+  temp[4] = statevec[RVZ];
+  temp[5] = statevec[RBX];
+  temp[6] = statevec[RBY];
+  temp[7] = statevec[RBZ];
 
-    statevec[eqRO] = temp[0];
-    statevec[eqPG] = temp[1];
-    statevec[eqVX] = temp[2];
-    statevec[eqVY] = temp[3];
-    statevec[eqVZ] = temp[4];
-    statevec[eqBX] = temp[5];
-    statevec[eqBY] = temp[6];
-    statevec[eqBZ] = temp[7];
+  statevec[eqRO] = temp[0];
+  statevec[eqPG] = temp[1];
+  statevec[eqVX] = temp[2];
+  statevec[eqVY] = temp[3];
+  statevec[eqVZ] = temp[4];
+  statevec[eqBX] = temp[5];
+  statevec[eqBY] = temp[6];
+  statevec[eqBZ] = temp[7];
 
-    //
-    // Tracers and any variables with v>7 are unaffected by the MHD solver!
-    //
+  //
+  // Tracers and any variables with v>7 are unaffected by the MHD solver!
+  //
 
-    return;
+  return;
 }
 
 // ##################################################################
@@ -513,11 +505,11 @@ void riemann_MHD::solver2codevars(pion_flt* statevec)
 
 void riemann_MHD::failerror(int err, string text)
 {
-    if (err != 0) {
-        cerr << "riemann_MHD::(" << text << "): ERROR code: " << err;
-        cerr << " Exiting...\n";
-        rep.error(text, err);
-    }
+  if (err != 0) {
+    cerr << "riemann_MHD::(" << text << "): ERROR code: " << err;
+    cerr << " Exiting...\n";
+    rep.error(text, err);
+  }
 }
 
 // ##################################################################
@@ -525,17 +517,17 @@ void riemann_MHD::failerror(int err, string text)
 
 void riemann_MHD::get_average_state()
 {
-    //
-    // We can construct the average state any way we want.  Falle et
-    // al. (1998) advocate just the arithmetic mean of the left and
-    // right states.
-    //
+  //
+  // We can construct the average state any way we want.  Falle et
+  // al. (1998) advocate just the arithmetic mean of the left and
+  // right states.
+  //
 
-    // ARITHMETIC MEAN:
-    for (int v = 0; v < eq_nvar; v++)
-        RS_meanp[v] = 0.5 * (RS_left[v] + RS_right[v]);
+  // ARITHMETIC MEAN:
+  for (int v = 0; v < eq_nvar; v++)
+    RS_meanp[v] = 0.5 * (RS_left[v] + RS_right[v]);
 
-    return;
+  return;
 }
 
 // ##################################################################
@@ -543,218 +535,217 @@ void riemann_MHD::get_average_state()
 
 int riemann_MHD::get_sound_speeds()
 {
+  //
+  // The equations for these are on p.2 of Falle, Komissarov, & Joarder, 1998.
+  // The Average State sound speeds are calculated based on the average state,
+  // not on the left and right sound speeds.  I think this is sensible, and it
+  // is what Andy does.
+  // Hydrodynamic sound speeds
+  //
+
+  riemann_MHD::ch = sqrt(eq_gamma * RS_meanp[RPG] / RS_meanp[RRO]);
+  // MHD speeds:
+  riemann_MHD::bx = ansBX / sqrt(RS_meanp[RRO]);
+  riemann_MHD::ca = fabs(bx);
+
+  /** \section stability Numerical Stability
+   *
+   * The Fast and Slow speeds are subject to roundoff error.
+   *   - First the term \f$ [(a^2+b^2)^2 - 4a^2b_x^2] \f$ can be very small if
+   *     \f$b_t\f$ is very small and \f$b_x^2 \simeq a^2\f$.  So we need to
+   * check that this is positive.
+   *   - Secondly for the slow speed, the term \f$[(a^2+b^2)-\sqrt{\ldots}]\f$
+   * can be very small.  This happens when \f$a \ll 1\f$ or when \f$b_x
+   * \ll1\f$. So we also need to check that this is positive. The question is
+   * what to do when these turn out to be negative.  This means that the
+   * computer can't calculate it accurately.  I can give it an approximation
+   * to calculate it accurately, or I can arbitrarily set it to be a value
+   * slightly larger than the machine precision.  I decided the simplest thing
+   * is the latter.
+   *
+   * In two cases where the slow speed goes to zero (namely \f$a\rightarrow
+   * 0\f$ and/or \f$b_x\rightarrow 0\f$), it is well approximated by \f[ c_s^2
+   * \simeq \frac{a^2b_x^2}{a^2+b^2} + \mbox{h.o.t.} \f] so I can use this.
+   * There is also the hydrodynamic limit, where \f$b\rightarrow 0\f$. In this
+   * case \f$ c_s^2 \simeq b_x^2
+   * +\mbox{h.o.t.}\f$.
+   *
+   * In cases where \f$ [(a^2+b^2)^2 - 4a^2b_x^2]\rightarrow 0 \f$, the fast
+   * and slow speed become the same.
+   *
+   * So at this point I will determine whether we have any numerical
+   * instability present, and will get rid of it.
+   *
+   * Three quantities determine the stability: \f$ \{b_x,b_t,a\}\f$.
+   * - if \f$a\rightarrow 0\f$ Then we are in trouble.  In this case MHD
+   * probably isn't applicable, because the magnetic field energy is \f$
+   * 10^{15} \f$ times stronger than the gas energy.  This is not likely to
+   * happen in the problems we are considering.  So I think if this is
+   * encountered we should bug out of the code, with an explanation of why, of
+   * course.  So for the rest of the cases we assume that \f$a\f$ is of order
+   * unity.
+   * - if \f$b_x\rightarrow 0\f$ but \f$b_t\simeq 1\f$, then the Alfv\'en and
+   * slow waves disappear into the contact discontinuity.  The fast and slow
+   * speeds are given by \f$c_f^2 \simeq a^2+b_t^2\f$ and \f$c_s^2 \simeq
+   * \frac{a^2b_x^2}{a^2+b^2}\f$ respectively.  The normalisation quantities
+   * \f$\alpha_{f,s}\f$ will be calculated without difficulty.  So in this
+   * case I may want to approximate \f$c_s\f$.  Or, what would be better would
+   * be to have a pseudo-hydro solver, as Falle points out that this is ok.
+   * Certainly simpler than solving the MHD problem.
+   * - if \f$b_x\rightarrow 0 \f$ and \f$b_t\rightarrow 0\f$ we get the
+   * hydrodynamic limit, where the magnetic field is irrelevant.  I can just
+   * call the hydro solver in this case, and leave the magnetic field
+   * unchanged.
+   * - The remaining case is where \f$b_t\rightarrow 0\f$ and \f$b_x\simeq
+   * 1\f$. This is really three subcases.  Obviously the Alfv\'en waves need
+   * attention regardless.  Falle suggests setting \f$\beta_{f,s} =
+   * 1/\sqrt{2}\f$, saying that it really doesn't matter what you choose.  I
+   * wonder is it better to give them random signs, so you don't have any
+   * chance to add up error???  For the slow and fast waves here are the three
+   * cases:
+   *   - When \f$b_x^2<a^2\f$, there is no problem as long as \f$a^2-b_x^2 >
+   * \epsilon\f$ where \f$\epsilon\f$ is a small number close to the machine
+   * precision.
+   *   - When \f$b_x^2>a^2\f$, there is no problem as long as \f$b_x^2-a^2 >
+   * \epsilon\f$ where \f$\epsilon\f$ is a small number close to the machine
+   * precision.
+   *   - When \f$b_x^2 \simeq a^2\f$, things become difficult.  The slow and
+   * fast speeds become the same.  The fast and slow normalisations can vary
+   * from zero to one very sensitively, based on the small difference in the
+   * sound speeds.  Falle, and Roe and Balsara both claim that it doesn't
+   * matter what you choose for this case, that the flux you get out at the
+   * end is insensitive to what you choose.  I should test this.
+   *
+   * So, basically, if the slow or fast speeds are the same as the sound
+   * speed, then I set them to be chydro+-smallB.  If the tangential field is
+   * less than smallB^3, I set it to be tinyB.  If alpha_f,s cannot be
+   * determined accurately, it means that the speeds are very similar, so I
+   * set them to both to be equal at 1/root2.
+   * */
+
+  /** \subsection bt Tangential Field
+   * The tangential field absolute value is calculated as
+   * \f$b_t = \sqrt{(B_y^2+B_z^2)/\rho}\f$.  The two normalised components of
+   * the field are given by \f$\beta_{y,z} = B_{y,z}/(\sqrt{\rho}b_t)\f$ if
+   * \f$b_t > \mbox{\tt tinyB}\f$, and \f$\beta_{y,z} = 1/\sqrt{2}\f$
+   * otherwise.
+   * */
+  riemann_MHD::bt = sqrt(
+      (RS_meanp[RBY] * RS_meanp[RBY] + RS_meanp[RBZ] * RS_meanp[RBZ])
+      / RS_meanp[RRO]);
+  if (bt > tinyB) {
+    betay = RS_meanp[RBY] / sqrt(RS_meanp[RRO]) / bt;
+    betaz = RS_meanp[RBZ] / sqrt(RS_meanp[RRO]) / bt;
+  }
+  else {
+    // Set betayz to be equal, and the tangential field is at 45deg.
+    betay = 1. / sqrt(2.);
+    betaz = 1. / sqrt(2.);
+  }
+
+  /** \subsection checka Check that 'a' is not tiny.
+   * We check that the hydro sound speed is not insignificantly small compared
+   * to the magnetic field strength.  If this is the case, then MHD is
+   * probably no good anyway, and nothing will be calculated accurately.\n The
+   * condition is that if \f$a/\max{(|b_x|,b_t)} < \sqrt{\mbox{machine
+   * precision}}\f$ then we bug out and complain.
+   * */
+  if ((ch / max(ca, bt)) < sqrt(smallB)) {
+    cerr << "(riemann_MHD::get_sound_speeds) hydro sound speed ";
+    cerr << "insignificantly small compared to magnetic speeds.";
+    cerr << "  Bugging out...\n";
+    cerr << "\t ch = " << ch << " and c_a = " << ca << ", c_t = " << bt << "\n";
+    return (1);
+  }
+
+  /** \subsection cfcs Fast and Slow Speeds.
+   * At the moment, if I have roundoff errors in the calculation in the two
+   * subtractions that I need to do, I just set the difference to be
+   * smallB squared (as it always gets square-rooted in the next line).  So
+   * this way I am deliberately adding an error equal to a number slightly
+   * larger than the machine precision.\n
+   * Also, I check that the fast/slow speed is larger/smaller than the
+   * hydrodynamic sound speed, and if it's not I set it to be larger by
+   * smallB.
+   * */
+  double temp1 = ch * ch + bx * bx + bt * bt;
+  double temp2 = 4. * ch * ch * bx * bx;
+  if ((temp2 = temp1 * temp1 - temp2) < MACHINEACCURACY)
+    temp2 = MACHINEACCURACY;  // This is as good as the computer can get.
+  riemann_MHD::cf = sqrt((temp1 + sqrt(temp2)) / 2.);
+  if ((temp2 = temp1 - sqrt(temp2)) < MACHINEACCURACY)
+    temp2 = MACHINEACCURACY;  // Again, as good as the machine can get.
+  riemann_MHD::cs = sqrt(temp2 / 2.);
+
+  if (cs > ch) {
+    // cout<<"cs>ch: "<<cs/ch-1.<<"!!!\n";
+    cs = ch - smallB;
+  }
+  if (ch > cf) {
+    // cout<<"ch>cf: "<<ch/cf-1.<<"!!!\n";
+    cf = ch + smallB;
+  }
+
+  if (cs > ca) cs = ca - smallB;
+  if (cs <= 0. || cs > ca) cs = ca / 2.;
+  if (ca > cf) cf = ca + smallB;
+
+  /** \subsection alphafs Roe+Balsara Normalisation constants
+   * Calculate the eigenvector normalisation constants, as follows:
+   * \f[ \alpha_f = \frac{a^2-c^2_s}{c^2_f-c^2_s} \;,\qquad
+   *     \alpha_s = \frac{c^2_f-a^2}{c^2_f-c^2_s} \f]
+   * If I am clever, I have already ensured that the sound speeds are all
+   * finite, and as a byproduct, they are all greater than zero.  So I
+   * shouldn't have any trouble with machine accuracy here.  I check anyway.\n
+   * Where I might have trouble is that I have set cf=ch+smallB, cs=ch-smallB,
+   * so this enforces alphaf^2=alphax^2=1/2.  But this is only enforced
+   * sometimes.
+   * */
+  double cf2diff;
+  if ((cf2diff = cf * cf - cs * cs) > smallB) {
+    if ((alphaf = ch * ch - cs * cs) <= smallB) alphaf = 0.;
+    if ((alphas = cf * cf - ch * ch) <= smallB) alphas = 0.;
+    if ((alphaf = sqrt(alphaf / cf2diff)) > 1.) {
+      // cout<<"alpha_f = "<<alphaf<<" !!!\n";
+      alphaf = 1.;
+    }
+    if ((alphas = sqrt(alphas / cf2diff)) > 1.) {
+      // cout<<"alpha_s>1!!!\n";
+      alphas = 1.;
+    }
+  }
+  else {
     //
-    // The equations for these are on p.2 of Falle, Komissarov, & Joarder, 1998.
-    // The Average State sound speeds are calculated based on the average state,
-    // not on the left and right sound speeds.  I think this is sensible, and it
-    // is what Andy does.
-    // Hydrodynamic sound speeds
+    // We are near the triple degeneracy point, and haven't fixed things
+    //  already (hopefully won't happen)..
     //
+    cout << "Near Triple degeneracy point! (and didn't realise it!)";
+    cout << " THINGS ARE PROBABLY GOING BAD...\n";
+    alphaf = alphas = 1. / sqrt(2.);
+    rep.printVec("left  state", RS_left, eq_nvar);
+    rep.printVec("right state", RS_right, eq_nvar);
+    rep.printVec("Avg.  state", RS_meanp, eq_nvar);
+    rep.error("Bugging out for now...", 99);
+  }
 
-    riemann_MHD::ch = sqrt(eq_gamma * RS_meanp[RPG] / RS_meanp[RRO]);
-    // MHD speeds:
-    riemann_MHD::bx = ansBX / sqrt(RS_meanp[RRO]);
-    riemann_MHD::ca = fabs(bx);
+  //
+  // Check sound speeds are positive definite!
+  //
+  if ((cf <= 0.) || (cs < 0.) || (ca < 0.) || (ch <= 0.)) {
+    cerr << "(riemann_MHD::get_sound_speeds) Error... sound speeds are "
+            "negative.\n";
+    cout << "Speeds: (ch2,ca2,ct2,cs2,cf2): (" << ch * ch << " ," << ca * ca
+         << " ," << bt * bt << " ," << cs * cs << " ," << cf * cf << " )\n";
+    return (1);
+  }
 
-    /** \section stability Numerical Stability
-     *
-     * The Fast and Slow speeds are subject to roundoff error.
-     *   - First the term \f$ [(a^2+b^2)^2 - 4a^2b_x^2] \f$ can be very small if
-     *     \f$b_t\f$ is very small and \f$b_x^2 \simeq a^2\f$.  So we need to
-     * check that this is positive.
-     *   - Secondly for the slow speed, the term \f$[(a^2+b^2)-\sqrt{\ldots}]\f$
-     * can be very small.  This happens when \f$a \ll 1\f$ or when \f$b_x
-     * \ll1\f$. So we also need to check that this is positive. The question is
-     * what to do when these turn out to be negative.  This means that the
-     * computer can't calculate it accurately.  I can give it an approximation
-     * to calculate it accurately, or I can arbitrarily set it to be a value
-     * slightly larger than the machine precision.  I decided the simplest thing
-     * is the latter.
-     *
-     * In two cases where the slow speed goes to zero (namely \f$a\rightarrow
-     * 0\f$ and/or \f$b_x\rightarrow 0\f$), it is well approximated by \f[ c_s^2
-     * \simeq \frac{a^2b_x^2}{a^2+b^2} + \mbox{h.o.t.} \f] so I can use this.
-     * There is also the hydrodynamic limit, where \f$b\rightarrow 0\f$. In this
-     * case \f$ c_s^2 \simeq b_x^2
-     * +\mbox{h.o.t.}\f$.
-     *
-     * In cases where \f$ [(a^2+b^2)^2 - 4a^2b_x^2]\rightarrow 0 \f$, the fast
-     * and slow speed become the same.
-     *
-     * So at this point I will determine whether we have any numerical
-     * instability present, and will get rid of it.
-     *
-     * Three quantities determine the stability: \f$ \{b_x,b_t,a\}\f$.
-     * - if \f$a\rightarrow 0\f$ Then we are in trouble.  In this case MHD
-     * probably isn't applicable, because the magnetic field energy is \f$
-     * 10^{15} \f$ times stronger than the gas energy.  This is not likely to
-     * happen in the problems we are considering.  So I think if this is
-     * encountered we should bug out of the code, with an explanation of why, of
-     * course.  So for the rest of the cases we assume that \f$a\f$ is of order
-     * unity.
-     * - if \f$b_x\rightarrow 0\f$ but \f$b_t\simeq 1\f$, then the Alfv\'en and
-     * slow waves disappear into the contact discontinuity.  The fast and slow
-     * speeds are given by \f$c_f^2 \simeq a^2+b_t^2\f$ and \f$c_s^2 \simeq
-     * \frac{a^2b_x^2}{a^2+b^2}\f$ respectively.  The normalisation quantities
-     * \f$\alpha_{f,s}\f$ will be calculated without difficulty.  So in this
-     * case I may want to approximate \f$c_s\f$.  Or, what would be better would
-     * be to have a pseudo-hydro solver, as Falle points out that this is ok.
-     * Certainly simpler than solving the MHD problem.
-     * - if \f$b_x\rightarrow 0 \f$ and \f$b_t\rightarrow 0\f$ we get the
-     * hydrodynamic limit, where the magnetic field is irrelevant.  I can just
-     * call the hydro solver in this case, and leave the magnetic field
-     * unchanged.
-     * - The remaining case is where \f$b_t\rightarrow 0\f$ and \f$b_x\simeq
-     * 1\f$. This is really three subcases.  Obviously the Alfv\'en waves need
-     * attention regardless.  Falle suggests setting \f$\beta_{f,s} =
-     * 1/\sqrt{2}\f$, saying that it really doesn't matter what you choose.  I
-     * wonder is it better to give them random signs, so you don't have any
-     * chance to add up error???  For the slow and fast waves here are the three
-     * cases:
-     *   - When \f$b_x^2<a^2\f$, there is no problem as long as \f$a^2-b_x^2 >
-     * \epsilon\f$ where \f$\epsilon\f$ is a small number close to the machine
-     * precision.
-     *   - When \f$b_x^2>a^2\f$, there is no problem as long as \f$b_x^2-a^2 >
-     * \epsilon\f$ where \f$\epsilon\f$ is a small number close to the machine
-     * precision.
-     *   - When \f$b_x^2 \simeq a^2\f$, things become difficult.  The slow and
-     * fast speeds become the same.  The fast and slow normalisations can vary
-     * from zero to one very sensitively, based on the small difference in the
-     * sound speeds.  Falle, and Roe and Balsara both claim that it doesn't
-     * matter what you choose for this case, that the flux you get out at the
-     * end is insensitive to what you choose.  I should test this.
-     *
-     * So, basically, if the slow or fast speeds are the same as the sound
-     * speed, then I set them to be chydro+-smallB.  If the tangential field is
-     * less than smallB^3, I set it to be tinyB.  If alpha_f,s cannot be
-     * determined accurately, it means that the speeds are very similar, so I
-     * set them to both to be equal at 1/root2.
-     * */
-
-    /** \subsection bt Tangential Field
-     * The tangential field absolute value is calculated as
-     * \f$b_t = \sqrt{(B_y^2+B_z^2)/\rho}\f$.  The two normalised components of
-     * the field are given by \f$\beta_{y,z} = B_{y,z}/(\sqrt{\rho}b_t)\f$ if
-     * \f$b_t > \mbox{\tt tinyB}\f$, and \f$\beta_{y,z} = 1/\sqrt{2}\f$
-     * otherwise.
-     * */
-    riemann_MHD::bt = sqrt(
-        (RS_meanp[RBY] * RS_meanp[RBY] + RS_meanp[RBZ] * RS_meanp[RBZ])
-        / RS_meanp[RRO]);
-    if (bt > tinyB) {
-        betay = RS_meanp[RBY] / sqrt(RS_meanp[RRO]) / bt;
-        betaz = RS_meanp[RBZ] / sqrt(RS_meanp[RRO]) / bt;
-    }
-    else {
-        // Set betayz to be equal, and the tangential field is at 45deg.
-        betay = 1. / sqrt(2.);
-        betaz = 1. / sqrt(2.);
-    }
-
-    /** \subsection checka Check that 'a' is not tiny.
-     * We check that the hydro sound speed is not insignificantly small compared
-     * to the magnetic field strength.  If this is the case, then MHD is
-     * probably no good anyway, and nothing will be calculated accurately.\n The
-     * condition is that if \f$a/\max{(|b_x|,b_t)} < \sqrt{\mbox{machine
-     * precision}}\f$ then we bug out and complain.
-     * */
-    if ((ch / max(ca, bt)) < sqrt(smallB)) {
-        cerr << "(riemann_MHD::get_sound_speeds) hydro sound speed ";
-        cerr << "insignificantly small compared to magnetic speeds.";
-        cerr << "  Bugging out...\n";
-        cerr << "\t ch = " << ch << " and c_a = " << ca << ", c_t = " << bt
-             << "\n";
-        return (1);
-    }
-
-    /** \subsection cfcs Fast and Slow Speeds.
-     * At the moment, if I have roundoff errors in the calculation in the two
-     * subtractions that I need to do, I just set the difference to be
-     * smallB squared (as it always gets square-rooted in the next line).  So
-     * this way I am deliberately adding an error equal to a number slightly
-     * larger than the machine precision.\n
-     * Also, I check that the fast/slow speed is larger/smaller than the
-     * hydrodynamic sound speed, and if it's not I set it to be larger by
-     * smallB.
-     * */
-    double temp1 = ch * ch + bx * bx + bt * bt;
-    double temp2 = 4. * ch * ch * bx * bx;
-    if ((temp2 = temp1 * temp1 - temp2) < MACHINEACCURACY)
-        temp2 = MACHINEACCURACY;  // This is as good as the computer can get.
-    riemann_MHD::cf = sqrt((temp1 + sqrt(temp2)) / 2.);
-    if ((temp2 = temp1 - sqrt(temp2)) < MACHINEACCURACY)
-        temp2 = MACHINEACCURACY;  // Again, as good as the machine can get.
-    riemann_MHD::cs = sqrt(temp2 / 2.);
-
-    if (cs > ch) {
-        // cout<<"cs>ch: "<<cs/ch-1.<<"!!!\n";
-        cs = ch - smallB;
-    }
-    if (ch > cf) {
-        // cout<<"ch>cf: "<<ch/cf-1.<<"!!!\n";
-        cf = ch + smallB;
-    }
-
-    if (cs > ca) cs = ca - smallB;
-    if (cs <= 0. || cs > ca) cs = ca / 2.;
-    if (ca > cf) cf = ca + smallB;
-
-    /** \subsection alphafs Roe+Balsara Normalisation constants
-     * Calculate the eigenvector normalisation constants, as follows:
-     * \f[ \alpha_f = \frac{a^2-c^2_s}{c^2_f-c^2_s} \;,\qquad
-     *     \alpha_s = \frac{c^2_f-a^2}{c^2_f-c^2_s} \f]
-     * If I am clever, I have already ensured that the sound speeds are all
-     * finite, and as a byproduct, they are all greater than zero.  So I
-     * shouldn't have any trouble with machine accuracy here.  I check anyway.\n
-     * Where I might have trouble is that I have set cf=ch+smallB, cs=ch-smallB,
-     * so this enforces alphaf^2=alphax^2=1/2.  But this is only enforced
-     * sometimes.
-     * */
-    double cf2diff;
-    if ((cf2diff = cf * cf - cs * cs) > smallB) {
-        if ((alphaf = ch * ch - cs * cs) <= smallB) alphaf = 0.;
-        if ((alphas = cf * cf - ch * ch) <= smallB) alphas = 0.;
-        if ((alphaf = sqrt(alphaf / cf2diff)) > 1.) {
-            // cout<<"alpha_f = "<<alphaf<<" !!!\n";
-            alphaf = 1.;
-        }
-        if ((alphas = sqrt(alphas / cf2diff)) > 1.) {
-            // cout<<"alpha_s>1!!!\n";
-            alphas = 1.;
-        }
-    }
-    else {
-        //
-        // We are near the triple degeneracy point, and haven't fixed things
-        //  already (hopefully won't happen)..
-        //
-        cout << "Near Triple degeneracy point! (and didn't realise it!)";
-        cout << " THINGS ARE PROBABLY GOING BAD...\n";
-        alphaf = alphas = 1. / sqrt(2.);
-        rep.printVec("left  state", RS_left, eq_nvar);
-        rep.printVec("right state", RS_right, eq_nvar);
-        rep.printVec("Avg.  state", RS_meanp, eq_nvar);
-        rep.error("Bugging out for now...", 99);
-    }
-
-    //
-    // Check sound speeds are positive definite!
-    //
-    if ((cf <= 0.) || (cs < 0.) || (ca < 0.) || (ch <= 0.)) {
-        cerr << "(riemann_MHD::get_sound_speeds) Error... sound speeds are "
-                "negative.\n";
-        cout << "Speeds: (ch2,ca2,ct2,cs2,cf2): (" << ch * ch << " ," << ca * ca
-             << " ," << bt * bt << " ," << cs * cs << " ," << cf * cf << " )\n";
-        return (1);
-    }
-
-    //
-    // PHEW!!! If we get here then we got sensible wave-speeds.  As you
-    // can tell, this is the function where things start to go wrong
-    // most of the time, hence the extra work to check everything is
-    // sane.
-    //
-    return (0);
+  //
+  // PHEW!!! If we get here then we got sensible wave-speeds.  As you
+  // can tell, this is the function where things start to go wrong
+  // most of the time, hence the extra work to check everything is
+  // sane.
+  //
+  return (0);
 }
 
 // ##################################################################
@@ -762,21 +753,21 @@ int riemann_MHD::get_sound_speeds()
 
 void riemann_MHD::get_eigenvalues()
 {
-    // This constructs the eigenvalues of the average matrix
-    // \bar{A}. The 'average' sound speeds are already calculated.
-    RS_evalue[FN] = RS_meanp[RVX] - cf;
-    RS_evalue[FP] = RS_meanp[RVX] + cf;
-    RS_evalue[AN] = RS_meanp[RVX] - ca;
-    RS_evalue[AP] = RS_meanp[RVX] + ca;
-    RS_evalue[SN] = RS_meanp[RVX] - cs;
-    RS_evalue[SP] = RS_meanp[RVX] + cs;
-    RS_evalue[CT] = RS_meanp[RVX];
-    //  for (waves i=FN; i<=FP; ++i) {
-    //    cout  << "(riemann_MHD::get_eigenvalues) evalue[" << i << "]: ";
-    //    cout  << RS_evalue[i] << "\n";
-    //  }
+  // This constructs the eigenvalues of the average matrix
+  // \bar{A}. The 'average' sound speeds are already calculated.
+  RS_evalue[FN] = RS_meanp[RVX] - cf;
+  RS_evalue[FP] = RS_meanp[RVX] + cf;
+  RS_evalue[AN] = RS_meanp[RVX] - ca;
+  RS_evalue[AP] = RS_meanp[RVX] + ca;
+  RS_evalue[SN] = RS_meanp[RVX] - cs;
+  RS_evalue[SP] = RS_meanp[RVX] + cs;
+  RS_evalue[CT] = RS_meanp[RVX];
+  //  for (waves i=FN; i<=FP; ++i) {
+  //    cout  << "(riemann_MHD::get_eigenvalues) evalue[" << i << "]: ";
+  //    cout  << RS_evalue[i] << "\n";
+  //  }
 
-    return;
+  return;
 }
 
 // ##################################################################
@@ -784,11 +775,11 @@ void riemann_MHD::get_eigenvalues()
 
 inline double riemann_MHD::dot_product(pion_flt* v1, pion_flt* v2, int nd)
 {
-    double temp = 0.0;
-    for (int i = 0; i < nd; i++) {
-        temp += v1[i] * v2[i];
-    }
-    return (temp);
+  double temp = 0.0;
+  for (int i = 0; i < nd; i++) {
+    temp += v1[i] * v2[i];
+  }
+  return (temp);
 }
 
 // ##################################################################
@@ -796,14 +787,14 @@ inline double riemann_MHD::dot_product(pion_flt* v1, pion_flt* v2, int nd)
 
 void riemann_MHD::calculate_wave_strengths()
 {
-    riemann_MHD::getPdiff();
-    for (waves i = FN; i <= FP; ++i) {
-        RS_strength[i] = dot_product(RS_leftevec[i], RS_pdiff, RS_nvar);
-        // cout  << "wavestrength[" << i << "]: " << RS_strength[i] << "\n";
-    }
-    //  rep.printVec("strenth",RS_strength,RS_nvar);
+  riemann_MHD::getPdiff();
+  for (waves i = FN; i <= FP; ++i) {
+    RS_strength[i] = dot_product(RS_leftevec[i], RS_pdiff, RS_nvar);
+    // cout  << "wavestrength[" << i << "]: " << RS_strength[i] << "\n";
+  }
+  //  rep.printVec("strenth",RS_strength,RS_nvar);
 
-    return;
+  return;
 }
 
 // ##################################################################
@@ -811,14 +802,14 @@ void riemann_MHD::calculate_wave_strengths()
 
 void riemann_MHD::getPdiff()
 {
-    RS_pdiff[RRO] = RS_right[RRO] - RS_left[RRO];
-    RS_pdiff[RPG] = RS_right[RPG] - RS_left[RPG];
-    RS_pdiff[RVX] = RS_right[RVX] - RS_left[RVX];
-    RS_pdiff[RVY] = RS_right[RVY] - RS_left[RVY];
-    RS_pdiff[RVZ] = RS_right[RVZ] - RS_left[RVZ];
-    RS_pdiff[RBY] = RS_right[RBY] - RS_left[RBY];
-    RS_pdiff[RBZ] = RS_right[RBZ] - RS_left[RBZ];
-    return;
+  RS_pdiff[RRO] = RS_right[RRO] - RS_left[RRO];
+  RS_pdiff[RPG] = RS_right[RPG] - RS_left[RPG];
+  RS_pdiff[RVX] = RS_right[RVX] - RS_left[RVX];
+  RS_pdiff[RVY] = RS_right[RVY] - RS_left[RVY];
+  RS_pdiff[RVZ] = RS_right[RVZ] - RS_left[RVZ];
+  RS_pdiff[RBY] = RS_right[RBY] - RS_left[RBY];
+  RS_pdiff[RBZ] = RS_right[RBZ] - RS_left[RBZ];
+  return;
 }
 
 // ##################################################################
@@ -826,125 +817,125 @@ void riemann_MHD::getPdiff()
 
 int riemann_MHD::get_pstar()
 {
-    /** \section arrays Arrays
-     * pdiff[] is not used for the rest of the calculation,
-     * and I need an extra array in this function, so I use pdiff[] to
-     * store the result obtained by starting at the right state and
-     * crossing waves to the left until I reach x=0.  pstar[] holds the
-     * result of starting at the left and crossing waves to the right
-     * until I reach x=0.
-     * */
+  /** \section arrays Arrays
+   * pdiff[] is not used for the rest of the calculation,
+   * and I need an extra array in this function, so I use pdiff[] to
+   * store the result obtained by starting at the right state and
+   * crossing waves to the left until I reach x=0.  pstar[] holds the
+   * result of starting at the left and crossing waves to the right
+   * until I reach x=0.
+   * */
+
+  //
+  // Now go across waves from the left, assign result to pstar[]
+  //
+  int i = 0;
+  // If the eigenvalue is this close to zero, do averaging.
+  double evalacc = 1.e-4;
+
+  for (int j = 0; j < RS_nvar; j++)
+    RS_pstar[j] = RS_left[j];
+
+  while ((i < RS_nvar) && (RS_evalue[i] < 0.)) {
+    //    cout << "P* from left:  wave["<<i<<"]"<< "\n";
+    for (int j = 0; j < RS_nvar; j++) {
+      RS_pstar[j] += RS_strength[i] * RS_rightevec[i][j];
+    }
+    i++;
+  }
+
+  /** \section contact Contact Discontinuity
+   * If pave[RVX]=0, then I need to do something to decide which value of
+   * density to choose.  the most sensible thing is to look at pstar[RVX],
+   * and decide on the basis of that.
+   * */
+  //  cout <<"pave rvx = "<<pave[RVX]<<"\n";
+
+  //
+  // if Pstar[Vx] is small, then set Pstar to be the mean of
+  // left/right starred states.
+  //
+  if (fabs(RS_meanp[RVX]) < (evalacc * ch)) {
+    // cout <<"contact discontinuity is stationary. ch="<<ch;
+    // cout <<"\t pstar[RVX]="<<RS_pstar[RVX]<<"\n";
 
     //
-    // Now go across waves from the left, assign result to pstar[]
+    // Now go across waves from the right, assign result to pdiff[]
     //
-    int i = 0;
-    // If the eigenvalue is this close to zero, do averaging.
-    double evalacc = 1.e-4;
-
+    i = RS_nvar - 1;
     for (int j = 0; j < RS_nvar; j++)
-        RS_pstar[j] = RS_left[j];
-
-    while ((i < RS_nvar) && (RS_evalue[i] < 0.)) {
-        //    cout << "P* from left:  wave["<<i<<"]"<< "\n";
-        for (int j = 0; j < RS_nvar; j++) {
-            RS_pstar[j] += RS_strength[i] * RS_rightevec[i][j];
-        }
-        i++;
+      RS_pdiff[j] = RS_right[j];
+    //  while ((RS_evalue[i]>(evalacc*ch)) && (i>=0)) {
+    while ((i >= 0) && (RS_evalue[i] > 0.)) {
+      // cout << "P* from right: wave["<<i<<"]"<< "\n";
+      for (int j = 0; j < RS_nvar; j++) {
+        RS_pdiff[j] -= RS_strength[i] * RS_rightevec[i][j];
+      }
+      i--;
     }
 
-    /** \section contact Contact Discontinuity
-     * If pave[RVX]=0, then I need to do something to decide which value of
-     * density to choose.  the most sensible thing is to look at pstar[RVX],
-     * and decide on the basis of that.
-     * */
-    //  cout <<"pave rvx = "<<pave[RVX]<<"\n";
-
     //
-    // if Pstar[Vx] is small, then set Pstar to be the mean of
-    // left/right starred states.
+    // Now pstar is the mean of the values obtained by going from left
+    // to right, and then right to left.
     //
-    if (fabs(RS_meanp[RVX]) < (evalacc * ch)) {
-        // cout <<"contact discontinuity is stationary. ch="<<ch;
-        // cout <<"\t pstar[RVX]="<<RS_pstar[RVX]<<"\n";
-
-        //
-        // Now go across waves from the right, assign result to pdiff[]
-        //
-        i = RS_nvar - 1;
-        for (int j = 0; j < RS_nvar; j++)
-            RS_pdiff[j] = RS_right[j];
-        //  while ((RS_evalue[i]>(evalacc*ch)) && (i>=0)) {
-        while ((i >= 0) && (RS_evalue[i] > 0.)) {
-            // cout << "P* from right: wave["<<i<<"]"<< "\n";
-            for (int j = 0; j < RS_nvar; j++) {
-                RS_pdiff[j] -= RS_strength[i] * RS_rightevec[i][j];
-            }
-            i--;
-        }
-
-        //
-        // Now pstar is the mean of the values obtained by going from left
-        // to right, and then right to left.
-        //
-        for (int v = 0; v < RS_nvar; v++) {
-            RS_pstar[v] = 0.5 * (RS_pstar[v] + RS_pdiff[v]);
-            RS_pdiff[v] = RS_pstar[v];
-        }
+    for (int v = 0; v < RS_nvar; v++) {
+      RS_pstar[v] = 0.5 * (RS_pstar[v] + RS_pdiff[v]);
+      RS_pdiff[v] = RS_pstar[v];
     }
+  }
 
 #ifdef RS_TESTING
-    cout.setf(ios_base::fixed, ios_base::floatfield);
-    //  cout.setf( ios_base::scientific, ios_base::right );
-    cout.precision(8);
-    for (i = 0; i < RS_nvar; i++) {
-        // cout <<"RS_TESTING!\n";
-        if (fabs(RS_pstar[i] - RS_pdiff[i])
-                / (fabs(RS_pstar[i]) + fabs(RS_pdiff[i]) + SMALLVALUE)
-            > 5.e-2) {
-            cout.width(10);
-            cout << "(riemann_MHD::get_pstar) left-ans[" << i
-                 << "] - right-ans[" << i << "] = ";
-            cout.width(10);
-            cout << RS_pstar[i] - RS_pdiff[i] << "\n";
-            cout << "Evalues[] = [";
-            for (int j = 0; j < (RS_nvar - 1); j++)
-                cout << RS_evalue[j] << ", ";
-            cout << RS_evalue[RS_nvar - 1] << " ]\n";
-            cout << "left[]    = [";
-            for (int j = 0; j < (RS_nvar - 1); j++)
-                cout << RS_left[j] << ", ";
-            cout << RS_left[RS_nvar - 1] << " ]"
-                 << "\n";
-            cout << "right[]   = [";
-            for (int j = 0; j < (RS_nvar - 1); j++)
-                cout << RS_right[j] << ", ";
-            cout << RS_right[RS_nvar - 1] << " ]"
-                 << "\n";
-            cout << "pstar_l[] = [";
-            for (int j = 0; j < (RS_nvar - 1); j++)
-                cout << RS_pstar[j] << ", ";
-            cout << RS_pstar[RS_nvar - 1] << " ]"
-                 << "\n";
-            cout << "pstar_r[] = [";
-            for (int j = 0; j < (RS_nvar - 1); j++)
-                cout << RS_pdiff[j] << ", ";
-            cout << RS_pdiff[RS_nvar - 1] << " ]"
-                 << "\n";
-            cout << "Bx = " << ansBX << "\t alphaf,s = " << alphaf << " "
-                 << alphas << "\n";
-            cout.setf(ios_base::fmtflags(0), ios_base::floatfield);
-            cout.precision(6);
-            cout.width(0);
-            return (1);
-        }
+  cout.setf(ios_base::fixed, ios_base::floatfield);
+  //  cout.setf( ios_base::scientific, ios_base::right );
+  cout.precision(8);
+  for (i = 0; i < RS_nvar; i++) {
+    // cout <<"RS_TESTING!\n";
+    if (fabs(RS_pstar[i] - RS_pdiff[i])
+            / (fabs(RS_pstar[i]) + fabs(RS_pdiff[i]) + SMALLVALUE)
+        > 5.e-2) {
+      cout.width(10);
+      cout << "(riemann_MHD::get_pstar) left-ans[" << i << "] - right-ans[" << i
+           << "] = ";
+      cout.width(10);
+      cout << RS_pstar[i] - RS_pdiff[i] << "\n";
+      cout << "Evalues[] = [";
+      for (int j = 0; j < (RS_nvar - 1); j++)
+        cout << RS_evalue[j] << ", ";
+      cout << RS_evalue[RS_nvar - 1] << " ]\n";
+      cout << "left[]    = [";
+      for (int j = 0; j < (RS_nvar - 1); j++)
+        cout << RS_left[j] << ", ";
+      cout << RS_left[RS_nvar - 1] << " ]"
+           << "\n";
+      cout << "right[]   = [";
+      for (int j = 0; j < (RS_nvar - 1); j++)
+        cout << RS_right[j] << ", ";
+      cout << RS_right[RS_nvar - 1] << " ]"
+           << "\n";
+      cout << "pstar_l[] = [";
+      for (int j = 0; j < (RS_nvar - 1); j++)
+        cout << RS_pstar[j] << ", ";
+      cout << RS_pstar[RS_nvar - 1] << " ]"
+           << "\n";
+      cout << "pstar_r[] = [";
+      for (int j = 0; j < (RS_nvar - 1); j++)
+        cout << RS_pdiff[j] << ", ";
+      cout << RS_pdiff[RS_nvar - 1] << " ]"
+           << "\n";
+      cout << "Bx = " << ansBX << "\t alphaf,s = " << alphaf << " " << alphas
+           << "\n";
+      cout.setf(ios_base::fmtflags(0), ios_base::floatfield);
+      cout.precision(6);
+      cout.width(0);
+      return (1);
     }
-    cout.setf(ios_base::fmtflags(0), ios_base::floatfield);
-    cout.precision(6);
-    cout.width(0);
+  }
+  cout.setf(ios_base::fmtflags(0), ios_base::floatfield);
+  cout.precision(6);
+  cout.width(0);
 #endif
 
-    return (0);
+  return (0);
 }
 
 // ##################################################################
@@ -952,153 +943,153 @@ int riemann_MHD::get_pstar()
 
 int riemann_MHD::RoeBalsara_evectors()
 {
-    //
-    // This calculates the Roe and Balsara (1996) eigenvectors.  They
-    // are more numerically robust than the evectors proposed by
-    // Falle, Komissarov and Joarder (1998) for the fast and slow waves.
-    // I still use FKJ98's Alfven wave normalisation.
-    //
+  //
+  // This calculates the Roe and Balsara (1996) eigenvectors.  They
+  // are more numerically robust than the evectors proposed by
+  // Falle, Komissarov and Joarder (1998) for the fast and slow waves.
+  // I still use FKJ98's Alfven wave normalisation.
+  //
 
-    double r2 = sqrt(2.);
-    int sBx;  // Sign of B_x
-    if (ansBX < 0.)
-        sBx = -1;
-    else if (ansBX > 0.)
-        sBx = 1;
-    else {
-        // cout << "Bx = 0, assigning sign(Bx) = +1... make sure this is ok!!!"
-        // <<
-        // "\n";
-        sBx = 1;
-    }
-    // Have got alpha[f,s], beta[y,z] from get_sound_speeds().
-    // Eigenvectors: first index refers to which wave it corresponds to,
-    // and the second to which element of the vector it is.
-    // ****LEFT EIGENVECTORS****
-    // Left Fast Magnetosonic Wave
-    RS_leftevec[FN][RRO] = 0.0;
-    RS_leftevec[FN][RVX] = -alphaf * cf;
-    RS_leftevec[FN][RVY] = alphas * cs * sBx * betay;
-    RS_leftevec[FN][RVZ] = alphas * cs * sBx * betaz;
-    RS_leftevec[FN][RPG] = alphaf / RS_meanp[RRO];
-    RS_leftevec[FN][RBY] = alphas * ch * betay / sqrt(RS_meanp[RRO]);
-    RS_leftevec[FN][RBZ] = alphas * ch * betaz / sqrt(RS_meanp[RRO]);
-    // RS_Left Alfven Wave
-    RS_leftevec[AN][RRO] = 0.;
-    RS_leftevec[AN][RVX] = 0.;
-    RS_leftevec[AN][RVY] = sBx * betaz / r2;
-    RS_leftevec[AN][RVZ] = -sBx * betay / r2;
-    RS_leftevec[AN][RPG] = 0.;
-    RS_leftevec[AN][RBY] = betaz / sqrt(RS_meanp[RRO]) / r2;
-    RS_leftevec[AN][RBZ] = -betay / sqrt(RS_meanp[RRO]) / r2;
-    // Left Slow Magnetosonic Wave
-    RS_leftevec[SN][RRO] = 0.0;
-    RS_leftevec[SN][RVX] = -alphas * cs;
-    RS_leftevec[SN][RVY] = -alphaf * cf * sBx * betay;
-    RS_leftevec[SN][RVZ] = -alphaf * cf * sBx * betaz;
-    RS_leftevec[SN][RPG] = alphas / RS_meanp[RRO];
-    RS_leftevec[SN][RBY] = -alphaf * ch * betay / sqrt(RS_meanp[RRO]);
-    RS_leftevec[SN][RBZ] = -alphaf * ch * betaz / sqrt(RS_meanp[RRO]);
-    // Contact Discontinuity
-    RS_leftevec[CT][RRO] = 1.;
-    RS_leftevec[CT][RVX] = 0.;
-    RS_leftevec[CT][RVY] = 0.;
-    RS_leftevec[CT][RVZ] = 0.;
-    RS_leftevec[CT][RPG] = -1 / ch / ch;
-    RS_leftevec[CT][RBY] = 0.;
-    RS_leftevec[CT][RBZ] = 0.;
-    // Right Slow Magnetosonic Wave
-    RS_leftevec[SP][RRO] = 0.0;
-    RS_leftevec[SP][RVX] = -RS_leftevec[SN][RVX];
-    RS_leftevec[SP][RVY] = -RS_leftevec[SN][RVY];
-    RS_leftevec[SP][RVZ] = -RS_leftevec[SN][RVZ];
-    RS_leftevec[SP][RPG] = RS_leftevec[SN][RPG];
-    RS_leftevec[SP][RBY] = RS_leftevec[SN][RBY];
-    RS_leftevec[SP][RBZ] = RS_leftevec[SN][RBZ];
-    // Right Alfven Wave
-    RS_leftevec[AP][RRO] = 0.;
-    RS_leftevec[AP][RVX] = 0.;
-    RS_leftevec[AP][RVY] = RS_leftevec[AN][RVY];
-    RS_leftevec[AP][RVZ] = RS_leftevec[AN][RVZ];
-    RS_leftevec[AP][RPG] = 0.;
-    RS_leftevec[AP][RBY] = -RS_leftevec[AN][RBY];
-    RS_leftevec[AP][RBZ] = -RS_leftevec[AN][RBZ];
-    // Right Fast Magnetosonic wave
-    RS_leftevec[FP][RRO] = 0.0;
-    RS_leftevec[FP][RVX] = -RS_leftevec[FN][RVX];
-    RS_leftevec[FP][RVY] = -RS_leftevec[FN][RVY];
-    RS_leftevec[FP][RVZ] = -RS_leftevec[FN][RVZ];
-    RS_leftevec[FP][RPG] = RS_leftevec[FN][RPG];
-    RS_leftevec[FP][RBY] = RS_leftevec[FN][RBY];
-    RS_leftevec[FP][RBZ] = RS_leftevec[FN][RBZ];
-    // ****RIGHT EIGENVECTORS****
-    // RS_Left Fast Magnetosonic Wave
-    RS_rightevec[FN][RRO] = alphaf * RS_meanp[RRO];
-    RS_rightevec[FN][RVX] = RS_leftevec[FN][RVX];
-    RS_rightevec[FN][RVY] = RS_leftevec[FN][RVY];
-    RS_rightevec[FN][RVZ] = RS_leftevec[FN][RVZ];
-    RS_rightevec[FN][RPG] = alphaf * RS_meanp[RRO] * ch * ch;
-    RS_rightevec[FN][RBY] = RS_leftevec[FN][RBY] * RS_meanp[RRO];
-    RS_rightevec[FN][RBZ] = RS_leftevec[FN][RBZ] * RS_meanp[RRO];
-    // RS_Left Alfven Wave
-    RS_rightevec[AN][RRO] = 0.;
-    RS_rightevec[AN][RVX] = 0.;
-    RS_rightevec[AN][RVY] = RS_leftevec[AN][RVY];
-    RS_rightevec[AN][RVZ] = RS_leftevec[AN][RVZ];
-    RS_rightevec[AN][RPG] = 0.;
-    RS_rightevec[AN][RBY] = RS_leftevec[AN][RBY] * RS_meanp[RRO];
-    RS_rightevec[AN][RBZ] = RS_leftevec[AN][RBZ] * RS_meanp[RRO];
-    // Left Slow Magnetosonic Wave
-    RS_rightevec[SN][RRO] = alphas * RS_meanp[RRO];
-    RS_rightevec[SN][RVX] = RS_leftevec[SN][RVX];
-    RS_rightevec[SN][RVY] = RS_leftevec[SN][RVY];
-    RS_rightevec[SN][RVZ] = RS_leftevec[SN][RVZ];
-    RS_rightevec[SN][RPG] = alphas * RS_meanp[RRO] * ch * ch;
-    RS_rightevec[SN][RBY] = RS_leftevec[SN][RBY] * RS_meanp[RRO];
-    RS_rightevec[SN][RBZ] = RS_leftevec[SN][RBZ] * RS_meanp[RRO];
-    // Contact Discontinuity
-    RS_rightevec[CT][RRO] = 1.0;
-    RS_rightevec[CT][RVX] = 0.;
-    RS_rightevec[CT][RVY] = 0.;
-    RS_rightevec[CT][RVZ] = 0.;
-    RS_rightevec[CT][RPG] = 0.;
-    RS_rightevec[CT][RBY] = 0.;
-    RS_rightevec[CT][RBZ] = 0.;
-    // Right Slow Magnetosonic Wave
-    RS_rightevec[SP][RRO] = RS_rightevec[SN][RRO];
-    RS_rightevec[SP][RVX] = -RS_rightevec[SN][RVX];
-    RS_rightevec[SP][RVY] = -RS_rightevec[SN][RVY];
-    RS_rightevec[SP][RVZ] = -RS_rightevec[SN][RVZ];
-    RS_rightevec[SP][RPG] = RS_rightevec[SN][RPG];
-    RS_rightevec[SP][RBY] = RS_rightevec[SN][RBY];
-    RS_rightevec[SP][RBZ] = RS_rightevec[SN][RBZ];
-    // Right Alfven Wave
-    RS_rightevec[AP][RRO] = 0.;
-    RS_rightevec[AP][RVX] = 0.;
-    RS_rightevec[AP][RVY] = RS_rightevec[AN][RVY];
-    RS_rightevec[AP][RVZ] = RS_rightevec[AN][RVZ];
-    RS_rightevec[AP][RPG] = 0.;
-    RS_rightevec[AP][RBY] = -RS_rightevec[AN][RBY];
-    RS_rightevec[AP][RBZ] = -RS_rightevec[AN][RBZ];
-    // Right Fast Magnetosonic wave
-    RS_rightevec[FP][RRO] = RS_rightevec[FN][RRO];
-    RS_rightevec[FP][RVX] = -RS_rightevec[FN][RVX];
-    RS_rightevec[FP][RVY] = -RS_rightevec[FN][RVY];
-    RS_rightevec[FP][RVZ] = -RS_rightevec[FN][RVZ];
-    RS_rightevec[FP][RPG] = RS_rightevec[FN][RPG];
-    RS_rightevec[FP][RBY] = RS_rightevec[FN][RBY];
-    RS_rightevec[FP][RBZ] = RS_rightevec[FN][RBZ];
+  double r2 = sqrt(2.);
+  int sBx;  // Sign of B_x
+  if (ansBX < 0.)
+    sBx = -1;
+  else if (ansBX > 0.)
+    sBx = 1;
+  else {
+    // cout << "Bx = 0, assigning sign(Bx) = +1... make sure this is ok!!!"
+    // <<
+    // "\n";
+    sBx = 1;
+  }
+  // Have got alpha[f,s], beta[y,z] from get_sound_speeds().
+  // Eigenvectors: first index refers to which wave it corresponds to,
+  // and the second to which element of the vector it is.
+  // ****LEFT EIGENVECTORS****
+  // Left Fast Magnetosonic Wave
+  RS_leftevec[FN][RRO] = 0.0;
+  RS_leftevec[FN][RVX] = -alphaf * cf;
+  RS_leftevec[FN][RVY] = alphas * cs * sBx * betay;
+  RS_leftevec[FN][RVZ] = alphas * cs * sBx * betaz;
+  RS_leftevec[FN][RPG] = alphaf / RS_meanp[RRO];
+  RS_leftevec[FN][RBY] = alphas * ch * betay / sqrt(RS_meanp[RRO]);
+  RS_leftevec[FN][RBZ] = alphas * ch * betaz / sqrt(RS_meanp[RRO]);
+  // RS_Left Alfven Wave
+  RS_leftevec[AN][RRO] = 0.;
+  RS_leftevec[AN][RVX] = 0.;
+  RS_leftevec[AN][RVY] = sBx * betaz / r2;
+  RS_leftevec[AN][RVZ] = -sBx * betay / r2;
+  RS_leftevec[AN][RPG] = 0.;
+  RS_leftevec[AN][RBY] = betaz / sqrt(RS_meanp[RRO]) / r2;
+  RS_leftevec[AN][RBZ] = -betay / sqrt(RS_meanp[RRO]) / r2;
+  // Left Slow Magnetosonic Wave
+  RS_leftevec[SN][RRO] = 0.0;
+  RS_leftevec[SN][RVX] = -alphas * cs;
+  RS_leftevec[SN][RVY] = -alphaf * cf * sBx * betay;
+  RS_leftevec[SN][RVZ] = -alphaf * cf * sBx * betaz;
+  RS_leftevec[SN][RPG] = alphas / RS_meanp[RRO];
+  RS_leftevec[SN][RBY] = -alphaf * ch * betay / sqrt(RS_meanp[RRO]);
+  RS_leftevec[SN][RBZ] = -alphaf * ch * betaz / sqrt(RS_meanp[RRO]);
+  // Contact Discontinuity
+  RS_leftevec[CT][RRO] = 1.;
+  RS_leftevec[CT][RVX] = 0.;
+  RS_leftevec[CT][RVY] = 0.;
+  RS_leftevec[CT][RVZ] = 0.;
+  RS_leftevec[CT][RPG] = -1 / ch / ch;
+  RS_leftevec[CT][RBY] = 0.;
+  RS_leftevec[CT][RBZ] = 0.;
+  // Right Slow Magnetosonic Wave
+  RS_leftevec[SP][RRO] = 0.0;
+  RS_leftevec[SP][RVX] = -RS_leftevec[SN][RVX];
+  RS_leftevec[SP][RVY] = -RS_leftevec[SN][RVY];
+  RS_leftevec[SP][RVZ] = -RS_leftevec[SN][RVZ];
+  RS_leftevec[SP][RPG] = RS_leftevec[SN][RPG];
+  RS_leftevec[SP][RBY] = RS_leftevec[SN][RBY];
+  RS_leftevec[SP][RBZ] = RS_leftevec[SN][RBZ];
+  // Right Alfven Wave
+  RS_leftevec[AP][RRO] = 0.;
+  RS_leftevec[AP][RVX] = 0.;
+  RS_leftevec[AP][RVY] = RS_leftevec[AN][RVY];
+  RS_leftevec[AP][RVZ] = RS_leftevec[AN][RVZ];
+  RS_leftevec[AP][RPG] = 0.;
+  RS_leftevec[AP][RBY] = -RS_leftevec[AN][RBY];
+  RS_leftevec[AP][RBZ] = -RS_leftevec[AN][RBZ];
+  // Right Fast Magnetosonic wave
+  RS_leftevec[FP][RRO] = 0.0;
+  RS_leftevec[FP][RVX] = -RS_leftevec[FN][RVX];
+  RS_leftevec[FP][RVY] = -RS_leftevec[FN][RVY];
+  RS_leftevec[FP][RVZ] = -RS_leftevec[FN][RVZ];
+  RS_leftevec[FP][RPG] = RS_leftevec[FN][RPG];
+  RS_leftevec[FP][RBY] = RS_leftevec[FN][RBY];
+  RS_leftevec[FP][RBZ] = RS_leftevec[FN][RBZ];
+  // ****RIGHT EIGENVECTORS****
+  // RS_Left Fast Magnetosonic Wave
+  RS_rightevec[FN][RRO] = alphaf * RS_meanp[RRO];
+  RS_rightevec[FN][RVX] = RS_leftevec[FN][RVX];
+  RS_rightevec[FN][RVY] = RS_leftevec[FN][RVY];
+  RS_rightevec[FN][RVZ] = RS_leftevec[FN][RVZ];
+  RS_rightevec[FN][RPG] = alphaf * RS_meanp[RRO] * ch * ch;
+  RS_rightevec[FN][RBY] = RS_leftevec[FN][RBY] * RS_meanp[RRO];
+  RS_rightevec[FN][RBZ] = RS_leftevec[FN][RBZ] * RS_meanp[RRO];
+  // RS_Left Alfven Wave
+  RS_rightevec[AN][RRO] = 0.;
+  RS_rightevec[AN][RVX] = 0.;
+  RS_rightevec[AN][RVY] = RS_leftevec[AN][RVY];
+  RS_rightevec[AN][RVZ] = RS_leftevec[AN][RVZ];
+  RS_rightevec[AN][RPG] = 0.;
+  RS_rightevec[AN][RBY] = RS_leftevec[AN][RBY] * RS_meanp[RRO];
+  RS_rightevec[AN][RBZ] = RS_leftevec[AN][RBZ] * RS_meanp[RRO];
+  // Left Slow Magnetosonic Wave
+  RS_rightevec[SN][RRO] = alphas * RS_meanp[RRO];
+  RS_rightevec[SN][RVX] = RS_leftevec[SN][RVX];
+  RS_rightevec[SN][RVY] = RS_leftevec[SN][RVY];
+  RS_rightevec[SN][RVZ] = RS_leftevec[SN][RVZ];
+  RS_rightevec[SN][RPG] = alphas * RS_meanp[RRO] * ch * ch;
+  RS_rightevec[SN][RBY] = RS_leftevec[SN][RBY] * RS_meanp[RRO];
+  RS_rightevec[SN][RBZ] = RS_leftevec[SN][RBZ] * RS_meanp[RRO];
+  // Contact Discontinuity
+  RS_rightevec[CT][RRO] = 1.0;
+  RS_rightevec[CT][RVX] = 0.;
+  RS_rightevec[CT][RVY] = 0.;
+  RS_rightevec[CT][RVZ] = 0.;
+  RS_rightevec[CT][RPG] = 0.;
+  RS_rightevec[CT][RBY] = 0.;
+  RS_rightevec[CT][RBZ] = 0.;
+  // Right Slow Magnetosonic Wave
+  RS_rightevec[SP][RRO] = RS_rightevec[SN][RRO];
+  RS_rightevec[SP][RVX] = -RS_rightevec[SN][RVX];
+  RS_rightevec[SP][RVY] = -RS_rightevec[SN][RVY];
+  RS_rightevec[SP][RVZ] = -RS_rightevec[SN][RVZ];
+  RS_rightevec[SP][RPG] = RS_rightevec[SN][RPG];
+  RS_rightevec[SP][RBY] = RS_rightevec[SN][RBY];
+  RS_rightevec[SP][RBZ] = RS_rightevec[SN][RBZ];
+  // Right Alfven Wave
+  RS_rightevec[AP][RRO] = 0.;
+  RS_rightevec[AP][RVX] = 0.;
+  RS_rightevec[AP][RVY] = RS_rightevec[AN][RVY];
+  RS_rightevec[AP][RVZ] = RS_rightevec[AN][RVZ];
+  RS_rightevec[AP][RPG] = 0.;
+  RS_rightevec[AP][RBY] = -RS_rightevec[AN][RBY];
+  RS_rightevec[AP][RBZ] = -RS_rightevec[AN][RBZ];
+  // Right Fast Magnetosonic wave
+  RS_rightevec[FP][RRO] = RS_rightevec[FN][RRO];
+  RS_rightevec[FP][RVX] = -RS_rightevec[FN][RVX];
+  RS_rightevec[FP][RVY] = -RS_rightevec[FN][RVY];
+  RS_rightevec[FP][RVZ] = -RS_rightevec[FN][RVZ];
+  RS_rightevec[FP][RPG] = RS_rightevec[FN][RPG];
+  RS_rightevec[FP][RBY] = RS_rightevec[FN][RBY];
+  RS_rightevec[FP][RBZ] = RS_rightevec[FN][RBZ];
 
-    // Now multiply left fast and slow evectors by 1/(2a^2) to make them
-    // normalised.
-    double a22 = 1. / (2. * ch * ch);
-    for (int i = 0; i < RS_nvar; i++) {
-        RS_leftevec[FN][i] *= a22;
-        RS_leftevec[SN][i] *= a22;
-        RS_leftevec[SP][i] *= a22;
-        RS_leftevec[FP][i] *= a22;
-    }
-    return (0);
+  // Now multiply left fast and slow evectors by 1/(2a^2) to make them
+  // normalised.
+  double a22 = 1. / (2. * ch * ch);
+  for (int i = 0; i < RS_nvar; i++) {
+    RS_leftevec[FN][i] *= a22;
+    RS_leftevec[SN][i] *= a22;
+    RS_leftevec[SP][i] *= a22;
+    RS_leftevec[FP][i] *= a22;
+  }
+  return (0);
 }
 
 // ##################################################################
@@ -1106,117 +1097,112 @@ int riemann_MHD::RoeBalsara_evectors()
 
 int riemann_MHD::check_evectors()
 {
-    // Printing the eigenvectors to screen!
-    //   cout.setf( ios_base::scientific,ios_base::floatfield );
-    cout.setf(ios_base::fixed, ios_base::floatfield);
-    cout.precision(6);
-    for (waves i = FN; i <= FP; ++i) {
-        cout << " leftevec[" << i << "] = [ ";
-        for (int j = 0; j < RS_nvar; j++) {
-            cout.width(9);
-            cout << RS_leftevec[i][j] << ", ";
-        }
-        cout << "]"
-             << "\n";
-    }
-    for (waves i = FN; i <= FP; ++i) {
-        cout << "rightevec[" << i << "] = [ ";
-        for (int j = 0; j < RS_nvar; j++) {
-            cout.width(9);
-            cout << RS_rightevec[i][j] << ", ";
-        }
-        cout << "]"
-             << "\n";
-    }
-
-    // Print the dot products
-    // On-axis dot products
-    cout.setf(ios_base::fixed, ios_base::floatfield);
-    cout.precision(16);
-    cout << "left[i].right[i] = [ ";
-    for (waves i = FN; i <= FP; ++i) {
-        cout.width(11);
-        cout << dot_product(RS_leftevec[i], RS_rightevec[i], RS_nvar) << ", ";
+  // Printing the eigenvectors to screen!
+  //   cout.setf( ios_base::scientific,ios_base::floatfield );
+  cout.setf(ios_base::fixed, ios_base::floatfield);
+  cout.precision(6);
+  for (waves i = FN; i <= FP; ++i) {
+    cout << " leftevec[" << i << "] = [ ";
+    for (int j = 0; j < RS_nvar; j++) {
+      cout.width(9);
+      cout << RS_leftevec[i][j] << ", ";
     }
     cout << "]"
-         << "\n"
          << "\n";
-    // off-axis dot products.
-    for (waves i = FN; i <= FP; ++i) {
-        cout << "left[" << i << "].right[j] = [ ";
-        for (waves j = FN; j <= FP; ++j) {
-            cout.width(11);
-            cout << dot_product(RS_leftevec[i], RS_rightevec[j], RS_nvar)
-                 << ", ";
-        }
-        cout << "]"
-             << "\n";
+  }
+  for (waves i = FN; i <= FP; ++i) {
+    cout << "rightevec[" << i << "] = [ ";
+    for (int j = 0; j < RS_nvar; j++) {
+      cout.width(9);
+      cout << RS_rightevec[i][j] << ", ";
     }
-    cout << "\n";
-    for (waves i = FN; i <= FP; ++i) {
-        cout << "left[" << i << "].left[j] = [ ";
-        for (waves j = FN; j <= FP; ++j) {
-            cout.width(11);
-            cout << dot_product(RS_leftevec[i], RS_leftevec[j], RS_nvar)
-                 << ", ";
-            // cout << dot_product(RS_rightevec[i],RS_rightevec[j],RS_nvar) <<
-            // ", ";
-        }
-        cout << "]"
-             << "\n";
-    }
-    cout << "\n";
-    for (waves i = FN; i <= FP; ++i) {
-        cout << "right[" << i << "].right[j] = [ ";
-        for (waves j = FN; j <= FP; ++j) {
-            cout.width(11);
-            // cout << dot_product(RS_leftevec[i],RS_leftevec[j],RS_nvar) << ",
-            // ";
-            cout << dot_product(RS_rightevec[i], RS_rightevec[j], RS_nvar)
-                 << ", ";
-        }
-        cout << "]"
-             << "\n";
-    }
-    cout << "\n";
+    cout << "]"
+         << "\n";
+  }
 
-    cout.setf(ios_base::scientific, ios_base::floatfield);
-    cout.precision(6);
-    //
-    // Check the dot products are what they should be
-    // First the i=j products; should be 1.
-    // Setting the tolerance: 1.e-12 is roughly truncation error.
-    //
-    double test;
-    double errtol = 1.e-8;
-    for (waves i = FN; i <= FP; ++i) {
-        if ((test = fabs(
-                 dot_product(RS_leftevec[i], RS_rightevec[i], RS_nvar) - 1.))
-            > errtol) {
-            cout << "evectors not properly normalised: ";
-            cout << "(l[" << i << "].r[" << i << "] -1) = " << test << "\n";
-            onaxis++;
-            return (1);
-        }
+  // Print the dot products
+  // On-axis dot products
+  cout.setf(ios_base::fixed, ios_base::floatfield);
+  cout.precision(16);
+  cout << "left[i].right[i] = [ ";
+  for (waves i = FN; i <= FP; ++i) {
+    cout.width(11);
+    cout << dot_product(RS_leftevec[i], RS_rightevec[i], RS_nvar) << ", ";
+  }
+  cout << "]"
+       << "\n"
+       << "\n";
+  // off-axis dot products.
+  for (waves i = FN; i <= FP; ++i) {
+    cout << "left[" << i << "].right[j] = [ ";
+    for (waves j = FN; j <= FP; ++j) {
+      cout.width(11);
+      cout << dot_product(RS_leftevec[i], RS_rightevec[j], RS_nvar) << ", ";
     }
-    for (waves i = FN; i <= FP; ++i) {
-        for (waves j = FN; j <= FP; ++j) {
-            if (j != i) {
-                if ((test = fabs(
-                         dot_product(RS_leftevec[i], RS_rightevec[j], RS_nvar)))
-                    >= errtol) {
-                    cout << "evectors not properly normalised: ";
-                    cout << "left[" << i << "].right[" << j << "] = " << test
-                         << "\n";
-                    offaxis++;
-                    return (1);
-                }
-            }
-        }
+    cout << "]"
+         << "\n";
+  }
+  cout << "\n";
+  for (waves i = FN; i <= FP; ++i) {
+    cout << "left[" << i << "].left[j] = [ ";
+    for (waves j = FN; j <= FP; ++j) {
+      cout.width(11);
+      cout << dot_product(RS_leftevec[i], RS_leftevec[j], RS_nvar) << ", ";
+      // cout << dot_product(RS_rightevec[i],RS_rightevec[j],RS_nvar) <<
+      // ", ";
     }
-    cout.setf(ios_base::fmtflags(0), ios_base::floatfield);
+    cout << "]"
+         << "\n";
+  }
+  cout << "\n";
+  for (waves i = FN; i <= FP; ++i) {
+    cout << "right[" << i << "].right[j] = [ ";
+    for (waves j = FN; j <= FP; ++j) {
+      cout.width(11);
+      // cout << dot_product(RS_leftevec[i],RS_leftevec[j],RS_nvar) << ",
+      // ";
+      cout << dot_product(RS_rightevec[i], RS_rightevec[j], RS_nvar) << ", ";
+    }
+    cout << "]"
+         << "\n";
+  }
+  cout << "\n";
 
-    return (0);
+  cout.setf(ios_base::scientific, ios_base::floatfield);
+  cout.precision(6);
+  //
+  // Check the dot products are what they should be
+  // First the i=j products; should be 1.
+  // Setting the tolerance: 1.e-12 is roughly truncation error.
+  //
+  double test;
+  double errtol = 1.e-8;
+  for (waves i = FN; i <= FP; ++i) {
+    if ((test =
+             fabs(dot_product(RS_leftevec[i], RS_rightevec[i], RS_nvar) - 1.))
+        > errtol) {
+      cout << "evectors not properly normalised: ";
+      cout << "(l[" << i << "].r[" << i << "] -1) = " << test << "\n";
+      onaxis++;
+      return (1);
+    }
+  }
+  for (waves i = FN; i <= FP; ++i) {
+    for (waves j = FN; j <= FP; ++j) {
+      if (j != i) {
+        if ((test = fabs(dot_product(RS_leftevec[i], RS_rightevec[j], RS_nvar)))
+            >= errtol) {
+          cout << "evectors not properly normalised: ";
+          cout << "left[" << i << "].right[" << j << "] = " << test << "\n";
+          offaxis++;
+          return (1);
+        }
+      }
+    }
+  }
+  cout.setf(ios_base::fmtflags(0), ios_base::floatfield);
+
+  return (0);
 }
 
 // ##################################################################
