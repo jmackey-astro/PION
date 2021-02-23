@@ -652,7 +652,7 @@ int IC_photevap_multi_clumps::get_random_clump_params(
   //cout <<"\tvolume="<<volume;
   if (ndim>2) volume *= SimPM->Range[ZZ]; //-rcd->border[ZN]-rcd->border[ZP];
   //cout <<"\tvolume="<<volume;
-  rcd->total_mass = rcd->density*volume*pconst.m_p();
+  rcd->total_mass = rcd->density*volume;
   cout <<"Mean number density for Random Clumps:"<<rcd->density<<", giving total mass="<<rcd->total_mass<<" grams.\n";
 
   //
@@ -914,6 +914,12 @@ int IC_photevap_multi_clumps::rc_set_clump_properties(
     rcd->cl[j].rm[ZZ][XX] =  cos(rcd->cl[j].ang[XX])*sin(rcd->cl[j].ang[YY]);
     rcd->cl[j].rm[ZZ][YY] =  sin(rcd->cl[j].ang[XX])*sin(rcd->cl[j].ang[YY]);
     rcd->cl[j].rm[ZZ][ZZ] =  cos(rcd->cl[j].ang[YY]);
+
+    // set velocity
+    rcd->cl[j].Vel[0] = amb_data.ambient[VX];
+    rcd->cl[j].Vel[1] = amb_data.ambient[VY];
+    rcd->cl[j].Vel[2] = amb_data.ambient[VZ];
+    
     // all done, move on to next clump.
   }
   return err;
@@ -1314,6 +1320,13 @@ int IC_photevap_multi_clumps::clumps_set_dens(class cell *c,
 
   return err;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 void IC_photevap_multi_clumps::print_clump(struct clump *rc)
 {

@@ -25,6 +25,11 @@ using namespace std;
 #include "angle_projection.h"
 #include "projection_constants.h"
 
+#ifdef PROJ_OMP
+#include <omp.h>
+#endif
+
+
 // ##################################################################
 // ##################################################################
 
@@ -420,6 +425,8 @@ int generate_angle_image(
   //
   // Loop over all pixels
   //
+  cout <<"looping over pixels\n";
+  double ttsf=0.0;
 #ifdef PROJ_OMP
 #pragma omp parallel for private(ttsf)
 #endif

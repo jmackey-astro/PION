@@ -74,15 +74,16 @@ OPTION += -DFITS
 # This variable includes a #define for ABSORPTION, if requested
 OPTION += ${ABS}
 OPTION += ${NII}
+
+LDFLAGS  = -lreadline
 MT=""
 #MT=USE_THREADS
 ifeq ($(MT), USE_THREADS)
   LDFLAGS += -fopenmp
-  OPTION += -DPROJ_OMP
+  OPTION += -DPROJ_OMP -fopenmp
 endif
 
 # All machines and options need readline and maths
-LDFLAGS  = -lreadline
 LDFLAGS += -lm
 
 ######################################################################
@@ -102,7 +103,6 @@ ifeq ($(MAKE_UNAME), debian9)
   OPTION += -DCVODE2
   INC  = -I/usr/include
   INC += -I${srcdir}
-  LDFLAGS += -lm
   LDFLAGS += -L/usr/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
   LDFLAGS += -lcfitsio
@@ -132,7 +132,6 @@ ifeq ($(MAKE_UNAME), debian10)
   CXXFLAGS += -DCVODE3
   INC  = -I/usr/include
   INC += -I${srcdir}
-  LDFLAGS += -lm
   LDFLAGS += -L/usr/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
   LDFLAGS += -lcfitsio
