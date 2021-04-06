@@ -1,0 +1,34 @@
+cff-version: 1.1.0
+message: If you use this software, please cite it as below.
+authors:
+  - family-names: Mackey
+    given-names: Jonathan
+    orcid: https://orcid.org/0000-0002-5449-6131
+  - family-names: Celeste
+    given-names: Maggie
+  - family-names: Dhanoa
+    given-names: Harpreet
+  - family-names: Green
+    given-names: Samuel
+    orcid: https://orcid.org/0000-0003-1129-4676
+  - family-names: Kavanagh
+    given-names: Robert
+    orcid: https://orcid.org/0000-0002-1486-7188
+  - family-names: Lim
+    given-names: Andrew
+  - family-names: Moutzouri
+    given-names: Maria
+    orcid: https://orcid.org/0000-0002-6501-090X
+  - family-names: Zargaryan
+    given-names: Davit
+title: "PION"
+version: 2.0.0
+date-released: 2020-04-06
+identifiers:
+ - type: "ascl-id"
+   value: "ascl:2103.024"
+ - type: "doi"
+   value: "10.1093/mnras/stab781"
+ - type: "bibcode"
+   value: "2021ascl.soft03024M"
+
