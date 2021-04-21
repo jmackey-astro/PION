@@ -37,8 +37,8 @@ class DebugParams {
 public:
   DebugParams();
   ~DebugParams();
-  class cell* c;  ///< Pointer that can be used to track which cell we are at.
-  class GridBaseClass* grid;  ///< pointer to grid.
+  class cell *c;  ///< Pointer that can be used to track which cell we are at.
+  class GridBaseClass *grid;  ///< pointer to grid.
   // class BaseFVSolver *solver; ///< pointer to solver.
   double initERG;  ///< Initial total energy on the grid (not including ghost
                    ///< cells).
@@ -72,20 +72,20 @@ public:
   void console(std::string  ///< Optional text for prompt.
   );
 
-  void auto_console(char*  ///< Optional text for prompt.
+  void auto_console(char *  ///< Optional text for prompt.
   );
 
 private:
   /// Reads a string, and return a pointer to it.  Returns NULL on EOF.
-  char* rl_gets(
-      char*,  ///< pointer to line of text.
-      char*   ///< text inputted to prompt.
+  char *rl_gets(
+      char *,  ///< pointer to line of text.
+      char *   ///< text inputted to prompt.
   );
   /// Executes any commands the CLI recognises in the string passed in.
-  int execute(char*);
-  void cmd1();       ///< An example command, with no arguments.
-  void cmd2(char*);  ///< another example command, with arguments.
-  void bigcmd();     ///< A further example command.
+  int execute(char *);
+  void cmd1();        ///< An example command, with no arguments.
+  void cmd2(char *);  ///< another example command, with arguments.
+  void bigcmd();      ///< A further example command.
 
   /// prints cell which dp.c points to.(DebugParams)
   void print_cell();

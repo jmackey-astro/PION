@@ -47,11 +47,11 @@ public:
   /// Gets the solution to the Riemann Problem.
   ///
   int FVS_flux(
-      const pion_flt*,  ///< Left Primitive var. state vector.
-      const pion_flt*,  ///< Right Primitive var. state vector.
-      pion_flt*,        ///< Result Flux vector.
-      pion_flt*,        ///< Interface state (for viscosity)
-      const double      ///< Gas constant gamma (unused b/c g=constant)
+      const pion_flt *,  ///< Left Primitive var. state vector.
+      const pion_flt *,  ///< Right Primitive var. state vector.
+      pion_flt *,        ///< Result Flux vector.
+      pion_flt *,        ///< Interface state (for viscosity)
+      const double       ///< Gas constant gamma (unused b/c g=constant)
   );
 
 private:
@@ -60,10 +60,10 @@ private:
   pion_flt *fpos, *fneg;  ///< split flux vectors.
 
   void Roe_average_state(
-      const pion_flt*,  ///< state 1
-      const pion_flt*,  ///< state 2
-      const double,     ///< gamma
-      pion_flt*         ///< Roe-averaged state
+      const pion_flt *,  ///< state 1
+      const pion_flt *,  ///< state 2
+      const double,      ///< gamma
+      pion_flt *         ///< Roe-averaged state
   );
 };
 

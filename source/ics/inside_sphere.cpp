@@ -14,7 +14,7 @@
 // ##################################################################
 
 inside_sphere::inside_sphere(
-    double* cen, double r, double size, int N, int nd) :
+    double *cen, double r, double size, int N, int nd) :
     sr(r),
     clen(size),
     del(size / 2.),
@@ -43,7 +43,7 @@ bool inside_sphere::equalD(const double a, const double b)
 // ##################################################################
 // ##################################################################
 
-double inside_sphere::distance(const double* d1, const double* d2, int nd)
+double inside_sphere::distance(const double *d1, const double *d2, int nd)
 {
   double temp = 0.;
   for (int i = 0; i < nd; i++)
@@ -54,7 +54,7 @@ double inside_sphere::distance(const double* d1, const double* d2, int nd)
 // ##################################################################
 // ##################################################################
 
-double inside_sphere::volumeFraction(cell* cpt)
+double inside_sphere::volumeFraction(cell *cpt)
 {
   // Assign centre of square positions.
   for (int v = 0; v < ndim; v++)

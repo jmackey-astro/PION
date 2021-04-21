@@ -13,9 +13,9 @@ using namespace std;
 // ##################################################################
 
 int jetreflect_bc::BC_assign_JETREFLECT(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    boundary_data* b)
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    boundary_data *b)
 {
   enum direction offdir = b->dir;
   enum direction ondir  = b->ondir;
@@ -75,9 +75,9 @@ int jetreflect_bc::BC_assign_JETREFLECT(
   // Now go through each column of boundary points and assign values
   // to them.
   //
-  list<cell*>::iterator bpt = b->data.begin();
-  cell* temp                = 0;
-  unsigned int ct           = 0;
+  list<cell *>::iterator bpt = b->data.begin();
+  cell *temp                 = 0;
+  unsigned int ct            = 0;
 
   do {
     temp = (*bpt);
@@ -108,9 +108,9 @@ int jetreflect_bc::BC_assign_JETREFLECT(
 // ##################################################################
 
 int jetreflect_bc::BC_update_JETREFLECT(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    struct boundary_data* b,
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    struct boundary_data *b,
     const int cstep,
     const int maxstep)
 {
@@ -118,7 +118,7 @@ int jetreflect_bc::BC_update_JETREFLECT(
   // same routine as for reflecting, except the normal B is
   // unchanged, but the tangential is reversed.
   //
-  list<cell*>::iterator c = b->data.begin();
+  list<cell *>::iterator c = b->data.begin();
   for (c = b->data.begin(); c != b->data.end(); ++c) {
     for (int v = 0; v < par.nvar; v++) {
       (*c)->Ph[v] = (*c)->npt->Ph[v] * b->refval[v];

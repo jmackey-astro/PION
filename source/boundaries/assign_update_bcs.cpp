@@ -17,13 +17,13 @@ using namespace std;
 // ##################################################################
 
 int assign_update_bcs::assign_boundary_data(
-    class SimParams& par,      ///< simulation parameters
+    class SimParams &par,      ///< simulation parameters
     const int level,           ///< level in grid hierarchy
-    class GridBaseClass* grid  ///< pointer to grid.
+    class GridBaseClass *grid  ///< pointer to grid.
 )
 {
   int err = 0;
-  struct boundary_data* b;
+  struct boundary_data *b;
   //
   // Loop through all boundaries, and assign data to them.
   //
@@ -135,15 +135,15 @@ int assign_update_bcs::assign_boundary_data(
 // ##################################################################
 
 int assign_update_bcs::TimeUpdateInternalBCs(
-    class SimParams& par,          ///< pointer to simulation parameters
+    class SimParams &par,          ///< pointer to simulation parameters
     const int level,               ///< level in grid hierarchy
-    class GridBaseClass* grid,     ///< pointer to grid.
-    class FV_solver_base* solver,  ///< pointer to equations
+    class GridBaseClass *grid,     ///< pointer to grid.
+    class FV_solver_base *solver,  ///< pointer to equations
     const double simtime,          ///< current simulation time
     const int cstep,
     const int maxstep)
 {
-  struct boundary_data* b;
+  struct boundary_data *b;
   int err = 0;
   for (size_t i = 0; i < grid->BC_bd.size(); i++) {
     b = grid->BC_bd[i];
@@ -181,10 +181,10 @@ int assign_update_bcs::TimeUpdateInternalBCs(
 // ##################################################################
 
 int assign_update_bcs::TimeUpdateExternalBCs(
-    class SimParams& par,          ///< simulation parameters
+    class SimParams &par,          ///< simulation parameters
     const int level,               ///< level in grid hierarchy
-    class GridBaseClass* grid,     ///< pointer to grid.
-    class FV_solver_base* solver,  ///< pointer to equations
+    class GridBaseClass *grid,     ///< pointer to grid.
+    class FV_solver_base *solver,  ///< pointer to equations
     const double simtime,          ///< current simulation time
     const int cstep,
     const int maxstep)
@@ -192,7 +192,7 @@ int assign_update_bcs::TimeUpdateExternalBCs(
 #ifdef TEST_MPI_NG
   cout << "update_bcs: external boundary update" << endl;
 #endif
-  struct boundary_data* b;
+  struct boundary_data *b;
   int err = 0;
   for (size_t i = 0; i < grid->BC_bd.size(); i++) {
     b = grid->BC_bd[i];

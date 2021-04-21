@@ -53,12 +53,12 @@ public:
   /// from Toro (1999), chapter 11.2.2, pp.350-353.
   ///
   int Roe_flux_solver_symmetric(
-      const pion_flt*,  ///< input left state
-      const pion_flt*,  ///< input right state
-      const double,     ///< input gamma
-      const double,     ///< H-correction eta-max value.
-      pion_flt*,        ///< output pstar
-      pion_flt*         ///< output flux
+      const pion_flt *,  ///< input left state
+      const pion_flt *,  ///< input right state
+      const double,      ///< input gamma
+      const double,      ///< H-correction eta-max value.
+      pion_flt *,        ///< output pstar
+      pion_flt *         ///< output flux
   );
 
 private:
@@ -77,29 +77,29 @@ private:
   enum primitive eqHH;
 
   /// Local copy of mean state vector (5 elements only!)
-  pion_flt* RCV_meanp;
+  pion_flt *RCV_meanp;
 
   /// Eigenvalues
-  pion_flt* RCV_eval;
+  pion_flt *RCV_eval;
 
   /// Wave strengths.
-  pion_flt* RCV_strength;
+  pion_flt *RCV_strength;
 
   /// Difference vector
-  pion_flt* RCV_udiff;
+  pion_flt *RCV_udiff;
 
   /// Left and right state conserved variable state.
   pion_flt *RCV_ul, *RCV_ur;
 
   /// matrix of eigenvectors
-  pion_flt** RCV_evec;
+  pion_flt **RCV_evec;
 
   ///
   /// Returns true if the left and right states are very similar.
   ///
   int test_left_right_equality(
-      const pion_flt*,  ///< input left state
-      const pion_flt*   ///< input right state
+      const pion_flt *,  ///< input left state
+      const pion_flt *   ///< input right state
   );
 
   ///
@@ -109,8 +109,8 @@ private:
   /// the mean state.
   ///
   void set_Roe_mean_state(
-      const pion_flt*,  ///< input left state
-      const pion_flt*   ///< input right state
+      const pion_flt *,  ///< input left state
+      const pion_flt *   ///< input right state
   );
 
   ///
@@ -118,8 +118,8 @@ private:
   /// the difference vector.  Store results in ul[], ur[], udiff[].
   ///
   void set_ul_ur_udiff(
-      const pion_flt*,  ///< input left state
-      const pion_flt*   ///< input right state
+      const pion_flt *,  ///< input left state
+      const pion_flt *   ///< input right state
   );
 
   ///
@@ -144,7 +144,7 @@ private:
   /// Calculate the symmetric Roe flux (for the 5 physical variables
   /// only!) by stepping across all waves.
   ///
-  void calculate_symmetric_flux(pion_flt*  ///< output flux vector
+  void calculate_symmetric_flux(pion_flt *  ///< output flux vector
   );
 
   ///
@@ -154,13 +154,14 @@ private:
   /// function is really superceded by the symmetric version since
   /// this version does not maintain symmetry in symmetric problems!
   ///
-  void calculate_asymmetric_flux(const pion_flt*, const pion_flt*, pion_flt*);
+  void calculate_asymmetric_flux(
+      const pion_flt *, const pion_flt *, pion_flt *);
 
   ///
   /// Set Pstar[] from RCV_meanp[] (need to replace enthalpy with
   /// pressure).
   ///
-  void set_pstar_from_meanp(pion_flt*  ///< output pstar vector
+  void set_pstar_from_meanp(pion_flt *  ///< output pstar vector
   );
 };
 

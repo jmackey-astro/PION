@@ -55,9 +55,9 @@ using namespace std;
 mp_only_cooling::mp_only_cooling(
     const int nv,
     const int ntr,          ///< Number of tracer variables in state vector
-    const std::string* tr,  ///< List of tracer variable names.
-    struct which_physics* ephys,  ///< pointer to extra physics flags.
-    struct rad_sources* rsrcs     ///< radiation sources.
+    const std::string *tr,  ///< List of tracer variable names.
+    struct which_physics *ephys,  ///< pointer to extra physics flags.
+    struct rad_sources *rsrcs     ///< radiation sources.
     ) :
     microphysics_base(nv, ntr, tr, ephys, rsrcs),
     cooling_function_SD93CIE(),
@@ -160,12 +160,12 @@ mp_only_cooling::~mp_only_cooling() {}
 // ##################################################################
 
 int mp_only_cooling::TimeUpdateMP(
-    const pion_flt* p_in,  ///< Primitive Vector to be updated
-    pion_flt* p_out,       ///< Destination Vector for updated values.
+    const pion_flt *p_in,  ///< Primitive Vector to be updated
+    pion_flt *p_out,       ///< Destination Vector for updated values.
     const double dt,       ///< Time Step to advance by.
     const double g,        ///< EOS gamma.
     const int,             ///< Switch for what type of integration to use
-    double* Tf             ///< final temperature.
+    double *Tf             ///< final temperature.
 )
 {
   mp_only_cooling::rho   = p_in[RO];
@@ -218,8 +218,8 @@ int mp_only_cooling::TimeUpdateMP(
 
 int mp_only_cooling::dPdt(
     const int nv,     ///< number of variables we are expecting.
-    const double* P,  ///< Current state vector.
-    double* R         ///< Rate Vector to write to.
+    const double *P,  ///< Current state vector.
+    double *R         ///< Rate Vector to write to.
 )
 {
   R[0] = Edot(rho, P[0] * (gamma - 1.0) * Mu_tot_over_kB / rho);
@@ -230,7 +230,7 @@ int mp_only_cooling::dPdt(
 // ##################################################################
 
 int mp_only_cooling::Set_Temp(
-    pion_flt* p_in,   ///< primitive vector.
+    pion_flt *p_in,   ///< primitive vector.
     const double T,   ///< temperature requested.
     const double gam  ///< eos gamma.
 )
@@ -256,7 +256,7 @@ int mp_only_cooling::Set_Temp(
 // ##################################################################
 
 double mp_only_cooling::Temperature(
-    const pion_flt* p_in,  ///< primitive vector
+    const pion_flt *p_in,  ///< primitive vector
     const double           ///< eos gamma
 )
 {
@@ -267,7 +267,7 @@ double mp_only_cooling::Temperature(
 // ##################################################################
 
 double mp_only_cooling::get_n_elec(
-    const pion_flt* p_in  ///< primitive state vector.
+    const pion_flt *p_in  ///< primitive state vector.
 )
 {
   // H and He are fully ionized
@@ -278,7 +278,7 @@ double mp_only_cooling::get_n_elec(
 // ##################################################################
 
 double mp_only_cooling::get_n_Hplus(
-    const pion_flt* p_in  ///< primitive state vector.
+    const pion_flt *p_in  ///< primitive state vector.
 )
 {
   // fully ionized hydrogen
@@ -289,7 +289,7 @@ double mp_only_cooling::get_n_Hplus(
 // ##################################################################
 
 double mp_only_cooling::get_n_Hneutral(
-    const pion_flt* p_in  ///< primitive state vector.
+    const pion_flt *p_in  ///< primitive state vector.
 )
 {
   // Assume neutral fraction of 1e-12 (arbitrary)
@@ -300,7 +300,7 @@ double mp_only_cooling::get_n_Hneutral(
 // ##################################################################
 
 double mp_only_cooling::timescales(
-    const pion_flt* p_in,  ///< Current cell.
+    const pion_flt *p_in,  ///< Current cell.
     const double gam,      ///< EOS gamma.
     const bool tc,         ///< set to true if including cooling time.
     const bool,            ///< set to true if including recombination time.

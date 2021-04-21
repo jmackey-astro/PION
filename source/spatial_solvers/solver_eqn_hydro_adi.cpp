@@ -50,7 +50,7 @@ FV_solver_Hydro_Euler::FV_solver_Hydro_Euler(
     const int nd,          ///< number of space dimensions in grid.
     const double cflno,    ///< CFL number
     const double gam,      ///< gas eos gamma.
-    pion_flt* state,       ///< State vector of mean values for simulation.
+    pion_flt *state,       ///< State vector of mean values for simulation.
     const double avcoeff,  ///< Artificial Viscosity Parameter etav.
     const int ntr          ///< Number of tracer variables.
     ) :
@@ -88,17 +88,17 @@ FV_solver_Hydro_Euler::~FV_solver_Hydro_Euler()
 // ##################################################################
 
 int FV_solver_Hydro_Euler::inviscid_flux(
-    class SimParams& par,  ///< simulation parameters
-    class GridBaseClass*,  ///< pointer to grid
-    const double dx,       ///< cell-size dx (for LF method)
-    class cell* Cl,        ///< Left state cell pointer
-    class cell* Cr,        ///< Right state cell pointer
-    const pion_flt* Pl,    ///< Left Primitive state vector.
-    const pion_flt* Pr,    ///< Right Primitive state vector.
-    pion_flt* flux,        ///< Resultant Flux state vector.
-    pion_flt* pstar,       ///< State vector at interface.
-    const int solve_flag,  ///< Solver to use
-    const double g         ///< Gas constant gamma.
+    class SimParams &par,   ///< simulation parameters
+    class GridBaseClass *,  ///< pointer to grid
+    const double dx,        ///< cell-size dx (for LF method)
+    class cell *Cl,         ///< Left state cell pointer
+    class cell *Cr,         ///< Right state cell pointer
+    const pion_flt *Pl,     ///< Left Primitive state vector.
+    const pion_flt *Pr,     ///< Right Primitive state vector.
+    pion_flt *flux,         ///< Resultant Flux state vector.
+    pion_flt *pstar,        ///< State vector at interface.
+    const int solve_flag,   ///< Solver to use
+    const double g          ///< Gas constant gamma.
 )
 {
 #ifdef FUNCTION_ID
@@ -202,7 +202,7 @@ int FV_solver_Hydro_Euler::inviscid_flux(
 // ##################################################################
 // ##################################################################
 
-void FV_solver_Hydro_Euler::PtoU(const pion_flt* p, pion_flt* u, const double g)
+void FV_solver_Hydro_Euler::PtoU(const pion_flt *p, pion_flt *u, const double g)
 {
   for (int t = 0; t < FV_ntr; t++)
     u[eqTR[t]] = p[eqTR[t]] * p[eqRO];
@@ -214,8 +214,8 @@ void FV_solver_Hydro_Euler::PtoU(const pion_flt* p, pion_flt* u, const double g)
 // ##################################################################
 
 int FV_solver_Hydro_Euler::UtoP(
-    const pion_flt* u,
-    pion_flt* p,
+    const pion_flt *u,
+    pion_flt *p,
     const double MinTemp,  ///< minimum temperature/pressure allowed
     const double g)
 {
@@ -229,7 +229,7 @@ int FV_solver_Hydro_Euler::UtoP(
 // ##################################################################
 
 void FV_solver_Hydro_Euler::PUtoFlux(
-    const pion_flt* p, const pion_flt* u, pion_flt* f)
+    const pion_flt *p, const pion_flt *u, pion_flt *f)
 {
   for (int t = 0; t < FV_ntr; t++)
     f[eqTR[t]] = p[eqTR[t]] * f[eqRHO];
@@ -241,7 +241,7 @@ void FV_solver_Hydro_Euler::PUtoFlux(
 // ##################################################################
 
 void FV_solver_Hydro_Euler::UtoFlux(
-    const pion_flt* u, pion_flt* f, const double g)
+    const pion_flt *u, pion_flt *f, const double g)
 {
   eqns_Euler::UtoFlux(u, f, g);
   for (int t = 0; t < FV_ntr; t++)
@@ -253,10 +253,10 @@ void FV_solver_Hydro_Euler::UtoFlux(
 // ##################################################################
 
 int FV_solver_Hydro_Euler::AVFalle(
-    const pion_flt* Pl,
-    const pion_flt* Pr,
-    const pion_flt* pstar,
-    pion_flt* flux,
+    const pion_flt *Pl,
+    const pion_flt *Pr,
+    const pion_flt *pstar,
+    pion_flt *flux,
     const double etav,
     const double gam)
 {
@@ -309,12 +309,12 @@ int FV_solver_Hydro_Euler::AVFalle(
 /// Adds the contribution from flux in the current direction to dU.
 ///
 int FV_solver_Hydro_Euler::dU_Cell(
-    class GridBaseClass* grid,
-    cell* c,                // Current cell.
+    class GridBaseClass *grid,
+    cell *c,                // Current cell.
     const axes d,           // Which axis we are looking along.
-    const pion_flt* fn,     // Negative direction flux.
-    const pion_flt* fp,     // Positive direction flux.
-    const pion_flt* slope,  // slope vector for cell c.
+    const pion_flt *fn,     // Negative direction flux.
+    const pion_flt *fp,     // Positive direction flux.
+    const pion_flt *slope,  // slope vector for cell c.
     const int ooa,          // spatial order of accuracy.
     const double dx,        // cell length dx.
     const double dt         // cell TimeStep, dt.
@@ -336,11 +336,11 @@ int FV_solver_Hydro_Euler::dU_Cell(
 // ##################################################################
 
 int FV_solver_Hydro_Euler::CellAdvanceTime(
-    class cell* c,
-    const pion_flt* Pin,  // Initial State Vector.
-    pion_flt* dU,         // Update vector dU
-    pion_flt* Pf,         // Final state vector (can be same as initial vec.).
-    pion_flt* dE,  // TESTING Tracks change of energy for negative pressure
+    class cell *c,
+    const pion_flt *Pin,  // Initial State Vector.
+    pion_flt *dU,         // Update vector dU
+    pion_flt *Pf,         // Final state vector (can be same as initial vec.).
+    pion_flt *dE,  // TESTING Tracks change of energy for negative pressure
                    // correction.
     const double,  // gas EOS gamma.
     const double MinTemp,  ///< Min Temperature allowed on grid.
@@ -423,7 +423,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
 /// Given a cell, calculate the hydrodynamic timestep.
 ///
 double FV_solver_Hydro_Euler::CellTimeStep(
-    const cell* c,   ///< pointer to cell
+    const cell *c,   ///< pointer to cell
     const double,    ///< gas EOS gamma.
     const double dx  ///< Cell size dx.
 )
@@ -482,7 +482,7 @@ cyl_FV_solver_Hydro_Euler::cyl_FV_solver_Hydro_Euler(
     const int nd,          ///< number of space dimensions in grid.
     const double cflno,    ///< CFL number
     const double gam,      ///< gas eos gamma.
-    pion_flt* state,       ///< State vector of mean values for simulation.
+    pion_flt *state,       ///< State vector of mean values for simulation.
     const double avcoeff,  ///< Artificial Viscosity Parameter etav.
     const int ntr          ///< Number of tracer variables.
     ) :
@@ -515,12 +515,12 @@ cyl_FV_solver_Hydro_Euler::~cyl_FV_solver_Hydro_Euler() {}
 // ##################################################################
 
 void cyl_FV_solver_Hydro_Euler::geometric_source(
-    cell* c,               ///< Current cell.
+    cell *c,               ///< Current cell.
     const axes d,          ///< Which axis we are looking along.
-    const pion_flt* dpdx,  ///< slope vector for cell c.
+    const pion_flt *dpdx,  ///< slope vector for cell c.
     const int OA,          ///< spatial order of accuracy.
     const double dR,       ///< cell length dx.
-    pion_flt* dU           ///< update vector to add source term to [OUTPUT]
+    pion_flt *dU           ///< update vector to add source term to [OUTPUT]
 )
 {
 
@@ -557,7 +557,7 @@ sph_FV_solver_Hydro_Euler::sph_FV_solver_Hydro_Euler(
     const int nd,          ///< number of space dimensions in grid.
     const double cflno,    ///< CFL number
     const double gam,      ///< gas eos gamma.
-    pion_flt* state,       ///< State vector of mean values for simulation.
+    pion_flt *state,       ///< State vector of mean values for simulation.
     const double avcoeff,  ///< Artificial Viscosity Parameter etav.
     const int ntr          ///< Number of tracer variables.
     ) :
@@ -591,12 +591,12 @@ sph_FV_solver_Hydro_Euler::~sph_FV_solver_Hydro_Euler() {}
 // ##################################################################
 
 void sph_FV_solver_Hydro_Euler::geometric_source(
-    cell* c,               ///< Current cell.
+    cell *c,               ///< Current cell.
     const axes d,          ///< Which axis we are looking along.
-    const pion_flt* dpdx,  ///< slope vector for cell c.
+    const pion_flt *dpdx,  ///< slope vector for cell c.
     const int OA,          ///< spatial order of accuracy.
     const double dR,       ///< cell length dx.
-    pion_flt* dU           ///< update vector to add source term to [OUTPUT]
+    pion_flt *dU           ///< update vector to add source term to [OUTPUT]
 )
 {
 

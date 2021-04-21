@@ -42,8 +42,8 @@ public:
   IC_basic_tests();
   ~IC_basic_tests();
   int setup_data(
-      class ReadParams*,    ///< pointer to parameter list.
-      class GridBaseClass*  ///< pointer to grid
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *  ///< pointer to grid
   );
 
 protected:
@@ -53,8 +53,8 @@ protected:
    * needed (and probably is needed to asess stability).
    * */
   int setup_uniformgrid(
-      class ReadParams*,    ///< pointer to parameter list.
-      class GridBaseClass*  ///< pointer to grid
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *  ///< pointer to grid
   );
   /** \brief Sets up a constant state with an overdense clump, and a sine
    * wave variation in the Y-velocity across the grid. */
@@ -99,8 +99,8 @@ public:
   IC_blastwave();
   ~IC_blastwave();
   int setup_data(
-      class ReadParams*,    ///< pointer to parameter list.
-      class GridBaseClass*  ///< pointer to grid
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *  ///< pointer to grid
   );
 
 protected:
@@ -115,8 +115,8 @@ protected:
       bw_BX,        ///< ambient B_x field.
       bw_BY,        ///< ambient B_y field.
       bw_BZ;        ///< ambient B_z field.
-  double* ambient;  ///< 2nd ambient medium vector (optional).
-  double* BW_tr;    ///< ambient medium tracers.
+  double *ambient;  ///< 2nd ambient medium vector (optional).
+  double *BW_tr;    ///< ambient medium tracers.
   double
       interface;  ///< optional position of interface between 2 ambient media.
   void get_amb2_params();
@@ -147,8 +147,8 @@ public:
   IC_shock_cloud();
   ~IC_shock_cloud();
   int setup_data(
-      class ReadParams*,    ///< pointer to parameter list.
-      class GridBaseClass*  ///< pointer to grid
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *  ///< pointer to grid
   );
 
 protected:
@@ -178,8 +178,8 @@ public:
   IC_shocktube();
   ~IC_shocktube();
   int setup_data(
-      class ReadParams*,    ///< pointer to parameter list.
-      class GridBaseClass*  ///< pointer to grid
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *  ///< pointer to grid
   );
 
 protected:
@@ -196,16 +196,16 @@ protected:
       *postshock;  ///< postshock state vector.
 
   int assign_data(
-      double*,  ///< left state.
-      double*,  ///< right state.
-      double    ///< shock position (in units of X-range)
-  );            ///< given angles,shockpos,l,r, set data.
+      double *,  ///< left state.
+      double *,  ///< right state.
+      double     ///< shock position (in units of X-range)
+  );             ///< given angles,shockpos,l,r, set data.
   int get_riemann_ics(
-      int,      ///< test number to run
-      double*,  ///< left state.
-      double*,  ///< right state.
-      double*   ///< shock position
-  );            ///< get appropriate test from a list.
+      int,       ///< test number to run
+      double *,  ///< left state.
+      double *,  ///< right state.
+      double *   ///< shock position
+  );             ///< get appropriate test from a list.
 };
 
 // ##################################################################
@@ -216,8 +216,8 @@ public:
   IC_jet();
   ~IC_jet();
   int setup_data(
-      class ReadParams*,    ///< pointer to parameter list.
-      class GridBaseClass*  ///< pointer to grid
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *  ///< pointer to grid
   );
 
 protected:
@@ -240,8 +240,8 @@ public:
   IC_radiative_shock();
   ~IC_radiative_shock();
   int setup_data(
-      class ReadParams*,    ///< pointer to parameter list.
-      class GridBaseClass*  ///< pointer to grid
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *  ///< pointer to grid
   );
 
 protected:
@@ -269,8 +269,8 @@ public:
   IC_laser_ablation();
   ~IC_laser_ablation();
   int setup_data(
-      class ReadParams*,    ///< pointer to parameter list.
-      class GridBaseClass*  ///< pointer to grid
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *  ///< pointer to grid
   );
 
 protected:
@@ -297,8 +297,8 @@ public:
   IC_photoevaporatingclump();
   ~IC_photoevaporatingclump();
   int setup_data(
-      class ReadParams*,    ///< pointer to parameter list.
-      class GridBaseClass*  ///< pointer to grid
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *  ///< pointer to grid
   );
 
 protected:
@@ -365,8 +365,8 @@ public:
   IC_photevap_random_clumps();
   ~IC_photevap_random_clumps();
   int setup_data(
-      class ReadParams*,    ///< pointer to parameter list.
-      class GridBaseClass*  ///< pointer to grid
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *  ///< pointer to grid
   );
 
 protected:
@@ -389,7 +389,7 @@ protected:
       *ambient,      ///< ambient state vector.
       ambdens;  ///< ambient gas density (after taking clump mass out of total
                 ///< mass).
-  struct clump* cl;
+  struct clump *cl;
   int setup_perc();  ///< setup data now that we have all info from file.
   int setup_perc_fixedmass();  ///< setup clumps for fixed total mass on grid.
   int clumps_random_setup();   ///< setup clumps (original version, random
@@ -401,9 +401,9 @@ protected:
   int clumps_random_setup_pllel_fixedmass();  ///< setup clumps in parallel
                                               ///< (fixed total mass).
 #endif                                        // PARALLEL
-  int clumps_random_set_dens(cell*            ///< cell to operate on.
+  int clumps_random_set_dens(cell *           ///< cell to operate on.
   );
-  void print_clump(struct clump*);
+  void print_clump(struct clump *);
   double
   random_frac();  ///< returns random value on [0,1], assuming seed is set.
 };
@@ -414,7 +414,7 @@ struct random_clump_data {
   int profile;  ///< flag to say what kind of radial density profile to use
                 ///< (0=top-hat, 1=Gaussian)
   int random_seed;   ///< Seed to use for generating clumps.
-  double* border;    ///< 2*ndim doubles saying what fraction of the domain in
+  double *border;    ///< 2*ndim doubles saying what fraction of the domain in
                      ///< each direction has no clumps.
   double density,    ///< mean number density of gas to go into clumps (within
                      ///< clumpy region).
@@ -425,7 +425,7 @@ struct random_clump_data {
                      ///< fixed mass clumps).
       min_size,      ///< min fraction of Y-Range for clump radius.
       max_size;      ///< max fraction of Y-Range for clump radius.
-  struct clump* cl;  ///< pointer to info for each of the N random clumps.
+  struct clump *cl;  ///< pointer to info for each of the N random clumps.
 };
 
 // ##################################################################
@@ -433,7 +433,7 @@ struct random_clump_data {
 
 struct ambient_data {
   bool used;  ///< set to true so destructor knows to delete dynamic memory.
-  double* ambient;      ///< Ambient gas state vector
+  double *ambient;      ///< Ambient gas state vector
   int radial_profile;   ///< Optional radial profile for ambient gas (radial
                         ///< out from star).
   double cloudradius;   ///< Radius of core of cloud with given radial profile.
@@ -449,7 +449,7 @@ struct ambient_data {
 struct strategic_clump_data {
   bool used;    ///< set to true so destructor knows to delete dynamic memory.
   int Nclumps;  ///< Number of strategically placed clumps.
-  struct clump* cl;  ///< Pointer to list of clumps.
+  struct clump *cl;  ///< Pointer to list of clumps.
   int profile;       ///< What kind of radial density profile to use (0=top-hat,
                      ///< 1=Gaussian)
 };
@@ -467,8 +467,8 @@ public:
   IC_photevap_multi_clumps();
   ~IC_photevap_multi_clumps();
   int setup_data(
-      class ReadParams*,    ///< pointer to parameter list.
-      class GridBaseClass*  ///< pointer to grid
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *  ///< pointer to grid
   );
 
 protected:
@@ -488,48 +488,49 @@ protected:
   //
   // Ambient Medium Routines
   //
-  int get_ambient_params(class ReadParams*, struct ambient_data*);
-  int add_ambient_data_to_grid(class GridBaseClass*, struct ambient_data*);
+  int get_ambient_params(class ReadParams *, struct ambient_data *);
+  int add_ambient_data_to_grid(class GridBaseClass *, struct ambient_data *);
 
   //
   // Ambient Medium Routines (the alternate values are only written
   // to the first 10 per cent of the x-domain).
   //
-  int get_alternate_ambient_params(class ReadParams*, struct ambient_data*);
+  int get_alternate_ambient_params(class ReadParams *, struct ambient_data *);
   int add_alternate_ambient_data_to_grid(
-      class GridBaseClass*, struct ambient_data*);
+      class GridBaseClass *, struct ambient_data *);
   //
   // Generic Clump Routines
   //
   double random_frac();
-  void print_clump(struct clump*);
+  void print_clump(struct clump *);
   int clumps_set_dens(
-      class cell*,    ///< cell to operate on.
-      const int,      ///< number of clumps (length of clump array following)
-      struct clump*,  ///< pointer to list of clump structs.
-      const int       ///< clump profile.
+      class cell *,    ///< cell to operate on.
+      const int,       ///< number of clumps (length of clump array following)
+      struct clump *,  ///< pointer to list of clump structs.
+      const int        ///< clump profile.
   );
 
   //
   // Random Clumps Routines:
   //
-  int get_random_clump_params(class ReadParams*, struct random_clump_data*);
-  int rc_fixed_mass_range_params(class ReadParams*, struct random_clump_data*);
-  int rc_fixed_number_params(class ReadParams*, struct random_clump_data*);
+  int get_random_clump_params(class ReadParams *, struct random_clump_data *);
+  int rc_fixed_mass_range_params(
+      class ReadParams *, struct random_clump_data *);
+  int rc_fixed_number_params(class ReadParams *, struct random_clump_data *);
   /** \brief This function is hardcoded for Gaussian density distributions
    * (for total mass). It uses an analytic result to go from mass and size to
    * peak overdensity.
    */
-  int rc_set_clump_properties(struct random_clump_data*);
+  int rc_set_clump_properties(struct random_clump_data *);
   int add_random_clumps_to_grid(
-      class GridBaseClass*, struct random_clump_data*);
+      class GridBaseClass *, struct random_clump_data *);
   //
   // Strategically Placed Clumps Routines
   //
   int get_strategic_clump_params(
-      class ReadParams*, struct strategic_clump_data*);
+      class ReadParams *, struct strategic_clump_data *);
   int add_strategic_clumps_to_grid(
-      class GridBaseClass*, struct strategic_clump_data*);
+      class GridBaseClass *, struct strategic_clump_data *);
 };
 
 // ##################################################################
@@ -540,8 +541,8 @@ public:
   IC_spherical_clump();
   ~IC_spherical_clump();
   int setup_data(
-      class ReadParams*,    ///< pointer to parameter list.
-      class GridBaseClass*  ///< pointer to grid
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *  ///< pointer to grid
   );
 
 protected:
@@ -574,24 +575,24 @@ public:
   IC_read_1Dto2D();
   ~IC_read_1Dto2D();
   int setup_data(
-      class ReadParams*,    ///< pointer to parameter list.
-      class GridBaseClass*  ///< pointer to grid
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *  ///< pointer to grid
   );
 
 protected:
   void get_data_vals(
-      double*,                  ///< Cell centre
-      vector<double>&,          ///< radius vector
-      vector<vector<double>>&,  ///< arrays of variable data.
-      const int,                ///< number of variables.
-      double*                   ///< array for output data values at pos.
+      double *,                   ///< Cell centre
+      vector<double> &,           ///< radius vector
+      vector<vector<double> > &,  ///< arrays of variable data.
+      const int,                  ///< number of variables.
+      double *                    ///< array for output data values at pos.
   );
   void get_3D_data_vals(
-      double*,                  ///< Cell centre
-      vector<double>&,          ///< radius vector
-      vector<vector<double>>&,  ///< arrays of variable data.
-      const int,                ///< number of variables.
-      double*                   ///< array for output data values at pos.
+      double *,                   ///< Cell centre
+      vector<double> &,           ///< radius vector
+      vector<vector<double> > &,  ///< arrays of variable data.
+      const int,                  ///< number of variables.
+      double *                    ///< array for output data values at pos.
   );
 };
 
@@ -609,18 +610,18 @@ public:
   IC_HD_2D_ShockCloud();
   ~IC_HD_2D_ShockCloud();
   int setup_data(
-      class ReadParams*,    ///< pointer to parameter list.
-      class GridBaseClass*  ///< pointer to grid
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *  ///< pointer to grid
   );
 
 protected:
   void get_data_vals(
-      double*,                  ///< Cell centre
-      const double,             ///< Shock position.
-      vector<double>&,          ///< radius vector
-      vector<vector<double>>&,  ///< arrays of variable data.
-      const int,                ///< number of variables.
-      double*                   ///< array for output data values at pos.
+      double *,                   ///< Cell centre
+      const double,               ///< Shock position.
+      vector<double> &,           ///< radius vector
+      vector<vector<double> > &,  ///< arrays of variable data.
+      const int,                  ///< number of variables.
+      double *                    ///< array for output data values at pos.
   );
 };
 #endif  // don't EXCLUDE_HD_MODULE
@@ -635,17 +636,17 @@ public:
   IC_read_BBurkhart_data();
   ~IC_read_BBurkhart_data();
   int setup_data(
-      class ReadParams*,    ///< pointer to parameter list.
-      class GridBaseClass*  ///< pointer to grid
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *  ///< pointer to grid
   );
 
 protected:
   void read_file(
-      const string,         ///< input fits file to read
-      const int,            ///< variable in state vector
-      const double,         ///< optional scaling of value.
-      const double,         ///< optional offset of value, after scaling.
-      class GridBaseClass*  ///< pointer to grid
+      const string,          ///< input fits file to read
+      const int,             ///< variable in state vector
+      const double,          ///< optional scaling of value.
+      const double,          ///< optional offset of value, after scaling.
+      class GridBaseClass *  ///< pointer to grid
   );
 
   std::string File_RO, File_PG, File_VX, File_VY, File_VZ, File_BX, File_BY,
@@ -665,8 +666,8 @@ public:
   IC_StarBench_Tests();
   ~IC_StarBench_Tests();
   int setup_data(
-      class ReadParams*,    ///< pointer to parameter list.
-      class GridBaseClass*  ///< pointer to grid
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *  ///< pointer to grid
   );
 
 protected:
@@ -675,9 +676,9 @@ protected:
   /// Wuensch.
   ///
   int setup_ContactDiscontinuity(
-      class ReadParams*,     ///< pointer to parameter list.
-      class GridBaseClass*,  ///< pointer to grid
-      string& test           ///< String with which test to run.
+      class ReadParams *,     ///< pointer to parameter list.
+      class GridBaseClass *,  ///< pointer to grid
+      string &test            ///< String with which test to run.
   );
 
   ///
@@ -685,45 +686,45 @@ protected:
   /// Haworth.
   ///
   int setup_StarBench_IFI(
-      class ReadParams*,     ///< pointer to parameter list.
-      class GridBaseClass*,  ///< pointer to grid
-      string& test           ///< String with which test to run.
+      class ReadParams *,     ///< pointer to parameter list.
+      class GridBaseClass *,  ///< pointer to grid
+      string &test            ///< String with which test to run.
   );
 
   ///
   /// A planar ionisation-front Test.
   ///
   int setup_StarBench_planarIF(
-      class ReadParams*,     ///< pointer to parameter list.
-      class GridBaseClass*,  ///< pointer to grid
-      string& test           ///< String with which test to run.
+      class ReadParams *,     ///< pointer to parameter list.
+      class GridBaseClass *,  ///< pointer to grid
+      string &test            ///< String with which test to run.
   );
 
   ///
   /// The Irradiated Cloud test from Tom Haworth.
   ///
   int setup_StarBench_IrrCl(
-      class ReadParams*,     ///< pointer to parameter list.
-      class GridBaseClass*,  ///< pointer to grid
-      string& test           ///< String with which test to run.
+      class ReadParams *,     ///< pointer to parameter list.
+      class GridBaseClass *,  ///< pointer to grid
+      string &test            ///< String with which test to run.
   );
 
   ///
   /// The shadowed region cooling/recomb test from Pascal Tremblin.
   ///
   int setup_StarBench_TremblinCooling(
-      class ReadParams*,     ///< pointer to parameter list.
-      class GridBaseClass*,  ///< pointer to grid
-      string& test           ///< String with which test to run.
+      class ReadParams *,     ///< pointer to parameter list.
+      class GridBaseClass *,  ///< pointer to grid
+      string &test            ///< String with which test to run.
   );
 
   ///
   /// conical HII region expansion.
   ///
   int setup_StarBench_Cone(
-      class ReadParams*,     ///< pointer to parameter list.
-      class GridBaseClass*,  ///< pointer to grid
-      string& test           ///< String with which test to run.
+      class ReadParams *,     ///< pointer to parameter list.
+      class GridBaseClass *,  ///< pointer to grid
+      string &test            ///< String with which test to run.
   );
 };
 

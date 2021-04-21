@@ -95,7 +95,7 @@ void Hydrogen_chem::setup_Hi_coll_excitation_rate()
     cx_T[i]    = log10(T[i]);
     cx_rate[i] = log10(R[i]);
   }
-  interpolate.spline(cx_T, cx_rate, cx_Nspl, 1.e99, 1.e99, cx_spline_id);
+  interpolate.spline(cx_T, cx_rate, cx_Nspl, 0.0, 0.0, cx_spline_id);
   //
   // Logarithmic slopes at either end of the domain.
   //
@@ -180,7 +180,7 @@ double Hydrogen_chem::Hi_coll_ion_cooling_rate(double T)
 // ##################################################################
 // ##################################################################
 
-void Hydrogen_chem::Hi_coll_ion_rates(double T, double* cir, double* cicr)
+void Hydrogen_chem::Hi_coll_ion_rates(double T, double *cir, double *cicr)
 {
   //
   // see Hi_coll_ion[_cooling]_rate(double T) for more details.

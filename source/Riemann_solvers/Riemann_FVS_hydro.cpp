@@ -76,10 +76,10 @@ Riemann_FVS_Euler::~Riemann_FVS_Euler()
 // ##################################################################
 
 int Riemann_FVS_Euler::FVS_flux(
-    const pion_flt* pl,  ///< Left Primitive var. state vec.
-    const pion_flt* pr,  ///< Right Primitive var. state vec.
-    pion_flt* flux,      ///< Result Flux vector.
-    pion_flt* pstar,     ///< Interface state (for viscosity)
+    const pion_flt *pl,  ///< Left Primitive var. state vec.
+    const pion_flt *pr,  ///< Right Primitive var. state vec.
+    pion_flt *flux,      ///< Result Flux vector.
+    pion_flt *pstar,     ///< Interface state (for viscosity)
     const double         ///< Gas constant gamma (unused)
 )
 {
@@ -192,10 +192,10 @@ int Riemann_FVS_Euler::FVS_flux(
 // ##################################################################
 
 void Riemann_FVS_Euler::Roe_average_state(
-    const pion_flt* p1,  ///< state 1
-    const pion_flt* p2,  ///< state 2
+    const pion_flt *p1,  ///< state 1
+    const pion_flt *p2,  ///< state 2
     const double,        ///< gamma (unused)
-    pion_flt* ans        ///< Roe-averaged state
+    pion_flt *ans        ///< Roe-averaged state
 )
 {
   //

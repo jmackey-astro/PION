@@ -40,8 +40,8 @@ public:
   /// class).
   ///
   raytracer_shielding(
-      class GridBaseClass*,     ///< Pointer to grid
-      class microphysics_base*  ///< Pointer to MicroPhysics Class.
+      class GridBaseClass *,     ///< Pointer to grid
+      class microphysics_base *  ///< Pointer to MicroPhysics Class.
   );
   ///
   /// Destructor really doesn't do anything.
@@ -67,11 +67,11 @@ protected:
   /// density to the point entering the next cell).
   ///
   virtual int ProcessCell(
-      class cell*,        ///< Current cell.
-      double,             ///< Column to cell.
-      double,             ///< Path Length through cell.
-      const rad_source*,  ///< pointer to source struct.
-      const double        ///< Timestep
+      class cell *,        ///< Current cell.
+      double,              ///< Column to cell.
+      double,              ///< Path Length through cell.
+      const rad_source *,  ///< pointer to source struct.
+      const double         ///< Timestep
   );
 
 private:
@@ -92,8 +92,8 @@ public:
   /// constructor.  Doesn't do all that much.
   ///
   raytracer_shielding_pllel(
-      class GridBaseClass*,     ///< Pointer to grid
-      class microphysics_base*  ///< Pointer to MicroPhysics Class.
+      class GridBaseClass *,     ///< Pointer to grid
+      class microphysics_base *  ///< Pointer to MicroPhysics Class.
   );
 
   ///
@@ -108,7 +108,7 @@ public:
   /// any) extra corner boundaries it needs to set up for sending and
   /// receiving data.
   ///
-  virtual int Add_Source(const struct rad_src_info*  ///< ptr to source info.
+  virtual int Add_Source(const struct rad_src_info *  ///< ptr to source info.
   );
 
   ///

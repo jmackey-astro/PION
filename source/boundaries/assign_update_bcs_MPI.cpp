@@ -19,13 +19,13 @@ using namespace std;
 // ##################################################################
 
 int assign_update_bcs_MPI::assign_boundary_data(
-    class SimParams& par,      ///< pointer to simulation parameters
+    class SimParams &par,      ///< pointer to simulation parameters
     const int level,           ///< level in grid hierarchy
-    class GridBaseClass* grid  ///< pointer to grid.
+    class GridBaseClass *grid  ///< pointer to grid.
 )
 {
 #ifdef TEST_MPI_BC
-  class MCMDcontrol* ppar = &(par.levels[level].MCMD);
+  class MCMDcontrol *ppar = &(par.levels[level].MCMD);
   cout << ppar->get_myrank() << " Setting up MPI boundaries..." << endl;
 #endif
   int err = assign_update_bcs::assign_boundary_data(par, level, grid);
@@ -81,10 +81,10 @@ int assign_update_bcs_MPI::assign_boundary_data(
 // ##################################################################
 
 int assign_update_bcs_MPI::TimeUpdateExternalBCs(
-    class SimParams& par,          ///< pointer to sim parameters
+    class SimParams &par,          ///< pointer to sim parameters
     const int level,               ///< level in grid hierarchy
-    class GridBaseClass* grid,     ///< pointer to grid.
-    class FV_solver_base* solver,  ///< pointer to equations
+    class GridBaseClass *grid,     ///< pointer to grid.
+    class FV_solver_base *solver,  ///< pointer to equations
     const double simtime,          ///< current simulation time
     const int cstep,
     const int maxstep)
@@ -92,7 +92,7 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
 #ifdef TEST_MPI_NG
   cout << "update_bcs_MPI: external boundary update" << endl;
 #endif
-  struct boundary_data* b;
+  struct boundary_data *b;
   int err  = 0;
   size_t i = 0;
 

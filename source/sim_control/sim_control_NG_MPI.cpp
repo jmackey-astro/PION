@@ -64,8 +64,9 @@ int sim_control_NG_MPI::Init(
     string infile,
     int typeOfFile,
     int narg,
-    string* args,
-    vector<class GridBaseClass*>& grid  ///< address of vector of grid pointers.
+    string *args,
+    vector<class GridBaseClass *>
+        &grid  ///< address of vector of grid pointers.
 )
 {
   cout << "(pion) Init: infile = " << infile << "\n";
@@ -126,7 +127,7 @@ int sim_control_NG_MPI::Init(
   // ----------------------------------------------------------------
   // Set Ph[] = P[], and then implement the boundary conditions.
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-    cell* c = grid[l]->FirstPt();
+    cell *c = grid[l]->FirstPt();
     double u[SimPM.nvar];
     // rep.printVec("First Point",c->P,SimPM.nvar);
     do {
@@ -317,7 +318,7 @@ int sim_control_NG_MPI::Init(
 
   // ----------------------------------------------------------------
   //#ifdef TESTING
-  cell* c = 0;
+  cell *c = 0;
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
     // cout <<"LEVEL-ZERO-CHECK L="<<l<<"\n";
     c = (grid[l])->FirstPt_All();
@@ -337,7 +338,7 @@ int sim_control_NG_MPI::Init(
 // ##################################################################
 
 int sim_control_NG_MPI::Time_Int(
-    vector<class GridBaseClass*>& grid  ///< grid pointers.
+    vector<class GridBaseClass *> &grid  ///< grid pointers.
 )
 {
   cout << "-------------------------------------------------------\n";
@@ -598,7 +599,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   int err                   = 0;
   double dt2_fine           = 0.0;  // timestep for two finer level steps.
   double dt2_this           = 0.0;  // two timesteps for this level.
-  class GridBaseClass* grid = SimPM.levels[l].grid;
+  class GridBaseClass *grid = SimPM.levels[l].grid;
   bool finest_level         = (l < (SimPM.grid_nlevels - 1)) ? false : true;
 
 #ifdef TEST_INT
@@ -854,7 +855,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   double dt2_fine           = 0.0;  // timestep for two finer level steps.
   double dt2_this           = 0.0;  // two timesteps for this level.
   double ctime              = SimPM.levels[l].simtime;  // current time
-  class GridBaseClass* grid = SimPM.levels[l].grid;
+  class GridBaseClass *grid = SimPM.levels[l].grid;
   bool finest_level         = (l < SimPM.grid_nlevels - 1) ? false : true;
 
 #ifdef TEST_INT
@@ -1165,7 +1166,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
 // ##################################################################
 
 int sim_control_NG_MPI::initial_conserved_quantities(
-    vector<class GridBaseClass*>& grid)
+    vector<class GridBaseClass *> &grid)
 {
   // Energy, and Linear Momentum in x-direction.
 #ifdef TEST_CONSERVATION
@@ -1179,7 +1180,7 @@ int sim_control_NG_MPI::initial_conserved_quantities(
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     double dx     = SimPM.levels[l].dx;
     double dv     = 0.0;
-    class cell* c = grid[l]->FirstPt();
+    class cell *c = grid[l]->FirstPt();
     do {
       if (c->isdomain && c->isleaf) {
         // cout <<"*** LEVEL "<<l<<", cell is a leaf: "<<c->isdomain<<"
@@ -1224,7 +1225,7 @@ int sim_control_NG_MPI::initial_conserved_quantities(
 // ##################################################################
 // ##################################################################
 
-int sim_control_NG_MPI::check_energy_cons(vector<class GridBaseClass*>& grid)
+int sim_control_NG_MPI::check_energy_cons(vector<class GridBaseClass *> &grid)
 {
   // Energy, and Linear Momentum in x-direction.
 #ifdef TEST_CONSERVATION
@@ -1238,7 +1239,7 @@ int sim_control_NG_MPI::check_energy_cons(vector<class GridBaseClass*>& grid)
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     double dx     = SimPM.levels[l].dx;
     double dv     = 0.0;
-    class cell* c = grid[l]->FirstPt();
+    class cell *c = grid[l]->FirstPt();
     do {
       if (c->isdomain && c->isleaf) {
         dv = spatial_solver->CellVolume(c, dx);

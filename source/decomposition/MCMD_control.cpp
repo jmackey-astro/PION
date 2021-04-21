@@ -57,8 +57,8 @@ MCMDcontrol::~MCMDcontrol()
 // ##################################################################
 
 int MCMDcontrol::decomposeDomain(
-    class SimParams& SimPM,  ///< simulation parameters
-    class level& level       ///< parameters for NG grid level
+    class SimParams &SimPM,  ///< simulation parameters
+    class level &level       ///< parameters for NG grid level
 )
 {
 #ifdef TESTING
@@ -233,8 +233,8 @@ int MCMDcontrol::decomposeDomain(
 
 int MCMDcontrol::decomposeDomain(
     const enum axes daxis,   ///< Axis to decompose domain along.
-    class SimParams& SimPM,  ///< pointer to simulation parameters
-    class level& level       ///< pointer to domain parameters for NG grid level
+    class SimParams &SimPM,  ///< pointer to simulation parameters
+    class level &level       ///< pointer to domain parameters for NG grid level
 )
 {
   cout << "---MCMDcontrol::decomposeDomain() decomposing domain";
@@ -315,8 +315,8 @@ int MCMDcontrol::decomposeDomain(
 // ##################################################################
 
 int MCMDcontrol::pointToNeighbours(
-    class SimParams& SimPM,  ///< pointer to simulation parameters
-    class level& level       ///< pointer to domain parameters for NG grid level
+    class SimParams &SimPM,  ///< pointer to simulation parameters
+    class level &level       ///< pointer to domain parameters for NG grid level
 )
 {
 #ifdef TESTING
@@ -378,7 +378,7 @@ int MCMDcontrol::pointToNeighbours(
 ///
 void MCMDcontrol::get_abutting_domains(
     const int ndim,       ///< grid dimensions
-    std::vector<int>& dl  ///< write list to this vector.
+    std::vector<int> &dl  ///< write list to this vector.
 )
 {
   //
@@ -519,7 +519,7 @@ void MCMDcontrol::get_abutting_domains(
 void MCMDcontrol::get_domain_ix(
     const int ndim,  ///< grid dimensions
     const int r,     ///< rank ix requested for.
-    int* arr         ///< array to put ix into.
+    int *arr         ///< array to put ix into.
 )
 {
   int temp = r;
@@ -539,8 +539,8 @@ void MCMDcontrol::get_domain_ix(
 // ##################################################################
 
 int MCMDcontrol::get_grid_rank(
-    class SimParams& par,  ///< simulation parameters
-    const double* loc,     ///< location sought
+    class SimParams &par,  ///< simulation parameters
+    const double *loc,     ///< location sought
     const int l            ///< grid level
 )
 {
@@ -572,7 +572,7 @@ int MCMDcontrol::get_grid_rank(
 // ##################################################################
 
 void MCMDcontrol::set_NG_hierarchy(
-    class SimParams& par,  ///< simulation parameters
+    class SimParams &par,  ///< simulation parameters
     const int l            ///< level to work on
 )
 {
@@ -954,7 +954,7 @@ void MCMDcontrol::set_NG_hierarchy(
 // ##################################################################
 // ##################################################################
 
-void MCMDcontrol::get_parent_grid_info(struct cgrid* cg)
+void MCMDcontrol::get_parent_grid_info(struct cgrid *cg)
 {
   cg->rank = pgrid.rank;
   for (int i = 0; i < MAX_DIM; i++)
@@ -968,7 +968,7 @@ void MCMDcontrol::get_parent_grid_info(struct cgrid* cg)
 // ##################################################################
 // ##################################################################
 
-void MCMDcontrol::get_parent_ngb_grid_info(vector<struct cgrid>& pgngb)
+void MCMDcontrol::get_parent_ngb_grid_info(vector<struct cgrid> &pgngb)
 {
   pgngb.resize(pgrid_ngb.size());
   for (size_t iter = 0; iter < pgrid_ngb.size(); iter++) {
@@ -984,7 +984,7 @@ void MCMDcontrol::get_parent_ngb_grid_info(vector<struct cgrid>& pgngb)
 // ##################################################################
 // ##################################################################
 
-void MCMDcontrol::get_child_grid_info(vector<struct cgrid>& cg)
+void MCMDcontrol::get_child_grid_info(vector<struct cgrid> &cg)
 {
   cg.resize(child_procs.size());
   for (size_t iter = 0; iter < child_procs.size(); iter++) {
@@ -1000,7 +1000,7 @@ void MCMDcontrol::get_child_grid_info(vector<struct cgrid>& cg)
 // ##################################################################
 // ##################################################################
 
-void MCMDcontrol::get_level_lp1_ngb_info(vector<vector<struct cgrid>>& cgngb)
+void MCMDcontrol::get_level_lp1_ngb_info(vector<vector<struct cgrid> > &cgngb)
 {
   cgngb.resize(cgrid_ngb.size());
   for (size_t p = 0; p < cgrid_ngb.size(); p++) {

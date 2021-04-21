@@ -13,9 +13,9 @@ using namespace std;
 // ##################################################################
 
 int axisymmetric_bc::BC_assign_AXISYMMETRIC(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    boundary_data* b)
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    boundary_data *b)
 {
   enum direction offdir = b->dir;
   enum direction ondir  = b->ondir;
@@ -56,9 +56,9 @@ int axisymmetric_bc::BC_assign_AXISYMMETRIC(
   // Now go through each of the boundary points and assign values
   // to them, multiplying the relevant entries by -1.
   //
-  list<cell*>::iterator bpt = b->data.begin();
-  cell* temp                = 0;
-  unsigned int ct           = 0;
+  list<cell *>::iterator bpt = b->data.begin();
+  cell *temp                 = 0;
+  unsigned int ct            = 0;
   // cout <<"\t\t**** PRINTING CELLS FOR BOUNDARY DIR = "<<b->dir<<"
   // ****\n\n";
   do {
@@ -94,16 +94,16 @@ int axisymmetric_bc::BC_assign_AXISYMMETRIC(
 // ##################################################################
 
 int axisymmetric_bc::BC_update_AXISYMMETRIC(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    struct boundary_data* b,
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    struct boundary_data *b,
     const int cstep,
     const int maxstep)
 {
   //
   // same routine as for outflow, except multiply v_n,B_n by -1.
   //
-  list<cell*>::iterator c = b->data.begin();
+  list<cell *>::iterator c = b->data.begin();
   for (c = b->data.begin(); c != b->data.end(); ++c) {
     for (int v = 0; v < par.nvar; v++) {
       (*c)->Ph[v] = (*c)->npt->Ph[v] * b->refval[v];

@@ -13,9 +13,9 @@ using namespace std;
 // ##################################################################
 
 int inflow_bc::BC_assign_INFLOW(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    boundary_data* b)
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    boundary_data *b)
 {
   enum direction ondir = b->ondir;
 
@@ -26,8 +26,8 @@ int inflow_bc::BC_assign_INFLOW(
     b->refval = mem.myalloc(b->refval, par.nvar);
   }
 
-  list<cell*>::iterator bpt = b->data.begin();
-  cell* temp;
+  list<cell *>::iterator bpt = b->data.begin();
+  cell *temp;
   unsigned int ct = 0;
   do {
     //
@@ -76,9 +76,9 @@ int inflow_bc::BC_assign_INFLOW(
 // ##################################################################
 
 int inflow_bc::BC_update_INFLOW(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    struct boundary_data* b,
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    struct boundary_data *b,
     const int,
     const int)
 {
@@ -86,7 +86,7 @@ int inflow_bc::BC_update_INFLOW(
   // Inflow means BC is constant at the initial value of the
   // neighbouring edge cell, so we set dU=0.
   //
-  list<cell*>::iterator c = b->data.begin();
+  list<cell *>::iterator c = b->data.begin();
   for (c = b->data.begin(); c != b->data.end(); ++c) {
     for (int v = 0; v < par.nvar; v++)
       (*c)->dU[v] = 0.0;

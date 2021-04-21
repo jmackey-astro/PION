@@ -92,7 +92,7 @@ void sim_init::set_max_walltime(double t  ///< New Max. runtime in seconds.
 //
 // Function to output commandline options for code.
 //
-void sim_init::print_command_line_options(int argc, char** argv)
+void sim_init::print_command_line_options(int argc, char **argv)
 {
   cout << "PION: You ran:\n";
   for (int v = 0; v < argc; v++)
@@ -169,8 +169,9 @@ int sim_init::Init(
     string infile,
     int typeOfFile,
     int narg,
-    string* args,
-    vector<class GridBaseClass*>& grid  ///< address of vector of grid pointers.
+    string *args,
+    vector<class GridBaseClass *>
+        &grid  ///< address of vector of grid pointers.
 )
 {
   cout << "(pion)  Initialising"
@@ -219,7 +220,7 @@ int sim_init::Init(
   //
   // Set Ph[] = P[], and then implement the boundary conditions.
   //
-  cell* c = grid[0]->FirstPt();
+  cell *c = grid[0]->FirstPt();
   do {
     for (int v = 0; v < SimPM.nvar; v++)
       c->Ph[v] = c->P[v];
@@ -326,7 +327,7 @@ int sim_init::Init(
 // ##################################################################
 // ##################################################################
 
-int sim_init::override_params(int narg, string* args)
+int sim_init::override_params(int narg, string *args)
 {
 
   cout << "(pion)  Overriding parameters if requested...\n";
@@ -713,8 +714,8 @@ int sim_init::override_params(int narg, string* args)
 // ##################################################################
 // ##################################################################
 
-int sim_init::output_data(
-    vector<class GridBaseClass*>& grid  ///< address of vector of grid pointers.
+int sim_init::output_data(vector<class GridBaseClass *>
+                              &grid  ///< address of vector of grid pointers.
 )
 {
   ///
@@ -814,7 +815,7 @@ int sim_init::output_data(
 // ##################################################################
 // ##################################################################
 
-int sim_init::initial_conserved_quantities(class GridBaseClass* grid)
+int sim_init::initial_conserved_quantities(class GridBaseClass *grid)
 {
   // Energy, and Linear Momentum in x-direction.
 #ifdef TEST_CONSERVATION
@@ -824,7 +825,7 @@ int sim_init::initial_conserved_quantities(class GridBaseClass* grid)
   initERG   = 0.;
   initMMX = initMMY = initMMZ = 0.;
   initMASS                    = 0.0;
-  class cell* cpt             = grid->FirstPt();
+  class cell *cpt             = grid->FirstPt();
   do {
     if (cpt->isdomain) {
       spatial_solver->PtoU(cpt->P, u, SimPM.gamma);
@@ -849,8 +850,8 @@ int sim_init::initial_conserved_quantities(class GridBaseClass* grid)
 // ##################################################################
 
 int sim_init::RT_all_sources(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< Computational grid.
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< Computational grid.
     const int)
 {
   int err = 0;

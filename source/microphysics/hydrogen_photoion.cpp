@@ -105,21 +105,26 @@ double hydrogen_photoion::Hi_discrete_multifreq_photoion_rate(
   // else use normal discretised integration.
   //
   double dtau = dTau0;
-  double ans  = 0.0;
+  double ans = 0.0, ans2 = 0.0;
 
-  if (dtau < 0.01) {
-    //
+  if (dtau < MinTau) {
     // splint returns value to be multiplied by dNH0/(n(H0)*Vshell)
-    //
     ans = max(MinTau, min(MaxTau, Tau0));
     interpolate.splint(PI_Tau, LTPIrate, LTPIrt_id, PI_Nspl, log10(ans), &ans);
     ans = exp(LOGTEN * ans) * dTau0
           / (Hi_monochromatic_photo_ion_xsection(JUST_IONISED) * nH * Vshell);
-    // cout <<"PIR="<<ans<<", non-discretised="<<
-    //      Hi_multifreq_photoionisation_rate(NH0,     nH,Vshell) -
-    //      Hi_multifreq_photoionisation_rate(NH0+dNH0,nH,Vshell)<<"\n";
   }
-
+  else if (dtau < 3.0 * MinTau) {
+    // Weighted average of the optically thin and thick calculation.
+    ans = max(MinTau, min(MaxTau, Tau0));
+    interpolate.splint(PI_Tau, LTPIrate, LTPIrt_id, PI_Nspl, log10(ans), &ans);
+    ans = exp(LOGTEN * ans) * dTau0
+          / (Hi_monochromatic_photo_ion_xsection(JUST_IONISED) * nH * Vshell);
+    ans2 = Hi_multifreq_photoionisation_rate(Tau0, nH, Vshell)
+           - Hi_multifreq_photoionisation_rate(Tau0 + dTau0, nH, Vshell);
+    ans = ans * 0.5 * (3.0 * MinTau - dtau) / MinTau
+          + ans2 * 0.5 * (dtau - MinTau) / MinTau;
+  }
   else {
     //
     // just take the difference between the two to get the rate
@@ -154,20 +159,29 @@ double hydrogen_photoion::Hi_discrete_multifreq_photoheating_rate(
   // see Hi_discrete_multifreq_photoion_rate() for details.
   //
   double dtau = dTau0;
-  double ans  = 0.0;
+  double ans = 0.0, ans2 = 0.0;
 
-  if (dtau < 0.01) {
-    //
+  if (dtau < MinTau) {
     // splint returns value to be multiplied by dNH0/(n(H0)*Vshell)
-    //
-    dtau = max(MinTau, min(MaxTau, Tau0));
-    interpolate.splint(PI_Tau, LTPIheat, LTPIht_id, PI_Nspl, log10(dtau), &ans);
+    ans = max(MinTau, min(MaxTau, Tau0));
+    interpolate.splint(PI_Tau, LTPIheat, LTPIht_id, PI_Nspl, log10(ans), &ans);
     ans = exp(LOGTEN * ans) * dTau0
           / (Hi_monochromatic_photo_ion_xsection(JUST_IONISED) * nH * Vshell);
     //      Hi_multifreq_photoionisation_heating_rate(NH0,     nH,Vshell) -
     //      Hi_multifreq_photoionisation_heating_rate(NH0+dNH0,nH,Vshell)<<"\n";
   }
-
+  else if (dtau < 3.0 * MinTau) {
+    // Weighted average of the optically thin and thick calculation.
+    ans = max(MinTau, min(MaxTau, Tau0));
+    interpolate.splint(PI_Tau, LTPIheat, LTPIht_id, PI_Nspl, log10(ans), &ans);
+    ans = exp(LOGTEN * ans) * dTau0
+          / (Hi_monochromatic_photo_ion_xsection(JUST_IONISED) * nH * Vshell);
+    ans2 =
+        Hi_multifreq_photoionisation_heating_rate(Tau0, nH, Vshell)
+        - Hi_multifreq_photoionisation_heating_rate(Tau0 + dTau0, nH, Vshell);
+    ans = ans * 0.5 * (3.0 * MinTau - dtau) / MinTau
+          + ans2 * 0.5 * (dtau - MinTau) / MinTau;
+  }
   else {
     //
     // just take the difference between the two to get the rate
@@ -184,8 +198,8 @@ double hydrogen_photoion::Hi_discrete_multifreq_photoheating_rate(
 // Get multifrequency photoionisation rate for a given column density of H0,
 // local number density of H0, and Shell volume ~4.Pi.[(R+)^3-(R-)^3]/3
 // PHYSICALLY THIS IS MEANINGLESS, BECAUSE THERE IS NO POINT IN THE
-// VSHELL PARAMETER WITHOUT HAVING A DTAU THROUGH THE SHELL!!  THIS FUNCTION
-// ISA NUMERICAL CONVENIENCE.
+// VSHELL PARAMETER WITHOUT HAVING A DTAU THROUGH THE SHELL. THIS FUNCTION
+// IS A NUMERICAL CONVENIENCE.
 //
 double hydrogen_photoion::Hi_multifreq_photoionisation_rate(
     const double Tau0,   ///< Optical depth of H0 (at 13.6eV).
@@ -325,7 +339,7 @@ double hydrogen_photoion::Hi_discrete_mono_photoion_rate(
   // (1-exp(-dtau))/nH term by dtau/nH.  Otherwise evaluate the full
   // expression.
   //
-  if (dtau < 0.0001) {
+  if (dtau < MinTau) {
     rate *= dtau / nH;  // Hi_monochromatic_photo_ion_xsection(E)*ds;
   }
   else {
@@ -430,20 +444,24 @@ void hydrogen_photoion::Setup_photoionisation_rate_table(
     // phr="<<exp(LOGTEN*PIheat[v])<<"\n";
   }
 
-  //
+  // GSL:
   // Fit a cubic spline to the Photoionisation and Photoheating rates.
   // Large values in the 4th,5th args tell it to use natural boundary
   // conditions, which means set the second derivative to zero at the
   // endpoints. A small value (<1.0e30) indicates that this is the actual
   // value of the first derivative at the boundary values (4th is lower limit,
   // 5th is upper limit).
+  // BOOST:
+  // 4th and 5th args are the first derivatives at the endpoints.  As
+  // far as I can tell the makima() method is continuous and
+  // piecewise-constant 1st derivatives (i.e. not differentiable).
   //
-  interpolate.spline(PI_Tau, PIrate, PI_Nspl, 1.e99, 1.e99, PIrt_id);
-  interpolate.spline(PI_Tau, PIheat, PI_Nspl, 1.e99, 1.e99, PIht_id);
+  interpolate.spline(PI_Tau, PIrate, PI_Nspl, 0.0, 0.0, PIrt_id);
+  interpolate.spline(PI_Tau, PIheat, PI_Nspl, 0.0, 0.0, PIht_id);
 
   // LOW-DTAU APPROX INTEGRAL ---------------
-  interpolate.spline(PI_Tau, LTPIrate, PI_Nspl, 1.e99, 1.e99, LTPIrt_id);
-  interpolate.spline(PI_Tau, LTPIheat, PI_Nspl, 1.e99, 1.e99, LTPIht_id);
+  interpolate.spline(PI_Tau, LTPIrate, PI_Nspl, 0.0, 0.0, LTPIrt_id);
+  interpolate.spline(PI_Tau, LTPIheat, PI_Nspl, 0.0, 0.0, LTPIht_id);
   // ----------------------------------------
 
   return;

@@ -21,9 +21,9 @@ using namespace std;
 // ##################################################################
 
 int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
-    class SimParams& par,  ///< pointer to simulation parameters
+    class SimParams &par,  ///< pointer to simulation parameters
     const int l,           ///< level of this grid.
-    boundary_data* b       ///< boundary data
+    boundary_data *b       ///< boundary data
 )
 {
 #ifdef TEST_MPI_NG_F2C
@@ -31,13 +31,13 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
 #endif
   // Check if parent grid is on my MPI process
   int pproc               = par.levels[l].MCMD.parent_proc;
-  class MCMDcontrol* MCMD = &(par.levels[l].MCMD);
+  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
 
   //
   // If we are doing raytracing, then also send the column densities
   // from fine to coarse grids.  Here we set up the number of them.
   //
-  struct rad_src_info* s;
+  struct rad_src_info *s;
   F2C_Nxd = 0;
   F2C_tauoff.resize(par.RS.Nsources);
   for (int isrc = 0; isrc < par.RS.Nsources; isrc++) {
@@ -63,7 +63,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
     // Else, make a vector of structs with a list of cells contained
     // in each coarse cell (2,4,or 8) of the parent grid.  This grid
     // is (by design) entirely contained within the parent.
-    class GridBaseClass* grid = par.levels[l].grid;
+    class GridBaseClass *grid = par.levels[l].grid;
     int nc                    = 1;  // number of fine cells per coarse cell
     for (int i = 0; i < par.ndim; i++)
       nc *= 2;
@@ -90,10 +90,10 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
 // ##################################################################
 
 int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
-    class SimParams& par,          ///< pointer to simulation parameters
-    class FV_solver_base* solver,  ///< pointer to equations
+    class SimParams &par,          ///< pointer to simulation parameters
+    class FV_solver_base *solver,  ///< pointer to equations
     const int l,                   ///< level in the NG grid structure
-    struct boundary_data* b,
+    struct boundary_data *b,
     const int cstep,
     const int maxstep)
 {
@@ -101,7 +101,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   // Check if parent grid is on my MPI process
   int pproc               = par.levels[l].MCMD.parent_proc;
   int err                 = 0;
-  class MCMDcontrol* MCMD = &(par.levels[l].MCMD);
+  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
 
   // If so, do nothing because the parent grid will call the
   // serial NG setup function, which just grabs the data from
@@ -115,13 +115,13 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   }
 
   // else we have to send data to another MPI process:
-  class GridBaseClass* grid = par.levels[l].grid;
+  class GridBaseClass *grid = par.levels[l].grid;
   int nc                    = b->avg[0].c.size();
   int nel                   = b->avg.size();
 
   // data to send will be ordered as position,conserved-var,X-data
   // for each averaged cell.  Position only needed for testing.
-  pion_flt* data = 0;
+  pion_flt *data = 0;
 #ifdef NG_F2C_POS
   data = mem.myalloc(data, nel * (par.nvar + F2C_Nxd + par.ndim));
 #else
@@ -207,9 +207,9 @@ void NG_MPI_fine_to_coarse_bc::BC_FINE_TO_COARSE_SEND_clear_sends()
 // ##################################################################
 
 int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
-    class SimParams& par,  ///< pointer to simulation parameters
+    class SimParams &par,  ///< pointer to simulation parameters
     const int l,           ///< level of this grid.
-    boundary_data* b       ///< boundary data
+    boundary_data *b       ///< boundary data
 )
 {
 #ifdef TEST_MPI_NG_F2C
@@ -219,7 +219,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
 
   // Check if child grids exist or are on my MPI process
   int err                 = 0;
-  class MCMDcontrol* MCMD = &(par.levels[l].MCMD);
+  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   vector<struct cgrid> cg;
   MCMD->get_child_grid_info(cg);
   int nchild = cg.size();
@@ -248,8 +248,8 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
     rep.printVec("F2C MPI: child xmax", ixmax, par.ndim);
 #endif
 
-    class GridBaseClass* grid = par.levels[l].grid;
-    cell* c                   = grid->FirstPt();
+    class GridBaseClass *grid = par.levels[l].grid;
+    cell *c                   = grid->FirstPt();
     size_t ct                 = 0;
     do {
       bool ongrid = true;
@@ -307,16 +307,16 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
 // ##################################################################
 
 int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
-    class SimParams& par,          ///< pointer to simulation parameters
-    class FV_solver_base* solver,  ///< pointer to equations
+    class SimParams &par,          ///< pointer to simulation parameters
+    class FV_solver_base *solver,  ///< pointer to equations
     const int l,                   ///< level in the NG grid structure
-    struct boundary_data* b,
+    struct boundary_data *b,
     const int cstep,
     const int maxstep)
 {
   // Check if child grids exist or are on my MPI process
   int err                 = 0;
-  class MCMDcontrol* MCMD = &(par.levels[l].MCMD);
+  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   vector<struct cgrid> cg;
   MCMD->get_child_grid_info(cg);
   int nchild = b->NGrecvF2C.size();
@@ -395,7 +395,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       size_t ct = nel * (par.nvar + F2C_Nxd);
 #endif
 
-      pion_flt* buf = mem.myalloc(buf, ct);
+      pion_flt *buf = mem.myalloc(buf, ct);
 #ifdef TEST_MPI_NG_F2C
       cout << "BC_update_FINE_TO_COARSE_RECV: get " << nel << " cells.\n";
 #endif
@@ -407,8 +407,8 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
 
       // Go through list of cells in child i, and put the received
       // data onto these cells.
-      list<cell*>::iterator c_iter = b->NGrecvF2C[i].begin();
-      cell* c                      = 0;
+      list<cell *>::iterator c_iter = b->NGrecvF2C[i].begin();
+      cell *c                       = 0;
 #ifdef NG_F2C_POS
       pion_flt pos[MAX_DIM];
 #endif
@@ -447,7 +447,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
 
         // set coarse cell optical depths for any radiation sources by
         // taking values received (see get_F2C_Tau() for ordering)
-        struct rad_src_info* s;
+        struct rad_src_info *s;
         int off;
         for (int isrc = 0; isrc < par.RS.Nsources; isrc++) {
           s   = &(par.RS.sources[isrc]);

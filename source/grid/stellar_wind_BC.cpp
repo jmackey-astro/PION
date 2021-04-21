@@ -71,7 +71,7 @@ stellar_wind::stellar_wind(
     const int nv,           ///< nvar
     const int nt,           ///< ntracer
     const int ft,           ///< ftr
-    const std::string* tr,  ///< List of tracer variable names.
+    const std::string *tr,  ///< List of tracer variable names.
     const int cs,           ///< coord_sys
     const int eq,           ///< eqn_type
     const double mt         ///< Minimum temperature allowed on grid
@@ -99,7 +99,7 @@ stellar_wind::~stellar_wind()
   // Need to delete the wind_cell structs in each wind_source struct,
   // and then delete the wind_source structs.
   //
-  struct wind_source* ws;
+  struct wind_source *ws;
 
   for (int n = 0; n < nsrc; n++) {
     ws = wlist[n];
@@ -128,7 +128,7 @@ double stellar_wind::pow_fast(double a, double b)
 // ##################################################################
 
 int stellar_wind::add_source(
-    const double* pos,   ///< position (cm, w.r.t. grid origin)
+    const double *pos,   ///< position (cm, w.r.t. grid origin)
     const double rad,    ///< radius (cm)
     const int type,      ///< type (0=constant, only option here)
     const double mdot,   ///< Mdot (Msun/yr)
@@ -137,10 +137,10 @@ int stellar_wind::add_source(
     const double temp,   ///< Wind Temperature (K)
     const double Rstar,  ///< Radius of star (cm).
     const double Bstar,  ///< Surface Magnetic field of star (Gauss).
-    pion_flt* trv        ///< Tracer values of wind (if any)
+    pion_flt *trv        ///< Tracer values of wind (if any)
 )
 {
-  struct wind_source* ws = 0;
+  struct wind_source *ws = 0;
   ws                     = mem.myalloc(ws, 1);
   ws->id                 = wlist.size();
   ws->ncell              = 0;
@@ -231,18 +231,18 @@ int stellar_wind::Nsources()
 // ##################################################################
 
 int stellar_wind::add_cell(
-    class GridBaseClass* grid,
+    class GridBaseClass *grid,
     const int id,  ///< src id
-    cell* c        ///< cell to add to list.
+    cell *c        ///< cell to add to list.
 )
 {
   if (id < 0 || id >= nsrc) rep.error("bad src id", id);
-  struct wind_source* WS = wlist[id];
+  struct wind_source *WS = wlist[id];
 
   //
   // Setup a wind_cell struct
   //
-  struct wind_cell* wc = 0;
+  struct wind_cell *wc = 0;
   wc                   = mem.myalloc(wc, 1);
   //
   // GEOMETRY: this is a distance from a vertex to a cell--centre, so
@@ -335,9 +335,9 @@ int stellar_wind::add_cell(
 // ##################################################################
 
 void stellar_wind::set_wind_cell_reference_state(
-    class GridBaseClass* grid,
-    struct wind_cell* wc,
-    const struct wind_source* WS,
+    class GridBaseClass *grid,
+    struct wind_cell *wc,
+    const struct wind_source *WS,
     const double gamma  ///< EOS gamma
 )
 {
@@ -409,7 +409,7 @@ void stellar_wind::set_wind_cell_reference_state(
 
   // Velocities and magnetic fields: get coordinates relative to star
   // for calculating sin/cos angles in theta and phi.
-  cell* c = wc->c;
+  cell *c = wc->c;
   double x, y, z;
   switch (ndim) {
     case 1:
@@ -593,7 +593,7 @@ int stellar_wind::get_num_cells(const int id  ///< src id
 // ##################################################################
 
 int stellar_wind::set_cell_values(
-    class GridBaseClass* grid,
+    class GridBaseClass *grid,
     const int id,   ///< src id
     const double t  ///< simulation time
 )
@@ -603,7 +603,7 @@ int stellar_wind::set_cell_values(
   //
   // go through every cell in one go and update them all
   //
-  struct wind_source* WS = wlist[id];
+  struct wind_source *WS = wlist[id];
 #ifdef TESTING
   cout << "updating source " << id << " which has " << WS->ncell << " cells.\n";
 #endif
@@ -626,7 +626,7 @@ int stellar_wind::set_cell_values(
 
 void stellar_wind::get_src_posn(
     const int id,  ///< src id
-    double* x      ///< position vector (output)
+    double *x      ///< position vector (output)
 )
 {
   for (int v = 0; v < ndim; v++)
@@ -638,7 +638,7 @@ void stellar_wind::get_src_posn(
 
 void stellar_wind::get_src_Mdot(
     const int id,  ///< src id
-    double* x      ///< mdot (output)
+    double *x      ///< mdot (output)
 )
 {
   *x = wlist[id]->Mdot * pconst.year() / pconst.Msun();
@@ -649,7 +649,7 @@ void stellar_wind::get_src_Mdot(
 
 void stellar_wind::get_src_drad(
     const int id,  ///< src id
-    double* x      ///< radius (output)
+    double *x      ///< radius (output)
 )
 {
   *x = wlist[id]->radius;
@@ -661,7 +661,7 @@ void stellar_wind::get_src_drad(
 
 void stellar_wind::get_src_Vinf(
     const int id,  ///< src id
-    double* x      ///< Vinf (output km/s)
+    double *x      ///< Vinf (output km/s)
 )
 {
   *x = wlist[id]->Vinf / 1.0e5;
@@ -672,7 +672,7 @@ void stellar_wind::get_src_Vinf(
 
 void stellar_wind::get_src_Tw(
     const int id,  ///< src id
-    double* x      ///< Stellar Radius (output)
+    double *x      ///< Stellar Radius (output)
 )
 {
   *x = wlist[id]->Tw;
@@ -683,7 +683,7 @@ void stellar_wind::get_src_Tw(
 
 void stellar_wind::get_src_Rstar(
     const int id,  ///< src id
-    double* x      ///< Stellar radius (output)
+    double *x      ///< Stellar radius (output)
 )
 {
   *x = wlist[id]->Rstar;
@@ -694,7 +694,7 @@ void stellar_wind::get_src_Rstar(
 
 void stellar_wind::get_src_trcr(
     const int id,  ///< src id
-    pion_flt* x    ///< tracers (output)
+    pion_flt *x    ///< tracers (output)
 )
 {
   for (int v = 0; v < ntracer; v++)
@@ -706,7 +706,7 @@ void stellar_wind::get_src_trcr(
 
 void stellar_wind::get_src_type(
     const int id,  ///< src id
-    int* x         ///< type of wind (=0 for now) (output)
+    int *x         ///< type of wind (=0 for now) (output)
 )
 {
   *x = wlist[id]->type;
@@ -786,7 +786,7 @@ stellar_wind_evolution::stellar_wind_evolution(
     const int nv,           ///< nvar
     const int nt,           ///< ntracer
     const int ft,           ///< ftr
-    const std::string* tr,  ///< List of tracer variable names.
+    const std::string *tr,  ///< List of tracer variable names.
     const int cs,           ///< coord_sys
     const int eq,           ///< eqn_type
     const double mt,        ///< Minimum temperature allowed on grid
@@ -817,7 +817,7 @@ stellar_wind_evolution::~stellar_wind_evolution()
   // delete each wdata_evol[] element, making sure to delete the
   // arrays in each element first (arrays, pos, tracers).
   //
-  struct evolving_wind_data* wd = 0;
+  struct evolving_wind_data *wd = 0;
   while (wdata_evol.size() > 0) {
     wd = wdata_evol.back();
     wdata_evol.pop_back();
@@ -829,7 +829,7 @@ stellar_wind_evolution::~stellar_wind_evolution()
 // ##################################################################
 
 int stellar_wind_evolution::add_source(
-    const double* pos,   ///< position (physical units)
+    const double *pos,   ///< position (physical units)
     const double rad,    ///< radius (physical units)
     const int type,      ///< type (0=fixed in time,1=slow switch on)
     const double mdot,   ///< Mdot (Msun/yr)
@@ -838,7 +838,7 @@ int stellar_wind_evolution::add_source(
     const double Twnd,   ///< Wind Temperature (K)
     const double Rstar,  ///< Stellar radius.
     const double Bstar,  ///< Surface Magnetic field of star (Gauss).
-    pion_flt* trv        ///< Tracer values of wind (if any)
+    pion_flt *trv        ///< Tracer values of wind (if any)
 )
 {
   //
@@ -846,7 +846,7 @@ int stellar_wind_evolution::add_source(
   // constant wind.  It sets all the evolving wind stuff to zero, and
   // then calls the stellar_wind:: version to set up the wind source.
   //
-  struct evolving_wind_data* temp = 0;
+  struct evolving_wind_data *temp = 0;
   temp                            = mem.myalloc(temp, 1);
   //
   // First set all the stuff we don't need for a constant wind.
@@ -878,7 +878,7 @@ int stellar_wind_evolution::add_source(
 // ##################################################################
 // ##################################################################
 
-void stellar_wind_evolution::set_element_indices(struct evolving_wind_data* ewd)
+void stellar_wind_evolution::set_element_indices(struct evolving_wind_data *ewd)
 {
   ewd->i_XH  = -1;
   ewd->i_XHe = -1;
@@ -915,7 +915,7 @@ void stellar_wind_evolution::set_element_indices(struct evolving_wind_data* ewd)
 
 int stellar_wind_evolution::read_evolution_file(
     const string infile,             ///< file name to read data from.
-    struct evolving_wind_data* data  ///< where to put the data
+    struct evolving_wind_data *data  ///< where to put the data
 )
 {
 
@@ -924,13 +924,13 @@ int stellar_wind_evolution::read_evolution_file(
   // Format: time M L Teff Mdot vrot vcrit vinf
   //     X_H X_He X_C X_N X_O X_Z X_D
   //
-  FILE* wf = 0;
+  FILE *wf = 0;
   wf       = fopen(infile.c_str(), "r");
   if (!wf) rep.error("can't open wind file, stellar_wind_angle", wf);
 
   // Skip first two lines
   char line[512];
-  char* rval = 0;
+  char *rval = 0;
   rval       = fgets(line, 512, wf);
   if (!rval) rep.error("stwind_angle: failed to get line 1", line);
   // printf("Star Calculation Source: %s",line);
@@ -996,10 +996,10 @@ int stellar_wind_evolution::read_evolution_file(
 // ##################################################################
 
 int stellar_wind_evolution::add_evolving_source(
-    const double* pos,         ///< position (physical units).
+    const double *pos,         ///< position (physical units).
     const double rad,          ///< radius (physical units).
     const int type,            ///< type (must be 3, for variable wind).
-    pion_flt* trv,             ///< Any (constant) wind tracer values.
+    pion_flt *trv,             ///< Any (constant) wind tracer values.
     const string infile,       ///< file name to read data from.
     const int,                 ///< enhance mdot based on rotation (0=no,1=yes).
     const double time_offset,  ///< time offset = [t(sim)-t(wind_file)] in years
@@ -1024,7 +1024,7 @@ int stellar_wind_evolution::add_evolving_source(
   //
   // Wind source struct, to be added to class vector wdata_evol
   //
-  struct evolving_wind_data* temp = 0;
+  struct evolving_wind_data *temp = 0;
   temp                            = mem.myalloc(temp, 1);
   int err                         = read_evolution_file(infile, temp);
   if (err) rep.error("couldn't read wind evolution file", infile);
@@ -1136,8 +1136,8 @@ int stellar_wind_evolution::add_evolving_source(
 // ##################################################################
 
 void stellar_wind_evolution::update_source(
-    class GridBaseClass* grid,
-    struct evolving_wind_data* wd,
+    class GridBaseClass *grid,
+    struct evolving_wind_data *wd,
     const double t_now,
     const double gamma)
 {
@@ -1224,7 +1224,7 @@ void stellar_wind_evolution::update_source(
 // ##################################################################
 
 int stellar_wind_evolution::set_cell_values(
-    class GridBaseClass* grid,
+    class GridBaseClass *grid,
     const int id,       ///< src id
     const double t_now  ///< simulation time
 )
@@ -1234,7 +1234,7 @@ int stellar_wind_evolution::set_cell_values(
     rep.error("bad src id", id);
   }
 
-  struct evolving_wind_data* wd = wdata_evol[id];
+  struct evolving_wind_data *wd = wdata_evol[id];
 
   //
   // Check if the source needs to be updated, and if so, update it

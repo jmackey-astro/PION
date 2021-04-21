@@ -31,7 +31,7 @@ using namespace std;
 
 void setup_ics_type(
     string ics,              ///< string giving type of ICs
-    class ICsetup_base** ic  ///< pointer to address of IC class
+    class ICsetup_base **ic  ///< pointer to address of IC class
 )
 {
   // invoke an appropriate class for whatever 'ics' is.
@@ -128,10 +128,10 @@ void setup_ics_type(
 // ##################################################################
 
 int ICsetup_base::equilibrate_MP(
-    class GridBaseClass* gg,
-    class microphysics_base* mp,
-    class ReadParams* rp,
-    class SimParams& SimPM)
+    class GridBaseClass *gg,
+    class microphysics_base *mp,
+    class ReadParams *rp,
+    class SimParams &SimPM)
 {
 
   if (!mp || !gg || !rp) rep.error("microphysics or grid not initialised.", mp);
@@ -142,7 +142,7 @@ int ICsetup_base::equilibrate_MP(
   string s    = rp->find_parameter(seek);
   if (s == "" || s == "YES" || s == "Y" || s == "y") {
     // integrate ion fractions to equilibrium
-    cell* c = gg->FirstPt();
+    cell *c = gg->FirstPt();
     do {
       //
       // Check if cell is boundary data or not (can only be an internal
@@ -164,7 +164,7 @@ int ICsetup_base::equilibrate_MP(
 
     // now do a long time integration to get to equilibrium.
     c           = gg->FirstPt();
-    pion_flt* p = c->P;
+    pion_flt *p = c->P;
     double tint = sqrt(SimPM.gamma * p[PG] / p[RO]);
     tint        = 50. * gg->DX()
            / tint;  // gives us 50 times the dynamical time for a cell.
@@ -196,7 +196,7 @@ int ICsetup_base::equilibrate_MP(
   else if (s == "NO" || s == "N" || s == "n" || s == "no") {
     // initial values should be read from paramfile.
     string vb = "Tracer";
-    cell* c   = 0;
+    cell *c   = 0;
     for (int i = 0; i < SimPM.ntracer; i++) {
       ostringstream t;
       t << vb << i;
@@ -229,7 +229,7 @@ int ICsetup_base::equilibrate_MP(
 // ##################################################################
 
 int ICsetup_base::AddNoise2Data(
-    class GridBaseClass* grid, class SimParams& SimPM, int n, double frac)
+    class GridBaseClass *grid, class SimParams &SimPM, int n, double frac)
 {
   int seed = 975;
 #ifdef PARALLEL
@@ -237,7 +237,7 @@ int ICsetup_base::AddNoise2Data(
   bool true_edge = false;
 #endif
   srand(seed);
-  class cell* cpt;
+  class cell *cpt;
   double avg  = 0.;
   long int ct = 0;
   switch (n) {

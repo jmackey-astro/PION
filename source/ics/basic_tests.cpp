@@ -46,8 +46,8 @@ IC_basic_tests::~IC_basic_tests() {}
 // ##################################################################
 
 int IC_basic_tests::setup_data(
-    class ReadParams* rrp,    ///< pointer to parameter list.
-    class GridBaseClass* ggg  ///< pointer to grid
+    class ReadParams *rrp,    ///< pointer to parameter list.
+    class GridBaseClass *ggg  ///< pointer to grid
 )
 {
   int err = 0;
@@ -153,8 +153,8 @@ int IC_basic_tests::setup_data(
 // ##################################################################
 
 int IC_basic_tests::setup_uniformgrid(
-    class ReadParams* rrp,    ///< pointer to parameter list.
-    class GridBaseClass* ggg  ///< pointer to grid
+    class ReadParams *rrp,    ///< pointer to parameter list.
+    class GridBaseClass *ggg  ///< pointer to grid
 )
 {
   // SimPM->typeofop=1; // text output
@@ -295,7 +295,7 @@ int IC_basic_tests::setup_uniformgrid(
   if (use_core && pconst.equalD(radial_slope, 0.0)) use_core = false;
 
   // cout <<"\t\tAssigning values to data.\n";
-  class cell* cpt = ggg->FirstPt();
+  class cell *cpt = ggg->FirstPt();
   double distance, dpos[MAX_DIM];
   do {
     for (int v = 0; v < SimPM->nvar; v++)
@@ -395,7 +395,7 @@ int IC_basic_tests::setup_sinewave_velocity()
 
   // data
   // cout <<"\t\tAssigning primitive vectors.\n";
-  class cell* cpt = gg->FirstPt();
+  class cell *cpt = gg->FirstPt();
   do {
     // Set values of primitive variables.
     cpt->P[RO] = rhoout;
@@ -493,7 +493,7 @@ int IC_basic_tests::setup_advection()
 
   // data
   // cout <<"\t\tAssigning primitive vectors.\n";
-  class cell* cpt = gg->FirstPt();
+  class cell *cpt = gg->FirstPt();
   do {
     // Set values of primitive variables.
     cpt->P[RO] = rhoout;
@@ -541,7 +541,7 @@ int IC_basic_tests::setup_divBpeak()
   int ndim = gg->Ndim();
   if (ndim != 2) rep.error("divBpeak only works in 2D", ndim);
   int nvar  = gg->Nvar();
-  double* s = new double[nvar];
+  double *s = new double[nvar];
   s[RO]     = 1.0;
   s[VX] = s[VY] = 1.;
   s[VZ]         = 0.0;
@@ -565,7 +565,7 @@ int IC_basic_tests::setup_divBpeak()
         "Set bounds properly for divBpeak!!! x=[-.5,1.5] y=[-.5,1.5]",
         SimPM->Xmin[XX]);
   }
-  class cell* c = gg->FirstPt();
+  class cell *c = gg->FirstPt();
   double r2     = 0;
   double dpos[MAX_DIM];
   CI.get_dpos(c, dpos);
@@ -634,7 +634,7 @@ int IC_basic_tests::setup_FieldLoop(double vz  ///< Z-velocity of fluid
   }
 
   // cout <<"Assigning primitive vectors.\n";
-  class cell* c = gg->FirstPt();
+  class cell *c = gg->FirstPt();
   do {
     c->P[RO] = rho;
     c->P[PG] = p_g;
@@ -684,7 +684,7 @@ int IC_basic_tests::setup_FieldLoop(double vz  ///< Z-velocity of fluid
   //
   int els[3] = {BX, BY, BZ};
   pion_flt ans[3];
-  class VectorOps_Cart* vec = new VectorOps_Cart(ndim);
+  class VectorOps_Cart *vec = new VectorOps_Cart(ndim);
   c                         = gg->FirstPt();
   do {
 
@@ -749,7 +749,7 @@ int IC_basic_tests::setup_OrszagTang()
   double d0    = SimPM->gamma * otvmach * otvmach * p0;  // constant density.
   // cout <<"Assigning primitive vectors.\n";
   double dpos[ndim];
-  class cell* c = gg->FirstPt();
+  class cell *c = gg->FirstPt();
   do {
     CI.get_dpos(c, dpos);
     // Set values of primitive variables.
@@ -837,7 +837,7 @@ int IC_basic_tests::setup_DoubleMachRef()
   // vy="<<vy1<<endl;
 
   double xs     = 0.0;
-  class cell* c = gg->FirstPt();
+  class cell *c = gg->FirstPt();
   double dpos[ndim];
   do {
     CI.get_dpos(c, dpos);
@@ -892,7 +892,7 @@ int IC_basic_tests::setup_KelvinHelmholz_Stone()
   srand(seed);
   double noise_amp = 0.01;  // absolute amplitude of noise.
 
-  class cell* c = gg->FirstPt();
+  class cell *c = gg->FirstPt();
   double dpos[ndim];
   do {
     CI.get_dpos(c, dpos);
@@ -943,7 +943,7 @@ int IC_basic_tests::setup_KelvinHelmholz()
   double Uy_amp   = 0.01;  // Amplitude of velocity perturbation
   double a        = SimPM->Range[YY] / 25.0;  // Thickness of shear layer.
 
-  class cell* c = gg->FirstPt();
+  class cell *c = gg->FirstPt();
   double dpos[ndim];
   do {
     CI.get_dpos(c, dpos);
@@ -989,7 +989,7 @@ int IC_basic_tests::setup_LWImplosion()
   double pressure = 1.0;
   double rho      = 1.0;
 
-  class cell* c = gg->FirstPt();
+  class cell *c = gg->FirstPt();
   double dpos[ndim];
   do {
     CI.get_dpos(c, dpos);

@@ -115,11 +115,11 @@ HLLD_MHD::~HLLD_MHD()
 // ##################################################################
 
 int HLLD_MHD::MHD_HLLD_flux_solver(
-    const pion_flt* Pl,  ///< input left state
-    const pion_flt* Pr,  ///< input right state
+    const pion_flt *Pl,  ///< input left state
+    const pion_flt *Pr,  ///< input right state
     const double gamma,  ///< input gamma
-    pion_flt* out_flux,  ///< output flux
-    pion_flt* out_ustar  ///< output state (cons. var)
+    pion_flt *out_flux,  ///< output flux
+    pion_flt *out_ustar  ///< output state (cons. var)
 )
 {
   eq_gamma = gamma;
@@ -348,11 +348,11 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
 // ###################################################################
 
 void HLLD_MHD::HLLD_signal_speeds(
-    const pion_flt* Pl,  ///< inputs
-    const pion_flt* Pr,
+    const pion_flt *Pl,  ///< inputs
+    const pion_flt *Pr,
     const double eq_gamma,
-    double& Sl,  ///< outputs
-    double& Sr)
+    double &Sl,  ///< outputs
+    double &Sr)
 {
   //
   // compute wave speeds (m05 eq 3)
@@ -378,11 +378,11 @@ void HLLD_MHD::HLLD_signal_speeds(
 // ###################################################################
 
 int HLLD_MHD::MHD_HLL_flux_solver(
-    const pion_flt* Pl,  ///< input left state
-    const pion_flt* Pr,  ///< input right state
+    const pion_flt *Pl,  ///< input left state
+    const pion_flt *Pr,  ///< input right state
     const double gamma,  ///< input gamma
-    pion_flt* out_flux,  ///< output flux
-    pion_flt* out_ustar  ///< output Ustar vec
+    pion_flt *out_flux,  ///< output flux
+    pion_flt *out_ustar  ///< output Ustar vec
 )
 {
   eq_gamma = gamma;

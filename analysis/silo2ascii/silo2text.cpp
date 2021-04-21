@@ -166,7 +166,7 @@ int main(int argc, char **argv)
       // Now setup microphysics and raytracing classes
       //
       err += SimSetup->setup_microphysics(SimPM);
-      //err += setup_raytracing();
+      //err += SimSetup->setup_raytracing(SimPM);
       err += SimSetup->set_equations(SimPM);
       if (err) rep.error("Setup of microphysics and raytracing",err);
 

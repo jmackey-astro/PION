@@ -19,8 +19,8 @@
 using namespace std;
 
 raytracer_shielding::raytracer_shielding(
-    class GridBaseClass* ggg,     ///< Pointer to grid
-    class microphysics_base* mmm  ///< Pointer to MicroPhysics Class.
+    class GridBaseClass *ggg,     ///< Pointer to grid
+    class microphysics_base *mmm  ///< Pointer to MicroPhysics Class.
     ) :
     raytracer_USC_infinity(ggg, mmm)
 {
@@ -55,7 +55,7 @@ int raytracer_shielding::RayTrace_Column_Density(
     cout << "raytracer_shielding::RayTrace_Column_Density: setting Vshell for "
             "source "
          << s_id << ".\n";
-    cell* c   = gridptr->FirstPt();
+    cell *c   = gridptr->FirstPt();
     double dx = gridptr->DX();
     do {
       CI.set_cell_Vshell(c, s_id, dx);
@@ -76,10 +76,10 @@ int raytracer_shielding::RayTrace_Column_Density(
 }
 
 int raytracer_shielding::ProcessCell(
-    class cell* c,             ///< Current cell.
+    class cell *c,             ///< Current cell.
     double col2cell,           ///< Column to cell [N(H) per cm2].
     double ds,                 ///< Path Length through cell (physical units!).
-    const rad_source* source,  ///< pointer to source struct.
+    const rad_source *source,  ///< pointer to source struct.
     const double dt            ///< Timestep
 )
 {
@@ -158,8 +158,8 @@ int raytracer_shielding::ProcessCell(
 
 #ifdef PARALLEL
 raytracer_shielding_pllel::raytracer_shielding_pllel(
-    class GridBaseClass* ggg,     ///< Pointer to grid
-    class microphysics_base* mmm  ///< Pointer to MicroPhysics Class.
+    class GridBaseClass *ggg,     ///< Pointer to grid
+    class microphysics_base *mmm  ///< Pointer to MicroPhysics Class.
     ) :
     raytracer_USC_infinity(ggg, mmm),
     raytracer_shielding(ggg, mmm)
@@ -175,7 +175,7 @@ raytracer_shielding_pllel::~raytracer_shielding_pllel()
 }
 
 int raytracer_shielding_pllel::Add_Source(
-    const struct rad_src_info* src  ///< source info.
+    const struct rad_src_info *src  ///< source info.
 )
 {
   cout << "\n--BEGIN-----raytracer_shielding_pllel::AddSource()------------\n";

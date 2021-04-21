@@ -27,11 +27,11 @@ protected:
   /// The HLLD MHD solver (reference!)
   ///
   int MHD_HLLD_flux_solver(
-      const pion_flt*,  ///< input left state
-      const pion_flt*,  ///< input right state
-      const double,     ///< input eq_gamma
-      pion_flt*,        ///< output flux
-      pion_flt*         ///< output Ustar vec
+      const pion_flt *,  ///< input left state
+      const pion_flt *,  ///< input right state
+      const double,      ///< input eq_gamma
+      pion_flt *,        ///< output flux
+      pion_flt *         ///< output Ustar vec
   );
 
   double *HD_lambda, *HD_UL, *HD_UR, *HD_FL, *HD_FR, *HD_ULs, *HD_URs, *HD_FLs,
@@ -39,18 +39,18 @@ protected:
   double HD_nvar;
 
   void HLLD_signal_speeds(
-      const pion_flt*,  ///< inputs
-      const pion_flt*,
+      const pion_flt *,  ///< inputs
+      const pion_flt *,
       const double,
-      double&,  ///< outputs
-      double&);
+      double &,  ///< outputs
+      double &);
 
   int MHD_HLL_flux_solver(
-      const pion_flt*,  ///< input left state
-      const pion_flt*,  ///< input right state
-      const double,     ///< input gamma
-      pion_flt*,        ///< output flux
-      pion_flt*         ///< output Ustar vec
+      const pion_flt *,  ///< input left state
+      const pion_flt *,  ///< input right state
+      const double,      ///< input gamma
+      pion_flt *,        ///< output flux
+      pion_flt *         ///< output Ustar vec
   );
 };
 

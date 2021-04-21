@@ -46,11 +46,11 @@ public:
   /// \retval 1 failure
   ///
   virtual int Init(
-      string,   ///< Name of input file.
-      int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...)
-      int,      ///< Number of command-line arguments.
-      string*,  ///< Pointer to array of command-line arguments.
-      vector<class GridBaseClass*>&  ///< grid pointers.
+      string,    ///< Name of input file.
+      int,       ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...)
+      int,       ///< Number of command-line arguments.
+      string *,  ///< Pointer to array of command-line arguments.
+      vector<class GridBaseClass *> &  ///< grid pointers.
   );
 
   ///
@@ -61,7 +61,7 @@ public:
   /// It calls a sequence of functions to advance the time by one timestep,
   /// all in a loop which runs until end-of-sim is reached.
   ///
-  virtual int Time_Int(vector<class GridBaseClass*>&  ///< grid pointers.
+  virtual int Time_Int(vector<class GridBaseClass *> &  ///< grid pointers.
   );
 
   ///
@@ -69,7 +69,7 @@ public:
   /// This function finished the simulation gracefully (hopefully!).
   ///
   int Finalise(
-      vector<class GridBaseClass*>&  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
   );
 
   //---------------------------------------
@@ -78,7 +78,7 @@ protected:
   /// Calculates total values of conserved quantities.
   ///
   virtual int initial_conserved_quantities(
-      vector<class GridBaseClass*>&  ///< grid pointers.
+      vector<class GridBaseClass *> &  ///< grid pointers.
   );
 
 #ifdef CHECK_MAGP
@@ -87,7 +87,7 @@ protected:
   /// pressure on the full domain and outputs it to screen
   ///
   void calculate_magnetic_pressure(
-      vector<class GridBaseClass*>&  ///< grid pointers.
+      vector<class GridBaseClass *> &  ///< grid pointers.
   );
 #endif  // CHECK_MAGP
 
@@ -97,7 +97,7 @@ protected:
   /// position and output to screen.
   ///
   void calculate_blastwave_radius(
-      vector<class GridBaseClass*>&  ///<  grid pointers.
+      vector<class GridBaseClass *> &  ///<  grid pointers.
   );
 #endif  // BLAST_WAVE_CHECK
 
@@ -108,8 +108,8 @@ protected:
   /// first-order or second-order update.
   ///
   virtual double advance_time(
-      const int,            ///< level in NG grid.
-      class GridBaseClass*  ///< grid pointer
+      const int,             ///< level in NG grid.
+      class GridBaseClass *  ///< grid pointer
   );
 
   ///
@@ -133,7 +133,7 @@ protected:
   /// message if not.
   ///
   virtual int check_energy_cons(
-      vector<class GridBaseClass*>&  ///< grid pointers.
+      vector<class GridBaseClass *> &  ///< grid pointers.
   );
 
   ///
@@ -141,7 +141,8 @@ protected:
   /// densities through each grid for each one.  This exchanges data
   /// between grid levels so that the rays traverse all levels.
   ///
-  virtual int RT_all_sources_levels(class SimParams&  ///< simulation parameters
+  virtual int RT_all_sources_levels(
+      class SimParams &  ///< simulation parameters
   );
 
   ///
@@ -161,9 +162,9 @@ protected:
   /// are stored in extra_data[i] for each cell.
   ///
   virtual int do_ongrid_raytracing(
-      class SimParams&,      ///< simulation parameters
-      class GridBaseClass*,  ///< grid to trace rays on.
-      const int              ///< level of NG grid.
+      class SimParams &,      ///< simulation parameters
+      class GridBaseClass *,  ///< grid to trace rays on.
+      const int               ///< level of NG grid.
   );
 
   ///
@@ -172,9 +173,9 @@ protected:
   /// are stored in extra_data[i] for each cell.
   ///
   virtual int do_offgrid_raytracing(
-      class SimParams&,      ///< simulation parameters
-      class GridBaseClass*,  ///< grid to trace rays on.
-      const int              ///< level of NG grid.
+      class SimParams &,      ///< simulation parameters
+      class GridBaseClass *,  ///< grid to trace rays on.
+      const int               ///< level of NG grid.
   );
 
 };  // sim_control_NG

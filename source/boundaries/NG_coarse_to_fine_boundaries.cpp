@@ -16,10 +16,10 @@ using namespace std;
 // ##################################################################
 
 int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
-    class SimParams& par,        ///< simulation parameters
-    class GridBaseClass* grid,   ///< pointer to grid.
-    boundary_data* b,            ///< boundary data
-    class GridBaseClass* parent  ///< pointer to parent grid.
+    class SimParams &par,        ///< simulation parameters
+    class GridBaseClass *grid,   ///< pointer to grid.
+    boundary_data *b,            ///< boundary data
+    class GridBaseClass *parent  ///< pointer to parent grid.
 )
 {
   //
@@ -35,7 +35,7 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
     // from coarse to fine grids.  Here we set up the number of them.
     //
 #ifdef C2F_TAU
-  struct rad_src_info* s;
+  struct rad_src_info *s;
   C2F_Nxd = 0;
   C2F_tauoff.resize(par.RS.Nsources);
   for (int isrc = 0; isrc < par.RS.Nsources; isrc++) {
@@ -52,10 +52,10 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
 #ifdef TEST_C2F
   cout << "assigning C2F boundary for dir " << b->dir << "\n";
 #endif
-  list<cell*>::iterator bpt = b->data.begin();
-  int gidx                  = grid->idx();
-  cell* pc                  = parent->FirstPt_All();  // parent cell.
-  double distance           = 0.0;
+  list<cell *>::iterator bpt = b->data.begin();
+  int gidx                   = grid->idx();
+  cell *pc                   = parent->FirstPt_All();  // parent cell.
+  double distance            = 0.0;
 
   // Match parent cells with child grid boundary cells.
   do {
@@ -88,10 +88,10 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
 // ##################################################################
 
 int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
-    class SimParams& par,          ///< simulation parameters
-    class FV_solver_base* solver,  ///< pointer to equations
+    class SimParams &par,          ///< simulation parameters
+    class FV_solver_base *solver,  ///< pointer to equations
     const int level,               ///< level in the NG grid structure
-    struct boundary_data* b,
+    struct boundary_data *b,
     const int step)
 {
   if (level == 0) return 0;
@@ -115,14 +115,14 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   //
 
   // pointers to coarse and fine grids:
-  class GridBaseClass* coarse = par.levels[level].parent;
-  class GridBaseClass* fine   = par.levels[level].grid;
+  class GridBaseClass *coarse = par.levels[level].parent;
+  class GridBaseClass *fine   = par.levels[level].grid;
 #ifdef TEST_C2F
   cout << "C2F: fine=" << fine << ", parent=" << coarse << ", level=";
   cout << level << "\n";
 #endif
 
-  list<cell*>::iterator f_iter = b->data.begin();
+  list<cell *>::iterator f_iter = b->data.begin();
   cell *f, *c;
 
   // ----------------------------------------------------------------
@@ -168,10 +168,10 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   // save coarse cell optical depths onto fine cells (Experimental!)
   for (f_iter = b->data.begin(); f_iter != b->data.end(); ++f_iter) {
     cell *f1 = 0, *f2 = 0;
-    struct rad_src_info* s;
+    struct rad_src_info *s;
     int off = 0, ncells = 0;
     pion_flt Tau[MAX_TAU], T[C2F_Nxd], cpos[MAX_DIM];
-    std::vector<cell*> fcl;
+    std::vector<cell *> fcl;
     c = (*f_iter)->npt;
     CI.get_dpos(c, cpos);
 
@@ -350,8 +350,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       cout << b->data.size() << "\n";
 #endif
       pion_flt c_vol = 0.0;
-      cell* fch[8];  // fine-level cells (children)
-      cell* c;       // coarse-level cell.
+      cell *fch[8];  // fine-level cells (children)
+      cell *c;       // coarse-level cell.
       for (f_iter = b->data.begin(); f_iter != b->data.end(); ++f_iter) {
         c = (*f_iter)->npt;
 
@@ -403,14 +403,14 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
 // ##################################################################
 
 void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
-    class SimParams& par,          ///< simulation parameters
-    class GridBaseClass* fine,     ///< pointer to fine grid
-    class FV_solver_base* solver,  ///< pointer to equations
-    const pion_flt* P,             ///< state vector of coarse cell.
+    class SimParams &par,          ///< simulation parameters
+    class GridBaseClass *fine,     ///< pointer to fine grid
+    class FV_solver_base *solver,  ///< pointer to equations
+    const pion_flt *P,             ///< state vector of coarse cell.
     const pion_flt c_vol,          ///< volume of coarse cell.
-    pion_flt* sx,                  ///< dP/dx in coarse cell.
-    cell* f1,                      ///< pointer to first fine cell  (XN)
-    cell* f2                       ///< pointer to second fine cell (XP)
+    pion_flt *sx,                  ///< dP/dx in coarse cell.
+    cell *f1,                      ///< pointer to first fine cell  (XN)
+    cell *f2                       ///< pointer to second fine cell (XP)
 )
 {
   double fU[par.nvar], f1U[par.nvar], f2U[par.nvar], cU[par.nvar];
@@ -478,16 +478,16 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
 // ##################################################################
 
 void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
-    class SimParams& par,          ///< pointer to simulation parameters
-    class GridBaseClass* fine,     ///< pointer to fine grid
-    class FV_solver_base* solver,  ///< pointer to equations
-    const pion_flt* P,             ///< state vector of coarse cell.
-    const int* cpos,               ///< position of coarse cell.
+    class SimParams &par,          ///< pointer to simulation parameters
+    class GridBaseClass *fine,     ///< pointer to fine grid
+    class FV_solver_base *solver,  ///< pointer to equations
+    const pion_flt *P,             ///< state vector of coarse cell.
+    const int *cpos,               ///< position of coarse cell.
     const pion_flt c_vol,          ///< volume of coarse cell.
-    pion_flt* sx,                  ///< dP/dx in coarse cell.
-    pion_flt* sy,                  ///< dP/dy in coarse cell.
-    pion_flt* sz,                  ///< dP/dz in coarse cell.
-    cell** fch                     ///< pointer to array of 8 fine cells
+    pion_flt *sx,                  ///< dP/dx in coarse cell.
+    pion_flt *sy,                  ///< dP/dy in coarse cell.
+    pion_flt *sz,                  ///< dP/dz in coarse cell.
+    cell **fch                     ///< pointer to array of 8 fine cells
 )
 {
   double **fU = 0, Utot[par.nvar], cU[par.nvar];
@@ -604,18 +604,18 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
 // ##################################################################
 
 void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
-    class SimParams& par,          ///< pointer to simulation parameters
-    class GridBaseClass* fine,     ///< pointer to fine grid
-    class FV_solver_base* solver,  ///< pointer to equations
-    const pion_flt* P,             ///< state vector of coarse cell.
-    const int* cpos,               ///< position of coarse cell.
+    class SimParams &par,          ///< pointer to simulation parameters
+    class GridBaseClass *fine,     ///< pointer to fine grid
+    class FV_solver_base *solver,  ///< pointer to equations
+    const pion_flt *P,             ///< state vector of coarse cell.
+    const int *cpos,               ///< position of coarse cell.
     const pion_flt c_vol,          ///< volume of coarse cell.
-    pion_flt* sx,                  ///< dP/dx in coarse cell.
-    pion_flt* sy,                  ///< dP/dy in coarse cell.
-    cell* f1,                      ///< pointer to first fine cell  (XN,YN)
-    cell* f2,                      ///< pointer to second fine cell (XP,YN)
-    cell* f3,                      ///< pointer to third fine cell  (XN,YP)
-    cell* f4                       ///< pointer to fourth fine cell (XP,YP)
+    pion_flt *sx,                  ///< dP/dx in coarse cell.
+    pion_flt *sy,                  ///< dP/dy in coarse cell.
+    cell *f1,                      ///< pointer to first fine cell  (XN,YN)
+    cell *f2,                      ///< pointer to second fine cell (XP,YN)
+    cell *f3,                      ///< pointer to third fine cell  (XN,YP)
+    cell *f4                       ///< pointer to fourth fine cell (XP,YP)
 )
 {
   double fU[par.nvar], f1U[par.nvar], f2U[par.nvar];
@@ -722,16 +722,16 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
 // ##################################################################
 
 void NG_coarse_to_fine_bc::get_C2F_Tau(
-    class SimParams& par,   ///< pointer to simulation parameters
-    std::vector<cell*>& c,  ///< list of cells
-    const pion_flt* cpos,   ///< centre of coarse cell.
-    double* T               ///< coarse-cell optical depths
+    class SimParams &par,    ///< pointer to simulation parameters
+    std::vector<cell *> &c,  ///< list of cells
+    const pion_flt *cpos,    ///< centre of coarse cell.
+    double *T                ///< coarse-cell optical depths
 )
 {
   // data needed for getting coarse cell Taus onto coarse grid.
   double Tau[MAX_TAU], dTau[MAX_TAU];
   class cell *f0, *f1, *f2, *f3;
-  struct rad_src_info* s;
+  struct rad_src_info *s;
   double diffx, diffy;
 
   if (par.ndim == 1) {

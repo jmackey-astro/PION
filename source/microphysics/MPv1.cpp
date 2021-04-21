@@ -80,9 +80,9 @@ using namespace std;
 MP_Hydrogen::MP_Hydrogen(
     const int nv,
     const int ntr,
-    const std::string* tracers,
-    struct which_physics* ephys,  ///< pointer to extra physics flags.
-    struct rad_sources* rsrcs     ///< radiation sources.
+    const std::string *tracers,
+    struct which_physics *ephys,  ///< pointer to extra physics flags.
+    struct rad_sources *rsrcs     ///< radiation sources.
     ) :
     microphysics_base(nv, ntr, tracers, ephys, rsrcs),
     kB(pconst.kB()),
@@ -195,8 +195,8 @@ MP_Hydrogen::MP_Hydrogen(
     hr_alpha2[i] = 0.0;
     hr_beta2[i]  = 0.0;
   }
-  interpolate.spline(hr_t, hr_alpha, hr_nspl, 1.e99, 1.e99, hr_alpha2);
-  interpolate.spline(hr_t, hr_beta, hr_nspl, 1.e99, 1.e99, hr_beta2);
+  interpolate.spline(hr_t, hr_alpha, hr_nspl, 0.0, 0.0, hr_alpha2);
+  interpolate.spline(hr_t, hr_beta, hr_nspl, 0.0, 0.0, hr_beta2);
 
 #ifdef TESTING
   //
@@ -261,7 +261,7 @@ int MP_Hydrogen::Tr(string t)
 // ##################################################################
 
 int MP_Hydrogen::Set_Temp(
-    pion_flt* p,     ///< primitive vector.
+    pion_flt *p,     ///< primitive vector.
     const double T,  ///< temperature.
     const double g   ///< eos gamma.
 )
@@ -288,7 +288,7 @@ int MP_Hydrogen::Set_Temp(
 // ##################################################################
 
 double MP_Hydrogen::Temperature(
-    const pion_flt* pv,  ///< primitive vector
+    const pion_flt *pv,  ///< primitive vector
     const double g       ///< eos gamma
 )
 {
@@ -324,7 +324,7 @@ double MP_Hydrogen::Temperature(
 // ##################################################################
 
 int MP_Hydrogen::Init_ionfractions(
-    pion_flt* p_prim,  ///< Primitive vector to be updated.
+    pion_flt *p_prim,  ///< Primitive vector to be updated.
     const double gam,  ///< eos gamma.
     const double temp  ///< optional gas temperature to end up at. (negative
                        ///< means use pressure)
@@ -354,7 +354,7 @@ int MP_Hydrogen::Init_ionfractions(
 // ##################################################################
 
 int MP_Hydrogen::convert_prim2local(
-    const pion_flt* p_in, double* p_local, const double gam)
+    const pion_flt *p_in, double *p_local, const double gam)
 {
   p_local[lv_nh]   = p_in[RO] / m_p;
   p_local[lv_eint] = p_in[PG] / (gam - 1.);
@@ -419,9 +419,9 @@ int MP_Hydrogen::convert_prim2local(
 // ##################################################################
 
 int MP_Hydrogen::convert_local2prim(
-    const double* p_local,
-    const pion_flt* p_in,
-    pion_flt* p_out,
+    const double *p_local,
+    const pion_flt *p_in,
+    pion_flt *p_out,
     const double gam)
 {
   for (int v = 0; v < nv_prim; v++)
@@ -475,12 +475,12 @@ int MP_Hydrogen::convert_local2prim(
 // ##################################################################
 
 int MP_Hydrogen::TimeUpdateMP(
-    const pion_flt* p_in,
-    pion_flt* p_out,
+    const pion_flt *p_in,
+    pion_flt *p_out,
     const double dt,
     const double g,
     const int sw_int,
-    double* ttt)
+    double *ttt)
 {
   int err = 0;
   gamma   = g;
@@ -556,8 +556,8 @@ int MP_Hydrogen::TimeUpdateMP(
 // ##################################################################
 
 int MP_Hydrogen::TimeUpdate_RTsinglesrc(
-    const pion_flt* p_in,  ///< Primitive Vector to be updated.
-    pion_flt* p_out,       ///< Destination Vector for updated values.
+    const pion_flt *p_in,  ///< Primitive Vector to be updated.
+    pion_flt *p_out,       ///< Destination Vector for updated values.
     const double dt,       ///< Time Step to advance by.
     const double g,        ///< EOS gamma.
     const int sw_int,      ///< Switch for what type of integration to use.
@@ -565,7 +565,7 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
     const double phot_in,  ///< flux in per unit length along ray (F/ds or L/dV)
     const double ds,       ///< path length ds through cell.
     const double tau2cell,  ///< Optical depth to entry point of ray into cell.
-    double* deltau  ///< return optical depth through cell in this variable.
+    double *deltau  ///< return optical depth through cell in this variable.
 )
 {
 #ifdef RT_TESTING
@@ -647,7 +647,7 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
 
 #ifdef COUNT_ENERGETICS
   have_counted_ergs = false;
-  double* rrr       = 0;
+  double *rrr       = 0;
   rrr               = mem.myalloc(rrr, nvl);
 
   for (int i = 0; i < nvl; i++)
@@ -863,8 +863,8 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
 int MP_Hydrogen::implicit_step(
     const int nv,      ///< number of variables we are expecting.
     const double dt,   ///< timestep to use.
-    const double* P,   ///< Current state vector.
-    double* p_out,     ///< Final State Vector.
+    const double *P,   ///< Current state vector.
+    double *p_out,     ///< Final State Vector.
     const double etol  ///< error tolerance
 )
 {
@@ -1212,12 +1212,12 @@ int MP_Hydrogen::implicit_step(
 
 int MP_Hydrogen::Int_Adaptive_RKCK(
     const int nv,       ///< number of elements in P array.
-    const double* p0,   ///< initial state vector.
+    const double *p0,   ///< initial state vector.
     const double t0,    ///< initial time
     const double dt,    ///< timestep to advance by.
     const double etol,  ///< error tolerance per step.
-    double* pf,         ///< final state vector
-    double* tf          ///< pointer to final time.
+    double *pf,         ///< final state vector
+    double *tf          ///< pointer to final time.
 )
 {
   // cout <<"\t\t\tMP_Hydrogen explicit step!\n";
@@ -1310,8 +1310,8 @@ int MP_Hydrogen::Int_Adaptive_RKCK(
 
 int MP_Hydrogen::dPdt(
     const int nv,     ///< number of variables we are expecting.
-    const double* P,  ///< Current state vector.
-    double* R         ///< Rate Vector to write to.
+    const double *P,  ///< Current state vector.
+    double *R         ///< Rate Vector to write to.
 )
 {
   if (nv != nvl) rep.error("variables wrong!", nv - nvl);
@@ -1626,7 +1626,7 @@ double MP_Hydrogen::rad_recomb_energy(double T  ///< Precalculated Temperature.
 /// arguments.  Time is returned in seconds.
 ///
 double MP_Hydrogen::timescales(
-    const pion_flt* p_in,  ///< Current cell primitive vector.
+    const pion_flt *p_in,  ///< Current cell primitive vector.
     const double gam,      ///< EOS gamma.
     const bool f_cool,     ///< set to true if including cooling time.
     const bool f_recomb,   ///< set to true if including recombination time.

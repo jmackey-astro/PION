@@ -101,7 +101,7 @@ struct ion_struct {
                    ///< ergs.
   int charge;      ///< Charge of ion in units of the electron charge.
   enum species i;  ///< ion id number.
-  struct element_struct* e;  ///< pointer to associated element info.
+  struct element_struct *e;  ///< pointer to associated element info.
   int index;                 ///< where in the local state vector the ion is.
   int pv_index;  ///< index in primitive variable state vector from/to main
                  ///< code.
@@ -123,7 +123,7 @@ struct element_struct {
   std::vector<string> ions;  ///< List of ions (including neutral).
   int nspecies;      ///< Number of ionisation states included in state vec
                      ///< (may not have all ionisation states).
-  int* ion_indices;  ///< list of indices of ions in the local state vector.
+  int *ion_indices;  ///< list of indices of ions in the local state vector.
   double mass;       ///< Mass in units of the proton mass.
   double numfrac;    ///< Number fraction of element in relation to hydrogen.
 };
@@ -139,12 +139,12 @@ public:
   /// Constructor.  Takes in info on tracers to determine what sort of
   /// chemistry we are using.
   MPv0(
-      const int,              ///< Total number of variables in state vector
-      const int,              ///< Number of tracer variables in state vector.
-      const std::string,      ///< type of chemistry we are running.
-      const std::string*,     ///< List of what the tracer variables mean.
-      struct which_physics*,  ///< pointer to extra physics flags.
-      struct rad_sources*     ///< radiation sources.
+      const int,               ///< Total number of variables in state vector
+      const int,               ///< Number of tracer variables in state vector.
+      const std::string,       ///< type of chemistry we are running.
+      const std::string *,     ///< List of what the tracer variables mean.
+      struct which_physics *,  ///< pointer to extra physics flags.
+      struct rad_sources *     ///< radiation sources.
   );
 
   /// \brief Destructor deletes dynamically allocated member data.
@@ -155,13 +155,13 @@ public:
   /// into the destination vector.  For fully local microphysics (no R-T!)
   ///
   int TimeUpdateMP(
-      const pion_flt*,  ///< Primitive Vector to be updated.
-      pion_flt*,        ///< Destination Vector for updated values.
-      const double,     ///< Time Step to advance by.
-      const double,     ///< EOS gamma.
+      const pion_flt *,  ///< Primitive Vector to be updated.
+      pion_flt *,        ///< Destination Vector for updated values.
+      const double,      ///< Time Step to advance by.
+      const double,      ///< EOS gamma.
       const int,  ///< Switch for what type of integration to use. (0=adaptive
                   ///< RK5, 1=adaptive Euler,2=onestep o4-RK)
-      double*     ///< final temperature.
+      double *    ///< final temperature.
   );
 
   /// \brief Same as TimeUpdateMP, except that a incident photon flux
@@ -169,16 +169,16 @@ public:
   /// Optical depth through the cell being processed is returned.
   ///
   int TimeUpdate_RTsinglesrc(
-      const pion_flt*,  ///< Primitive Vector to be updated.
-      pion_flt*,        ///< Destination Vector for updated values.
-      const double,     ///< Time Step to advance by.
-      const double,     ///< EOS gamma.
+      const pion_flt *,  ///< Primitive Vector to be updated.
+      pion_flt *,        ///< Destination Vector for updated values.
+      const double,      ///< Time Step to advance by.
+      const double,      ///< EOS gamma.
       const int,  ///< Switch for what type of integration to use. (0=adaptive
                   ///< RK5, 1=adaptive Euler,2=onestep o4-RK)
       const double,  ///< flux in per unit length along ray (F/ds or L/dV)
       const double,  ///< path length ds through cell.~
       const double,  ///< Optical depth to entry point of ray into cell.
-      double*        ///< return optical depth through cell in this variable.
+      double *       ///< return optical depth through cell in this variable.
   );
 
   /// \brief Returns element number of named tracer variable in state vector.
@@ -188,14 +188,14 @@ public:
   /// \brief Initialise microphysics ionisation fractions to an equilibrium
   /// value.
   int Init_ionfractions(
-      pion_flt*,     ///< Primitive vector to be updated.
+      pion_flt *,    ///< Primitive vector to be updated.
       const double,  ///< eos gamma.
       const double   ///< optional gas temperature to end up at.
                      ///< (negative means use pressure)
   );
 
   int Set_Temp(
-      pion_flt*,     ///< primitive vector.
+      pion_flt *,    ///< primitive vector.
       const double,  ///< temperature
       const double   ///< eos gamma.
   );
@@ -205,8 +205,8 @@ public:
   /// Assumes primitive vector is in cgs units.
   ///
   double Temperature(
-      const pion_flt*,  ///< primitive vector
-      const double      ///< eos gamma
+      const pion_flt *,  ///< primitive vector
+      const double       ///< eos gamma
   );
 
   ///
@@ -214,11 +214,11 @@ public:
   /// arguments.  Time is returned in seconds.
   ///
   double timescales(
-      const pion_flt*,  ///< Current cell.
-      const double,     ///< EOS gamma.
-      const bool,       ///< set to true if including cooling time.
-      const bool,       ///< set to true if including recombination time.
-      const bool        ///< set to true if including photo-ionsation time.
+      const pion_flt *,  ///< Current cell.
+      const double,      ///< EOS gamma.
+      const bool,        ///< set to true if including cooling time.
+      const bool,        ///< set to true if including recombination time.
+      const bool         ///< set to true if including photo-ionsation time.
   );
 
   ///
@@ -228,12 +228,12 @@ public:
   /// substantially greater capability than the other timescales function.
   ///
   virtual double timescales_RT(
-      const pion_flt*,  ///< Current cell.
-      const int,        ///< Number of UV heating sources.
-      const std::vector<struct rt_source_data>&,
+      const pion_flt *,  ///< Current cell.
+      const int,         ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
       ///< list of UV-heating column densities and source properties.
       const int,  ///< number of ionising radiation sources.
-      const std::vector<struct rt_source_data>&,
+      const std::vector<struct rt_source_data> &,
       ///< list of ionising src column densities and source properties.
       const double  ///< EOS gamma.
   )
@@ -247,9 +247,9 @@ public:
   /// state vector.
   ///
   double get_recombination_rate(
-      const int,        ///< ion index in tracer array (optional).
-      const pion_flt*,  ///< input state vector (primitive).
-      const double      ///< EOS gamma (optional)
+      const int,         ///< ion index in tracer array (optional).
+      const pion_flt *,  ///< input state vector (primitive).
+      const double       ///< EOS gamma (optional)
   )
   {
     cout << "MPv0::get_recombination_rate: not written!\n";
@@ -265,18 +265,18 @@ private:
   /// \brief convert state vector from grid cell into local microphysics
   /// vector.
   int convert_prim2local(
-      const pion_flt*,  ///< primitive vector (nv_prim)
-      double*,          ///< local vector (length nvl)
-      const double      ///< eos gamma.
+      const pion_flt *,  ///< primitive vector (nv_prim)
+      double *,          ///< local vector (length nvl)
+      const double       ///< eos gamma.
   );
 
   /// \brief convert local microphysics vector into state vector for grid
   /// cell.
   int convert_local2prim(
-      const double*,    ///< local vector (length nvl)
-      const pion_flt*,  ///< input primitive vector(length nv_prim)
-      pion_flt*,        ///< updated primitive vector(length nv_prim)
-      const double      ///< eos gamma.
+      const double *,    ///< local vector (length nvl)
+      const pion_flt *,  ///< input primitive vector(length nv_prim)
+      pion_flt *,        ///< updated primitive vector(length nv_prim)
+      const double       ///< eos gamma.
   );
 
   /// \brief Calculate rate of change of local state vector. Note this is
@@ -284,9 +284,9 @@ private:
   /// consists of n_h, E_int, and if needed, x_e and all the ions x_i.
   ///
   int dPdt(
-      const int,      ///< length of state vector (for checking).
-      const double*,  ///< current state vector P.
-      double*         ///< Rate vector to write to, R=dPdt(P)#
+      const int,       ///< length of state vector (for checking).
+      const double *,  ///< current state vector P.
+      double *         ///< Rate vector to write to, R=dPdt(P)#
   );
 
   /// \brief Calculate rate of change of local state vector. Note this is
@@ -297,9 +297,9 @@ private:
   /// hydrogen, and just do the cooling function.
   ///
   int dPdt_OnlyCooling(
-      const int,      ///< length of state vector (for checking).
-      const double*,  ///< current state vector P.
-      double*         ///< Rate vector to write to, R=dPdt(P)
+      const int,       ///< length of state vector (for checking).
+      const double *,  ///< current state vector P.
+      double *         ///< Rate vector to write to, R=dPdt(P)
   );
 
   /// \brief  This takes a copy of the primitive vector and advances it in
@@ -310,22 +310,22 @@ private:
   /// assuming the gas is fully ionised hydrogen.
   ///
   int TimeUpdate_OnlyCooling(
-      const pion_flt*,  ///< Primitive Vector to be updated.
-      pion_flt*,        ///< Destination Vector for updated values.
-      const double,     ///< Time Step to advance by.
-      const double,     ///< EOS gamma.
+      const pion_flt *,  ///< Primitive Vector to be updated.
+      pion_flt *,        ///< Destination Vector for updated values.
+      const double,      ///< Time Step to advance by.
+      const double,      ///< EOS gamma.
       const int,  ///< Switch for what type of integration to use. (0=adaptive
                   ///< RK5, 1=adaptive Euler,2=onestep o4-RK)
-      double*     ///< final temperature.
+      double *    ///< final temperature.
   );
 
   /// \brief This is for if we are solving the rate equation, and returns the
   /// creation rate of some quantity. xdot=A*(1-x)-B*x, so this returns A(x).
   ///
   int C_rate(
-      const int,      ///< length of state vector.
-      const double*,  ///< current state vector P.
-      double*         ///< Creation rate vector to write to.
+      const int,       ///< length of state vector.
+      const double *,  ///< current state vector P.
+      double *         ///< Creation rate vector to write to.
   );
 
   /// \brief This is for if we are solving the rate equation, and returns the
@@ -333,9 +333,9 @@ private:
   /// A(x)+B(x).
   ///
   int D_rate(
-      const int,      ///< length of state vector.
-      const double*,  ///< current state vector P.
-      double*         ///< Destruction rate vector to write to.
+      const int,       ///< length of state vector.
+      const double *,  ///< current state vector P.
+      double *         ///< Destruction rate vector to write to.
   );
 
   void set_atomic_data();  ///< sets atomic data arrays to right values.
@@ -346,7 +346,7 @@ private:
   std::string chemtype;    ///< type of chemistry network we are using.
   //   class Chemistry_Base *chem; ///< Chemistry class, which knows how to
   //   calculate things.
-  class CoolingFn* cool;    ///< Pointer to generic cooling function.
+  class CoolingFn *cool;    ///< Pointer to generic cooling function.
   struct which_physics ep;  ///< struct with flags for which extra physics we
                             ///< are or aren't doing.
 
@@ -386,62 +386,62 @@ private:
       ion_props;  ///< properties of each ion.
   std::map<std::string, struct element_struct>
       el_props;                ///< properties of each element.
-  struct ion_struct** ii;      ///< pointer to array of ions used.
-  struct element_struct** ee;  ///< pointer to array of elements used.
+  struct ion_struct **ii;      ///< pointer to array of ions used.
+  struct element_struct **ee;  ///< pointer to array of elements used.
 
   void copy_element_struct(
       const element_struct,  ///< source.
-      element_struct*        /// destination.
+      element_struct *       /// destination.
   );
 
   void copy_ion_struct(
       const ion_struct,  ///< source.
-      ion_struct*        /// destination.
+      ion_struct *       /// destination.
   );
 
-  void show_ion_struct(const ion_struct*);
+  void show_ion_struct(const ion_struct *);
 
   /// Returns number density of hydrogen in all its forms.
   double Get_nH(const double  ///< gas density.
   );
 
   /// Get number density of all ions from state vector.
-  double Get_nIons(const double*  ///< State vector to get number density from
+  double Get_nIons(const double *  ///< State vector to get number density from
   );
 
   /// Get number density of all particles from state vector.
-  double Get_nTot(const double*  ///< State vector to get number density from
+  double Get_nTot(const double *  ///< State vector to get number density from
   );
 
   /// For a give ion, calculate neutral fraction of its element.
   double neutral_fraction(
-      const double*,     ///< State vector to get ionised fractions from.
-      const ion_struct*  ///< pointer to ion we want to get neutral fraction
-                         ///< of.
+      const double *,     ///< State vector to get ionised fractions from.
+      const ion_struct *  ///< pointer to ion we want to get neutral fraction
+                          ///< of.
   );
 
   /// Returns temperature for a given state vector.
-  double Get_Temp(const double*  ///< State vector to get Temperature from.
+  double Get_Temp(const double *  ///< State vector to get Temperature from.
   );
 
   /// Given a temperature, set internal energy to consistent value.
   int Set_Eint(
-      double*,      ///< local state vector
+      double *,     ///< local state vector
       const double  ///< Temperature we want to set to.
   );
 
   /// Returns Collisional Ionisation rate from ion passed in to next stage up,
   /// in [cm^3/s] units.
   double Coll_Ion_rate(
-      double,            ///< Precalculated Temperature.
-      const ion_struct*  ///< pointer to current ion data.
+      double,             ///< Precalculated Temperature.
+      const ion_struct *  ///< pointer to current ion data.
   );
 
   /// Returns Radiative Recombination rate from ion passed in to next stage
   /// down, in [cm^3/s] units.
   double Rad_Recomb_rate(
-      double,            ///< Precalculated Temperature.
-      const ion_struct*  ///< pointer to current ion data.
+      double,             ///< Precalculated Temperature.
+      const ion_struct *  ///< pointer to current ion data.
   );
 
   /// Some ions have dielectronic recombination; this returns the DR rate,
@@ -459,13 +459,13 @@ private:
   );
 
   /// returns photoionisation cross section of ion.
-  double phot_xsection(const ion_struct*  ///< pointer to current ion data.
+  double phot_xsection(const ion_struct *  ///< pointer to current ion data.
   );
 
   /// Returns charge transfer rate between current ion and hydrogen.
   double charge_exchange_rate(
-      double,                    ///< Precalculated Temperature.
-      const struct ion_struct*,  ///< current ion.
+      double,                     ///< Precalculated Temperature.
+      const struct ion_struct *,  ///< current ion.
       const int  ///< 0 for recombination from ion, 1 for ionisation of ion.
   );
 };

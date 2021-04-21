@@ -67,7 +67,7 @@ struct energetics {
       recomb_time;    // in years
 };
 
-extern struct energetics* GLOBAL_CE;
+extern struct energetics *GLOBAL_CE;
 ///< for tracking rates in microphysics/raytracing.
 #endif
 
@@ -82,20 +82,20 @@ class cell {
 
 public:
   friend class cell_interface;
-  cell** ngb;     ///< Pointers to cell's Neigbours.
-  cell* npt;      ///< Pointer to next point in list, or some other cell.
-  cell* npt_all;  ///< Pointer to next point in grid, including
+  cell **ngb;     ///< Pointers to cell's Neigbours.
+  cell *npt;      ///< Pointer to next point in list, or some other cell.
+  cell *npt_all;  ///< Pointer to next point in grid, including
                   ///< boundary data.
-  int* pos;
-  pion_flt* P;   ///< Primitive Variables.
-  pion_flt* Ph;  ///< Primitive State vector at half timestep.
-  pion_flt* dU;  ///< Update vector to be added to U when we do the time update.
+  int *pos;
+  pion_flt *P;   ///< Primitive Variables.
+  pion_flt *Ph;  ///< Primitive State vector at half timestep.
+  pion_flt *dU;  ///< Update vector to be added to U when we do the time update.
   /// Flux vector for use in NG grids to ensure consistency between
   /// fluxes at different levels in the hierarchy of grids.
-  std::vector<pion_flt*> F;
+  std::vector<pion_flt *> F;
 
 private:
-  double* extra_data;  ///< General purpose data (Tau in ray-tracing, eta for
+  double *extra_data;  ///< General purpose data (Tau in ray-tracing, eta for
                        ///< H-correction)
 public:
   long int id;  ///< Grid point's id.
@@ -113,7 +113,7 @@ public:
   bool timestep;  ///< True if cell used for setting timestep
   /// True if needed for ensuring flux consistency between different
   /// refinement levels.  Array of length 2*MAX_DIM
-  bool* isbd_ref;
+  bool *isbd_ref;
 
 #ifdef COUNT_ENERGETICS
   struct energetics
@@ -140,23 +140,23 @@ public:
 
   bool query_minimal_cells();  ///< true if using minimal cells.
 
-  class cell* new_cell();  ///< Create a new cell.
+  class cell *new_cell();  ///< Create a new cell.
 
   /// Delete all the dynamically allocated memory in a cell.
-  void delete_cell(cell*);
+  void delete_cell(cell *);
 
   ///
   /// Copy one cell's contents to another.
   ///
   void copy_cell(
-      const cell*,  ///< input : copy from this cell.
-      cell*         ///< output: copy to this cell.
+      const cell *,  ///< input : copy from this cell.
+      cell *         ///< output: copy to this cell.
   );
 
   ///
   /// Print most of the information held by a cell.
   ///
-  void print_cell(const cell*  ///< cell whose info we want to display.
+  void print_cell(const cell *  ///< cell whose info we want to display.
   );
 
   ///
@@ -177,7 +177,7 @@ public:
   ///
   /// Set the global Xmin of the grid.
   ///
-  void set_xmin(const double*);
+  void set_xmin(const double *);
 
   ///
   /// Return physical size of one internal unit
@@ -188,8 +188,8 @@ public:
   /// Set cell position by passing in a double precision vector.
   ///
   void set_pos(
-      cell*,         ///< pointer to cell
-      const double*  ///< double array of size ndim, cell position.
+      cell *,         ///< pointer to cell
+      const double *  ///< double array of size ndim, cell position.
   );
 
   ///
@@ -197,16 +197,16 @@ public:
   /// SimPM.Xmin[] and with a cell width equal to 2 units.
   ///
   void set_pos(
-      cell*,      ///< pointer to cell
-      const int*  ///< int array of size ndim, cell integer position.
+      cell *,      ///< pointer to cell
+      const int *  ///< int array of size ndim, cell integer position.
   );
 
   ///
   /// Returns double precision position of cell centre (cgs).
   ///
   void get_dpos(
-      const cell*,  ///< pointer to cell
-      double*       ///< array to write position into.
+      const cell *,  ///< pointer to cell
+      double *       ///< array to write position into.
   );
 
   ///
@@ -214,8 +214,8 @@ public:
   /// coordinate direction (cgs).
   ///
   double get_dpos(
-      const cell*,  ///< pointer to cell
-      const int     ///< element of position we want.
+      const cell *,  ///< pointer to cell
+      const int      ///< element of position we want.
   );
 
   ///
@@ -223,24 +223,24 @@ public:
   /// position.
   ///
   void get_ipos_vec(
-      const double*,  ///< physical position (input)
-      int*            ///< integer position (output)
+      const double *,  ///< physical position (input)
+      int *            ///< integer position (output)
   );
 
   ///
   /// Converts from an integer position to a double precision pos.
   ///
   void get_dpos_vec(
-      const int*,  ///< integer position  (input)
-      double*      ///< physical position (output)
+      const int *,  ///< integer position  (input)
+      double *      ///< physical position (output)
   );
 
   ///
   /// Returns integer position of cell centre.
   ///
   void get_ipos(
-      const cell*,  ///< pointer to cell
-      int*          ///< array to write integer position into.
+      const cell *,  ///< pointer to cell
+      int *          ///< array to write integer position into.
   );
 
   ///
@@ -248,8 +248,8 @@ public:
   /// coordinate direction.
   ///
   int get_ipos(
-      const cell*,  ///< pointer to cell
-      const int     ///< element of position we want.
+      const cell *,  ///< pointer to cell
+      const int      ///< element of position we want.
   );
 
   ///
@@ -257,8 +257,8 @@ public:
   /// equivalent value in internal (integer) units.
   ///
   void get_ipos_as_double(
-      const double*,  ///< physical position (input)
-      double*  ///< floating pt. position in integer position units (output)
+      const double *,  ///< physical position (input)
+      double *  ///< floating pt. position in integer position units (output)
   );
 
   // ##################################################################
@@ -273,11 +273,11 @@ public:
   /// THIS *MUST* BE SET BEFORE CREATING ANY CELLS ON THE GRID.
   ///
   void setup_extra_data(
-      const struct rad_sources&,  ///< Pointer to (SimPM.RS)
-                                  ///< ray-tracing struct.
-      const int,                  ///< Flag for H-correction requirements
-      const int,                  ///< Flag for Div(V) variable required.
-      const int                   ///< Flag for |Grad(Pg)| variable required.
+      const struct rad_sources &,  ///< Pointer to (SimPM.RS)
+                                   ///< ray-tracing struct.
+      const int,                   ///< Flag for H-correction requirements
+      const int,                   ///< Flag for Div(V) variable required.
+      const int                    ///< Flag for |Grad(Pg)| variable required.
   );
 
   // ##################################################################
@@ -290,9 +290,9 @@ public:
   /// start of the simulation.
   ///
   inline void get_col(
-      const cell* c,  ///< current cell.
+      const cell *c,  ///< current cell.
       const int s,    ///< index of source.
-      double* tau     ///< pointer to array for optical depths.
+      double *tau     ///< pointer to array for optical depths.
   )
   {
     for (short unsigned int v = 0; v < NTau[s]; v++) {
@@ -308,7 +308,7 @@ public:
   /// Set the optical depth along the ray (see get_col for details)
   ///
   inline void set_col(
-      cell* c,
+      cell *c,
       const int s,        ///< index of source.
       const double tau[]  ///< value to set
   )
@@ -326,9 +326,9 @@ public:
   /// Get cell optical depth
   ///
   inline void get_cell_col(
-      const cell* c,
+      const cell *c,
       const int s,  ///< index of source.
-      double* dtau  ///< pointer to array for optical depths.
+      double *dtau  ///< pointer to array for optical depths.
   )
   {
     for (short unsigned int v = 0; v < NTau[s]; v++) {
@@ -344,7 +344,7 @@ public:
   /// Set cell optical depth
   ///
   inline void set_cell_col(
-      cell* c,
+      cell *c,
       const int s,         ///< index of source.
       const double dtau[]  ///< value to set
   )
@@ -362,7 +362,7 @@ public:
   /// Set cell Vshell value (for raytracing).
   ///
   inline void set_cell_Vshell(
-      cell* c,
+      cell *c,
       const int s,     ///< index of source.
       const double Vs  ///< value to set.
   )
@@ -385,7 +385,7 @@ public:
   /// Get cell Vshell value (for raytracing).
   ///
   inline double get_cell_Vshell(
-      const cell* c,  ///< current cell.
+      const cell *c,  ///< current cell.
       const int s     ///< index of source.
   )
   {
@@ -406,7 +406,7 @@ public:
   /// Set raytracing path length through cell for source i.
   ///
   inline void set_cell_deltaS(
-      cell* c,
+      cell *c,
       const int s,  ///< index of source.
       const double deltaS)
   {
@@ -428,7 +428,7 @@ public:
   /// Get raytracing path length through cell for source i.
   ///
   inline double get_cell_deltaS(
-      const cell* c,  ///< current cell.
+      const cell *c,  ///< current cell.
       const int s     ///< index of source.
   )
   {
@@ -450,7 +450,7 @@ public:
   /// the requested direction (at the positive direction cell
   /// interface).
   ///
-  inline double get_Hcorr(const cell* c, const enum axes a)
+  inline double get_Hcorr(const cell *c, const enum axes a)
   {
     return c->extra_data[iHcorr[a]];
   }
@@ -461,7 +461,7 @@ public:
   ///
   /// Set the H-correction coefficient eta for cell in direction a
   ///
-  inline void set_Hcorr(cell* c, const enum axes a, double eta)
+  inline void set_Hcorr(cell *c, const enum axes a, double eta)
   {
     c->extra_data[iHcorr[a]] = eta;
     return;
@@ -473,7 +473,7 @@ public:
   ///
   /// Get div(v) for a cell.
   ///
-  inline double get_DivV(const cell* c) { return c->extra_data[iDivV]; }
+  inline double get_DivV(const cell *c) { return c->extra_data[iDivV]; }
 
   // ##################################################################
   // ##################################################################
@@ -481,7 +481,7 @@ public:
   ///
   /// Set div(v) for a cell.
   ///
-  inline void set_DivV(cell* c, double divv)
+  inline void set_DivV(cell *c, double divv)
   {
     c->extra_data[iDivV] = divv;
     return;
@@ -493,7 +493,7 @@ public:
   ///
   /// Get |grad(p)| for a cell.
   ///
-  inline double get_MagGradP(const cell* c) { return c->extra_data[iGradP]; }
+  inline double get_MagGradP(const cell *c) { return c->extra_data[iGradP]; }
 
   // ##################################################################
   // ##################################################################
@@ -501,7 +501,7 @@ public:
   ///
   /// Set div(v) for a cell.
   ///
-  inline void set_MagGradP(cell* c, double gradP)
+  inline void set_MagGradP(cell *c, double gradP)
   {
     c->extra_data[iGradP] = gradP;
     return;
@@ -517,7 +517,7 @@ private:
   double dxo2;        ///< Half a cell width.
   int ndim;           ///< dimensionality of grid.
   int nvar;           ///< number of variables in state vector.
-  double* xmin;       ///< The global Xmin of the domain, for counting integer
+  double *xmin;       ///< The global Xmin of the domain, for counting integer
                       ///< positions from.
   double int_converter;     ///< 1+EPS.
   int cell_size_int_units;  ///< size of a cell in integer units (==2)
@@ -537,7 +537,7 @@ private:
   /// array where the value of the 'i'th element is the number of
   /// optical depths associated with radiation source i.
   ///
-  short unsigned int* NTau;
+  short unsigned int *NTau;
 
   ///
   /// First optical depth for source v is contained in the iTau[v]'th
@@ -545,7 +545,7 @@ private:
   /// Any further optical depths are in the following elements e.g.
   /// extra_data[iTau[v]+1], extra_data[iTau[v]+2]
   ///
-  short unsigned int* iTau;
+  short unsigned int *iTau;
 
   ///
   /// First cell optical depth for source v is contained in the
@@ -553,19 +553,19 @@ private:
   /// Any further optical depths are in the following elements e.g.
   /// extra_data[iDTau[v]+1], extra_data[iDTau[v]+2]
   ///
-  short unsigned int* iDTau;
+  short unsigned int *iDTau;
 
   ///
   /// Vshell parameter for photon-conserving-RT is given by value in
   /// extra_data[iVsh[v]] for radiation source v.
   ///
-  short unsigned int* iVsh;
+  short unsigned int *iVsh;
 
   ///
   /// Path length through cell for radiation is given by the value in
   /// extra_data[idS[v]] for radiation source v.
   ///
-  short unsigned int* idS;
+  short unsigned int *idS;
 
   ///
   /// indices of Hcorrection values in extra_data [XX,YY,ZZ] are

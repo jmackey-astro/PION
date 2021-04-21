@@ -101,9 +101,9 @@ FV_solver_base::~FV_solver_base()
 // ##################################################################
 
 int FV_solver_base::get_LaxFriedrichs_flux(
-    const pion_flt* l,
-    const pion_flt* r,
-    pion_flt* f,
+    const pion_flt *l,
+    const pion_flt *r,
+    pion_flt *f,
     const double dx,  ///< cell size dx
     const double)
 {
@@ -142,13 +142,13 @@ int FV_solver_base::get_LaxFriedrichs_flux(
 /// Calculate Flux between a left and right state.
 ///
 int FV_solver_base::InterCellFlux(
-    class SimParams& par,  ///< simulation parameters
-    class GridBaseClass* grid,
-    class cell* Cl,  ///< Left state cell pointer
-    class cell* Cr,  ///< Right state cell pointer
-    pion_flt* lp,    ///< Left Primitive State Vector.
-    pion_flt* rp,    ///< Right Primitive State Vector.
-    pion_flt* f,     ///< Flux Vector. (written to).
+    class SimParams &par,  ///< simulation parameters
+    class GridBaseClass *grid,
+    class cell *Cl,  ///< Left state cell pointer
+    class cell *Cr,  ///< Right state cell pointer
+    pion_flt *lp,    ///< Left Primitive State Vector.
+    pion_flt *rp,    ///< Right Primitive State Vector.
+    pion_flt *f,     ///< Flux Vector. (written to).
     const double g,  ///< gas EOS gamma.
     const double dx  ///< Cell size dx.
 )
@@ -200,9 +200,9 @@ int FV_solver_base::InterCellFlux(
 // ##################################################################
 
 void FV_solver_base::pre_calc_viscous_terms(
-    class GridBaseClass* grid,
-    const cell* cl,    ///< left-of-interface cell
-    const cell* cr,    ///< right-of-interface cell
+    class GridBaseClass *grid,
+    const cell *cl,    ///< left-of-interface cell
+    const cell *cr,    ///< right-of-interface cell
     const int av_flag  ///< what kind of AV?
 )
 {
@@ -226,12 +226,12 @@ void FV_solver_base::pre_calc_viscous_terms(
 // ##################################################################
 
 void FV_solver_base::post_calc_viscous_terms(
-    const cell* cl,  ///< left-of-interface cell
-    const cell* cr,  ///< right-of-interface cell
-    const pion_flt* Pl,
-    const pion_flt* Pr,
-    const pion_flt* Pstar,
-    pion_flt* flux,    ///< flux vector
+    const cell *cl,  ///< left-of-interface cell
+    const cell *cr,  ///< right-of-interface cell
+    const pion_flt *Pl,
+    const pion_flt *Pr,
+    const pion_flt *Pstar,
+    pion_flt *flux,    ///< flux vector
     const int av_flag  ///< what kind of AV?
 )
 {
@@ -259,9 +259,9 @@ void FV_solver_base::post_calc_viscous_terms(
 // ##################################################################
 
 void FV_solver_base::set_interface_tracer_flux(
-    const pion_flt* left,   // prim.var.
-    const pion_flt* right,  // prim.var.
-    pion_flt* flux)
+    const pion_flt *left,   // prim.var.
+    const pion_flt *right,  // prim.var.
+    pion_flt *flux)
 {
   pion_flt corrector[eq_nvar];
   for (int v = 0; v < eq_nvar; v++)
@@ -331,8 +331,8 @@ void FV_solver_base::set_interface_tracer_flux(
 //
 int FV_solver_base::preprocess_data(
     const int csp,             ///< spatial order of accuracy required.
-    class SimParams& SimPM,    ///< pointer to simulation parameters
-    class GridBaseClass* grid  ///< pointer to grid.
+    class SimParams &SimPM,    ///< pointer to simulation parameters
+    class GridBaseClass *grid  ///< pointer to grid.
 )
 {
   //  cout <<"\t\t\tpreprocess_data(): Starting: ndim = "<<SimPM.ndim<<"\n";
@@ -359,7 +359,7 @@ int FV_solver_base::preprocess_data(
   // TODO: Wrap this in an if statement when I get the SimPM.EP.conduction
   //       flag integrated into the code.
   //
-  class cell* c = grid->FirstPt();
+  class cell *c = grid->FirstPt();
   // cout <<"\tmultiplying conduction dU by dt.\n";
   do {
     c->dU[ERG] *= SimPM.dt;
@@ -379,7 +379,7 @@ int FV_solver_base::preprocess_data(
   // HLLD has a switch based on velocity divergence, where it can
   // reduce to HLL near strong shocks.  So set divV here.
   if (SimPM.solverType == FLUX_RS_HLLD) {
-    class cell* c = grid->FirstPt_All();
+    class cell *c = grid->FirstPt_All();
     double gradp  = 0.0;
     int indices[MAX_DIM];
     indices[0] = eqVX;
@@ -402,8 +402,8 @@ int FV_solver_base::preprocess_data(
 
 int FV_solver_base::calc_Hcorrection(
     const int csp,
-    class SimParams& SimPM,  ///< pointer to simulation parameters
-    class GridBaseClass* grid)
+    class SimParams &SimPM,  ///< pointer to simulation parameters
+    class GridBaseClass *grid)
 {
 #ifdef TESTING
   cout << "\t\t\tcalc_Hcorrection() ndim = " << SimPM.ndim << "\n";
@@ -450,8 +450,8 @@ int FV_solver_base::calc_Hcorrection(
     cout << "\t\t\tidim=" << idim << "\n";
 #endif  // TESTING
     SetDirection(axis[idim]);
-    class cell* start  = grid->FirstPt_All();
-    class cell* marker = grid->FirstPt_All();
+    class cell *start  = grid->FirstPt_All();
+    class cell *marker = grid->FirstPt_All();
 
     //
     // Loop over z-planes (there must be at least one!)
@@ -477,9 +477,9 @@ int FV_solver_base::calc_Hcorrection(
         // Set three cell pointers (2nd order slopes have a 3-point
         // stencil).
         //
-        cell* cpt  = start;
-        cell* npt  = grid->NextPt(cpt, posdirs[idim]);
-        cell* n2pt = grid->NextPt(npt, posdirs[idim]);
+        cell *cpt  = start;
+        cell *npt  = grid->NextPt(cpt, posdirs[idim]);
+        cell *n2pt = grid->NextPt(npt, posdirs[idim]);
         if (npt == 0 || n2pt == 0)
           rep.error("Couldn't find two real cells in column", 0);
 
@@ -568,10 +568,10 @@ int FV_solver_base::calc_Hcorrection(
 // ##################################################################
 
 void FV_solver_base::set_Hcorrection(
-    cell* c,                ///< cell to operate on
+    cell *c,                ///< cell to operate on
     const axes axis,        ///< axis normal to interface.
-    const pion_flt* edgeL,  ///< Left state
-    const pion_flt* edgeR,  ///< right state
+    const pion_flt *edgeL,  ///< Left state
+    const pion_flt *edgeR,  ///< right state
     const double g          ///< gamma
 )
 {
@@ -594,9 +594,9 @@ void FV_solver_base::set_Hcorrection(
 // ##################################################################
 
 double FV_solver_base::select_Hcorr_eta(
-    const cell* cl,  ///< cell to left of interface
-    const cell* cr,  ///< cell to right of interface
-    class GridBaseClass* grid)
+    const cell *cl,  ///< cell to left of interface
+    const cell *cr,  ///< cell to right of interface
+    class GridBaseClass *grid)
 {
   //
   // Based on Sanders, Morano, Druguet, (1998, JCP, 145, 511)
@@ -642,7 +642,7 @@ double FV_solver_base::select_Hcorr_eta(
   // cells it needs, with the correct connectivity.
   //
   enum direction negdir = NO;
-  cell* cneg            = 0;
+  cell *cneg            = 0;
   for (int idim = 1; idim < FV_gndim; idim++) {
     perp   = static_cast<axes>((static_cast<int>(axis) + idim) % FV_gndim);
     negdir = static_cast<direction>(static_cast<int>(axis) * 2);
@@ -668,7 +668,7 @@ double FV_solver_base::select_Hcorr_eta(
 
 #ifdef THERMAL_CONDUCTION
 int FV_solver_base::set_thermal_conduction_Edot(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   //
@@ -684,7 +684,7 @@ int FV_solver_base::set_thermal_conduction_Edot(
   if (!MP) {
     rep.error("Why do conductivity without having Microphysics?", MP);
   }
-  cell* c = grid->FirstPt_All();
+  cell *c = grid->FirstPt_All();
   do {
     // cout <<"dU[RHO]="<<c->dU[RHO];
     c->dU[RHO] = MP->Temperature(c->Ph, SimPM.gamma);
@@ -721,8 +721,8 @@ int FV_solver_base::set_thermal_conduction_Edot(
     // to the first boundary cell to get the correct edge-cell in/out
     // heat flux in each direction.
     //
-    class cell* start  = grid->FirstPt();
-    class cell* marker = grid->FirstPt();
+    class cell *start  = grid->FirstPt();
+    class cell *marker = grid->FirstPt();
 
     //
     // Loop over z-planes (there must be at least one!)
@@ -742,11 +742,11 @@ int FV_solver_base::set_thermal_conduction_Edot(
         // We need all interfaces between and including the
         // grid-boundary interface.
         // --------------------------------------------------------
-        cell* cpt = start;
+        cell *cpt = start;
         while (grid->NextPt(cpt, negdirs[idim])) {
           cpt = grid->NextPt(cpt, negdirs[idim]);
         }
-        cell* npt = grid->NextPt(cpt, posdirs[idim]);
+        cell *npt = grid->NextPt(cpt, posdirs[idim]);
         if (npt == 0) rep.error("Couldn't find two cells in column", 0);
 
         q_neg = 0.0;  // no flux coming in from non-existent boundary data.

@@ -72,9 +72,9 @@ MPv0::MPv0(
     const int nv,
     const int ntr,
     const std::string chem_code,  ///< type of chemistry we are running.
-    const std::string* tracers,   ///< List of what the tracer variables mean.
-    struct which_physics* ephys,  ///< pointer to extra physics flags.
-    struct rad_sources* rsrcs     ///< radiation sources.
+    const std::string *tracers,   ///< List of what the tracer variables mean.
+    struct which_physics *ephys,  ///< pointer to extra physics flags.
+    struct rad_sources *rsrcs     ///< radiation sources.
     ) :
     microphysics_base(nv, ntr, tracers, ephys, rsrcs),
     kB(pconst.kB()),
@@ -299,8 +299,8 @@ MPv0::MPv0(
 
   ii = 0;
   ee = 0;
-  ii = new ion_struct*[nions];
-  ee = new element_struct*[nels];
+  ii = new ion_struct *[nions];
+  ee = new element_struct *[nels];
   if (!ii || !ee) rep.error("MPv0 init, ii/ee malloc", ii);
 
   for (int i = 0; i < nions; i++) {
@@ -402,7 +402,7 @@ MPv0::MPv0(
 // ##################################################################
 // ##################################################################
 
-void MPv0::copy_ion_struct(const ion_struct src, ion_struct* dest)
+void MPv0::copy_ion_struct(const ion_struct src, ion_struct *dest)
 {
   rep.error("unused function. test me!", -99);
   dest->ion     = src.ion;
@@ -419,7 +419,7 @@ void MPv0::copy_ion_struct(const ion_struct src, ion_struct* dest)
 // ##################################################################
 
 void MPv0::copy_element_struct(
-    const struct element_struct src, struct element_struct* dest)
+    const struct element_struct src, struct element_struct *dest)
 {
   rep.error("unused function. test me!", -99);
   dest->el       = src.el;
@@ -444,7 +444,7 @@ void MPv0::copy_element_struct(
 // ##################################################################
 // ##################################################################
 
-void MPv0::show_ion_struct(const ion_struct* i)
+void MPv0::show_ion_struct(const ion_struct *i)
 {
   cout << "\t\tion: " << i->ion << "\tel: " << i->el << " index:" << i->index
        << " pv_index:" << i->pv_index;
@@ -496,7 +496,7 @@ double MPv0::Get_nH(const double rho  ///< gas density.
 // ##################################################################
 // ##################################################################
 
-double MPv0::Get_Temp(const double* P  ///< state vector
+double MPv0::Get_Temp(const double *P  ///< state vector
 )
 {
   //  rep.printVec("\t\t\tPPPPPPPPPPPP",P,nvl);
@@ -508,7 +508,7 @@ double MPv0::Get_Temp(const double* P  ///< state vector
 // ##################################################################
 
 int MPv0::Set_Eint(
-    double* P,      ///< state vector
+    double *P,      ///< state vector
     const double T  ///< Temperature we want to set to.
 )
 {
@@ -523,7 +523,7 @@ int MPv0::Set_Eint(
 // ##################################################################
 // ##################################################################
 
-double MPv0::Get_nTot(const double* P  ///< state vector
+double MPv0::Get_nTot(const double *P  ///< state vector
 )
 {
   // This assumes n_h has already been set, as that is the first thing
@@ -537,7 +537,7 @@ double MPv0::Get_nTot(const double* P  ///< state vector
 // ##################################################################
 // ##################################################################
 
-double MPv0::Get_nIons(const double* P  ///< state vector
+double MPv0::Get_nIons(const double *P  ///< state vector
 )
 {
   double nf = 0.0;
@@ -549,11 +549,11 @@ double MPv0::Get_nIons(const double* P  ///< state vector
 // ##################################################################
 // ##################################################################
 
-double MPv0::neutral_fraction(const double* P, const ion_struct* i)
+double MPv0::neutral_fraction(const double *P, const ion_struct *i)
 {
   //  rep.printVec("nf vec",P,nvl);
   double nf         = 1.0;
-  element_struct* e = i->e;
+  element_struct *e = i->e;
   //  cout <<"nions: "<<e->ions.size()<<" and first el="<<e->ions[1]<<"\n";
   for (int j = 0; j < e->nspecies; j++) {
     // cout <<"j="<<j<<"\te->ion_indices[j] = "<< e->ion_indices[j]<<"\t:
@@ -589,7 +589,7 @@ int MPv0::Tr(string t)
 // ##################################################################
 
 int MPv0::Set_Temp(
-    pion_flt* p,     ///< primitive vector.
+    pion_flt *p,     ///< primitive vector.
     const double T,  ///< temperature.
     const double g   ///< eos gamma.
 )
@@ -606,7 +606,7 @@ int MPv0::Set_Temp(
 // ##################################################################
 
 double MPv0::Temperature(
-    const pion_flt* p,  ///< primitive vector
+    const pion_flt *p,  ///< primitive vector
     const double g      ///< eos gamma
 )
 {
@@ -625,7 +625,7 @@ double MPv0::Temperature(
 // ##################################################################
 
 int MPv0::convert_prim2local(
-    const pion_flt* p_in, double* p_local, const double gam)
+    const pion_flt *p_in, double *p_local, const double gam)
 {
   /** \todo Speed up this function by removing string maps!!! e.g. set up
    * a map<int,int> for relating primitive indices to local indices, and vice
@@ -683,9 +683,9 @@ int MPv0::convert_prim2local(
 // ##################################################################
 
 int MPv0::convert_local2prim(
-    const double* p_local,
-    const pion_flt* p_in,
-    pion_flt* p_out,
+    const double *p_local,
+    const pion_flt *p_in,
+    pion_flt *p_out,
     const double gam)
 {
   // Now return updated values, note density, velocity, mag.field don't
@@ -709,12 +709,12 @@ int MPv0::convert_local2prim(
 // ##################################################################
 
 int MPv0::TimeUpdate_OnlyCooling(
-    const pion_flt* p_in,
-    pion_flt* p_out,
+    const pion_flt *p_in,
+    pion_flt *p_out,
     const double dt,
     const double g,
     const int sw_int,
-    double* ttt)
+    double *ttt)
 {
   //  cout <<"only cooling: nvl = "<<nvl<<"\n";
   if (nvl != 2) rep.error("nvl wrong", nvl);
@@ -776,12 +776,12 @@ int MPv0::TimeUpdate_OnlyCooling(
 // ##################################################################
 
 int MPv0::TimeUpdateMP(
-    const pion_flt* p_in,
-    pion_flt* p_out,
+    const pion_flt *p_in,
+    pion_flt *p_out,
     const double dt,
     const double g,
     const int sw_int,
-    double* ttt)
+    double *ttt)
 {
   // First if we are just doing cooling with no microphysics, call different
   // function
@@ -852,8 +852,8 @@ int MPv0::TimeUpdateMP(
 // ##################################################################
 
 int MPv0::TimeUpdate_RTsinglesrc(
-    const pion_flt* p_in,  ///< Primitive Vector to be updated.
-    pion_flt* p_out,       ///< Destination Vector for updated values.
+    const pion_flt *p_in,  ///< Primitive Vector to be updated.
+    pion_flt *p_out,       ///< Destination Vector for updated values.
     const double dt,       ///< Time Step to advance by.
     const double g,        ///< EOS gamma.
     const int sw_int,      ///< Switch for what type of integration to use.
@@ -861,7 +861,7 @@ int MPv0::TimeUpdate_RTsinglesrc(
     const double phot_in,  ///< flux in per unit length along ray (F/ds or L/dV)
     const double ds,       ///< path length ds through cell.
     const double tau2cell,  ///< Optical depth to entry point of ray into cell.
-    double* deltau  ///< return optical depth through cell in this variable.
+    double *deltau  ///< return optical depth through cell in this variable.
 )
 {
   if (!ep.phot_ionisation)
@@ -918,8 +918,8 @@ int MPv0::TimeUpdate_RTsinglesrc(
 
 int MPv0::dPdt_OnlyCooling(
     const int nv,     ///< number of variables we are expecting.
-    const double* P,  ///< Current state vector.
-    double* R         ///< Rate Vector to write to.
+    const double *P,  ///< Current state vector.
+    double *R         ///< Rate Vector to write to.
 )
 {
   R[lv_nh] = 0.0;
@@ -941,8 +941,8 @@ int MPv0::dPdt_OnlyCooling(
 
 int MPv0::dPdt(
     const int nv,     ///< number of variables we are expecting.
-    const double* P,  ///< Current state vector.
-    double* R         ///< Rate Vector to write to.
+    const double *P,  ///< Current state vector.
+    double *R         ///< Rate Vector to write to.
 )
 {
   if (nv != nvl) rep.error("variables wrong!", nv - nvl);
@@ -1107,8 +1107,8 @@ int MPv0::dPdt(
 
 int MPv0::C_rate(
     const int nv,     ///< number of variables we are expecting.
-    const double* P,  ///< Current state vector.
-    double* R         ///< Rate Vector to write to.
+    const double *P,  ///< Current state vector.
+    double *R         ///< Rate Vector to write to.
 )
 {
   return 1;
@@ -1119,8 +1119,8 @@ int MPv0::C_rate(
 
 int MPv0::D_rate(
     const int nv,     ///< number of variables we are expecting.
-    const double* P,  ///< Current state vector.
-    double* R         ///< Rate Vector to write to.
+    const double *P,  ///< Current state vector.
+    double *R         ///< Rate Vector to write to.
 )
 {
   return 1;
@@ -1129,7 +1129,7 @@ int MPv0::D_rate(
 // ##################################################################
 // ##################################################################
 
-double MPv0::phot_xsection(const struct ion_struct* ci)
+double MPv0::phot_xsection(const struct ion_struct *ci)
 {
   if (ci->i == H_1p)
     return 6.3e-18;  // in cm^2
@@ -1144,7 +1144,7 @@ double MPv0::phot_xsection(const struct ion_struct* ci)
 
 double MPv0::Coll_Ion_rate(
     double temperature,          ///< Precalculated Temperature.
-    const struct ion_struct* ci  ///< current ion.
+    const struct ion_struct *ci  ///< current ion.
 )
 {
   // This uses fitting formulae from Voronov (1997) ADANDT, 65, 1.
@@ -1357,7 +1357,7 @@ double MPv0::Coll_Ion_rate(
 
 double MPv0::Rad_Recomb_rate(
     double temperature,          ///< Precalculated Temperature.
-    const struct ion_struct* ci  ///< current ion.
+    const struct ion_struct *ci  ///< current ion.
 )
 {
 #ifdef NEW_RATES
@@ -1699,7 +1699,7 @@ double MPv0::dielec_recomb(double T, enum species i)
 
 double MPv0::charge_exchange_rate(
     double T,                     ///< Precalculated Temperature.
-    const struct ion_struct* ci,  ///< current ion.
+    const struct ion_struct *ci,  ///< current ion.
     const int sw  ///< 0 for recombination from ion, 1 for ionisation of ion.
 )
 {
@@ -1712,7 +1712,7 @@ double MPv0::charge_exchange_rate(
 // ##################################################################
 
 int MPv0::Init_ionfractions(
-    pion_flt* p_prim,  ///< Primitive vector to be updated.
+    pion_flt *p_prim,  ///< Primitive vector to be updated.
     const double gam,  ///< eos gamma.
     const double temp  ///< optional gas temperature to end up at. (negative
                        ///< means use pressure)
@@ -2428,7 +2428,7 @@ void MPv0::set_atomic_data()
 /// arguments.  Time is returned in seconds.
 ///
 double MPv0::timescales(
-    const pion_flt* p_in,  ///< Current cell primitive vector.
+    const pion_flt *p_in,  ///< Current cell primitive vector.
     const double gam,      ///< EOS gamma.
     const bool f_cool,     ///< set to true if including cooling time.
     const bool f_recomb,   ///< set to true if including recombination time.

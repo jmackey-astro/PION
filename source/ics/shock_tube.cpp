@@ -60,8 +60,8 @@ IC_shocktube::~IC_shocktube()
 // ##################################################################
 
 int IC_shocktube::setup_data(
-    class ReadParams* rrp,    ///< pointer to parameter list.
-    class GridBaseClass* ggg  ///< pointer to grid
+    class ReadParams *rrp,    ///< pointer to parameter list.
+    class GridBaseClass *ggg  ///< pointer to grid
 )
 {
   int err = 0;
@@ -335,8 +335,8 @@ int IC_shocktube::setup_data(
 // ##################################################################
 
 int IC_shocktube::assign_data(
-    double* l_in,     ///< input left state
-    double* r_in,     ///< input right state
+    double *l_in,     ///< input left state
+    double *r_in,     ///< input right state
     double interface  ///< location of interface
 )
 {
@@ -353,7 +353,7 @@ int IC_shocktube::assign_data(
     right[v] = r_in[v];
   }
 
-  class eqns_base* eqn = 0;
+  class eqns_base *eqn = 0;
   if (eqns == 1)
     eqn = new class eqns_Euler(nvar);
   else if (eqns == 2)
@@ -370,7 +370,7 @@ int IC_shocktube::assign_data(
   rep.printVec("Right: ", right, nvar);
 
   // preshock state vector.
-  class cell* cpt = gg->FirstPt();
+  class cell *cpt = gg->FirstPt();
   double dx       = 2.0 * gg->DX();
   if (ndim == 1) {
     do {
@@ -521,7 +521,7 @@ int IC_shocktube::assign_data(
 // ##################################################################
 // ##################################################################
 
-int IC_shocktube::get_riemann_ics(int sw, double* l, double* r, double* xm)
+int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
 {
   // for these, we are dimensionless, so no microphysics allowed!
   SimPM->EP.raytracing        = 0;

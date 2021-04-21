@@ -24,8 +24,8 @@ IC_spherical_clump::IC_spherical_clump() {}
 IC_spherical_clump::~IC_spherical_clump() {}
 
 int IC_spherical_clump::setup_data(
-    class ReadParams* rrp,    ///< pointer to parameter list.
-    class GridBaseClass* ggg  ///< pointer to grid
+    class ReadParams *rrp,    ///< pointer to parameter list.
+    class GridBaseClass *ggg  ///< pointer to grid
 )
 {
   int err = 0;
@@ -181,7 +181,7 @@ int IC_spherical_clump::setup_clump()
   // Data.
   //
   cout << "Assigning primitive vectors.\n";
-  class cell* cpt = gg->FirstPt();
+  class cell *cpt = gg->FirstPt();
   do {
     // Set values of primitive variables.
     cpt->P[RO] = AMB_density;

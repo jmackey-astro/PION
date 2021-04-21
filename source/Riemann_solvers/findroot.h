@@ -65,7 +65,7 @@ public:
   /// which must be defined in a derived class.
   ///
   virtual int FR_find_root(
-      pion_flt*,       ///< pointer to result
+      pion_flt *,      ///< pointer to result
       const pion_flt,  ///< parameter 1
       const pion_flt,  ///< parameter 2
       const pion_flt,  ///< parameter 3
@@ -78,7 +78,7 @@ public:
   /// the roots of, and a variable to assign data into.
   ///
   int solve_test(
-      pion_flt*,      ///< pointer to result.
+      pion_flt *,     ///< pointer to result.
       const pion_flt  ///< param1.
   );
 
@@ -95,9 +95,9 @@ protected:
   /// \retval 1 Failure (with error message hopefully).
   ///
   int solve_pm(
-      pion_flt,  ///< Initial bracketing value guess x1
-      pion_flt,  ///< Initial bracketing value guess x2
-      pion_flt*  ///< Pointer to ans.
+      pion_flt,   ///< Initial bracketing value guess x1
+      pion_flt,   ///< Initial bracketing value guess x2
+      pion_flt *  ///< Pointer to ans.
   );
 
   /// \brief Same as solve_pm() but int the range \f$ [0, \infty]\f$.
@@ -105,7 +105,7 @@ protected:
   /// \retval 0 Success.
   /// \retval 1 Failure.
   ///
-  int solve_pos(pion_flt, pion_flt, pion_flt*);
+  int solve_pos(pion_flt, pion_flt, pion_flt *);
 
   ///
   /// Input an x value and this returns f(x).  The aim of this class is to
@@ -139,8 +139,8 @@ private:
   /// \retval 1 Failure.
   ///
   int bracket_root_pos(
-      pion_flt*,  ///< The lower bracketing value x1
-      pion_flt*   ///< The upper bracketing value x2
+      pion_flt *,  ///< The lower bracketing value x1
+      pion_flt *   ///< The upper bracketing value x2
   );
 
   /// \brief Brackets a root in the range \f$ [-\infty, \infty]\f$
@@ -153,8 +153,8 @@ private:
   /// \retval 1 Failure.
   ///
   int bracket_root_pm(
-      pion_flt*,  ///< The lower bracketing value x1
-      pion_flt*   ///< The upper bracketing value x2
+      pion_flt *,  ///< The lower bracketing value x1
+      pion_flt *   ///< The upper bracketing value x2
   );
 
   /// \brief Given brackets around a root, finds the root by the bisection
@@ -169,10 +169,10 @@ private:
   /// \retval 1 fail.
   ///
   int find_root_bisection(
-      pion_flt*,  ///< lower bound x1
-      pion_flt*,  ///< upper bound x2
-      pion_flt,   ///< required accuracy
-      pion_flt*   ///< pointer to answer
+      pion_flt *,  ///< lower bound x1
+      pion_flt *,  ///< upper bound x2
+      pion_flt,    ///< required accuracy
+      pion_flt *   ///< pointer to answer
   );
 
   /// \brief Given brackets around a root, finds the root by the Brent's
@@ -188,7 +188,7 @@ private:
       pion_flt x1,   ///< lower bound x1
       pion_flt x2,   ///< upper bound x2
       pion_flt err,  ///< required accuracy
-      pion_flt* ans  ///< pointer to answer
+      pion_flt *ans  ///< pointer to answer
   );
 };
 

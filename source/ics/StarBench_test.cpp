@@ -50,8 +50,8 @@ IC_StarBench_Tests::~IC_StarBench_Tests() {}
 // ##################################################################
 
 int IC_StarBench_Tests::setup_data(
-    class ReadParams* rrp,    ///< pointer to parameter list.
-    class GridBaseClass* ggg  ///< pointer to grid
+    class ReadParams *rrp,    ///< pointer to parameter list.
+    class GridBaseClass *ggg  ///< pointer to grid
 )
 {
   //
@@ -144,9 +144,9 @@ int IC_StarBench_Tests::setup_data(
 // ##################################################################
 
 int IC_StarBench_Tests::setup_ContactDiscontinuity(
-    class ReadParams* rrp,     ///< pointer to parameter list.
-    class GridBaseClass* ggg,  ///< pointer to grid
-    string& test)
+    class ReadParams *rrp,     ///< pointer to parameter list.
+    class GridBaseClass *ggg,  ///< pointer to grid
+    string &test)
 {
   //
   // First see what test we are doing.
@@ -200,7 +200,7 @@ int IC_StarBench_Tests::setup_ContactDiscontinuity(
       Vel[YY] = atof(seek.c_str());
   }
 
-  cell* c = ggg->FirstPt();
+  cell *c = ggg->FirstPt();
   double pos[SimPM->ndim];
 
   if (test_id == 1) {
@@ -308,9 +308,9 @@ int IC_StarBench_Tests::setup_ContactDiscontinuity(
 // ##################################################################
 
 int IC_StarBench_Tests::setup_StarBench_planarIF(
-    class ReadParams* rrp,     ///< pointer to parameter list.
-    class GridBaseClass* ggg,  ///< pointer to grid
-    string& test)
+    class ReadParams *rrp,     ///< pointer to parameter list.
+    class GridBaseClass *ggg,  ///< pointer to grid
+    string &test)
 {
   //
   // ----------------------------------------------------------------
@@ -356,7 +356,7 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   //
   double c_n = 0.0, c_i = 0.0;
 
-  cell* c  = ggg->FirstPt();
+  cell *c  = ggg->FirstPt();
   c->P[RO] = d_up;
   c->P[VX] = c->P[VY] = c->P[VZ] = 0.0;
 
@@ -748,9 +748,9 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
 // ##################################################################
 
 int IC_StarBench_Tests::setup_StarBench_IFI(
-    class ReadParams* rrp,     ///< pointer to parameter list.
-    class GridBaseClass* ggg,  ///< pointer to grid
-    string& test)
+    class ReadParams *rrp,     ///< pointer to parameter list.
+    class GridBaseClass *ggg,  ///< pointer to grid
+    string &test)
 {
 
   int id = 0;
@@ -763,7 +763,7 @@ int IC_StarBench_Tests::setup_StarBench_IFI(
   else
     rep.error("Bad test name", test);
 
-  cell* c = ggg->FirstPt();
+  cell *c = ggg->FirstPt();
   double pos[SimPM->ndim];
   do {
     // CI.get_dpos(c,pos);
@@ -797,9 +797,9 @@ int IC_StarBench_Tests::setup_StarBench_IFI(
 // ##################################################################
 
 int IC_StarBench_Tests::setup_StarBench_IrrCl(
-    class ReadParams* rrp,     ///< pointer to parameter list.
-    class GridBaseClass* ggg,  ///< pointer to grid
-    string& test)
+    class ReadParams *rrp,     ///< pointer to parameter list.
+    class GridBaseClass *ggg,  ///< pointer to grid
+    string &test)
 {
 
   int id = 0;
@@ -810,7 +810,7 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
   else
     rep.error("Bad test name", test);
 
-  cell* c = ggg->FirstPt();
+  cell *c = ggg->FirstPt();
   double pos[SimPM->ndim];
   //
   // Run through grid and set uniform initial conditions.
@@ -886,9 +886,9 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
 // ##################################################################
 
 int IC_StarBench_Tests::setup_StarBench_TremblinCooling(
-    class ReadParams* rrp,     ///< pointer to parameter list.
-    class GridBaseClass* ggg,  ///< pointer to grid
-    string& test)
+    class ReadParams *rrp,     ///< pointer to parameter list.
+    class GridBaseClass *ggg,  ///< pointer to grid
+    string &test)
 {
   //
   // Set density based on parameter (giving n(H) in cm^{-3})
@@ -901,7 +901,7 @@ int IC_StarBench_Tests::setup_StarBench_TremblinCooling(
     density = atof(seek.c_str());
 
   double dpos[SimPM->ndim];
-  cell* c = ggg->FirstPt();
+  cell *c = ggg->FirstPt();
   do {
     CI.get_dpos(c, dpos);
 
@@ -927,9 +927,9 @@ int IC_StarBench_Tests::setup_StarBench_TremblinCooling(
 // ##################################################################
 
 int IC_StarBench_Tests::setup_StarBench_Cone(
-    class ReadParams* rrp,     ///< pointer to parameter list.
-    class GridBaseClass* ggg,  ///< pointer to grid
-    string& test)
+    class ReadParams *rrp,     ///< pointer to parameter list.
+    class GridBaseClass *ggg,  ///< pointer to grid
+    string &test)
 {
 
   double srcpos[SimPM->ndim];
@@ -944,7 +944,7 @@ int IC_StarBench_Tests::setup_StarBench_Cone(
   // if (seek=="") rep.error("Need parameter
   // StarBench_TremblinCooling_Rho",1); else density = atof(seek.c_str());
 
-  cell* c = ggg->FirstPt();
+  cell *c = ggg->FirstPt();
   double pos[SimPM->ndim];
   double dist         = 0.0;
   double r0           = 3.086e17;  // core radius of cloud.

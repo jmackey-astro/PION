@@ -88,10 +88,10 @@ public:
   /// is passed in to the public solve function.
   ///
   riemann_Euler(
-      const int,        ///< Length of State Vectors, nvar
-      const pion_flt*,  ///< Mean values of primitive variables on
-                        ///< grid [vector, length nvar]
-      const double      ///< Gamma for state vector.
+      const int,         ///< Length of State Vectors, nvar
+      const pion_flt *,  ///< Mean values of primitive variables on
+                         ///< grid [vector, length nvar]
+      const double       ///< Gamma for state vector.
   );
 
   /// \brief Destructor: deletes dynamically allocated data.
@@ -102,11 +102,11 @@ public:
   /// exact, or hybrid solution depending on the 4th argument.
   ///
   int JMs_riemann_solve(
-      const pion_flt*,  ///< Left Primitive var. state vector.
-      const pion_flt*,  ///< Right Primitive var. state vector.
-      pion_flt*,        ///< Result Primitive var. state vector.
-      const int,        ///< Solve Type (1=LinearRS,2=ExactRS,3=HybridRS)
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< Left Primitive var. state vector.
+      const pion_flt *,  ///< Right Primitive var. state vector.
+      pion_flt *,        ///< Result Primitive var. state vector.
+      const int,         ///< Solve Type (1=LinearRS,2=ExactRS,3=HybridRS)
+      const double       ///< Gas constant gamma.
   );
 
   /// \brief Prints out info on what the solver has done, and how well it's
@@ -117,17 +117,17 @@ protected:
 private:
   const int rs_nvar;   ///< length of state vectors required for the Riemann
                        ///< solver, i.e.5.
-  pion_flt* rs_left;   ///< Local copy of the left state.
-  pion_flt* rs_right;  ///< Local copy of the right state.
-  pion_flt* rs_pstar;  ///< Local copy of result state.
-  pion_flt* rs_meanp;  ///< The average state.
+  pion_flt *rs_left;   ///< Local copy of the left state.
+  pion_flt *rs_right;  ///< Local copy of the right state.
+  pion_flt *rs_pstar;  ///< Local copy of result state.
+  pion_flt *rs_meanp;  ///< The average state.
   long int linct;      ///< Counter for how many linear solves we have done.
   long int exact;      ///< Counter for how many exact solves we have done.
   long int total;      ///< counter for how many solves the instance has done.
   long int samestate;  ///< Debugging counter, for counting how many solves
                        ///< had the same left and right state.
 #ifdef RSTESTING
-  pion_flt* linearpstar;  ///< (TESTING) Testing variable, for the result
+  pion_flt *linearpstar;  ///< (TESTING) Testing variable, for the result
                           ///< state from the linear solver.
   int fails;  ///< Counter for how many linear solves weren't good enough when
               ///< linearOK() thought they should have been.
@@ -143,7 +143,7 @@ private:
   /// conditions across hydrodynamic discontinuities.
   ///
   virtual int FR_find_root(
-      pion_flt*,       ///< pointer to result
+      pion_flt *,      ///< pointer to result
       const pion_flt,  ///< parameter 1
       const pion_flt,  ///< parameter 2
       const pion_flt,  ///< parameter 3

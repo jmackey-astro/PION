@@ -16,9 +16,9 @@ using namespace std;
 // ##################################################################
 
 int jet_bc::BC_assign_JETBC(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    boundary_data* b)
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    boundary_data *b)
 {
   if (!JP.jetic) {
     rep.error("BC_assign_JETBC: not a jet simulation!", JP.jetic);
@@ -26,7 +26,7 @@ int jet_bc::BC_assign_JETBC(
   if (b->dir != NO) {
     rep.error("BC_assign_JETBC: boundary is not an internal one!", b->dir);
   }
-  cell* c    = grid->FirstPt();
+  cell *c    = grid->FirstPt();
   cell *temp = 0, *cy = 0;
   int ct    = 0;
   int ctot  = 0;
@@ -222,9 +222,9 @@ int jet_bc::BC_assign_JETBC(
 // ##################################################################
 
 int jet_bc::BC_update_JETBC(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    struct boundary_data* b,
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    struct boundary_data *b,
     const int,
     const int)
 {
@@ -233,7 +233,7 @@ int jet_bc::BC_update_JETBC(
   double jr   = JP.jetradius * grid->DX();
 #endif  // SOFTJET
 
-  list<cell*>::iterator c = b->data.begin();
+  list<cell *>::iterator c = b->data.begin();
   for (c = b->data.begin(); c != b->data.end(); ++c) {
     for (int v = 0; v < par.nvar; v++)
       (*c)->dU[v] = 0.0;

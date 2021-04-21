@@ -53,9 +53,9 @@ using namespace std;
 /********************************************************/
 
 dataio_silo_utility::dataio_silo_utility(
-    class SimParams& SimPM,  ///< pointer to simulation parameters
+    class SimParams &SimPM,  ///< pointer to simulation parameters
     std::string dtype,       ///< FLOAT or DOUBLE for files.
-    class MCMDcontrol* p) :
+    class MCMDcontrol *p) :
     dataio_silo_pllel(SimPM, dtype, p)
 {
 #ifdef TEST_SILO_IO
@@ -67,7 +67,7 @@ dataio_silo_utility::dataio_silo_utility(
 // ##################################################################
 // ##################################################################
 
-int dataio_silo_utility::SRAD_get_nproc_numfiles(string fname, int* np, int* nf)
+int dataio_silo_utility::SRAD_get_nproc_numfiles(string fname, int *np, int *nf)
 {
   int err = 0;
 
@@ -77,7 +77,7 @@ int dataio_silo_utility::SRAD_get_nproc_numfiles(string fname, int* np, int* nf)
 #ifdef TEST_SILO_IO
   cout << "opening file: " << fname << "\n";
 #endif
-  DBfile* dbfile = 0;
+  DBfile *dbfile = 0;
   dbfile         = DBOpen(fname.c_str(), DB_UNKNOWN, DB_READ);
   if (!dbfile) rep.error("open silo file failed.", dbfile);
 
@@ -126,9 +126,9 @@ int dataio_silo_utility::SRAD_get_nproc_numfiles(string fname, int* np, int* nf)
 // ##################################################################
 
 bool dataio_silo_utility::SRAD_point_on_my_domain(
-    const cell* c,             ///< pointer to cell
-    class SimParams& SimPM,    ///< pointer to simulation parameters
-    class MCMDcontrol* filePM  ///< pointer to class with nproc.
+    const cell *c,             ///< pointer to cell
+    class SimParams &SimPM,    ///< pointer to simulation parameters
+    class MCMDcontrol *filePM  ///< pointer to class with nproc.
 )
 {
   //
@@ -148,12 +148,12 @@ bool dataio_silo_utility::SRAD_point_on_my_domain(
 // ##################################################################
 
 int dataio_silo_utility::SRAD_read_var2grid(
-    DBfile* dbfile,            ///< pointer to silo file.
-    class GridBaseClass* ggg,  ///< pointer to data.
+    DBfile *dbfile,            ///< pointer to silo file.
+    class GridBaseClass *ggg,  ///< pointer to data.
     const string variable,     ///< variable name to read.
     const long int npt,        ///< number of cells expected.
-    class SimParams& SimPM,    ///< pointer to simulation parameters
-    class MCMDcontrol* filePM  ///< pointer to class with nproc.
+    class SimParams &SimPM,    ///< pointer to simulation parameters
+    class MCMDcontrol *filePM  ///< pointer to class with nproc.
 )
 {
   //
@@ -161,7 +161,7 @@ int dataio_silo_utility::SRAD_read_var2grid(
   // the named variable to read, so it's ok to bug out if we don't
   // find it.
   //
-  DBquadvar* silodata = 0;
+  DBquadvar *silodata = 0;
   silodata            = DBGetQuadvar(dbfile, variable.c_str());
   if (!silodata) {
     rep.error(
@@ -195,14 +195,14 @@ int dataio_silo_utility::SRAD_read_var2grid(
   // is a void pointer, so I have to reinterpret it to get data that
   // PION can understand.
   //
-  void** data    = silodata->vals;
-  float** fdata  = 0;
-  double** ddata = 0;
+  void **data    = silodata->vals;
+  float **fdata  = 0;
+  double **ddata = 0;
   if (silo_dtype == DB_FLOAT) {
-    fdata = reinterpret_cast<float**>(data);
+    fdata = reinterpret_cast<float **>(data);
   }
   else {
-    ddata = reinterpret_cast<double**>(data);
+    ddata = reinterpret_cast<double **>(data);
   }
 
   if (variable == "Velocity" || variable == "MagneticField") {
@@ -225,7 +225,7 @@ int dataio_silo_utility::SRAD_read_var2grid(
     //    "<<silodata->nvals<<"\n";
     // cout <<"reading variable "<<variable<<" into element "<<v1<<" of
     // state vec.\n";
-    cell* c     = ggg->FirstPt();
+    cell *c     = ggg->FirstPt();
     long int ct = 0;
     do {
       if (SRAD_point_on_my_domain(c, SimPM, filePM)) {
@@ -303,7 +303,7 @@ int dataio_silo_utility::SRAD_read_var2grid(
     // First get to start cell in local domain:
     //
     enum direction posdir[3] = {XP, YP, ZP};
-    cell* start              = ggg->FirstPt();
+    cell *start              = ggg->FirstPt();
     long int ct              = 0;
     for (int i = 0; i < SimPM.ndim; i++) {
       while (CI.get_dpos(start, i) < filePM->LocalXmin[i])
@@ -363,7 +363,7 @@ int dataio_silo_utility::SRAD_read_var2grid(
 // ##################################################################
 
 void dataio_silo_utility::set_pllel_filename(
-    std::string& fname,  ///< filename
+    std::string &fname,  ///< filename
     const int ifile      ///< file number to replace name with.
 )
 {
@@ -394,12 +394,12 @@ void dataio_silo_utility::set_pllel_filename(
 // ##################################################################
 
 int dataio_silo_utility::serial_read_any_data(
-    string firstfile,                 ///< file to read from
-    class SimParams& SimPM,           ///< pointer to simulation parameters
-    vector<class GridBaseClass*>& cg  ///< address of vector of grid pointers.
+    string firstfile,                  ///< file to read from
+    class SimParams &SimPM,            ///< pointer to simulation parameters
+    vector<class GridBaseClass *> &cg  ///< address of vector of grid pointers.
 )
 {
-  class GridBaseClass* ggg = cg[0];
+  class GridBaseClass *ggg = cg[0];
   if (!ggg) rep.error("null pointer to computational grid!", ggg);
 
   //
@@ -450,11 +450,11 @@ int dataio_silo_utility::serial_read_any_data(
 
 int dataio_silo_utility::serial_read_pllel_silodata(
     const string firstfile,    ///< filename
-    class GridBaseClass* ggg,  ///< pointer to data.
+    class GridBaseClass *ggg,  ///< pointer to data.
     const int numfiles,        ///< number of files
     const int groupsize,       ///< number of groups
-    class SimParams& SimPM,    ///< pointer to simulation parameters
-    class MCMDcontrol* filePM  ///< number of processes used to write file.
+    class SimParams &SimPM,    ///< pointer to simulation parameters
+    class MCMDcontrol *filePM  ///< number of processes used to write file.
 )
 {
   int err = 0;
@@ -476,7 +476,7 @@ int dataio_silo_utility::serial_read_pllel_silodata(
     //
     set_pllel_filename(infile, ifile);
 
-    DBfile* dbfile = DBOpen(infile.c_str(), DB_UNKNOWN, DB_READ);
+    DBfile *dbfile = DBOpen(infile.c_str(), DB_UNKNOWN, DB_READ);
     if (!dbfile) rep.error("open first silo file failed.", dbfile);
     //
     // loop over domains within this file.  The last file may have fewer
@@ -530,9 +530,9 @@ int dataio_silo_utility::serial_read_pllel_silodata(
 // ##################################################################
 
 int dataio_silo_utility::ReadData(
-    string firstfile,                  ///< file to read from
-    vector<class GridBaseClass*>& cg,  ///< grid pointers.
-    class SimParams& SimPM             ///< pointer to simulation parameters
+    string firstfile,                   ///< file to read from
+    vector<class GridBaseClass *> &cg,  ///< grid pointers.
+    class SimParams &SimPM              ///< pointer to simulation parameters
 )
 {
   cout << "(pion-ng mpi)  Reading data from file: " << firstfile << "\n";
@@ -594,13 +594,13 @@ int dataio_silo_utility::ReadData(
 
 int dataio_silo_utility::ReadLevelData(
     string firstfile,         ///< file to read from
-    class GridBaseClass* cg,  ///< grid pointer.
-    class SimParams& SimPM,   ///< simulation parameters
+    class GridBaseClass *cg,  ///< grid pointer.
+    class SimParams &SimPM,   ///< simulation parameters
     const int l               ///< level in grid hierarchy
 )
 {
 
-  class GridBaseClass* ggg = cg;
+  class GridBaseClass *ggg = cg;
   if (!ggg) rep.error("null pointer to computational grid!", ggg);
   int err = 0;
 
@@ -704,8 +704,8 @@ int dataio_silo_utility::ReadLevelData(
 
 int dataio_silo_utility::parallel_read_serial_silodata(
     string firstfile,          ///< file to read from
-    class GridBaseClass* ggg,  ///< pointer to data.
-    class SimParams& SimPM     ///< pointer to simulation parameters
+    class GridBaseClass *ggg,  ///< pointer to data.
+    class SimParams &SimPM     ///< pointer to simulation parameters
 )
 {
   int err = 0;
@@ -713,7 +713,7 @@ int dataio_silo_utility::parallel_read_serial_silodata(
   // This is quite simple -- the local domain reads in a subset of the
   // uniform grid in the file.
   //
-  DBfile* dbfile = DBOpen(firstfile.c_str(), DB_UNKNOWN, DB_READ);
+  DBfile *dbfile = DBOpen(firstfile.c_str(), DB_UNKNOWN, DB_READ);
   if (!dbfile) rep.error("open first silo file failed.", dbfile);
 
   int ftype = DBGetDriverType(dbfile);
@@ -768,8 +768,8 @@ int dataio_silo_utility::parallel_read_serial_silodata(
 
 int dataio_silo_utility::parallel_read_parallel_silodata(
     string firstfile,          ///< file to read from
-    class GridBaseClass* ggg,  ///< pointer to data.
-    class SimParams& SimPM,    ///< simulation parameters
+    class GridBaseClass *ggg,  ///< pointer to data.
+    class SimParams &SimPM,    ///< simulation parameters
     const int numfiles,        ///< number of files
     const int groupsize,       ///< number of groups
     const int nmesh,           ///< number of domains in file.
@@ -794,7 +794,7 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
     //
     set_pllel_filename(infile, ifile);
 
-    DBfile* dbfile = DBOpen(infile.c_str(), DB_UNKNOWN, DB_READ);
+    DBfile *dbfile = DBOpen(infile.c_str(), DB_UNKNOWN, DB_READ);
     if (!dbfile) rep.error("open first silo file failed.", dbfile);
     //
     // loop over domains within this file. The number of domains per file is
@@ -930,12 +930,12 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
 // ##################################################################
 
 void dataio_silo_utility::get_quadmesh_extents(
-    DBfile* dbfile,         ///< pointer to silo file.
+    DBfile *dbfile,         ///< pointer to silo file.
     const string mesh_dir,  ///< directory of mesh
     const string qm_name,   ///< name of mesh
-    double* mesh_xmin,      ///< Xmin for mesh (output)
-    double* mesh_xmax,      ///< Xmax for mesh (output)
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    double *mesh_xmin,      ///< Xmin for mesh (output)
+    double *mesh_xmax,      ///< Xmax for mesh (output)
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
 
@@ -947,7 +947,7 @@ void dataio_silo_utility::get_quadmesh_extents(
   //
   // Now get the mesh from the file.
   //
-  DBquadmesh* qm = 0;
+  DBquadmesh *qm = 0;
   qm             = DBGetQuadmesh(dbfile, qm_name.c_str());
   if (!qm) rep.error("failed to get quadmesh", qm_name);
 
@@ -973,8 +973,8 @@ void dataio_silo_utility::get_quadmesh_extents(
   cout.precision(15);
 #endif  // TESTING
   if (silo_dtype == DB_FLOAT) {
-    float* fqmmin = qm->min_extents;
-    float* fqmmax = qm->max_extents;
+    float *fqmmin = qm->min_extents;
+    float *fqmmax = qm->max_extents;
     for (int v = 0; v < ndim; v++) {
       mesh_xmin[v] = fqmmin[v];
       mesh_xmax[v] = fqmmax[v];
@@ -985,8 +985,8 @@ void dataio_silo_utility::get_quadmesh_extents(
     }
   }
   else {
-    double* dqmmin = reinterpret_cast<double*>(qm->min_extents);
-    double* dqmmax = reinterpret_cast<double*>(qm->max_extents);
+    double *dqmmin = reinterpret_cast<double *>(qm->min_extents);
+    double *dqmmax = reinterpret_cast<double *>(qm->max_extents);
     for (int v = 0; v < ndim; v++) {
       mesh_xmin[v] = dqmmin[v];
       mesh_xmax[v] = dqmmax[v];
@@ -1004,13 +1004,13 @@ void dataio_silo_utility::get_quadmesh_extents(
 // ##################################################################
 
 void dataio_silo_utility::get_quadmesh_integer_extents(
-    DBfile* dbfile,            ///< pointer to silo file.
-    class GridBaseClass* ggg,  ///< pointer to data.
-    class SimParams& SimPM,    ///< pointer to simulation parameters
+    DBfile *dbfile,            ///< pointer to silo file.
+    class GridBaseClass *ggg,  ///< pointer to data.
+    class SimParams &SimPM,    ///< pointer to simulation parameters
     const string mesh_dir,     ///< directory of mesh
     const string qm_name,      ///< name of mesh
-    int* iXmin,                ///< integer Xmin for mesh (output)
-    int* iXmax                 ///< integer Xmax for mesh (output)
+    int *iXmin,                ///< integer Xmin for mesh (output)
+    int *iXmax                 ///< integer Xmax for mesh (output)
 )
 {
   //
@@ -1062,13 +1062,13 @@ void dataio_silo_utility::get_quadmesh_integer_extents(
 // ##################################################################
 
 int dataio_silo_utility::PP_read_var2grid(
-    DBfile* dbfile,            ///< pointer to silo file.
-    class GridBaseClass* ggg,  ///< pointer to data.
-    class SimParams& SimPM,    ///< pointer to simulation parameters
+    DBfile *dbfile,            ///< pointer to silo file.
+    class GridBaseClass *ggg,  ///< pointer to data.
+    class SimParams &SimPM,    ///< pointer to simulation parameters
     const string variable,     ///< variable name to read.
     const long int,            ///< number of cells expected (defunct!)
-    const int* iXmin,          ///< integer Xmin for mesh
-    const int* iXmax           ///< integer Xmax for mesh
+    const int *iXmin,          ///< integer Xmin for mesh
+    const int *iXmax           ///< integer Xmax for mesh
 )
 {
   //
@@ -1076,7 +1076,7 @@ int dataio_silo_utility::PP_read_var2grid(
   // the named variable to read, so it's ok to bug out if we don't
   // find it.
   //
-  DBquadvar* qv = 0;
+  DBquadvar *qv = 0;
   qv            = DBGetQuadvar(dbfile, variable.c_str());
   if (!qv)
     rep.error(
@@ -1108,14 +1108,14 @@ int dataio_silo_utility::PP_read_var2grid(
   //
   // Set a pointer to the data in the quadmesh
   //
-  void** data    = qv->vals;
-  float** fdata  = 0;
-  double** ddata = 0;
+  void **data    = qv->vals;
+  float **fdata  = 0;
+  double **ddata = 0;
   if (silo_dtype == DB_FLOAT) {
-    fdata = reinterpret_cast<float**>(data);
+    fdata = reinterpret_cast<float **>(data);
   }
   else {
-    ddata = reinterpret_cast<double**>(data);
+    ddata = reinterpret_cast<double **>(data);
   }
 
   //
@@ -1179,7 +1179,7 @@ int dataio_silo_utility::PP_read_var2grid(
   //
   // Get to first cell in the quadmesh/grid intersection region.
   //
-  cell* c = ggg->FirstPt();
+  cell *c = ggg->FirstPt();
 
   for (int v = 0; v < ndim; v++) {
 #ifdef TESTING

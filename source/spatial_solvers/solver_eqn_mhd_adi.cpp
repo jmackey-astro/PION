@@ -46,7 +46,7 @@ FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(
     const int nd,          ///< number of space dimensions in grid.
     const double cflno,    ///< CFL number
     const double gam,      ///< gas eos gamma.
-    pion_flt* state,       ///< State vector of mean values for simulation.
+    pion_flt *state,       ///< State vector of mean values for simulation.
     const double avcoeff,  ///< Artificial Viscosity Parameter etav.
     const int ntr          ///< Number of tracer variables.
     ) :
@@ -90,15 +90,15 @@ FV_solver_mhd_ideal_adi::~FV_solver_mhd_ideal_adi()
 // ##################################################################
 
 int FV_solver_mhd_ideal_adi::inviscid_flux(
-    class SimParams& par,       ///< simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid
+    class SimParams &par,       ///< simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid
     const double dx,            ///< cell-size dx (for LF method)
-    class cell* Cl,             ///< Left state cell pointer
-    class cell* Cr,             ///< Right state cell pointer
-    const pion_flt* Pl,         ///< Left Primitive vector.
-    const pion_flt* Pr,         ///< Right Primitive vector.
-    pion_flt* flux,             ///< Resultant Flux vector.
-    pion_flt* pstar,            ///< State vector at interface.
+    class cell *Cl,             ///< Left state cell pointer
+    class cell *Cr,             ///< Right state cell pointer
+    const pion_flt *Pl,         ///< Left Primitive vector.
+    const pion_flt *Pr,         ///< Right Primitive vector.
+    pion_flt *flux,             ///< Resultant Flux vector.
+    pion_flt *pstar,            ///< State vector at interface.
     const int solve_flag,       ///< Solver to use
     const double eq_gamma       ///< Gas constant gamma.
 )
@@ -198,10 +198,10 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
 // ##################################################################
 
 int FV_solver_mhd_ideal_adi::AVFalle(
-    const pion_flt* Pleft,
-    const pion_flt* Pright,
-    const pion_flt* Pstar,
-    pion_flt* flux,
+    const pion_flt *Pleft,
+    const pion_flt *Pright,
+    const pion_flt *Pstar,
+    pion_flt *flux,
     const double eta,   ///< already set as FV_etav
     const double gamma  ///< already set as eq_gamma
 )
@@ -284,7 +284,7 @@ int FV_solver_mhd_ideal_adi::AVFalle(
 // ##################################################################
 
 void FV_solver_mhd_ideal_adi::PtoU(
-    const pion_flt* p, pion_flt* u, const double g)
+    const pion_flt *p, pion_flt *u, const double g)
 {
   eqns_mhd_ideal::PtoU(p, u, g);
   for (int t = 0; t < FV_ntr; t++)
@@ -296,8 +296,8 @@ void FV_solver_mhd_ideal_adi::PtoU(
 // ##################################################################
 
 int FV_solver_mhd_ideal_adi::UtoP(
-    const pion_flt* u,
-    pion_flt* p,
+    const pion_flt *u,
+    pion_flt *p,
     const double MinTemp,  ///< Min Temperature allowed on grid.
     const double g)
 {
@@ -311,7 +311,7 @@ int FV_solver_mhd_ideal_adi::UtoP(
 // ##################################################################
 
 void FV_solver_mhd_ideal_adi::PUtoFlux(
-    const pion_flt* p, const pion_flt* u, pion_flt* f)
+    const pion_flt *p, const pion_flt *u, pion_flt *f)
 {
   eqns_mhd_ideal::PUtoFlux(p, u, f);
   for (int t = 0; t < FV_ntr; t++)
@@ -323,7 +323,7 @@ void FV_solver_mhd_ideal_adi::PUtoFlux(
 // ##################################################################
 
 void FV_solver_mhd_ideal_adi::UtoFlux(
-    const pion_flt* u, pion_flt* f, const double g)
+    const pion_flt *u, pion_flt *f, const double g)
 {
   eqns_mhd_ideal::UtoFlux(u, f, g);
   for (int t = 0; t < FV_ntr; t++)
@@ -335,12 +335,12 @@ void FV_solver_mhd_ideal_adi::UtoFlux(
 // ##################################################################
 
 int FV_solver_mhd_ideal_adi::dU_Cell(
-    class GridBaseClass* grid,
-    cell* c,                // Current cell.
+    class GridBaseClass *grid,
+    cell *c,                // Current cell.
     const axes d,           // Which axis we are looking along.
-    const pion_flt* fn,     // Negative direction flux.
-    const pion_flt* fp,     // Positive direction flux.
-    const pion_flt* slope,  // slope vector for cell c.
+    const pion_flt *fn,     // Negative direction flux.
+    const pion_flt *fp,     // Positive direction flux.
+    const pion_flt *slope,  // slope vector for cell c.
     const int ooa,          // spatial order of accuracy.
     const double dx,        // cell length dx.
     const double dt         // cell TimeStep, dt.
@@ -360,11 +360,11 @@ int FV_solver_mhd_ideal_adi::dU_Cell(
 // ##################################################################
 
 int FV_solver_mhd_ideal_adi::MHDsource(
-    class GridBaseClass* grid,  ///< pointer to grid.
-    class cell* Cl,             ///< pointer to cell of left state
-    class cell* Cr,             ///< pointer to cell of right state
-    pion_flt* Pl,               ///< left edge state
-    pion_flt* Pr,               ///< right edge state
+    class GridBaseClass *grid,  ///< pointer to grid.
+    class cell *Cl,             ///< pointer to cell of left state
+    class cell *Cr,             ///< pointer to cell of right state
+    pion_flt *Pl,               ///< left edge state
+    pion_flt *Pr,               ///< right edge state
     const axes d,               ///< Which axis we are looking along.
     enum direction pos,         ///< positive normal direction
     enum direction neg,         ///< negative normal direction
@@ -410,11 +410,11 @@ int FV_solver_mhd_ideal_adi::MHDsource(
 // ##################################################################
 
 int FV_solver_mhd_ideal_adi::CellAdvanceTime(
-    class cell* c,         // cell to update.
-    const pion_flt* Pin,   // Initial State Vector.
-    pion_flt* dU,          // Update vector dU
-    pion_flt* Pf,          // Final state vector (can be same as initial vec.).
-    pion_flt* dE,          // Tracks dE (to correct for negative pressure)
+    class cell *c,         // cell to update.
+    const pion_flt *Pin,   // Initial State Vector.
+    pion_flt *dU,          // Update vector dU
+    pion_flt *Pf,          // Final state vector (can be same as initial vec.).
+    pion_flt *dE,          // Tracks dE (to correct for negative pressure)
     const double,          // gas EOS gamma.
     const double MinTemp,  ///< Min Temperature allowed on grid.
     const double           // Cell timestep dt.
@@ -473,7 +473,7 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
 /// Given a cell, calculate the hydrodynamic timestep.
 ///
 double FV_solver_mhd_ideal_adi::CellTimeStep(
-    const cell* c,   ///< pointer to cell
+    const cell *c,   ///< pointer to cell
     const double,    ///< gas EOS gamma.
     const double dx  ///< Cell size dx.
 )
@@ -557,7 +557,7 @@ FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi(
     const int nd,          ///< number of space dimensions in grid.
     const double cflno,    ///< CFL number
     const double gam,      ///< gas eos gamma.
-    pion_flt* state,       ///< State vector of mean values for simulation.
+    pion_flt *state,       ///< State vector of mean values for simulation.
     const double avcoeff,  ///< Artificial Viscosity Parameter etav.
     const int ntr          ///< Number of tracer variables.
     ) :
@@ -586,7 +586,7 @@ FV_solver_mhd_mixedGLM_adi::~FV_solver_mhd_mixedGLM_adi()
 // ##################################################################
 
 double FV_solver_mhd_mixedGLM_adi::CellTimeStep(
-    const cell* c,   ///< pointer to cell
+    const cell *c,   ///< pointer to cell
     const double,    ///< gas EOS gamma.
     const double dx  ///< Cell size dx.
 )
@@ -602,15 +602,15 @@ double FV_solver_mhd_mixedGLM_adi::CellTimeStep(
 // ##################################################################
 
 int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
-    class SimParams& par,       ///< simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid
+    class SimParams &par,       ///< simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid
     const double dx,            ///< cell-size dx (for LF method)
-    class cell* Cl,             ///< Left state cell pointer
-    class cell* Cr,             ///< Right state cell pointer
-    const pion_flt* Pl,         ///< Left Primitive state vector.
-    const pion_flt* Pr,         ///< Right Primitive state vector.
-    pion_flt* flux,             ///< Resultant Flux state vector.
-    pion_flt* pstar,            ///< State vector at interface.
+    class cell *Cl,             ///< Left state cell pointer
+    class cell *Cr,             ///< Right state cell pointer
+    const pion_flt *Pl,         ///< Left Primitive state vector.
+    const pion_flt *Pr,         ///< Right Primitive state vector.
+    pion_flt *flux,             ///< Resultant Flux state vector.
+    pion_flt *pstar,            ///< State vector at interface.
     const int solve_flag,       ///< Solver to use
     const double eq_gamma       ///< Gas constant gamma.
 )
@@ -726,11 +726,11 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
 // Not exactly as indicated in Dominik's paper, but it works.
 //
 int FV_solver_mhd_mixedGLM_adi::MHDsource(
-    class GridBaseClass* grid,  ///< pointer to grid.
-    class cell* Cl,             ///< pointer to cell of left state
-    class cell* Cr,             ///< pointer to cell of right state
-    pion_flt* Pl,               ///< left edge state
-    pion_flt* Pr,               ///< right edge state
+    class GridBaseClass *grid,  ///< pointer to grid.
+    class cell *Cl,             ///< pointer to cell of left state
+    class cell *Cr,             ///< pointer to cell of right state
+    pion_flt *Pl,               ///< left edge state
+    pion_flt *Pr,               ///< right edge state
     const axes d,               ///< Which axis we are looking along.
     enum direction pos,         ///< positive direction normal to interface
     enum direction neg,         ///< negative direction normal to interface
@@ -762,11 +762,11 @@ int FV_solver_mhd_mixedGLM_adi::MHDsource(
 // ##################################################################
 
 int FV_solver_mhd_mixedGLM_adi::CellAdvanceTime(
-    class cell* c,
-    const pion_flt* Pin,  // Initial State Vector.
-    pion_flt* dU,         // Update vector dU
-    pion_flt* Pf,         // Final state vector (can be same as initial vec.).
-    pion_flt* dE,  // Tracks change of energy if I have to correct for negative
+    class cell *c,
+    const pion_flt *Pin,  // Initial State Vector.
+    pion_flt *dU,         // Update vector dU
+    pion_flt *Pf,         // Final state vector (can be same as initial vec.).
+    pion_flt *dE,  // Tracks change of energy if I have to correct for negative
                    // pressure
     const double,  // gas EOS gamma.
     const double MinTemp,  ///< Min Temperature allowed on grid.
@@ -791,7 +791,7 @@ int FV_solver_mhd_mixedGLM_adi::CellAdvanceTime(
 // ##################################################################
 
 void FV_solver_mhd_mixedGLM_adi::PtoU(
-    const pion_flt* p, pion_flt* u, const double g)
+    const pion_flt *p, pion_flt *u, const double g)
 {
 #ifdef FUNCTION_ID
   cout << "FV_solver_mhd_mixedGLM_adi::PtoU ...starting.\n";
@@ -811,8 +811,8 @@ void FV_solver_mhd_mixedGLM_adi::PtoU(
 // ##################################################################
 
 int FV_solver_mhd_mixedGLM_adi::UtoP(
-    const pion_flt* u,
-    pion_flt* p,
+    const pion_flt *u,
+    pion_flt *p,
     const double MinTemp,  ///< Min Temperature allowed on grid.
     const double g)
 {
@@ -866,7 +866,7 @@ cyl_FV_solver_mhd_ideal_adi::cyl_FV_solver_mhd_ideal_adi(
     const int nd,          ///< number of space dimensions in grid.
     const double cflno,    ///< CFL number
     const double gam,      ///< gas eos gamma.
-    pion_flt* state,       ///< State vector of mean values for simulation.
+    pion_flt *state,       ///< State vector of mean values for simulation.
     const double avcoeff,  ///< Artificial Viscosity Parameter etav.
     const int ntr          ///< Number of tracer variables.
     ) :
@@ -910,12 +910,12 @@ cyl_FV_solver_mhd_ideal_adi::~cyl_FV_solver_mhd_ideal_adi()
 // ##################################################################
 
 void cyl_FV_solver_mhd_ideal_adi::geometric_source(
-    cell* c,               ///< Current cell.
+    cell *c,               ///< Current cell.
     const axes d,          ///< Which axis we are looking along.
-    const pion_flt* dpdx,  ///< slope vector for cell c.
+    const pion_flt *dpdx,  ///< slope vector for cell c.
     const int OA,          ///< spatial order of accuracy.
     const double dR,       ///< cell length dx.
-    pion_flt* dU           ///< add to update vector [OUTPUT]
+    pion_flt *dU           ///< add to update vector [OUTPUT]
 )
 {
 
@@ -947,11 +947,11 @@ void cyl_FV_solver_mhd_ideal_adi::geometric_source(
 // ##################################################################
 
 int cyl_FV_solver_mhd_ideal_adi::MHDsource(
-    class GridBaseClass* grid,  ///< pointer to grid.
-    class cell* Cl,             ///< pointer to cell of left state
-    class cell* Cr,             ///< pointer to cell of right state
-    pion_flt* Pl,               ///< left edge state
-    pion_flt* Pr,               ///< right edge state
+    class GridBaseClass *grid,  ///< pointer to grid.
+    class cell *Cl,             ///< pointer to cell of left state
+    class cell *Cr,             ///< pointer to cell of right state
+    pion_flt *Pl,               ///< left edge state
+    pion_flt *Pr,               ///< right edge state
     const axes d,               ///< Which axis we are looking along.
     enum direction pos,         ///< positive normal direction
     enum direction neg,         ///< negative normal direction
@@ -1025,7 +1025,7 @@ cyl_FV_solver_mhd_mixedGLM_adi::cyl_FV_solver_mhd_mixedGLM_adi(
     const int nd,          ///< number of space dimensions in grid.
     const double cflno,    ///< CFL number
     const double gam,      ///< gas eos gamma.
-    pion_flt* state,       ///< State vector of mean values for simulation.
+    pion_flt *state,       ///< State vector of mean values for simulation.
     const double avcoeff,  ///< Artificial Viscosity Parameter etav.
     const int ntr          ///< Number of tracer variables.
     ) :
@@ -1078,12 +1078,12 @@ cyl_FV_solver_mhd_mixedGLM_adi::~cyl_FV_solver_mhd_mixedGLM_adi()
 // ##################################################################
 
 void cyl_FV_solver_mhd_mixedGLM_adi::geometric_source(
-    cell* c,               ///< Current cell.
+    cell *c,               ///< Current cell.
     const axes d,          ///< Which axis we are looking along.
-    const pion_flt* dpdx,  ///< slope vector for cell c.
+    const pion_flt *dpdx,  ///< slope vector for cell c.
     const int OA,          ///< spatial order of accuracy.
     const double dR,       ///< cell length dx.
-    pion_flt* dU           ///< update vector to add source term to [OUTPUT]
+    pion_flt *dU           ///< update vector to add source term to [OUTPUT]
 )
 {
 
@@ -1131,11 +1131,11 @@ void cyl_FV_solver_mhd_mixedGLM_adi::geometric_source(
 /// Not exactly as indicated in Dominik's paper, but it works.
 ///
 int cyl_FV_solver_mhd_mixedGLM_adi::MHDsource(
-    class GridBaseClass* grid,  ///< pointer to grid.
-    class cell* Cl,             ///< pointer to cell of left state
-    class cell* Cr,             ///< pointer to cell of right state
-    pion_flt* Pl,               ///< left edge state
-    pion_flt* Pr,               ///< right edge state
+    class GridBaseClass *grid,  ///< pointer to grid.
+    class cell *Cl,             ///< pointer to cell of left state
+    class cell *Cr,             ///< pointer to cell of right state
+    pion_flt *Pl,               ///< left edge state
+    pion_flt *Pr,               ///< right edge state
     const axes d,               ///< Which axis we are looking along.
     enum direction pos,         ///< positive direction normal to interface
     enum direction neg,         ///< negative direction normal to interface

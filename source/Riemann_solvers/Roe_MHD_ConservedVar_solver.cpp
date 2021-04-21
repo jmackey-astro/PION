@@ -124,12 +124,12 @@ Riemann_Roe_MHD_CV::~Riemann_Roe_MHD_CV()
 /// a one-sided calculation (just jump across waves with v<0).
 ///
 int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_onesided(
-    const pion_flt* left,
-    const pion_flt* right,
+    const pion_flt *left,
+    const pion_flt *right,
     const double g,
     const pion_flt hc_etamax,
-    pion_flt* out_pstar,
-    pion_flt* out_flux)
+    pion_flt *out_pstar,
+    pion_flt *out_flux)
 {
 
   //
@@ -202,12 +202,12 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_onesided(
 /// a symmetric calculation (all waves contribute).
 ///
 int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_symmetric(
-    const pion_flt* left,
-    const pion_flt* right,
+    const pion_flt *left,
+    const pion_flt *right,
     const double g,
     const pion_flt hc_etamax,
-    pion_flt* out_pstar,
-    pion_flt* out_flux)
+    pion_flt *out_pstar,
+    pion_flt *out_flux)
 {
 #ifdef FUNCTION_ID
   cout << "Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_symmetric ...starting.\n";
@@ -253,7 +253,7 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_symmetric(
 // ##################################################################
 
 double Riemann_Roe_MHD_CV::Enthalpy(
-    const pion_flt* p,  ///< primitive State Vector.
+    const pion_flt *p,  ///< primitive State Vector.
     const double g      ///< gas EOS gamma.
 )
 {
@@ -276,7 +276,7 @@ double Riemann_Roe_MHD_CV::Enthalpy(
 /// Set Pstar[] from Roe_meanp[] (need to replace enthalpy with
 /// pressure).
 ///
-void Riemann_Roe_MHD_CV::set_pstar_from_meanp(pion_flt* out_pstar)
+void Riemann_Roe_MHD_CV::set_pstar_from_meanp(pion_flt *out_pstar)
 {
 #ifdef FUNCTION_ID
   cout << "Riemann_Roe_MHD_CV::set_pstar_from_meanp ...starting.\n";
@@ -316,7 +316,7 @@ void Riemann_Roe_MHD_CV::set_pstar_from_meanp(pion_flt* out_pstar)
 /// From Stone et al. (2009), ApJS, 178, 137, eq.65.
 ///
 int Riemann_Roe_MHD_CV::Roe_get_average_state(
-    const pion_flt* left, const pion_flt* right)
+    const pion_flt *left, const pion_flt *right)
 {
   //
   // This gets the average of the primitive variables
@@ -382,7 +382,7 @@ int Riemann_Roe_MHD_CV::Roe_get_average_state(
 /// From Stone et al. (2009), ApJS, 178, 137, eq.65.
 ///
 int Riemann_Roe_MHD_CV::Roe_get_difference_states(
-    const pion_flt* left, const pion_flt* right)
+    const pion_flt *left, const pion_flt *right)
 {
   // double Ul[eq_nvar], Ur[eq_nvar];
   // eqns_mhd_ideal::PtoU(left,  Ul, eq_gamma);
@@ -823,12 +823,12 @@ int Riemann_Roe_MHD_CV::Roe_get_right_evectors()
 /// Roe-average Flux from the left state across to zero.
 ///
 int Riemann_Roe_MHD_CV::Roe_get_flux_onesided(
-    const pion_flt* left,
-    const pion_flt* right,
+    const pion_flt *left,
+    const pion_flt *right,
 #ifdef MHD_ROE_USE_USTAR
-    pion_flt* out_pstar,
+    pion_flt *out_pstar,
 #endif  // MHD_ROE_USE_USTAR
-    pion_flt* out_flux)
+    pion_flt *out_flux)
 {
   //
   // We also need to get the starred state by jumping across waves, so
@@ -1077,7 +1077,7 @@ int Riemann_Roe_MHD_CV::Roe_get_flux_onesided(
 // ##################################################################
 
 int Riemann_Roe_MHD_CV::calculate_symmetric_flux(
-    const pion_flt* left, const pion_flt* right, pion_flt* out_flux)
+    const pion_flt *left, const pion_flt *right, pion_flt *out_flux)
 {
 #ifdef FUNCTION_ID
   cout << "Riemann_Roe_MHD_CV::calculate_symmetric_flux ...starting.\n";

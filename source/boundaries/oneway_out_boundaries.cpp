@@ -12,9 +12,9 @@ using namespace std;
 // ##################################################################
 
 int oneway_out_bc::BC_assign_ONEWAY_OUT(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    boundary_data* b)
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    boundary_data *b)
 {
   //
   // The setup for this is identical to outflow.
@@ -27,9 +27,9 @@ int oneway_out_bc::BC_assign_ONEWAY_OUT(
 // ##################################################################
 
 int oneway_out_bc::BC_update_ONEWAY_OUT(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    struct boundary_data* b,
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    struct boundary_data *b,
     const int cstep,
     const int maxstep)
 {
@@ -83,8 +83,8 @@ int oneway_out_bc::BC_update_ONEWAY_OUT(
   //
   // Now run through all cells in the boundary
   //
-  list<cell*>::iterator c = b->data.begin();
-  cell* gc;
+  list<cell *>::iterator c = b->data.begin();
+  cell *gc;
   for (c = b->data.begin(); c != b->data.end(); ++c) {
     (*c)->isdomain = false;
     gc             = (*c)->npt;

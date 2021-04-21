@@ -49,10 +49,10 @@ public:
   /// current output file, to hold the simulation data for some variable.
   ///
   int create_fits_image(
-      fitsfile*,     ///< fitsfile pointer.
+      fitsfile *,    ///< fitsfile pointer.
       const string,  ///< extname of hdu to create.
       const int,     ///< Dimensionality of image
-      const int*     ///< vector npix in each dimension
+      const int *    ///< vector npix in each dimension
   );
 
   ///
@@ -69,15 +69,15 @@ public:
   /// domain.
   ///
   int write_fits_image(
-      fitsfile*,      ///< fitsfile pointer.
-      const string,   ///< extname of hdu to write to.
-      const double*,  ///< vector local xmin (subdomain).
-      const double*,  ///< vector global xmin (full domain).
-      const double,   ///< pixel size.
-      const int,      ///< dimensionality of image.
-      const int*,     ///< vector npix to write in each direction.
-      long int,       ///< total npix to write (size of data array)
-      double*         ///< array of data elements to write to subset of image
+      fitsfile *,      ///< fitsfile pointer.
+      const string,    ///< extname of hdu to write to.
+      const double *,  ///< vector local xmin (subdomain).
+      const double *,  ///< vector global xmin (full domain).
+      const double,    ///< pixel size.
+      const int,       ///< dimensionality of image.
+      const int *,     ///< vector npix to write in each direction.
+      long int,        ///< total npix to write (size of data array)
+      double *         ///< array of data elements to write to subset of image
   );
 
   ///
@@ -86,10 +86,10 @@ public:
   /// code exits, as this would be a serious problem.
   ///
   int check_fits_image_dimensions(
-      fitsfile*,     ///< fitsfile pointer.
+      fitsfile *,    ///< fitsfile pointer.
       const string,  ///< extname of hdu to check.
       const int,     ///< dimensionality we are expecting.
-      const int*     ///< npix in each direction to compare image to.
+      const int *    ///< npix in each direction to compare image to.
   );
 
   ///
@@ -103,16 +103,16 @@ public:
   /// starting point and npix.
   ///
   int read_fits_image_to_data(
-      fitsfile*,       ///< fitsfile pointer.
+      fitsfile *,      ///< fitsfile pointer.
       const string,    ///< name of hdu to read from.
       const int,       ///< dimensionality of image.
-      const double*,   ///< local xmin (subdomain).
-      const double*,   ///< global xmin (full domain).
+      const double *,  ///< local xmin (subdomain).
+      const double *,  ///< global xmin (full domain).
       const double,    ///< pixel size
-      const int*,      ///< number of pixels to read in each direction
+      const int *,     ///< number of pixels to read in each direction
       const long int,  ///< total number of pixels to be read.
       const int,       ///< FITS datatype (e.g. TDOUBLE or TFLOAT)
-      void*            ///< data array to write to.
+      void *           ///< data array to write to.
   );
 };
 
@@ -127,7 +127,7 @@ public:
   ///
   /// Constructor.
   ///
-  DataIOFits(class SimParams&  ///< pointer to simulation parameters
+  DataIOFits(class SimParams &  ///< pointer to simulation parameters
   );
 
   /// Destructor (doensn't have much to do).
@@ -138,7 +138,7 @@ public:
   /// allows you to set a pointer to the solver.
   ///
   void SetSolver(
-      FV_solver_base*  ///< Pointer to the solver (to get Eint,divB,Ptot)
+      FV_solver_base *  ///< Pointer to the solver (to get Eint,divB,Ptot)
   );
 
   ///
@@ -158,9 +158,9 @@ public:
   /// if the solver is an MHD solver).
   ///
   virtual int OutputData(
-      const string,                   ///< File to write to
-      vector<class GridBaseClass*>&,  ///< address of vector of grid pointers.
-      class SimParams&,               ///< pointer to simulation parameters
+      const string,                     ///< File to write to
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
+      class SimParams &,                ///< pointer to simulation parameters
       const long int  ///< number to stamp file with (e.g. timestep)
   );
 
@@ -171,8 +171,8 @@ public:
   /// the right dimensions to take the data from the fits file.
   ///
   virtual int ReadHeader(
-      std::string,      ///< file to read from
-      class SimParams&  ///< pointer to simulation parameters
+      std::string,       ///< file to read from
+      class SimParams &  ///< pointer to simulation parameters
   );
 
   ///
@@ -181,43 +181,43 @@ public:
   /// from the fits header, which should be read first.
   ///
   virtual int ReadData(
-      std::string,                    ///< file to read from
-      vector<class GridBaseClass*>&,  ///< address of vector of grid pointers.
-      class SimParams&                ///< pointer to simulation parameters
+      std::string,                      ///< file to read from
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
+      class SimParams &                 ///< pointer to simulation parameters
   );
 
   ///
   /// Write simulation header info to file (file must already exist!)
   ///
   int WriteHeader(
-      const string,     ///< file to write to (full, exact filename).
-      class SimParams&  ///< pointer to simulation parameters
+      const string,      ///< file to write to (full, exact filename).
+      class SimParams &  ///< pointer to simulation parameters
   );
 
 protected:
-  class GridBaseClass* gp;    ///< pointer to computational grid.
-  class FV_solver_base* eqn;  ///< pointer to the solver, which knows the
+  class GridBaseClass *gp;    ///< pointer to computational grid.
+  class FV_solver_base *eqn;  ///< pointer to the solver, which knows the
                               ///< equations we are solving.
-  fitsfile* file_ptr;
+  fitsfile *file_ptr;
 
   ///
   /// Function which defines how to get the data from a silo file.
   ///
-  int read_header_param(class pm_base*);
+  int read_header_param(class pm_base *);
 
   ///
   /// Function which defines how to write a parameter to a silo file.
   ///
-  int write_header_param(class pm_base*);
+  int write_header_param(class pm_base *);
 
   ///
   /// Puts a grid variable into a 1D data array.
   ///
   int put_variable_into_data_array(
-      class SimParams&,  ///< pointer to simulation parameters
-      const string,      ///< variable name to put in array.
-      const long int,    ///< size of data array to be initialised.
-      double**           ///< pointer to uninitialised data.
+      class SimParams &,  ///< pointer to simulation parameters
+      const string,       ///< variable name to put in array.
+      const long int,     ///< size of data array to be initialised.
+      double **           ///< pointer to uninitialised data.
   );
 
   ///
@@ -235,13 +235,13 @@ protected:
   /// into a grid data variable.
   ///
   int read_fits_image(
-      class SimParams&,  ///< pointer to simulation parameters
-      fitsfile*,         ///< fitsfile pointer.
-      string,            ///< extname of hdu to read from.
-      double*,           ///<  vector local xmin (subdomain).
-      double*,           ///< vector global xmin (full domain).
-      int*,              ///< vector npix to read in each direction.
-      long int           ///< total npix to read.
+      class SimParams &,  ///< pointer to simulation parameters
+      fitsfile *,         ///< fitsfile pointer.
+      string,             ///< extname of hdu to read from.
+      double *,           ///<  vector local xmin (subdomain).
+      double *,           ///< vector global xmin (full domain).
+      int *,              ///< vector npix to read in each direction.
+      long int            ///< total npix to read.
   );
 };
 

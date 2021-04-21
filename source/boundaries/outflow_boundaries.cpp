@@ -12,9 +12,9 @@ using namespace std;
 // ##################################################################
 
 int outflow_bc::BC_assign_OUTFLOW(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    boundary_data* b)
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    boundary_data *b)
 {
   //
   // Zero order extrapolation, if edge cell is index k, and boundary cells
@@ -27,9 +27,9 @@ int outflow_bc::BC_assign_OUTFLOW(
   if (b->data.empty()) {
     rep.error("BC_assign_OUTFLOW: empty boundary data", b->itype);
   }
-  list<cell*>::iterator bpt = b->data.begin();
-  cell* temp                = 0;
-  unsigned int ct           = 0;  // counter (for accounting).
+  list<cell *>::iterator bpt = b->data.begin();
+  cell *temp                 = 0;
+  unsigned int ct            = 0;  // counter (for accounting).
 
   //
   // loop through all boundary cells, set npt to point to the grid
@@ -99,9 +99,9 @@ int outflow_bc::BC_assign_OUTFLOW(
 // ##################################################################
 
 int outflow_bc::BC_update_OUTFLOW(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    struct boundary_data* b,
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    struct boundary_data *b,
     const int cstep,
     const int maxstep)
 {
@@ -109,8 +109,8 @@ int outflow_bc::BC_update_OUTFLOW(
   // Outflow or Absorbing BCs; boundary cells are same as edge cells.
   // This is zeroth order outflow bcs.
   //
-  list<cell*>::iterator c = b->data.begin();
-  cell* gc;
+  list<cell *>::iterator c = b->data.begin();
+  cell *gc;
 
   for (c = b->data.begin(); c != b->data.end(); ++c) {
     //

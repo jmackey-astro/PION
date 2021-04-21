@@ -170,7 +170,7 @@ enum axes eqns_base::GetDirection()
 // ##################################################################
 
 void eqns_base::rotate(
-    pion_flt* vec,      ///< State vector
+    pion_flt *vec,      ///< State vector
     enum axes initdir,  ///< Initial orientation.
     enum axes finaldir  ///< Final Orientation.
 )
@@ -221,7 +221,7 @@ void eqns_base::rotate(
 // ##################################################################
 
 void eqns_base::rotateXY(
-    pion_flt* v,  ///< State vector
+    pion_flt *v,  ///< State vector
     double theta  ///< rotation angle
 )
 {
@@ -241,7 +241,7 @@ void eqns_base::rotateXY(
 // ##################################################################
 // ##################################################################
 
-void eqns_base::PtoFlux(const pion_flt* p, pion_flt* f, const double gamma)
+void eqns_base::PtoFlux(const pion_flt *p, pion_flt *f, const double gamma)
 {
   pion_flt u[eq_nvar];
   PtoU(p, u, gamma);

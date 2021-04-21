@@ -41,7 +41,7 @@ CommandLineInterface::~CommandLineInterface()
   //  cout <<"Destructing interactive debugging.\n";
 }
 
-void CommandLineInterface::auto_console(char* prompt)
+void CommandLineInterface::auto_console(char *prompt)
 {
   cout << "\n Welcome to the AUTOPILOT command line\n";
   cout << "****************************************\n";
@@ -78,10 +78,10 @@ void CommandLineInterface::console(std::string p)
   //
   // Get a command.
   //
-  char* comm = NULL;
+  char *comm = NULL;
   for (;;) {
     comm    = rl_gets(comm, prompt);
-    char* c = comm;
+    char *c = comm;
     do {
       char comm1[512], *d = comm1;
       *d = 0;
@@ -95,7 +95,7 @@ void CommandLineInterface::console(std::string p)
   }
 }
 
-char* CommandLineInterface::rl_gets(char* line, char* prompt)
+char *CommandLineInterface::rl_gets(char *line, char *prompt)
 {
   //
   // Reads a string, and return a pointer to it.  Returns NULL on EOF.
@@ -106,7 +106,7 @@ char* CommandLineInterface::rl_gets(char* line, char* prompt)
     //      to the free pool.
     //
     free(line);
-    line = (char*)NULL;
+    line = (char *)NULL;
   }
   //
   // Get a line from the user.
@@ -119,7 +119,7 @@ char* CommandLineInterface::rl_gets(char* line, char* prompt)
   return (line);
 }
 
-int CommandLineInterface::execute(char* com)
+int CommandLineInterface::execute(char *com)
 {
   //
   // Executes the command in com[], Could be smarter than to hardcode the
@@ -212,7 +212,7 @@ void CommandLineInterface::cmd1()
   rep.printVec("position", x, 2);
 }
 
-void CommandLineInterface::cmd2(char* args)
+void CommandLineInterface::cmd2(char *args)
 {
   fprintf(stderr, " This is command 2, args: \"%s\"\n", args);
   rep.printVec("P ", dp.c->P, 5);

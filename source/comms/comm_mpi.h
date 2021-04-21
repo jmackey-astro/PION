@@ -33,7 +33,7 @@ struct sent_info {
   int comm_tag;         ///< the tag used to describe the send.
   int from_rank;        ///< sender.
   int to_rank;          ///< recipient
-  void* data;           ///< pointer to data.
+  void *data;           ///< pointer to data.
   int type;             ///< type of data: COMM_CELLDATA=char array;
                         ///< COMM_DOUBLEDATA=double array.
 };
@@ -44,7 +44,7 @@ struct recv_info {
   int comm_tag;       ///< the tag used to describe the send.
   int from_rank;      ///< sender.
   int to_rank;        ///< recipient
-  void* data;         ///< pointer to data.
+  void *data;         ///< pointer to data.
   int type;           ///< type of data: COMM_CELLDATA=char array;
                       ///< COMM_DOUBLEDATA=double array.
 };
@@ -58,16 +58,16 @@ public:
   /// Also set myrank and nproc in the global struct mpiPM.
   ///
   int init(
-      int*,    ///< number of program arguments.
-      char***  ///< character list of arguments.
+      int *,    ///< number of program arguments.
+      char ***  ///< character list of arguments.
   );
 
   ///
   /// Get this process's rank, and total number of processes.
   ///
   int get_rank_nproc(
-      int*,  ///< rank.
-      int*   ///< nproc
+      int *,  ///< rank.
+      int *   ///< nproc
   );
 
   /// Tell other processes that I am exiting, and wait for the
@@ -99,7 +99,7 @@ public:
   void global_op_double_array(
       const std::string,  ///< MAX,MIN,SUM
       const size_t,       ///< Number of elements in array.
-      double*             ///< pointer to this process's data array.
+      double *            ///< pointer to this process's data array.
   );
 
   /// Broadcast data from one process to all others.
@@ -107,7 +107,7 @@ public:
       const int,          ///< rank of sender.
       const std::string,  ///< Type of data INT,DOUBLE,etc.
       const int,          ///< number of elements
-      void*               ///< pointer to data.
+      void *              ///< pointer to data.
   );
 
   /// Send cell data to another processor, return immediately, but
@@ -123,13 +123,13 @@ public:
   /// complete.
   ///
   int send_cell_data(
-      const int,          ///< rank to send to.
-      std::list<cell*>*,  ///< list of cells to get data from.
-      long int,           ///< number of cells in list
-      const int,          ///< ndim
-      const int,          ///< nvar
-      std::string&,       ///< identifier for send, delivery tracking
-      const int           ///< comm_tag, kind of send this is.
+      const int,            ///< rank to send to.
+      std::list<cell *> *,  ///< list of cells to get data from.
+      long int,             ///< number of cells in list
+      const int,            ///< ndim
+      const int,            ///< nvar
+      std::string &,        ///< identifier for send, delivery tracking
+      const int             ///< comm_tag, kind of send this is.
   );
 
   ///
@@ -142,8 +142,8 @@ public:
   int send_double_data(
       const int,       ///< rank to send to.
       const long int,  ///< size of buffer, in number of doubles.
-      const double*,   ///< pointer to double array.
-      std::string&,    ///< identifier for send, for tracking delivery
+      const double *,  ///< pointer to double array.
+      std::string &,   ///< identifier for send, for tracking delivery
       const int        ///< comm_tag, for what kind of send this is.
   );
 
@@ -151,18 +151,18 @@ public:
   /// It returns once the receiver confirms that it has got the data.
   ///
   int wait_for_send_to_finish(
-      std::string&  ///< identifier for the send we are waiting on.
+      std::string &  ///< identifier for the send we are waiting on.
   );
 
   /// Look for some data that is being sent to us.  Does not return
   /// until it finds some, so it is up to you to prevent deadlock!
   ///
   int look_for_data_to_receive(
-      int*,          ///< rank of sender
-      std::string&,  ///< identifier for receive.
-      int*,          ///< comm_tag associated with data.
-      const int,     ///< comm_tag requested: (PER,MPI,F2C,C2F)
-      const int      ///< type of data to look for (e.g. COMM_DOUBLEDATA)
+      int *,          ///< rank of sender
+      std::string &,  ///< identifier for receive.
+      int *,          ///< comm_tag associated with data.
+      const int,      ///< comm_tag requested: (PER,MPI,F2C,C2F)
+      const int       ///< type of data to look for (e.g. COMM_DOUBLEDATA)
   );
 
   /// Receive Cell data from a specific process rank.
@@ -172,22 +172,22 @@ public:
   /// they are received.  No checking of this is performed.
   ///
   int receive_cell_data(
-      const int,          ///< rank of process we are receiving from.
-      std::list<cell*>*,  ///< list of cells to get data for.
-      const long int,     ///< number of cells in list
-      const int,          ///< ndim
-      const int,          ///< nvar
-      const int,          ///< comm_tag: (PER,MPI,F2C,C2F)
-      const std::string&  ///< identifier for receive.
+      const int,            ///< rank of process we are receiving from.
+      std::list<cell *> *,  ///< list of cells to get data for.
+      const long int,       ///< number of cells in list
+      const int,            ///< ndim
+      const int,            ///< nvar
+      const int,            ///< comm_tag: (PER,MPI,F2C,C2F)
+      const std::string &   ///< identifier for receive.
   );
 
   /// Receive array of doubles from a specific process rank.
   int receive_double_data(
-      const int,           ///< rank of process we are receiving from.
-      const int,           ///< comm_tag: (PER,MPI,F2C,C2F)
-      const std::string&,  ///< identifier for receive.
-      const long int,      ///< number of doubles to receive
-      double*              ///< Pointer to array to write to (initialised).
+      const int,            ///< rank of process we are receiving from.
+      const int,            ///< comm_tag: (PER,MPI,F2C,C2F)
+      const std::string &,  ///< identifier for receive.
+      const long int,       ///< number of doubles to receive
+      double *              ///< Pointer to array to write to (initialised).
   );
 
 #ifdef SILO
@@ -195,36 +195,36 @@ public:
       const int,          ///< number of files to write
       const std::string,  ///< READ or WRITE
       const std::string,  ///< identifier for this read/write.
-      int*,               ///< group rank.
-      int*                ///< rank in group
+      int *,              ///< group rank.
+      int *               ///< rank in group
   );
 
   int silo_pllel_wait_for_file(
       const std::string,  ///< identifier for this read/write.
       const std::string,  ///< File Name
       const std::string,  ///< Directory to open in file.
-      DBfile**            ///< pointer that file gets returned in.
+      DBfile **           ///< pointer that file gets returned in.
   );
 
   int silo_pllel_finish_with_file(
       const std::string,  ///< identifier for this read/write.
-      DBfile**            ///< pointer to file we have been working on.
+      DBfile **           ///< pointer to file we have been working on.
   );
 
   void silo_pllel_get_ranks(
       std::string id,  ///< identifier for this read/write.
       const int,       ///< processor rank
-      int*,            ///< rank of group processor is in.
-      int*             ///< rank of processor within group.
+      int *,           ///< rank of group processor is in.
+      int *            ///< rank of processor within group.
   );
 
 #endif
 
 private:
-  std::list<struct sent_info*> sent_list;
-  std::list<struct recv_info*> recv_list;
+  std::list<struct sent_info *> sent_list;
+  std::list<struct recv_info *> recv_list;
 #ifdef SILO
-  PMPIO_baton_t* bat;
+  PMPIO_baton_t *bat;
   std::string silo_id;
 #endif
   int myrank;

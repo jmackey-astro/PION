@@ -53,8 +53,9 @@ int sim_control_NG::Init(
     string infile,
     int typeOfFile,
     int narg,
-    string* args,
-    vector<class GridBaseClass*>& grid  ///< address of vector of grid pointers.
+    string *args,
+    vector<class GridBaseClass *>
+        &grid  ///< address of vector of grid pointers.
 )
 {
 #ifdef TESTING
@@ -103,7 +104,7 @@ int sim_control_NG::Init(
   // ----------------------------------------------------------------
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     // Set Ph=P in every cell.
-    cell* c = grid[l]->FirstPt();
+    cell *c = grid[l]->FirstPt();
     do {
       for (int v = 0; v < SimPM.nvar; v++)
         c->Ph[v] = c->P[v];
@@ -202,7 +203,7 @@ int sim_control_NG::Init(
 
 #ifdef TESTING
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-    cell* c = (grid[l])->FirstPt_All();
+    cell *c = (grid[l])->FirstPt_All();
     do {
       if (pconst.equalD(c->P[RO], 0.0)) {
         cout << "zero data in cell: ";
@@ -219,7 +220,7 @@ int sim_control_NG::Init(
 // ##################################################################
 
 int sim_control_NG::initial_conserved_quantities(
-    vector<class GridBaseClass*>& grid)
+    vector<class GridBaseClass *> &grid)
 {
   // Energy, and Linear Momentum in x-direction.
 #ifdef TEST_CONSERVATION
@@ -233,7 +234,7 @@ int sim_control_NG::initial_conserved_quantities(
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     double dx     = SimPM.levels[l].dx;
     double dv     = 0.0;
-    class cell* c = grid[l]->FirstPt();
+    class cell *c = grid[l]->FirstPt();
     do {
       if (c->isdomain && c->isleaf) {
         dv = spatial_solver->CellVolume(c, dx);
@@ -261,7 +262,7 @@ int sim_control_NG::initial_conserved_quantities(
 // ##################################################################
 
 int sim_control_NG::Time_Int(
-    vector<class GridBaseClass*>& grid  ///< vector of grids
+    vector<class GridBaseClass *> &grid  ///< vector of grids
 )
 {
   cout << "-------------------------------------------------------\n";
@@ -408,7 +409,7 @@ int sim_control_NG::Time_Int(
 /// pressure on the full domain and outputs it to screen
 ///
 void sim_control_NG::calculate_magnetic_pressure(
-    vector<class GridBaseClass*>& grid  ///< grid pointers.
+    vector<class GridBaseClass *> &grid  ///< grid pointers.
 )
 {
   //
@@ -420,7 +421,7 @@ void sim_control_NG::calculate_magnetic_pressure(
 
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
 
-    cell* c = grid[l]->FirstPt();
+    cell *c = grid[l]->FirstPt();
     do {
       if (!c->isbd && c->isleaf)
         magp += (spatial_solver->Ptot(c->P, 0.0) - c->P[PG])
@@ -443,7 +444,7 @@ void sim_control_NG::calculate_magnetic_pressure(
 /// and output to screen.
 ///
 void sim_control_NG::calculate_blastwave_radius(
-    vector<class GridBaseClass*>& grid  ///< grid pointers.
+    vector<class GridBaseClass *> &grid  ///< grid pointers.
 )
 {
   //
@@ -457,7 +458,7 @@ void sim_control_NG::calculate_blastwave_radius(
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l++) {
 
     if (shock_found) continue;
-    cell* c = grid->LastPt();
+    cell *c = grid->LastPt();
     if (fabs(c->P[VX]) >= 1.0e4) {
       cout << "level " << l << " does not contain shock.\n";
     }
@@ -484,8 +485,8 @@ void sim_control_NG::calculate_blastwave_radius(
 // ##################################################################
 // ##################################################################
 
-int sim_control_NG::Finalise(
-    vector<class GridBaseClass*>& grid  ///< address of vector of grid pointers.
+int sim_control_NG::Finalise(vector<class GridBaseClass *>
+                                 &grid  ///< address of vector of grid pointers.
 )
 {
   int err = 0;
@@ -509,7 +510,7 @@ int sim_control_NG::Finalise(
 
 double sim_control_NG::advance_time(
     const int l,               ///< level to advance.
-    class GridBaseClass* grid  ///< grid pointer
+    class GridBaseClass *grid  ///< grid pointer
 )
 {
 #ifdef TESTING
@@ -542,7 +543,7 @@ double sim_control_NG::advance_step_OA1(const int l  ///< level to advance.
   // double dt2_fine=0.0; // timestep for two finer level steps.
   double dt2_this = 0.0;   // two timesteps for this level.
   class MCMDcontrol ppar;  // unused for serial code.
-  class GridBaseClass* grid = SimPM.levels[l].grid;
+  class GridBaseClass *grid = SimPM.levels[l].grid;
 
   err = update_evolving_RT_sources(SimPM, SimPM.levels[l].simtime, grid->RT);
   rep.errorTest("NG TIME_INT::update_RT_sources error", 0, err);
@@ -649,7 +650,7 @@ double sim_control_NG::advance_step_OA2(const int l  ///< level to advance.
   // double dt2_fine=0.0; // timestep for two finer level steps.
   double dt2_this           = 0.0;  // two timesteps for this level.
   double ctime              = SimPM.levels[l].simtime;  // current time
-  class GridBaseClass* grid = SimPM.levels[l].grid;
+  class GridBaseClass *grid = SimPM.levels[l].grid;
 
   err = update_evolving_RT_sources(SimPM, SimPM.levels[l].simtime, grid->RT);
   rep.errorTest("NG TIME_INT::update_RT_sources error", 0, err);
@@ -771,7 +772,7 @@ double sim_control_NG::advance_step_OA2(const int l  ///< level to advance.
 // ##################################################################
 // ##################################################################
 
-int sim_control_NG::check_energy_cons(vector<class GridBaseClass*>& grid)
+int sim_control_NG::check_energy_cons(vector<class GridBaseClass *> &grid)
 {
   // Energy, and Linear Momentum in x-direction.
 #ifdef TEST_CONSERVATION
@@ -785,7 +786,7 @@ int sim_control_NG::check_energy_cons(vector<class GridBaseClass*>& grid)
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     double dx     = SimPM.levels[l].dx;
     double dv     = 0.0;
-    class cell* c = grid[l]->FirstPt();
+    class cell *c = grid[l]->FirstPt();
     do {
       if (!c->isbd && c->isgd) {
         dv = spatial_solver->CellVolume(c, dx);
@@ -821,8 +822,8 @@ int sim_control_NG::check_energy_cons(vector<class GridBaseClass*>& grid)
 // ##################################################################
 
 int sim_control_NG::do_ongrid_raytracing(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< Computational grid.
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< Computational grid.
     const int l                 ///< level in NG
 )
 {
@@ -850,8 +851,8 @@ int sim_control_NG::do_ongrid_raytracing(
 // ##################################################################
 
 int sim_control_NG::do_offgrid_raytracing(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< Computational grid.
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< Computational grid.
     const int)
 {
   if (!grid->RT) return 0;
@@ -881,7 +882,7 @@ int sim_control_NG::do_offgrid_raytracing(
 // ##################################################################
 
 int sim_control_NG::RT_all_sources_levels(
-    class SimParams& par  ///< simulation parameters
+    class SimParams &par  ///< simulation parameters
 )
 {
   /// Do this in 3 passes: 1st we go from coarse to fine, tracing the
@@ -890,7 +891,7 @@ int sim_control_NG::RT_all_sources_levels(
   /// updating column densities as we go.
   /// Finally go from coarse to fine again, updating boundary data.
   int err                   = 0;
-  class GridBaseClass* grid = 0;
+  class GridBaseClass *grid = 0;
 
   // --------------------------------------------------------------
   // Update off-grid sources and external boundaries.

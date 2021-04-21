@@ -69,11 +69,11 @@ public:
   /// constructor.
   ///
   mp_only_cooling(
-      const int,              ///< length of prim. state vec.
-      const int,              ///< Number of tracer variables in state vector
-      const std::string*,     ///< List of tracer variable names.
-      struct which_physics*,  ///< pointer to extra physics flags.
-      struct rad_sources*     ///< radiation sources.
+      const int,               ///< length of prim. state vec.
+      const int,               ///< Number of tracer variables in state vector
+      const std::string *,     ///< List of tracer variable names.
+      struct which_physics *,  ///< pointer to extra physics flags.
+      struct rad_sources *     ///< radiation sources.
   );
 
   ///
@@ -87,29 +87,29 @@ public:
   /// and the internal energy.
   ///
   virtual int TimeUpdateMP(
-      const pion_flt*,  ///< Primitive Vector to be updated.
-      pion_flt*,        ///< Destination Vector for updated values.
-      const double,     ///< Time Step to advance by.
-      const double,     ///< EOS gamma.
-      const int,        ///< Switch for what type of integration to use (not
-                        ///< used here!)
-      double*           ///< final temperature.
+      const pion_flt *,  ///< Primitive Vector to be updated.
+      pion_flt *,        ///< Destination Vector for updated values.
+      const double,      ///< Time Step to advance by.
+      const double,      ///< EOS gamma.
+      const int,         ///< Switch for what type of integration to use (not
+                         ///< used here!)
+      double *           ///< final temperature.
   );
 
   ///
   /// This is just a dummy function which bugs out if called.
   ///
   virtual int TimeUpdate_RTsinglesrc(
-      const pion_flt*,  ///< Primitive Vector to be updated.
-      pion_flt*,        ///< Destination Vector for updated values.
-      const double,     ///< Time Step to advance by.
-      const double,     ///< EOS gamma.
+      const pion_flt *,  ///< Primitive Vector to be updated.
+      pion_flt *,        ///< Destination Vector for updated values.
+      const double,      ///< Time Step to advance by.
+      const double,      ///< EOS gamma.
       const int,  ///< Switch for what type of integration to use. (0=adaptive
                   ///< RK5, 1=adaptive Euler,2=onestep o4-RK)
       const double,  ///< flux in per unit length along ray (F/ds or L/dV)
       const double,  ///< path length ds through cell.
       const double,  ///< Optical depth to entry point of ray into cell.
-      double*        ///< return optical depth through cell in this variable.
+      double *       ///< return optical depth through cell in this variable.
   )
   {
     return DONT_CALL_ME;
@@ -120,7 +120,7 @@ public:
   /// value.  This function does nothing here.
   ///
   virtual int Init_ionfractions(
-      pion_flt*,     ///< Primitive vector to be updated.
+      pion_flt *,    ///< Primitive vector to be updated.
       const double,  ///< eos gamma.
       const double   ///< optional gas temperature to end up at.
                      ///< (negative means use pressure)
@@ -145,11 +145,11 @@ public:
   /// to the primitive vector to get the updated value.
   ///
   virtual int Get_MP_Rates(
-      cell*,         ///< current cell.
+      cell *,        ///< current cell.
       const double,  ///< timestep
       const double,  ///< column to cell
       const double,  ///< Flux entering cell?
-      double*        ///< initial column through cell, to be
+      double *       ///< initial column through cell, to be
                      ///< changed to time-averaged column.
   )
   {
@@ -171,7 +171,7 @@ public:
   /// you want it to be.  Here we assume ionised gas with mu=0.7m_p.
   ///
   virtual int Set_Temp(
-      pion_flt*,     ///< primitive vector.
+      pion_flt *,    ///< primitive vector.
       const double,  ///< temperature requested.
       const double   ///< eos gamma.
   );
@@ -182,8 +182,8 @@ public:
   /// - Is threadsafe.
   ///
   virtual double Temperature(
-      const pion_flt*,  ///< primitive vector
-      const double      ///< eos gamma
+      const pion_flt *,  ///< primitive vector
+      const double       ///< eos gamma
   );
 
   ///
@@ -192,11 +192,11 @@ public:
   /// has any effect here.
   ///
   virtual double timescales(
-      const pion_flt*,  ///< Current cell.
-      const double,     ///< EOS gamma.
-      const bool,       ///< set to true if including cooling time.
-      const bool,       ///< set to true if including recombination time.
-      const bool        ///< set to true if including photo-ionsation time.
+      const pion_flt *,  ///< Current cell.
+      const double,      ///< EOS gamma.
+      const bool,        ///< set to true if including cooling time.
+      const bool,        ///< set to true if including recombination time.
+      const bool         ///< set to true if including photo-ionsation time.
   );
 
   ///
@@ -209,12 +209,12 @@ public:
   /// capability, it doesn't do anything!
   ///
   virtual double timescales_RT(
-      const pion_flt*,  ///< Current cell.
-      const int,        ///< Number of UV heating sources.
-      const std::vector<struct rt_source_data>&,
+      const pion_flt *,  ///< Current cell.
+      const int,         ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
       ///< list of UV-heating column densities and source properties.
       const int,  ///< number of ionising radiation sources.
-      const std::vector<struct rt_source_data>&,
+      const std::vector<struct rt_source_data> &,
       ///< list of ionising src column densities and source properties.
       const double  ///< EOS gamma.
   )
@@ -228,9 +228,9 @@ public:
   /// state vector.
   ///
   double get_recombination_rate(
-      const int,        ///< ion index in tracer array (optional).
-      const pion_flt*,  ///< input state vector (primitive).
-      const double      ///< EOS gamma (optional)
+      const int,         ///< ion index in tracer array (optional).
+      const pion_flt *,  ///< input state vector (primitive).
+      const double       ///< EOS gamma (optional)
   )
   {
     cout << "get_recombination_rate: mp_only_cooling has no ions!\n";
@@ -240,19 +240,19 @@ public:
   ///
   /// Get electron number density (cm^{-3})
   ///
-  double get_n_elec(const pion_flt*  ///< primitive state vector.
+  double get_n_elec(const pion_flt *  ///< primitive state vector.
   );
 
   ///
   /// Get H+ number density (cm^{-3})
   ///
-  double get_n_Hplus(const pion_flt*  ///< primitive state vector.
+  double get_n_Hplus(const pion_flt *  ///< primitive state vector.
   );
 
   ///
   /// Get neutral H number density (cm^{-3})
   ///
-  double get_n_Hneutral(const pion_flt*  ///< primitive state vector.
+  double get_n_Hneutral(const pion_flt *  ///< primitive state vector.
   );
 
 private:
@@ -273,16 +273,16 @@ private:
   /// Calculate rate of change of local state vector, for use in the
   /// integrator class with the adaptive CK method.
   int dPdt(
-      const int,      ///< length of state vector.
-      const double*,  ///< current state vector P.
-      double*         ///< Rate vector to write to, R=dPdt(P)#
+      const int,       ///< length of state vector.
+      const double *,  ///< current state vector P.
+      double *         ///< Rate vector to write to, R=dPdt(P)#
   );
 
   /// not used, but must be defined.
   int C_rate(
-      const int,      ///< length of state vector.
-      const double*,  ///< current state vector P.
-      double*         ///< Creation rate vector to write to.
+      const int,       ///< length of state vector.
+      const double *,  ///< current state vector P.
+      double *         ///< Creation rate vector to write to.
   )
   {
     return 999;
@@ -290,9 +290,9 @@ private:
 
   /// not used, but must be defined.
   int D_rate(
-      const int,      ///< length of state vector.
-      const double*,  ///< current state vector P.
-      double*         ///< Destruction rate vector to write to.
+      const int,       ///< length of state vector.
+      const double *,  ///< current state vector P.
+      double *         ///< Destruction rate vector to write to.
   )
   {
     return 999;

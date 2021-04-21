@@ -12,10 +12,10 @@ using namespace std;
 // ##################################################################
 
 int periodic_bc::BC_assign_PERIODIC(
-    class SimParams& par,       ///< pointer to simulation parameters
+    class SimParams &par,       ///< pointer to simulation parameters
     const int,                  ///< level in grid hierarchy
-    class GridBaseClass* grid,  ///< pointer to grid.
-    boundary_data* b)
+    class GridBaseClass *grid,  ///< pointer to grid.
+    boundary_data *b)
 {
   enum direction ondir = b->ondir;
   if (b->data.empty())
@@ -24,8 +24,8 @@ int periodic_bc::BC_assign_PERIODIC(
   // loop through all cells in boundary, and make the cell's "npt"
   // pointer point to the corresponding cell wrapped around on the
   // other side of the grid.  Assign data from that cell too.
-  list<cell*>::iterator bpt = b->data.begin();
-  cell* temp;
+  list<cell *>::iterator bpt = b->data.begin();
+  cell *temp;
   unsigned int ct = 0;
   do {
     // boundary cells are part of the domain, so set isdomain
@@ -61,16 +61,16 @@ int periodic_bc::BC_assign_PERIODIC(
 // ##################################################################
 
 int periodic_bc::BC_update_PERIODIC(
-    class SimParams& par,       ///< pointer to simulation parameters
+    class SimParams &par,       ///< pointer to simulation parameters
     const int l,                ///< level in grid hierarchy
-    class GridBaseClass* grid,  ///< pointer to grid.
-    struct boundary_data* b,
+    class GridBaseClass *grid,  ///< pointer to grid.
+    struct boundary_data *b,
     const int cstep,
     const int maxstep)
 {
   // cout <<"updating "<<b->data.size()<<" cells for periodic on level
   // "<<l<<"\n";
-  list<cell*>::iterator c = b->data.begin();
+  list<cell *>::iterator c = b->data.begin();
   for (c = b->data.begin(); c != b->data.end(); ++c) {
     // cout <<"cell and npt: ";
     // rep.printVec("cell",(*c)->pos,par.ndim);

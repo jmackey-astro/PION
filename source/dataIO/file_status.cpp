@@ -97,12 +97,12 @@ void file_status::file_unlock(string fname)
 //
 int file_status::get_dir_listing(
     const string dir,    ///< directory to list.
-    list<string>* files  ///< list to put filenames in.
+    list<string> *files  ///< list to put filenames in.
 )
 {
   cout << "get_dir_listing() reading directory: " << dir << "\n";
-  DIR* dp             = 0;
-  struct dirent* dirp = 0;
+  DIR *dp             = 0;
+  struct dirent *dirp = 0;
   if ((dp = opendir(dir.c_str())) == 0) {
     cout << "Error(" << errno << ") opening " << dir << "\n";
     return errno;
@@ -126,7 +126,7 @@ int file_status::get_dir_listing(
 int file_status::get_files_in_dir(
     const string dir,    ///< directory to list.
     const string str,    ///< string that files start with
-    list<string>* files  ///< list to put filenames in.
+    list<string> *files  ///< list to put filenames in.
 )
 {
   cout << "get_files_in_dir(): starting.\n";

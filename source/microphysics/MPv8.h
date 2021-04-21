@@ -30,14 +30,14 @@ public:
   /// Constructor
   ///
   MPv8(
-      const int,              ///< grid dimensions
-      const int,              ///< Coordinate System flag
-      const int,              ///< Total number of variables in state vector
-      const int,              ///< Number of tracer variables in state vector.
-      const std::string*,     ///< List of what the tracer variables mean.
-      struct which_physics*,  ///< extra physics stuff.
-      struct rad_sources*,    ///< radiation sources.
-      const double            ///< EOS Gamma
+      const int,               ///< grid dimensions
+      const int,               ///< Coordinate System flag
+      const int,               ///< Total number of variables in state vector
+      const int,               ///< Number of tracer variables in state vector.
+      const std::string *,     ///< List of what the tracer variables mean.
+      struct which_physics *,  ///< extra physics stuff.
+      struct rad_sources *,    ///< radiation sources.
+      const double             ///< EOS Gamma
   );
 
   ///
@@ -57,7 +57,7 @@ public:
       double,  ///< current time (probably not needed for rate equations)
       const N_Vector,  ///< current Y-value
       N_Vector,        ///< vector for Y-dot values
-      const double*    ///< extra user-data vector, P, for evaluating
+      const double *   ///< extra user-data vector, P, for evaluating
                        ///< ydot(y,t,p)
   );
 
@@ -66,9 +66,9 @@ public:
   /// state vector.
   ///
   double get_recombination_rate(
-      const int,      ///< ion index in tracer array (optional).
-      const double*,  ///< input state vector (primitive).
-      const double    ///< EOS gamma (optional)
+      const int,       ///< ion index in tracer array (optional).
+      const double *,  ///< input state vector (primitive).
+      const double     ///< EOS gamma (optional)
   );
 
   ///
@@ -81,8 +81,8 @@ protected:
   /// convert state vector from grid cell into local microphysics vector.
   ///
   virtual int convert_prim2local(
-      const double*,  ///< primitive vector from grid cell (length nv_prim)
-      double*         ///< local vector [x(H0),E](n+1).
+      const double *,  ///< primitive vector from grid cell (length nv_prim)
+      double *         ///< local vector [x(H0),E](n+1).
   );
 
   ///
@@ -90,10 +90,10 @@ protected:
   /// This is the inverse of convert_prim2local.
   ///
   virtual int convert_local2prim(
-      const double*,  ///< local (updated) vector [x(H0),E](n+1).
-      const double*,  ///< input primitive vector from grid cell (length
-                      ///< nv_prim)
-      double*  ///< updated primitive vector for grid cell (length nv_prim)
+      const double *,  ///< local (updated) vector [x(H0),E](n+1).
+      const double *,  ///< input primitive vector from grid cell (length
+                       ///< nv_prim)
+      double *  ///< updated primitive vector for grid cell (length nv_prim)
   );
 
   ///

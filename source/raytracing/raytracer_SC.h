@@ -68,11 +68,11 @@ class raytracer_USC_infinity : public RayTracingBase {
 public:
   /// Constructor.
   raytracer_USC_infinity(
-      class GridBaseClass*,      ///< Pointer to grid
-      class microphysics_base*,  ///< Pointer to MicroPhysics Class.
-      int,                       ///< grid dimensionality
-      int,                       ///< coordinate system
-      int,                       ///< number of variables in state vector
+      class GridBaseClass *,      ///< Pointer to grid
+      class microphysics_base *,  ///< Pointer to MicroPhysics Class.
+      int,                        ///< grid dimensionality
+      int,                        ///< coordinate system
+      int,                        ///< number of variables in state vector
       int  ///< index of first tracer variable in state vector
   );
 
@@ -88,7 +88,7 @@ public:
   /// For a source at infinity, the source strength refers to the flux
   /// arriving at the grid, as we can't use luminosity.
   ///
-  virtual int Add_Source(struct rad_src_info*  ///< ptr to source info.
+  virtual int Add_Source(struct rad_src_info *  ///< ptr to source info.
   );
 
   ///
@@ -134,7 +134,7 @@ public:
   /// changes over time.
   ///
   virtual void update_RT_source_properties(
-      const struct rad_src_info*  ///< ptr to source info.
+      const struct rad_src_info *  ///< ptr to source info.
   );
 
   ///
@@ -155,8 +155,8 @@ public:
   /// checking.
   ///
   virtual int populate_ionising_src_list(
-      std::vector<struct rt_source_data>&  ///< list of data for ionising
-                                           ///< sources
+      std::vector<struct rt_source_data> &  ///< list of data for ionising
+                                            ///< sources
   );
 
   ///
@@ -167,8 +167,8 @@ public:
   /// checking.
   ///
   virtual int populate_UVheating_src_list(
-      std::vector<struct rt_source_data>&  ///< list of data for UV-heating
-                                           ///< sources
+      std::vector<struct rt_source_data> &  ///< list of data for UV-heating
+                                            ///< sources
   );
 
 protected:
@@ -189,10 +189,10 @@ protected:
   int N_uvh_srcs;
 
   /// cell/source data on IONISING srcs.
-  std::vector<struct rt_source_data*> ION_data;
+  std::vector<struct rt_source_data *> ION_data;
 
   /// cell/source data on UV-HEATING srcs.
-  std::vector<struct rt_source_data*> UVH_data;
+  std::vector<struct rt_source_data *> UVH_data;
 
   /// List of sources, with id, position, strength.
   std::vector<rad_source> SourceList;
@@ -203,23 +203,23 @@ protected:
   /// newly added source.
   ///
   void update_local_variables_for_new_source(
-      struct rad_source*  ///< newly added source
+      struct rad_source *  ///< newly added source
   );
 
   /// pointer to the computational grid that we are tracing
-  class GridBaseClass* gridptr;
+  class GridBaseClass *gridptr;
 
   /// Pointer to the microphysics solver (to get n,T).
-  class microphysics_base* mpptr;
+  class microphysics_base *mpptr;
 
   /// pointer to source we are currently working with.
-  struct rad_source* current_src;
+  struct rad_source *current_src;
 
   /// If a source is at infinity, we can trace each column one by one with
   /// a much simpler algorithm, so that's what this function does.
 
   int trace_parallel_rays(
-      const rad_source*,    ///< source we are dealing with.
+      const rad_source *,   ///< source we are dealing with.
       const enum direction  ///< direction to source at infinity.
   );
 
@@ -229,8 +229,8 @@ protected:
   /// direction.
 
   int trace_column_parallel(
-      const rad_source*,    ///< source we are tracing from.
-      cell*,                ///< cell to start from.
+      const rad_source *,   ///< source we are tracing from.
+      cell *,               ///< cell to start from.
       const enum direction  ///< direction we are looking.
   );
 
@@ -239,11 +239,11 @@ protected:
   /// for 1D or source at infinity.
   ///
   int cell_cols_1d(
-      const rad_source*,     ///< pointer to source struct.
-      class cell*,           ///< Current Cell
+      const rad_source *,    ///< pointer to source struct.
+      class cell *,          ///< Current Cell
       const enum direction,  ///< direction to source.
-      double*,               ///< column to cell.
-      double*                ///< path length of ray in cell.
+      double *,              ///< column to cell.
+      double *               ///< path length of ray in cell.
   );
 
   ///
@@ -252,11 +252,11 @@ protected:
   /// behaviour of this function is set by rs->update and rs->opacity_src.
   ///
   virtual int ProcessCell(
-      cell*,              ///< Current cell.
-      double[],           ///< Column to cell.
-      double,             ///< Path Length through cell.
-      const rad_source*,  ///< pointer to source struct.
-      const double        ///< Timestep
+      cell *,              ///< Current cell.
+      double[],            ///< Column to cell.
+      double,              ///< Path Length through cell.
+      const rad_source *,  ///< pointer to source struct.
+      const double         ///< Timestep
   );
 
   ///
@@ -265,7 +265,7 @@ protected:
   /// local source-list maintained by the raytracing class, and makes sure
   /// that its properties are appropriate.
   ///
-  virtual void add_source_to_list(struct rad_src_info*  ///< source info.
+  virtual void add_source_to_list(struct rad_src_info *  ///< source info.
   );
 
   ///
@@ -274,7 +274,7 @@ protected:
   /// infinity.  Vshell is used for the photon-conserving
   /// photoionisation rate calculation.
   ///
-  virtual void set_Vshell_for_source(struct rad_source*);
+  virtual void set_Vshell_for_source(struct rad_source *);
 
   ///
   /// Set Vshell in the current cell (See Mellema et al. 2006, NewAst.).
@@ -282,9 +282,9 @@ protected:
   /// photoionisation rate calculation.
   ///
   virtual void set_Vshell_in_cell(
-      cell*,             ///< current cell.
-      double,            ///< Path Length through cell.
-      const rad_source*  ///< pointer to source struct.
+      cell *,             ///< current cell.
+      double,             ///< Path Length through cell.
+      const rad_source *  ///< pointer to source struct.
   );
 };
 
@@ -297,11 +297,11 @@ class raytracer_USC : public raytracer_USC_infinity {
 public:
   /// Constructor.
   raytracer_USC(
-      class GridBaseClass*,      ///< Pointer to grid
-      class microphysics_base*,  ///< Pointer to MicroPhysics Class.
-      int,                       ///< grid dimensionality
-      int,                       ///< coordinate system
-      int,                       ///< number of variables in state vector
+      class GridBaseClass *,      ///< Pointer to grid
+      class microphysics_base *,  ///< Pointer to MicroPhysics Class.
+      int,                        ///< grid dimensionality
+      int,                        ///< coordinate system
+      int,                        ///< number of variables in state vector
       int,  ///< index of first tracer variable in state vector
       int   ///< Number of radiation sources
   );
@@ -318,7 +318,7 @@ public:
   /// for a small number of cores, and seems to be more accurate for Cartesian
   /// grids.
   ///
-  virtual int Add_Source(struct rad_src_info*  ///< ptr to source info.
+  virtual int Add_Source(struct rad_src_info *  ///< ptr to source info.
   );
 
   /// Processes a source's effect on the grid over a timestep.
@@ -336,7 +336,7 @@ public:
   /// Vshell is used for the photon-conserving photoionisation rate
   /// calculation.
   ///
-  void set_Vshell_for_source(struct rad_source*);
+  void set_Vshell_for_source(struct rad_source *);
 
   ///\brief Prints list of sources with id, location, strength.
   void Print_SourceList();
@@ -363,40 +363,40 @@ protected:
 
   ///\brief Find the source cell, or if the source is off the grid, find the
   /// nearest cell to the source.
-  class cell* find_source_cell(double*  ///< position of source.
+  class cell *find_source_cell(double *  ///< position of source.
   );
 
   ///\brief Set the source position to be the centre of a cell, even if off
   /// grid.
   void centre_source_on_cell(
-      double*,   ///< position of source.
+      double *,  ///< position of source.
       enum axes  ///< axis to find source along.
   );
 
   /// This will return a pointer to the source cell, or the on-grid
   /// cell nearest the off-grid source.  Works for 2D and 3D.
   void find_closest_cell(
-      const rad_source*,  ///< pointer to source
-      cell*,              ///< cell to move to cell nearest to source.
-      enum direction*     ///< array to put in directions to
-                          ///< source from cell nearest.
+      const rad_source *,  ///< pointer to source
+      cell *,              ///< cell to move to cell nearest to source.
+      enum direction *     ///< array to put in directions to
+                           ///< source from cell nearest.
   );
 
   /// Given a source cell, assign a list of start cells for each
   /// line/quad/octant that we need to trace along (some may be null).
   void set_startcells(
-      cell*,   ///< source cell, or cell nearest to source if off grid (const).
-      cell**,  ///< list of startcells for each line/quadrant/octant (to be
-               ///< assigned).
-      enum direction*  ///< list of directions to source if it is off grid
-                       ///< (const).
+      cell *,   ///< source cell, or cell nearest to source if off grid (const).
+      cell **,  ///< list of startcells for each line/quadrant/octant (to be
+                ///< assigned).
+      enum direction *  ///< list of directions to source if it is off grid
+                        ///< (const).
   );
 
   /// Traces a 1D column from a starting cell, in a direction,
   /// to the edge of the grid.
   virtual int trace_column(
-      const rad_source*,    ///< source we are tracing from.
-      cell*,                ///< cell to start from.
+      const rad_source *,   ///< source we are tracing from.
+      cell *,               ///< cell to start from.
       const enum direction  ///< direction we are looking.
   );
 
@@ -407,8 +407,8 @@ protected:
   /// y-direction after each column, so that the whole quadrant gets covered.
   ///
   int trace_plane(
-      const rad_source*,     ///< source we are dealing with.
-      cell*,                 ///< starting cell in quadrant
+      const rad_source *,    ///< source we are dealing with.
+      cell *,                ///< starting cell in quadrant
       const enum direction,  ///< x-direction from starting cell to go in.
       const enum direction   ///< y-direction from starting cell to go in.
   );
@@ -419,8 +419,8 @@ protected:
   /// and moves through the column of z-cells in the octant.
   ///
   int trace_octant(
-      const rad_source*,     ///< source we are dealing with.
-      cell*,                 ///< starting cell in octant
+      const rad_source *,    ///< source we are dealing with.
+      cell *,                ///< starting cell in octant
       const enum direction,  ///< x-direction from starting cell to go in.
       const enum direction,  ///< y-direction from starting cell to go in.
       const enum direction   ///< z-direction from starting cell to go in.
@@ -433,10 +433,10 @@ protected:
   /// get_cell_columns_parallel()
   ///
   int get_cell_columns(
-      const rad_source*,  ///< pointer to source struct.
-      class cell*,        ///< Current Cell
-      double*,            ///< column to cell.
-      double*             ///< path length of ray in cell.
+      const rad_source *,  ///< pointer to source struct.
+      class cell *,        ///< Current Cell
+      double *,            ///< column to cell.
+      double *             ///< path length of ray in cell.
   );
 
   /// Get column density to current cell from source, and path length through
@@ -444,48 +444,48 @@ protected:
   /// have been tried, and the best one is the one that isn't commented out!
   ///
   int cell_cols_2d(
-      const rad_source*,  ///< pointer to source struct.
-      class cell*,        ///< Current Cell
-      double*,            ///< column to cell.
-      double*             ///< path length of ray in cell.
+      const rad_source *,  ///< pointer to source struct.
+      class cell *,        ///< Current Cell
+      double *,            ///< column to cell.
+      double *             ///< path length of ray in cell.
   );
 
   /// Get column density to current cell from source, and path length through
   /// cell. This uses interpolation for 3D grids.
   ///
   int cell_cols_3d(
-      const rad_source*,  ///< pointer to source struct.
-      class cell*,        ///< Current Cell
-      double*,            ///< column to cell.
-      double*             ///< path length of ray in cell.
+      const rad_source *,  ///< pointer to source struct.
+      class cell *,        ///< Current Cell
+      double *,            ///< column to cell.
+      double *             ///< path length of ray in cell.
   );
 
   ///
   /// Short Characteristic Method of getting column density to cell.
   ///
   virtual void col2cell_2d(
-      const rad_source*,      ///< source we are working on.
-      const cell*,            ///< cell to get column to.
-      const enum direction,   ///< face ray enters cell through.
-      const enum direction*,  ///< perp direction(s) towards source. (1 el
-                              ///< array in 2d)
-      const double*,          ///< fabs tan theta (angle(s) between 0 and 45deg)
-                              ///< (1 el array in 2d)
-      double[]                ///< Column densities.
+      const rad_source *,      ///< source we are working on.
+      const cell *,            ///< cell to get column to.
+      const enum direction,    ///< face ray enters cell through.
+      const enum direction *,  ///< perp direction(s) towards source. (1 el
+                               ///< array in 2d)
+      const double *,  ///< fabs tan theta (angle(s) between 0 and 45deg)
+                       ///< (1 el array in 2d)
+      double[]         ///< Column densities.
   );
 
   ///
   /// Short Characteristic Method of getting column density to cell.
   ///
   virtual void col2cell_3d(
-      const rad_source*,      ///< source we are working on.
-      const cell*,            ///< cell to get column to.
-      const enum direction,   ///< face ray enters cell through.
-      const enum direction*,  ///< perp direction(s) towards source. (1 el
-                              ///< array in 2d)
-      const double*,          ///< fabs tan theta (angle(s) between 0 and 45deg)
-                              ///< (1 el array in 2d)
-      double[]                ///< Column densities.
+      const rad_source *,      ///< source we are working on.
+      const cell *,            ///< cell to get column to.
+      const enum direction,    ///< face ray enters cell through.
+      const enum direction *,  ///< perp direction(s) towards source. (1 el
+                               ///< array in 2d)
+      const double *,  ///< fabs tan theta (angle(s) between 0 and 45deg)
+                       ///< (1 el array in 2d)
+      double[]         ///< Column densities.
   );
 
   ///
@@ -533,7 +533,7 @@ protected:
   /// local source-list maintained by the raytracing class, and makes sure
   /// that its properties are appropriate.
   ///
-  virtual void add_source_to_list(struct rad_src_info*  ///< source info.
+  virtual void add_source_to_list(struct rad_src_info *  ///< source info.
   );
 
   ///
@@ -542,9 +542,9 @@ protected:
   /// photoionisation rate calculation.
   ///
   virtual void set_Vshell_in_cell(
-      cell*,             ///< current cell.
-      double,            ///< Path Length through cell.
-      const rad_source*  ///< pointer to source struct.
+      cell *,             ///< current cell.
+      double,             ///< Path Length through cell.
+      const rad_source *  ///< pointer to source struct.
   );
 
 #ifdef CELL_CENTRED_SRC
@@ -552,9 +552,9 @@ protected:
   /// to the cell, and the column through the cell is different.
   ///
   int ProcessSourceCell(
-      cell*,              ///< Current cell.
-      const rad_source*,  ///< pointer to source struct.
-      const double        ///< Timestep
+      cell *,              ///< Current cell.
+      const rad_source *,  ///< pointer to source struct.
+      const double         ///< Timestep
   );
 #endif  // CELL_CENTRED_SRC
 };

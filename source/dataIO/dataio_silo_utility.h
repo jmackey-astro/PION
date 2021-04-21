@@ -41,25 +41,25 @@ using namespace std;
 class dataio_silo_utility : public dataio_silo_pllel {
 public:
   dataio_silo_utility(
-      class SimParams&,  ///< pointer to simulation parameters
-      std::string,       ///< FLOAT or DOUBLE for files.
-      class MCMDcontrol*);
+      class SimParams &,  ///< pointer to simulation parameters
+      std::string,        ///< FLOAT or DOUBLE for files.
+      class MCMDcontrol *);
 
   ~dataio_silo_utility() {}
 
   int serial_read_any_data(
-      string,                        ///< file to read from
-      class SimParams&,              ///< pointer to simulation parameters
-      vector<class GridBaseClass*>&  ///< address of vector of grid pointers.
+      string,                          ///< file to read from
+      class SimParams &,               ///< pointer to simulation parameters
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
   );
 
   ///
   /// Parallel code to read any data.
   ///
   int ReadData(
-      string,                         ///< file to read from
-      vector<class GridBaseClass*>&,  ///< address of vector of grid pointers.
-      class SimParams&                ///< pointer to simulation parameters
+      string,                           ///< file to read from
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
+      class SimParams &                 ///< pointer to simulation parameters
   );
 
 protected:
@@ -67,22 +67,22 @@ protected:
   /// Parallel code to read any data onto one level of a nested grid.
   ///
   int ReadLevelData(
-      string,                ///< file to read from
-      class GridBaseClass*,  ///< address of vector of grid pointers.
-      class SimParams&,      ///< pointer to simulation parameters
-      const int              ///< level in grid hierarchy
+      string,                 ///< file to read from
+      class GridBaseClass *,  ///< address of vector of grid pointers.
+      class SimParams &,      ///< pointer to simulation parameters
+      const int               ///< level in grid hierarchy
   );
 
   ///
   /// Read data from a parallel file using a single processor.
   ///
   int serial_read_pllel_silodata(
-      const string,          ///< filename
-      class GridBaseClass*,  ///< pointer to data.
-      const int,             ///< number of files
-      const int,             ///< number of groups
-      class SimParams&,      ///< pointer to simulation parameters
-      class MCMDcontrol*     ///< pointer to class with nproc.
+      const string,           ///< filename
+      class GridBaseClass *,  ///< pointer to data.
+      const int,              ///< number of files
+      const int,              ///< number of groups
+      class SimParams &,      ///< pointer to simulation parameters
+      class MCMDcontrol *     ///< pointer to class with nproc.
   );
 
   ///
@@ -91,12 +91,12 @@ protected:
   /// any number of processors.
   ///
   int SRAD_read_var2grid(
-      DBfile*,               ///< pointer to silo file.
-      class GridBaseClass*,  ///< pointer to data.
-      const string,          ///< variable name to read.
-      const long int,        ///< number of cells expected.
-      class SimParams&,      ///< pointer to simulation parameters
-      class MCMDcontrol*     ///< pointer to class with nproc.
+      DBfile *,               ///< pointer to silo file.
+      class GridBaseClass *,  ///< pointer to data.
+      const string,           ///< variable name to read.
+      const long int,         ///< number of cells expected.
+      class SimParams &,      ///< pointer to simulation parameters
+      class MCMDcontrol *     ///< pointer to class with nproc.
   );
 
   ///
@@ -105,8 +105,8 @@ protected:
   ///
   int SRAD_get_nproc_numfiles(
       const string,  ///< name of file to open
-      int*,          ///< number of processes.
-      int*           ///< number of files per timestep
+      int *,         ///< number of processes.
+      int *          ///< number of files per timestep
   );
 
   ///
@@ -114,9 +114,9 @@ protected:
   /// Returns true if it is.
   ///
   bool SRAD_point_on_my_domain(
-      const cell*,        ///< pointer to cell
-      class SimParams&,   ///< pointer to simulation parameters
-      class MCMDcontrol*  ///< pointer to class with nproc.
+      const cell *,        ///< pointer to cell
+      class SimParams &,   ///< pointer to simulation parameters
+      class MCMDcontrol *  ///< pointer to class with nproc.
   );
 
   ///
@@ -125,20 +125,20 @@ protected:
   /// The integer argument to the function is the new filenumber.
   ///
   void set_pllel_filename(
-      std::string&,  ///< filename
-      const int      ///< file number
+      std::string &,  ///< filename
+      const int       ///< file number
   );
 
   ///
   /// Get Xmin[],Xmax[] for a quadmesh, and return them.
   ///
   void get_quadmesh_extents(
-      DBfile*,          ///< pointer to silo file.
-      const string,     ///< directory of mesh
-      const string,     ///< name of mesh
-      double*,          ///< integer Xmin for mesh (output)
-      double*,          ///< integer Xmax for mesh (output)
-      class SimParams&  ///< pointer to simulation parameters
+      DBfile *,          ///< pointer to silo file.
+      const string,      ///< directory of mesh
+      const string,      ///< name of mesh
+      double *,          ///< integer Xmin for mesh (output)
+      double *,          ///< integer Xmax for mesh (output)
+      class SimParams &  ///< pointer to simulation parameters
   );
 
   ///
@@ -147,13 +147,13 @@ protected:
   /// work!
   ///
   void get_quadmesh_integer_extents(
-      DBfile*,               ///< pointer to silo file.
-      class GridBaseClass*,  ///< pointer to data.
-      class SimParams&,      ///< pointer to simulation parameters
-      const string,          ///< directory of mesh
-      const string,          ///< name of mesh
-      int*,                  ///< integer Xmin for mesh (output)
-      int*                   ///< integer Xmax for mesh (output)
+      DBfile *,               ///< pointer to silo file.
+      class GridBaseClass *,  ///< pointer to data.
+      class SimParams &,      ///< pointer to simulation parameters
+      const string,           ///< directory of mesh
+      const string,           ///< name of mesh
+      int *,                  ///< integer Xmin for mesh (output)
+      int *                   ///< integer Xmax for mesh (output)
   );
 
   ///
@@ -161,9 +161,9 @@ protected:
   /// single-core simulation.
   ///
   int parallel_read_serial_silodata(
-      string,                ///< file to read from
-      class GridBaseClass*,  ///< pointer to data.
-      class SimParams&       ///< pointer to simulation parameters
+      string,                 ///< file to read from
+      class GridBaseClass *,  ///< pointer to data.
+      class SimParams &       ///< pointer to simulation parameters
   );
 
   ///
@@ -171,13 +171,13 @@ protected:
   /// jobs, where M and N are not equal.
   ///
   int parallel_read_parallel_silodata(
-      string,                ///< file to read from
-      class GridBaseClass*,  ///< pointer to data.
-      class SimParams&,      ///< pointer to simulation parameters
-      const int,             ///< number of files
-      const int,             ///< number of groups
-      const int,             ///< number of processes used to write file.
-      const int              ///< level in grid hierarchy
+      string,                 ///< file to read from
+      class GridBaseClass *,  ///< pointer to data.
+      class SimParams &,      ///< pointer to simulation parameters
+      const int,              ///< number of files
+      const int,              ///< number of groups
+      const int,              ///< number of processes used to write file.
+      const int               ///< level in grid hierarchy
   );
 
   ///
@@ -186,13 +186,13 @@ protected:
   /// any number of processors.
   ///
   int PP_read_var2grid(
-      DBfile*,               ///< pointer to silo file.
-      class GridBaseClass*,  ///< pointer to data.
-      class SimParams&,      ///< pointer to simulation parameters
-      const string,          ///< variable name to read.
-      const long int,        ///< number of cells expected (not needed)
-      const int*,            ///< integer Xmin for mesh
-      const int*             ///< integer Xmax for mesh
+      DBfile *,               ///< pointer to silo file.
+      class GridBaseClass *,  ///< pointer to data.
+      class SimParams &,      ///< pointer to simulation parameters
+      const string,           ///< variable name to read.
+      const long int,         ///< number of cells expected (not needed)
+      const int *,            ///< integer Xmin for mesh
+      const int *             ///< integer Xmax for mesh
   );
 };
 

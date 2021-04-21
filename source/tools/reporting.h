@@ -43,7 +43,7 @@ public:
   ///
   /// Redirects stdout/stderr to files in the path specified.
   ///
-  int redirect(const string&  ///< Location of files to write reporting to.
+  int redirect(const string &  ///< Location of files to write reporting to.
   );
 
   ///
@@ -143,7 +143,7 @@ public:
   template<class T>
   inline void printVec(
       string msg,  ///< Name of Vector
-      T* vec,      ///< pointer to vector
+      T *vec,      ///< pointer to vector
       int nd       ///< length of vector.
   )
   {
@@ -160,7 +160,7 @@ public:
   template<class T>
   inline void printSTLVec(
       string msg,                ///< Name of Vector
-      const std::vector<T>& vec  ///< pointer to vector
+      const std::vector<T> &vec  ///< pointer to vector
   )
   {
     int nd = vec.size();

@@ -78,7 +78,7 @@ setup_grid_NG_MPI::~setup_grid_NG_MPI()
 // ##################################################################
 
 void setup_grid_NG_MPI::setup_NG_grid_levels(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   // call serial version to set global properties of each level.
@@ -109,8 +109,8 @@ void setup_grid_NG_MPI::setup_NG_grid_levels(
 // ##################################################################
 
 int setup_grid_NG_MPI::setup_grid(
-    vector<class GridBaseClass*>& grid,  ///< grid pointers.
-    class SimParams& SimPM               ///< pointer to simulation parameters
+    vector<class GridBaseClass *> &grid,  ///< grid pointers.
+    class SimParams &SimPM                ///< pointer to simulation parameters
 )
 {
   // cout <<"------------------------------------------------------\n";
@@ -232,8 +232,8 @@ int setup_grid_NG_MPI::setup_grid(
 // ##################################################################
 
 int setup_grid_NG_MPI::setup_raytracing(
-    class SimParams& SimPM,             ///< pointer to simulation parameters
-    vector<class GridBaseClass*>& grid  ///< vec of grid pointers.
+    class SimParams &SimPM,              ///< pointer to simulation parameters
+    vector<class GridBaseClass *> &grid  ///< vec of grid pointers.
 )
 {
   if (!SimPM.EP.raytracing) {
@@ -270,8 +270,8 @@ int setup_grid_NG_MPI::setup_raytracing(
 // ##################################################################
 
 int setup_grid_NG_MPI::boundary_conditions(
-    class SimParams& par,               ///< pointer to simulation parameters
-    vector<class GridBaseClass*>& grid  ///< vec of grid pointers.
+    class SimParams &par,                ///< pointer to simulation parameters
+    vector<class GridBaseClass *> &grid  ///< vec of grid pointers.
 )
 {
 #ifdef TESTING
@@ -289,8 +289,8 @@ int setup_grid_NG_MPI::boundary_conditions(
 // ##################################################################
 
 int setup_grid_NG_MPI::setup_boundary_structs(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
     const int l                 ///< level in NG grid
 )
 {
@@ -362,7 +362,7 @@ int setup_grid_NG_MPI::setup_boundary_structs(
       cout << "Adding FINE_TO_COARSE_RECV boundary for level ";
       cout << l << ", current # boundaries: " << grid->BC_bd.size() << "\n";
 #endif
-      struct boundary_data* bd = new boundary_data;
+      struct boundary_data *bd = new boundary_data;
       bd->itype                = FINE_TO_COARSE_RECV;
       bd->type                 = "FINE_TO_COARSE_RECV";
       bd->dir                  = NO;
@@ -380,7 +380,7 @@ int setup_grid_NG_MPI::setup_boundary_structs(
       cout << "Adding COARSE_TO_FINE_SEND boundary for level ";
       cout << l << ", current # boundaries: " << grid->BC_bd.size() << "\n";
 #endif
-      struct boundary_data* bd2 = new boundary_data;
+      struct boundary_data *bd2 = new boundary_data;
       bd2->itype                = COARSE_TO_FINE_SEND;
       bd2->type                 = "COARSE_TO_FINE_SEND";
       bd2->dir                  = NO;
@@ -407,7 +407,7 @@ int setup_grid_NG_MPI::setup_boundary_structs(
       cout << "Adding FINE_TO_COARSE_SEND boundary for level ";
       cout << l << ", current # boundaries: " << grid->BC_bd.size() << "\n";
 #endif
-      struct boundary_data* bd = new boundary_data;
+      struct boundary_data *bd = new boundary_data;
       bd->itype                = FINE_TO_COARSE_SEND;
       bd->type                 = "FINE_TO_COARSE_SEND";
       bd->dir                  = NO;
@@ -446,7 +446,7 @@ int setup_grid_NG_MPI::setup_boundary_structs(
 // ##################################################################
 
 void setup_grid_NG_MPI::setup_dataio_class(
-    class SimParams& par,  ///< simulation parameters
+    class SimParams &par,  ///< simulation parameters
     const int typeOfFile   ///< type of I/O: 1=text,2=fits,5=silo
 )
 {

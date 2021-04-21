@@ -39,8 +39,8 @@ IC_read_BBurkhart_data::~IC_read_BBurkhart_data() {}
 // ##################################################################
 
 int IC_read_BBurkhart_data::setup_data(
-    class ReadParams* rrp,    ///< pointer to parameter list.
-    class GridBaseClass* ggg  ///< pointer to grid
+    class ReadParams *rrp,    ///< pointer to parameter list.
+    class GridBaseClass *ggg  ///< pointer to grid
 )
 {
   ICsetup_base::gg = ggg;
@@ -298,13 +298,13 @@ int IC_read_BBurkhart_data::setup_data(
         // Because simulations are isothermal, pressure is a fixed
         // multiple of density, which we get from the parameterfile.
         //
-        cell* c = ggg->FirstPt();
+        cell *c = ggg->FirstPt();
         do {
           c->P[v] = (c->P[RO] * CodePDratio) * scaling;
         } while ((c = ggg->NextPt(c)) != 0);
       }
       else if (v == SI) {
-        cell* c = ggg->FirstPt();
+        cell *c = ggg->FirstPt();
         do {
           c->P[v] = 0.0;
         } while ((c = ggg->NextPt(c)) != 0);
@@ -341,7 +341,7 @@ int IC_read_BBurkhart_data::setup_data(
   //
   // Assign tracer values everywhere on grid.
   //
-  cell* c = ggg->FirstPt();
+  cell *c = ggg->FirstPt();
   do {
     for (int v = 0; v < SimPM.ntracer; v++)
       c->P[v + SimPM.ftr] = data_vals[v];
@@ -358,7 +358,7 @@ void IC_read_BBurkhart_data::read_file(
     const int var,          ///< variable in state vector
     const double scaling,   ///< optional scaling of value.
     const double offset,    ///< optional offset of value, after scaling.
-    class GridBaseClass* g  ///< pointer to grid
+    class GridBaseClass *g  ///< pointer to grid
 )
 {
   //
@@ -366,9 +366,9 @@ void IC_read_BBurkhart_data::read_file(
   // Set up the utility fitsio class to read data.
   //
   // class utility_fitsio fio ();
-  class utility_fitsio* fio = 0;
+  class utility_fitsio *fio = 0;
   fio                       = new utility_fitsio();
-  fitsfile* ff              = 0;
+  fitsfile *ff              = 0;
   int status = 0, err = 0;
   err = fits_open_file(&ff, infile.c_str(), READONLY, &status);
   if (status) {
@@ -392,7 +392,7 @@ void IC_read_BBurkhart_data::read_file(
   //  err=0;
   //}
 
-  double* data = 0;
+  double *data = 0;
   // size_t Npix = SimPM.Ncell;
   // int npix[ndim];
   // for (int v=0; v<ndim;v++) npix[v] = SimPM.NG[v];
@@ -409,7 +409,7 @@ void IC_read_BBurkhart_data::read_file(
       ff, HDU_NAME, ndim, l_xmin, g_xmin, pix_size, NG, ncell, TDOUBLE, &data);
   if (err) rep.error("Failed to read fits subset", err);
 
-  cell* c      = g->FirstPt();
+  cell *c      = g->FirstPt();
   size_t count = 0;
   do {
     c->P[var] = data[count] * scaling - offset;

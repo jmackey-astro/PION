@@ -106,24 +106,24 @@ protected:
   /// FirstPt()); the point with the most positive coordinates in
   /// each direction.
   ///
-  cell* G_lpt;
+  cell *G_lpt;
 
   ///
   /// Pointer to last point on grid (including ghost cells) (opposite
   /// corner of grid to FirstPt())
   ///
-  cell* G_lpt_all;
+  cell *G_lpt_all;
 
   ///
   /// Grid Data, pointer to first grid cell; the point with the most
   /// negative coordinates in each direction.
   ///
-  cell* G_fpt;
+  cell *G_fpt;
 
   ///
   /// Grid Data, pointer to first grid cell (including ghost cells).
   ///
-  cell* G_fpt_all;
+  cell *G_fpt_all;
 
   const int G_ndim;     ///< Dimensionality of Grid
   const int G_nvar;     ///< Number of variables in state vector
@@ -131,27 +131,27 @@ protected:
   int G_coordsys;       ///< coordinate system (cart/cyl/sph)
   int G_ntracer;        ///< number of tracer fields.
   int G_ftr;            ///< index of first tracer field.
-  int* G_ng;            ///< number of grid points in each direction.
+  int *G_ng;            ///< number of grid points in each direction.
   size_t G_ncell;       ///< Total number of grid points (excl. boundary)
-  int* G_nbc;           ///< depth of boundary layer in each dir [2*ndim]
+  int *G_nbc;           ///< depth of boundary layer in each dir [2*ndim]
   /// number of grid points in each dir, including boundary cells
-  int* G_ng_all;
+  int *G_ng_all;
   /// Total number of grid points, including boundary points.
   size_t G_ncell_all;
 
-  double* G_range;      ///< Size of domain in x,y,z-direction.
-  double* G_xmin;       ///< Min value of x,y,z in domain.
-  double* G_xmax;       ///< Max value of x,y,z in domain.
-  double* G_range_all;  ///< as G_range but including boundary data.
-  double* G_xmin_all;   ///< as G_xmin but including boundary data.
-  double* G_xmax_all;   ///< as G_xmax but including boundary data.
+  double *G_range;      ///< Size of domain in x,y,z-direction.
+  double *G_xmin;       ///< Min value of x,y,z in domain.
+  double *G_xmax;       ///< Max value of x,y,z in domain.
+  double *G_range_all;  ///< as G_range but including boundary data.
+  double *G_xmin_all;   ///< as G_xmin but including boundary data.
+  double *G_xmax_all;   ///< as G_xmax but including boundary data.
 
-  int* G_irange;  ///< Size of domain in x,y,z-direction (integer coordinates).
-  int* G_ixmin;   ///< Min value of x,y,z in domain (integer coordinates).
-  int* G_ixmax;   ///< Max value of x,y,z in domain (integer coordinates).
-  int* G_irange_all;  ///< as G_irange but including boundary data.
-  int* G_ixmin_all;   ///< as G_ixmin but including boundary data.
-  int* G_ixmax_all;   ///< as G_ixmax but including boundary data.
+  int *G_irange;  ///< Size of domain in x,y,z-direction (integer coordinates).
+  int *G_ixmin;   ///< Min value of x,y,z in domain (integer coordinates).
+  int *G_ixmax;   ///< Max value of x,y,z in domain (integer coordinates).
+  int *G_irange_all;  ///< as G_irange but including boundary data.
+  int *G_ixmin_all;   ///< as G_ixmin but including boundary data.
+  int *G_ixmax_all;   ///< as G_ixmax but including boundary data.
 
   double G_dx;  ///< Linear side length of (uniform, cube-shaped, cartesian)
                 ///< grid cells.
@@ -161,19 +161,19 @@ protected:
   double G_dV;  ///< Volume of one cube-shaped, cartesian grid cell (same for
                 ///< all cells).
 
-  double* Sim_range;  ///< Size of full domain in x,y,z-direction.
-  double* Sim_xmin;   ///< Min value of x,y,z in full domain.
-  double* Sim_xmax;   ///< Max value of x,y,z in full domain.
-  int* Sim_irange;    ///< Size of full domain: int coords
-  int* Sim_ixmin;     ///< Min value of x,y,z in full domain: int coords
-  int* Sim_ixmax;     ///< Max value of x,y,z in full domain: int coords
+  double *Sim_range;  ///< Size of full domain in x,y,z-direction.
+  double *Sim_xmin;   ///< Min value of x,y,z in full domain.
+  double *Sim_xmax;   ///< Max value of x,y,z in full domain.
+  int *Sim_irange;    ///< Size of full domain: int coords
+  int *Sim_ixmin;     ///< Min value of x,y,z in full domain: int coords
+  int *Sim_ixmax;     ///< Max value of x,y,z in full domain: int coords
 
-  double* L_range;  ///< Size of level domain in x,y,z-direction.
-  double* L_xmin;   ///< Min value of x,y,z in level domain.
-  double* L_xmax;   ///< Max value of x,y,z in level domain.
-  int* L_irange;    ///< Size of level domain: int coords
-  int* L_ixmin;     ///< Min value of x,y,z in level domain: int coords
-  int* L_ixmax;     ///< Max value of x,y,z in level domain: int coords
+  double *L_range;  ///< Size of level domain in x,y,z-direction.
+  double *L_xmin;   ///< Min value of x,y,z in level domain.
+  double *L_xmax;   ///< Max value of x,y,z in level domain.
+  int *L_irange;    ///< Size of level domain: int coords
+  int *L_ixmin;     ///< Min value of x,y,z in level domain: int coords
+  int *L_ixmax;     ///< Max value of x,y,z in level domain: int coords
 
   ///
   /// Set cell dimensions based on grid properties.
@@ -205,17 +205,17 @@ public:
   ///  - Sets up pointers to first element, and all neighbours.
   ///
   UniformGrid(
-      int,      ///< ndim, length of position vector.
-      int,      ///< nvar, length of state vectors.
-      int,      ///< eqntype, which equations we are using (needed by BCs).
-      int,      ///< number of boundary cells to use.
-      double*,  ///< array of minimum values of x,y,z for this grid.
-      double*,  ///< array of maximum values of x,y,z for this grid.
-      int*,     ///< array of number of cells in x,y,z directions.
-      double*,  ///< array of min. x/y/z for level.
-      double*,  ///< array of max. x/y/z for level.
-      double*,  ///< array of min. x/y/z for full simulation.
-      double*   ///< array of max. x/y/z for full simulation.
+      int,       ///< ndim, length of position vector.
+      int,       ///< nvar, length of state vectors.
+      int,       ///< eqntype, which equations we are using (needed by BCs).
+      int,       ///< number of boundary cells to use.
+      double *,  ///< array of minimum values of x,y,z for this grid.
+      double *,  ///< array of maximum values of x,y,z for this grid.
+      int *,     ///< array of number of cells in x,y,z directions.
+      double *,  ///< array of min. x/y/z for level.
+      double *,  ///< array of max. x/y/z for level.
+      double *,  ///< array of min. x/y/z for full simulation.
+      double *   ///< array of max. x/y/z for full simulation.
   );
 
   ///
@@ -237,7 +237,7 @@ public:
   /// Returns cell diameter for a given cell along a given axis.
   ///
   virtual double DX(
-      const cell*,     ///< cell to get dx for
+      const cell *,    ///< cell to get dx for
       const enum axes  ///< axis along which to get dx.
       ) const
   {
@@ -347,13 +347,13 @@ public:
   /// Return cell size in integer units
   int idx() const { return G_idx; }
 
-  virtual double CellVolume(const cell* c, const double)
+  virtual double CellVolume(const cell *c, const double)
   {
     return VectorOps_Cart::CellVolume(c, G_dx);
   }
 
   virtual double CellInterface(
-      const cell* c,        ///< Cell
+      const cell *c,        ///< Cell
       const direction dir,  ///< outward normal to interface.
       const double)
   {
@@ -366,22 +366,22 @@ public:
   ///
   /// Returns pointer to the first grid point (ex. boundary data).
   ///
-  virtual cell* FirstPt();
+  virtual cell *FirstPt();
 
   ///
   /// Returns pointer to the first grid point (inc. boundary data).
   ///
-  virtual cell* FirstPt_All();
+  virtual cell *FirstPt_All();
 
   ///
   /// Returns pointer to the last grid point (ex. boundary data).
   ///
-  virtual cell* LastPt();
+  virtual cell *LastPt();
 
   ///
   /// Returns pointer to the last grid point (inc. boundary data).
   ///
-  virtual cell* LastPt_All();
+  virtual cell *LastPt_All();
 
   ///
   /// returns a pointer to a neighbouring cell in the given
@@ -394,8 +394,8 @@ public:
   /// cell->ngb[direction] i.e. the neighbour if it exists or 0 if it
   /// doesn't.
   ///
-  virtual cell* NextPt(
-      const cell* c,            ///< Current cell.
+  virtual cell *NextPt(
+      const cell *c,            ///< Current cell.
       const enum direction dir  ///< direction of neighbour.
   )
   {
@@ -405,19 +405,19 @@ public:
   ///
   /// returns a pointer to the next cell (ex. boundary data).
   ///
-  virtual cell* NextPt(const cell* c) { return (c->npt); }
+  virtual cell *NextPt(const cell *c) { return (c->npt); }
 
   ///
   /// returns a pointer to the next cell (inc. boundary data).
   ///
-  virtual cell* NextPt_All(const cell* c) { return (c->npt_all); }
+  virtual cell *NextPt_All(const cell *c) { return (c->npt_all); }
 
   ///
   /// Like NextPt(cell,dir), but in reverse direction.
   ///
-  virtual class cell* PrevPt(
-      const class cell*,  ///< Current Point.
-      enum direction      ///< Direction to go in.
+  virtual class cell *PrevPt(
+      const class cell *,  ///< Current Point.
+      enum direction       ///< Direction to go in.
   );
 
   // ---------- ACCESSING AND MOVING FROM CELL TO CELL --------------
@@ -432,13 +432,13 @@ public:
   /// specified (internal, e.g. stellar wind).
   ///
   virtual int SetupBCs(
-      class SimParams&  ///< List of simulation params (including BCs)
+      class SimParams &  ///< List of simulation params (including BCs)
   );
 
   ///
   /// prints all the cells in the given boundary data pointer.
   ///
-  int BC_printBCdata(boundary_data*);
+  int BC_printBCdata(boundary_data *);
 
   ///
   /// Destructor for all the boundary data, BC_bd.
@@ -448,7 +448,7 @@ public:
   ///
   /// Destructor for a boundary data struct.
   ///
-  void BC_deleteBoundaryData(boundary_data*);
+  void BC_deleteBoundaryData(boundary_data *);
 
   ///
   /// Calculate distance between two points, where the two position
@@ -457,8 +457,8 @@ public:
   /// physical units.
   ///
   virtual double distance(
-      const double*,  ///< position 1 (physical)
-      const double*   ///< position 2 (physical)
+      const double *,  ///< position 1 (physical)
+      const double *   ///< position 2 (physical)
   );
 
   ///
@@ -468,8 +468,8 @@ public:
   /// integer units (but obviously the answer is not an integer).
   ///
   virtual double idistance(
-      const int*,  ///< position 1 (integer)
-      const int*   ///< position 2 (integer)
+      const int *,  ///< position 1 (integer)
+      const int *   ///< position 2 (integer)
   );
 
   ///
@@ -478,8 +478,8 @@ public:
   /// Result returned in physical units (e.g. centimetres).
   ///
   virtual double distance_cell2cell(
-      const cell*,  ///< cell 1
-      const cell*   ///< cell 2
+      const cell *,  ///< cell 1
+      const cell *   ///< cell 2
   );
 
   ///
@@ -489,8 +489,8 @@ public:
   /// two units).
   ///
   virtual double idistance_cell2cell(
-      const cell*,  ///< cell 1
-      const cell*   ///< cell 2
+      const cell *,  ///< cell 1
+      const cell *   ///< cell 2
   );
 
   ///
@@ -499,8 +499,8 @@ public:
   /// geometry).  Here both input and output are physical units.
   ///
   virtual double distance_vertex2cell(
-      const double*,  ///< vertex (physical)
-      const cell*     ///< cell
+      const double *,  ///< vertex (physical)
+      const cell *     ///< cell
   );
 
   ///
@@ -509,9 +509,9 @@ public:
   /// the *cell* coordinate minus the *vertex* coordinate.
   ///
   virtual double difference_vertex2cell(
-      const double*,  ///< vertex (double)
-      const cell*,    ///< cell
-      const axes      ///< Axis to calculate.
+      const double *,  ///< vertex (double)
+      const cell *,    ///< cell
+      const axes       ///< Axis to calculate.
   );
 
   ///
@@ -520,8 +520,8 @@ public:
   /// geometry).  Here both input and output are code-integer units.
   ///
   virtual double idistance_vertex2cell(
-      const int*,  ///< vertex (integer)
-      const cell*  ///< cell
+      const int *,  ///< vertex (integer)
+      const cell *  ///< cell
   );
 
   ///
@@ -530,9 +530,9 @@ public:
   /// the *cell* coordinate minus the *vertex* coordinate.
   ///
   virtual double idifference_vertex2cell(
-      const int*,   ///< vertex (integer)
-      const cell*,  ///< cell
-      const axes    ///< Axis to calculate.
+      const int *,   ///< vertex (integer)
+      const cell *,  ///< cell
+      const axes     ///< Axis to calculate.
   );
 
   ///
@@ -541,15 +541,15 @@ public:
   /// It returns *cell2* coordinate minus *cell1* coordinate.
   ///
   virtual double idifference_cell2cell(
-      const cell*,  ///< cell 1
-      const cell*,  ///< cell 2
-      const axes    ///< Axis.
+      const cell *,  ///< cell 1
+      const cell *,  ///< cell 2
+      const axes     ///< Axis.
   );
 
   ///
   /// Returns true if the position is on the grid, false otherwise
   ///
-  bool point_on_grid(const double*  ///< position
+  bool point_on_grid(const double *  ///< position
   );
 };
 
@@ -570,17 +570,17 @@ public:
   ///  - All grid setup is done in the cartesian version.
   ///
   uniform_grid_cyl(
-      int,      ///< ndim, length of position vector.
-      int,      ///< nvar, length of state vectors.
-      int,      ///< eqntype, which equations we are using (needed by BCs).
-      int,      ///< number of boundary cells to use.
-      double*,  ///< array of minimum values of x,y,z for this grid.
-      double*,  ///< array of maximum values of x,y,z for this grid.
-      int*,     ///< array of number of cells in x,y,z directions.
-      double*,  ///< array of min. x/y/z for level.
-      double*,  ///< array of max. x/y/z for level.
-      double*,  ///< array of min. x/y/z for full simulation.
-      double*   ///< array of max. x/y/z for full simulation.
+      int,       ///< ndim, length of position vector.
+      int,       ///< nvar, length of state vectors.
+      int,       ///< eqntype, which equations we are using (needed by BCs).
+      int,       ///< number of boundary cells to use.
+      double *,  ///< array of minimum values of x,y,z for this grid.
+      double *,  ///< array of maximum values of x,y,z for this grid.
+      int *,     ///< array of number of cells in x,y,z directions.
+      double *,  ///< array of min. x/y/z for level.
+      double *,  ///< array of max. x/y/z for level.
+      double *,  ///< array of min. x/y/z for full simulation.
+      double *   ///< array of max. x/y/z for full simulation.
   );
 
   ///
@@ -593,8 +593,8 @@ public:
   /// physical units.
   ///
   virtual double distance(
-      const double*,  ///< position 1 (physical)
-      const double*   ///< position 2 (physical)
+      const double *,  ///< position 1 (physical)
+      const double *   ///< position 2 (physical)
   );
 
   ///
@@ -604,8 +604,8 @@ public:
   /// integer units (but obviously the answer is not an integer).
   ///
   virtual double idistance(
-      const int*,  ///< position 1 (integer)
-      const int*   ///< position 2 (integer)
+      const int *,  ///< position 1 (integer)
+      const int *   ///< position 2 (integer)
   );
 
   ///
@@ -614,8 +614,8 @@ public:
   /// Result returned in physical units (e.g. centimetres).
   ///
   virtual double distance_cell2cell(
-      const cell*,  ///< cell 1
-      const cell*   ///< cell 2
+      const cell *,  ///< cell 1
+      const cell *   ///< cell 2
   );
 
   ///
@@ -625,8 +625,8 @@ public:
   /// two units).
   ///
   virtual double idistance_cell2cell(
-      const cell*,  ///< cell 1
-      const cell*   ///< cell 2
+      const cell *,  ///< cell 1
+      const cell *   ///< cell 2
   );
 
   ///
@@ -635,8 +635,8 @@ public:
   /// geometry).  Here both input and output are physical units.
   ///
   virtual double distance_vertex2cell(
-      const double*,  ///< vertex (physical)
-      const cell*     ///< cell
+      const double *,  ///< vertex (physical)
+      const cell *     ///< cell
   );
 
   ///
@@ -645,9 +645,9 @@ public:
   /// the *cell* coordinate minus the *vertex* coordinate.
   ///
   virtual double difference_vertex2cell(
-      const double*,  ///< vertex (double)
-      const cell*,    ///< cell
-      const axes      ///< Axis to calculate.
+      const double *,  ///< vertex (double)
+      const cell *,    ///< cell
+      const axes       ///< Axis to calculate.
   );
 
   ///
@@ -656,8 +656,8 @@ public:
   /// geometry).  Here both input and output are code-integer units.
   ///
   virtual double idistance_vertex2cell(
-      const int*,  ///< vertex (integer)
-      const cell*  ///< cell
+      const int *,  ///< vertex (integer)
+      const cell *  ///< cell
   );
 
   ///
@@ -666,9 +666,9 @@ public:
   /// the *cell* coordinate minus the *vertex* coordinate.
   ///
   virtual double idifference_vertex2cell(
-      const int*,   ///< vertex (integer)
-      const cell*,  ///< cell
-      const axes    ///< Axis to calculate.
+      const int *,   ///< vertex (integer)
+      const cell *,  ///< cell
+      const axes     ///< Axis to calculate.
   );
 
   ///
@@ -677,18 +677,18 @@ public:
   /// It returns *cell2* coordinate minus *cell1* coordinate.
   ///
   virtual double idifference_cell2cell(
-      const cell*,  ///< cell 1
-      const cell*,  ///< cell 2
-      const axes    ///< Axis.
+      const cell *,  ///< cell 1
+      const cell *,  ///< cell 2
+      const axes     ///< Axis.
   );
 
-  virtual double CellVolume(const cell* c, const double)
+  virtual double CellVolume(const cell *c, const double)
   {
     return VectorOps_Cyl::CellVolume(c, G_dx);
   }
 
   virtual double CellInterface(
-      const cell* c,        ///< Cell
+      const cell *c,        ///< Cell
       const direction dir,  ///< outward normal to interface.
       const double)
   {
@@ -700,7 +700,7 @@ protected:
   /// Returns the centre of volume of a cell (in the radial
   /// direction) in the dimensionless integer coordinate system.
   ///
-  virtual double iR_cov(const cell*);
+  virtual double iR_cov(const cell *);
 };
 
 // ##################################################################
@@ -720,17 +720,17 @@ public:
   ///  - All grid setup is done in the cartesian version.
   ///
   uniform_grid_sph(
-      int,      ///< ndim, length of position vector.
-      int,      ///< nvar, length of state vectors.
-      int,      ///< eqntype, which equations we are using (needed by BCs).
-      int,      ///< number of boundary cells to use.
-      double*,  ///< array of minimum values of x,y,z for this grid.
-      double*,  ///< array of maximum values of x,y,z for this grid.
-      int*,     ///< array of number of cells in x,y,z directions.
-      double*,  ///< array of min. x/y/z for level.
-      double*,  ///< array of max. x/y/z for level.
-      double*,  ///< array of min. x/y/z for full simulation.
-      double*   ///< array of max. x/y/z for full simulation.
+      int,       ///< ndim, length of position vector.
+      int,       ///< nvar, length of state vectors.
+      int,       ///< eqntype, which equations we are using (needed by BCs).
+      int,       ///< number of boundary cells to use.
+      double *,  ///< array of minimum values of x,y,z for this grid.
+      double *,  ///< array of maximum values of x,y,z for this grid.
+      int *,     ///< array of number of cells in x,y,z directions.
+      double *,  ///< array of min. x/y/z for level.
+      double *,  ///< array of max. x/y/z for level.
+      double *,  ///< array of min. x/y/z for full simulation.
+      double *   ///< array of max. x/y/z for full simulation.
   );
 
   ///
@@ -745,8 +745,8 @@ public:
   /// physical units.
   ///
   virtual double distance(
-      const double*,  ///< position 1 (physical)
-      const double*   ///< position 2 (physical)
+      const double *,  ///< position 1 (physical)
+      const double *   ///< position 2 (physical)
   );
 
   ///
@@ -756,8 +756,8 @@ public:
   /// integer units (but obviously the answer is not an integer).
   ///
   virtual double idistance(
-      const int*,  ///< position 1 (integer)
-      const int*   ///< position 2 (integer)
+      const int *,  ///< position 1 (integer)
+      const int *   ///< position 2 (integer)
   );
 
   ///
@@ -766,8 +766,8 @@ public:
   /// Result returned in physical units (e.g. centimetres).
   ///
   virtual double distance_cell2cell(
-      const cell*,  ///< cell 1
-      const cell*   ///< cell 2
+      const cell *,  ///< cell 1
+      const cell *   ///< cell 2
   );
 
   ///
@@ -777,8 +777,8 @@ public:
   /// two units).
   ///
   virtual double idistance_cell2cell(
-      const cell*,  ///< cell 1
-      const cell*   ///< cell 2
+      const cell *,  ///< cell 1
+      const cell *   ///< cell 2
   );
 
   ///
@@ -787,8 +787,8 @@ public:
   /// geometry).  Here both input and output are physical units.
   ///
   virtual double distance_vertex2cell(
-      const double*,  ///< vertex (physical)
-      const cell*     ///< cell
+      const double *,  ///< vertex (physical)
+      const cell *     ///< cell
   );
 
   ///
@@ -797,9 +797,9 @@ public:
   /// the *cell* coordinate minus the *vertex* coordinate.
   ///
   virtual double difference_vertex2cell(
-      const double*,  ///< vertex (double)
-      const cell*,    ///< cell
-      const axes      ///< Axis to calculate.
+      const double *,  ///< vertex (double)
+      const cell *,    ///< cell
+      const axes       ///< Axis to calculate.
   );
 
   ///
@@ -808,8 +808,8 @@ public:
   /// geometry).  Here both input and output are code-integer units.
   ///
   virtual double idistance_vertex2cell(
-      const int*,  ///< vertex (integer)
-      const cell*  ///< cell
+      const int *,  ///< vertex (integer)
+      const cell *  ///< cell
   );
 
   ///
@@ -818,9 +818,9 @@ public:
   /// the *cell* coordinate minus the *vertex* coordinate.
   ///
   virtual double idifference_vertex2cell(
-      const int*,   ///< vertex (integer)
-      const cell*,  ///< cell
-      const axes    ///< Axis to calculate.
+      const int *,   ///< vertex (integer)
+      const cell *,  ///< cell
+      const axes     ///< Axis to calculate.
   );
 
   ///
@@ -829,18 +829,18 @@ public:
   /// It returns *cell2* coordinate minus *cell1* coordinate.
   ///
   virtual double idifference_cell2cell(
-      const cell*,  ///< cell 1
-      const cell*,  ///< cell 2
-      const axes    ///< Axis.
+      const cell *,  ///< cell 1
+      const cell *,  ///< cell 2
+      const axes     ///< Axis.
   );
 
-  virtual double CellVolume(const cell* c, const double)
+  virtual double CellVolume(const cell *c, const double)
   {
     return VectorOps_Sph::CellVolume(c, G_dx);
   }
 
   virtual double CellInterface(
-      const cell* c,        ///< Cell
+      const cell *c,        ///< Cell
       const direction dir,  ///< outward normal to interface.
       const double)
   {
@@ -852,7 +852,7 @@ protected:
   /// Returns the centre of volume of a cell (in the radial
   /// direction) in the dimensionless integer coordinate system.
   ///
-  virtual double iR_cov(const cell*);
+  virtual double iR_cov(const cell *);
 };
 
 #endif  // UNIFORM_GRID_H

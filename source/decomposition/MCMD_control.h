@@ -61,7 +61,7 @@ public:
   double LocalRange[MAX_DIM];  ///< Size of Processor's domain in
                                ///< x,y,z-direction.
 
-  int* ngbprocs;  ///< list with processor rank of neighbours in each
+  int *ngbprocs;  ///< list with processor rank of neighbours in each
                   ///< direction.
 
   int parent_proc;  ///< process of the parent grid, if NG and l>0
@@ -77,8 +77,8 @@ public:
   /// a structure which contains the domain of each processor.
   ///
   int decomposeDomain(
-      class SimParams&,  ///< pointer to simulation parameters
-      class level&       ///< pointer to domain parameters for NG grid level
+      class SimParams &,  ///< pointer to simulation parameters
+      class level &       ///< pointer to domain parameters for NG grid level
   );
 
   ///
@@ -88,16 +88,16 @@ public:
   ///
   int decomposeDomain(
       const enum axes,
-      class SimParams&,  ///< simulation parameters
-      class level&       ///< domain parameters for NG grid level
+      class SimParams &,  ///< simulation parameters
+      class level &       ///< domain parameters for NG grid level
   );
 
   ///
   /// For nested grid, set process ranks of parent and child grid(s).
   ///
   void set_NG_hierarchy(
-      class SimParams&,  ///< simulation parameters
-      const int          ///< level in grid hierarchy.
+      class SimParams &,  ///< simulation parameters
+      const int           ///< level in grid hierarchy.
   );
 
   ///
@@ -105,8 +105,8 @@ public:
   /// intersections.
   ///
   void get_abutting_domains(
-      const int,         ///< grid dimensions
-      std::vector<int>&  ///< write list to this vector.
+      const int,          ///< grid dimensions
+      std::vector<int> &  ///< write list to this vector.
   );
 
   ///
@@ -115,7 +115,7 @@ public:
   void get_domain_ix(
       const int,  ///< grid dimensions
       const int,  ///< rank ix requested for.
-      int*        ///< array to put ix into.
+      int *       ///< array to put ix into.
   );
 
   ///
@@ -123,9 +123,9 @@ public:
   /// requested position on a given refinement level.
   ///
   int get_grid_rank(
-      class SimParams&,  ///< simulation parameters
-      const double*,     ///< location sought
-      const int          ///< grid level
+      class SimParams &,  ///< simulation parameters
+      const double *,     ///< location sought
+      const int           ///< grid level
   );
 
   /// get my process rank
@@ -146,16 +146,16 @@ public:
   }
 
   /// get data on parent grid, if it exists
-  void get_parent_grid_info(struct cgrid* cg);
+  void get_parent_grid_info(struct cgrid *cg);
 
   /// get data on neighbouring grids to parent grid, if they exist
-  void get_parent_ngb_grid_info(std::vector<struct cgrid>& pgngb);
+  void get_parent_ngb_grid_info(std::vector<struct cgrid> &pgngb);
 
   /// get data on child grids, if they exist
-  void get_child_grid_info(std::vector<struct cgrid>& cg);
+  void get_child_grid_info(std::vector<struct cgrid> &cg);
 
   /// get data on neighbouring grids on level l+1, if they exist.
-  void get_level_lp1_ngb_info(std::vector<std::vector<struct cgrid>>& cgngb);
+  void get_level_lp1_ngb_info(std::vector<std::vector<struct cgrid> > &cgngb);
 
 protected:
   int nproc;   ///< Number of processors.
@@ -181,7 +181,7 @@ protected:
   /// don't intersect with, my grid on level l.  The outer index of
   /// the 2D array is the outward normal direction of the grid face,
   /// and the inner one is the list of grids (up to 2**(ND-1)).
-  std::vector<std::vector<struct cgrid>> cgrid_ngb;
+  std::vector<std::vector<struct cgrid> > cgrid_ngb;
 
   /// a process can have up to 2**NDIM child grids.
   std::vector<struct cgrid> child_procs;
@@ -200,8 +200,8 @@ protected:
   /// processor along that direction.
   ///
   int pointToNeighbours(
-      class SimParams&,  ///< pointer to simulation parameters
-      class level&       ///< pointer to domain parameters for NG grid level
+      class SimParams &,  ///< pointer to simulation parameters
+      class level &       ///< pointer to domain parameters for NG grid level
   );
 };
 

@@ -119,12 +119,12 @@ Riemann_Roe_Hydro_CV::~Riemann_Roe_Hydro_CV()
 // ##################################################################
 
 int Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric(
-    const pion_flt* left,
-    const pion_flt* right,
+    const pion_flt *left,
+    const pion_flt *right,
     const double g,
     const double hc_eta,
-    pion_flt* out_pstar,
-    pion_flt* out_flux)
+    pion_flt *out_pstar,
+    pion_flt *out_flux)
 {
 #ifdef FUNCTION_ID
   cout << "Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric ...starting.\n";
@@ -247,7 +247,7 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric(
 // -------------------------------------------------------------------
 
 int Riemann_Roe_Hydro_CV::test_left_right_equality(
-    const pion_flt* left, const pion_flt* right)
+    const pion_flt *left, const pion_flt *right)
 {
   //
   // Return true if the left and right input states are almost
@@ -277,7 +277,7 @@ int Riemann_Roe_Hydro_CV::test_left_right_equality(
 // ##################################################################
 
 void Riemann_Roe_Hydro_CV::set_Roe_mean_state(
-    const pion_flt* left, const pion_flt* right)
+    const pion_flt *left, const pion_flt *right)
 {
 #ifdef FUNCTION_ID
   cout << "Riemann_Roe_Hydro_CV::set_Roe_mean_state ...starting.\n";
@@ -408,7 +408,7 @@ void Riemann_Roe_Hydro_CV::set_eigenvectors()
 // ##################################################################
 
 void Riemann_Roe_Hydro_CV::set_ul_ur_udiff(
-    const pion_flt* left, const pion_flt* right)
+    const pion_flt *left, const pion_flt *right)
 {
 #ifdef FUNCTION_ID
   cout << "Riemann_Roe_Hydro_CV::set_ul_ur_udiff ...starting.\n";
@@ -477,7 +477,7 @@ void Riemann_Roe_Hydro_CV::set_wave_strengths()
 // ##################################################################
 // ##################################################################
 
-void Riemann_Roe_Hydro_CV::calculate_symmetric_flux(pion_flt* out_flux)
+void Riemann_Roe_Hydro_CV::calculate_symmetric_flux(pion_flt *out_flux)
 {
 #ifdef FUNCTION_ID
   cout << "Riemann_Roe_Hydro_CV::calculate_symmetric_flux ...starting.\n";
@@ -530,7 +530,7 @@ void Riemann_Roe_Hydro_CV::calculate_symmetric_flux(pion_flt* out_flux)
 // ##################################################################
 // ##################################################################
 
-void Riemann_Roe_Hydro_CV::set_pstar_from_meanp(pion_flt* out_pstar)
+void Riemann_Roe_Hydro_CV::set_pstar_from_meanp(pion_flt *out_pstar)
 {
 #ifdef FUNCTION_ID
   cout << "Riemann_Roe_Hydro_CV::set_pstar_from_meanp ...starting.\n";
@@ -558,7 +558,7 @@ void Riemann_Roe_Hydro_CV::set_pstar_from_meanp(pion_flt* out_pstar)
 // ##################################################################
 
 void Riemann_Roe_Hydro_CV::calculate_asymmetric_flux(
-    const pion_flt* left, const pion_flt* right, pion_flt* out_flux)
+    const pion_flt *left, const pion_flt *right, pion_flt *out_flux)
 {
 #ifdef FUNCTION_ID
   cout << "Riemann_Roe_Hydro_CV::calculate_asymmetric_flux ...starting.\n";

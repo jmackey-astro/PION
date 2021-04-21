@@ -66,9 +66,9 @@ public:
   /// (saves computation).
   ///
   void Hi_coll_ion_rates(
-      double,   ///< electron temperature
-      double*,  ///< ionisation rate
-      double*   ///< cooling rate
+      double,    ///< electron temperature
+      double *,  ///< ionisation rate
+      double *   ///< cooling rate
   );
 
   ///

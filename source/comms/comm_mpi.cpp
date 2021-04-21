@@ -46,7 +46,7 @@
 #include <sstream>
 using namespace std;
 
-class comms_base* COMM = new comm_mpi();
+class comms_base *COMM = new comm_mpi();
 
 // ##################################################################
 // ##################################################################
@@ -74,8 +74,8 @@ comm_mpi::~comm_mpi()
 // ##################################################################
 
 int comm_mpi::init(
-    int* argc,    ///< number of program arguments.
-    char*** argv  ///< character list of arguments.
+    int *argc,    ///< number of program arguments.
+    char ***argv  ///< character list of arguments.
 )
 {
   int err = MPI_Init(argc, argv);
@@ -101,8 +101,8 @@ int comm_mpi::init(
 // ##################################################################
 
 int comm_mpi::get_rank_nproc(
-    int* r,  ///< rank.
-    int* n   ///< nproc
+    int *r,  ///< rank.
+    int *n   ///< nproc
 )
 {
   *r = myrank;
@@ -192,7 +192,7 @@ double comm_mpi::global_operation_double(
 void comm_mpi::global_op_double_array(
     const std::string s,  ///< MAX,MIN,SUM
     const size_t Nel,     ///< Number of elements in array.
-    double* data          ///< pointer to this process's data array.
+    double *data          ///< pointer to this process's data array.
 )
 {
   int err = 0;
@@ -202,22 +202,22 @@ void comm_mpi::global_op_double_array(
     // err += MPI_Allreduce(MPI_IN_PLACE, static_cast<void *>(data), Nel,
     // MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
     err += MPI_Allreduce(
-        static_cast<void*>(data), static_cast<void*>(op_data), Nel, MPI_DOUBLE,
-        MPI_MAX, MPI_COMM_WORLD);
+        static_cast<void *>(data), static_cast<void *>(op_data), Nel,
+        MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   }
   else if (s == "MIN") {
     // err += MPI_Allreduce(MPI_IN_PLACE, static_cast<void *>(data), Nel,
     // MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
     err += MPI_Allreduce(
-        static_cast<void*>(data), static_cast<void*>(op_data), Nel, MPI_DOUBLE,
-        MPI_MIN, MPI_COMM_WORLD);
+        static_cast<void *>(data), static_cast<void *>(op_data), Nel,
+        MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
   }
   else if (s == "SUM") {
     // err += MPI_Allreduce(MPI_IN_PLACE, static_cast<void *>(data), Nel,
     // MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     err += MPI_Allreduce(
-        static_cast<void*>(data), static_cast<void*>(op_data), Nel, MPI_DOUBLE,
-        MPI_SUM, MPI_COMM_WORLD);
+        static_cast<void *>(data), static_cast<void *>(op_data), Nel,
+        MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   }
   else
     rep.error("comm_mpi:global_op_double_array: Bad identifier", s);
@@ -238,21 +238,21 @@ int comm_mpi::broadcast_data(
     const int sender,        ///< rank of sender.
     const std::string type,  ///< Type of data INT,DOUBLE,etc.
     const int n_el,          ///< number of elements
-    void* data               ///< pointer to data.
+    void *data               ///< pointer to data.
 )
 {
   int err = 0;
   if (type == "DOUBLE") {
     err += MPI_Bcast(
-        static_cast<double*>(data), n_el, MPI_DOUBLE, sender, MPI_COMM_WORLD);
+        static_cast<double *>(data), n_el, MPI_DOUBLE, sender, MPI_COMM_WORLD);
   }
   else if (type == "INT") {
     err += MPI_Bcast(
-        static_cast<int*>(data), n_el, MPI_INT, sender, MPI_COMM_WORLD);
+        static_cast<int *>(data), n_el, MPI_INT, sender, MPI_COMM_WORLD);
   }
   else if (type == "FLOAT") {
     err += MPI_Bcast(
-        static_cast<float*>(data), n_el, MPI_FLOAT, sender, MPI_COMM_WORLD);
+        static_cast<float *>(data), n_el, MPI_FLOAT, sender, MPI_COMM_WORLD);
   }
   else
     rep.error("Bad type of data to send", type);
@@ -263,13 +263,13 @@ int comm_mpi::broadcast_data(
 // ##################################################################
 
 int comm_mpi::send_cell_data(
-    const int to_rank,    ///< rank to send to.
-    std::list<cell*>* l,  ///< list of cells to get data from.
-    long int nc,          ///< number of cells in list (extra checking!)
-    const int ndim,       ///< ndim
-    const int nvar,       ///< nvar
-    string& id,           ///< identifier for send, for tracking delivery later.
-    const int comm_tag    ///< comm_tag, to say what kind of send this is.
+    const int to_rank,     ///< rank to send to.
+    std::list<cell *> *l,  ///< list of cells to get data from.
+    long int nc,           ///< number of cells in list (extra checking!)
+    const int ndim,        ///< ndim
+    const int nvar,        ///< nvar
+    string &id,         ///< identifier for send, for tracking delivery later.
+    const int comm_tag  ///< comm_tag, to say what kind of send this is.
 )
 {
 
@@ -287,8 +287,8 @@ int comm_mpi::send_cell_data(
     rep.error("to_rank is out of bounds", to_rank);
   }
 
-  list<cell*>::iterator c = l->begin();
-  int err                 = 0;
+  list<cell *>::iterator c = l->begin();
+  int err                  = 0;
 
   //
   // Determine size of send buffer needed
@@ -306,8 +306,8 @@ int comm_mpi::send_cell_data(
   //
   // Allocate memory for send buffer, and for the record of the send.
   //
-  char* send_buff      = 0;
-  struct sent_info* si = 0;
+  char *send_buff      = 0;
+  struct sent_info *si = 0;
   send_buff            = mem.myalloc(send_buff, totalsize);
   si                   = mem.myalloc(si, 1);
 
@@ -319,17 +319,18 @@ int comm_mpi::send_cell_data(
   //
   int position = 0, ct = 0, ipos[MAX_DIM];
   err += MPI_Pack(
-      reinterpret_cast<void*>(&nc), 1, MPI_LONG,
-      reinterpret_cast<void*>(send_buff), totalsize, &position, MPI_COMM_WORLD);
+      reinterpret_cast<void *>(&nc), 1, MPI_LONG,
+      reinterpret_cast<void *>(send_buff), totalsize, &position,
+      MPI_COMM_WORLD);
   do {
     CI.get_ipos(*c, ipos);
     err += MPI_Pack(
-        reinterpret_cast<void*>(&((*c)->id)), 1, MPI_LONG,
-        reinterpret_cast<void*>(send_buff), totalsize, &position,
+        reinterpret_cast<void *>(&((*c)->id)), 1, MPI_LONG,
+        reinterpret_cast<void *>(send_buff), totalsize, &position,
         MPI_COMM_WORLD);
     err += MPI_Pack(
-        reinterpret_cast<void*>(ipos), ndim, MPI_INT,
-        reinterpret_cast<void*>(send_buff), totalsize, &position,
+        reinterpret_cast<void *>(ipos), ndim, MPI_INT,
+        reinterpret_cast<void *>(send_buff), totalsize, &position,
         MPI_COMM_WORLD);
 
 #ifdef TEST_COMMS
@@ -340,13 +341,13 @@ int comm_mpi::send_cell_data(
 
 #if defined PION_DATATYPE_DOUBLE
     err += MPI_Pack(
-        reinterpret_cast<void*>((*c)->Ph), nvar, MPI_DOUBLE,
-        reinterpret_cast<void*>(send_buff), totalsize, &position,
+        reinterpret_cast<void *>((*c)->Ph), nvar, MPI_DOUBLE,
+        reinterpret_cast<void *>(send_buff), totalsize, &position,
         MPI_COMM_WORLD);
 #elif defined PION_DATATYPE_FLOAT
     err += MPI_Pack(
-        reinterpret_cast<void*>((*c)->Ph), nvar, MPI_FLOAT,
-        reinterpret_cast<void*>(send_buff), totalsize, &position,
+        reinterpret_cast<void *>((*c)->Ph), nvar, MPI_FLOAT,
+        reinterpret_cast<void *>(send_buff), totalsize, &position,
         MPI_COMM_WORLD);
 #else
 #error "MUST define either PION_DATATYPE_FLOAT or PION_DATATYPE_DOUBLE"
@@ -378,7 +379,7 @@ int comm_mpi::send_cell_data(
   si->comm_tag  = comm_tag;
   si->from_rank = myrank;
   si->to_rank   = to_rank;
-  si->data      = reinterpret_cast<void*>(send_buff);
+  si->data      = reinterpret_cast<void *>(send_buff);
   si->type      = COMM_CELLDATA;
   comm_mpi::sent_list.push_back(si);
 
@@ -415,7 +416,7 @@ int comm_mpi::send_cell_data(
 // ##################################################################
 
 int comm_mpi::wait_for_send_to_finish(
-    string& id  ///< identifier for the send we are waiting on.
+    string &id  ///< identifier for the send we are waiting on.
 )
 {
 #ifdef TEST_COMMS
@@ -428,8 +429,8 @@ int comm_mpi::wait_for_send_to_finish(
   // Find the send in the list of active sends.
   //
   int el = 0;
-  list<sent_info*>::iterator i;
-  struct sent_info* si = 0;
+  list<sent_info *>::iterator i;
+  struct sent_info *si = 0;
 
 #ifdef TEST_COMMS
   cout << "rank: " << myrank;
@@ -483,11 +484,11 @@ int comm_mpi::wait_for_send_to_finish(
 #endif  // TEST_COMMS
 
   if (si->type == COMM_CELLDATA) {
-    char* t = reinterpret_cast<char*>(si->data);
+    char *t = reinterpret_cast<char *>(si->data);
     t       = mem.myfree(t);
   }
   else if (si->type == COMM_DOUBLEDATA) {
-    double* t = reinterpret_cast<double*>(si->data);
+    double *t = reinterpret_cast<double *>(si->data);
     t         = mem.myfree(t);
   }
   else
@@ -507,9 +508,9 @@ int comm_mpi::wait_for_send_to_finish(
 // ##################################################################
 
 int comm_mpi::look_for_data_to_receive(
-    int* from_rank,      ///< rank of sender
-    string& id,          ///< identifier for receive.
-    int* recv_tag,       ///< comm_tag associated with data.
+    int *from_rank,      ///< rank of sender
+    string &id,          ///< identifier for receive.
+    int *recv_tag,       ///< comm_tag associated with data.
     const int comm_tag,  ///< comm_tag: (PER,MPI,F2C,C2F)
     const int type       ///< type of data we are looking for.
 )
@@ -522,7 +523,7 @@ int comm_mpi::look_for_data_to_receive(
   //
   // Create a new received info record.
   //
-  struct recv_info* ri = 0;
+  struct recv_info *ri = 0;
   ri                   = mem.myalloc(ri, 1);
   ri->to_rank          = myrank;
   ri->data             = 0;
@@ -613,13 +614,13 @@ int comm_mpi::look_for_data_to_receive(
 // ##################################################################
 
 int comm_mpi::receive_cell_data(
-    const int from_rank,  ///< rank of process we are receiving from.
-    std::list<cell*>* l,  ///< list of cells to get data for.
-    const long int nc,    ///< number of cells in list (extra checking!)
-    const int ndim,       ///< ndim
-    const int nvar,       ///< nvar
-    const int comm_tag,   ///< comm_tag: (PER,MPI,F2C,C2F)
-    const string& id      ///< identifier for receive, for book-keeping.
+    const int from_rank,   ///< rank of process we are receiving from.
+    std::list<cell *> *l,  ///< list of cells to get data for.
+    const long int nc,     ///< number of cells in list (extra checking!)
+    const int ndim,        ///< ndim
+    const int nvar,        ///< nvar
+    const int comm_tag,    ///< comm_tag: (PER,MPI,F2C,C2F)
+    const string &id       ///< identifier for receive, for book-keeping.
 )
 {
   int err = 0;
@@ -640,8 +641,8 @@ int comm_mpi::receive_cell_data(
   if (recv_list.empty())
     rep.error("Call look4data before receive_data", recv_list.size());
 
-  struct recv_info* info = 0;
-  list<recv_info*>::iterator iget;
+  struct recv_info *info = 0;
+  list<recv_info *>::iterator iget;
   for (iget = recv_list.begin(); iget != recv_list.end(); ++iget) {
     info = (*iget);
     if (info->id == id) break;
@@ -686,7 +687,7 @@ int comm_mpi::receive_cell_data(
   //
   // Allocate memory for data.
   //
-  char* buf = 0;
+  char *buf = 0;
   buf       = mem.myalloc(buf, ct);
 
   //
@@ -754,8 +755,8 @@ int comm_mpi::receive_cell_data(
   cout.flush();
 #endif  // TEST_COMMS
 
-  int* ipos   = 0;
-  pion_flt* p = 0;
+  int *ipos   = 0;
+  pion_flt *p = 0;
   ipos        = mem.myalloc(ipos, ndim);
   p           = mem.myalloc(p, nvar);
 
@@ -768,8 +769,8 @@ int comm_mpi::receive_cell_data(
 #endif  // TEST_COMMS
 
   int cpos[MAX_DIM];
-  long int c_id           = 0;
-  list<cell*>::iterator c = l->begin();
+  long int c_id            = 0;
+  list<cell *>::iterator c = l->begin();
 
   for (int i = 0; i < ncell; i++) {
 #ifdef TEST_COMMS
@@ -877,8 +878,8 @@ int comm_mpi::receive_cell_data(
 int comm_mpi::send_double_data(
     const int to_rank,    ///< rank to send to.
     const long int n_el,  ///< size of buffer, in number of doubles.
-    const double* data,   ///< pointer to double array.
-    string& id,           ///< identifier for send, for tracking delivery.
+    const double *data,   ///< pointer to double array.
+    string &id,           ///< identifier for send, for tracking delivery.
     const int comm_tag    ///< comm_tag, to say what kind of send.
 )
 {
@@ -888,8 +889,8 @@ int comm_mpi::send_double_data(
   //
   // Allocate memory for a record of the send, and for send_buffer
   //
-  double* send_buf     = 0;
-  struct sent_info* si = 0;
+  double *send_buf     = 0;
+  struct sent_info *si = 0;
   send_buf             = mem.myalloc(send_buf, n_el);
   si                   = mem.myalloc(si, 1);
   //
@@ -904,7 +905,7 @@ int comm_mpi::send_double_data(
   si->comm_tag  = comm_tag;
   si->from_rank = myrank;
   si->to_rank   = to_rank;
-  si->data      = reinterpret_cast<void*>(send_buf);
+  si->data      = reinterpret_cast<void *>(send_buf);
   si->type      = COMM_DOUBLEDATA;
   ostringstream temp;
   temp.str("");
@@ -937,10 +938,10 @@ int comm_mpi::receive_double_data(
     const int from_rank,  ///< rank of process we are receiving from.
     const int comm_tag,   ///< comm_tag: what sort of comm we are looking for
                           ///< (PER,MPI,etc.)
-    const string& id,     ///< identifier for receive, for any book-keeping.
+    const string &id,     ///< identifier for receive, for any book-keeping.
     const long int nel,   ///< number of doubles to receive
-    double*
-        data  ///< Pointer to array to write to (must be already initialised).
+    double
+        *data  ///< Pointer to array to write to (must be already initialised).
 )
 {
   int err = 0;
@@ -958,8 +959,8 @@ int comm_mpi::receive_double_data(
   if (recv_list.empty())
     rep.error("Call look4data before receive_data", recv_list.size());
 
-  struct recv_info* info = 0;
-  list<recv_info*>::iterator iget;
+  struct recv_info *info = 0;
+  list<recv_info *>::iterator iget;
   for (iget = recv_list.begin(); iget != recv_list.end(); ++iget) {
     info = (*iget);
     if (info->id == id) break;
@@ -1010,7 +1011,7 @@ int comm_mpi::receive_double_data(
   cout << "comm_mpi::receive_double_data: receiving buffer of data from rank: "
        << from_rank << "\n";
 #endif  // TEST_COMMS
-  void* buf = data;
+  void *buf = data;
   err += MPI_Recv(
       buf, ct, MPI_DOUBLE, info->from_rank, info->comm_tag, MPI_COMM_WORLD,
       &(info->status));
@@ -1042,8 +1043,8 @@ int comm_mpi::silo_pllel_init(
     const int num_files,           ///< number of files to write
     const std::string iotype,      ///< READ or WRITE
     const std::string session_id,  ///< identifier for this read/write.
-    int* group_rank,               ///< rank of group (nth file).
-    int* rank_in_group             ///< rank in group (nth proc in file i).
+    int *group_rank,               ///< rank of group (nth file).
+    int *rank_in_group             ///< rank in group (nth proc in file i).
 )
 {
   comm_mpi::silo_id     = session_id;
@@ -1082,7 +1083,7 @@ int comm_mpi::silo_pllel_wait_for_file(
     const std::string id,        ///< identifier for this read/write.
     const std::string filename,  ///< File Name
     const std::string dir,       ///< Directory to open in file.
-    DBfile** dbfile              ///< pointer that file gets returned in.
+    DBfile **dbfile              ///< pointer that file gets returned in.
 )
 {
 #ifdef TEST_COMMS
@@ -1094,7 +1095,7 @@ int comm_mpi::silo_pllel_wait_for_file(
   if (*dbfile) rep.error("please pass in null file pointer!", *dbfile);
   if (!bat) rep.error("call init before wait_for_file!", bat);
 
-  *dbfile = static_cast<DBfile*>(
+  *dbfile = static_cast<DBfile *>(
       PMPIO_WaitForBaton(bat, filename.c_str(), dir.c_str()));
   if (!(*dbfile)) {
     rep.error("wait for baton failed to return file pointer.", *dbfile);
@@ -1105,7 +1106,7 @@ int comm_mpi::silo_pllel_wait_for_file(
 
 int comm_mpi::silo_pllel_finish_with_file(
     const std::string id,  ///< identifier for this read/write.
-    DBfile** dbfile        ///< pointer to file we have been working on.
+    DBfile **dbfile        ///< pointer to file we have been working on.
 )
 {
 #ifdef TEST_COMMS
@@ -1115,7 +1116,7 @@ int comm_mpi::silo_pllel_finish_with_file(
   if (id != silo_id) rep.error(id, silo_id);
   if (!(*dbfile)) rep.error("file pointer is null!", *dbfile);
 
-  PMPIO_HandOffBaton(bat, static_cast<void*>(*dbfile));
+  PMPIO_HandOffBaton(bat, static_cast<void *>(*dbfile));
   PMPIO_Finish(bat);
 
   bat = 0;
@@ -1129,8 +1130,8 @@ int comm_mpi::silo_pllel_finish_with_file(
 void comm_mpi::silo_pllel_get_ranks(
     const std::string id,  ///< identifier for this read/write.
     const int proc,        ///< processor rank
-    int* group,            ///< rank of group processor is in.
-    int* rank              ///< rank of processor within group.
+    int *group,            ///< rank of group processor is in.
+    int *rank              ///< rank of processor within group.
 )
 {
   if (id != silo_id) rep.error(id, silo_id);

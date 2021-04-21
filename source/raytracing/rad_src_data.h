@@ -107,9 +107,9 @@ struct rad_source {
   /// pointer to source (set to SimPM.RS.source[id]) with the basic
   /// info about the source.
   ///
-  struct rad_src_info* s;
+  struct rad_src_info *s;
 
-  class cell* sc;     ///< nearest cell to source.
+  class cell *sc;     ///< nearest cell to source.
   bool src_on_grid;   ///< true if source is at a grid cell.
   int ipos[MAX_DIM];  ///< source position in integer form (grid units, dx=2).
 

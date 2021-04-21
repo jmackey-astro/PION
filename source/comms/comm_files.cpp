@@ -24,7 +24,7 @@
 #include <sstream>
 using namespace std;
 
-class comms_base* COMM = new comm_files();
+class comms_base *COMM = new comm_files();
 
 // ##################################################################
 // ##################################################################
@@ -61,8 +61,8 @@ comm_files::~comm_files()
 // ##################################################################
 
 int comm_files::init(
-    int* argc,    ///< number of program arguments.
-    char*** argv  ///< character list of arguments.
+    int *argc,    ///< number of program arguments.
+    char ***argv  ///< character list of arguments.
 )
 {
   //
@@ -140,8 +140,8 @@ int comm_files::init(
 // ##################################################################
 
 int comm_mpi::get_rank_nproc(
-    int* r,  ///< rank.
-    int* n   ///< nproc
+    int *r,  ///< rank.
+    int *n   ///< nproc
 )
 {
   *r = comm_files::myrank;
@@ -243,7 +243,7 @@ double comm_files::global_operation_double(
   f << dir << "rank_" << myrank << "_" << s;
   fs.acquire_lock(f.str());
   ofstream outf(f.str().c_str(), ios_base::binary);
-  outf.write(reinterpret_cast<char*>(&local), sizeof(double));
+  outf.write(reinterpret_cast<char *>(&local), sizeof(double));
   outf.close();
   fs.release_lock(f.str());
 
@@ -262,7 +262,7 @@ double comm_files::global_operation_double(
       fs.acquire_lock(f.str());
       ifstream infile(f.str().c_str(), ios_base::binary);
       // infile >> vals[r];
-      infile.read(reinterpret_cast<char*>(&(vals[r])), sizeof(double));
+      infile.read(reinterpret_cast<char *>(&(vals[r])), sizeof(double));
 #ifdef TESTING
       cout << "global_operation_double() " << s << " got value " << vals[r]
            << " from file " << f.str() << "\n";
@@ -301,7 +301,7 @@ double comm_files::global_operation_double(
     fs.acquire_lock(f.str());
     ofstream outfile(f.str().c_str(), ios_base::binary);
     // outfile << global;
-    outfile.write(reinterpret_cast<char*>(&global), sizeof(double));
+    outfile.write(reinterpret_cast<char *>(&global), sizeof(double));
     outfile.close();
     fs.release_lock(f.str());
 #ifdef TESTING
@@ -327,7 +327,7 @@ double comm_files::global_operation_double(
     if (!infile.is_open())
       rep.error("failed to open infile for global max,min", f.str());
     // infile >>global;
-    infile.read(reinterpret_cast<char*>(&global), sizeof(double));
+    infile.read(reinterpret_cast<char *>(&global), sizeof(double));
     infile.close();
 #ifdef TESTING
     cout << "global_operation_double() " << s
@@ -349,7 +349,7 @@ double comm_files::global_operation_double(
 void comm_files::global_op_double_array(
     const std::string s,  ///< MAX,MIN,SUM
     const size_t Nel,     ///< Number of elements in array.
-    double* data          ///< pointer to this process's data array.
+    double *data          ///< pointer to this process's data array.
 )
 {
   rep.error(
@@ -364,7 +364,7 @@ int comm_files::broadcast_data(
     const int sender,        ///< rank of sender.
     const std::string type,  ///< Type of data INT,DOUBLE,etc.
     const int n_el,          ///< number of elements
-    void* data               ///< pointer to data.
+    void *data               ///< pointer to data.
 )
 {
   int err   = 0;
@@ -380,21 +380,21 @@ int comm_files::broadcast_data(
     fs.acquire_lock(f.str());
     ofstream outfile(f.str().c_str(), ios_base::binary);
     if (type == "DOUBLE") {
-      double* d = static_cast<double*>(data);
+      double *d = static_cast<double *>(data);
       for (int i = 0; i < n_el; i++)
-        outfile.write(reinterpret_cast<char*>(&(d[i])), sizeof(double));
+        outfile.write(reinterpret_cast<char *>(&(d[i])), sizeof(double));
       // outfile<<d[i];
     }
     else if (type == "INT") {
-      int* d = static_cast<int*>(data);
+      int *d = static_cast<int *>(data);
       for (int i = 0; i < n_el; i++)
-        outfile.write(reinterpret_cast<char*>(&(d[i])), sizeof(int));
+        outfile.write(reinterpret_cast<char *>(&(d[i])), sizeof(int));
       // outfile<<d[i];
     }
     else if (type == "FLOAT") {
-      float* d = static_cast<float*>(data);
+      float *d = static_cast<float *>(data);
       for (int i = 0; i < n_el; i++)
-        outfile.write(reinterpret_cast<char*>(&(d[i])), sizeof(float));
+        outfile.write(reinterpret_cast<char *>(&(d[i])), sizeof(float));
       // outfile<<d[i];
     }
     else
@@ -413,9 +413,9 @@ int comm_files::broadcast_data(
     cout << "broadcast_data() " << type << ": received data: [";
 #endif
     if (type == "DOUBLE") {
-      double* d = static_cast<double*>(data);
+      double *d = static_cast<double *>(data);
       for (int i = 0; i < n_el; i++)
-        infile.read(reinterpret_cast<char*>(&(d[i])), sizeof(double));
+        infile.read(reinterpret_cast<char *>(&(d[i])), sizeof(double));
         // infile>>d[i];
 #ifdef TESTING
       for (int i = 0; i < n_el; i++)
@@ -423,9 +423,9 @@ int comm_files::broadcast_data(
 #endif
     }
     else if (type == "INT") {
-      int* d = static_cast<int*>(data);
+      int *d = static_cast<int *>(data);
       for (int i = 0; i < n_el; i++)
-        infile.read(reinterpret_cast<char*>(&(d[i])), sizeof(int));
+        infile.read(reinterpret_cast<char *>(&(d[i])), sizeof(int));
         // infile>>d[i];
 #ifdef TESTING
       for (int i = 0; i < n_el; i++)
@@ -433,9 +433,9 @@ int comm_files::broadcast_data(
 #endif
     }
     else if (type == "FLOAT") {
-      float* d = static_cast<float*>(data);
+      float *d = static_cast<float *>(data);
       for (int i = 0; i < n_el; i++)
-        infile.read(reinterpret_cast<char*>(&(d[i])), sizeof(float));
+        infile.read(reinterpret_cast<char *>(&(d[i])), sizeof(float));
         // infile>>d[i];
 #ifdef TESTING
       for (int i = 0; i < n_el; i++)
@@ -461,13 +461,13 @@ int comm_files::broadcast_data(
 // ##################################################################
 
 int comm_files::send_cell_data(
-    const int to_rank,    ///< rank to send to.
-    std::list<cell*>* l,  ///< list of cells to get data from.
-    long int nc,          ///< number of cells in list (extra checking!)
-    const int ndim,       ///< ndim
-    const int nvar,       ///< nvar
-    string& id,           ///< identifier for send, for tracking delivery later.
-    const int comm_tag    ///< comm_tag, to say what kind of send this is.
+    const int to_rank,     ///< rank to send to.
+    std::list<cell *> *l,  ///< list of cells to get data from.
+    long int nc,           ///< number of cells in list (extra checking!)
+    const int ndim,        ///< ndim
+    const int nvar,        ///< nvar
+    string &id,         ///< identifier for send, for tracking delivery later.
+    const int comm_tag  ///< comm_tag, to say what kind of send this is.
 )
 {
 #ifdef TESTING
@@ -483,8 +483,8 @@ int comm_files::send_cell_data(
   }
   if (to_rank < 0 || to_rank > nproc)
     rep.error("to_rank is out of bounds", to_rank);
-  list<cell*>::iterator c = l->begin();
-  int err                 = 0;
+  list<cell *>::iterator c = l->begin();
+  int err                  = 0;
 
   //
   // Determine size of send buffer needed
@@ -497,7 +497,7 @@ int comm_files::send_cell_data(
   //
   // Allocate memory for the record of the send.
   //
-  struct sent_info* si = 0;
+  struct sent_info *si = 0;
 #ifdef TESTING
   si = mem.myalloc(si, 1, "comm_files:send_cell_data: si");
 #else
@@ -529,17 +529,17 @@ int comm_files::send_cell_data(
 
   fs.acquire_lock(f.str());
   ofstream outfile(f.str().c_str(), ios_base::binary);
-  outfile.write(reinterpret_cast<char*>(&(si->comm_tag)), sizeof(int));
-  outfile.write(reinterpret_cast<char*>(&(nc)), sizeof(long int));
-  outfile.write(reinterpret_cast<char*>(&(totalsize)), sizeof(long int));
+  outfile.write(reinterpret_cast<char *>(&(si->comm_tag)), sizeof(int));
+  outfile.write(reinterpret_cast<char *>(&(nc)), sizeof(long int));
+  outfile.write(reinterpret_cast<char *>(&(totalsize)), sizeof(long int));
   int ipos[MAX_DIM];
   do {
     CI.get_ipos(*c, ipos);
-    outfile.write(reinterpret_cast<char*>(&((*c)->id)), sizeof(int));
+    outfile.write(reinterpret_cast<char *>(&((*c)->id)), sizeof(int));
     for (int i = 0; i < ndim; i++)
-      outfile.write(reinterpret_cast<char*>(&(ipos[i])), sizeof(int));
+      outfile.write(reinterpret_cast<char *>(&(ipos[i])), sizeof(int));
     for (int v = 0; v < nvar; v++)
-      outfile.write(reinterpret_cast<char*>(&((*c)->Ph[v])), sizeof(double));
+      outfile.write(reinterpret_cast<char *>(&((*c)->Ph[v])), sizeof(double));
     ct++;
     ++c;  // next cell in list.
   } while (c != l->end());
@@ -571,7 +571,7 @@ int comm_files::send_cell_data(
 // ##################################################################
 
 int comm_files::wait_for_send_to_finish(
-    string& id  ///< identifier for the send we are waiting on.
+    string &id  ///< identifier for the send we are waiting on.
 )
 {
 #ifdef TESTING
@@ -584,8 +584,8 @@ int comm_files::wait_for_send_to_finish(
   // string.
   //
   int el = 0;
-  list<sent_info*>::iterator i;
-  struct sent_info* si = 0;
+  list<sent_info *>::iterator i;
+  struct sent_info *si = 0;
 #ifdef TESTING
   cout << "rank: " << myrank
        << "  comm_files::wait_for_send_to_finish() more than one send, so "
@@ -636,9 +636,9 @@ int comm_files::wait_for_send_to_finish(
 // ##################################################################
 
 int comm_files::look_for_data_to_receive(
-    int* from_rank,     ///< rank of sender
-    string& id,         ///< identifier for receive.
-    int* comm_tag,      ///< comm_tag associated with data.
+    int *from_rank,     ///< rank of sender
+    string &id,         ///< identifier for receive.
+    int *comm_tag,      ///< comm_tag associated with data.
     const int req_tag,  ///< comm_tag requested
     const int type      ///< type of data we are looking for.
 )
@@ -652,7 +652,7 @@ int comm_files::look_for_data_to_receive(
   // Create a new received info record.
   //
   //
-  struct recv_info* ri = 0;
+  struct recv_info *ri = 0;
 #ifdef TESTING
   ri = mem.myalloc(ri, 1, "comm_files:look_for_data_to_receive: ri");
 #else
@@ -715,7 +715,7 @@ int comm_files::look_for_data_to_receive(
   fs.acquire_lock(f.str());
   ifstream infile(f.str().c_str(), ios_base::binary);
   if (!infile.is_open()) rep.error("failed to open file for reading", f.str());
-  infile.read(reinterpret_cast<char*>(comm_tag), sizeof(int));
+  infile.read(reinterpret_cast<char *>(comm_tag), sizeof(int));
 
 #ifdef TESTING
   cout << "comm_files::look_for_data_to_receive: got comm_tag: " << *comm_tag
@@ -736,15 +736,15 @@ int comm_files::look_for_data_to_receive(
 }
 
 int comm_files::receive_cell_data(
-    const int from_rank,  ///< rank of process we are receiving from.
-    std::list<cell*>* l,  ///< list of cells to get data for.
-    const long int nc,    ///< number of cells in list (extra checking!)
-    const int ndim,       ///< ndim
-    const int nvar,       ///< nvar
-    const int comm_tag,   ///< comm_tag: what sort of comm we are looking for
-                          ///< (PER,MPI,etc.)
-    const string& id      ///< identifier for receive, for any book-keeping that
-                          ///< might be needed.
+    const int from_rank,   ///< rank of process we are receiving from.
+    std::list<cell *> *l,  ///< list of cells to get data for.
+    const long int nc,     ///< number of cells in list (extra checking!)
+    const int ndim,        ///< ndim
+    const int nvar,        ///< nvar
+    const int comm_tag,    ///< comm_tag: what sort of comm we are looking for
+                           ///< (PER,MPI,etc.)
+    const string &id  ///< identifier for receive, for any book-keeping that
+                      ///< might be needed.
 )
 {
   //  int err=0;
@@ -764,8 +764,8 @@ int comm_files::receive_cell_data(
   if (recv_list.empty())
     rep.error("Call look4data before receive_data", recv_list.size());
 
-  struct recv_info* info = 0;
-  list<recv_info*>::iterator i;
+  struct recv_info *info = 0;
+  list<recv_info *>::iterator i;
   for (i = recv_list.begin(); i != recv_list.end(); ++i) {
     info = (*i);
     if (info->id == id) break;
@@ -801,9 +801,9 @@ int comm_files::receive_cell_data(
   int tmp          = 0;
   int tmp2         = 0;
   long int n_cells = 0, totalsize = 0;
-  infile.read(reinterpret_cast<char*>(&(tmp)), sizeof(int));
-  infile.read(reinterpret_cast<char*>(&(n_cells)), sizeof(long int));
-  infile.read(reinterpret_cast<char*>(&(totalsize)), sizeof(long int));
+  infile.read(reinterpret_cast<char *>(&(tmp)), sizeof(int));
+  infile.read(reinterpret_cast<char *>(&(n_cells)), sizeof(long int));
+  infile.read(reinterpret_cast<char *>(&(totalsize)), sizeof(long int));
 #ifdef TESTING
   cout << "comm_files::receive_cell_data: got comm:" << tmp
        << " n_cells=" << n_cells << " size=" << totalsize << "\n";
@@ -819,15 +819,15 @@ int comm_files::receive_cell_data(
   // make sure the cells were ordered the same way by sender and receiver.  I
   // should really get rid of them now but haven't bothered.
   //
-  list<cell*>::iterator c = l->begin();
-  int ct                  = 0;
+  list<cell *>::iterator c = l->begin();
+  int ct                   = 0;
   do {
     if (c == l->end()) rep.error("Got too many cells!", ct);
-    infile.read(reinterpret_cast<char*>(&(tmp)), sizeof(int));
+    infile.read(reinterpret_cast<char *>(&(tmp)), sizeof(int));
     for (int i = 0; i < ndim; i++)
-      infile.read(reinterpret_cast<char*>(&(tmp2)), sizeof(int));
+      infile.read(reinterpret_cast<char *>(&(tmp2)), sizeof(int));
     for (int v = 0; v < nvar; v++)
-      infile.read(reinterpret_cast<char*>(&((*c)->Ph[v])), sizeof(double));
+      infile.read(reinterpret_cast<char *>(&((*c)->Ph[v])), sizeof(double));
     ++c;
     ct++;
   } while (c != l->end());
@@ -874,8 +874,8 @@ int comm_files::receive_cell_data(
 int comm_files::send_double_data(
     const int to_rank,    ///< rank to send to.
     const long int n_el,  ///< size of buffer, in number of doubles.
-    const double* data,   ///< pointer to double array.
-    string& id,           ///< identifier for send, for tracking delivery later.
+    const double *data,   ///< pointer to double array.
+    string &id,           ///< identifier for send, for tracking delivery later.
     const int comm_tag    ///< comm_tag, to say what kind of send this is.
 )
 {
@@ -884,7 +884,7 @@ int comm_files::send_double_data(
   //
   // Allocate memory for a record of the send
   //
-  struct sent_info* si = 0;
+  struct sent_info *si = 0;
 #ifdef TESTING
   si = mem.myalloc(si, 1, "comm_files:send_double_data: si");
 #else
@@ -918,11 +918,11 @@ int comm_files::send_double_data(
   //
   fs.acquire_lock(id);
   ofstream outfile(id.c_str(), ios_base::binary);
-  outfile.write(reinterpret_cast<char*>(&(si->comm_tag)), sizeof(int));
-  outfile.write(reinterpret_cast<const char*>(&(n_el)), sizeof(long int));
+  outfile.write(reinterpret_cast<char *>(&(si->comm_tag)), sizeof(int));
+  outfile.write(reinterpret_cast<const char *>(&(n_el)), sizeof(long int));
   // outfile << comm_tag << n_el;
   for (int i = 0; i < n_el; i++)
-    outfile.write(reinterpret_cast<const char*>(&(data[i])), sizeof(double));
+    outfile.write(reinterpret_cast<const char *>(&(data[i])), sizeof(double));
   // outfile << data[i];
   outfile.close();
   fs.release_lock(id);
@@ -937,11 +937,11 @@ int comm_files::receive_double_data(
     const int from_rank,  ///< rank of process we are receiving from.
     const int comm_tag,   ///< comm_tag: what sort of comm we are looking for
                           ///< (PER,MPI,etc.)
-    const string& id,     ///< identifier for receive, for any book-keeping that
+    const string &id,     ///< identifier for receive, for any book-keeping that
                           ///< might be needed.
     const long int nel,   ///< number of doubles to receive
-    double*
-        data  ///< Pointer to array to write to (must be already initialised).
+    double
+        *data  ///< Pointer to array to write to (must be already initialised).
 )
 {
 #ifdef TESTING
@@ -960,8 +960,8 @@ int comm_files::receive_double_data(
   if (recv_list.empty())
     rep.error("Call look4data before receive_data", recv_list.size());
 
-  struct recv_info* info = 0;
-  list<recv_info*>::iterator i;
+  struct recv_info *info = 0;
+  list<recv_info *>::iterator i;
   for (i = recv_list.begin(); i != recv_list.end(); ++i) {
     info = (*i);
     if (info->id == id) break;
@@ -996,8 +996,8 @@ int comm_files::receive_double_data(
   //
   int tmp     = 0;
   long int ct = 0;
-  infile.read(reinterpret_cast<char*>(&(tmp)), sizeof(int));
-  infile.read(reinterpret_cast<char*>(&(ct)), sizeof(long int));
+  infile.read(reinterpret_cast<char *>(&(tmp)), sizeof(int));
+  infile.read(reinterpret_cast<char *>(&(ct)), sizeof(long int));
   //  infile >> tmp >> ct;
 #ifdef TESTING
   cout << "comm_files::receive_cell_data: got comm:" << tmp << " n_el=" << ct
@@ -1008,7 +1008,7 @@ int comm_files::receive_double_data(
     rep.error(
         "comm_files::receive_cell_data: n_el has unexpected value", nel - ct);
   for (int v = 0; v < nel; v++)
-    infile.read(reinterpret_cast<char*>(&(data[v])), sizeof(double));
+    infile.read(reinterpret_cast<char *>(&(data[v])), sizeof(double));
   // infile >> data[v];
 
   //
@@ -1051,8 +1051,8 @@ int comm_files::silo_pllel_init(
     const int n_files,             ///< number of files to write
     const std::string iotype,      ///< READ or WRITE
     const std::string session_id,  ///< identifier for this read/write.
-    int* group_rank,               ///< rank of group (nth file).
-    int* rank_in_group             ///< rank in group (nth proc in file i).
+    int *group_rank,               ///< rank of group (nth file).
+    int *rank_in_group             ///< rank in group (nth proc in file i).
 )
 {
   comm_files::silo_id       = session_id;
@@ -1093,7 +1093,7 @@ int comm_files::silo_pllel_wait_for_file(
     const std::string s_id,        ///< identifier for this read/write.
     const std::string s_filename,  ///< File Name
     const std::string s_dir,       ///< Directory to open in file.
-    DBfile** dbfile                ///< pointer that file gets returned in.
+    DBfile **dbfile                ///< pointer that file gets returned in.
 )
 {
 #ifdef TESTING
@@ -1194,7 +1194,7 @@ int comm_files::silo_pllel_wait_for_file(
 
 int comm_files::silo_pllel_finish_with_file(
     const std::string s_id,  ///< identifier for this read/write.
-    DBfile** dbfile          ///< pointer to file we have been working on.
+    DBfile **dbfile          ///< pointer to file we have been working on.
 )
 {
 #ifdef TESTING
@@ -1249,8 +1249,8 @@ int comm_files::silo_pllel_finish_with_file(
 void comm_files::silo_pllel_get_ranks(
     const std::string id,  ///< identifier for this read/write.
     const int proc,        ///< processor rank
-    int* group,            ///< rank of group processor is in.
-    int* rank              ///< rank of processor within group.
+    int *group,            ///< rank of group processor is in.
+    int *rank              ///< rank of processor within group.
 )
 {
   if (id != silo_id) rep.error(id, silo_id);

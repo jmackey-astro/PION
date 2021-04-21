@@ -195,42 +195,42 @@ pm_dvararr::pm_dvararr(const string s)
 //
 // constructor with name and pointer to data
 //
-pm_int::pm_int(const string s, int* p)
+pm_int::pm_int(const string s, int *p)
 {
   type = MY_INT;
   name.assign(s);
   ptr    = p;
   defval = -1;
 }
-pm_double::pm_double(const string s, double* p)
+pm_double::pm_double(const string s, double *p)
 {
   type = MY_DOUBLE;
   name.assign(s);
   ptr    = p;
   defval = -VERY_LARGE_VALUE;
 }
-pm_float::pm_float(const string s, float* p)
+pm_float::pm_float(const string s, float *p)
 {
   type = MY_FLOAT;
   name.assign(s);
   ptr    = p;
   defval = -SMALLVALUE;
 }
-pm_long::pm_long(const string s, long int* p)
+pm_long::pm_long(const string s, long int *p)
 {
   type = MY_LONG;
   name.assign(s);
   ptr    = p;
   defval = -1;
 }
-pm_string::pm_string(const string s, string* p)
+pm_string::pm_string(const string s, string *p)
 {
   type = MY_STRING;
   name.assign(s);
   ptr = p;
   defval.assign("HELLO");
 }
-pm_ddimarr::pm_ddimarr(const string s, double* p)
+pm_ddimarr::pm_ddimarr(const string s, double *p)
 {
   type = MY_DDIMARR;
   len  = MAX_DIM;
@@ -238,7 +238,7 @@ pm_ddimarr::pm_ddimarr(const string s, double* p)
   ptr    = p;
   defval = 0;
 }
-pm_idimarr::pm_idimarr(const string s, int* p)
+pm_idimarr::pm_idimarr(const string s, int *p)
 {
   type = MY_IDIMARR;
   len  = MAX_DIM;
@@ -246,7 +246,7 @@ pm_idimarr::pm_idimarr(const string s, int* p)
   ptr    = p;
   defval = 0;
 }
-pm_dvararr::pm_dvararr(const string s, pion_flt* p)
+pm_dvararr::pm_dvararr(const string s, pion_flt *p)
 {
   type = MY_DVARARR;
   len  = MAX_NVAR;
@@ -261,7 +261,7 @@ pm_dvararr::pm_dvararr(const string s, pion_flt* p)
 //
 // constructor with name, pointer to data, default value.
 //
-pm_int::pm_int(const string s, int* p, const int def)
+pm_int::pm_int(const string s, int *p, const int def)
 {
   type = MY_INT;
   name.assign(s);
@@ -269,35 +269,35 @@ pm_int::pm_int(const string s, int* p, const int def)
   defval = def;
   // cout <<"PM_INT: "<<s<<".. "<<ptr<<".. "<<defval<<"\n";
 }
-pm_double::pm_double(const string s, double* p, const double def)
+pm_double::pm_double(const string s, double *p, const double def)
 {
   type = MY_DOUBLE;
   name.assign(s);
   ptr    = p;
   defval = def;
 }
-pm_float::pm_float(const string s, float* p, const float def)
+pm_float::pm_float(const string s, float *p, const float def)
 {
   type = MY_FLOAT;
   name.assign(s);
   ptr    = p;
   defval = def;
 }
-pm_long::pm_long(const string s, long int* p, const long int def)
+pm_long::pm_long(const string s, long int *p, const long int def)
 {
   type = MY_LONG;
   name.assign(s);
   ptr    = p;
   defval = def;
 }
-pm_string::pm_string(const string s, string* p, const string def)
+pm_string::pm_string(const string s, string *p, const string def)
 {
   type = MY_STRING;
   name.assign(s);
   ptr = p;
   defval.assign(def);
 }
-pm_ddimarr::pm_ddimarr(const string s, double* p, const double* def)
+pm_ddimarr::pm_ddimarr(const string s, double *p, const double *def)
 {
   type = MY_DDIMARR;
   len  = MAX_DIM;
@@ -307,7 +307,7 @@ pm_ddimarr::pm_ddimarr(const string s, double* p, const double* def)
   for (int v = 0; v < len; v++)
     defval[v] = def[v];
 }
-pm_idimarr::pm_idimarr(const string s, int* p, const int* def)
+pm_idimarr::pm_idimarr(const string s, int *p, const int *def)
 {
   type = MY_IDIMARR;
   len  = MAX_DIM;
@@ -317,7 +317,7 @@ pm_idimarr::pm_idimarr(const string s, int* p, const int* def)
   for (int v = 0; v < len; v++)
     defval[v] = def[v];
 }
-pm_dvararr::pm_dvararr(const string s, pion_flt* p, const pion_flt* def)
+pm_dvararr::pm_dvararr(const string s, pion_flt *p, const pion_flt *def)
 {
   type = MY_DVARARR;
   len  = MAX_NVAR;
@@ -353,76 +353,76 @@ pm_dvararr::~pm_dvararr()
 // ##################################################################
 // ##################################################################
 
-void pm_int::assign_val(void* val)
+void pm_int::assign_val(void *val)
 {
-  *ptr = *(static_cast<int*>(val));
+  *ptr = *(static_cast<int *>(val));
 }
-void pm_double::assign_val(void* val)
+void pm_double::assign_val(void *val)
 {
-  *ptr = *(static_cast<double*>(val));
+  *ptr = *(static_cast<double *>(val));
 }
-void pm_float::assign_val(void* val)
+void pm_float::assign_val(void *val)
 {
-  *ptr = *(static_cast<float*>(val));
+  *ptr = *(static_cast<float *>(val));
 }
-void pm_long::assign_val(void* val)
+void pm_long::assign_val(void *val)
 {
-  *ptr = *(static_cast<long int*>(val));
+  *ptr = *(static_cast<long int *>(val));
 }
-void pm_string::assign_val(void* val)
+void pm_string::assign_val(void *val)
 {
-  (*ptr).assign(*(static_cast<string*>(val)));
+  (*ptr).assign(*(static_cast<string *>(val)));
 }
-void pm_ddimarr::assign_val(void* val)
+void pm_ddimarr::assign_val(void *val)
 {
   for (int i = 0; i < len; i++)
-    ptr[i] = (static_cast<double*>(val))[i];
+    ptr[i] = (static_cast<double *>(val))[i];
 }
-void pm_idimarr::assign_val(void* val)
+void pm_idimarr::assign_val(void *val)
 {
   for (int i = 0; i < len; i++)
-    ptr[i] = (static_cast<int*>(val))[i];
+    ptr[i] = (static_cast<int *>(val))[i];
 }
-void pm_dvararr::assign_val(void* val)
+void pm_dvararr::assign_val(void *val)
 {
   for (int i = 0; i < len; i++)
-    ptr[i] = (static_cast<pion_flt*>(val))[i];
+    ptr[i] = (static_cast<pion_flt *>(val))[i];
 }
 
 // ##################################################################
 // ##################################################################
 
-void pm_int::set_ptr(void* p)
+void pm_int::set_ptr(void *p)
 {
-  ptr = static_cast<int*>(p);
+  ptr = static_cast<int *>(p);
 }
-void pm_double::set_ptr(void* p)
+void pm_double::set_ptr(void *p)
 {
-  ptr = static_cast<double*>(p);
+  ptr = static_cast<double *>(p);
 }
-void pm_float::set_ptr(void* p)
+void pm_float::set_ptr(void *p)
 {
-  ptr = static_cast<float*>(p);
+  ptr = static_cast<float *>(p);
 }
-void pm_long::set_ptr(void* p)
+void pm_long::set_ptr(void *p)
 {
-  ptr = static_cast<long int*>(p);
+  ptr = static_cast<long int *>(p);
 }
-void pm_string::set_ptr(void* p)
+void pm_string::set_ptr(void *p)
 {
-  ptr = static_cast<string*>(p);
+  ptr = static_cast<string *>(p);
 }
-void pm_ddimarr::set_ptr(void* p)
+void pm_ddimarr::set_ptr(void *p)
 {
-  ptr = static_cast<double*>(p);
+  ptr = static_cast<double *>(p);
 }
-void pm_idimarr::set_ptr(void* p)
+void pm_idimarr::set_ptr(void *p)
 {
-  ptr = static_cast<int*>(p);
+  ptr = static_cast<int *>(p);
 }
-void pm_dvararr::set_ptr(void* p)
+void pm_dvararr::set_ptr(void *p)
 {
-  ptr = static_cast<pion_flt*>(p);
+  ptr = static_cast<pion_flt *>(p);
 }
 
 // ##################################################################
@@ -522,85 +522,85 @@ void pm_dvararr::set_to_default()
 // ##################################################################
 // ##################################################################
 
-void* pm_int::get_ptr()
+void *pm_int::get_ptr()
 {
-  return static_cast<void*>(ptr);
+  return static_cast<void *>(ptr);
 }
-void* pm_double::get_ptr()
+void *pm_double::get_ptr()
 {
-  return static_cast<void*>(ptr);
+  return static_cast<void *>(ptr);
 }
-void* pm_float::get_ptr()
+void *pm_float::get_ptr()
 {
-  return static_cast<void*>(ptr);
+  return static_cast<void *>(ptr);
 }
-void* pm_long::get_ptr()
+void *pm_long::get_ptr()
 {
-  return static_cast<void*>(ptr);
+  return static_cast<void *>(ptr);
 }
-void* pm_string::get_ptr()
+void *pm_string::get_ptr()
 {
-  return static_cast<void*>(ptr);
+  return static_cast<void *>(ptr);
 }
-void* pm_ddimarr::get_ptr()
+void *pm_ddimarr::get_ptr()
 {
-  return static_cast<void*>(ptr);
+  return static_cast<void *>(ptr);
 }
-void* pm_idimarr::get_ptr()
+void *pm_idimarr::get_ptr()
 {
-  return static_cast<void*>(ptr);
+  return static_cast<void *>(ptr);
 }
-void* pm_dvararr::get_ptr()
+void *pm_dvararr::get_ptr()
 {
-  return static_cast<void*>(ptr);
+  return static_cast<void *>(ptr);
 }
 
 // ##################################################################
 // ##################################################################
 
-void pm_int::set_default_val(void* v)
+void pm_int::set_default_val(void *v)
 {
-  defval = *(static_cast<int*>(v));
+  defval = *(static_cast<int *>(v));
 }
-void pm_double::set_default_val(void* v)
+void pm_double::set_default_val(void *v)
 {
-  defval = *(static_cast<double*>(v));
+  defval = *(static_cast<double *>(v));
 }
-void pm_float::set_default_val(void* v)
+void pm_float::set_default_val(void *v)
 {
-  defval = *(static_cast<float*>(v));
+  defval = *(static_cast<float *>(v));
 }
-void pm_long::set_default_val(void* v)
+void pm_long::set_default_val(void *v)
 {
-  defval = *(static_cast<long*>(v));
+  defval = *(static_cast<long *>(v));
 }
-void pm_string::set_default_val(void* v)
+void pm_string::set_default_val(void *v)
 {
-  defval = *(static_cast<string*>(v));
+  defval = *(static_cast<string *>(v));
 }
-void pm_ddimarr::set_default_val(void* v)
+void pm_ddimarr::set_default_val(void *v)
 {
   if (!defval)
     defval = mem.myalloc(defval, len);
   else
     for (int i = 0; i < len; i++)
-      defval[i] = (static_cast<double*>(v))[i];
+      defval[i] = (static_cast<double *>(v))[i];
 }
-void pm_idimarr::set_default_val(void* v)
+void pm_idimarr::set_default_val(void *v)
 {
   if (!defval)
     defval = mem.myalloc(defval, len);
   else
     for (int i = 0; i < len; i++)
-      defval[i] = (static_cast<double*>(v))[i];
+      defval[i] = (static_cast<double *>(v))[i];
 }
-void pm_dvararr::set_default_val(void* v)
+void pm_dvararr::set_default_val(void *v)
 {
   if (!defval)
     defval = mem.myalloc(defval, len);
   else
     for (int i = 0; i < len; i++)
-      defval[i] = (static_cast<pion_flt*>(v))[i];
+      defval[i] = (static_cast<pion_flt *>(v))[i];
 }
 
 // void pm_int::

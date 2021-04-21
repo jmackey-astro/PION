@@ -30,9 +30,9 @@
 /// a NG/AMR simulation.
 ///
 struct flux_interface {
-  std::vector<class cell*> c;  ///< list of cells with faces on this interface
+  std::vector<class cell *> c;  ///< list of cells with faces on this interface
   std::vector<double> area;  ///< area of each face for cells c, ordered as is c
-  pion_flt* flux;            ///< flux through interface.
+  pion_flt *flux;            ///< flux through interface.
 };
 
 // ##################################################################
@@ -44,7 +44,7 @@ struct flux_interface {
 /// a NG/AMR simulation.  (Berger & Colella, 1989).
 ///
 struct flux_update {
-  vector<struct flux_interface*> fi;
+  vector<struct flux_interface *> fi;
   int Ncells;             ///< number of cells contributing.
   std::vector<int> rank;  ///< list of grid ranks to send to/recv from
   int dir;                ///< direction of face (outward for send)
@@ -78,9 +78,9 @@ public:
   /// Berger & Colella (1989,JCP,82,64).
   ///
   virtual int setup_flux_recv(
-      class SimParams&,      ///< simulation params (including BCs)
-      class GridBaseClass*,  ///< pointer to coarse grid.
-      const int              ///< finer level to receive from
+      class SimParams &,      ///< simulation params (including BCs)
+      class GridBaseClass *,  ///< pointer to coarse grid.
+      const int               ///< finer level to receive from
   );
 
   ///
@@ -91,9 +91,9 @@ public:
   /// Berger & Colella (1989,JCP,82,64).
   ///
   virtual int setup_flux_send(
-      class SimParams&,      ///< simulation params (including BCs)
-      class GridBaseClass*,  ///< pointer to finer grid.
-      const int              ///< level to send to
+      class SimParams &,      ///< simulation params (including BCs)
+      class GridBaseClass *,  ///< pointer to finer grid.
+      const int               ///< level to send to
   );
 
   ///
@@ -107,8 +107,8 @@ public:
   /// Berger & Colella (1989,JCP,82,64).
   ///
   virtual void save_fine_fluxes(
-      class SimParams&,  ///< simulation parameters
-      const int          ///< level to save.
+      class SimParams &,  ///< simulation parameters
+      const int           ///< level to save.
   );
 
   ///
@@ -121,8 +121,8 @@ public:
   /// to ensure that they are consistent across all levels.
   ///
   virtual void save_coarse_fluxes(
-      class SimParams&,  ///< simulation parameters
-      const int          ///< level to save.
+      class SimParams &,  ///< simulation parameters
+      const int           ///< level to save.
   );
 
   ///
@@ -131,24 +131,24 @@ public:
   /// child and parent grid are on the same MPI process.
   ///
   virtual int recv_BC89_fluxes_F2C(
-      class FV_solver_base*,  ///< spatial solver, for gradients
-      class SimParams&,       ///< simulation parameters
-      const int,              ///< My level in grid hierarchy.
-      const int,              ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
-      const int               ///< Full order of accuracy of simulation
+      class FV_solver_base *,  ///< spatial solver, for gradients
+      class SimParams &,       ///< simulation parameters
+      const int,               ///< My level in grid hierarchy.
+      const int,               ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+      const int                ///< Full order of accuracy of simulation
   );
 
   /// For a given boundary, implement the BC89 flux-correction from
   /// fine to coarse grid, so that conserved quantities are conserved
   int recv_BC89_flux_boundary(
-      class FV_solver_base*,  ///< spatial solver, for gradients
-      class SimParams&,       ///< simulation parameters
-      class GridBaseClass*,   ///< pointer to coarse grid
-      const double,           ///< timestep
-      struct flux_update&,    ///< data for fine grid
-      struct flux_update&,    ///< data for coarse grid
-      const unsigned int,     ///< direction of outward normal
-      const axes              ///< axis of normal direction.
+      class FV_solver_base *,  ///< spatial solver, for gradients
+      class SimParams &,       ///< simulation parameters
+      class GridBaseClass *,   ///< pointer to coarse grid
+      const double,            ///< timestep
+      struct flux_update &,    ///< data for fine grid
+      struct flux_update &,    ///< data for coarse grid
+      const unsigned int,      ///< direction of outward normal
+      const axes               ///< axis of normal direction.
   );
 
 protected:
@@ -159,14 +159,14 @@ protected:
   /// consistent across all levels.
   ///
   int add_cells_to_face(
-      class SimParams&,      ///< pointer to simulation parameters
-      class GridBaseClass*,  ///< pointer to grid.
-      enum direction,        ///< which direction we're facing
-      int*,                  ///< xmin of interface region (integer units)
-      int*,                  ///< xmax of interface region (integer units)
-      int*,                  ///< number of elements in interface region
-      const int,             ///< number of cells per face, per dim.
-      struct flux_update&    ///< struct with list to populate
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      enum direction,         ///< which direction we're facing
+      int *,                  ///< xmin of interface region (integer units)
+      int *,                  ///< xmax of interface region (integer units)
+      int *,                  ///< number of elements in interface region
+      const int,              ///< number of cells per face, per dim.
+      struct flux_update &    ///< struct with list to populate
   );
 
   /// array of interfaces for a finer grid within this grid.
@@ -182,7 +182,7 @@ protected:
   ///
   /// These fluxes are used to correct the fluxes on the coarse grid.
   ///
-  std::vector<std::vector<struct flux_update>> flux_update_recv;
+  std::vector<std::vector<struct flux_update> > flux_update_recv;
 
   /// Array of interfaces for a coarser grid encompassing this grid.
   /// Each element contains 2^(ndim-1) cells.
@@ -197,7 +197,7 @@ protected:
   ///
   /// These fluxes are used to correct the fluxes on the coarse grid.
   ///
-  std::vector<std::vector<struct flux_update>> flux_update_send;
+  std::vector<std::vector<struct flux_update> > flux_update_send;
 };
 
 #endif  // NG_BC89FLUX_H

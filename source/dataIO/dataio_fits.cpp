@@ -95,7 +95,7 @@ using namespace std;
 // ##################################################################
 
 DataIOFits::DataIOFits(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
     ) :
     DataIOBase(SimPM)
 {
@@ -118,7 +118,7 @@ DataIOFits::~DataIOFits()
 // ##################################################################
 // ##################################################################
 
-void DataIOFits::SetSolver(FV_solver_base* solver)
+void DataIOFits::SetSolver(FV_solver_base *solver)
 {
   cout << "DataIOFits::SetSolver() Setting solver pointer.\n";
   DataIOFits::eqn = solver;
@@ -128,15 +128,15 @@ void DataIOFits::SetSolver(FV_solver_base* solver)
 // ##################################################################
 
 int DataIOFits::OutputData(
-    string outfilebase,                ///< base filename
-    vector<class GridBaseClass*>& cg,  ///< address of vector of grid pointers.
-    class SimParams& SimPM,            ///< pointer to simulation parameters
+    string outfilebase,                 ///< base filename
+    vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
+    class SimParams &SimPM,             ///< pointer to simulation parameters
     const long int file_counter  ///< number to stamp file with (e.g. timestep)
 )
 {
   string fname    = "DataIOFits::OutputData";
   int nvar        = SimPM.nvar;
-  string* extname = 0;
+  string *extname = 0;
   if (SimPM.ntracer > 5)
     rep.error("OutputFitsData:: only accepts <=5 tracers!", SimPM.ntracer);
 #ifdef RT_TESTING_OUTPUTCOL
@@ -243,7 +243,7 @@ int DataIOFits::OutputData(
     rep.error("DataIOFits::OutputData() null pointer to grid!", cg[0]);
   DataIOFits::gp = cg[0];
 
-  fitsfile* ff = 0;
+  fitsfile *ff = 0;
   int status = 0, err = 0;
   //
   // Choose filename based on the basename and the counter passed to
@@ -304,7 +304,7 @@ int DataIOFits::OutputData(
     // cout
     // <<extname[i]<<"\t"<<SimPM.Xmin[2]<<"\t"<<SimPM.Xmax[2]<<"\t"<<SimPM.NG[2]<<"\t"<<SimPM.Ncell<<"\n";
     err += create_fits_image(ff, extname[i], SimPM.ndim, SimPM.NG);
-    double* data = 0;
+    double *data = 0;
     err += put_variable_into_data_array(SimPM, extname[i], SimPM.Ncell, &data);
     err += write_fits_image(
         ff, extname[i], SimPM.Xmin, SimPM.Xmin, gp->DX(), SimPM.ndim, SimPM.NG,
@@ -337,12 +337,12 @@ int DataIOFits::OutputData(
 
 int DataIOFits::ReadHeader(
     string infile,          ///< file to read from
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   int err    = 0;
   int status = 0;
-  fitsfile* ff;
+  fitsfile *ff;
   //  cout <<"DataIOFits::ReadHeader() opening fits file to read header...";
   err = fits_open_file(&ff, infile.c_str(), READONLY, &status);
   if (status) {
@@ -391,12 +391,12 @@ int DataIOFits::ReadHeader(
 
 int DataIOFits::WriteHeader(
     const string fname,     ///< file to write to (full, exact filename).
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   int err    = 0;
   int status = 0;
-  fitsfile* ff;
+  fitsfile *ff;
   err = fits_open_file(&ff, fname.c_str(), READWRITE, &status);
   if (status) {
     fits_report_error(stderr, status);
@@ -447,8 +447,8 @@ int DataIOFits::WriteHeader(
 
 int DataIOFits::ReadData(
     string infile,
-    vector<class GridBaseClass*>& cg,  ///< address of vector of grid pointers.
-    class SimParams& SimPM             ///< pointer to simulation parameters
+    vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
+    class SimParams &SimPM              ///< pointer to simulation parameters
 )
 {
   string fname = "DataIOFits::ReadData";
@@ -458,7 +458,7 @@ int DataIOFits::ReadData(
 
   int err    = 0;
   int status = 0;
-  fitsfile* ff;
+  fitsfile *ff;
   // cout <<"DataIOFits::ReadData() opening fits file to read data...";
   err = fits_open_file(&ff, infile.c_str(), READONLY, &status);
   if (status) {
@@ -480,7 +480,7 @@ int DataIOFits::ReadData(
   // -------------------------------------------------------
 
   int nvar    = SimPM.nvar;
-  string* var = 0;
+  string *var = 0;
   if (SimPM.ntracer > 5)
     rep.error(
         "DataIOFits::ReadData() only handles up to 5 tracer variables! "
@@ -555,7 +555,7 @@ int DataIOFits::ReadData(
 
     if (err != 0) {
       // If can't find variable, set them all to zero.
-      cell* c = gp->FirstPt();
+      cell *c = gp->FirstPt();
       do {
         c->P[v] = 0.;
       } while ((c = gp->NextPt(c)) != 0);
@@ -597,7 +597,7 @@ int DataIOFits::ReadData(
   //  cout <<"Closed fits file. err="<<err<<"\n";
 
   // Now assign Ph to be equal to P for each cell.
-  cell* cpt = gp->FirstPt();
+  cell *cpt = gp->FirstPt();
   do {
     for (int v = 0; v < nvar; v++)
       cpt->Ph[v] = cpt->P[v];
@@ -640,7 +640,7 @@ std::string DataIOFits::choose_filename(
 // ##################################################################
 // ##################################################################
 
-int DataIOFits::read_header_param(class pm_base* p)
+int DataIOFits::read_header_param(class pm_base *p)
 {
   int err = 0, status = 0;
   char key[128];
@@ -723,7 +723,7 @@ int DataIOFits::read_header_param(class pm_base* p)
 // ##################################################################
 // ##################################################################
 
-int DataIOFits::write_header_param(class pm_base* p)
+int DataIOFits::write_header_param(class pm_base *p)
 {
   int err = 0, status = 0;
   char key[128];
@@ -731,32 +731,32 @@ int DataIOFits::write_header_param(class pm_base* p)
   strcpy(key, p->name.c_str());
 
   if (i == MY_INT) {
-    int* x = static_cast<int*>(p->get_ptr());
+    int *x = static_cast<int *>(p->get_ptr());
     err += fits_update_key(file_ptr, TINT, key, x, 0, &status);
   }
   else if (i == MY_DOUBLE) {
-    double* x = static_cast<double*>(p->get_ptr());
+    double *x = static_cast<double *>(p->get_ptr());
     err += fits_update_key(file_ptr, TDOUBLE, key, x, 0, &status);
   }
   else if (i == MY_FLOAT) {
-    float* x = static_cast<float*>(p->get_ptr());
+    float *x = static_cast<float *>(p->get_ptr());
     err += fits_update_key(file_ptr, TFLOAT, key, x, 0, &status);
   }
   else if (i == MY_LONG) {
-    long int* x = static_cast<long int*>(p->get_ptr());
+    long int *x = static_cast<long int *>(p->get_ptr());
     err += fits_update_key(file_ptr, TLONG, key, x, 0, &status);
   }
   else if (i == MY_STRING) {
     //
     // strings are harder -- need to get pointer and copy to char[]
     //
-    string x(*(static_cast<string*>(p->get_ptr())));
+    string x(*(static_cast<string *>(p->get_ptr())));
     char temp[128];
     strcpy(temp, x.c_str());
     err += fits_update_key(file_ptr, TSTRING, key, temp, 0, &status);
   }
   else if (i == MY_DDIMARR) {
-    double* x = static_cast<double*>(p->get_ptr());
+    double *x = static_cast<double *>(p->get_ptr());
     //
     // Easier to give each element of an array its own numbered name.
     //
@@ -768,7 +768,7 @@ int DataIOFits::write_header_param(class pm_base* p)
     }
   }
   else if (i == MY_IDIMARR) {
-    int* x = static_cast<int*>(p->get_ptr());
+    int *x = static_cast<int *>(p->get_ptr());
     for (int v = 0; v < MAX_DIM; v++) {
       ostringstream temp2;
       temp2 << p->name << v;
@@ -777,7 +777,7 @@ int DataIOFits::write_header_param(class pm_base* p)
     }
   }
   else if (i == MY_DVARARR) {
-    double* x = static_cast<double*>(p->get_ptr());
+    double *x = static_cast<double *>(p->get_ptr());
     for (int v = 0; v < MAX_NVAR; v++) {
       ostringstream temp2;
       temp2 << p->name << v;
@@ -800,10 +800,10 @@ int DataIOFits::write_header_param(class pm_base* p)
 // ##################################################################
 
 int DataIOFits::put_variable_into_data_array(
-    class SimParams& SimPM,  ///< pointer to simulation parameters
+    class SimParams &SimPM,  ///< pointer to simulation parameters
     const string name,       ///< variable name to put in array.
     const long int ntot,     ///< size of data array to be initialised.
-    double** data            ///< pointer to uninitialised data.
+    double **data            ///< pointer to uninitialised data.
 )
 {
   (*data) = mem.myalloc((*data), ntot);
@@ -864,7 +864,7 @@ int DataIOFits::put_variable_into_data_array(
 
   long int ct = 0;
   double norm = sqrt(4.0 * M_PI);
-  cell* c     = gp->FirstPt();
+  cell *c     = gp->FirstPt();
   if (v >= 0) {
     do {
       (*data)[ct] = c->P[v];
@@ -891,7 +891,7 @@ int DataIOFits::put_variable_into_data_array(
   }
 
   else if (v == -2) {  // divB
-    int* vars = 0;
+    int *vars = 0;
     vars      = mem.myalloc(vars, 3);
     vars[0]   = static_cast<int>(BX);
     vars[1]   = static_cast<int>(BY);
@@ -941,20 +941,20 @@ int DataIOFits::put_variable_into_data_array(
 // ##################################################################
 
 int DataIOFits::read_fits_image(
-    class SimParams& SimPM,  ///< pointer to simulation parameters
-    fitsfile* ff,
+    class SimParams &SimPM,  ///< pointer to simulation parameters
+    fitsfile *ff,
     string name,
-    double* localxmin,
-    double* globalxmin,
-    int* npt,
+    double *localxmin,
+    double *globalxmin,
+    int *npt,
     long int ntot)
 {
-  double* data = 0;
+  double *data = 0;
   data         = mem.myalloc(data, ntot);
 
   int err = utility_fitsio::read_fits_image_to_data(
       ff, name, SimPM.ndim, localxmin, globalxmin, gp->DX(), npt, ntot, TDOUBLE,
-      static_cast<void*>(data));
+      static_cast<void *>(data));
   if (err)
     rep.error(
         " DataIOFits::read_fits_image() Failed to read image from file", err);
@@ -1012,7 +1012,7 @@ int DataIOFits::read_fits_image(
   // assign data to grid points, to the variable determined above.
   double nulval = -1.e99;
   long int ct   = 0;
-  cell* c       = gp->FirstPt();
+  cell *c       = gp->FirstPt();
   double norm   = 1.0 / sqrt(4.0 * M_PI);
   do {
     c->P[v] = data[ct];

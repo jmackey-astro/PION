@@ -42,15 +42,15 @@ public:
   /// at least try to deal with any memory requests.
   ///
   template<class T>
-  T* myalloc(
-      T* ptr,              ///< uninitialised null pointer.
+  T *myalloc(
+      T *ptr,              ///< uninitialised null pointer.
       const long int n_el  ///< number elements to initialise.
   )
   {
     try {
       ptr = new T[n_el];
     }
-    catch (const std::bad_alloc&) {
+    catch (const std::bad_alloc &) {
       cerr << "mem_alloc() pointer initialisation failed.\n";
       rep.error("mem_alloc() pointer initialisation failed.", ptr);
     }
@@ -63,7 +63,7 @@ public:
    * try to delete it again!  Otherwise delete it and set it to zero.
    */
   template<class T>
-  T* myfree(T* ptr)
+  T *myfree(T *ptr)
   {
     //
     // if ptr is already null, can't free anything, so just return.
@@ -83,7 +83,7 @@ public:
    * try to delete it again!  Otherwise delete it and set it to zero.
    */
   template<class T>
-  T* myfree_single(T* ptr)
+  T *myfree_single(T *ptr)
   {
     //
     // if ptr is already null, can't free anything, so just return.

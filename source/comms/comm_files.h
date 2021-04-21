@@ -62,16 +62,16 @@ public:
    *strips off those args.
    **/
   int init(
-      int*,    ///< number of program arguments.
-      char***  ///< character list of arguments.
+      int *,    ///< number of program arguments.
+      char ***  ///< character list of arguments.
   );
 
   ///
   /// Get this process's rank, and total number of processes.
   ///
   int get_rank_nproc(
-      int*,  ///< rank.
-      int*   ///< nproc
+      int *,  ///< rank.
+      int *   ///< nproc
   );
 
   /** \brief Tell other processes that I am exiting, and either exit, or wait
@@ -102,7 +102,7 @@ public:
   void global_op_double_array(
       const std::string,  ///< MAX,MIN,SUM
       const size_t,       ///< Number of elements in array.
-      double*             ///< pointer to this process's data array.
+      double *            ///< pointer to this process's data array.
   );
 
   /** \brief Broadcast data from one process to all others. */
@@ -110,7 +110,7 @@ public:
       const int,          ///< rank of sender.
       const std::string,  ///< Type of data INT,DOUBLE,etc.
       const int,          ///< number of elements
-      void*               ///< pointer to data.
+      void *              ///< pointer to data.
   );
 
   /** \brief Send cell data to another processor, and return immediately, but
@@ -122,13 +122,13 @@ public:
    * know how to unpack the data from it's matching receive call.
    */
   int send_cell_data(
-      const int,          ///< rank to send to.
-      std::list<cell*>*,  ///< list of cells to get data from.
-      long int,           ///< number of cells in list (extra checking!)
-      const int,          ///< ndim
-      const int,          ///< nvar
-      std::string&,       ///< identifier for send, for tracking delivery later.
-      const int           ///< comm_tag, to say what kind of send this is.
+      const int,            ///< rank to send to.
+      std::list<cell *> *,  ///< list of cells to get data from.
+      long int,             ///< number of cells in list (extra checking!)
+      const int,            ///< ndim
+      const int,            ///< nvar
+      std::string &,  ///< identifier for send, for tracking delivery later.
+      const int       ///< comm_tag, to say what kind of send this is.
   );
 
   /** \brief Send an array of n doubles to another processor, and return
@@ -138,8 +138,8 @@ public:
   int send_double_data(
       const int,       ///< rank to send to.
       const long int,  ///< size of buffer, in number of doubles.
-      const double*,   ///< pointer to double array.
-      std::string&,    ///< identifier for send, for tracking delivery later.
+      const double *,  ///< pointer to double array.
+      std::string &,   ///< identifier for send, for tracking delivery later.
       const int        ///< comm_tag, to say what kind of send this is.
   );
   /** \brief This function is called when we need to make sure a send has been
@@ -147,7 +147,7 @@ public:
    * the data.
    */
   int wait_for_send_to_finish(
-      std::string&  ///< identifier for the send we are waiting on.
+      std::string &  ///< identifier for the send we are waiting on.
   );
 
   /// Look for some data that is being sent to us.  Does not return
@@ -157,11 +157,11 @@ public:
   /// and associates an identifier string with it.  This string can
   /// be used to receive the data by a subsequent function call.
   virtual int look_for_data_to_receive(
-      int*,          ///< rank of sender
-      std::string&,  ///< identifier for receive.
-      int*,          ///< comm_tag associated with data found.
-      const int,     ///< comm_tag requested: (PER,MPI,F2C,C2F)
-      const int      ///< type of data request (COMM_CELLDATA,COMM_DOUBLEDATA)
+      int *,          ///< rank of sender
+      std::string &,  ///< identifier for receive.
+      int *,          ///< comm_tag associated with data found.
+      const int,      ///< comm_tag requested: (PER,MPI,F2C,C2F)
+      const int       ///< type of data request (COMM_CELLDATA,COMM_DOUBLEDATA)
   );
 
   /** \brief Receive Cell data from a specific process rank.
@@ -171,15 +171,15 @@ public:
    *received.  No checking of this is performed.
    **/
   int receive_cell_data(
-      const int,          ///< rank of process we are receiving from.
-      std::list<cell*>*,  ///< list of cells to get data for.
-      const long int,     ///< number of cells in list (extra checking!)
-      const int,          ///< ndim
-      const int,          ///< nvar
-      const int,          ///< comm_tag: what sort of comm we are looking for
-                          ///< (PER,MPI,etc.)
-      const std::string&  ///< identifier for receive, for any book-keeping
-                          ///< that might be needed.
+      const int,            ///< rank of process we are receiving from.
+      std::list<cell *> *,  ///< list of cells to get data for.
+      const long int,       ///< number of cells in list (extra checking!)
+      const int,            ///< ndim
+      const int,            ///< nvar
+      const int,            ///< comm_tag: what sort of comm we are looking for
+                            ///< (PER,MPI,etc.)
+      const std::string &   ///< identifier for receive, for any book-keeping
+                            ///< that might be needed.
   );
 
   /** \brief Receive array of doubles from a specific process rank.
@@ -188,43 +188,43 @@ public:
    *list!
    **/
   int receive_double_data(
-      const int,           ///< rank of process we are receiving from.
-      const int,           ///< comm_tag: what sort of comm we are looking for
-                           ///< (PER,MPI,etc.)
-      const std::string&,  ///< identifier for receive, for any book-keeping
-                           ///< that might be needed.
-      const long int,      ///< number of doubles to receive
-      double*              ///< Pointer to array to write to (must be already
-                           ///< initialised).
+      const int,            ///< rank of process we are receiving from.
+      const int,            ///< comm_tag: what sort of comm we are looking for
+                            ///< (PER,MPI,etc.)
+      const std::string &,  ///< identifier for receive, for any book-keeping
+                            ///< that might be needed.
+      const long int,       ///< number of doubles to receive
+      double *              ///< Pointer to array to write to (must be already
+                            ///< initialised).
   );
 #ifdef SILO
   int silo_pllel_init(
       const int,          ///< number of files to write
       const std::string,  ///< READ or WRITE
       const std::string,  ///< identifier for this read/write.
-      int*,               ///< group rank.
-      int*                ///< rank in group
+      int *,              ///< group rank.
+      int *               ///< rank in group
   );
   int silo_pllel_wait_for_file(
       const std::string,  ///< identifier for this read/write.
       const std::string,  ///< File Name
       const std::string,  ///< Directory to open in file.
-      DBfile**            ///< pointer that file gets returned in.
+      DBfile **           ///< pointer that file gets returned in.
   );
   int silo_pllel_finish_with_file(
       const std::string,  ///< identifier for this read/write.
-      DBfile**            ///< pointer to file we have been working on.
+      DBfile **           ///< pointer to file we have been working on.
   );
   void silo_pllel_get_ranks(
       std::string id,  ///< identifier for this read/write.
       const int,       ///< processor rank
-      int*,            ///< rank of group processor is in.
-      int*             ///< rank of processor within group.
+      int *,           ///< rank of group processor is in.
+      int *            ///< rank of processor within group.
   );
 #endif
 private:
-  std::list<struct sent_info*> sent_list;
-  std::list<struct recv_info*> recv_list;
+  std::list<struct sent_info *> sent_list;
+  std::list<struct recv_info *> recv_list;
 #ifdef SILO
   // PMPIO_baton_t *bat;
   std::string silo_id;      ///< identifier for this silo session.

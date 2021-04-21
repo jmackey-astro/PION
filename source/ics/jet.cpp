@@ -40,8 +40,8 @@ IC_jet::~IC_jet()
 }
 
 int IC_jet::setup_data(
-    class ReadParams* rrp,    ///< pointer to parameter list.
-    class GridBaseClass* ggg  ///< pointer to grid
+    class ReadParams *rrp,    ///< pointer to parameter list.
+    class GridBaseClass *ggg  ///< pointer to grid
 )
 {
   int err = 0;
@@ -264,7 +264,7 @@ int IC_jet::setup_data(
   // All of the jet parameters are in the global JP class/struct, and will
   // be used by the boundary conditions setup when the sim is starting.
   //
-  class cell* c = gg->FirstPt();
+  class cell *c = gg->FirstPt();
   do {
     for (int v = 0; v < SimPM->nvar; v++)
       c->P[v] = ambient[v];

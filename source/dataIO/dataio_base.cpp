@@ -21,7 +21,7 @@ using namespace std;
 // ##################################################################
 
 DataIOBase::DataIOBase(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
     ) :
     Ndigits(8)
 {
@@ -50,7 +50,7 @@ DataIOBase::~DataIOBase()
 // ##################################################################
 
 void DataIOBase::set_params(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   //
@@ -69,29 +69,29 @@ void DataIOBase::set_params(
   //
   // START WITH GRID PROPERTIES
   //
-  pm_base* p;
+  pm_base *p;
 
   // pm_int     *p001 = new pm_int
   //  ("gridtype",    &SimPM.gridType);
   // p = p001; p->critical=true;
   // params.push_back(p);
-  pm_int* p002 = new pm_int("gridndim", &SimPM.ndim);
+  pm_int *p002 = new pm_int("gridndim", &SimPM.ndim);
   p            = p002;
   p->critical  = true;
   params.push_back(p);
-  pm_idimarr* p003 = new pm_idimarr("NGrid", SimPM.NG);
+  pm_idimarr *p003 = new pm_idimarr("NGrid", SimPM.NG);
   p                = p003;
   p->critical      = true;
   params.push_back(p);
-  pm_long* p004 = new pm_long("Ncell", &SimPM.Ncell);
+  pm_long *p004 = new pm_long("Ncell", &SimPM.Ncell);
   p             = p004;
   p->critical   = true;
   params.push_back(p);
-  pm_ddimarr* p005 = new pm_ddimarr("Xmin", SimPM.Xmin);
+  pm_ddimarr *p005 = new pm_ddimarr("Xmin", SimPM.Xmin);
   p                = p005;
   p->critical      = true;
   params.push_back(p);
-  pm_ddimarr* p006 = new pm_ddimarr("Xmax", SimPM.Xmax);
+  pm_ddimarr *p006 = new pm_ddimarr("Xmax", SimPM.Xmax);
   p                = p006;
   p->critical      = true;
   params.push_back(p);
@@ -99,34 +99,34 @@ void DataIOBase::set_params(
   //
   // Nested grid parameters
   //
-  pm_int* n001 = new pm_int("grid_nlevels", &SimPM.grid_nlevels, 1);
+  pm_int *n001 = new pm_int("grid_nlevels", &SimPM.grid_nlevels, 1);
   p            = n001;
   p->critical  = false;
   params.push_back(p);
 
-  int* defaspect = new int[MAX_DIM];
+  int *defaspect = new int[MAX_DIM];
   for (int v = 0; v < MAX_DIM; v++)
     defaspect[v] = 1;
-  pm_idimarr* n002 =
+  pm_idimarr *n002 =
       new pm_idimarr("grid_aspect_ratio", SimPM.grid_aspect_ratio, defaspect);
   p           = n002;
   p->critical = false;
   params.push_back(p);
   delete[] defaspect;
 
-  double* defngcentre = new double[MAX_DIM];
+  double *defngcentre = new double[MAX_DIM];
   for (int v = 0; v < MAX_DIM; v++)
     defngcentre[v] = 0.0;
-  pm_ddimarr* n003 = new pm_ddimarr("NG_centre", SimPM.NG_centre, defngcentre);
+  pm_ddimarr *n003 = new pm_ddimarr("NG_centre", SimPM.NG_centre, defngcentre);
   p                = n003;
   p->critical      = false;
   params.push_back(p);
   delete[] defngcentre;
 
-  int* defngrefine = new int[MAX_DIM];
+  int *defngrefine = new int[MAX_DIM];
   for (int v = 0; v < MAX_DIM; v++)
     defngrefine[v] = 0;
-  pm_idimarr* n004 = new pm_idimarr("NG_refine", SimPM.NG_refine, defngrefine);
+  pm_idimarr *n004 = new pm_idimarr("NG_refine", SimPM.NG_refine, defngrefine);
   p                = n004;
   p->critical      = false;
   params.push_back(p);
@@ -136,7 +136,7 @@ void DataIOBase::set_params(
   // Boundary conditions
   //
   // Number of internal boundaries
-  pm_int* p124 = new pm_int("BC_Ninternal", &SimPM.BC_Nint);
+  pm_int *p124 = new pm_int("BC_Ninternal", &SimPM.BC_Nint);
   p            = p124;
   p->critical  = false;
   params.push_back(p);
@@ -144,7 +144,7 @@ void DataIOBase::set_params(
 
   // LEGACY: look for a string parameter called BC, in case the
   // data file was written with a pre-2018 version of PION.
-  pm_string* p125 = new pm_string("typeofbc_str", &SimPM.BC_STRING);
+  pm_string *p125 = new pm_string("typeofbc_str", &SimPM.BC_STRING);
   p               = p125;
   p->critical     = false;
   params.push_back(p);
@@ -152,15 +152,15 @@ void DataIOBase::set_params(
   //
   // EQUATIONS
   //
-  pm_int* p008 = new pm_int("eqn_type", &SimPM.eqntype);
+  pm_int *p008 = new pm_int("eqn_type", &SimPM.eqntype);
   p            = p008;
   p->critical  = true;
   params.push_back(p);
-  pm_int* p009 = new pm_int("eqn_ndim", &SimPM.eqnNDim, 3);
+  pm_int *p009 = new pm_int("eqn_ndim", &SimPM.eqnNDim, 3);
   p            = p009;
   p->critical  = false;
   params.push_back(p);
-  pm_int* p010 = new pm_int("eqn_nvar", &SimPM.nvar);
+  pm_int *p010 = new pm_int("eqn_nvar", &SimPM.nvar);
   p            = p010;
   p->critical  = true;
   params.push_back(p);
@@ -168,18 +168,18 @@ void DataIOBase::set_params(
   //
   // Tracers
   //
-  pm_int* p011 = new pm_int("num_tracer", &SimPM.ntracer);
+  pm_int *p011 = new pm_int("num_tracer", &SimPM.ntracer);
   p            = p011;
   p->critical  = true;
   params.push_back(p);
-  pm_string* p012a = new pm_string("chem_code", &SimPM.chem_code, "CHEM_CODE");
+  pm_string *p012a = new pm_string("chem_code", &SimPM.chem_code, "CHEM_CODE");
   p                = p012a;
   p->critical      = false;
   params.push_back(p);
   have_setup_tracers = false;  // so we know to populate list later.
   // LEGACY: look for a string parameter called trtype, in case the
   // data file was written with a pre-2018 version of PION.
-  pm_string* p312 = new pm_string("tracer_str", &SimPM.TRTYPE);
+  pm_string *p312 = new pm_string("tracer_str", &SimPM.TRTYPE);
   p               = p312;
   p->critical     = false;
   params.push_back(p);
@@ -187,40 +187,40 @@ void DataIOBase::set_params(
   //
   // hydro solver parameters.
   //
-  pm_int* p013 = new pm_int("solver", &SimPM.solverType);
+  pm_int *p013 = new pm_int("solver", &SimPM.solverType);
   p            = p013;
   p->critical  = true;
   params.push_back(p);
-  pm_int* p014 = new pm_int("coord_sys", &SimPM.coord_sys);
+  pm_int *p014 = new pm_int("coord_sys", &SimPM.coord_sys);
   p            = p014;
   p->critical  = true;
   params.push_back(p);
-  pm_int* p015 = new pm_int("Space_OOA", &SimPM.spOOA, 2);
+  pm_int *p015 = new pm_int("Space_OOA", &SimPM.spOOA, 2);
   p            = p015;
   p->critical  = false;
   params.push_back(p);
-  pm_int* p016 = new pm_int("Time_OOA", &SimPM.tmOOA, 2);
+  pm_int *p016 = new pm_int("Time_OOA", &SimPM.tmOOA, 2);
   p            = p016;
   p->critical  = false;
   params.push_back(p);
-  pm_double* p017 = new pm_double("Gamma", &SimPM.gamma);
+  pm_double *p017 = new pm_double("Gamma", &SimPM.gamma);
   p               = p017;
   p->critical     = true;
   params.push_back(p);
-  pm_double* p018 = new pm_double("CFL", &SimPM.CFL);
+  pm_double *p018 = new pm_double("CFL", &SimPM.CFL);
   p               = p018;
   p->critical     = true;
   params.push_back(p);
-  pm_int* p019 = new pm_int("art_visc", &SimPM.artviscosity);
+  pm_int *p019 = new pm_int("art_visc", &SimPM.artviscosity);
   p            = p019;
   p->critical  = true;
   params.push_back(p);
-  pm_double* p020 = new pm_double("eta_visc", &SimPM.etav);
+  pm_double *p020 = new pm_double("eta_visc", &SimPM.etav);
   p               = p020;
   p->critical     = true;
   params.push_back(p);
 
-  pm_dvararr* p120 = new pm_dvararr("Ref_Vector", SimPM.RefVec);
+  pm_dvararr *p120 = new pm_dvararr("Ref_Vector", SimPM.RefVec);
   p                = p120;
   p->critical      = true;
   params.push_back(p);
@@ -228,51 +228,51 @@ void DataIOBase::set_params(
   //
   // PHYSICS FLAGS
   //
-  pm_int* p021 = new pm_int("EP_dynamics", &SimPM.EP.dynamics);
+  pm_int *p021 = new pm_int("EP_dynamics", &SimPM.EP.dynamics);
   p            = p021;
   p->critical  = true;
   params.push_back(p);
-  pm_int* p022 = new pm_int("EP_raytracing", &SimPM.EP.raytracing);
+  pm_int *p022 = new pm_int("EP_raytracing", &SimPM.EP.raytracing);
   p            = p022;
   p->critical  = true;
   params.push_back(p);
-  pm_int* p023 = new pm_int("EP_cooling", &SimPM.EP.cooling);
+  pm_int *p023 = new pm_int("EP_cooling", &SimPM.EP.cooling);
   p            = p023;
   p->critical  = true;
   params.push_back(p);
-  pm_int* p024 = new pm_int("EP_chemistry", &SimPM.EP.chemistry);
+  pm_int *p024 = new pm_int("EP_chemistry", &SimPM.EP.chemistry);
   p            = p024;
   p->critical  = true;
   params.push_back(p);
-  pm_int* p025 = new pm_int("EP_coll_ionisation", &SimPM.EP.coll_ionisation);
+  pm_int *p025 = new pm_int("EP_coll_ionisation", &SimPM.EP.coll_ionisation);
   p            = p025;
   p->critical  = true;
   params.push_back(p);
-  pm_int* p026 = new pm_int("EP_phot_ionisation", &SimPM.EP.phot_ionisation);
+  pm_int *p026 = new pm_int("EP_phot_ionisation", &SimPM.EP.phot_ionisation);
   p            = p026;
   p->critical  = true;
   params.push_back(p);
-  pm_int* p027 =
+  pm_int *p027 =
       new pm_int("EP_rad_recombination", &SimPM.EP.rad_recombination);
   p           = p027;
   p->critical = true;
   params.push_back(p);
-  pm_int* p028 = new pm_int("EP_update_erg", &SimPM.EP.update_erg);
+  pm_int *p028 = new pm_int("EP_update_erg", &SimPM.EP.update_erg);
   p            = p028;
   p->critical  = true;
   params.push_back(p);
-  pm_int* p029 =
+  pm_int *p029 =
       new pm_int("EP_MP_timestep_limit", &SimPM.EP.MP_timestep_limit, 0);
   p           = p029;
   p->critical = false;
   params.push_back(p);
   //#ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
-  pm_double* pMNT =
+  pm_double *pMNT =
       new pm_double("EP_Min_Temperature", &SimPM.EP.MinTemperature, 0.0);
   p           = pMNT;
   p->critical = false;
   params.push_back(p);
-  pm_double* pMXT =
+  pm_double *pMXT =
       new pm_double("EP_Max_Temperature", &SimPM.EP.MaxTemperature, 1.0e100);
   p           = pMXT;
   p->critical = false;
@@ -283,7 +283,7 @@ void DataIOBase::set_params(
   // Hydrogen abundance (by mass) X.
   // Default value is from Asplund et al. (2009,ARA&A,47,481)
   //
-  pm_double* pXXX =
+  pm_double *pXXX =
       new pm_double("EP_Hydrogen_MassFrac", &SimPM.EP.H_MassFrac, 0.7154);
   p           = pXXX;
   p->critical = false;
@@ -293,7 +293,7 @@ void DataIOBase::set_params(
   // Helium abundance (by mass) Y.
   // Default value is from Asplund et al. (2009,ARA&A,47,481)
   //
-  pm_double* pYYY =
+  pm_double *pYYY =
       new pm_double("EP_Helium_MassFrac", &SimPM.EP.Helium_MassFrac, 0.2703);
   p           = pYYY;
   p->critical = false;
@@ -302,7 +302,7 @@ void DataIOBase::set_params(
   // Metal abundance (by mass) Z.
   // Default value is from Asplund et al. (2009,ARA&A,47,481)
   //
-  pm_double* pZZZ =
+  pm_double *pZZZ =
       new pm_double("EP_Metal_MassFrac", &SimPM.EP.Metal_MassFrac, 0.0142);
   p           = pZZZ;
   p->critical = false;
@@ -311,28 +311,28 @@ void DataIOBase::set_params(
   //
   // TIMESTEPS
   //
-  pm_double* p030 = new pm_double("t_start", &SimPM.starttime);
+  pm_double *p030 = new pm_double("t_start", &SimPM.starttime);
   p               = p030;
   p->critical     = true;
   params.push_back(p);
-  pm_double* p031 = new pm_double("t_finish", &SimPM.finishtime);
+  pm_double *p031 = new pm_double("t_finish", &SimPM.finishtime);
   p               = p031;
   p->critical     = true;
   params.push_back(p);
-  pm_int* p032 = new pm_int("t_step", &SimPM.timestep, 0);
+  pm_int *p032 = new pm_int("t_step", &SimPM.timestep, 0);
   p            = p032;
   p->critical  = false;
   params.push_back(p);
-  pm_double* p033 = new pm_double("t_sim", &SimPM.simtime, 0.0);
+  pm_double *p033 = new pm_double("t_sim", &SimPM.simtime, 0.0);
   p               = p033;
   p->critical     = false;
   params.push_back(p);
-  pm_double* p034 =
+  pm_double *p034 =
       new pm_double("min_timestep", &SimPM.min_timestep, TINYVALUE);
   p           = p034;
   p->critical = false;
   params.push_back(p);
-  pm_double* p035 = new pm_double("last_dt", &SimPM.last_dt, 0.0);
+  pm_double *p035 = new pm_double("last_dt", &SimPM.last_dt, 0.0);
   p               = p035;
   p->critical     = false;
   params.push_back(p);
@@ -340,23 +340,23 @@ void DataIOBase::set_params(
   //
   // OUTPUT PARAMETERS
   //
-  pm_int* p040 = new pm_int("typeofop", &SimPM.typeofop);
+  pm_int *p040 = new pm_int("typeofop", &SimPM.typeofop);
   p            = p040;
   p->critical  = true;
   params.push_back(p);
-  pm_string* p041 = new pm_string("outfile", &SimPM.outFileBase);
+  pm_string *p041 = new pm_string("outfile", &SimPM.outFileBase);
   p               = p041;
   p->critical     = true;
   params.push_back(p);
-  pm_int* p042 = new pm_int("op_freq", &SimPM.opfreq, 0);
+  pm_int *p042 = new pm_int("op_freq", &SimPM.opfreq, 0);
   p            = p042;
   p->critical  = false;
   params.push_back(p);
-  pm_double* p043 = new pm_double("opfreq_time", &SimPM.opfreq_time, -1.0);
+  pm_double *p043 = new pm_double("opfreq_time", &SimPM.opfreq_time, -1.0);
   p               = p043;
   p->critical     = false;
   params.push_back(p);
-  pm_int* p044 = new pm_int("op_criterion", &SimPM.op_criterion, 0);
+  pm_int *p044 = new pm_int("op_criterion", &SimPM.op_criterion, 0);
   p            = p044;
   p->critical  = false;
   params.push_back(p);
@@ -364,7 +364,7 @@ void DataIOBase::set_params(
   //
   // JET SIMULATION PARAMS (GET WIDTH/STAT LATER)
   //
-  pm_int* p050 = new pm_int("JetSim", &JP.jetic, 0);
+  pm_int *p050 = new pm_int("JetSim", &JP.jetic, 0);
   p            = p050;
   p->critical  = false;
   params.push_back(p);
@@ -373,7 +373,7 @@ void DataIOBase::set_params(
   //
   // RAY-TRACING PARAMS (GET STRENGTH/POSN LATER)
   //
-  pm_int* p060 = new pm_int("RT_Nsources", &(SimPM.RS.Nsources), 0);
+  pm_int *p060 = new pm_int("RT_Nsources", &(SimPM.RS.Nsources), 0);
   p            = p060;
   p->critical  = false;
   params.push_back(p);
@@ -382,7 +382,7 @@ void DataIOBase::set_params(
   //
   // STELLAR WIND PARAMS (GET STRENGTH/POSN LATER)
   //
-  pm_int* w200 = new pm_int("WIND_Nsources", &SWP.Nsources, 0);
+  pm_int *w200 = new pm_int("WIND_Nsources", &SWP.Nsources, 0);
   p            = w200;
   p->critical  = false;
   params.push_back(p);
@@ -391,23 +391,23 @@ void DataIOBase::set_params(
   //
   // UNITS (NOTE THESE ARE JUST FOR INFORMATION PURPOSES NOW!)
   //
-  pm_string* u001 = new pm_string("unitsys", &uc.unitsys, "CGS");
+  pm_string *u001 = new pm_string("unitsys", &uc.unitsys, "CGS");
   p               = u001;
   p->critical     = false;
   params.push_back(p);
-  pm_string* u002 = new pm_string("unitdens", &uc.density, "g.cm-3");
+  pm_string *u002 = new pm_string("unitdens", &uc.density, "g.cm-3");
   p               = u002;
   p->critical     = false;
   params.push_back(p);
-  pm_string* u003 = new pm_string("unitlen", &uc.length, "cm");
+  pm_string *u003 = new pm_string("unitlen", &uc.length, "cm");
   p               = u003;
   p->critical     = false;
   params.push_back(p);
-  pm_string* u004 = new pm_string("unitvel", &uc.velocity, "cm.s-1");
+  pm_string *u004 = new pm_string("unitvel", &uc.velocity, "cm.s-1");
   p               = u004;
   p->critical     = false;
   params.push_back(p);
-  pm_string* u005 = new pm_string("unitmagf", &uc.bfield, "Gauss/sqrt(4pi)");
+  pm_string *u005 = new pm_string("unitmagf", &uc.bfield, "Gauss/sqrt(4pi)");
   p               = u005;
   p->critical     = false;
   params.push_back(p);
@@ -415,19 +415,19 @@ void DataIOBase::set_params(
   // For the values, I think the idea is that one code unit equals
   // this many units in the current unit system.  But I can't remember.
   //
-  pm_double* u006 = new pm_double("rhoval", &uc.rhoVal, 1.0);
+  pm_double *u006 = new pm_double("rhoval", &uc.rhoVal, 1.0);
   p               = u006;
   p->critical     = false;
   params.push_back(p);
-  pm_double* u007 = new pm_double("lenval", &uc.lenVal, 1.0);
+  pm_double *u007 = new pm_double("lenval", &uc.lenVal, 1.0);
   p               = u007;
   p->critical     = false;
   params.push_back(p);
-  pm_double* u008 = new pm_double("velval", &uc.velVal, 1.0);
+  pm_double *u008 = new pm_double("velval", &uc.velVal, 1.0);
   p               = u008;
   p->critical     = false;
   params.push_back(p);
-  pm_double* u009 = new pm_double("magval", &uc.magVal, 1.0);
+  pm_double *u009 = new pm_double("magval", &uc.magVal, 1.0);
   p               = u009;
   p->critical     = false;
   params.push_back(p);
@@ -438,14 +438,14 @@ void DataIOBase::set_params(
 // ##################################################################
 // ##################################################################
 
-void DataIOBase::clear_param_list(std::list<class pm_base*>& listptr)
+void DataIOBase::clear_param_list(std::list<class pm_base *> &listptr)
 {
   if (listptr.empty())
     return;
   else {
     do {
-      list<pm_base*>::iterator i = listptr.begin();
-      pm_base* p                 = (*i);
+      list<pm_base *>::iterator i = listptr.begin();
+      pm_base *p                  = (*i);
       p->set_ptr(0);
       delete p;
       listptr.erase(i);
@@ -458,7 +458,7 @@ void DataIOBase::clear_param_list(std::list<class pm_base*>& listptr)
 // ##################################################################
 
 int DataIOBase::read_simulation_parameters(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   if (params.empty())
@@ -467,9 +467,9 @@ int DataIOBase::read_simulation_parameters(
   //
   // loop over all parameters.
   //
-  pm_base* p = 0;
+  pm_base *p = 0;
   int err    = 0;
-  for (list<pm_base*>::iterator iter = params.begin(); iter != params.end();
+  for (list<pm_base *>::iterator iter = params.begin(); iter != params.end();
        ++iter) {
     p   = (*iter);
     err = read_header_param(p);
@@ -498,7 +498,7 @@ int DataIOBase::read_simulation_parameters(
 
     // First get the external boundaries
     string d[6] = {"XN", "XP", "YN", "YP", "ZN", "ZP"};
-    string* par[6];
+    string *par[6];
     par[0] = &(SimPM.BC_XN);
     par[1] = &(SimPM.BC_XP);
     par[2] = &(SimPM.BC_YN);
@@ -578,7 +578,7 @@ int DataIOBase::read_simulation_parameters(
     // now read them:
     //
     int ct = 0;
-    for (list<pm_base*>::iterator iter = bc_pm.begin(); iter != bc_pm.end();
+    for (list<pm_base *>::iterator iter = bc_pm.begin(); iter != bc_pm.end();
          ++iter) {
       p   = (*iter);
       err = read_header_param(p);
@@ -618,7 +618,7 @@ int DataIOBase::read_simulation_parameters(
   }  // if LEGACY tracer variables used.
 
   else {
-    for (list<pm_base*>::iterator iter = tr_pm.begin(); iter != tr_pm.end();
+    for (list<pm_base *>::iterator iter = tr_pm.begin(); iter != tr_pm.end();
          ++iter) {
       p   = (*iter);
       err = read_header_param(p);
@@ -644,7 +644,7 @@ int DataIOBase::read_simulation_parameters(
     //
     // now read them:
     //
-    for (list<pm_base*>::iterator iter = jet_pm.begin(); iter != jet_pm.end();
+    for (list<pm_base *>::iterator iter = jet_pm.begin(); iter != jet_pm.end();
          ++iter) {
       p   = (*iter);
       err = read_header_param(p);
@@ -681,7 +681,7 @@ int DataIOBase::read_simulation_parameters(
     // vector. Note the rt_src list has all parameters for Nsources
     // radiation sources, so Nsources*Nparams elements.
     //
-    for (list<pm_base*>::iterator iter = rt_src.begin(); iter != rt_src.end();
+    for (list<pm_base *>::iterator iter = rt_src.begin(); iter != rt_src.end();
          ++iter) {
       p   = (*iter);
       err = read_header_param(p);
@@ -738,13 +738,13 @@ int DataIOBase::read_simulation_parameters(
     // Now read each property for each wind source and add the source
     // Need to read from disk to temp variables first.
     //
-    list<pm_base*>::iterator iter = windsrc.begin();
+    list<pm_base *>::iterator iter = windsrc.begin();
     //
     // Problem: for data analysis, we read the wind source from each output
     // in turn, so we can't simply add it every time without deleting all
     // the elements beforehand.
     //
-    struct stellarwind_params* temp_wind = 0;
+    struct stellarwind_params *temp_wind = 0;
     while (SWP.params.size() > 0) {
       temp_wind = SWP.params.back();
       SWP.params.pop_back();
@@ -755,7 +755,7 @@ int DataIOBase::read_simulation_parameters(
       // double Mdot, rad, posn[MAX_DIM], Vinf, Tw, trcr[MAX_NVAR], Rstar;
       // int type;
       ostringstream nm;
-      struct stellarwind_params* wind = 0;
+      struct stellarwind_params *wind = 0;
       wind                            = mem.myalloc(wind, 1);
       wind->id                        = isw;
 
@@ -765,7 +765,7 @@ int DataIOBase::read_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(posn));
-      (*iter)->set_ptr(static_cast<void*>(wind->dpos));
+      (*iter)->set_ptr(static_cast<void *>(wind->dpos));
       err = read_header_param(*iter);
       if (err) rep.error("Error reading parameter", (*iter)->name);
       ++iter;
@@ -777,7 +777,7 @@ int DataIOBase::read_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(&rad));
-      (*iter)->set_ptr(static_cast<void*>(&wind->radius));
+      (*iter)->set_ptr(static_cast<void *>(&wind->radius));
       err = read_header_param(*iter);
       if (err) rep.error("Error reading parameter", (*iter)->name);
       ++iter;
@@ -789,7 +789,7 @@ int DataIOBase::read_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(&Mdot));
-      (*iter)->set_ptr(static_cast<void*>(&wind->Mdot));
+      (*iter)->set_ptr(static_cast<void *>(&wind->Mdot));
       err = read_header_param(*iter);
       if (err) rep.error("Error reading parameter", (*iter)->name);
       ++iter;
@@ -801,7 +801,7 @@ int DataIOBase::read_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(&Vinf));
-      (*iter)->set_ptr(static_cast<void*>(&wind->Vinf));
+      (*iter)->set_ptr(static_cast<void *>(&wind->Vinf));
       err = read_header_param(*iter);
       if (err) rep.error("Error reading parameter", (*iter)->name);
       ++iter;
@@ -813,7 +813,7 @@ int DataIOBase::read_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(&Vinf));
-      (*iter)->set_ptr(static_cast<void*>(&wind->Vrot));
+      (*iter)->set_ptr(static_cast<void *>(&wind->Vrot));
       err = read_header_param(*iter);
       if (err) rep.error("Error reading parameter", (*iter)->name);
       ++iter;
@@ -825,7 +825,7 @@ int DataIOBase::read_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(&Tw));
-      (*iter)->set_ptr(static_cast<void*>(&wind->Tstar));
+      (*iter)->set_ptr(static_cast<void *>(&wind->Tstar));
       err = read_header_param(*iter);
       if (err) rep.error("Error reading parameter", (*iter)->name);
       ++iter;
@@ -837,7 +837,7 @@ int DataIOBase::read_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(&Rstar));
-      (*iter)->set_ptr(static_cast<void*>(&wind->Rstar));
+      (*iter)->set_ptr(static_cast<void *>(&wind->Rstar));
       err = read_header_param(*iter);
       if (err) rep.error("Error reading parameter", (*iter)->name);
       ++iter;
@@ -849,7 +849,7 @@ int DataIOBase::read_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(&Rstar));
-      (*iter)->set_ptr(static_cast<void*>(&wind->Bstar));
+      (*iter)->set_ptr(static_cast<void *>(&wind->Bstar));
       err = read_header_param(*iter);
       if (err) rep.error("Error reading parameter", (*iter)->name);
       ++iter;
@@ -861,7 +861,7 @@ int DataIOBase::read_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       }
-      (*iter)->set_ptr(static_cast<void*>(&wind->type));
+      (*iter)->set_ptr(static_cast<void *>(&wind->type));
       err = read_header_param(*iter);
       if (err) rep.error("Error reading parameter", (*iter)->name);
       ++iter;
@@ -874,7 +874,7 @@ int DataIOBase::read_simulation_parameters(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       }
       //(*iter)->set_ptr(static_cast<void *>(trcr));
-      (*iter)->set_ptr(static_cast<void*>(wind->tr));
+      (*iter)->set_ptr(static_cast<void *>(wind->tr));
       err = read_header_param(*iter);
       if (err) rep.error("Error reading parameter", (*iter)->name);
       //
@@ -896,7 +896,7 @@ int DataIOBase::read_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       }
-      (*iter)->set_ptr(static_cast<void*>(&wind->evolving_wind_file));
+      (*iter)->set_ptr(static_cast<void *>(&wind->evolving_wind_file));
       err = read_header_param(*iter);
       if (err) rep.error("Error reading parameter", (*iter)->name);
       ++iter;
@@ -912,7 +912,7 @@ int DataIOBase::read_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       }
-      (*iter)->set_ptr(static_cast<void*>(&wind->enhance_mdot));
+      (*iter)->set_ptr(static_cast<void *>(&wind->enhance_mdot));
       err = read_header_param(*iter);
       if (err) {
         cout << "failed to find WIND_" << isw
@@ -934,7 +934,7 @@ int DataIOBase::read_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       }
-      (*iter)->set_ptr(static_cast<void*>(&wind->xi));
+      (*iter)->set_ptr(static_cast<void *>(&wind->xi));
       err = read_header_param(*iter);
       if (err) {
         cout << "failed to find WIND_" << isw
@@ -951,7 +951,7 @@ int DataIOBase::read_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       }
-      (*iter)->set_ptr(static_cast<void*>(&wind->time_offset));
+      (*iter)->set_ptr(static_cast<void *>(&wind->time_offset));
       err = read_header_param(*iter);
       if (err) rep.error("Error reading parameter", (*iter)->name);
       ++iter;
@@ -963,7 +963,7 @@ int DataIOBase::read_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       }
-      (*iter)->set_ptr(static_cast<void*>(&wind->update_freq));
+      (*iter)->set_ptr(static_cast<void *>(&wind->update_freq));
       err = read_header_param(*iter);
       if (err) rep.error("Error reading parameter", (*iter)->name);
       ++iter;
@@ -975,7 +975,7 @@ int DataIOBase::read_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       }
-      (*iter)->set_ptr(static_cast<void*>(&wind->t_scalefactor));
+      (*iter)->set_ptr(static_cast<void *>(&wind->t_scalefactor));
       err = read_header_param(*iter);
       if (err) {
         cout << "Error reading parameter " << (*iter)->name;
@@ -1027,7 +1027,7 @@ int DataIOBase::read_simulation_parameters(
 // ##################################################################
 
 void DataIOBase::set_tracer_params(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   if (have_setup_tracers) {
@@ -1045,7 +1045,7 @@ void DataIOBase::set_tracer_params(
     SimPM.tracers = mem.myalloc(SimPM.tracers, SimPM.ntracer);
   }
 
-  class pm_base* p;
+  class pm_base *p;
 
   for (int i = 0; i < SimPM.ntracer; i++) {
     ostringstream temp;
@@ -1055,7 +1055,7 @@ void DataIOBase::set_tracer_params(
     temp << i;
     // cout <<"i="<<i<<", setting up tracer : "<<temp.str()<<"\n";
 
-    pm_string* ptemp =
+    pm_string *ptemp =
         new pm_string(temp.str(), &SimPM.tracers[i], "NEED_TRACER_VALUES!");
     p           = ptemp;
     p->critical = true;
@@ -1136,72 +1136,72 @@ void DataIOBase::set_windsrc_params()
     temp12.str("");
     temp12 << "WIND_" << n << "_t_scalefac";
 
-    pm_ddimarr* w001 = new pm_ddimarr(temp01.str());  // position of source (cm)
+    pm_ddimarr *w001 = new pm_ddimarr(temp01.str());  // position of source (cm)
     windsrc.push_back(w001);
 
-    pm_double* w002 = new pm_double(temp02.str());  // radius of wind BC (cm)
+    pm_double *w002 = new pm_double(temp02.str());  // radius of wind BC (cm)
     windsrc.push_back(w002);
 
-    pm_double* w003 = new pm_double(temp03.str());  // Mdot (Msun/yr)
+    pm_double *w003 = new pm_double(temp03.str());  // Mdot (Msun/yr)
     windsrc.push_back(w003);
 
-    pm_double* w004 = new pm_double(temp04.str());  // v_inf (km/s)
+    pm_double *w004 = new pm_double(temp04.str());  // v_inf (km/s)
     windsrc.push_back(w004);
 
-    pm_double* w009 = new pm_double(temp09.str());  // v_rot (km/s)
+    pm_double *w009 = new pm_double(temp09.str());  // v_rot (km/s)
     w009->critical  = false;
     windsrc.push_back(w009);
 
-    pm_double* w005 = new pm_double(temp05.str());  // Twind (K)
+    pm_double *w005 = new pm_double(temp05.str());  // Twind (K)
     windsrc.push_back(w005);
 
-    pm_double* w008 = new pm_double(temp08.str());  // radius of star (cm)
+    pm_double *w008 = new pm_double(temp08.str());  // radius of star (cm)
     windsrc.push_back(w008);
 
-    pm_double* w016 = new pm_double(temp16.str());  // B-field of star (G)
+    pm_double *w016 = new pm_double(temp16.str());  // B-field of star (G)
     w016->critical  = false;
     windsrc.push_back(w016);
 
-    pm_int* w006 = new pm_int(temp06.str());  // wind type flag
+    pm_int *w006 = new pm_int(temp06.str());  // wind type flag
     windsrc.push_back(w006);
 
-    pm_dvararr* w007 = new pm_dvararr(temp07.str());  // tracers
+    pm_dvararr *w007 = new pm_dvararr(temp07.str());  // tracers
     windsrc.push_back(w007);
 
     // wind-evolution file.
-    pm_string* w011 = new pm_string(temp11.str());
+    pm_string *w011 = new pm_string(temp11.str());
     w011->critical  = false;
     windsrc.push_back(w011);
 
     // enhance mdot based on rotation?
-    pm_int* w013   = new pm_int(temp13.str());
+    pm_int *w013   = new pm_int(temp13.str());
     w013->critical = false;
     windsrc.push_back(w013);
 
     // power-law index xi for rotating stars
-    pm_double* w014 = new pm_double(temp14.str());
+    pm_double *w014 = new pm_double(temp14.str());
     w014->critical  = false;
     windsrc.push_back(w014);
 
     // time offset
-    pm_double* w015 = new pm_double(temp15.str());
+    pm_double *w015 = new pm_double(temp15.str());
     double dv       = 0.0;
     w015->critical  = false;
-    w015->set_default_val(static_cast<void*>(&dv));
+    w015->set_default_val(static_cast<void *>(&dv));
     windsrc.push_back(w015);
 
     // update frequency (in years)
-    pm_double* w010 = new pm_double(temp10.str());
+    pm_double *w010 = new pm_double(temp10.str());
     w010->critical  = false;
     dv              = 1000.0;
-    w010->set_default_val(static_cast<void*>(&dv));
+    w010->set_default_val(static_cast<void *>(&dv));
     windsrc.push_back(w010);
 
     // scale factor (default must be 1, parameter must not be critical).
-    pm_double* w012 = new pm_double(temp12.str());
+    pm_double *w012 = new pm_double(temp12.str());
     w012->critical  = false;
     dv              = 1.0;
-    w012->set_default_val(static_cast<void*>(&dv));
+    w012->set_default_val(static_cast<void *>(&dv));
     windsrc.push_back(w012);
   }
   have_setup_windsrc = true;
@@ -1212,7 +1212,7 @@ void DataIOBase::set_windsrc_params()
 // ##################################################################
 
 void DataIOBase::set_rt_src_params(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   //
@@ -1320,43 +1320,43 @@ void DataIOBase::set_rt_src_params(
 #ifdef RT_TESTING
     cout << "Adding Source Effect Variables\n";
 #endif
-    pm_ddimarr* rtpos = new pm_ddimarr(temp2.str(), (SimPM.RS.sources[n].pos));
+    pm_ddimarr *rtpos = new pm_ddimarr(temp2.str(), (SimPM.RS.sources[n].pos));
     rt_src.push_back(rtpos);
-    pm_double* rtstr =
+    pm_double *rtstr =
         new pm_double(temp3.str(), &(SimPM.RS.sources[n].strength));
     rt_src.push_back(rtstr);
-    pm_int* rttyp = new pm_int(temp4.str(), &(SimPM.RS.sources[n].type));
+    pm_int *rttyp = new pm_int(temp4.str(), &(SimPM.RS.sources[n].type));
     rt_src.push_back(rttyp);
-    pm_int* rtinf = new pm_int(temp5.str(), &(SimPM.RS.sources[n].at_infinity));
+    pm_int *rtinf = new pm_int(temp5.str(), &(SimPM.RS.sources[n].at_infinity));
     rt_src.push_back(rtinf);
-    pm_int* rtupd = new pm_int(temp6.str(), &(SimPM.RS.sources[n].update));
+    pm_int *rtupd = new pm_int(temp6.str(), &(SimPM.RS.sources[n].update));
     rt_src.push_back(rtupd);
-    pm_int* rttsc = new pm_int(temp7.str(), &(SimPM.RS.sources[n].opacity_src));
+    pm_int *rttsc = new pm_int(temp7.str(), &(SimPM.RS.sources[n].opacity_src));
     rttsc->critical = false;
     rt_src.push_back(rttsc);
     // -------------------------------------------------------------
     // include this because of typo in old version: Remove later.
-    pm_int* rtts2 = new pm_int(tmp17.str(), &(SimPM.RS.sources[n].opacity_src));
+    pm_int *rtts2 = new pm_int(tmp17.str(), &(SimPM.RS.sources[n].opacity_src));
     rtts2->critical = false;
     rt_src.push_back(rtts2);
     // -------------------------------------------------------------
-    pm_int* rttvr = new pm_int(temp8.str(), &(SimPM.RS.sources[n].opacity_var));
+    pm_int *rttvr = new pm_int(temp8.str(), &(SimPM.RS.sources[n].opacity_var));
     rt_src.push_back(rttvr);
-    pm_int* rteff = new pm_int(temp9.str(), &(SimPM.RS.sources[n].effect));
+    pm_int *rteff = new pm_int(temp9.str(), &(SimPM.RS.sources[n].effect));
     rt_src.push_back(rteff);
-    pm_double* rtRst =
+    pm_double *rtRst =
         new pm_double(tmp10.str(), &(SimPM.RS.sources[n].Rstar), 0.0);
     rtRst->critical = false;
     rt_src.push_back(rtRst);
-    pm_double* rtTst =
+    pm_double *rtTst =
         new pm_double(tmp11.str(), &(SimPM.RS.sources[n].Tstar), 0.0);
     rtTst->critical = false;
     rt_src.push_back(rtTst);
-    pm_string* rtEvo =
+    pm_string *rtEvo =
         new pm_string(tmp12.str(), &(SimPM.RS.sources[n].EvoFile), "NOFILE");
     rtEvo->critical = false;
     rt_src.push_back(rtEvo);
-    pm_int* rtNBn   = new pm_int(tmp13.str(), &(SimPM.RS.sources[n].NTau), 1);
+    pm_int *rtNBn   = new pm_int(tmp13.str(), &(SimPM.RS.sources[n].NTau), 1);
     rtNBn->critical = false;
     rt_src.push_back(rtNBn);
   }
@@ -1376,9 +1376,9 @@ void DataIOBase::set_jet_pm_params()
     rep.error("WARNING! why set jet parameters?!", have_setup_jet_pm);
   }
 
-  pm_int* p051 = new pm_int("JetRadius", &JP.jetradius);
+  pm_int *p051 = new pm_int("JetRadius", &JP.jetradius);
   jet_pm.push_back(p051);
-  pm_dvararr* p052 = new pm_dvararr("JetState", JP.jetstate);
+  pm_dvararr *p052 = new pm_dvararr("JetState", JP.jetstate);
   jet_pm.push_back(p052);
 
   have_setup_jet_pm = true;
@@ -1389,7 +1389,7 @@ void DataIOBase::set_jet_pm_params()
 // ##################################################################
 
 void DataIOBase::set_bc_pm_params(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   // cout <<"setting up BC parameters\n";
@@ -1400,19 +1400,19 @@ void DataIOBase::set_bc_pm_params(
     rep.error("set bc parameters twice?!", have_setup_bc_pm);
   }
 
-  pm_string* p007 = new pm_string("BC_XN", &SimPM.BC_XN);
+  pm_string *p007 = new pm_string("BC_XN", &SimPM.BC_XN);
   p007->critical  = true;
   bc_pm.push_back(p007);
-  pm_string* p117 = new pm_string("BC_XP", &SimPM.BC_XP);
+  pm_string *p117 = new pm_string("BC_XP", &SimPM.BC_XP);
   p117->critical  = true;
   bc_pm.push_back(p117);
-  pm_string* p118 = new pm_string("BC_YN", &SimPM.BC_YN);
+  pm_string *p118 = new pm_string("BC_YN", &SimPM.BC_YN);
   bc_pm.push_back(p118);
-  pm_string* p119 = new pm_string("BC_YP", &SimPM.BC_YP);
+  pm_string *p119 = new pm_string("BC_YP", &SimPM.BC_YP);
   bc_pm.push_back(p119);
-  pm_string* p122 = new pm_string("BC_ZN", &SimPM.BC_ZN);
+  pm_string *p122 = new pm_string("BC_ZN", &SimPM.BC_ZN);
   bc_pm.push_back(p122);
-  pm_string* p123 = new pm_string("BC_ZP", &SimPM.BC_ZP);
+  pm_string *p123 = new pm_string("BC_ZP", &SimPM.BC_ZP);
   bc_pm.push_back(p123);
 
   //
@@ -1428,7 +1428,7 @@ void DataIOBase::set_bc_pm_params(
     intbc.width(3);
     intbc.fill('0');
     intbc << v;
-    pm_string* p124 = new pm_string(intbc.str(), &(SimPM.BC_INT[v]));
+    pm_string *p124 = new pm_string(intbc.str(), &(SimPM.BC_INT[v]));
     bc_pm.push_back(p124);
   }
   have_setup_bc_pm = true;
@@ -1439,7 +1439,7 @@ void DataIOBase::set_bc_pm_params(
 // ##################################################################
 
 int DataIOBase::write_simulation_parameters(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   if (params.empty())
@@ -1448,9 +1448,9 @@ int DataIOBase::write_simulation_parameters(
   //
   // loop over all *normal* parameters, writing one-by-one.
   //
-  pm_base* p = 0;
+  pm_base *p = 0;
   int err    = 0;
-  for (list<pm_base*>::iterator iter = params.begin(); iter != params.end();
+  for (list<pm_base *>::iterator iter = params.begin(); iter != params.end();
        ++iter) {
     p   = (*iter);
     err = write_header_param(p);
@@ -1465,7 +1465,7 @@ int DataIOBase::write_simulation_parameters(
   //
   // now write them:
   //
-  for (list<pm_base*>::iterator iter = bc_pm.begin(); iter != bc_pm.end();
+  for (list<pm_base *>::iterator iter = bc_pm.begin(); iter != bc_pm.end();
        ++iter) {
     p = (*iter);
     // cout <<p->name<<"    "; p->show_val(); cout <<"\n";
@@ -1478,7 +1478,7 @@ int DataIOBase::write_simulation_parameters(
   //
   if (!have_setup_tracers) set_tracer_params(SimPM);
   // cout <<"Writing tracer names.\n";
-  for (list<pm_base*>::iterator iter = tr_pm.begin(); iter != tr_pm.end();
+  for (list<pm_base *>::iterator iter = tr_pm.begin(); iter != tr_pm.end();
        ++iter) {
     p = (*iter);
     // cout <<"tracer val: "; p->show_val(); cout <<"\n";
@@ -1491,7 +1491,7 @@ int DataIOBase::write_simulation_parameters(
   //
   if (JP.jetic) {
     if (!have_setup_jet_pm) set_jet_pm_params();
-    for (list<pm_base*>::iterator iter = jet_pm.begin(); iter != jet_pm.end();
+    for (list<pm_base *>::iterator iter = jet_pm.begin(); iter != jet_pm.end();
          ++iter) {
       p   = (*iter);
       err = write_header_param(p);
@@ -1518,7 +1518,7 @@ int DataIOBase::write_simulation_parameters(
     // Data should be already set up and ready to go.
     //
     // cout <<"rt_src.size = "<<rt_src.size()<<"\n";
-    for (list<pm_base*>::iterator iter = rt_src.begin(); iter != rt_src.end();
+    for (list<pm_base *>::iterator iter = rt_src.begin(); iter != rt_src.end();
          ++iter) {
       p   = (*iter);
       err = write_header_param(p);
@@ -1545,7 +1545,7 @@ int DataIOBase::write_simulation_parameters(
     // Need to copy to a temp variable for the silo interface.
     // List elements are ordered src 0,1,2.
     //
-    list<pm_base*>::iterator iter = windsrc.begin();
+    list<pm_base *>::iterator iter = windsrc.begin();
 
     for (int isw = 0; isw < SWP.Nsources; isw++) {
       // double xd[MAX_NVAR];
@@ -1563,7 +1563,7 @@ int DataIOBase::write_simulation_parameters(
       }
       // SW.get_src_posn(isw,xd);
       //(*iter)->set_ptr(static_cast<void *>(xd));
-      (*iter)->set_ptr(static_cast<void*>(SWP.params[isw]->dpos));
+      (*iter)->set_ptr(static_cast<void *>(SWP.params[isw]->dpos));
       err = write_header_param(*iter);
       if (err) rep.error("Error writing WIND parameter", (*iter)->name);
       ++iter;
@@ -1574,7 +1574,7 @@ int DataIOBase::write_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       }
-      (*iter)->set_ptr(static_cast<void*>(&SWP.params[isw]->radius));
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->radius));
       err = write_header_param(*iter);
       if (err) rep.error("Error writing WIND parameter", (*iter)->name);
       ++iter;
@@ -1587,7 +1587,7 @@ int DataIOBase::write_simulation_parameters(
       }
       // SW.get_src_Mdot(isw,xd);
       //(*iter)->set_ptr(static_cast<void *>(xd));
-      (*iter)->set_ptr(static_cast<void*>(&SWP.params[isw]->Mdot));
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Mdot));
       err = write_header_param(*iter);
       if (err) rep.error("Error writing WIND parameter", (*iter)->name);
       ++iter;
@@ -1600,7 +1600,7 @@ int DataIOBase::write_simulation_parameters(
       }
       // SW.get_src_Vinf(isw,xd);
       //(*iter)->set_ptr(static_cast<void *>(xd));
-      (*iter)->set_ptr(static_cast<void*>(&SWP.params[isw]->Vinf));
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Vinf));
       err = write_header_param(*iter);
       if (err) rep.error("Error writing WIND parameter", (*iter)->name);
       ++iter;
@@ -1613,7 +1613,7 @@ int DataIOBase::write_simulation_parameters(
       }
       // SW.get_src_Vinf(isw,xd);
       //(*iter)->set_ptr(static_cast<void *>(xd));
-      (*iter)->set_ptr(static_cast<void*>(&SWP.params[isw]->Vrot));
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Vrot));
       err = write_header_param(*iter);
       if (err) rep.error("Error writing WIND parameter", (*iter)->name);
       ++iter;
@@ -1626,7 +1626,7 @@ int DataIOBase::write_simulation_parameters(
       }
       // SW.get_src_Tw(isw,xd);
       //(*iter)->set_ptr(static_cast<void *>(xd));
-      (*iter)->set_ptr(static_cast<void*>(&SWP.params[isw]->Tstar));
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Tstar));
       err = write_header_param(*iter);
       if (err) rep.error("Error writing WIND parameter", (*iter)->name);
       ++iter;
@@ -1639,7 +1639,7 @@ int DataIOBase::write_simulation_parameters(
       }
       // SW.get_src_Rstar(isw,xd);
       //(*iter)->set_ptr(static_cast<void *>(xd));
-      (*iter)->set_ptr(static_cast<void*>(&SWP.params[isw]->Rstar));
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Rstar));
       err = write_header_param(*iter);
       if (err) rep.error("Error writing WIND parameter", (*iter)->name);
       ++iter;
@@ -1652,7 +1652,7 @@ int DataIOBase::write_simulation_parameters(
       }
       // SW.get_src_Rstar(isw,xd);
       //(*iter)->set_ptr(static_cast<void *>(xd));
-      (*iter)->set_ptr(static_cast<void*>(&SWP.params[isw]->Bstar));
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Bstar));
       err = write_header_param(*iter);
       if (err) rep.error("Error writing WIND parameter", (*iter)->name);
       ++iter;
@@ -1665,7 +1665,7 @@ int DataIOBase::write_simulation_parameters(
       }
       // SW.get_src_type(isw,xi);
       //(*iter)->set_ptr(static_cast<void *>(xi));
-      (*iter)->set_ptr(static_cast<void*>(&SWP.params[isw]->type));
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->type));
       err = write_header_param(*iter);
       if (err) rep.error("Error writing WIND parameter", (*iter)->name);
       ++iter;
@@ -1676,7 +1676,7 @@ int DataIOBase::write_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       }
-      (*iter)->set_ptr(static_cast<void*>(SWP.params[isw]->tr));
+      (*iter)->set_ptr(static_cast<void *>(SWP.params[isw]->tr));
       for (int v = SimPM.ntracer; v < MAX_NVAR; v++) {
         SWP.params[isw]->tr[v] = 0.0;
       }
@@ -1694,7 +1694,7 @@ int DataIOBase::write_simulation_parameters(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       }
       (*iter)->set_ptr(
-          static_cast<void*>(&SWP.params[isw]->evolving_wind_file));
+          static_cast<void *>(&SWP.params[isw]->evolving_wind_file));
       err = write_header_param(*iter);
       if (err) rep.error("Error writing parameter", (*iter)->name);
       ++iter;
@@ -1706,7 +1706,7 @@ int DataIOBase::write_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       }
-      (*iter)->set_ptr(static_cast<void*>(&SWP.params[isw]->enhance_mdot));
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->enhance_mdot));
       err = write_header_param(*iter);
       if (err) rep.error("Error writing parameter", (*iter)->name);
       ++iter;
@@ -1718,7 +1718,7 @@ int DataIOBase::write_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       }
-      (*iter)->set_ptr(static_cast<void*>(&SWP.params[isw]->xi));
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->xi));
       err = write_header_param(*iter);
       if (err) rep.error("Error writing parameter", (*iter)->name);
       ++iter;
@@ -1730,7 +1730,7 @@ int DataIOBase::write_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       }
-      (*iter)->set_ptr(static_cast<void*>(&SWP.params[isw]->time_offset));
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->time_offset));
       err = write_header_param(*iter);
       if (err) rep.error("Error writing parameter", (*iter)->name);
       ++iter;
@@ -1742,7 +1742,7 @@ int DataIOBase::write_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       }
-      (*iter)->set_ptr(static_cast<void*>(&SWP.params[isw]->update_freq));
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->update_freq));
       err = write_header_param(*iter);
       if (err) rep.error("Error reading parameter", (*iter)->name);
       ++iter;
@@ -1754,7 +1754,7 @@ int DataIOBase::write_simulation_parameters(
         rep.error(
             "Stellar wind parameters not ordered as expected!", (*iter)->name);
       }
-      (*iter)->set_ptr(static_cast<void*>(&SWP.params[isw]->t_scalefactor));
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->t_scalefactor));
       err = write_header_param(*iter);
       if (err) rep.error("Error writing parameter", (*iter)->name);
       ++iter;
@@ -1770,7 +1770,7 @@ int DataIOBase::write_simulation_parameters(
 // ##################################################################
 
 int DataIOBase::check_header_parameters(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   // This is where we check that nvar,ndim,ntracer,outfile, etc. are all set

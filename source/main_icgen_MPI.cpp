@@ -42,7 +42,7 @@ using namespace std;
 // ##################################################################
 // ##################################################################
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
   int err = COMM->init(&argc, &argv);
   if (err) rep.error("comms init error", err);
@@ -61,7 +61,7 @@ int main(int argc, char** argv)
     return (1);
   }
 
-  string* args = 0;
+  string *args = 0;
   args         = new string[argc];
   for (int i = 0; i < argc; i++)
     args[i] = argv[i];
@@ -85,10 +85,10 @@ int main(int argc, char** argv)
   // cout << "rank: " << MCMD.get_myrank();
   // cout << " nproc: " << MCMD.get_nproc() << "\n";
 
-  class DataIOBase* dataio    = 0;
-  class get_sim_info* siminfo = 0;
-  class ICsetup_base* ic      = 0;
-  class ReadParams* rp        = 0;
+  class DataIOBase *dataio    = 0;
+  class get_sim_info *siminfo = 0;
+  class ICsetup_base *ic      = 0;
+  class ReadParams *rp        = 0;
   MP                          = 0;  // global microphysics class pointer.
 
   string pfile = argv[1];
@@ -126,19 +126,19 @@ int main(int argc, char** argv)
   SimPM.levels[0].dt         = 0.0;
   SimPM.levels[0].multiplier = 1;
 
-  class setup_fixed_grid* SimSetup = 0;
+  class setup_fixed_grid *SimSetup = 0;
   SimSetup                         = new setup_fixed_grid_pllel();
 
   //
   // Set up the Xmin/Xmax/Range/dx of each level in the NG grid
   //
-  vector<class GridBaseClass*> grid;
+  vector<class GridBaseClass *> grid;
   // have to do something with SimPM.levels[0] because this
   // is used to set the local domain size in decomposeDomain
   err = SimPM.levels[0].MCMD.decomposeDomain(SimPM, SimPM.levels[0]);
   rep.errorTest("Couldn't Decompose Domain!", 0, err);
 
-  class MCMDcontrol* MCMD = &(SimPM.levels[0].MCMD);
+  class MCMDcontrol *MCMD = &(SimPM.levels[0].MCMD);
 
   //
   // Now we have read in parameters from the file, so set up a grid.
@@ -284,7 +284,7 @@ int main(int argc, char** argv)
   //
   while (SWP.params.size() > 0) {
     int i                           = static_cast<int>(SWP.params.size()) - 1;
-    struct stellarwind_params* temp = SWP.params[i];
+    struct stellarwind_params *temp = SWP.params[i];
     SWP.params.pop_back();    // remove struct from list.
     temp = mem.myfree(temp);  // delete struct.
   }

@@ -36,7 +36,7 @@ using namespace std;
 // ##################################################################
 // ##################################################################
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
   int err = COMM->init(&argc, &argv);
   if (err) rep.error("comms init error", err);
@@ -51,7 +51,7 @@ int main(int argc, char** argv)
     return (1);
   }
 
-  string* args = 0;
+  string *args = 0;
   args         = new string[argc];
   for (int i = 0; i < argc; i++)
     args[i] = argv[i];
@@ -73,11 +73,11 @@ int main(int argc, char** argv)
   rep.kill_stdout_from_other_procs(0);
 #endif
 
-  class DataIOBase* dataio          = 0;
-  class get_sim_info* siminfo       = 0;
-  class ICsetup_base* ic            = 0;
-  class ReadParams* rp              = 0;
-  class setup_grid_NG_MPI* SimSetup = 0;
+  class DataIOBase *dataio          = 0;
+  class get_sim_info *siminfo       = 0;
+  class ICsetup_base *ic            = 0;
+  class ReadParams *rp              = 0;
+  class setup_grid_NG_MPI *SimSetup = 0;
   MP                                = 0;  // global microphysics class pointer.
 
   SimSetup = new setup_grid_NG_MPI();
@@ -101,7 +101,7 @@ int main(int argc, char** argv)
   // cout <<"ICGEN_NG_MPI setting up grid levels\n";
   SimSetup->setup_NG_grid_levels(SimPM);
   cout << "ICGEN_NG_MPI: grid levels set up.\n";
-  vector<class GridBaseClass*> grid;
+  vector<class GridBaseClass *> grid;
   grid.resize(SimPM.grid_nlevels);
 
   //
@@ -126,7 +126,7 @@ int main(int argc, char** argv)
 
   err = SimSetup->set_equations(SimPM);
   rep.errorTest("(icgen::set_equations) err!=0 Fix me!", 0, err);
-  class FV_solver_base* solver = SimSetup->get_solver_ptr();
+  class FV_solver_base *solver = SimSetup->get_solver_ptr();
 
   cout << "ICGEN_NG_MPI: setting up microphysics module\n";
   SimSetup->setup_microphysics(SimPM);
@@ -143,7 +143,7 @@ int main(int argc, char** argv)
 
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     // Set Ph=P in every cell.
-    cell* c = grid[l]->FirstPt();
+    cell *c = grid[l]->FirstPt();
     // rep.printVec("First Point",c->P,SimPM.nvar);
     do {
       for (int v = 0; v < SimPM.nvar; v++)
@@ -370,7 +370,7 @@ int main(int argc, char** argv)
   }
 
   for (unsigned int v = 0; v < grid.size(); v++) {
-    class GridBaseClass* g = grid[v];
+    class GridBaseClass *g = grid[v];
     delete g;
   }
 
@@ -381,7 +381,7 @@ int main(int argc, char** argv)
   //
   while (SWP.params.size() > 0) {
     int i                           = static_cast<int>(SWP.params.size()) - 1;
-    struct stellarwind_params* temp = SWP.params[i];
+    struct stellarwind_params *temp = SWP.params[i];
     SWP.params.pop_back();    // remove struct from list.
     temp = mem.myfree(temp);  // delete struct.
   }

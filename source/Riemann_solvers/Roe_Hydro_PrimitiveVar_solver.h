@@ -47,10 +47,10 @@ public:
   /// using the Roe avergae, see Toro (1999).
   ///
   int Roe_prim_var_solver(
-      const pion_flt*,  ///< input left state
-      const pion_flt*,  ///< input right state
-      const double,     ///< input EOS gamma
-      pion_flt*         ///< output pstar.
+      const pion_flt *,  ///< input left state
+      const pion_flt *,  ///< input right state
+      const double,      ///< input EOS gamma
+      pion_flt *         ///< output pstar.
   );
 
 private:

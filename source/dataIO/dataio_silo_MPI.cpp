@@ -70,9 +70,9 @@
 // ##################################################################
 
 dataio_silo_pllel::dataio_silo_pllel(
-    class SimParams& SimPM,  ///< pointer to simulation parameters
+    class SimParams &SimPM,  ///< pointer to simulation parameters
     std::string dtype,       ///< FLOAT or DOUBLE for files.
-    class MCMDcontrol* p) :
+    class MCMDcontrol *p) :
     dataio_silo(SimPM, dtype)
 {
 #ifdef TESTING
@@ -99,7 +99,7 @@ dataio_silo_pllel::~dataio_silo_pllel()
 
 int dataio_silo_pllel::ReadHeader(
     string infile,          ///< file to read from
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   int err  = 0;
@@ -175,8 +175,8 @@ int dataio_silo_pllel::ReadHeader(
 
 int dataio_silo_pllel::ReadData(
     string infile,
-    vector<class GridBaseClass*>& cg,  ///< address of vector of grid pointers.
-    class SimParams& SimPM             ///< pointer to simulation parameters
+    vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
+    class SimParams &SimPM              ///< pointer to simulation parameters
 )
 {
   dataio_silo::gp = cg[0];
@@ -273,7 +273,7 @@ int dataio_silo_pllel::ReadData(
   temp.width(4);
   temp << mpiPM->get_myrank();
   string meshname = temp.str();
-  DBquadmesh* qm  = DBGetQuadmesh(*db_ptr, meshname.c_str());
+  DBquadmesh *qm  = DBGetQuadmesh(*db_ptr, meshname.c_str());
   if (!qm) rep.error("failed to find quadmesh named as follows", meshname);
   int n;
   //
@@ -313,18 +313,18 @@ int dataio_silo_pllel::ReadData(
   // it as either float or double.
   //
   if (silo_dtype == DB_FLOAT) {
-    float** meshcoords = reinterpret_cast<float**>(qm->coords);
+    float **meshcoords = reinterpret_cast<float **>(qm->coords);
     //
     // check origin of subgrid is at the right place.
     //
-    float* nx = reinterpret_cast<float*>(nodex);
+    float *nx = reinterpret_cast<float *>(nodex);
     if (!pconst.equalD(nx[0], meshcoords[XX][0])) {
       cout << "I think x[0]=" << nx[0];
       cout << ", silo file says x[0]=" << meshcoords[XX][0] << "\n";
       rep.error("XX mesh not at right place...", nx[0] - meshcoords[XX][0]);
     }
     if (ndim > 1) {
-      nx = reinterpret_cast<float*>(nodey);
+      nx = reinterpret_cast<float *>(nodey);
       if (!pconst.equalD(nx[0], meshcoords[YY][0])) {
         cout << "nodey = " << nx[0] << " and coords[y]= " << meshcoords[YY][0]
              << "\n";
@@ -332,7 +332,7 @@ int dataio_silo_pllel::ReadData(
       }
     }
     if (ndim > 2) {
-      nx = reinterpret_cast<float*>(nodez);
+      nx = reinterpret_cast<float *>(nodez);
       if (!pconst.equalD(nx[0], meshcoords[ZZ][0])) {
         cout << "nodez = " << nx[0] << " and coords[z]= " << meshcoords[ZZ][0]
              << "\n";
@@ -344,16 +344,16 @@ int dataio_silo_pllel::ReadData(
     //
     // do the same thing for double precision.
     //
-    double** meshcoords = reinterpret_cast<double**>(qm->coords);
+    double **meshcoords = reinterpret_cast<double **>(qm->coords);
     //
     // check origin of subgrid is at the right place.
     //
-    double* nx = reinterpret_cast<double*>(nodex);
+    double *nx = reinterpret_cast<double *>(nodex);
     if (!pconst.equalD(nx[0], meshcoords[XX][0])) {
       rep.error("XX mesh not at right place...", nx[0] - meshcoords[XX][0]);
     }
     if (ndim > 1) {
-      nx = reinterpret_cast<double*>(nodey);
+      nx = reinterpret_cast<double *>(nodey);
       if (!pconst.equalD(nx[0], meshcoords[YY][0])) {
         cout << "nodey = " << nx[0] << " and coords[y]= " << meshcoords[YY][0]
              << "\n";
@@ -361,7 +361,7 @@ int dataio_silo_pllel::ReadData(
       }
     }
     if (ndim > 2) {
-      nx = reinterpret_cast<double*>(nodez);
+      nx = reinterpret_cast<double *>(nodez);
       if (!pconst.equalD(nx[0], meshcoords[ZZ][0])) {
         cout << "nodez = " << nx[0] << " and coords[z]= " << meshcoords[ZZ][0]
              << "\n";
@@ -383,7 +383,7 @@ int dataio_silo_pllel::ReadData(
       rep.error("dataio_silo_pllel::ReadData() error reading variable", (*i));
   }
   // Now assign Ph to be equal to P for each cell.
-  cell* cpt = gp->FirstPt();
+  cell *cpt = gp->FirstPt();
   do {
     for (int v = 0; v < SimPM.nvar; v++)
       cpt->Ph[v] = cpt->P[v];
@@ -409,9 +409,9 @@ int dataio_silo_pllel::ReadData(
 
 int dataio_silo_pllel::OutputData(
     const string outfilebase,
-    vector<class GridBaseClass*>& cg,  ///< grid pointers.
-    class SimParams& SimPM,            ///< simulation parameters
-    const long int file_counter        ///< timestep
+    vector<class GridBaseClass *> &cg,  ///< grid pointers.
+    class SimParams &SimPM,             ///< simulation parameters
+    const long int file_counter         ///< timestep
 )
 {
   int err = 0;
@@ -447,8 +447,8 @@ int dataio_silo_pllel::OutputData(
 
 int dataio_silo_pllel::SaveLevelData(
     const string outfilebase,    ///< filename
-    class GridBaseClass* cg,     ///< grid pointers.
-    class SimParams& SimPM,      ///< simulation parameters
+    class GridBaseClass *cg,     ///< grid pointers.
+    class SimParams &SimPM,      ///< simulation parameters
     const long int file_counter  ///< timestep
 )
 {
@@ -697,8 +697,8 @@ int dataio_silo_pllel::SaveLevelData(
 
     //  string mm_name="mesh";
     int nmesh       = mpiPM->get_nproc();
-    char** mm_names = 0;
-    int* meshtypes  = 0;
+    char **mm_names = 0;
+    int *meshtypes  = 0;
     int *groups     = 0,  // lists which group each process is in.
         *ranks      = 0;  // lists which rank each process has in its group.
 
@@ -754,7 +754,7 @@ int dataio_silo_pllel::SaveLevelData(
       strcpy(mm_names[i], temp.str().c_str());
     }
 
-    DBoptlist* mm_opts = DBMakeOptlist(7);
+    DBoptlist *mm_opts = DBMakeOptlist(7);
     DBAddOption(mm_opts, DBOPT_DTIME, &SimPM.simtime);
     DBAddOption(mm_opts, DBOPT_CYCLE, &SimPM.timestep);
     //  DBAddOption(mm_opts,DBOPT_ADJACENCY_NAME,mma_name.c_str()); //
@@ -909,7 +909,7 @@ int dataio_silo_pllel::choose_pllel_filename(
     const string fbase,      ///< filebase passed in from main code.
     const int igroup,        ///< group_rank (i.e. which file I write to)
     const int file_counter,  ///< file counter to use (e.g. timestep).
-    string& outfile          ///< write filename to this string.
+    string &outfile          ///< write filename to this string.
 )
 {
   ostringstream temp;
@@ -934,8 +934,8 @@ int dataio_silo_pllel::choose_pllel_filename(
 // ##################################################################
 
 int dataio_silo_pllel::setup_grid_properties(
-    class GridBaseClass* grid,  ///< pointer to data.
-    class SimParams& SimPM      ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to data.
+    class SimParams &SimPM      ///< pointer to simulation parameters
 )
 {
   // set grid parameters
@@ -971,17 +971,17 @@ int dataio_silo_pllel::setup_grid_properties(
     //
     // Allocate memory for node_coords, and set pointers.
     //
-    float** d   = 0;
+    float **d   = 0;
     float *posx = 0, *posy = 0, *posz = 0;
 
     if (node_coords) {
-      posx = reinterpret_cast<float*>(nodex);
-      posy = reinterpret_cast<float*>(nodey);
-      posz = reinterpret_cast<float*>(nodez);
+      posx = reinterpret_cast<float *>(nodex);
+      posy = reinterpret_cast<float *>(nodey);
+      posz = reinterpret_cast<float *>(nodez);
     }
     else {
       d           = mem.myalloc(d, ndim);
-      node_coords = reinterpret_cast<void**>(d);
+      node_coords = reinterpret_cast<void **>(d);
       posx        = mem.myalloc(posx, nx);
       if (ndim > 1) posy = mem.myalloc(posy, ny);
       if (ndim > 2) posz = mem.myalloc(posy, nz);
@@ -992,20 +992,20 @@ int dataio_silo_pllel::setup_grid_properties(
     //
     for (int i = 0; i < nx; i++)
       posx[i] = static_cast<float>(mpiPM->LocalXmin[XX] + i * dx);
-    nodex           = reinterpret_cast<void*>(posx);
+    nodex           = reinterpret_cast<void *>(posx);
     node_coords[XX] = nodex;
 
     if (ndim > 1) {
       for (int i = 0; i < ny; i++)
         posy[i] = static_cast<float>(mpiPM->LocalXmin[YY] + i * dx);
-      nodey           = reinterpret_cast<void*>(posy);
+      nodey           = reinterpret_cast<void *>(posy);
       node_coords[YY] = nodey;
     }
     if (ndim > 2) {
       posz = mem.myalloc(posz, nz);
       for (int i = 0; i < nz; i++)
         posz[i] = static_cast<float>(mpiPM->LocalXmin[ZZ] + i * dx);
-      nodez           = reinterpret_cast<void*>(posz);
+      nodez           = reinterpret_cast<void *>(posz);
       node_coords[ZZ] = nodez;
     }
   }
@@ -1014,17 +1014,17 @@ int dataio_silo_pllel::setup_grid_properties(
     // Allocate double-precision memory for node_coords, and set
     // pointers.
     //
-    double** d   = 0;
+    double **d   = 0;
     double *posx = 0, *posy = 0, *posz = 0;
 
     if (node_coords) {
-      posx = reinterpret_cast<double*>(nodex);
-      posy = reinterpret_cast<double*>(nodey);
-      posz = reinterpret_cast<double*>(nodez);
+      posx = reinterpret_cast<double *>(nodex);
+      posy = reinterpret_cast<double *>(nodey);
+      posz = reinterpret_cast<double *>(nodez);
     }
     else {
       d           = mem.myalloc(d, ndim);
-      node_coords = reinterpret_cast<void**>(d);
+      node_coords = reinterpret_cast<void **>(d);
       posx        = mem.myalloc(posx, nx);
       if (ndim > 1) posy = mem.myalloc(posy, ny);
       if (ndim > 2) posz = mem.myalloc(posz, nz);
@@ -1036,14 +1036,14 @@ int dataio_silo_pllel::setup_grid_properties(
     for (int i = 0; i < nx; i++) {
       posx[i] = static_cast<double>(mpiPM->LocalXmin[XX] + i * dx);
     }
-    nodex           = reinterpret_cast<void*>(posx);
+    nodex           = reinterpret_cast<void *>(posx);
     node_coords[XX] = nodex;
 
     if (ndim > 1) {
       for (int i = 0; i < ny; i++) {
         posy[i] = static_cast<double>(mpiPM->LocalXmin[YY] + i * dx);
       }
-      nodey           = reinterpret_cast<void*>(posy);
+      nodey           = reinterpret_cast<void *>(posy);
       node_coords[YY] = nodey;
     }
     if (ndim > 2) {
@@ -1051,7 +1051,7 @@ int dataio_silo_pllel::setup_grid_properties(
       for (int i = 0; i < nz; i++) {
         posz[i] = static_cast<double>(mpiPM->LocalXmin[ZZ] + i * dx);
       }
-      nodez           = reinterpret_cast<void*>(posz);
+      nodez           = reinterpret_cast<void *>(posz);
       node_coords[ZZ] = nodez;
     }
   }
@@ -1094,7 +1094,7 @@ int dataio_silo_pllel::setup_grid_properties(
 // ##################################################################
 
 void dataio_silo_pllel::create_data_arrays(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   // first check if we have the data arrays set up yet.
@@ -1111,22 +1111,22 @@ void dataio_silo_pllel::create_data_arrays(
   //
   if (!data0) {
     if (silo_dtype == DB_FLOAT) {
-      float* d = 0;
+      float *d = 0;
       d        = mem.myalloc(d, mpiPM->LocalNcell);
-      data0    = reinterpret_cast<void*>(d);
+      data0    = reinterpret_cast<void *>(d);
     }
     else {
-      double* d = 0;
+      double *d = 0;
       d         = mem.myalloc(d, mpiPM->LocalNcell);
-      data0     = reinterpret_cast<void*>(d);
+      data0     = reinterpret_cast<void *>(d);
     }
   }
 
   // set up array for mask variable for nested grid.
   if (!mask) {
-    int* m = 0;
+    int *m = 0;
     m      = mem.myalloc(m, mpiPM->LocalNcell);
-    mask   = reinterpret_cast<void*>(m);
+    mask   = reinterpret_cast<void *>(m);
   }
 
   //
@@ -1143,39 +1143,39 @@ void dataio_silo_pllel::create_data_arrays(
   //
   if ((vec_length > 1) && (!data1)) {
     if (silo_dtype == DB_FLOAT) {
-      float* d = 0;
+      float *d = 0;
       d        = mem.myalloc(d, mpiPM->LocalNcell);
-      data1    = reinterpret_cast<void*>(d);
+      data1    = reinterpret_cast<void *>(d);
     }
     else {
-      double* d = 0;
+      double *d = 0;
       d         = mem.myalloc(d, mpiPM->LocalNcell);
-      data1     = reinterpret_cast<void*>(d);
+      data1     = reinterpret_cast<void *>(d);
     }
   }
   if ((vec_length > 2) && (!data2)) {
     if (silo_dtype == DB_FLOAT) {
-      float* d = 0;
+      float *d = 0;
       d        = mem.myalloc(d, mpiPM->LocalNcell);
-      data2    = reinterpret_cast<void*>(d);
+      data2    = reinterpret_cast<void *>(d);
     }
     else {
-      double* d = 0;
+      double *d = 0;
       d         = mem.myalloc(d, mpiPM->LocalNcell);
-      data2     = reinterpret_cast<void*>(d);
+      data2     = reinterpret_cast<void *>(d);
     }
   }
 
   if ((vec_length > 1) && (!vec_data)) {
     if (silo_dtype == DB_FLOAT) {
-      float** d = 0;
+      float **d = 0;
       d         = mem.myalloc(d, vec_length);
-      vec_data  = reinterpret_cast<void**>(d);
+      vec_data  = reinterpret_cast<void **>(d);
     }
     else {
-      double** d = 0;
+      double **d = 0;
       d          = mem.myalloc(d, vec_length);
-      vec_data   = reinterpret_cast<void**>(d);
+      vec_data   = reinterpret_cast<void **>(d);
     }
     vec_data[0] = data0;
     if (vec_length > 1) vec_data[1] = data1;
@@ -1192,9 +1192,9 @@ void dataio_silo_pllel::create_data_arrays(
 // Write a mulitmesh adjacency object
 //
 int dataio_silo_pllel::write_multimeshadj(
-    class SimParams& SimPM,    ///< pointer to simulation parameters
-    DBfile* dbfile,            ///< pointer to silo file.
-    class GridBaseClass* ggg,  ///< pointer to data.
+    class SimParams &SimPM,    ///< pointer to simulation parameters
+    DBfile *dbfile,            ///< pointer to silo file.
+    class GridBaseClass *ggg,  ///< pointer to data.
     string mm_name,            ///< multimesh  name
     string mma_name            ///< multimeshadj name.
 )
@@ -1444,7 +1444,7 @@ int dataio_silo_pllel::write_multimeshadj(
   DBMkDir(dbfile, "Decomposition");
   DBSetDir(dbfile, "/Decomposition");
 
-  DBoptlist* mma_opts = DBMakeOptlist(2);
+  DBoptlist *mma_opts = DBMakeOptlist(2);
   DBAddOption(mma_opts, DBOPT_DTIME, &SimPM.simtime);
   DBAddOption(mma_opts, DBOPT_CYCLE, &SimPM.timestep);
 
@@ -1487,9 +1487,9 @@ int dataio_silo_pllel::write_multimeshadj(
 // Write a MRG tree object
 //
 int dataio_silo_pllel::write_MRGtree(
-    class SimParams& SimPM,    ///< pointer to simulation parameters
-    DBfile* dbfile,            ///< pointer to silo file.
-    class GridBaseClass* ggg,  ///< pointer to data.
+    class SimParams &SimPM,    ///< pointer to simulation parameters
+    DBfile *dbfile,            ///< pointer to silo file.
+    class GridBaseClass *ggg,  ///< pointer to data.
     string mm_name,            ///< multimesh  name
     string mrgt_name           ///< MRG tree name.
 )
@@ -1504,11 +1504,11 @@ int dataio_silo_pllel::write_MRGtree(
   //
   int mesh_type      = DB_MULTIMESH;
   int max_children   = 10;
-  DBoptlist* mt_opts = DBMakeOptlist(2);
+  DBoptlist *mt_opts = DBMakeOptlist(2);
   DBAddOption(mt_opts, DBOPT_DTIME, &SimPM.simtime);
   DBAddOption(mt_opts, DBOPT_CYCLE, &SimPM.timestep);
 
-  DBmrgtree* tree = DBMakeMrgtree(mesh_type, 0, max_children, mt_opts);
+  DBmrgtree *tree = DBMakeMrgtree(mesh_type, 0, max_children, mt_opts);
   if (!tree) rep.error("Failed to create mrgtree!", tree);
 
   //
@@ -1545,7 +1545,7 @@ int dataio_silo_pllel::write_MRGtree(
   int seg_types[nsegs];
   int seg_ids[nsegs];
   int seg_lens[nsegs];   // number of neighbours for mesh i
-  int* seg_data[nsegs];  // list of neighbours for mesh i
+  int *seg_data[nsegs];  // list of neighbours for mesh i
   for (int i = 0; i < nsegs; i++) {
     seg_types[i] = DB_BLOCKCENT;
     seg_ids[i]   = i;
@@ -1607,7 +1607,7 @@ int dataio_silo_pllel::write_MRGtree(
   err = 0;
   DBSetCwr(tree, child);
 
-  char* regn_names[1];
+  char *regn_names[1];
   regn_names[0] = strdup("@blocklist_%03d@n");
   err += DBAddRegionArray(
       tree,
@@ -1644,7 +1644,7 @@ int dataio_silo_pllel::write_MRGtree(
   int ns_types[nsegs];
   int ns_ids[nsegs];
   int ns_lens[nsegs];   // number of neighbours for mesh i
-  int* ns_data[nsegs];  // list of neighbours for mesh i
+  int *ns_data[nsegs];  // list of neighbours for mesh i
   for (int i = 0; i < nsegs; i++) {
     ns_types[i] = DB_NODECENT;
     ns_ids[i]   = i;
@@ -1757,7 +1757,7 @@ int dataio_silo_pllel::write_MRGtree(
   //
   // Maybe add this as a second region???
   //
-  char* regn_names2[1];
+  char *regn_names2[1];
   regn_names2[0] = strdup("@nodelist_%03d@n");
   err += DBAddRegionArray(
       tree,
@@ -1807,7 +1807,7 @@ int dataio_silo_pllel::write_MRGtree(
 // ##################################################################
 
 void dataio_silo_pllel::set_dir_in_file(
-    std::string& mydir,       ///< directory name.
+    std::string &mydir,       ///< directory name.
     const int my_rank,        ///< myrank (global).
     const int my_group_rank,  ///< myrank in group.
     const int level           ///< level in grid heirarchy
@@ -1834,7 +1834,7 @@ void dataio_silo_pllel::set_dir_in_file(
 
 void dataio_silo_pllel::mesh_name(
     const int rank,  ///< rank
-    string& mesh_name)
+    string &mesh_name)
 {
   //
   // Get mesh_name from rank

@@ -23,9 +23,9 @@ using namespace std;
 // cell-vertex-located source.
 //
 int stellar_wind_bc::BC_assign_STWIND(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    boundary_data* b)
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    boundary_data *b)
 {
   //
   // Check that we have an internal boundary struct, and that we have
@@ -161,8 +161,8 @@ int stellar_wind_bc::BC_assign_STWIND(
 // ##################################################################
 
 int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
     const int id                ///< source id
 )
 {
@@ -182,7 +182,7 @@ int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
   rep.printVec("src", srcpos, par.ndim);
 #endif
 
-  cell* c = grid->FirstPt_All();
+  cell *c = grid->FirstPt_All();
   do {
 #ifdef TESTING
     cout << "cell: " << grid->distance_vertex2cell(srcpos, c) << "\n";
@@ -212,10 +212,10 @@ int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
 // otherwise with a (slower) call to the  stellar wind class SW
 //
 int stellar_wind_bc::BC_update_STWIND(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
     const double simtime,       ///< current simulation time
-    boundary_data* b,           ///< Boundary to update.
+    boundary_data *b,           ///< Boundary to update.
     const int,                  ///< current fractional step being taken.
     const int                   ///< final step (not needed b/c fixed BC).
 )

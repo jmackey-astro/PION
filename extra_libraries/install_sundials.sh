@@ -22,15 +22,19 @@ HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
 
 export WGET='wget'
 
-source /usr/share/Modules/init/bash
-#module purge
-module load cmake3
-module load gcc
+case $HOSTNAME in
+  login[0-9].kay.ichec.ie)
+    echo "Compiling on KAY/ICHEC"
+    source /usr/share/Modules/init/bash
+    module purge
+    module load cmake3
+    module load gcc
 #module load cmake3/3.12.3
 #module load python py/intel
 #module load python numpy
-module list
-
+    module list
+    ;;
+esac
 
 export NCORES
 CURDIR=`pwd`
@@ -45,11 +49,13 @@ if [ "$COMPILE_SUNDIALS" == "yes" ]
 then
 #################################
 # Change these for new versions:
-  VERSION=sundials-5.6.1
+  # sundials-5.7.0.tar.gz
+  VERSION=sundials-5.7.0
   FILE="${VERSION}".tar.gz
   SRC_DIR="${VERSION}"
   BLD_DIR=sundials_build
-  REMOTE_URL=https://computing.llnl.gov/projects/sundials/download/"${FILE}"
+  REMOTE_URL=https://github.com/LLNL/sundials/releases/download/v5.7.0/"${FILE}"
+  #https://computing.llnl.gov/projects/sundials/download/"${FILE}"
   echo "********************************"
   echo "*** INSTALLING SUNDIALS/CVODE LIBRARY FILE=${FILE}****"
   echo "********************************"

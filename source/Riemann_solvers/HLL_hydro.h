@@ -27,19 +27,19 @@ protected:
   /// Calculate the positive and negative max. signal speeds based
   /// on the left and right states.
   void HLL_signal_speeds(
-      const pion_flt*,  ///< inputs
-      const pion_flt*,
+      const pion_flt *,  ///< inputs
+      const pion_flt *,
       const double,
-      double&,  ///< outputs
-      double&);
+      double &,  ///< outputs
+      double &);
 
   /// Calculate the HLL flux and interface state.
   int hydro_HLL_flux_solver(
-      const pion_flt*,  ///< input left state
-      const pion_flt*,  ///< input right state
-      const double,     ///< input gamma
-      pion_flt*,        ///< output flux
-      pion_flt*         ///< output interface state (cons.var.)
+      const pion_flt *,  ///< input left state
+      const pion_flt *,  ///< input right state
+      const double,      ///< input gamma
+      pion_flt *,        ///< output flux
+      pion_flt *         ///< output interface state (cons.var.)
   );
 };
 

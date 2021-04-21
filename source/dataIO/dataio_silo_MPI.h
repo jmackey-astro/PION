@@ -29,9 +29,9 @@ public:
   /// Constructor.
   ///
   dataio_silo_pllel(
-      class SimParams&,   ///< pointer to simulation parameters
-      std::string,        ///< FLOAT or DOUBLE for files.
-      class MCMDcontrol*  ///< address of MCMD controller class.
+      class SimParams &,   ///< pointer to simulation parameters
+      std::string,         ///< FLOAT or DOUBLE for files.
+      class MCMDcontrol *  ///< address of MCMD controller class.
   );
 
   /// Destructor (doensn't have much to do).
@@ -42,9 +42,9 @@ public:
   /// SaveLevelData() on each level.
   ///
   int OutputData(
-      const string,                   ///< File to write to
-      vector<class GridBaseClass*>&,  ///< grid pointers.
-      class SimParams&,               ///< pointer to simulation parameters
+      const string,                     ///< File to write to
+      vector<class GridBaseClass *> &,  ///< grid pointers.
+      class SimParams &,                ///< pointer to simulation parameters
       const long int  ///< number to stamp file with (e.g. timestep)
   );
 
@@ -58,8 +58,8 @@ public:
   /// present.
   ///
   int ReadHeader(
-      string,           ///< file to read from
-      class SimParams&  ///< simulation parameters
+      string,            ///< file to read from
+      class SimParams &  ///< simulation parameters
   );
 
   ///
@@ -70,13 +70,13 @@ public:
   /// hasn't.  The routine uses the PMPIO interface.
   ///
   virtual int ReadData(
-      string,                         ///< file to read from
-      vector<class GridBaseClass*>&,  ///< grid pointers.
-      class SimParams&                ///< simulation parameters
+      string,                           ///< file to read from
+      vector<class GridBaseClass *> &,  ///< grid pointers.
+      class SimParams &                 ///< simulation parameters
   );
 
 protected:
-  class MCMDcontrol* mpiPM;
+  class MCMDcontrol *mpiPM;
   ///
   /// Choose filename based on outfile, group_rank, and counter.
   ///
@@ -84,7 +84,7 @@ protected:
       const string,  ///< filebase passed in from main code.
       const int,     ///< group_rank (i.e. which file I write to)
       const int,     ///< file counter to use (e.g. timestep).
-      string&        ///< string to return filename in.
+      string &       ///< string to return filename in.
   );
 
   ///
@@ -92,7 +92,7 @@ protected:
   ///
   void mesh_name(
       const int,  ///< rank
-      string&     ///< mesh name returned in this string.
+      string &    ///< mesh name returned in this string.
   );
 
   ///
@@ -101,10 +101,10 @@ protected:
   /// rank_[global_rank]_domain_[rank_within_group]
   ///
   void set_dir_in_file(
-      std::string&,  ///< directory name.
-      const int,     ///< myrank (global).
-      const int,     ///< myrank in group.
-      const int      ///< level of grid in hierarchy
+      std::string &,  ///< directory name.
+      const int,      ///< myrank (global).
+      const int,      ///< myrank in group.
+      const int       ///< level of grid in hierarchy
   );
 
   ///
@@ -115,10 +115,10 @@ protected:
   /// variables such as Temperature, Div(B), etc.
   ///
   int SaveLevelData(
-      const string,          ///< File-base to write to
-      class GridBaseClass*,  ///< grid pointer.
-      class SimParams&,      ///< simulation parameters
-      const long int         ///< timestep
+      const string,           ///< File-base to write to
+      class GridBaseClass *,  ///< grid pointer.
+      class SimParams &,      ///< simulation parameters
+      const long int          ///< timestep
   );
 
   ///
@@ -127,8 +127,8 @@ protected:
   /// current processor.
   ///
   int setup_grid_properties(
-      class GridBaseClass*,  ///< pointer to data.
-      class SimParams&       ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to data.
+      class SimParams &       ///< pointer to simulation parameters
   );
 
   ///
@@ -137,7 +137,7 @@ protected:
   /// of global Ncell.
   ///
   void create_data_arrays(
-      class SimParams&  ///< pointer to simulation parameters
+      class SimParams &  ///< pointer to simulation parameters
   );
 
   int numfiles;  ///< number of files to split the data into.
@@ -146,22 +146,22 @@ protected:
   /// Write a mulitmesh adjacency object (obsolete and doesn't work!)
   ///
   int write_multimeshadj(
-      class SimParams&,      ///< pointer to simulation parameters
-      DBfile*,               ///< pointer to silo file.
-      class GridBaseClass*,  ///< pointer to data.
-      string,                ///< multimesh name
-      string                 ///< multimesh adjacency name.
+      class SimParams &,      ///< pointer to simulation parameters
+      DBfile *,               ///< pointer to silo file.
+      class GridBaseClass *,  ///< pointer to data.
+      string,                 ///< multimesh name
+      string                  ///< multimesh adjacency name.
   );
 
   ///
   /// Write an MRG tree object (replaces multimesh adjacency)
   ///
   int write_MRGtree(
-      class SimParams&,      ///< pointer to simulation parameters
-      DBfile*,               ///< pointer to silo file.
-      class GridBaseClass*,  ///< pointer to data.
-      string,                ///< multimesh name
-      string                 ///< MRG tree name.
+      class SimParams &,      ///< pointer to simulation parameters
+      DBfile *,               ///< pointer to silo file.
+      class GridBaseClass *,  ///< pointer to data.
+      string,                 ///< multimesh name
+      string                  ///< MRG tree name.
   );
 };
 

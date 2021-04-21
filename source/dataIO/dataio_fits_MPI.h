@@ -35,8 +35,8 @@ public:
   /// Constructor.
   ///
   DataIOFits_pllel(
-      class SimParams&,   ///< pointer to simulation parameters
-      class MCMDcontrol*  ///< address of MCMD controller class.
+      class SimParams &,   ///< pointer to simulation parameters
+      class MCMDcontrol *  ///< address of MCMD controller class.
   );
 
   /// Destructor (doensn't have much to do).
@@ -59,9 +59,9 @@ public:
   /// if the solver is an MHD solver).
   ///
   int OutputData(
-      const string,                   ///< File to write to
-      vector<class GridBaseClass*>&,  ///< address of vector of grid pointers.
-      class SimParams&,               ///< pointer to simulation parameters
+      const string,                     ///< File to write to
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
+      class SimParams &,                ///< pointer to simulation parameters
       const long int  ///< number to stamp file with (e.g. timestep)
   );
 
@@ -73,11 +73,11 @@ public:
   /// variables such as Temperature, Div(B), etc.
   ///
   int SaveLevelData(
-      const string,          ///< File-base to write to
-      const int,             ///< level in nested grid to write.
-      class GridBaseClass*,  ///< grid pointer.
-      class SimParams&,      ///< simulation parameters
-      const long int         ///< timestep
+      const string,           ///< File-base to write to
+      const int,              ///< level in nested grid to write.
+      class GridBaseClass *,  ///< grid pointer.
+      class SimParams &,      ///< simulation parameters
+      const long int          ///< timestep
   );
 
   ///
@@ -86,13 +86,13 @@ public:
   /// from the fits header, which should be read first.
   ///
   int ReadData(
-      string,                         ///< file to read from
-      vector<class GridBaseClass*>&,  ///< address of vector of grid pointers.
-      class SimParams&                ///< pointer to simulation parameters
+      string,                           ///< file to read from
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
+      class SimParams &                 ///< pointer to simulation parameters
   );
 
 protected:
-  class MCMDcontrol* mpiPM;
+  class MCMDcontrol *mpiPM;
 };
 
 #endif  // if FITS

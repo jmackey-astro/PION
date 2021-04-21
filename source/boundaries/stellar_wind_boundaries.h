@@ -30,9 +30,9 @@ protected:
   /// wind can be latitude-dependent.
   ///
   int BC_assign_STWIND(
-      class SimParams&,      ///< pointer to simulation parameters
-      class GridBaseClass*,  ///< pointer to grid.
-      boundary_data*);
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *);
 
   ///
   /// Update internal stellar wind boundaries -- these are (possibly
@@ -41,12 +41,12 @@ protected:
   /// (slower) call to the stellar wind class SW
   ///
   int BC_update_STWIND(
-      class SimParams&,      ///< pointer to simulation parameters
-      class GridBaseClass*,  ///< pointer to grid.
-      const double,          ///< current simulation time
-      boundary_data*,        ///< Boundary to update.
-      const int,             ///< current fractional step being taken.
-      const int              ///< final step.
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      const double,           ///< current simulation time
+      boundary_data *,        ///< Boundary to update.
+      const int,              ///< current fractional step being taken.
+      const int               ///< final step.
   );
 
   ///
@@ -55,8 +55,8 @@ protected:
   /// coords below.
   ///
   virtual int BC_assign_STWIND_add_cells2src(
-      class SimParams&,      ///< pointer to simulation parameters
-      class GridBaseClass*,  ///< pointer to grid.
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
       // boundary_data *, ///< boundary ptr.
       const int  ///< source id
   );

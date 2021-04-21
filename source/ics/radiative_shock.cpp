@@ -44,8 +44,8 @@ IC_radiative_shock::~IC_radiative_shock()
 // ##################################################################
 
 int IC_radiative_shock::setup_data(
-    class ReadParams* rrp,    ///< pointer to parameter list.
-    class GridBaseClass* ggg  ///< pointer to grid
+    class ReadParams *rrp,    ///< pointer to parameter list.
+    class GridBaseClass *ggg  ///< pointer to grid
 )
 {
   int err = 0;
@@ -166,7 +166,7 @@ int IC_radiative_shock::setup_RadiativeShock()
       trup[t] = 0.5;
   }
 
-  class cell* c = gg->FirstPt();
+  class cell *c = gg->FirstPt();
   do {
     c->P[RO] = rho0;
     c->P[PG] = pg;
@@ -249,7 +249,7 @@ int IC_radiative_shock::setup_OutflowRadiativeShock()
       trdn[t] = 0.0;
   }
 
-  class cell* c = gg->FirstPt();
+  class cell *c = gg->FirstPt();
   double dpos[SimPM->ndim];
   do {
     CI.get_dpos(c, dpos);

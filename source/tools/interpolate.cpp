@@ -10,6 +10,7 @@
 ///   checking for linear/bilinear int., fixed bug in linear int.
 /// - 2017.07.26 JM: added root_find_bilinear_vec() function.
 /// - 2019.09.03 JM: changed spline interpolation to use GSL
+/// - 2021.04.09 JM: switched GSL for Boost library.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -43,35 +44,39 @@ interpolate_arrays::~interpolate_arrays()
   // cout <<"timers.size: "<<timers.size()<<"\n";
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 void interpolate_arrays::spline(
-    const double* x,
-    const double* y,
+    const double *x,
+    const double *y,
     const int n,
     double yp1,
     double ypn,
-    int& id  ///< reference id for this spline interpolation.
+    int &id  ///< reference id for this spline interpolation.
 )
 {
-
-  // set up GSL interpolation object.
-  size_t len = static_cast<size_t>(n);
-  int err    = 0;
-
-  gsl_spline* data = gsl_spline_alloc(gsl_interp_cspline, len);
-
-  err = gsl_spline_init(data, x, y, len);
-  if (err) rep.error("gsl spline setup", err);
-
+  vector<double> vx(x, x + n);
+  vector<double> vy(y, y + n);
+  using boost::math::interpolators::makima;
+  class makima<vector<double> > *data =
+      new makima<std::vector<double> >(move(vx), move(vy), yp1, ypn);
   id = slist.size();
   slist.push_back(data);
+
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void interpolate_arrays::splint(
     const double xa[],
@@ -79,30 +84,70 @@ void interpolate_arrays::splint(
     const int id,  ///< reference id for this spline interpolation.
     const int n,
     const double x,
-    double* y)
+    double *y)
 {
   if (id >= static_cast<int>(slist.size())) rep.error("bad splint request", id);
-
-  // gsl_interp_accel *temp =  gsl_interp_accel_alloc();
-  int err = gsl_spline_eval_e(slist[id], x, 0, y);
-  if (err) {
-    rep.printVec("xa", xa, n);
-    rep.printVec("ya", ya, n);
-    cout << "id=" << id << ", n=" << n << ", x=" << x << "\n";
-    rep.error("gsl splint lookup", err);
-  }
-  // gsl_interp_accel_free(temp);
+  using boost::math::interpolators::makima;
+  class makima<vector<double> > data = *(slist[id]);
+  *y                                 = data(x);
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
+void interpolate_arrays::spline_vec(
+    vector<double> x,
+    vector<double> y,
+    double yp1,
+    double ypn,
+    int &id  ///< reference id for this spline interpolation.
+)
+{
+  using boost::math::interpolators::makima;
+  class makima<vector<double> > *data =
+      new makima<std::vector<double> >(move(x), move(y));
+
+  id = slist.size();
+  slist.push_back(data);
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void interpolate_arrays::splint_vec(
+    const int id,  ///< reference id for this spline interpolation.
+    const double x,
+    double *y)
+{
+  if (id >= static_cast<int>(slist.size())) rep.error("bad splint request", id);
+  using boost::math::interpolators::makima;
+  class makima<vector<double> > data = *(slist[id]);
+  *y                                 = data(x);
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 void interpolate_arrays::root_find_linear_vec(
-    const vector<double>& xarr,  ///< Array of x values.
-    const vector<double>& yarr,  ///< Array of y values.
+    const vector<double> &xarr,  ///< Array of x values.
+    const vector<double> &yarr,  ///< Array of y values.
     const double xreq,           ///< x we are searching for.
-    double& yreq                 ///< pointer to result.
+    double &yreq                 ///< pointer to result.
 )
 {
   //
@@ -151,11 +196,11 @@ void interpolate_arrays::root_find_linear_vec(
 // ##################################################################
 
 void interpolate_arrays::root_find_linear(
-    const double* xarr,  ///< Array of x values.
-    const double* yarr,  ///< Array of y values.
+    const double *xarr,  ///< Array of x values.
+    const double *yarr,  ///< Array of y values.
     const size_t len,    ///< Array sizes
     const double xreq,   ///< x we are searching for.
-    double* yreq         ///< pointer to result.
+    double *yreq         ///< pointer to result.
 )
 {
   //
@@ -203,12 +248,12 @@ void interpolate_arrays::root_find_linear(
 // ##################################################################
 
 void interpolate_arrays::root_find_bilinear(
-    const double* x,     ///< Array of x values.
-    const double* y,     ///< Array of y values.
-    double** f,          ///< Array of function values
-    const size_t* len,   ///< Array sizes
-    const double* xreq,  ///< (x,y) we are searching for.
-    double* res          ///< pointer to result.
+    const double *x,     ///< Array of x values.
+    const double *y,     ///< Array of y values.
+    double **f,          ///< Array of function values
+    const size_t *len,   ///< Array sizes
+    const double *xreq,  ///< (x,y) we are searching for.
+    double *res          ///< pointer to result.
 )
 {
   //
@@ -292,11 +337,11 @@ void interpolate_arrays::root_find_bilinear(
 // ##################################################################
 
 double interpolate_arrays::root_find_bilinear_vec(
-    const vector<double>& x,          ///< Array of x values.
-    const vector<double>& y,          ///< Array of y values.
-    const vector<vector<double>>& f,  ///< Array of function values
-    const vector<size_t>& len,        ///< Array sizes
-    const vector<double>& xreq        ///< (x,y) we are searching for.
+    const vector<double> &x,           ///< Array of x values.
+    const vector<double> &y,           ///< Array of y values.
+    const vector<vector<double> > &f,  ///< Array of function values
+    const vector<size_t> &len,         ///< Array sizes
+    const vector<double> &xreq         ///< (x,y) we are searching for.
 )
 {
   //
@@ -385,13 +430,13 @@ double interpolate_arrays::root_find_bilinear_vec(
 // ##################################################################
 
 double interpolate_arrays::root_find_trilinear_vec(
-    const vector<double>& x_vec,  ///< Array of x values
-    const vector<double>& y_vec,  ///< Array of y values
-    const vector<double>& z_vec,  ///< Array of z values
-    const vector<vector<vector<double>>>&
-        f,                           ///< Array of function values f(x,y,z)
-    const vector<size_t>& vec_size,  ///< Array sizes
-    const vector<double>& input      ///< (x,y,z) we want f for.
+    const vector<double> &x_vec,  ///< Array of x values
+    const vector<double> &y_vec,  ///< Array of y values
+    const vector<double> &z_vec,  ///< Array of z values
+    const vector<vector<vector<double> > >
+        &f,                          ///< Array of function values f(x,y,z)
+    const vector<size_t> &vec_size,  ///< Array sizes
+    const vector<double> &input      ///< (x,y,z) we want f for.
 )
 {
   //

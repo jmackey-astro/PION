@@ -113,7 +113,7 @@ setup_fixed_grid::~setup_fixed_grid()
 // ##################################################################
 
 void setup_fixed_grid::setup_cell_extra_data(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   //
@@ -150,8 +150,8 @@ void setup_fixed_grid::setup_cell_extra_data(
 // ##################################################################
 
 int setup_fixed_grid::setup_grid(
-    vector<class GridBaseClass*>& g,  ///< grid pointers.
-    class SimParams& SimPM            ///< pointer to simulation parameters
+    vector<class GridBaseClass *> &g,  ///< grid pointers.
+    class SimParams &SimPM             ///< pointer to simulation parameters
 )
 {
   cout << "(pion ug)  Setting up computational grid\n";
@@ -159,7 +159,7 @@ int setup_fixed_grid::setup_grid(
 #ifdef TESTING
   cout << "Init::setup_grid: \n";
 #endif  // TESTING
-  class GridBaseClass** grid = &(g[0]);
+  class GridBaseClass **grid = &(g[0]);
 
   if (SimPM.ndim < 1 || SimPM.ndim > 3)
     rep.error("Only know 1D,2D,3D methods!", SimPM.ndim);
@@ -246,7 +246,7 @@ int setup_fixed_grid::setup_grid(
 // ##################################################################
 
 int setup_fixed_grid::setup_microphysics(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   // cout <<"------------------------------------------------------------\n";
@@ -440,8 +440,8 @@ int setup_fixed_grid::setup_microphysics(
 // ##################################################################
 
 int setup_fixed_grid::setup_raytracing(
-    class SimParams& SimPM,    ///< pointer to simulation parameters
-    class GridBaseClass* grid  ///< pointer to grid
+    class SimParams &SimPM,    ///< pointer to simulation parameters
+    class GridBaseClass *grid  ///< pointer to grid
 )
 {
   if (!SimPM.EP.raytracing) {
@@ -578,7 +578,7 @@ int setup_fixed_grid::setup_raytracing(
 // ##################################################################
 
 int setup_fixed_grid::setup_evolving_RT_sources(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   //
@@ -611,7 +611,7 @@ int setup_fixed_grid::setup_evolving_RT_sources(
   // and set the rest of the data in the 'star' struct.
   //
   for (int isrc = 0; isrc < Nevo; isrc++) {
-    struct star* istar = &(SimPM.STAR[isrc]);
+    struct star *istar = &(SimPM.STAR[isrc]);
     istar->Nlines      = 0;
     istar->time.resize(0);
     istar->Log_L.resize(0);
@@ -621,13 +621,13 @@ int setup_fixed_grid::setup_evolving_RT_sources(
     //
     // Open file
     //
-    FILE* infile = 0;
+    FILE *infile = 0;
     infile       = fopen(istar->file_name.c_str(), "r");
     if (!infile)
       rep.error("can't open wind evolving radiation source file", infile);
     // Skip first two lines
     char line[512];
-    char* rval = 0;
+    char *rval = 0;
     rval       = fgets(line, 512, infile);
     if (!rval) rep.error("setup_fixed_grid, RS, file read 1", line);
     rval = fgets(line, 512, infile);
@@ -684,9 +684,9 @@ int setup_fixed_grid::setup_evolving_RT_sources(
 // ##################################################################
 
 int setup_fixed_grid::update_evolving_RT_sources(
-    class SimParams& SimPM,   ///< simulation parameters
+    class SimParams &SimPM,   ///< simulation parameters
     const double time,        ///< current simulation time
-    class RayTracingBase* RT  ///< pointer to raytracing class
+    class RayTracingBase *RT  ///< pointer to raytracing class
 )
 {
   bool updated = false;
@@ -695,7 +695,7 @@ int setup_fixed_grid::update_evolving_RT_sources(
   //
   for (unsigned int isrc = 0; isrc < SimPM.STAR.size(); isrc++) {
     // cout <<"isrc="<<isrc<<" of "<<SimPM.STAR.size()<<"\n";
-    struct star* istar = &(SimPM.STAR[isrc]);
+    struct star *istar = &(SimPM.STAR[isrc]);
     istar->t_now       = time;
     size_t i           = istar->last_line;
 
@@ -755,7 +755,7 @@ int setup_fixed_grid::update_evolving_RT_sources(
 
       // Copy new data into SimPM.RS, send updates to RayTracing and
       // microphysics classes.
-      struct rad_src_info* rs = &(SimPM.RS.sources[istar->src_id]);
+      struct rad_src_info *rs = &(SimPM.RS.sources[istar->src_id]);
       rs->strength            = istar->Lnow;
       rs->Rstar               = istar->Rnow;
       rs->Tstar               = istar->Tnow;
@@ -791,8 +791,8 @@ int setup_fixed_grid::update_evolving_RT_sources(
 // ##################################################################
 
 int setup_fixed_grid::boundary_conditions(
-    class SimParams& par,               ///< simulation parameters
-    vector<class GridBaseClass*>& grid  ///< grid pointers.
+    class SimParams &par,                ///< simulation parameters
+    vector<class GridBaseClass *> &grid  ///< grid pointers.
     // class GridBaseClass *grid ///< pointer to grid.
 )
 {
@@ -822,8 +822,8 @@ int setup_fixed_grid::boundary_conditions(
 // ##################################################################
 
 int setup_fixed_grid::setup_boundary_structs(
-    class SimParams& par,       ///< simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
+    class SimParams &par,       ///< simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
     const int)
 {
 #ifdef TESTING
@@ -840,7 +840,7 @@ int setup_fixed_grid::setup_boundary_structs(
     cout << "size=" << grid->BC_bd.size() << " allocating boundaries\n";
 #endif
     for (int b = 0; b < len; b++) {
-      struct boundary_data* bd = new boundary_data;
+      struct boundary_data *bd = new boundary_data;
       if (b < 2 * par.ndim)
         bd->depth = grid->boundary_depth(static_cast<enum direction>(b));
       grid->BC_bd.push_back(bd);
@@ -1004,7 +1004,7 @@ int setup_fixed_grid::setup_boundary_structs(
 // ##################################################################
 
 void setup_fixed_grid::setup_dataio_class(
-    class SimParams& par,  ///< simulation parameters
+    class SimParams &par,  ///< simulation parameters
     const int typeOfFile   ///< type of I/O: 1=text,2=fits,5=silo
 )
 {
@@ -1048,7 +1048,7 @@ void setup_fixed_grid::setup_dataio_class(
 // ##################################################################
 
 int setup_fixed_grid::set_equations(
-    class SimParams& par  ///< simulation parameters
+    class SimParams &par  ///< simulation parameters
 )
 {
   cout << "(pion)  Setting up solver for equations\n";

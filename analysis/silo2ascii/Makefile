@@ -71,7 +71,7 @@ OPT += -DSILO
 #MAKE_UNAME=JUROPA
 #MAKE_UNAME=standard
 #MAKE_UNAME=stokes
-#MAKE_UNAME=debian10
+MAKE_UNAME=debian10
 
 # All machines and options need readline and maths
 #LDFLAGS = -lreadline
@@ -130,6 +130,7 @@ ifeq ($(MAKE_UNAME), debian10)
   CXXFLAGS += -DCVODE3
   INC  = -I/usr/include
   INC += -I${SRCDIR}
+  INC += -I/home/jm/code/pion/extra_libraries/boost/include
   LDFLAGS += -lm
   LDFLAGS += -L/usr/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu

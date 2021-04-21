@@ -23,19 +23,19 @@ class periodic_bc {
 protected:
   /// Assigns data to a periodic boundary.
   virtual int BC_assign_PERIODIC(
-      class SimParams&,      ///< pointer to simulation parameters
-      const int,             ///< level in grid hierarchy
-      class GridBaseClass*,  ///< pointer to grid.
-      boundary_data*);
+      class SimParams &,      ///< pointer to simulation parameters
+      const int,              ///< level in grid hierarchy
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *);
 
   /// Updates data on a periodic boundary.
   virtual int BC_update_PERIODIC(
-      class SimParams&,      ///< pointer to simulation parameters
-      const int,             ///< level in grid hierarchy
-      class GridBaseClass*,  ///< pointer to grid.
-      boundary_data*,        ///< Boundary to update.
-      const int,             ///< current fractional step being taken.
-      const int              ///< final step.
+      class SimParams &,      ///< pointer to simulation parameters
+      const int,              ///< level in grid hierarchy
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *,        ///< Boundary to update.
+      const int,              ///< current fractional step being taken.
+      const int               ///< final step.
   );
 };
 

@@ -33,18 +33,18 @@ protected:
   /// the boundary and the tangential field is reversed.
   ///
   virtual int BC_assign_JETREFLECT(
-      class SimParams&,      ///< pointer to simulation parameters
-      class GridBaseClass*,  ///< pointer to grid.
-      boundary_data*);
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *);
 
   /// Updates data on JetReflect boundary (see
   /// BC_assign_JETREFLECT description).
   virtual int BC_update_JETREFLECT(
-      class SimParams&,      ///< pointer to simulation parameters
-      class GridBaseClass*,  ///< pointer to grid.
-      boundary_data*,        ///< Boundary to update.
-      const int,             ///< current fractional step being taken.
-      const int              ///< final step.
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *,        ///< Boundary to update.
+      const int,              ///< current fractional step being taken.
+      const int               ///< final step.
   );
 };
 

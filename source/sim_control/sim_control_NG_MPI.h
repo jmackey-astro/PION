@@ -46,11 +46,11 @@ public:
   /// \retval 1 failure
   ///
   int Init(
-      string,   ///< Name of input file.
-      int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...).
-      int,      ///< Number of command-line arguments.
-      string*,  ///< Pointer to array of command-line arguments.
-      vector<class GridBaseClass*>&  ///< grid pointers.
+      string,    ///< Name of input file.
+      int,       ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...).
+      int,       ///< Number of command-line arguments.
+      string *,  ///< Pointer to array of command-line arguments.
+      vector<class GridBaseClass *> &  ///< grid pointers.
   );
 
   ///
@@ -61,7 +61,7 @@ public:
   /// the time by one timestep, all in a loop which runs until
   /// end-of-sim is reached.
   ///
-  int Time_Int(vector<class GridBaseClass*>&  ///< grid pointers.
+  int Time_Int(vector<class GridBaseClass *> &  ///< grid pointers.
   );
 
 protected:
@@ -85,14 +85,14 @@ protected:
   /// Calculates total values of conserved quantities.
   ///
   virtual int initial_conserved_quantities(
-      vector<class GridBaseClass*>&  ///< grid pointers.
+      vector<class GridBaseClass *> &  ///< grid pointers.
   );
 
   ///
   /// Checks Total energy relative to initial value, and prints a
   /// message if not.
   ///
-  int check_energy_cons(vector<class GridBaseClass*>&  ///< grid pointers.
+  int check_energy_cons(vector<class GridBaseClass *> &  ///< grid pointers.
   );
 
 };  // sim_control_NG_MPI

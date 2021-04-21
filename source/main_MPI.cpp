@@ -46,7 +46,7 @@ using namespace std;
 #error "PARALLEL not defined, but trying to compile the mpi version!"
 #endif
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
 
   int err = COMM->init(&argc, &argv);
@@ -58,7 +58,7 @@ int main(int argc, char** argv)
   //
   // Set up simulation controller class.
   //
-  class sim_control_pllel* sim_control = 0;
+  class sim_control_pllel *sim_control = 0;
   sim_control                          = new class sim_control_pllel();
   if (!sim_control)
     rep.error("(PION) Couldn't initialise sim_control_pllel", sim_control);
@@ -74,7 +74,7 @@ int main(int argc, char** argv)
   //
   // copy cmd-line args into an array of strings (for ease of use.
   //
-  string* args = 0;
+  string *args = 0;
   args         = new string[argc];
   for (int i = 0; i < argc; i++) {
     args[i] = argv[i];
@@ -128,7 +128,7 @@ int main(int argc, char** argv)
   //
   // set up pointer to grid base class.
   //
-  vector<class GridBaseClass*> grid;
+  vector<class GridBaseClass *> grid;
 
   //
   // Reset max. walltime to run the simulation for, if needed.

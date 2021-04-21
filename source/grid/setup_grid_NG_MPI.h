@@ -48,15 +48,15 @@ public:
   /// Populate the array SimPM.levels with Xmin,Xmax,Range,dx,etc.
   ///
   void setup_NG_grid_levels(
-      class SimParams&  ///< pointer to simulation parameters
+      class SimParams &  ///< pointer to simulation parameters
   );
 
   ///
   /// Sets up a NG grid.
   ///
   int setup_grid(
-      vector<class GridBaseClass*>&,  ///< vector of grids.
-      class SimParams&                ///< pointer to simulation parameters
+      vector<class GridBaseClass *> &,  ///< vector of grids.
+      class SimParams &                 ///< pointer to simulation parameters
   );
 
   ///
@@ -64,8 +64,8 @@ public:
   /// raytracer associated with each grid.
   ///
   int setup_raytracing(
-      class SimParams&,              ///< pointer to simulation parameters
-      vector<class GridBaseClass*>&  ///< address of vector of grid.
+      class SimParams &,               ///< pointer to simulation parameters
+      vector<class GridBaseClass *> &  ///< address of vector of grid.
   );
 
   ///
@@ -75,8 +75,8 @@ public:
   /// boundary cells as such.
   ///
   int boundary_conditions(
-      class SimParams&,              ///< pointer to simulation parameters
-      vector<class GridBaseClass*>&  ///< address of vector of grid.
+      class SimParams &,               ///< pointer to simulation parameters
+      vector<class GridBaseClass *> &  ///< address of vector of grid.
   );
 
   //---------------------------------------
@@ -87,15 +87,15 @@ protected:
   /// Set the boundary conditions string and initialise BC_bd
   ///
   virtual int setup_boundary_structs(
-      class SimParams&,      ///< reference to SimParams list.
-      class GridBaseClass*,  ///< pointer to grid.
-      const int              ///< level of grid in NG
+      class SimParams &,      ///< reference to SimParams list.
+      class GridBaseClass *,  ///< pointer to grid.
+      const int               ///< level of grid in NG
   );
 
   /// function to setup parallel data-I/O class.
   void setup_dataio_class(
-      class SimParams&,  ///< pointer to simulation parameters
-      const int          ///< type of I/O: 2=fits,5=silo
+      class SimParams &,  ///< pointer to simulation parameters
+      const int           ///< type of I/O: 2=fits,5=silo
   );
 
 };  // setup_grid_NG_MPI

@@ -72,8 +72,8 @@ IC_photevap_multi_clumps::~IC_photevap_multi_clumps()
 // ##################################################################
 
 int IC_photevap_multi_clumps::setup_data(
-    class ReadParams* rrp,    ///< pointer to parameter list.
-    class GridBaseClass* ggg  ///< pointer to grid
+    class ReadParams *rrp,    ///< pointer to parameter list.
+    class GridBaseClass *ggg  ///< pointer to grid
 )
 {
   int err = 0;
@@ -141,7 +141,7 @@ int IC_photevap_multi_clumps::setup_data(
 // ##################################################################
 
 int IC_photevap_multi_clumps::get_ambient_params(
-    class ReadParams* rparams, struct ambient_data* amb)
+    class ReadParams *rparams, struct ambient_data *amb)
 {
   int err = 0;
   if (!amb || !rparams)
@@ -352,7 +352,7 @@ int IC_photevap_multi_clumps::get_ambient_params(
 // ##################################################################
 
 int IC_photevap_multi_clumps::get_alternate_ambient_params(
-    class ReadParams* rparams, struct ambient_data* amb)
+    class ReadParams *rparams, struct ambient_data *amb)
 {
   int err = 0;
   if (!amb || !rparams)
@@ -506,13 +506,13 @@ int IC_photevap_multi_clumps::get_alternate_ambient_params(
 // ##################################################################
 
 int IC_photevap_multi_clumps::add_ambient_data_to_grid(
-    class GridBaseClass* ggg, struct ambient_data* amb)
+    class GridBaseClass *ggg, struct ambient_data *amb)
 {
   int err = 0;
   if (!ggg || !amb)
     rep.error("Null pointer passed to add_ambient_data_to_grid()", ggg);
 
-  class cell* c = ggg->FirstPt();
+  class cell *c = ggg->FirstPt();
   double cloudcentre[MAX_DIM];
   for (int v = 0; v < MAX_DIM; v++)
     cloudcentre[v] = 0.0;
@@ -567,7 +567,7 @@ int IC_photevap_multi_clumps::add_ambient_data_to_grid(
 // ##################################################################
 
 int IC_photevap_multi_clumps::add_alternate_ambient_data_to_grid(
-    class GridBaseClass* ggg, struct ambient_data* amb)
+    class GridBaseClass *ggg, struct ambient_data *amb)
 {
   int err = 0;
   if (!ggg || !amb)
@@ -580,7 +580,7 @@ int IC_photevap_multi_clumps::add_alternate_ambient_data_to_grid(
   //
   double cutoff = ambdivider;
 
-  class cell* c = ggg->FirstPt();
+  class cell *c = ggg->FirstPt();
   //  int xmin=;
   do {
     // Set values of primitive variables.
@@ -602,7 +602,7 @@ int IC_photevap_multi_clumps::add_alternate_ambient_data_to_grid(
 // ##################################################################
 
 int IC_photevap_multi_clumps::get_random_clump_params(
-    class ReadParams* rparams, struct random_clump_data* rcd)
+    class ReadParams *rparams, struct random_clump_data *rcd)
 {
   int err = 0;
   string seek, str;
@@ -782,7 +782,7 @@ int IC_photevap_multi_clumps::get_random_clump_params(
 // ##################################################################
 
 int IC_photevap_multi_clumps::rc_fixed_number_params(
-    class ReadParams* rparams, struct random_clump_data* rcd)
+    class ReadParams *rparams, struct random_clump_data *rcd)
 {
   int err = 0;
   string seek, str;
@@ -832,7 +832,7 @@ int IC_photevap_multi_clumps::rc_fixed_number_params(
 // ##################################################################
 
 int IC_photevap_multi_clumps::rc_fixed_mass_range_params(
-    class ReadParams* rparams, struct random_clump_data* rcd)
+    class ReadParams *rparams, struct random_clump_data *rcd)
 {
   int err = 0;
 
@@ -892,7 +892,7 @@ int IC_photevap_multi_clumps::rc_fixed_mass_range_params(
 // ##################################################################
 
 int IC_photevap_multi_clumps::rc_set_clump_properties(
-    struct random_clump_data* rcd)
+    struct random_clump_data *rcd)
 {
   int err     = 0;
   double xmax = SimPM->Range[XX], ymax = SimPM->Range[YY],
@@ -988,7 +988,7 @@ int IC_photevap_multi_clumps::rc_set_clump_properties(
 // ##################################################################
 
 int IC_photevap_multi_clumps::add_random_clumps_to_grid(
-    class GridBaseClass* ggg, struct random_clump_data* rcd)
+    class GridBaseClass *ggg, struct random_clump_data *rcd)
 {
   int err = 0;
   if (!rcd->used) {
@@ -997,7 +997,7 @@ int IC_photevap_multi_clumps::add_random_clumps_to_grid(
   }
   cout << "Adding random clumps to grid...";
 
-  cell* c = ggg->FirstPt();
+  cell *c = ggg->FirstPt();
   do {
     err += clumps_set_dens(c, rcd->Nclumps, rcd->cl, rcd->profile);
   } while ((c = ggg->NextPt(c)) != 0);
@@ -1031,7 +1031,7 @@ int IC_photevap_multi_clumps::add_random_clumps_to_grid(
 // ##################################################################
 
 int IC_photevap_multi_clumps::get_strategic_clump_params(
-    class ReadParams* rparams, struct strategic_clump_data* scd)
+    class ReadParams *rparams, struct strategic_clump_data *scd)
 {
   int err = 0;
   string seek, str;
@@ -1250,7 +1250,7 @@ int IC_photevap_multi_clumps::get_strategic_clump_params(
 // ##################################################################
 
 int IC_photevap_multi_clumps::add_strategic_clumps_to_grid(
-    class GridBaseClass* ggg, struct strategic_clump_data* scd)
+    class GridBaseClass *ggg, struct strategic_clump_data *scd)
 {
   int err = 0;
   if (!scd->used) {
@@ -1259,7 +1259,7 @@ int IC_photevap_multi_clumps::add_strategic_clumps_to_grid(
   }
   cout << "Adding strategic clumps to grid...";
 
-  cell* c = ggg->FirstPt();
+  cell *c = ggg->FirstPt();
   do {
     err += clumps_set_dens(c, scd->Nclumps, scd->cl, scd->profile);
 
@@ -1285,7 +1285,7 @@ double IC_photevap_multi_clumps::random_frac()
 // ##################################################################
 
 int IC_photevap_multi_clumps::clumps_set_dens(
-    class cell* c, const int Nclumps, struct clump* cl, const int profile)
+    class cell *c, const int Nclumps, struct clump *cl, const int profile)
 {
   int err = 0;
   double x0[ndim], x1[ndim], dpos[ndim];
@@ -1419,7 +1419,7 @@ int IC_photevap_multi_clumps::clumps_set_dens(
   return err;
 }
 
-void IC_photevap_multi_clumps::print_clump(struct clump* rc)
+void IC_photevap_multi_clumps::print_clump(struct clump *rc)
 {
   cout << "--clump overdensity:" << rc->overdensity
        << "  mass/Msun:" << rc->mass / pconst.Msun() << endl;

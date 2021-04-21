@@ -67,7 +67,7 @@ get_sim_info::~get_sim_info()
 
 int get_sim_info::read_gridparams(
     string pfile,           ///< paramfile.
-    class SimParams& SimPM  ///< pointer to simulation paramters.
+    class SimParams &SimPM  ///< pointer to simulation paramters.
 )
 {
   int err          = 0;
@@ -618,7 +618,7 @@ int get_sim_info::read_gridparams(
 // ##################################################################
 
 int get_sim_info::read_radsources(
-    class SimParams& SimPM  ///< pointer to simulation paramters.
+    class SimParams &SimPM  ///< pointer to simulation paramters.
 )
 {
   if (!rp) return 1;
@@ -778,7 +778,7 @@ int get_sim_info::read_radsources(
 // ##################################################################
 
 int get_sim_info::read_wind_sources(
-    class SimParams& SimPM  ///< pointer to simulation paramters.
+    class SimParams &SimPM  ///< pointer to simulation paramters.
 )
 {
   if (!rp) return 1;
@@ -939,7 +939,7 @@ int get_sim_info::read_wind_sources(
     // Now we should have got all the sources, so add the source to
     // the global list.
     //
-    struct stellarwind_params* wind = 0;
+    struct stellarwind_params *wind = 0;
     wind                            = mem.myalloc(wind, 1);
     wind->id                        = i;
     for (int v = 0; v < MAX_DIM; v++)
@@ -977,7 +977,7 @@ int get_sim_info::read_wind_sources(
 // ##################################################################
 
 int get_sim_info::read_extra_physics(
-    class SimParams& SimPM  ///< pointer to simulation paramters.
+    class SimParams &SimPM  ///< pointer to simulation paramters.
 )
 {
   if (!rp) return 1;
@@ -1119,8 +1119,8 @@ int get_sim_info::read_units()
 // ##################################################################
 
 int get_sim_info::read_jet_params(
-    class SimParams& s_par,  ///< simulation paramters.
-    class JetParams& jpar    ///< jet parameters class.
+    class SimParams &s_par,  ///< simulation paramters.
+    class JetParams &jpar    ///< jet parameters class.
 )
 {
   string a;

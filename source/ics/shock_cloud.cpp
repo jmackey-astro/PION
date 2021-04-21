@@ -42,8 +42,8 @@ IC_shock_cloud::~IC_shock_cloud()
 }
 
 int IC_shock_cloud::setup_data(
-    class ReadParams* rrp,    ///< pointer to parameter list.
-    class GridBaseClass* ggg  ///< pointer to grid
+    class ReadParams *rrp,    ///< pointer to parameter list.
+    class GridBaseClass *ggg  ///< pointer to grid
 )
 {
   int err = 0;
@@ -374,7 +374,7 @@ int IC_shock_cloud::setup_shockcloud()
   cout << "\t\tAssigning primitive vectors.\n";
   double vfrac = 0.0;
   double dpos[ndim];
-  class cell* cpt = gg->FirstPt();
+  class cell *cpt = gg->FirstPt();
   do {
     CI.get_dpos(cpt, dpos);
     // Set values of primitive variables.
