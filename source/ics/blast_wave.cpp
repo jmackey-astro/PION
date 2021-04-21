@@ -42,8 +42,8 @@ IC_blastwave::~IC_blastwave()
 // ##################################################################
 
 int IC_blastwave::setup_data(
-    class ReadParams* rrp,    ///< pointer to parameter list.
-    class GridBaseClass* ggg  ///< pointer to grid
+    class ReadParams *rrp,    ///< pointer to parameter list.
+    class GridBaseClass *ggg  ///< pointer to grid
 )
 {
   int err = 0;
@@ -397,7 +397,7 @@ int IC_blastwave::setup_sph_bw_File(const std::string fname, const int tr_id)
   // Set up data vectors
   //
   std::vector<double> radius;
-  std::vector<std::vector<double>> data;
+  std::vector<std::vector<double> > data;
   data.resize(SimPM->nvar);
   //
   // now read in the data
@@ -456,7 +456,7 @@ int IC_blastwave::setup_sph_bw_File(const std::string fname, const int tr_id)
   // Now add the primitive variables to the grid.
   //
   cout << "Assigning primitive vectors.\n";
-  class cell* c = gg->FirstPt();
+  class cell *c = gg->FirstPt();
   double dpos[ndim];
   i = 0;
   do {
@@ -535,7 +535,7 @@ int IC_blastwave::setup_sph_bw()
   // Data.
   //
   cout << "Assigning primitive vectors.\n";
-  class cell* cpt = gg->FirstPt();
+  class cell *cpt = gg->FirstPt();
   double dpos[ndim];
   do {
     // Set values of primitive variables.
@@ -608,7 +608,7 @@ int IC_blastwave::setup_cyl_bw()
 
   // Data.
   cout << "Assigning primitive vectors.\n";
-  class cell* cpt = gg->FirstPt();
+  class cell *cpt = gg->FirstPt();
   double dpos[ndim];
   do {
     // Set values of primitive variables.
@@ -683,7 +683,7 @@ int IC_blastwave::setup_cart_bw()
 
   // Data.
   cout << "Assigning primitive vectors.\n";
-  class cell* cpt = gg->FirstPt();
+  class cell *cpt = gg->FirstPt();
   do {
     // Set values of primitive variables.
     cpt->P[RO] = bw_RO;

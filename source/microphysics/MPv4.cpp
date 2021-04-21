@@ -89,7 +89,7 @@ using namespace std;
 // ##################################################################
 
 void MPv4::get_error_tolerances(
-    double* reltol,  ///< relative error tolerance.
+    double *reltol,  ///< relative error tolerance.
     double atol[]    ///< absolute error tolerances
 )
 {
@@ -108,8 +108,8 @@ void MPv4::get_error_tolerances(
 // ##################################################################
 
 void MPv4::get_problem_size(
-    int* ne,  ///< number of equations
-    int* np   ///< number of parameters in user_data vector.
+    int *ne,  ///< number of equations
+    int *np   ///< number of parameters in user_data vector.
 )
 {
   *ne = N_equations;
@@ -144,8 +144,8 @@ void MPv4::setup_local_vectors()
 // ##################################################################
 
 int MPv4::convert_prim2local(
-    const double* p_in,  ///< primitive vector from grid cell (length nv_prim)
-    double* p_local)
+    const double *p_in,  ///< primitive vector from grid cell (length nv_prim)
+    double *p_local)
 {
   //
   // First set x_Hp and E_int using the explicit solver
@@ -217,7 +217,7 @@ int MPv4::ydot(
     double,                ///< current time (UNUSED)
     const N_Vector y_now,  ///< current Y-value
     N_Vector y_dot,        ///< vector for Y-dot values
-    const double*          ///< extra user-data vector (UNUSED)
+    const double *         ///< extra user-data vector (UNUSED)
 )
 {
   //
@@ -245,9 +245,9 @@ MPv4::MPv4(
     const int csys,  ///< Coordinate System flag
     const int nv,    ///< Total number of variables in state vector
     const int ntr    ///< Number of tracer variables in state vector.
-    const std::string* tracers,   ///< List of what the tracer variables mean.
-    struct which_physics* ephys,  ///< extra physics stuff.
-    struct rad_sources* rsrcs,    ///< radiation sources.
+    const std::string *tracers,   ///< List of what the tracer variables mean.
+    struct which_physics *ephys,  ///< extra physics stuff.
+    struct rad_sources *rsrcs,    ///< radiation sources.
     const double g                ///< EOS Gamma
     ) :
     MPv3(nd, csys, nv, ntr, tracers, ephys, rsrcs, g)
@@ -280,20 +280,20 @@ MPv4::~MPv4()
 // ##################################################################
 
 int MPv4::TimeUpdateMP_RTnew(
-    const double* p_in,  ///< Primitive Vector to be updated.
+    const double *p_in,  ///< Primitive Vector to be updated.
     const int N_heat,    ///< Number of UV heating sources.
-    const std::vector<struct rt_source_data>& heat_src,
+    const std::vector<struct rt_source_data> &heat_src,
     ///< list of UV-heating column densities and source properties.
     const int N_ion,  ///< number of ionising radiation sources.
-    const std::vector<struct rt_source_data>& ion_src,
+    const std::vector<struct rt_source_data> &ion_src,
     ///< list of ionising src column densities and source properties.
-    double* p_out,    ///< Destination Vector for updated values
+    double *p_out,    ///< Destination Vector for updated values
                       ///< (can be same as first Vector.
     const double dt,  ///< Time Step to advance by.
     const double,     ///< EOS gamma.
     const int,        ///< Switch for what type of integration to use.
                       ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-    double* dsigma    ///< Time-averaged projected neutral mass density, passed
+    double *dsigma    ///< Time-averaged projected neutral mass density, passed
                       ///< back to raytracer.
 )
 {
@@ -315,7 +315,7 @@ int MPv4::TimeUpdateMP_RTnew(
 // ##################################################################
 
 double MPv4::timescales(
-    const double* p_in,  ///< Current cell state vector.
+    const double *p_in,  ///< Current cell state vector.
     const double g,      ///< EOS gamma.
     const bool tc,       ///< set to 'true' if including cooling time.
     const bool tr,       ///< set to 'true' if including recombination time.
@@ -412,12 +412,12 @@ double MPv4::timescales(
 /// Default setting is DT05, which limits by 1.0*E/Edot and 1.0/ydot
 ///
 double MPv4::timescales_RT(
-    const double* p_in,  ///< Current cell state vector.
+    const double *p_in,  ///< Current cell state vector.
     const int N_heat,    ///< Number of UV heating sources.
-    const std::vector<struct rt_source_data>& heat_src,
+    const std::vector<struct rt_source_data> &heat_src,
     ///< list of UV-heating column densities and source properties.
     const int N_ion,  ///< number of ionising radiation sources.
-    const std::vector<struct rt_source_data>& ion_src,
+    const std::vector<struct rt_source_data> &ion_src,
     ///< list of ionising src column densities and source properties.
     const double  ///< EOS gamma.
 )

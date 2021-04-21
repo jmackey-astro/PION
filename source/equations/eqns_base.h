@@ -44,9 +44,9 @@ public:
 
   ///  Converts from primitive to conserved variables.
   virtual void PtoU(
-      const pion_flt*,  ///< pointer to Primitive variables.
-      pion_flt*,        ///< pointer to conserved variables.
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< pointer to Primitive variables.
+      pion_flt *,        ///< pointer to conserved variables.
+      const double       ///< Gas constant gamma.
       ) = 0;
 
   ///
@@ -55,35 +55,35 @@ public:
   /// update went badly.
   ///
   virtual int UtoP(
-      const pion_flt*,  ///< pointer to conserved variables.
-      pion_flt*,        ///< pointer to Primitive variables.
-      const double,     ///< minimum temperature/pressure allowed
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< pointer to conserved variables.
+      pion_flt *,        ///< pointer to Primitive variables.
+      const double,      ///< minimum temperature/pressure allowed
+      const double       ///< Gas constant gamma.
       ) = 0;
 
   ///  Converts from primitive and conserved variables to corresponding flux.
   /// This assumes that the direction has been set correctly.
   ///
   virtual void PUtoFlux(
-      const pion_flt*,  ///< pointer to Primitive variables.
-      const pion_flt*,  ///< pointer to conserved variables.
-      pion_flt*         ///< Pointer to flux variable.
+      const pion_flt *,  ///< pointer to Primitive variables.
+      const pion_flt *,  ///< pointer to conserved variables.
+      pion_flt *         ///< Pointer to flux variable.
       ) = 0;
 
   ///  convert direct from primitive variables to flux.
   /// Creates conserved variable array as an intermediate step,
   /// and then calls PUtoFlux().
   virtual void PtoFlux(
-      const pion_flt*,  ///< pointer to Primitive variables.
-      pion_flt*,        ///< Pointer to flux variable.
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< pointer to Primitive variables.
+      pion_flt *,        ///< Pointer to flux variable.
+      const double       ///< Gas constant gamma.
   );
 
   ///  Converts from conserved variables to flux.
   virtual void UtoFlux(
-      const pion_flt*,  ///< Pointer to conserved variables state vector.
-      pion_flt*,        ///< Pointer to flux variable state vector.
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< Pointer to conserved variables state vector.
+      pion_flt *,        ///< Pointer to flux variable state vector.
+      const double       ///< Gas constant gamma.
       ) = 0;
 
   ///
@@ -91,8 +91,8 @@ public:
   /// a primitive variable vector.
   ///
   virtual double eint(
-      const pion_flt*,  ///< Primitive State Vector.
-      const double      ///< gas EOS gamma.
+      const pion_flt *,  ///< Primitive State Vector.
+      const double       ///< gas EOS gamma.
       ) = 0;
 
   ///
@@ -100,8 +100,8 @@ public:
   /// vector.
   ///
   virtual double Etot(
-      const pion_flt*,  ///< Primitive State Vector.
-      const double      ///< gas EOS gamma.
+      const pion_flt *,  ///< Primitive State Vector.
+      const double       ///< gas EOS gamma.
       ) = 0;
 
   ///
@@ -109,8 +109,8 @@ public:
   /// vector.
   ///
   virtual double Enthalpy(
-      const pion_flt*,  ///< State Vector.
-      const double      ///< gas EOS gamma.
+      const pion_flt *,  ///< State Vector.
+      const double       ///< gas EOS gamma.
       ) = 0;
 
   ///
@@ -118,8 +118,8 @@ public:
   /// variable vector.
   ///
   virtual double Ptot(
-      const pion_flt*,  ///< Primitive State Vector.
-      const double      ///< gas EOS gamma.
+      const pion_flt *,  ///< Primitive State Vector.
+      const double       ///< gas EOS gamma.
       ) = 0;
 
   ///
@@ -137,7 +137,7 @@ public:
   ///  For eqns_Euler it returns the hydro speed, for MHD the fast speed.
   ///
   virtual double maxspeed(
-      const pion_flt* p,  ///< Pointer to primitive variables.
+      const pion_flt *p,  ///< Pointer to primitive variables.
       const double g      ///< Gas constant gamma.
       ) = 0;
 
@@ -154,9 +154,9 @@ public:
   ///  Rearranges a vector for a rotation by pi/2
   ///
   virtual void rotate(
-      pion_flt*,  ///< State vector
-      enum axes,  ///< Initial orientation.
-      enum axes   ///< Final Orientation.
+      pion_flt *,  ///< State vector
+      enum axes,   ///< Initial orientation.
+      enum axes    ///< Final Orientation.
   );
 
   ///
@@ -167,8 +167,8 @@ public:
   /// version just rotates the fluid velocity components.
   ///
   virtual void rotateXY(
-      pion_flt*,  ///< State vector
-      double      ///< angle to rotate through in 2d plane.
+      pion_flt *,  ///< State vector
+      double       ///< angle to rotate through in 2d plane.
   );
 
   ///
@@ -176,8 +176,8 @@ public:
   /// (velocity is set by sound speed)
   ///
   virtual void SetAvgState(
-      const pion_flt*,  ///< Mean Primitive var. state vector
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< Mean Primitive var. state vector
+      const double       ///< Gas constant gamma.
       ) = 0;
 
 protected:
@@ -200,7 +200,7 @@ protected:
   /// state vector of typical values in the simulation (for testing
   /// if a variable value is small or large).
   ///
-  pion_flt* eq_refvec;
+  pion_flt *eq_refvec;
 };
 
 #endif  // EQNS_BASE_H

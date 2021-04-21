@@ -47,7 +47,7 @@ public:
    * \retval 0 success
    * \retval 1 failure
    * */
-  int read_paramfile(const std::string& /**< Parameterfile to open. */);
+  int read_paramfile(const std::string & /**< Parameterfile to open. */);
   /** \brief prints all parameters and values to stdout.
    *
    * This function is just for testing really, as all it does
@@ -60,7 +60,7 @@ public:
    * of parameters for a matching name, returning the value if
    * it finds a parameter, and a null string if it can't.
    * */
-  std::string find_parameter(const std::string&);
+  std::string find_parameter(const std::string &);
 
 private:
   std::vector<struct parameter> params;  ///< List of Parameters;

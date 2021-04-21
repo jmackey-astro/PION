@@ -48,13 +48,13 @@ using namespace std;
 #include "sim_control/sim_control_NG.h"
 #include "tools/reporting.h"
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
 
   //
   // Set up simulation controller class.
   //
-  class sim_control_NG* sim_control = 0;
+  class sim_control_NG *sim_control = 0;
 
   sim_control = new class sim_control_NG();
   if (!sim_control)
@@ -69,7 +69,7 @@ int main(int argc, char** argv)
   }
 
   int err      = 0;
-  string* args = 0;
+  string *args = 0;
   args         = new string[argc];
   for (int i = 0; i < argc; i++)
     args[i] = argv[i];
@@ -107,7 +107,7 @@ int main(int argc, char** argv)
   //
   // set up vector of grids.
   //
-  vector<class GridBaseClass*> grid;
+  vector<class GridBaseClass *> grid;
 
   //
   // Initialise the grid.

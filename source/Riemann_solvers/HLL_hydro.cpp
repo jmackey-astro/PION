@@ -79,11 +79,11 @@ HLL_hydro::~HLL_hydro()
 // ###################################################################
 
 void HLL_hydro::HLL_signal_speeds(
-    const pion_flt* Pl,  ///< inputs
-    const pion_flt* Pr,
+    const pion_flt *Pl,  ///< inputs
+    const pion_flt *Pr,
     const double eq_gamma,
-    double& Sl,  ///< outputs
-    double& Sr)
+    double &Sl,  ///< outputs
+    double &Sr)
 {
   //
   // compute wave speeds (m05 eq 3)
@@ -100,11 +100,11 @@ void HLL_hydro::HLL_signal_speeds(
 // ###################################################################
 
 int HLL_hydro::hydro_HLL_flux_solver(
-    const pion_flt* Pl,     ///< input left state
-    const pion_flt* Pr,     ///< input right state
+    const pion_flt *Pl,     ///< input left state
+    const pion_flt *Pr,     ///< input right state
     const double eq_gamma,  ///< input gamma
-    pion_flt* out_flux,     ///< output flux
-    pion_flt* out_ustar     ///< output interface state (cons.var.)
+    pion_flt *out_flux,     ///< output flux
+    pion_flt *out_ustar     ///< output interface state (cons.var.)
 )
 {
 

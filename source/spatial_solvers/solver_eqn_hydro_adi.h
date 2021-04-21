@@ -64,7 +64,7 @@ public:
       const int,     ///< number of space dimensions in grid.
       const double,  ///< CFL number
       const double,  ///< gas eos gamma.
-      pion_flt*,     ///< State vector of mean values for simulation.
+      pion_flt *,    ///< State vector of mean values for simulation.
       const double,  ///< Artificial Viscosity Parameter etav.
       const int      ///< Number of tracer variables.
   );
@@ -81,9 +81,9 @@ public:
   /// conserved variable is the mass density of this.
   ///
   virtual void PtoU(
-      const pion_flt*,  ///< pointer to Primitive variables.
-      pion_flt*,        ///< pointer to conserved variables.
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< pointer to Primitive variables.
+      pion_flt *,        ///< pointer to conserved variables.
+      const double       ///< Gas constant gamma.
   );
 
   ///
@@ -95,10 +95,10 @@ public:
   /// conserved variable is the mass density of this.
   ///
   virtual int UtoP(
-      const pion_flt*,  ///< pointer to conserved variables.
-      pion_flt*,        ///< pointer to Primitive variables.
-      const double,     ///< minimum temperature/pressure allowed
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< pointer to conserved variables.
+      pion_flt *,        ///< pointer to Primitive variables.
+      const double,      ///< minimum temperature/pressure allowed
+      const double       ///< Gas constant gamma.
   );
 
   ///
@@ -110,9 +110,9 @@ public:
   /// state tracer var. if the mass flux is to the right, and vice versa.
   ///
   virtual void PUtoFlux(
-      const pion_flt*,  ///< pointer to Primitive variables.
-      const pion_flt*,  ///< pointer to conserved variables.
-      pion_flt*         ///< Pointer to flux variable.
+      const pion_flt *,  ///< pointer to Primitive variables.
+      const pion_flt *,  ///< pointer to conserved variables.
+      pion_flt *         ///< Pointer to flux variable.
   );
 
   ///
@@ -124,51 +124,51 @@ public:
   /// state tracer var. if the mass flux is to the right, and vice versa.
   ///
   virtual void UtoFlux(
-      const pion_flt*,  ///< Pointer to conserved variables state vector.
-      pion_flt*,        ///< Pointer to flux variable state vector.
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< Pointer to conserved variables state vector.
+      pion_flt *,        ///< Pointer to flux variable state vector.
+      const double       ///< Gas constant gamma.
   );
 
   /// Calculates Flux based on a left and right state vector (primitive).
   int inviscid_flux(
-      class SimParams&,      ///< simulation parameters
-      class GridBaseClass*,  ///< pointer to grid
-      const double,          ///< cell-size dx (for LF method)
-      class cell*,           ///< Left state cell pointer
-      class cell*,           ///< Right state cell pointer
-      const pion_flt*,       ///< Left Primitive state vector.
-      const pion_flt*,       ///< Right Primitive state vector.
-      pion_flt*,             ///< Resultant Flux state vector.
-      pion_flt*,             ///< Resultant Pstar state vector.
-      const int,             ///< Which Riemann solver
-      const double           ///< Gas constant gamma.
+      class SimParams &,      ///< simulation parameters
+      class GridBaseClass *,  ///< pointer to grid
+      const double,           ///< cell-size dx (for LF method)
+      class cell *,           ///< Left state cell pointer
+      class cell *,           ///< Right state cell pointer
+      const pion_flt *,       ///< Left Primitive state vector.
+      const pion_flt *,       ///< Right Primitive state vector.
+      pion_flt *,             ///< Resultant Flux state vector.
+      pion_flt *,             ///< Resultant Pstar state vector.
+      const int,              ///< Which Riemann solver
+      const double            ///< Gas constant gamma.
   );
 
   ///
   /// Adds the contribution from flux in the current direction to dU.
   ///
   virtual int dU_Cell(
-      class GridBaseClass*,
-      cell*,            ///< Current cell.
-      const axes,       ///< Which axis we are looking along.
-      const pion_flt*,  ///< Negative direction flux.
-      const pion_flt*,  ///< Positive direction flux.
-      const pion_flt*,  ///< slope vector for cell c.
-      const int,        ///< spatial order of accuracy.
-      const double,     ///< cell length dx.
-      const double      ///< cell TimeStep, dt.
+      class GridBaseClass *,
+      cell *,            ///< Current cell.
+      const axes,        ///< Which axis we are looking along.
+      const pion_flt *,  ///< Negative direction flux.
+      const pion_flt *,  ///< Positive direction flux.
+      const pion_flt *,  ///< slope vector for cell c.
+      const int,         ///< spatial order of accuracy.
+      const double,      ///< cell length dx.
+      const double       ///< cell TimeStep, dt.
   );
 
   ///
   /// Geometric source terms (does nothing for Cartesian geometry).
   ///
   virtual void geometric_source(
-      cell*,            ///< Current cell.
-      const axes,       ///< Which axis we are looking along.
-      const pion_flt*,  ///< slope vector for cell c.
-      const int,        ///< spatial order of accuracy.
-      const double,     ///< cell length dx.
-      pion_flt*         ///< update vector to add source term to [OUTPUT]
+      cell *,            ///< Current cell.
+      const axes,        ///< Which axis we are looking along.
+      const pion_flt *,  ///< slope vector for cell c.
+      const int,         ///< spatial order of accuracy.
+      const double,      ///< cell length dx.
+      pion_flt *         ///< update vector to add source term to [OUTPUT]
   )
   {
     return;
@@ -179,12 +179,12 @@ public:
   /// primitive state vector, for homogeneous equations.
   ///
   virtual int CellAdvanceTime(
-      class cell*,      ///< current cell.
-      const pion_flt*,  ///< Initial Primitive State Vector.
-      pion_flt*,        ///< Update vector dU
-      pion_flt*,     ///< Final Primitive state vector (can be same as initial
+      class cell *,      ///< current cell.
+      const pion_flt *,  ///< Initial Primitive State Vector.
+      pion_flt *,        ///< Update vector dU
+      pion_flt *,    ///< Final Primitive state vector (can be same as initial
                      ///< vec.).
-      pion_flt*,     ///< Tracks change of energy if I have to correct for
+      pion_flt *,    ///< Tracks change of energy if I have to correct for
                      ///< negative pressure
       const double,  ///< gas EOS gamma.
       const double,  ///< Min Temperature allowed on grid.
@@ -195,7 +195,7 @@ public:
   /// Given a cell, calculate the hydrodynamic timestep.
   ///
   virtual double CellTimeStep(
-      const cell*,   ///< pointer to cell
+      const cell *,  ///< pointer to cell
       const double,  ///< gas EOS gamma.
       const double   ///< Cell size dx.
   );
@@ -205,12 +205,12 @@ protected:
   /// Falle et al. (1998) Artificial Viscosity Calculation.
   ///
   int AVFalle(
-      const pion_flt*,  ///< Left Primitive state vector.
-      const pion_flt*,  ///< Right Primitive state vector.
-      const pion_flt*,  ///< Resolved (P*) state vector.
-      pion_flt*,        ///< Pointer to associated Flux Vector.
-      const double,     ///< Artificial Viscosity parameter, etav.
-      const double      ///< gamma
+      const pion_flt *,  ///< Left Primitive state vector.
+      const pion_flt *,  ///< Right Primitive state vector.
+      const pion_flt *,  ///< Resolved (P*) state vector.
+      pion_flt *,        ///< Pointer to associated Flux Vector.
+      const double,      ///< Artificial Viscosity parameter, etav.
+      const double       ///< gamma
   );
 };
 
@@ -228,7 +228,7 @@ public:
       const int,     ///< number of space dimensions in grid.
       const double,  ///< CFL number
       const double,  ///< gas eos gamma.
-      pion_flt*,     ///< State vector of mean values for simulation.
+      pion_flt *,    ///< State vector of mean values for simulation.
       const double,  ///< Artificial Viscosity Parameter etav.
       const int      ///< Number of tracer variables.
   );
@@ -241,12 +241,12 @@ public:
   /// spatial accuracy.
   ///
   virtual void geometric_source(
-      cell*,            ///< Current cell.
-      const axes,       ///< Which axis we are looking along.
-      const pion_flt*,  ///< slope vector for cell c.
-      const int,        ///< spatial order of accuracy.
-      const double,     ///< cell length dx.
-      pion_flt*         ///< update vector to add source term to [OUTPUT]
+      cell *,            ///< Current cell.
+      const axes,        ///< Which axis we are looking along.
+      const pion_flt *,  ///< slope vector for cell c.
+      const int,         ///< spatial order of accuracy.
+      const double,      ///< cell length dx.
+      pion_flt *         ///< update vector to add source term to [OUTPUT]
   );
 };
 
@@ -266,7 +266,7 @@ public:
       const int,     ///< number of space dimensions in grid.
       const double,  ///< CFL number
       const double,  ///< gas eos gamma.
-      pion_flt*,     ///< State vector of mean values for simulation.
+      pion_flt *,    ///< State vector of mean values for simulation.
       const double,  ///< Artificial Viscosity Parameter etav.
       const int      ///< Number of tracer variables.
   );
@@ -279,12 +279,12 @@ public:
   /// spatial accuracy.
   ///
   virtual void geometric_source(
-      cell*,            ///< Current cell.
-      const axes,       ///< Which axis we are looking along.
-      const pion_flt*,  ///< slope vector for cell c.
-      const int,        ///< spatial order of accuracy.
-      const double,     ///< cell length dx.
-      pion_flt*         ///< update vector to add source term to [OUTPUT]
+      cell *,            ///< Current cell.
+      const axes,        ///< Which axis we are looking along.
+      const pion_flt *,  ///< slope vector for cell c.
+      const int,         ///< spatial order of accuracy.
+      const double,      ///< cell length dx.
+      pion_flt *         ///< update vector to add source term to [OUTPUT]
   );
 
   ///	Vector for corrector values (used to modify flux according to sCMA)

@@ -28,7 +28,7 @@ using namespace std;
 //----------------------------------------------
 
 dataio_text::dataio_text(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
     ) :
     DataIOBase(SimPM)
 {
@@ -57,7 +57,7 @@ dataio_text::~dataio_text()
 
 int dataio_text::ReadHeader(
     string pfile,           ///< Name of parameter file
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   // read info from parameterfile.
@@ -76,9 +76,9 @@ int dataio_text::ReadHeader(
 // ##################################################################
 
 int dataio_text::ReadData(
-    string,                            ///< Name of file
-    vector<class GridBaseClass*>& cg,  ///< address of vector of grid pointers.
-    class SimParams& SimPM             ///< pointer to simulation parameters
+    string,                             ///< Name of file
+    vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
+    class SimParams &SimPM              ///< pointer to simulation parameters
 )
 {
   if (!cg[0]) rep.error("dataio_text::ReadData() null pointer to grid!", cg[0]);
@@ -100,7 +100,7 @@ int dataio_text::ReadData(
 // ##################################################################
 // ##################################################################
 
-void dataio_text::SetSolver(FV_solver_base* solver)
+void dataio_text::SetSolver(FV_solver_base *solver)
 {
   cout << "dataio_text::SetSolver() Setting solver pointer.\n";
   dataio_text::eqn = solver;
@@ -112,8 +112,8 @@ void dataio_text::SetSolver(FV_solver_base* solver)
 
 int dataio_text::OutputData(
     const string outfile,
-    vector<class GridBaseClass*>& cg,  ///< address of vector of grid pointers.
-    class SimParams& SimPM,            ///< pointer to simulation parameters
+    vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
+    class SimParams &SimPM,             ///< pointer to simulation parameters
     const long int counter  ///< number to stamp file with (e.g. timestep)
 )
 {
@@ -159,7 +159,7 @@ std::string dataio_text::set_filename(
 
 int dataio_text::get_parameters(
     string pfile,           ///< Name of parameter file
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   cout << "(dataio_text::get_parameters) from file " << pfile << " starting.\n";
@@ -542,7 +542,7 @@ int dataio_text::get_parameters(
 
 int dataio_text::output_ascii_data(
     string outfile,
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   ofstream outf(outfile.c_str());
@@ -581,7 +581,7 @@ int dataio_text::output_ascii_data(
     mhd = true;
 
   // Go through every point, output one line per point.
-  class cell* cpt = gp->FirstPt();
+  class cell *cpt = gp->FirstPt();
   do {
     if (CI.get_dpos(cpt, 0) < gp->SIM_Xmin(XX) + dx)
       outf << "\n";  // put in a blank line for gnuplot
@@ -631,12 +631,15 @@ int dataio_text::output_ascii_data(
       if (eqn) outf << "  " << eqn->Divergence(cpt, 0, vars, gp);
     }
 #ifdef RT_TESTING_OUTPUTCOL
-    for (int v = 0; v < SimPM.RS.Nsources; v++) {
-      // cout <<"hello";
-      CI.get_col(cpt, v, Utemp);
-      for (int iT = 0; iT < SimPM.RS.sources[v].NTau; iT++)
-        outf << "  " << Utemp[iT];
-    }
+    // THIS CAN'T WORK BECAUSE YOU NEED TO DO RAYTRACING TO SET VALUES
+    // for (int v = 0; v < SimPM.RS.Nsources; v++) {
+    //  //cout <<"hello";
+    //  CI.get_col(cpt, v, Utemp);
+    //  for (int iT = 0; iT < SimPM.RS.sources[v].NTau; iT++) {
+    //    outf << "  " << Utemp[iT];
+    //    //cout << "  " << Utemp[iT];
+    //  }
+    //}
 #endif  // RT_TESTING_OUTPUTCOL
     outf << "\n";
   } while ((cpt = gp->NextPt(cpt)) != 0);
@@ -651,7 +654,7 @@ int dataio_text::output_ascii_data(
 // ##################################################################
 
 int dataio_text::assign_initial_data(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   cout << "(dataio_text::assign_initial_data) Assigning Data.\n";
@@ -666,7 +669,7 @@ int dataio_text::assign_initial_data(
     double left[SimPM.nvar], right[SimPM.nvar];
     double interface = 0.0;
     err += get_riemann_ics(SimPM, which_riemann, left, right, &interface);
-    class cell* cpt = gp->FirstPt();
+    class cell *cpt = gp->FirstPt();
     if (SimPM.ndim == 1) {
       // interface = 0.5;
       do {
@@ -854,11 +857,11 @@ int dataio_text::assign_initial_data(
 // ##################################################################
 
 int dataio_text::get_riemann_ics(
-    class SimParams& SimPM,  ///< pointer to simulation parameters
+    class SimParams &SimPM,  ///< pointer to simulation parameters
     int sw,
-    double* l,
-    double* r,
-    double* xm)
+    double *l,
+    double *r,
+    double *xm)
 {
   // These are Toro's five tests on p.225 of his book.
   switch (sw) {
@@ -1472,12 +1475,12 @@ int dataio_text::get_riemann_ics(
 // ##################################################################
 
 int dataio_text::add_noise2data(
-    class SimParams& SimPM,  ///< pointer to simulation parameters
+    class SimParams &SimPM,  ///< pointer to simulation parameters
     int n,
     double frac)
 {
   srand(9768975);
-  class cell* cpt;
+  class cell *cpt;
   double avg  = 0.;
   long int ct = 0;
   switch (n) {

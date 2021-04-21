@@ -73,8 +73,8 @@ IC_photoevaporatingclump::~IC_photoevaporatingclump()
 // ##################################################################
 
 int IC_photoevaporatingclump::setup_data(
-    class ReadParams* rrp,    ///< pointer to parameter list.
-    class GridBaseClass* ggg  ///< pointer to grid
+    class ReadParams *rrp,    ///< pointer to parameter list.
+    class GridBaseClass *ggg  ///< pointer to grid
 )
 {
   int err = 0;
@@ -446,7 +446,7 @@ int IC_photoevaporatingclump::setup_pec2()
   //  double BX1  = ambient[BX]*pratio;
   double edge = 0.95 * clrad;
 
-  class cell* cpt = gg->FirstPt();
+  class cell *cpt = gg->FirstPt();
   do {
     //
     // Set values of primitive variables.
@@ -554,7 +554,7 @@ int IC_photoevaporatingclump::setup_pec()
 
   cout << "\t\tAssigning primitive vectors.\n";
   double vfrac    = 0.0;
-  class cell* cpt = gg->FirstPt();
+  class cell *cpt = gg->FirstPt();
   do {
     // Set values of primitive variables.
     for (int v = 0; v < SimPM->nvar; v++)
@@ -613,7 +613,7 @@ int IC_photoevaporatingclump::setup_powerlaw_density()
   double x0      = 3.086e18;
   double rho0    = 9.352e-23;
   double dpos[ndim];
-  class cell* cpt = gg->FirstPt();
+  class cell *cpt = gg->FirstPt();
   do {
     CI.get_dpos(cpt, dpos);
     // Set values of primitive variables.
@@ -674,7 +674,7 @@ int IC_photoevaporatingclump::setup_cloud_clump()
   rep.printVec("ISM Cloud centre", ISM_centre, SimPM->ndim);
 
   double dpos[ndim];
-  class cell* cpt = gg->FirstPt();
+  class cell *cpt = gg->FirstPt();
   do {
     CI.get_dpos(cpt, dpos);
     // Set values of primitive variables.
@@ -755,7 +755,7 @@ int IC_photoevaporatingclump::setup_radialprofile()
   double r0 = clrad;
 
   double dpos[ndim];
-  class cell* cpt = gg->FirstPt();
+  class cell *cpt = gg->FirstPt();
   do {
     CI.get_dpos(cpt, dpos);
     // Set values of primitive variables.

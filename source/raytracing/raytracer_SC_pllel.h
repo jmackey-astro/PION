@@ -23,13 +23,13 @@ class raytracer_USC_pllel : public raytracer_USC, public RT_MPI_bc {
 public:
   /// Constructor
   raytracer_USC_pllel(
-      class GridBaseClass*,      ///< Pointer to grid
-      class microphysics_base*,  ///< icroPhysics Class.
-      class SimParams*,          ///< simulation parameters
-      class MCMDcontrol*,        ///< domain decomposition info
-      int,                       ///< grid dimensionality
-      int,                       ///< coordinate system
-      int,                       ///< number of variables in state vector
+      class GridBaseClass *,      ///< Pointer to grid
+      class microphysics_base *,  ///< icroPhysics Class.
+      class SimParams *,          ///< simulation parameters
+      class MCMDcontrol *,        ///< domain decomposition info
+      int,                        ///< grid dimensionality
+      int,                        ///< coordinate system
+      int,                        ///< number of variables in state vector
       int,  ///< index of first tracer variable in state vector
       int   ///< Number of radiation sources
   );
@@ -43,7 +43,7 @@ public:
   /// any) extra corner boundaries it needs to set up for sending and
   /// receiving data.
   ///
-  virtual int Add_Source(struct rad_src_info*  ///< ptr to source info.
+  virtual int Add_Source(struct rad_src_info *  ///< ptr to source info.
   );
 
   /// Processes a source's effect on the grid over a timestep.
@@ -60,8 +60,8 @@ public:
   );
 
 protected:
-  class SimParams* par;     ///< pointer to simulation parameters
-  class MCMDcontrol* MCMD;  ///< pointer to domain decomposition
+  class SimParams *par;     ///< pointer to simulation parameters
+  class MCMDcontrol *MCMD;  ///< pointer to domain decomposition
 };
 #endif  // PARALLEL
 

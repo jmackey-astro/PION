@@ -46,15 +46,15 @@ using namespace std;
 // ##################################################################
 
 /// operators for the enums.
-waves& operator++(waves& d)
+waves &operator++(waves &d)
 {
   return (d = waves(d + 1));
 }
-conserved& operator++(conserved& d)
+conserved &operator++(conserved &d)
 {
   return (d = conserved(d + 1));
 }
-rsvars& operator++(rsvars& d)
+rsvars &operator++(rsvars &d)
 {
   return (d = rsvars(d + 1));
 }
@@ -67,7 +67,7 @@ rsvars& operator++(rsvars& d)
 //
 riemann_MHD::riemann_MHD(
     const int nv,           ///< length of state vectors.
-    const pion_flt* state,  ///< reference vector.
+    const pion_flt *state,  ///< reference vector.
     const double g          ///< equation of state gamma.
     ) :
     eqns_base(nv),
@@ -159,9 +159,9 @@ riemann_MHD::~riemann_MHD()
 // state P* in 'result'.  err_code solve(left, right, result );
 //
 int riemann_MHD::JMs_riemann_solve(
-    const pion_flt* l,
-    const pion_flt* r,
-    pion_flt* ans,
+    const pion_flt *l,
+    const pion_flt *r,
+    pion_flt *ans,
     const int mode,  ///< Solve Type (1=LinearRS,2=ExactRS,3=HybridRS, 4=RoeRS)
     const double g)
 {
@@ -406,7 +406,7 @@ int riemann_MHD::JMs_riemann_solve(
 // ##################################################################
 // ##################################################################
 
-void riemann_MHD::assign_data(const pion_flt* l, const pion_flt* r)
+void riemann_MHD::assign_data(const pion_flt *l, const pion_flt *r)
 {
   //
   // The Riemann problem has different state vector ordering, so we
@@ -438,7 +438,7 @@ void riemann_MHD::assign_data(const pion_flt* l, const pion_flt* r)
 // ##################################################################
 // ##################################################################
 
-void riemann_MHD::code2solvervars(pion_flt* statevec)
+void riemann_MHD::code2solvervars(pion_flt *statevec)
 {
   //
   // Need to re-order velocity and B-field elements.
@@ -469,7 +469,7 @@ void riemann_MHD::code2solvervars(pion_flt* statevec)
 // ##################################################################
 // ##################################################################
 
-void riemann_MHD::solver2codevars(pion_flt* statevec)
+void riemann_MHD::solver2codevars(pion_flt *statevec)
 {
   pion_flt temp[8];
   // Density, pressure.
@@ -773,7 +773,7 @@ void riemann_MHD::get_eigenvalues()
 // ##################################################################
 // ##################################################################
 
-inline double riemann_MHD::dot_product(pion_flt* v1, pion_flt* v2, int nd)
+inline double riemann_MHD::dot_product(pion_flt *v1, pion_flt *v2, int nd)
 {
   double temp = 0.0;
   for (int i = 0; i < nd; i++) {

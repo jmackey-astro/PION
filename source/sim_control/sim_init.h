@@ -36,7 +36,7 @@ public:
   ///
   /// Function to print command-line options for PION.
   ///
-  void print_command_line_options(int, char**);
+  void print_command_line_options(int, char **);
 
   ///
   /// initialisation.
@@ -50,11 +50,11 @@ public:
   /// \retval 1 failure
   ///
   virtual int Init(
-      string,   ///< Name of input file.
-      int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...)
-      int,      ///< Number of command-line arguments.
-      string*,  ///< Pointer to array of command-line arguments.
-      vector<class GridBaseClass*>&  ///< grid pointers.
+      string,    ///< Name of input file.
+      int,       ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...)
+      int,       ///< Number of command-line arguments.
+      string *,  ///< Pointer to array of command-line arguments.
+      vector<class GridBaseClass *> &  ///< grid pointers.
   );
 
   ///
@@ -95,8 +95,8 @@ protected:
   /// specified in the IC file, and if so, reset the parameters.
   ///
   int override_params(
-      int,     ///< Number of command-line arguments.
-      string*  ///< Pointer to array of command-line arguments.
+      int,      ///< Number of command-line arguments.
+      string *  ///< Pointer to array of command-line arguments.
   );
 
   ///
@@ -106,13 +106,13 @@ protected:
   /// checks what format to write in, and calls the appropriate
   /// function to write the data.
   ///
-  virtual int output_data(vector<class GridBaseClass*>&  ///< grid pointers.
+  virtual int output_data(vector<class GridBaseClass *> &  ///< grid pointers.
   );
 
   ///
   /// Calculates total values of conserved quantities.
   ///
-  int initial_conserved_quantities(class GridBaseClass*  ///< grid pointers.
+  int initial_conserved_quantities(class GridBaseClass *  ///< grid pointers.
   );
 
   ///
@@ -121,9 +121,9 @@ protected:
   /// are stored in extra_data[i] for each cell.
   ///
   virtual int RT_all_sources(
-      class SimParams&,      ///< simulation parameters
-      class GridBaseClass*,  ///< grid to trace rays on.
-      const int              ///< level of NG grid.
+      class SimParams &,      ///< simulation parameters
+      class GridBaseClass *,  ///< grid to trace rays on.
+      const int               ///< level of NG grid.
   );
 };
 

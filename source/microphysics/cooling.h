@@ -52,9 +52,9 @@ private:
   double MinTemp;     ///< Minimum Temperature we have cooling rate for.
   double MaxTemp;     ///< Maximum Temperature we have cooling rate for.
   double MinSlope;    ///< Slope of the Cooling Rate at the minimum temperature.
-  double* Temp;       ///< Temperature data.
-  double* Lamb;   ///< Normalised Cooling rate (erg cm^3 s^-1) = Lambda(T)/rho^2
-  double* Lam2;   ///< Second derivative of the Cooling Rate for Cubic Spline
+  double *Temp;       ///< Temperature data.
+  double *Lamb;   ///< Normalised Cooling rate (erg cm^3 s^-1) = Lambda(T)/rho^2
+  double *Lam2;   ///< Second derivative of the Cooling Rate for Cubic Spline
                   ///< Interpolation.
   int Nspl;       ///< Number of points to use for the spline/splint data
                   ///< functions.

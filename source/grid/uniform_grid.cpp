@@ -124,13 +124,13 @@ UniformGrid::UniformGrid(
     int nv,
     int eqt,
     int Nbc,       ///< Number of boundary cells to use.
-    double* g_xn,  // this grid xmin
-    double* g_xp,  // this grid xmax
-    int* g_nc,
-    double* lev_xn,  // level xmin
-    double* lev_xp,  // level xmax
-    double* sim_xn,  // sim xmin
-    double* sim_xp   // sim xmax
+    double *g_xn,  // this grid xmin
+    double *g_xp,  // this grid xmax
+    int *g_nc,
+    double *lev_xn,  // level xmin
+    double *lev_xp,  // level xmax
+    double *sim_xn,  // sim xmin
+    double *sim_xp   // sim xmax
     ) :
     VectorOps_Cart(nd),
     G_ndim(nd),
@@ -335,7 +335,7 @@ UniformGrid::UniformGrid(
 
   // set external boundary cells to be not part of the simulation
   // domain if they are outside of Sim_Xmin and Sim_Xmax.
-  class cell* c = FirstPt_All();
+  class cell *c = FirstPt_All();
   bool dom      = true;
   do {
     c->isdomain = true;
@@ -393,8 +393,8 @@ UniformGrid::~UniformGrid()
   //
   // Delete the grid data.
   //
-  cell* cpt = FirstPt_All();
-  cell* npt = NextPt_All(cpt);
+  cell *cpt = FirstPt_All();
+  cell *npt = NextPt_All(cpt);
   do {
     // cout <<"deleting cell id: "<<cpt->id<<"\n";
     CI.delete_cell(cpt);
@@ -482,7 +482,7 @@ int UniformGrid::assign_grid_structure()
   for (int i = 0; i < MAX_DIM; i++)
     dpos[i] = 0.0;
 
-  class cell* c = FirstPt_All();
+  class cell *c = FirstPt_All();
   do {
 #ifdef TESTING
     // cout <<"Cell positions: id = "<<c->id<<"\n";
@@ -654,7 +654,7 @@ int UniformGrid::assign_grid_structure()
   // Also set fpt for the first on-grid point, and lpt for the last.
   //
   bool set_fpt = false, set_lpt = false;
-  cell* ctemp = 0;
+  cell *ctemp = 0;
   c           = FirstPt_All();
   do {
     //
@@ -827,7 +827,7 @@ int UniformGrid::allocate_grid_data()
   // First generate G_ncell_all points and add a npt_all counter so
   // that they are in a singly linked list.
   //
-  cell* c      = G_fpt_all;
+  cell *c      = G_fpt_all;
   size_t count = 0;
   while (c->id < static_cast<long int>(G_ncell_all - 1)) {
     c->npt_all = CI.new_cell();
@@ -926,7 +926,7 @@ enum direction UniformGrid::OppDir(enum direction dir)
 // ##################################################################
 // ##################################################################
 
-class cell* UniformGrid::FirstPt()
+class cell *UniformGrid::FirstPt()
 {
   ///
   /// First point is always the at the negative corner of the grid in
@@ -938,7 +938,7 @@ class cell* UniformGrid::FirstPt()
 // ##################################################################
 // ##################################################################
 
-class cell* UniformGrid::FirstPt_All()
+class cell *UniformGrid::FirstPt_All()
 {
   ///
   /// First point is always the at the negative corner of the grid in
@@ -954,7 +954,7 @@ class cell* UniformGrid::FirstPt_All()
 
 
 
-class cell* UniformGrid::LastPt()
+class cell *UniformGrid::LastPt()
 {
   //#ifdef TESTING
   //  cout <<"Last Point is :"<<G_lpt; CI.print_cell(G_lpt);
@@ -969,7 +969,7 @@ class cell* UniformGrid::LastPt()
 
 
 
-class cell* UniformGrid::LastPt_All()
+class cell *UniformGrid::LastPt_All()
 {
   return (G_lpt_all);
 }  // LastPt
@@ -981,7 +981,7 @@ class cell* UniformGrid::LastPt_All()
 
 
 
-class cell* UniformGrid::PrevPt(const class cell* p, enum direction dir)
+class cell *UniformGrid::PrevPt(const class cell *p, enum direction dir)
 {
   // Returns previous cell, including virtual boundary cells.
   //
@@ -1004,7 +1004,7 @@ class cell* UniformGrid::PrevPt(const class cell* p, enum direction dir)
 // ##################################################################
 
 int UniformGrid::SetupBCs(
-    class SimParams& par  ///< List of simulation params (including BCs)
+    class SimParams &par  ///< List of simulation params (including BCs)
 )
 {
   //
@@ -1222,9 +1222,9 @@ int UniformGrid::SetupBCs(
 // ##################################################################
 // ##################################################################
 
-int UniformGrid::BC_printBCdata(boundary_data* b)
+int UniformGrid::BC_printBCdata(boundary_data *b)
 {
-  list<cell*>::iterator c = b->data.begin();
+  list<cell *>::iterator c = b->data.begin();
   for (c = b->data.begin(); c != b->data.end(); ++c) {
     CI.print_cell(*c);
   }
@@ -1234,13 +1234,13 @@ int UniformGrid::BC_printBCdata(boundary_data* b)
 // ##################################################################
 // ##################################################################
 
-void UniformGrid::BC_deleteBoundaryData(boundary_data* b)
+void UniformGrid::BC_deleteBoundaryData(boundary_data *b)
 {
   if (b->refval != 0) {
     b->refval = mem.myfree(b->refval);
   }
 
-  list<cell*>::iterator i = b->data.begin();
+  list<cell *>::iterator i = b->data.begin();
   if (b->data.empty()) {
 #ifdef TESTING
     cout << "BC destructor: No boundary cells to delete.\n";
@@ -1281,7 +1281,7 @@ void UniformGrid::BC_deleteBoundaryData(boundary_data* b)
 
   for (unsigned int j = 0; j < b->NGsendC2F.size(); j++) {
     b->NGsendC2F[j]->c.clear();
-    struct c2f* t = b->NGsendC2F[j];
+    struct c2f *t = b->NGsendC2F[j];
     delete t;
     // b->NGsendC2F[j] = mem.myfree( b->NGsendC2F[j]);
   }
@@ -1304,7 +1304,7 @@ void UniformGrid::BC_deleteBoundaryData()
 #ifdef TESTING
   cout << "BC destructor: deleting Boundary data...\n";
 #endif
-  struct boundary_data* b;
+  struct boundary_data *b;
   for (unsigned int ibd = 0; ibd < BC_bd.size(); ibd++) {
     b = BC_bd[ibd];
     BC_deleteBoundaryData(b);
@@ -1323,8 +1323,8 @@ void UniformGrid::BC_deleteBoundaryData()
 // physical units.
 //
 double UniformGrid::distance(
-    const double* p1,  ///< position 1 (physical)
-    const double* p2   ///< position 2 (physical)
+    const double *p1,  ///< position 1 (physical)
+    const double *p2   ///< position 2 (physical)
 )
 {
   double temp = 0.0;
@@ -1343,8 +1343,8 @@ double UniformGrid::distance(
 // integer units (but obviously the answer is not an integer).
 //
 double UniformGrid::idistance(
-    const int* p1,  ///< position 1 (integer)
-    const int* p2   ///< position 2 (integer)
+    const int *p1,  ///< position 1 (integer)
+    const int *p2   ///< position 2 (integer)
 )
 {
   double temp = 0.0;
@@ -1362,8 +1362,8 @@ double UniformGrid::idistance(
 // Result returned in physical units (e.g. centimetres).
 //
 double UniformGrid::distance_cell2cell(
-    const cell* c1,  ///< cell 1
-    const cell* c2   ///< cell 2
+    const cell *c1,  ///< cell 1
+    const cell *c2   ///< cell 2
 )
 {
   double temp = 0.0;
@@ -1382,8 +1382,8 @@ double UniformGrid::distance_cell2cell(
 // two units).
 //
 double UniformGrid::idistance_cell2cell(
-    const cell* c1,  ///< cell 1
-    const cell* c2   ///< cell 2
+    const cell *c1,  ///< cell 1
+    const cell *c2   ///< cell 2
 )
 {
   double temp = 0.0;
@@ -1402,8 +1402,8 @@ double UniformGrid::idistance_cell2cell(
 // geometry).  Here both input and output are physical units.
 //
 double UniformGrid::distance_vertex2cell(
-    const double* v,  ///< vertex (physical)
-    const cell* c     ///< cell
+    const double *v,  ///< vertex (physical)
+    const cell *c     ///< cell
 )
 {
   double temp = 0.0;
@@ -1421,8 +1421,8 @@ double UniformGrid::distance_vertex2cell(
 // the *cell* coordinate minus the *vertex* coordinate.
 //
 double UniformGrid::difference_vertex2cell(
-    const double* v,  ///< vertex (double)
-    const cell* c,    ///< cell
+    const double *v,  ///< vertex (double)
+    const cell *c,    ///< cell
     const axes a      ///< Axis to calculate.
 )
 {
@@ -1438,8 +1438,8 @@ double UniformGrid::difference_vertex2cell(
 // geometry).  Here both input and output are code-integer units.
 //
 double UniformGrid::idistance_vertex2cell(
-    const int* v,  ///< vertex (integer)
-    const cell* c  ///< cell
+    const int *v,  ///< vertex (integer)
+    const cell *c  ///< cell
 )
 {
   double temp = 0.0;
@@ -1457,8 +1457,8 @@ double UniformGrid::idistance_vertex2cell(
 // the *cell* coordinate minus the *vertex* coordinate.
 //
 double UniformGrid::idifference_vertex2cell(
-    const int* v,   ///< vertex (integer)
-    const cell* c,  ///< cell
+    const int *v,   ///< vertex (integer)
+    const cell *c,  ///< cell
     const axes a    ///< Axis to calculate.
 )
 {
@@ -1474,8 +1474,8 @@ double UniformGrid::idifference_vertex2cell(
 // It returns *cell2* coordinate minus *cell1* coordinate.
 //
 double UniformGrid::idifference_cell2cell(
-    const cell* c1,  ///< cell 1
-    const cell* c2,  ///< cell 2
+    const cell *c1,  ///< cell 1
+    const cell *c2,  ///< cell 2
     const axes a     ///< Axis.
 )
 {
@@ -1485,7 +1485,7 @@ double UniformGrid::idifference_cell2cell(
 // ##################################################################
 // ##################################################################
 
-bool UniformGrid::point_on_grid(const double* pos  ///< position
+bool UniformGrid::point_on_grid(const double *pos  ///< position
 )
 {
   bool on = true;
@@ -1517,13 +1517,13 @@ uniform_grid_cyl::uniform_grid_cyl(
     int nv,          ///< nvar, length of state vectors.
     int eqt,         ///< eqntype, which equations we are using (needed by BCs).
     int Nbc,         ///< Number of boundary cells to use.
-    double* g_xn,    ///< array of minimum values of x,y,z for this grid.
-    double* g_xp,    ///< array of maximum values of x,y,z for this grid.
-    int* g_nc,       ///< array of number of cells in x,y,z directions.
-    double* lev_xn,  // level xmin
-    double* lev_xp,  // level xmax
-    double* sim_xn,  ///< array of min. x/y/z for full simulation.
-    double* sim_xp   ///< array of max. x/y/z for full simulation.
+    double *g_xn,    ///< array of minimum values of x,y,z for this grid.
+    double *g_xp,    ///< array of maximum values of x,y,z for this grid.
+    int *g_nc,       ///< array of number of cells in x,y,z directions.
+    double *lev_xn,  // level xmin
+    double *lev_xp,  // level xmax
+    double *sim_xn,  ///< array of min. x/y/z for full simulation.
+    double *sim_xp   ///< array of max. x/y/z for full simulation.
     ) :
     VectorOps_Cart(nd),
     UniformGrid(
@@ -1556,7 +1556,7 @@ uniform_grid_cyl::~uniform_grid_cyl()
 // ##################################################################
 // ##################################################################
 
-double uniform_grid_cyl::iR_cov(const cell* c)
+double uniform_grid_cyl::iR_cov(const cell *c)
 {
   //
   // integer and physical units have different origins, so I need a
@@ -1581,8 +1581,8 @@ double uniform_grid_cyl::iR_cov(const cell* c)
 // physical units.
 //
 double uniform_grid_cyl::distance(
-    const double* p1,  ///< position 1 (physical)
-    const double* p2   ///< position 2 (physical)
+    const double *p1,  ///< position 1 (physical)
+    const double *p2   ///< position 2 (physical)
 )
 {
   //
@@ -1605,8 +1605,8 @@ double uniform_grid_cyl::distance(
 // integer units (but obviously the answer is not an integer).
 //
 double uniform_grid_cyl::idistance(
-    const int* p1,  ///< position 1 (integer)
-    const int* p2   ///< position 2 (integer)
+    const int *p1,  ///< position 1 (integer)
+    const int *p2   ///< position 2 (integer)
 )
 {
   //
@@ -1628,8 +1628,8 @@ double uniform_grid_cyl::idistance(
 // Result returned in physical units (e.g. centimetres).
 //
 double uniform_grid_cyl::distance_cell2cell(
-    const cell* c1,  ///< cell 1
-    const cell* c2   ///< cell 2
+    const cell *c1,  ///< cell 1
+    const cell *c2   ///< cell 2
 )
 {
   //
@@ -1654,8 +1654,8 @@ double uniform_grid_cyl::distance_cell2cell(
 // two units).
 //
 double uniform_grid_cyl::idistance_cell2cell(
-    const cell* c1,  ///< cell 1
-    const cell* c2   ///< cell 2
+    const cell *c1,  ///< cell 1
+    const cell *c2   ///< cell 2
 )
 {
   //
@@ -1680,8 +1680,8 @@ double uniform_grid_cyl::idistance_cell2cell(
 // geometry).  Here both input and output are physical units.
 //
 double uniform_grid_cyl::distance_vertex2cell(
-    const double* v,  ///< vertex (physical)
-    const cell* c     ///< cell
+    const double *v,  ///< vertex (physical)
+    const cell *c     ///< cell
 )
 {
   //
@@ -1705,8 +1705,8 @@ double uniform_grid_cyl::distance_vertex2cell(
 // the *cell* coordinate minus the *vertex* coordinate.
 //
 double uniform_grid_cyl::difference_vertex2cell(
-    const double* v,  ///< vertex (double)
-    const cell* c,    ///< cell
+    const double *v,  ///< vertex (double)
+    const cell *c,    ///< cell
     const axes a      ///< Axis to calculate.
 )
 {
@@ -1731,8 +1731,8 @@ double uniform_grid_cyl::difference_vertex2cell(
 // geometry).  Here both input and output are code-integer units.
 //
 double uniform_grid_cyl::idistance_vertex2cell(
-    const int* v,  ///< vertex (integer)
-    const cell* c  ///< cell
+    const int *v,  ///< vertex (integer)
+    const cell *c  ///< cell
 )
 {
   //
@@ -1763,8 +1763,8 @@ double uniform_grid_cyl::idistance_vertex2cell(
 // the *cell* coordinate minus the *vertex* coordinate.
 //
 double uniform_grid_cyl::idifference_vertex2cell(
-    const int* v,   ///< vertex (integer)
-    const cell* c,  ///< cell
+    const int *v,   ///< vertex (integer)
+    const cell *c,  ///< cell
     const axes a    ///< Axis to calculate.
 )
 {
@@ -1789,8 +1789,8 @@ double uniform_grid_cyl::idifference_vertex2cell(
 // It returns *cell2* coordinate minus *cell1* coordinate.
 //
 double uniform_grid_cyl::idifference_cell2cell(
-    const cell* c1,  ///< cell 1
-    const cell* c2,  ///< cell 2
+    const cell *c1,  ///< cell 1
+    const cell *c2,  ///< cell 2
     const axes a     ///< Axis.
 )
 {
@@ -1822,13 +1822,13 @@ uniform_grid_sph::uniform_grid_sph(
     int nv,          ///< nvar, length of state vectors.
     int eqt,         ///< eqntype, which equations we are using (needed by BCs).
     int Nbc,         ///< Number of boundary cells to use.
-    double* g_xn,    ///< array of minimum values of x,y,z for this grid.
-    double* g_xp,    ///< array of maximum values of x,y,z for this grid.
-    int* g_nc,       ///< array of number of cells in x,y,z directions.
-    double* lev_xn,  // level xmin
-    double* lev_xp,  // level xmax
-    double* sim_xn,  ///< array of min. x/y/z for full simulation.
-    double* sim_xp   ///< array of max. x/y/z for full simulation.
+    double *g_xn,    ///< array of minimum values of x,y,z for this grid.
+    double *g_xp,    ///< array of maximum values of x,y,z for this grid.
+    int *g_nc,       ///< array of number of cells in x,y,z directions.
+    double *lev_xn,  // level xmin
+    double *lev_xp,  // level xmax
+    double *sim_xn,  ///< array of min. x/y/z for full simulation.
+    double *sim_xp   ///< array of max. x/y/z for full simulation.
     ) :
     VectorOps_Cart(nd),
     UniformGrid(
@@ -1862,7 +1862,7 @@ uniform_grid_sph::~uniform_grid_sph()
 // ##################################################################
 // ##################################################################
 
-double uniform_grid_sph::iR_cov(const cell* c)
+double uniform_grid_sph::iR_cov(const cell *c)
 {
   //
   // integer and physical units have different origins, so I need a
@@ -1885,8 +1885,8 @@ double uniform_grid_sph::iR_cov(const cell* c)
 // physical units.
 //
 double uniform_grid_sph::distance(
-    const double* p1,  ///< position 1 (physical)
-    const double* p2   ///< position 2 (physical)
+    const double *p1,  ///< position 1 (physical)
+    const double *p2   ///< position 2 (physical)
 )
 {
   return fabs(p1[Rsph] - p2[Rsph]);
@@ -1902,8 +1902,8 @@ double uniform_grid_sph::distance(
 // integer units (but obviously the answer is not an integer).
 //
 double uniform_grid_sph::idistance(
-    const int* p1,  ///< position 1 (integer)
-    const int* p2   ///< position 2 (integer)
+    const int *p1,  ///< position 1 (integer)
+    const int *p2   ///< position 2 (integer)
 )
 {
   return fabs(static_cast<double>(p1[Rsph] - p2[Rsph]));
@@ -1918,8 +1918,8 @@ double uniform_grid_sph::idistance(
 // Result returned in physical units (e.g. centimetres).
 //
 double uniform_grid_sph::distance_cell2cell(
-    const cell* c1,  ///< cell 1
-    const cell* c2   ///< cell 2
+    const cell *c1,  ///< cell 1
+    const cell *c2   ///< cell 2
 )
 {
   return fabs(R_com(c1, G_dx) - R_com(c2, G_dx));
@@ -1935,8 +1935,8 @@ double uniform_grid_sph::distance_cell2cell(
 // two units).
 //
 double uniform_grid_sph::idistance_cell2cell(
-    const cell* c1,  ///< cell 1
-    const cell* c2   ///< cell 2
+    const cell *c1,  ///< cell 1
+    const cell *c2   ///< cell 2
 )
 {
   return fabs(R_com(c1, G_dx) - R_com(c2, G_dx)) / CI.phys_per_int();
@@ -1951,8 +1951,8 @@ double uniform_grid_sph::idistance_cell2cell(
 // geometry).  Here both input and output are physical units.
 //
 double uniform_grid_sph::distance_vertex2cell(
-    const double* v,  ///< vertex (physical)
-    const cell* c     ///< cell
+    const double *v,  ///< vertex (physical)
+    const cell *c     ///< cell
 )
 {
   return fabs(v[Rsph] - R_com(c, G_dx));
@@ -1967,8 +1967,8 @@ double uniform_grid_sph::distance_vertex2cell(
 // the *cell* coordinate minus the *vertex* coordinate.
 //
 double uniform_grid_sph::difference_vertex2cell(
-    const double* v,  ///< vertex (double)
-    const cell* c,    ///< cell
+    const double *v,  ///< vertex (double)
+    const cell *c,    ///< cell
     const axes a      ///< Axis to calculate.
 )
 {
@@ -1990,8 +1990,8 @@ double uniform_grid_sph::difference_vertex2cell(
 // geometry).  Here both input and output are code-integer units.
 //
 double uniform_grid_sph::idistance_vertex2cell(
-    const int* v,  ///< vertex (integer)
-    const cell* c  ///< cell
+    const int *v,  ///< vertex (integer)
+    const cell *c  ///< cell
 )
 {
   // cout <<"idist_v2c: iV[0]="<<v[Rsph]<<", iR(c)="<<iR_cov(c);
@@ -2008,8 +2008,8 @@ double uniform_grid_sph::idistance_vertex2cell(
 // the *cell* coordinate minus the *vertex* coordinate.
 //
 double uniform_grid_sph::idifference_vertex2cell(
-    const int* v,   ///< vertex (integer)
-    const cell* c,  ///< cell
+    const int *v,   ///< vertex (integer)
+    const cell *c,  ///< cell
     const axes a    ///< Axis to calculate.
 )
 {
@@ -2030,8 +2030,8 @@ double uniform_grid_sph::idifference_vertex2cell(
 // It returns *cell2* coordinate minus *cell1* coordinate.
 //
 double uniform_grid_sph::idifference_cell2cell(
-    const cell* c1,  ///< cell 1
-    const cell* c2,  ///< cell 2
+    const cell *c1,  ///< cell 1
+    const cell *c2,  ///< cell 2
     const axes a     ///< Axis.
 )
 {

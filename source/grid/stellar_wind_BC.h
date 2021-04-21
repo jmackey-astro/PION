@@ -52,8 +52,8 @@
 /// distance from the grid cell-centre to the source position.
 ///
 struct wind_cell {
-  class cell* c;  ///< pointer to cell we are interested in.
-  pion_flt* p;    ///< primitive vector with wind properties for this cell.
+  class cell *c;  ///< pointer to cell we are interested in.
+  pion_flt *p;    ///< primitive vector with wind properties for this cell.
   double dist;    ///< distance of cell centre to wind src.
   double theta;   ///< polar angle in radians of cell from source.
 };
@@ -82,9 +82,9 @@ struct wind_source {
       Tw,                ///< wind temperature (K)
       Rstar,             ///< radius of star (cm)
       Bstar;  ///< magnetic field strength of split monopole at Rstar (G)
-  pion_flt* tracers;  ///< tracer values of wind.
+  pion_flt *tracers;  ///< tracer values of wind.
   bool cells_added;   ///< false until we add all cells to the source list.
-  std::vector<struct wind_cell*> wcells;
+  std::vector<struct wind_cell *> wcells;
 };
 
 // ##################################################################
@@ -98,14 +98,14 @@ struct wind_source {
 class stellar_wind {
 public:
   stellar_wind(
-      const int,           ///< ndim
-      const int,           ///< nvar
-      const int,           ///< ntracer
-      const int,           ///< ftr
-      const std::string*,  ///< List of tracer variable names.
-      const int,           ///< coord_sys
-      const int,           ///< eqn_type
-      const double         ///< minimum temperature allowed
+      const int,            ///< ndim
+      const int,            ///< nvar
+      const int,            ///< ntracer
+      const int,            ///< ftr
+      const std::string *,  ///< List of tracer variable names.
+      const int,            ///< coord_sys
+      const int,            ///< eqn_type
+      const double          ///< minimum temperature allowed
   );
 
   virtual ~stellar_wind();
@@ -117,33 +117,33 @@ public:
   /// This is for a spherically symmetric wind.
   ///
   int add_source(
-      const double*,  ///< position (cgs units)
-      const double,   ///< radius (cgs units)
-      const int,      ///< type (0=constant,1=evolving,2=lat-dep.)
-      const double,   ///< Mdot (Msun/yr)
-      const double,   ///< Vinf (km/s)
-      const double,   ///< Vrot (km/s)
-      const double,   ///< Surface Temperature (K)
-      const double,   ///< Stellar Radius (cm)
-      const double,   ///< Surface B field (G)
-      pion_flt*       ///< Tracer values of wind (if any)
+      const double *,  ///< position (cgs units)
+      const double,    ///< radius (cgs units)
+      const int,       ///< type (0=constant,1=evolving,2=lat-dep.)
+      const double,    ///< Mdot (Msun/yr)
+      const double,    ///< Vinf (km/s)
+      const double,    ///< Vrot (km/s)
+      const double,    ///< Surface Temperature (K)
+      const double,    ///< Stellar Radius (cm)
+      const double,    ///< Surface B field (G)
+      pion_flt *       ///< Tracer values of wind (if any)
   );
 
   ///
   /// This function is only used in a derived class.
   ///
   virtual int add_evolving_source(
-      const double*,  ///< position (cgs units).
-      const double,   ///< radius of boundary region (cgs units).
-      const int,      ///< type (1=evolving,2=lat-dep.).
-      pion_flt*,      ///< Any (constant) wind tracer values.
-      const string,   ///< file name to read data from.
-      const int,      ///< enhance mdot based on rotation (0=no,1=yes).
-      const double,   ///< time offset = [t(sim)-t(wind_file)]
-      const double,   ///< current time.
-      const double,   ///< frequency with which to update wind properties.
-      const double    ///< time scale factor
-                      ///< (t(sim)=[t(evo_file)-offset]/scalefactor
+      const double *,  ///< position (cgs units).
+      const double,    ///< radius of boundary region (cgs units).
+      const int,       ///< type (1=evolving,2=lat-dep.).
+      pion_flt *,      ///< Any (constant) wind tracer values.
+      const string,    ///< file name to read data from.
+      const int,       ///< enhance mdot based on rotation (0=no,1=yes).
+      const double,    ///< time offset = [t(sim)-t(wind_file)]
+      const double,    ///< current time.
+      const double,    ///< frequency with which to update wind properties.
+      const double     ///< time scale factor
+                       ///< (t(sim)=[t(evo_file)-offset]/scalefactor
   )
   {
     rep.error("Don't call add_evolving_source from here.", 99);
@@ -156,17 +156,17 @@ public:
   /// hydrogen gas, otherwise it will be modified accordingly.
   ///
   virtual int add_rotating_source(
-      const double*,  ///< position (cm from grid origin)
-      const double,   ///< radius of boundary region (cm)
-      const int,      ///< type (2=lat-dep.)
-      const double,   ///< Mdot (g/s)
-      const double,   ///< Vesc (cm/s)
-      const double,   ///< Vrot (cm/s)
-      const double,   ///< Vcrit (cm/s)
-      const double,   ///< Wind Temperature at surface
-      const double,   ///< Stellar Radius (cm)
-      const double,   ///< Surface B field (G)
-      pion_flt*       ///< Tracer values of wind (if any)
+      const double *,  ///< position (cm from grid origin)
+      const double,    ///< radius of boundary region (cm)
+      const int,       ///< type (2=lat-dep.)
+      const double,    ///< Mdot (g/s)
+      const double,    ///< Vesc (cm/s)
+      const double,    ///< Vrot (cm/s)
+      const double,    ///< Vcrit (cm/s)
+      const double,    ///< Wind Temperature at surface
+      const double,    ///< Stellar Radius (cm)
+      const double,    ///< Surface B field (G)
+      pion_flt *       ///< Tracer values of wind (if any)
   )
   {
     rep.error("Don't call add_rotating_source from here.", 99);
@@ -183,9 +183,9 @@ public:
   /// (possibly fixed) boundary value.  Returns non-zero on error.
   ///
   int add_cell(
-      class GridBaseClass*,
+      class GridBaseClass *,
       const int,  ///< src id
-      cell*       ///< cell to add to list.
+      cell *      ///< cell to add to list.
   );
 
   ///
@@ -209,7 +209,7 @@ public:
   /// or return a positive value if the cell is not in the list.
   ///
   virtual int set_cell_values(
-      class GridBaseClass*,
+      class GridBaseClass *,
       const int,    ///< src id
       const double  ///< simulation time
   );
@@ -220,42 +220,42 @@ public:
 
   void get_src_posn(
       const int,  ///< src id
-      double*     ///< position vector (output)
+      double *    ///< position vector (output)
   );
 
   void get_src_drad(
       const int,  ///< src id
-      double*     ///< radius (output) (physical units).
+      double *    ///< radius (output) (physical units).
   );
 
   void get_src_Mdot(
       const int,  ///< src id
-      double*     ///< mdot (output)
+      double *    ///< mdot (output)
   );
 
   void get_src_Vinf(
       const int,  ///< src id
-      double*     ///< Vinf (output)
+      double *    ///< Vinf (output)
   );
 
   void get_src_Tw(
       const int,  ///< src id
-      double*     ///< Temperature (output)
+      double *    ///< Temperature (output)
   );
 
   void get_src_Rstar(
       const int,  ///< src id
-      double*     ///< Stellar radius (output)
+      double *    ///< Stellar radius (output)
   );
 
   void get_src_trcr(
       const int,  ///< src id
-      pion_flt*   ///< tracers (output)
+      pion_flt *  ///< tracers (output)
   );
 
   void get_src_type(
       const int,  ///< src id
-      int*        ///< type of wind (=0 for now) (output)
+      int *       ///< type of wind (=0 for now) (output)
   );
 
   // Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
@@ -278,9 +278,9 @@ protected:
   /// and the cell-to-source distance.
   ///
   void set_wind_cell_reference_state(
-      class GridBaseClass*,
-      struct wind_cell*,
-      const struct wind_source*,
+      class GridBaseClass *,
+      struct wind_cell *,
+      const struct wind_source *,
       const double  ///< EOS gamma
   );
 
@@ -290,7 +290,7 @@ protected:
   //
   double beta(const double);  ///< Teff
 
-  std::vector<struct wind_source*> wlist;  ///< list of sources.
+  std::vector<struct wind_source *> wlist;  ///< list of sources.
   int nsrc;  ///< number of sources (size of wlist vector)
 };
 
@@ -323,7 +323,7 @@ struct evolving_wind_data {
   // double *mdot;
   // double *vinf;
   // double *Teff;
-  struct wind_source* ws;
+  struct wind_source *ws;
   int i_XH, i_XHe, i_XC, i_XN, i_XO, i_XZ, i_XD;
   bool is_active;  ///< Set to false initially, then to true once its time has
                    ///< come.
@@ -352,16 +352,16 @@ public:
   /// Constructor:
   ///
   stellar_wind_evolution(
-      const int,           ///< ndim
-      const int,           ///< nvar
-      const int,           ///< ntracer
-      const int,           ///< ftr
-      const std::string*,  ///< List of tracer variable names.
-      const int,           ///< coord_sys
-      const int,           ///< eqn_type
-      const double,        ///< minimum temperature allowed
-      const double,        ///< Simulation start time.
-      const double         ///< Simulation finish time.
+      const int,            ///< ndim
+      const int,            ///< nvar
+      const int,            ///< ntracer
+      const int,            ///< ftr
+      const std::string *,  ///< List of tracer variable names.
+      const int,            ///< coord_sys
+      const int,            ///< eqn_type
+      const double,         ///< minimum temperature allowed
+      const double,         ///< Simulation start time.
+      const double          ///< Simulation finish time.
   );
 
   ///
@@ -374,16 +374,16 @@ public:
   /// This just wraps the stellar_wind version.
   ///
   int add_source(
-      const double*,  ///< position (physical units)
-      const double,   ///< radius (physical units)
-      const int,      ///< type (0=fixed,1=gradual-switch-on)
-      const double,   ///< Mdot (Msun/yr)
-      const double,   ///< Vinf (km/s)
-      const double,   ///< Vrot (km/s)
-      const double,   ///< Surface Temperature (K)
-      const double,   ///< Stellar Radius (cm)
-      const double,   ///< Surface B field (G)
-      pion_flt*       ///< Tracer values of wind (if any)
+      const double *,  ///< position (physical units)
+      const double,    ///< radius (physical units)
+      const int,       ///< type (0=fixed,1=gradual-switch-on)
+      const double,    ///< Mdot (Msun/yr)
+      const double,    ///< Vinf (km/s)
+      const double,    ///< Vrot (km/s)
+      const double,    ///< Surface Temperature (K)
+      const double,    ///< Stellar Radius (cm)
+      const double,    ///< Surface B field (G)
+      pion_flt *       ///< Tracer values of wind (if any)
   );
 
   ///
@@ -393,17 +393,17 @@ public:
   /// immediately).
   ///
   virtual int add_evolving_source(
-      const double*,  ///< position (physical units).
-      const double,   ///< radius (physical units).
-      const int,      ///< type (must be 3, for variable wind).
-      pion_flt*,      ///< Any (constant) wind tracer values.
-      const string,   ///< file name to read data from.
-      const int,      ///< enhance mdot based on rotation (0=no,1=yes).
-      const double,   ///< time offset = [t(sim)-t(wind_file)]
-      const double,   ///< current time.
-      const double,   ///< frequency with which to update wind properties.
-      const double    ///< scale factor for time
-                      ///< (t(sim)=[t(evo_file)-offset]/scalefactor
+      const double *,  ///< position (physical units).
+      const double,    ///< radius (physical units).
+      const int,       ///< type (must be 3, for variable wind).
+      pion_flt *,      ///< Any (constant) wind tracer values.
+      const string,    ///< file name to read data from.
+      const int,       ///< enhance mdot based on rotation (0=no,1=yes).
+      const double,    ///< time offset = [t(sim)-t(wind_file)]
+      const double,    ///< current time.
+      const double,    ///< frequency with which to update wind properties.
+      const double     ///< scale factor for time
+                       ///< (t(sim)=[t(evo_file)-offset]/scalefactor
   );
 
   ///
@@ -420,7 +420,7 @@ public:
   /// active.
   ///
   int set_cell_values(
-      class GridBaseClass*,
+      class GridBaseClass *,
       const int,    ///< src id
       const double  ///< simulation time
   );
@@ -435,14 +435,14 @@ protected:
   /// All columns must be present, but may not be used depending
   /// on the type of wind source.
   int read_evolution_file(
-      const string,               ///< file name to read data from.
-      struct evolving_wind_data*  ///< where to put the data
+      const string,                ///< file name to read data from.
+      struct evolving_wind_data *  ///< where to put the data
   );
 
   /// Look through list of tracers and find elements and map them to
   /// tracer indices.
   void set_element_indices(
-      struct evolving_wind_data*  ///< pointer to evolving wind data
+      struct evolving_wind_data *  ///< pointer to evolving wind data
   );
 
   ///
@@ -451,10 +451,10 @@ protected:
   /// wind cells.
   ///
   virtual void update_source(
-      class GridBaseClass*,
-      struct evolving_wind_data*,  ///< source to update.
-      const double,                ///< current simulation time.
-      const double                 ///< EOS Gamma
+      class GridBaseClass *,
+      struct evolving_wind_data *,  ///< source to update.
+      const double,                 ///< current simulation time.
+      const double                  ///< EOS Gamma
   );
 
   ///
@@ -462,7 +462,7 @@ protected:
   /// a one-to-one correspondence between sources in this list and
   /// the constant wind list wlist[].
   ///
-  std::vector<struct evolving_wind_data*> wdata_evol;
+  std::vector<struct evolving_wind_data *> wdata_evol;
 };
 
 #endif  // STELLAR_WIND_BC_H

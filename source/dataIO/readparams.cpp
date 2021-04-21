@@ -28,7 +28,7 @@ ReadParams::~ReadParams()
   //  cout << " ... Done.\n";
 }
 
-int ReadParams::read_paramfile(const string& infile)
+int ReadParams::read_paramfile(const string &infile)
 {
   ifstream paramfile;
   paramfile.open(infile.c_str());
@@ -85,7 +85,7 @@ void ReadParams::write_out_parameters()
 }
 
 // find and assign function
-string ReadParams::find_parameter(const string& p)
+string ReadParams::find_parameter(const string &p)
 {
   vector<struct parameter>::iterator i = params.begin();
   while (i != params.end() && (*i).name != p)

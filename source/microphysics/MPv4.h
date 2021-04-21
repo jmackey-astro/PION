@@ -41,14 +41,14 @@ public:
   /// Constructor
   ///
   MPv4(
-      const int,              ///< grid dimensions
-      const int,              ///< Coordinate System flag
-      const int,              ///< Total number of variables in state vector
-      const int,              ///< Number of tracer variables in state vector.
-      const std::string*,     ///< List of what the tracer variables mean.
-      struct which_physics*,  ///< extra physics stuff.
-      struct rad_sources*,    ///< radiation sources.
-      const double            ///< EOS Gamma
+      const int,               ///< grid dimensions
+      const int,               ///< Coordinate System flag
+      const int,               ///< Total number of variables in state vector
+      const int,               ///< Number of tracer variables in state vector.
+      const std::string *,     ///< List of what the tracer variables mean.
+      struct which_physics *,  ///< extra physics stuff.
+      struct rad_sources *,    ///< radiation sources.
+      const double             ///< EOS Gamma
   );
 
   ///
@@ -76,20 +76,20 @@ public:
   /// <<\delta\rho\times\delta x>>
   ///
   virtual int TimeUpdateMP_RTnew(
-      const pion_flt*,  ///< Primitive Vector to be updated.
-      const int,        ///< Number of UV heating sources.
-      const std::vector<struct rt_source_data>&,
+      const pion_flt *,  ///< Primitive Vector to be updated.
+      const int,         ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
       ///< list of UV-heating column densities and source properties.
       const int,  ///< number of ionising radiation sources.
-      const std::vector<struct rt_source_data>&,
+      const std::vector<struct rt_source_data> &,
       ///< list of ionising src column densities and source properties.
-      pion_flt*,     ///< Destination Vector for updated values
+      pion_flt *,    ///< Destination Vector for updated values
                      ///< (can be same as first Vector.
       const double,  ///< Time Step to advance by.
       const double,  ///< EOS gamma.
       const int,     ///< Switch for what type of integration to use.
                      ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-      double*        ///< any returned data (final temperature?).
+      double *       ///< any returned data (final temperature?).
   );
 
   ///
@@ -97,11 +97,11 @@ public:
   /// arguments.  (photoionisation time is not implemented).
   ///
   double timescales(
-      const pion_flt*,  ///< Current cell.
-      const double,     ///< EOS gamma.
-      const bool,       ///< set to 'true' if including cooling time.
-      const bool,       ///< set to 'true' if including recombination time.
-      const bool        ///< set to 'true' if including photo-ionsation time.
+      const pion_flt *,  ///< Current cell.
+      const double,      ///< EOS gamma.
+      const bool,        ///< set to 'true' if including cooling time.
+      const bool,        ///< set to 'true' if including recombination time.
+      const bool         ///< set to 'true' if including photo-ionsation time.
   );
 
   ///
@@ -112,12 +112,12 @@ public:
   /// capability than the other timescales function.
   ///
   double timescales_RT(
-      const pion_flt*,  ///< Current cell.
-      const int,        ///< Number of UV heating sources.
-      const std::vector<struct rt_source_data>&,
+      const pion_flt *,  ///< Current cell.
+      const int,         ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
       ///< list of UV-heating column densities and source properties.
       const int,  ///< number of ionising radiation sources.
-      const std::vector<struct rt_source_data>&,
+      const std::vector<struct rt_source_data> &,
       ///< list of ionising src column densities and source properties.
       const double  ///< EOS gamma.
   );
@@ -128,8 +128,8 @@ protected:
   /// vector.
   ///
   virtual int convert_prim2local(
-      const pion_flt*,  ///< primitive vector from grid cell (length nv_prim)
-      double*           ///< local vector [x,E](n+1).
+      const pion_flt *,  ///< primitive vector from grid cell (length nv_prim)
+      double *           ///< local vector [x,E](n+1).
   );
 
   ///
@@ -160,7 +160,7 @@ public:
       double,  ///< current time (probably not needed for rate equations)
       const N_Vector,  ///< current Y-value
       N_Vector,        ///< vector for Y-dot values
-      const double*    ///< extra user-data vector, P, for evaluating
+      const double *   ///< extra user-data vector, P, for evaluating
                        ///< ydot(y,t,p)
   );
 
@@ -168,8 +168,8 @@ public:
   /// Get the number of extra parameters and the number of equations.
   ///
   virtual void get_problem_size(
-      int*,  ///< number of equations
-      int*   ///< number of parameters in user_data vector.
+      int *,  ///< number of equations
+      int *   ///< number of parameters in user_data vector.
   );
 
 protected:
@@ -177,8 +177,8 @@ protected:
   /// set the relative and absolute error tolerances
   ///
   virtual void get_error_tolerances(
-      double*,  ///< relative error tolerance (single value)
-      double[]  ///< absolute error tolerance (array)
+      double *,  ///< relative error tolerance (single value)
+      double[]   ///< absolute error tolerance (array)
   );
 
   //---------------------------------------------------------------------------

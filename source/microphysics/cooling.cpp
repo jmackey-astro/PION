@@ -103,7 +103,7 @@ CoolingFn::CoolingFn(int flag)
     // derivative boundary conditions for extrapolation beyond the range of
     // the data.  It is dangerous to go beyond the range, but this boundary
     // condition means that extrapolation has a chance of being reasonable.
-    interpolate.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, id);
+    interpolate.spline(Temp, Lamb, Nspl, 0.0, 0.0, id);
   }  // SD93 function (NEQ)
 
   else if (flag == 2) {
@@ -164,7 +164,7 @@ CoolingFn::CoolingFn(int flag)
     // derivative boundary conditions for extrapolation beyond the range of
     // the data.  It is dangerous to go beyond the range, but this boundary
     // condition means that extrapolation has a chance of being reasonable.
-    interpolate.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, id);
+    interpolate.spline(Temp, Lamb, Nspl, 0.0, 0.0, id);
     rep.error(
         "Dalgarno and McCray cooling function is not usably coded -- get "
         "a better function",
@@ -220,7 +220,7 @@ CoolingFn::CoolingFn(int flag)
     MinSlope = (temp2[1] - temp2[0]) / (temp1[1] - temp1[0]);
     cout << "\t\tMinSlope (logarithmic) = " << MinSlope << "\n";
 #endif
-    interpolate.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, id);
+    interpolate.spline(Temp, Lamb, Nspl, 0.0, 0.0, id);
   }  // SD93 function (CIE)
 
   else if (flag == 5) {
@@ -333,7 +333,7 @@ CoolingFn::CoolingFn(int flag)
     MaxTemp  = Temp[Nspl - 1];
     MinSlope = (temp2[1] - temp2[0]) / (temp1[1] - temp1[0]);
     cout << "\t\tMinSlope (logarithmic) = " << MinSlope << "\n";
-    interpolate.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, id);
+    interpolate.spline(Temp, Lamb, Nspl, 0.0, 0.0, id);
   }  // SD93-CIE-ForbiddenLine
 
   else

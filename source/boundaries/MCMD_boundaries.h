@@ -29,24 +29,24 @@ protected:
   /// versa.
   ///
   virtual int BC_assign_BCMPI(
-      class SimParams&,      ///< simulation parameters
-      const int,             ///< level in grid hierarchy
-      class GridBaseClass*,  ///< pointer to grid.
-      boundary_data*,        ///< pointer to boundary we are assigning.
-      int                    ///< tag, either BC_MPItag or BC_PERtag.
+      class SimParams &,      ///< simulation parameters
+      const int,              ///< level in grid hierarchy
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *,        ///< pointer to boundary we are assigning.
+      int                     ///< tag, either BC_MPItag or BC_PERtag.
   );
 
   ///
   /// Updates data on an inter-process communicating boundary.
   ///
   virtual int BC_update_BCMPI(
-      class SimParams&,      ///< simulation parameters
-      const int,             ///< level in grid hierarchy
-      class GridBaseClass*,  ///< pointer to grid.
-      boundary_data*,        ///< Boundary to update.
-      const int,             ///< current fractional step being taken.
-      const int,             ///< final step.
-      int                    ///< tag, either BC_MPItag or BC_PERtag.
+      class SimParams &,      ///< simulation parameters
+      const int,              ///< level in grid hierarchy
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *,        ///< Boundary to update.
+      const int,              ///< current fractional step being taken.
+      const int,              ///< final step.
+      int                     ///< tag, either BC_MPItag or BC_PERtag.
   );
 
   /// Makes a list of cells from which we grab data to send to
@@ -54,12 +54,12 @@ protected:
   /// set up before the simulation starts in order to save time
   /// during the update.
   int BC_select_data2send(
-      class SimParams&,      ///< simulation parameters
-      class GridBaseClass*,  ///< pointer to grid.
-      list<cell*>*,          ///< list of cells (returned by this func.)
-      int*,                  ///< number of cells in list.
-      boundary_data*,        ///< pointer to boundary data.
-      int                    ///< tag, either BC_MPItag or BC_PERtag.
+      class SimParams &,      ///< simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      list<cell *> *,         ///< list of cells (returned by this func.)
+      int *,                  ///< number of cells in list.
+      boundary_data *,        ///< pointer to boundary data.
+      int                     ///< tag, either BC_MPItag or BC_PERtag.
   );
 };
 

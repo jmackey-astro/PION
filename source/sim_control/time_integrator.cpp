@@ -62,7 +62,7 @@ time_integrator::~time_integrator()
 
 double time_integrator::advance_time(
     const int level,           ///< level in grid hierarchy
-    class GridBaseClass* grid  ///< Computational grid.
+    class GridBaseClass *grid  ///< Computational grid.
 )
 {
   int err = 0;
@@ -132,7 +132,7 @@ double time_integrator::advance_time(
 int time_integrator::first_order_update(
     const double dt,
     const int ooa,
-    class GridBaseClass* grid  ///< Computational grid.
+    class GridBaseClass *grid  ///< Computational grid.
 )
 {
   // NB Only used for uniform grid.  update for NG grid is in
@@ -180,7 +180,7 @@ int time_integrator::first_order_update(
 int time_integrator::second_order_update(
     const double dt,
     const int ooa,
-    class GridBaseClass* grid  ///< Computational grid.
+    class GridBaseClass *grid  ///< Computational grid.
 )
 {
   // NB Only used for uniform grid.  update for NG grid is in
@@ -219,7 +219,7 @@ int time_integrator::second_order_update(
 
 int time_integrator::calc_microphysics_dU(
     const double delt,         ///< timestep to integrate MP eqns.
-    class GridBaseClass* grid  ///< Computational grid.
+    class GridBaseClass *grid  ///< Computational grid.
 )
 {
   // cout <<"\tcalc_microphysics_dU starting.\n";
@@ -267,7 +267,7 @@ int time_integrator::calc_microphysics_dU(
 
 int time_integrator::calc_RT_microphysics_dU(
     const double delt,         // timestep to integrate
-    class GridBaseClass* grid  ///< Computational grid.
+    class GridBaseClass *grid  ///< Computational grid.
 )
 {
 #ifdef RT_TESTING
@@ -284,7 +284,7 @@ int time_integrator::calc_RT_microphysics_dU(
   // so if we try to call this with old code then it should return with
   // a non-zero error code.
   //
-  cell* c = grid->FirstPt_All();
+  cell *c = grid->FirstPt_All();
   pion_flt p[SimPM.nvar];  // temporary state vector for output state.
   pion_flt ui[SimPM.nvar], uf[SimPM.nvar];  // conserved variable states.
 
@@ -405,7 +405,7 @@ int time_integrator::calc_RT_microphysics_dU(
 
 int time_integrator::calc_noRT_microphysics_dU(
     const double delt,         ///< timestep to integrate
-    class GridBaseClass* grid  ///< Computational grid.
+    class GridBaseClass *grid  ///< Computational grid.
 )
 {
 #ifdef TESTING
@@ -415,7 +415,7 @@ int time_integrator::calc_noRT_microphysics_dU(
   // No radiation sources and no diffuse radiation optical depths,
   // so call a simple microphysics update.
   //
-  cell* c = grid->FirstPt_All();
+  cell *c = grid->FirstPt_All();
   pion_flt p[SimPM.nvar];  // temporary state vector for output state.
   pion_flt ui[SimPM.nvar], uf[SimPM.nvar];  // conserved variable states.
   double tt = 0.;  // temperature returned at end of microphysics step.
@@ -464,7 +464,7 @@ int time_integrator::calc_noRT_microphysics_dU(
 int time_integrator::calc_dynamics_dU(
     const double dt,           ///< timestep to integrate
     const int step,            ///< whether OA1 or OA2.
-    class GridBaseClass* grid  ///< Computational grid.
+    class GridBaseClass *grid  ///< Computational grid.
 )
 {
   // cout <<"\tcalc_dynamics_dU starting.\n";
@@ -517,7 +517,7 @@ int time_integrator::calc_dynamics_dU(
 int time_integrator::set_dynamics_dU(
     const double dt,           ///< timestep for this calculation
     const int step,            ///< whether half-step or full-step
-    class GridBaseClass* grid  ///< Computational grid.
+    class GridBaseClass *grid  ///< Computational grid.
 )
 {
   //
@@ -559,8 +559,8 @@ int time_integrator::set_dynamics_dU(
   //
   for (int i = 0; i < SimPM.ndim; i++) {
     spatial_solver->SetDirection(axis[i]);
-    class cell* cpt    = grid->FirstPt_All();
-    class cell* marker = cpt;
+    class cell *cpt    = grid->FirstPt_All();
+    class cell *marker = cpt;
 
 #ifdef TEST_INT
     cout << "Direction=" << axis[i] << ", i=" << i << "\n";
@@ -610,12 +610,12 @@ int time_integrator::set_dynamics_dU(
 // ##################################################################
 
 int time_integrator::dynamics_dU_column(
-    class cell* startingPt,       ///< starting point of column.
+    class cell *startingPt,       ///< starting point of column.
     const enum direction posdir,  ///< direction to trace column.
     const enum direction negdir,  ///< reverse direction
     const double dt,              ///< timestep we are advancing by.
     const int csp,                ///< spatial order-of-accuracy for this step.
-    class GridBaseClass* grid     ///< Computational grid.
+    class GridBaseClass *grid     ///< Computational grid.
 )
 {
   if ((SimPM.spOOA > 2) || (SimPM.tmOOA > 2) || (csp > 2)) {
@@ -647,13 +647,13 @@ int time_integrator::dynamics_dU_column(
   //
   // Set starting point, and next two points in the column.
   //
-  cell* cpt = startingPt;
+  cell *cpt = startingPt;
   if (cpt == 0) {
     cerr << "(dynamics_dU_column) error finding left boundary cell.\n";
     return (1);
   }
-  cell* npt  = grid->NextPt(cpt, posdir);
-  cell* n2pt = grid->NextPt(npt, posdir);
+  cell *npt  = grid->NextPt(cpt, posdir);
+  cell *n2pt = grid->NextPt(npt, posdir);
 #ifdef TEST_INT
   // cout <<"Column: "<<cpt<<", "<<npt<<", "<<n2pt<<"\n";
 #endif
@@ -858,7 +858,7 @@ int time_integrator::grid_update_state_vector(
     const double dt,           ///< timestep
     const int step,            ///< OA1 or OA2
     const int ooa,             ///< Full order of accuracy of simulation
-    class GridBaseClass* grid  ///< Computational grid.
+    class GridBaseClass *grid  ///< Computational grid.
 )
 {
   int err = 0;
@@ -871,7 +871,7 @@ int time_integrator::grid_update_state_vector(
   //
   // Loop through grid, updating Ph[] with CellAdvanceTime function.
   //
-  class cell* c = grid->FirstPt_All();
+  class cell *c = grid->FirstPt_All();
   do {
 
 #ifdef TESTING

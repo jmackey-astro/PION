@@ -74,15 +74,15 @@ public:
 
   /// calculate Powell and GLM source terms for multi-D MHD
   virtual int MHDsource(
-      class GridBaseClass*,  ///< pointer to grid.
-      class cell*,           ///< pointer to cell of left state
-      class cell*,           ///< pointer to cell of right state
-      pion_flt*,             ///< left edge state
-      pion_flt*,             ///< right edge state
-      const axes,            ///< Which axis we are looking along.
-      enum direction,        ///< positive direction normal to interface
-      enum direction,        ///< negative direction normal to interface
-      const double           ///< timestep dt
+      class GridBaseClass *,  ///< pointer to grid.
+      class cell *,           ///< pointer to cell of left state
+      class cell *,           ///< pointer to cell of right state
+      pion_flt *,             ///< left edge state
+      pion_flt *,             ///< right edge state
+      const axes,             ///< Which axis we are looking along.
+      enum direction,         ///< positive direction normal to interface
+      enum direction,         ///< negative direction normal to interface
+      const double            ///< timestep dt
   )
   {
     return 0;
@@ -111,11 +111,11 @@ public:
   /// calculated left and right edge states at the boundary.
   ///
   void set_Hcorrection(
-      cell*,            ///< cell to assign eta value to.
-      const axes,       ///< axis we are looking along
-      const pion_flt*,  ///< left state (from current cell).
-      const pion_flt*,  ///< right state (from next cell).
-      const double      ///< EOS gamma.
+      cell *,            ///< cell to assign eta value to.
+      const axes,        ///< axis we are looking along
+      const pion_flt *,  ///< left state (from current cell).
+      const pion_flt *,  ///< right state (from next cell).
+      const double       ///< EOS gamma.
   );
 
 #ifdef THERMAL_CONDUCTION
@@ -130,7 +130,7 @@ public:
   /// magnetic field direction so I may want to add that later.
   ///
   virtual int set_thermal_conduction_Edot(
-      class SimParams&  ///< pointer to simulation parameters
+      class SimParams &  ///< pointer to simulation parameters
   );
 #endif  // THERMAL CONDUCTION
 
@@ -138,13 +138,13 @@ public:
   /// Calculate Flux between a left and right state.
   ///
   int InterCellFlux(
-      class SimParams&,           ///< simulation parameters
-      class GridBaseClass* grid,  ///< pointer to grid
-      class cell*,                ///< Left state cell pointer
-      class cell*,                ///< Right state cell pointer
-      pion_flt*,                  ///< Left Primitive State Vector.
-      pion_flt*,                  ///< Right Primitive State Vector.
-      pion_flt*,                  ///< Flux Vector. (written to).
+      class SimParams &,          ///< simulation parameters
+      class GridBaseClass *grid,  ///< pointer to grid
+      class cell *,               ///< Left state cell pointer
+      class cell *,               ///< Right state cell pointer
+      pion_flt *,                 ///< Left Primitive State Vector.
+      pion_flt *,                 ///< Right Primitive State Vector.
+      pion_flt *,                 ///< Flux Vector. (written to).
       const double,               ///< gas EOS gamma.
       const double                ///< Cell size dx.
   );
@@ -153,42 +153,42 @@ public:
   /// Calculates Flux based on a left and right state vector (prim).
   ///
   virtual int inviscid_flux(
-      class SimParams&,      ///< simulation parameters
-      class GridBaseClass*,  ///<  pointer to grid
-      const double,          ///< cell-size dx (for LF method)
-      class cell*,           ///< Left state cell pointer
-      class cell*,           ///< Right state cell pointer
-      const pion_flt*,       ///< Left Primitive state vector.
-      const pion_flt*,       ///< Right Primitive state vector.
-      pion_flt*,             ///< Resultant Flux state vector.
-      pion_flt*,             ///< State vector at interface.
-      const int,             ///< Which Riemann solver
-      const double           ///< Gas constant gamma.
+      class SimParams &,      ///< simulation parameters
+      class GridBaseClass *,  ///<  pointer to grid
+      const double,           ///< cell-size dx (for LF method)
+      class cell *,           ///< Left state cell pointer
+      class cell *,           ///< Right state cell pointer
+      const pion_flt *,       ///< Left Primitive state vector.
+      const pion_flt *,       ///< Right Primitive state vector.
+      pion_flt *,             ///< Resultant Flux state vector.
+      pion_flt *,             ///< State vector at interface.
+      const int,              ///< Which Riemann solver
+      const double            ///< Gas constant gamma.
       ) = 0;
 
   /// Adds the contribution from flux in the current direction to dU.
   virtual int dU_Cell(
-      class GridBaseClass* grid,
-      cell*,            ///< Current cell.
-      const axes,       ///< Which axis we are looking along.
-      const pion_flt*,  ///< Negative direction flux.
-      const pion_flt*,  ///< Positive direction flux.
-      const pion_flt*,  ///< slope vector for cell c.
-      const int,        ///< spatial order of accuracy.
-      const double,     ///< cell length dx.
-      const double      ///< cell TimeStep, dt.
+      class GridBaseClass *grid,
+      cell *,            ///< Current cell.
+      const axes,        ///< Which axis we are looking along.
+      const pion_flt *,  ///< Negative direction flux.
+      const pion_flt *,  ///< Positive direction flux.
+      const pion_flt *,  ///< slope vector for cell c.
+      const int,         ///< spatial order of accuracy.
+      const double,      ///< cell length dx.
+      const double       ///< cell TimeStep, dt.
       ) = 0;
 
   /// \brief General Finite volume scheme for updating a cell's
   /// primitive state vector, for homogeneous equations.
   ///
   virtual int CellAdvanceTime(
-      class cell*,      ///< cell to update.
-      const pion_flt*,  ///< Initial Primitive State Vector.
-      pion_flt*,        ///< Update vector dU
-      pion_flt*,     ///< Final Primitive state vector (can be same as initial
+      class cell *,      ///< cell to update.
+      const pion_flt *,  ///< Initial Primitive State Vector.
+      pion_flt *,        ///< Update vector dU
+      pion_flt *,    ///< Final Primitive state vector (can be same as initial
                      ///< vec.).
-      pion_flt*,     ///< Tracks change of energy if I have to correct for
+      pion_flt *,    ///< Tracks change of energy if I have to correct for
                      ///< negative pressure
       const double,  ///< gas EOS gamma.
       const double,  ///< Min Temperature allowed on grid.
@@ -197,7 +197,7 @@ public:
 
   /// \brief Given a cell, calculate the hydrodynamic timestep.
   virtual double CellTimeStep(
-      const cell*,   ///< pointer to cell
+      const cell *,  ///< pointer to cell
       const double,  ///< gas EOS gamma.
       const double   ///< Cell size dx.
       ) = 0;
@@ -210,9 +210,9 @@ public:
   /// H-correction viscosity.
   ///
   virtual int preprocess_data(
-      const int,            ///< Spatial order of acc for this call.
-      class SimParams&,     ///< pointer to simulation parameters
-      class GridBaseClass*  ///< pointer to computational grid.
+      const int,             ///< Spatial order of acc for this call.
+      class SimParams &,     ///< pointer to simulation parameters
+      class GridBaseClass *  ///< pointer to computational grid.
   );
 
   ///
@@ -221,9 +221,9 @@ public:
   /// in the cell data.
   ///
   int calc_Hcorrection(
-      const int,            ///< Spatial order of acc for this call.
-      class SimParams&,     ///< pointer to simulation parameters
-      class GridBaseClass*  ///< pointer to computational grid.
+      const int,             ///< Spatial order of acc for this call.
+      class SimParams &,     ///< pointer to simulation parameters
+      class GridBaseClass *  ///< pointer to computational grid.
   );
 
   ///
@@ -236,10 +236,10 @@ public:
   /// Base implementation does nothing.
   ///
   virtual int PostProcess_dU(
-      const double,         ///< current timestep, dt.
-      const int,            ///< TIMESTEP_FIRST_PART orTIMESTEP_FULL
-      class SimParams&,     ///< pointer to simulation parameters
-      class GridBaseClass*  ///< pointer to computational grid.
+      const double,          ///< current timestep, dt.
+      const int,             ///< TIMESTEP_FIRST_PART orTIMESTEP_FULL
+      class SimParams &,     ///< pointer to simulation parameters
+      class GridBaseClass *  ///< pointer to computational grid.
   )
   {
     return 0;
@@ -259,7 +259,7 @@ protected:
   /// Number of passive tracer variables.
   const int FV_ntr;
   /// Pointer to array of indices of tracer variables in the state vector.
-  int* eqTR;
+  int *eqTR;
 
   ///
   /// This calculates the Lax-Friedrichs flux across an interface, but the
@@ -269,11 +269,11 @@ protected:
   /// equations, but glm-mhd will need some extra work.
   ///
   virtual int get_LaxFriedrichs_flux(
-      const pion_flt*,  ///< Left  Primitive var. state vector.
-      const pion_flt*,  ///< Right Primitive var. state vector.
-      pion_flt*,        ///< Resulting Flux vector.
-      const double,     ///< cell size dx
-      const double      ///< gamma
+      const pion_flt *,  ///< Left  Primitive var. state vector.
+      const pion_flt *,  ///< Right Primitive var. state vector.
+      pion_flt *,        ///< Resulting Flux vector.
+      const double,      ///< cell size dx
+      const double       ///< gamma
   );
 
   ///
@@ -281,12 +281,12 @@ protected:
   /// Viscosity Calculation (one-dimensional).
   ///
   virtual int AVFalle(
-      const pion_flt*,  ///< Left Primitive state vector.
-      const pion_flt*,  ///< Right Primitive state vector.
-      const pion_flt*,  ///< Resolved (P*) state vector.
-      pion_flt*,        ///< Pointer to associated Flux Vector.
-      const double,     ///< Artificial Viscosity parameter, etav.
-      const double      ///< gamma
+      const pion_flt *,  ///< Left Primitive state vector.
+      const pion_flt *,  ///< Right Primitive state vector.
+      const pion_flt *,  ///< Resolved (P*) state vector.
+      pion_flt *,        ///< Pointer to associated Flux Vector.
+      const double,      ///< Artificial Viscosity parameter, etav.
+      const double       ///< gamma
       ) = 0;
 
   ///
@@ -294,10 +294,10 @@ protected:
   /// flux calculation.  So far this is only for the H-correction.
   ///
   void pre_calc_viscous_terms(
-      class GridBaseClass*,  ///< pointer to computational grid.
-      const cell*,           ///< left-of-interface cell
-      const cell*,           ///< right-of-interface cell
-      const int              ///< What kind of AV?
+      class GridBaseClass *,  ///< pointer to computational grid.
+      const cell *,           ///< left-of-interface cell
+      const cell *,           ///< right-of-interface cell
+      const int               ///< What kind of AV?
   );
 
   ///
@@ -306,13 +306,13 @@ protected:
   /// H-correction, but everything for FKJ98 and LAPIDUS viscosities.
   ///
   void post_calc_viscous_terms(
-      const cell*,      ///< left-of-interface cell
-      const cell*,      ///< right-of-interface cell
-      const pion_flt*,  ///< left state Prim.vec. (Pl)
-      const pion_flt*,  ///< right state Prim.vec. (Pr)
-      const pion_flt*,  ///< interface state Prim.vec. (P*)
-      pion_flt*,        ///< flux vector.
-      const int         ///< what kind of AV?
+      const cell *,      ///< left-of-interface cell
+      const cell *,      ///< right-of-interface cell
+      const pion_flt *,  ///< left state Prim.vec. (Pl)
+      const pion_flt *,  ///< right state Prim.vec. (Pr)
+      const pion_flt *,  ///< interface state Prim.vec. (P*)
+      pion_flt *,        ///< flux vector.
+      const int          ///< what kind of AV?
   );
 
   ///
@@ -321,9 +321,9 @@ protected:
   /// (1998,JCP,14,511).  Uses Eq. 16 and Fig. 9 from paper.
   ///
   double select_Hcorr_eta(
-      const cell*,          ///< cell to left of interface
-      const cell*,          ///< cell to right of interface
-      class GridBaseClass*  ///< pointer to computational grid.
+      const cell *,          ///< cell to left of interface
+      const cell *,          ///< cell to right of interface
+      class GridBaseClass *  ///< pointer to computational grid.
   );
 
   ///
@@ -333,9 +333,9 @@ protected:
   /// Flux must be already calculated for the physical variables!
   ///
   void set_interface_tracer_flux(
-      const pion_flt*,  ///< input left state.
-      const pion_flt*,  ///< input right state
-      pion_flt*         ///< Flux vector.
+      const pion_flt *,  ///< input left state.
+      const pion_flt *,  ///< input right state
+      pion_flt *         ///< Flux vector.
   );
 
   ///	Vector for corrector values (used to modify flux according to sCMA)

@@ -24,19 +24,19 @@ class NG_fine_to_coarse_bc {
 protected:
   /// Assigns data to a NG grid from finer grid.
   virtual int BC_assign_FINE_TO_COARSE(
-      class SimParams&,      ///< pointer to simulation parameters
-      class GridBaseClass*,  ///< pointer to grid.
-      boundary_data*,        ///< boundary data
-      class GridBaseClass*,  ///< pointer to child grid.
-      const int              ///< element in NGrecvF2C boundary struct
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *,        ///< boundary data
+      class GridBaseClass *,  ///< pointer to child grid.
+      const int               ///< element in NGrecvF2C boundary struct
   );
 
   /// Updates data to a NG grid from finer grid.
   virtual int BC_update_FINE_TO_COARSE(
-      class SimParams&,       ///< pointer to simulation parameters
-      class FV_solver_base*,  ///< pointer to equations
-      const int,              ///< level of grid in NG grid struct.
-      struct boundary_data*,
+      class SimParams &,       ///< pointer to simulation parameters
+      class FV_solver_base *,  ///< pointer to equations
+      const int,               ///< level of grid in NG grid struct.
+      struct boundary_data *,
       const int,  ///< element in NGrecvF2C boundary struct
       const int,
       const int);
@@ -44,57 +44,57 @@ protected:
   /// averages conserved vars of a list of cells, weighted by
   /// volume, using coarse-cell volume to normalise
   int average_cells(
-      class SimParams&,       ///< pointer to simulation parameters
-      class FV_solver_base*,  ///< pointer to equations
-      class GridBaseClass*,   ///< fine-level grid
-      const int,              ///< number of fine-level cells
-      std::vector<cell*>&,    ///< list of cells
-      const pion_flt*,        ///< centre of coarse cell.
-      pion_flt*               ///< [OUTPUT] averaged data (conserved var).
+      class SimParams &,       ///< pointer to simulation parameters
+      class FV_solver_base *,  ///< pointer to equations
+      class GridBaseClass *,   ///< fine-level grid
+      const int,               ///< number of fine-level cells
+      std::vector<cell *> &,   ///< list of cells
+      const pion_flt *,        ///< centre of coarse cell.
+      pion_flt *               ///< [OUTPUT] averaged data (conserved var).
   );
 
   /// Get optical depths for radiation sources from list of cells,
   /// and take appropriate combination of them for the coarse cell.
   ///
   void get_F2C_TauAvg(
-      class SimParams&,     ///< pointer to simulation parameters
-      const int,            ///< number of fine-level cells
-      std::vector<cell*>&,  ///< list of cells
-      const int*,           ///< centre of coarse cell.
-      double*               ///< [OUTPUT] pointer to optical depths
+      class SimParams &,      ///< pointer to simulation parameters
+      const int,              ///< number of fine-level cells
+      std::vector<cell *> &,  ///< list of cells
+      const int *,            ///< centre of coarse cell.
+      double *                ///< [OUTPUT] pointer to optical depths
   );
 
   /// Get optical depths for radiation sources from list of cells,
   /// and take appropriate combination of them for the coarse cell.
   ///
   void get_F2C_TauAvg_1D(
-      class SimParams&,     ///< pointer to simulation parameters
-      const int,            ///< number of fine-level cells
-      std::vector<cell*>&,  ///< list of cells
-      const int*,           ///< centre of coarse cell.
-      double*               ///< [OUTPUT] pointer to optical depths
+      class SimParams &,      ///< pointer to simulation parameters
+      const int,              ///< number of fine-level cells
+      std::vector<cell *> &,  ///< list of cells
+      const int *,            ///< centre of coarse cell.
+      double *                ///< [OUTPUT] pointer to optical depths
   );
 
   /// Get optical depths for radiation sources from list of cells,
   /// and take appropriate combination of them for the coarse cell.
   ///
   void get_F2C_TauAvg_2D(
-      class SimParams&,     ///< pointer to simulation parameters
-      const int,            ///< number of fine-level cells
-      std::vector<cell*>&,  ///< list of cells
-      const int*,           ///< centre of coarse cell.
-      double*               ///< [OUTPUT] pointer to optical depths
+      class SimParams &,      ///< pointer to simulation parameters
+      const int,              ///< number of fine-level cells
+      std::vector<cell *> &,  ///< list of cells
+      const int *,            ///< centre of coarse cell.
+      double *                ///< [OUTPUT] pointer to optical depths
   );
 
   /// Get optical depths for radiation sources from list of cells,
   /// and take appropriate combination of them for the coarse cell.
   ///
   void get_F2C_TauAvg_3D(
-      class SimParams&,     ///< pointer to simulation parameters
-      const int,            ///< number of fine-level cells
-      std::vector<cell*>&,  ///< list of cells
-      const int*,           ///< centre of coarse cell.
-      double*               ///< [OUTPUT] pointer to optical depths
+      class SimParams &,      ///< pointer to simulation parameters
+      const int,              ///< number of fine-level cells
+      std::vector<cell *> &,  ///< list of cells
+      const int *,            ///< centre of coarse cell.
+      double *                ///< [OUTPUT] pointer to optical depths
   );
 
   ///
@@ -102,10 +102,10 @@ protected:
   /// associated with a fine-to-coarse boundary.
   ///
   void add_cells_to_avg(
-      int,                            ///< grid dimension
-      class GridBaseClass*,           ///< pointer to child grid.
-      int,                            ///< number of coarse cells
-      std::vector<struct averaging>&  ///< avg list
+      int,                             ///< grid dimension
+      class GridBaseClass *,           ///< pointer to child grid.
+      int,                             ///< number of coarse cells
+      std::vector<struct averaging> &  ///< avg list
   );
 
   int F2C_Nxd;             ///< number of extra data variables to send.

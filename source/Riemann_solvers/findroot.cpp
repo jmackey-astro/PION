@@ -48,7 +48,7 @@ findroot::~findroot() {}
 // This version is specific to solving the equation in the Exact Riemann Solver.
 // Other versions could be specified, taking more or fewer parameters.
 int findroot::FR_find_root(
-    pion_flt* ans,      ///< pointer to result
+    pion_flt *ans,      ///< pointer to result
     const pion_flt p1,  ///< parameter 1
     const pion_flt p2,  ///< parameter 2
     const pion_flt p3,  ///< parameter 3
@@ -91,7 +91,7 @@ int findroot::FR_find_root(
 
 // This version is for testing
 int findroot::solve_test(
-    pion_flt* ans,     ///< pointer to result
+    pion_flt *ans,     ///< pointer to result
     const pion_flt p1  ///< pointer to parameter data.
 )
 {
@@ -134,7 +134,7 @@ pion_flt findroot::FR_test_function(const pion_flt x)
 // ##################################################################
 // ##################################################################
 
-int findroot::solve_pos(pion_flt x1, pion_flt x2, pion_flt* ans)
+int findroot::solve_pos(pion_flt x1, pion_flt x2, pion_flt *ans)
 {
   //  cout << "(fr::solve) ans = " << *ans << "\n";
   int err = bracket_root_pos(&x1, &x2);
@@ -160,7 +160,7 @@ int findroot::solve_pos(pion_flt x1, pion_flt x2, pion_flt* ans)
 // ##################################################################
 // ##################################################################
 
-int findroot::solve_pm(pion_flt x1, pion_flt x2, pion_flt* ans)
+int findroot::solve_pm(pion_flt x1, pion_flt x2, pion_flt *ans)
 {
   //  cout << "(fr::solve) ans = " << *ans << "\n";
   //  int err = bracket_root_pos(&x1,&x2);
@@ -190,7 +190,7 @@ int findroot::solve_pm(pion_flt x1, pion_flt x2, pion_flt* ans)
 ///
 /// This function returns brackets around a root.
 ///
-int findroot::bracket_root_pm(pion_flt* x1, pion_flt* x2)
+int findroot::bracket_root_pm(pion_flt *x1, pion_flt *x2)
 {
   // This is based on the NR root bracketing procedure.
   // It works for functions of x=[-infty,infty].
@@ -235,7 +235,7 @@ int findroot::bracket_root_pm(pion_flt* x1, pion_flt* x2)
 // ##################################################################
 // ##################################################################
 
-int findroot::bracket_root_pos(pion_flt* x1, pion_flt* x2)
+int findroot::bracket_root_pos(pion_flt *x1, pion_flt *x2)
 {
   // This is based on the NR root bracketing procedure.
   // It only works for fucntion of x=[0,infty], and would need
@@ -287,7 +287,7 @@ int findroot::bracket_root_pos(pion_flt* x1, pion_flt* x2)
 // ##################################################################
 
 int findroot::find_root_bisection(
-    pion_flt* x1, pion_flt* x2, pion_flt err, pion_flt* ans)
+    pion_flt *x1, pion_flt *x2, pion_flt err, pion_flt *ans)
 {
   // This is a simple bisection routine to find the root to an accuracy
   // of 'err'.  It is based on the NR bisection routine.
@@ -323,7 +323,7 @@ int findroot::find_root_bisection(
 // ##################################################################
 
 int findroot::find_root_zbrent(
-    pion_flt x1, pion_flt x2, pion_flt tol, pion_flt* ans)
+    pion_flt x1, pion_flt x2, pion_flt tol, pion_flt *ans)
 {
   // This is the numerical recipes routine 'zbrent.c'
   // It uses bisection and a higher order method when it can.

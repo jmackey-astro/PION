@@ -197,7 +197,7 @@ sim_control::~sim_control()
 /*********************** TIME INTEGRATION ************************/
 /*****************************************************************/
 int sim_control::Time_Int(
-    vector<class GridBaseClass*>& grid  ///< grid pointers.
+    vector<class GridBaseClass *> &grid  ///< grid pointers.
 )
 {
   cout << "------------------------------------------------------------\n";
@@ -293,7 +293,7 @@ int sim_control::Time_Int(
 /// pressure on the full domain and outputs it to screen
 ///
 void sim_control::calculate_magnetic_pressure(
-    class GridBaseClass* grid  ///< address of vector of grid pointers.
+    class GridBaseClass *grid  ///< address of vector of grid pointers.
 )
 {
   //
@@ -303,7 +303,7 @@ void sim_control::calculate_magnetic_pressure(
   double magp = 0.0, cellvol = 0.0;
   static double init_magp = -1.0;
 
-  cell* c = grid->FirstPt();
+  cell *c = grid->FirstPt();
   do {
     if (!c->isbd)
       magp += (spatial_solver->Ptot(c->P, 0.0) - c->P[PG])
@@ -324,7 +324,7 @@ void sim_control::calculate_magnetic_pressure(
 /// and output to screen.
 ///
 void sim_control::calculate_blastwave_radius(
-    class GridBaseClass* grid  ///< address of vector of grid pointers.
+    class GridBaseClass *grid  ///< address of vector of grid pointers.
 )
 {
   //
@@ -336,7 +336,7 @@ void sim_control::calculate_blastwave_radius(
   //  static double last_dt=0.0;
 
   // if (shock_found) continue;
-  cell* c = grid->LastPt();
+  cell *c = grid->LastPt();
   if (fabs(c->P[VX]) >= 1.0e4) {
     cout << "grid does not contain shock.\n";
     shockpos = CI.get_dpos(c, Rsph);
@@ -387,7 +387,7 @@ int sim_control::check_eosim()
 // ##################################################################
 // ##################################################################
 
-int sim_control::check_energy_cons(class GridBaseClass* grid)
+int sim_control::check_energy_cons(class GridBaseClass *grid)
 {
 #ifdef TEST_CONSERVATION
   // Energy, and Linear Momentum in x-direction.
@@ -399,7 +399,7 @@ int sim_control::check_energy_cons(class GridBaseClass* grid)
   nowMASS       = 0.0;
   double totmom = 0.0;
 
-  class cell* cpt = grid->FirstPt();
+  class cell *cpt = grid->FirstPt();
   double dR       = grid->DX();
   double dv       = 0.0;
   do {
@@ -433,8 +433,8 @@ int sim_control::check_energy_cons(class GridBaseClass* grid)
 /*****************************************************************/
 /*********************** FINISH SIMULATION ***********************/
 /*****************************************************************/
-int sim_control::Finalise(
-    vector<class GridBaseClass*>& grid  ///< address of vector of grid pointers.
+int sim_control::Finalise(vector<class GridBaseClass *>
+                              &grid  ///< address of vector of grid pointers.
 )
 {
   int err = 0;

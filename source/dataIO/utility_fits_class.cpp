@@ -58,7 +58,7 @@ utility_fitsio::utility_fitsio() {}
 // ##################################################################
 
 int utility_fitsio::create_fits_image(
-    fitsfile* ff, const string name, const int ndim, const int* npt)
+    fitsfile *ff, const string name, const int ndim, const int *npt)
 {
   string fname = "utility_fitsio::create_fits_image";
   int status   = 0;
@@ -84,15 +84,15 @@ int utility_fitsio::create_fits_image(
 // ##################################################################
 
 int utility_fitsio::write_fits_image(
-    fitsfile* ff,
+    fitsfile *ff,
     const string,  /// This is the name of the ext, but it's not used at the mo.
-    const double* localxmin,
-    const double* globalxmin,
+    const double *localxmin,
+    const double *globalxmin,
     const double pix_size,
     const int ndim,
-    const int* npt,
+    const int *npt,
     long int ntot,
-    double* data)
+    double *data)
 {
   int status     = 0;
   long int *fpix = 0, *lpix = 0;
@@ -136,17 +136,17 @@ int utility_fitsio::write_fits_image(
 // ##################################################################
 
 int utility_fitsio::check_fits_image_dimensions(
-    fitsfile* ff,       ///< file pointer.
+    fitsfile *ff,       ///< file pointer.
     const string name,  ///< Name of hdu image to check
     const int ndim,     ///< dimensionality we are expecting.
-    const int* npix     ///< number of pixels in each direction.
+    const int *npix     ///< number of pixels in each direction.
 )
 {
   int status = 0, num1 = 0, num = 0;
   fits_get_hdu_num(ff, &num);
   cout << "Current hdu: " << num << "\t and extname = " << name << "\n";
 
-  char* keyval = 0;
+  char *keyval = 0;
   keyval       = mem.myalloc(keyval, 256);
   strcpy(keyval, name.c_str());
   fits_movnam_hdu(ff, ANY_HDU, keyval, 0, &status);
@@ -163,7 +163,7 @@ int utility_fitsio::check_fits_image_dimensions(
 
   int bitpix      = -1;
   int naxis       = -1;
-  long int* naxes = 0;
+  long int *naxes = 0;
   naxes           = mem.myalloc(naxes, ndim);
   fits_get_img_param(ff, 0, &bitpix, &naxis, naxes, &status);
   // cout <<"naxis="<<naxis<<", axes=["<<naxes[0]<<", "<<naxes[1]<<"],
@@ -199,16 +199,16 @@ int utility_fitsio::check_fits_image_dimensions(
 // ##################################################################
 
 int utility_fitsio::read_fits_image_to_data(
-    fitsfile* ff,           ///< fitsfile pointer.
+    fitsfile *ff,           ///< fitsfile pointer.
     const string name,      ///< name of hdu to read from.
     const int ndim,         ///< dimensionality of image.
-    const double* l_xmin,   ///< local xmin (subdomain).
-    const double* g_xmin,   ///< global xmin (full domain).
+    const double *l_xmin,   ///< local xmin (subdomain).
+    const double *g_xmin,   ///< global xmin (full domain).
     const double pix_size,  ///< pixel size
-    const int* npt,         ///< number of pixels to read in each direction
+    const int *npt,         ///< number of pixels to read in each direction
     const long int ntot,    ///< total number of pixels to be read.
     const int datatype,     ///< FITS datatype (e.g. TDOUBLE or TFLOAT)
-    void* input_data        ///< data array to write to.
+    void *input_data        ///< data array to write to.
 )
 {
   if (datatype != TDOUBLE && datatype != TFLOAT) {
@@ -287,13 +287,13 @@ int utility_fitsio::read_fits_image_to_data(
     }
   }
 
-  void* nulval = 0;
+  void *nulval = 0;
   double dnull = -1.0e20;
   float fnull  = -1.0e20;
   if (datatype == TDOUBLE)
-    nulval = static_cast<void*>(&dnull);
+    nulval = static_cast<void *>(&dnull);
   else
-    nulval = static_cast<void*>(&fnull);
+    nulval = static_cast<void *>(&fnull);
 
   int anynul = 0;
   fits_read_subset(

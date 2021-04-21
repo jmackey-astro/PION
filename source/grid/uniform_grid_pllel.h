@@ -42,17 +42,17 @@ public:
   /// Constructor. Sets up a grid in the same way as the serial grid.
   ///
   UniformGridParallel(
-      int,      ///< ndim
-      int,      ///< nvar
-      int,      ///< equation type
-      int,      ///< number of boundary cells to use.
-      double*,  ///< local xmin
-      double*,  ///< local xmax
-      int*,     ///< local number of grid zones
-      double*,  ///< array of min. x/y/z for level.
-      double*,  ///< array of max. x/y/z for level.
-      double*,  ///< array of min. x/y/z for full simulation.
-      double*   ///< array of max. x/y/z for full simulation.
+      int,       ///< ndim
+      int,       ///< nvar
+      int,       ///< equation type
+      int,       ///< number of boundary cells to use.
+      double *,  ///< local xmin
+      double *,  ///< local xmax
+      int *,     ///< local number of grid zones
+      double *,  ///< array of min. x/y/z for level.
+      double *,  ///< array of max. x/y/z for level.
+      double *,  ///< array of min. x/y/z for full simulation.
+      double *   ///< array of max. x/y/z for full simulation.
   );
 
   ///
@@ -84,17 +84,17 @@ public:
   /// The constructor won't do very much:
   ///
   uniform_grid_cyl_parallel(
-      int,      ///< ndim, length of position vector.
-      int,      ///< nvar, length of state vectors.
-      int,      ///< eqntype, which equations we are using (needed by BCs).
-      int,      ///< number of boundary cells to use.
-      double*,  ///< array of minimum values of x,y,z.
-      double*,  ///< array of maximum values of x,y,z.
-      int*,     ///< array of number of cells in x,y,z directions.
-      double*,  ///< array of min. x/y/z for level.
-      double*,  ///< array of max. x/y/z for level.
-      double*,  ///< array of min. x/y/z for full simulation.
-      double*   ///< array of max. x/y/z for full simulation.
+      int,       ///< ndim, length of position vector.
+      int,       ///< nvar, length of state vectors.
+      int,       ///< eqntype, which equations we are using (needed by BCs).
+      int,       ///< number of boundary cells to use.
+      double *,  ///< array of minimum values of x,y,z.
+      double *,  ///< array of maximum values of x,y,z.
+      int *,     ///< array of number of cells in x,y,z directions.
+      double *,  ///< array of min. x/y/z for level.
+      double *,  ///< array of max. x/y/z for level.
+      double *,  ///< array of min. x/y/z for full simulation.
+      double *   ///< array of max. x/y/z for full simulation.
   );
 
   ///
@@ -108,7 +108,7 @@ public:
   /// It is redefined here because we need the radius calculated from
   /// the global simulation Xmin[Rcyl], not the grid Xmin.
   ///
-  virtual double iR_cov(const cell*);
+  virtual double iR_cov(const cell *);
 };
 
 // ##################################################################
@@ -132,17 +132,17 @@ public:
   /// The constructor won't do very much:
   ///
   uniform_grid_sph_parallel(
-      int,      ///< ndim, length of position vector.
-      int,      ///< nvar, length of state vectors.
-      int,      ///< eqntype, which equations we are using (needed by BCs).
-      int,      ///< number of boundary cells to use.
-      double*,  ///< array of minimum values of x,y,z.
-      double*,  ///< array of maximum values of x,y,z.
-      int*,     ///< array of number of cells in x,y,z directions.
-      double*,  ///< array of min. x/y/z for level.
-      double*,  ///< array of max. x/y/z for level.
-      double*,  ///< array of min. x/y/z for full simulation.
-      double*   ///< array of max. x/y/z for full simulation.
+      int,       ///< ndim, length of position vector.
+      int,       ///< nvar, length of state vectors.
+      int,       ///< eqntype, which equations we are using (needed by BCs).
+      int,       ///< number of boundary cells to use.
+      double *,  ///< array of minimum values of x,y,z.
+      double *,  ///< array of maximum values of x,y,z.
+      int *,     ///< array of number of cells in x,y,z directions.
+      double *,  ///< array of min. x/y/z for level.
+      double *,  ///< array of max. x/y/z for level.
+      double *,  ///< array of min. x/y/z for full simulation.
+      double *   ///< array of max. x/y/z for full simulation.
   );
 
   ///
@@ -156,7 +156,7 @@ public:
   /// It is re-defined here because we need the radius calculated from
   /// the global simulation Xmin[Rcyl], not the grid Xmin.
   ///
-  virtual double iR_cov(const cell*);
+  virtual double iR_cov(const cell *);
 };
 
 // ##################################################################

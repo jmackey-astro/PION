@@ -53,9 +53,9 @@ calc_timestep::~calc_timestep()
 // ##################################################################
 
 int calc_timestep::calculate_timestep(
-    class SimParams& par,             ///< pointer to simulation parameters
-    class GridBaseClass* grid,        ///< pointer to grid.
-    class FV_solver_base* sp_solver,  ///< solver/equations class
+    class SimParams &par,             ///< pointer to simulation parameters
+    class GridBaseClass *grid,        ///< pointer to grid.
+    class FV_solver_base *sp_solver,  ///< solver/equations class
     const int l                       ///< level to advance (for NG grid)
 )
 {
@@ -149,9 +149,9 @@ int calc_timestep::calculate_timestep(
 
 #ifdef THERMAL_CONDUCTION
 double calc_timestep::calc_conduction_dt_and_Edot(
-    class SimParams& par,            ///< pointer to simulation parameters
-    class GridBaseClass* grid,       ///< pointer to grid.
-    class FV_solver_base* sp_solver  ///< solver/equations class
+    class SimParams &par,            ///< pointer to simulation parameters
+    class GridBaseClass *grid,       ///< pointer to grid.
+    class FV_solver_base *sp_solver  ///< solver/equations class
 )
 {
   //
@@ -175,7 +175,7 @@ double calc_timestep::calc_conduction_dt_and_Edot(
   //
   double dt = 1.0e200, gm1 = par.gamma - 1.0, tempdt = 0.0,
          minP = par.RefVec[PG] * 1.0e-3;
-  cell* c     = grid->FirstPt();
+  cell *c     = grid->FirstPt();
   do {
     // DIDN'T WORK -- CHECKERBOARDING!
     // if (c->dU[ERG]<0.0) tempdt = c->Ph[PG]/(gm1*(fabs(c->dU[ERG]
@@ -206,7 +206,7 @@ double calc_timestep::calc_conduction_dt_and_Edot(
 // ##################################################################
 
 void calc_timestep::timestep_checking_and_limiting(
-    class SimParams& par,  ///< pointer to simulation parameters
+    class SimParams &par,  ///< pointer to simulation parameters
     const int l            ///< level to advance (for NG grid)
 )
 {
@@ -256,16 +256,16 @@ void calc_timestep::timestep_checking_and_limiting(
 // ##################################################################
 
 double calc_timestep::calc_dynamics_dt(
-    class SimParams& par,  ///< pointer to simulation parameters
-    class GridBaseClass* grid,
-    class FV_solver_base* sp_solver  ///< solver/equations class
+    class SimParams &par,  ///< pointer to simulation parameters
+    class GridBaseClass *grid,
+    class FV_solver_base *sp_solver  ///< solver/equations class
 )
 {
   double tempdt = 0.0;
   double dt     = 1.e100;  // Set it to very large no. initially.
   double dx     = grid->DX();
 
-  class cell* c = grid->FirstPt();
+  class cell *c = grid->FirstPt();
 #ifdef TESTING
   dp.c = c;
 #endif
@@ -323,8 +323,8 @@ double calc_timestep::calc_dynamics_dt(
 // ##################################################################
 
 double calc_timestep::calc_microphysics_dt(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
     const int l                 ///< level to advance (for NG grid)
 )
 {
@@ -384,8 +384,8 @@ double calc_timestep::calc_microphysics_dt(
 // ##################################################################
 
 double calc_timestep::get_mp_timescales_no_radiation(
-    class SimParams& par,  ///< pointer to simulation parameters
-    class GridBaseClass* grid)
+    class SimParams &par,  ///< pointer to simulation parameters
+    class GridBaseClass *grid)
 {
 #ifdef TESTING
   //
@@ -402,7 +402,7 @@ double calc_timestep::get_mp_timescales_no_radiation(
   // is.
   //
   double tempdt = 0.0, dt = 1.0e99;
-  class cell* c = grid->FirstPt();
+  class cell *c = grid->FirstPt();
   do {
 #ifdef TESTING
     dp.c = c;
@@ -492,8 +492,8 @@ double calc_timestep::get_mp_timescales_no_radiation(
 // ##################################################################
 
 double calc_timestep::get_mp_timescales_with_radiation(
-    class SimParams& par,  ///< pointer to simulation parameters
-    class GridBaseClass* grid)
+    class SimParams &par,  ///< pointer to simulation parameters
+    class GridBaseClass *grid)
 {
 #ifdef TESTING
   //
@@ -514,7 +514,7 @@ double calc_timestep::get_mp_timescales_with_radiation(
   // So now we need to go through every cell and see what the limit is.
   //
   double tempdt = 0.0, dt = 1.0e99;
-  class cell* c = grid->FirstPt();
+  class cell *c = grid->FirstPt();
   do {
 #ifdef TESTING
     dp.c = c;

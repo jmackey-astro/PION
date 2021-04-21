@@ -45,9 +45,9 @@ public:
   /// not on this process.
   ///
   int setup_flux_recv(
-      class SimParams&,      ///< simulation params (including BCs)
-      class GridBaseClass*,  ///< pointer to coarse grid.
-      const int              ///< level to receive from
+      class SimParams &,      ///< simulation params (including BCs)
+      class GridBaseClass *,  ///< pointer to coarse grid.
+      const int               ///< level to receive from
   );
 
   ///
@@ -59,9 +59,9 @@ public:
   /// not on this process.
   ///
   int setup_flux_send(
-      class SimParams&,      ///< simulation params (including BCs)
-      class GridBaseClass*,  ///< pointer to finer grid.
-      const int              ///< level to send to
+      class SimParams &,      ///< simulation params (including BCs)
+      class GridBaseClass *,  ///< pointer to finer grid.
+      const int               ///< level to send to
   );
 
   ///
@@ -69,10 +69,10 @@ public:
   /// grid(s) for static mesh refinement.
   ///
   int send_BC89_fluxes_F2C(
-      class SimParams&,  ///< simulation params (including BCs)
-      const int,         ///< My level in grid hierarchy.
-      const int,         ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
-      const int          ///< Full order of accuracy of simulation
+      class SimParams &,  ///< simulation params (including BCs)
+      const int,          ///< My level in grid hierarchy.
+      const int,          ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+      const int           ///< Full order of accuracy of simulation
   );
 
   ///
@@ -80,11 +80,11 @@ public:
   /// grid(s) for static mesh refinement.
   ///
   int recv_BC89_fluxes_F2C(
-      class FV_solver_base*,  ///< spatial solver, for gradients
-      class SimParams&,       ///< simulation params (including BCs)
-      const int,              ///< My level in grid hierarchy.
-      const int,              ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
-      const int               ///< Full order of accuracy of simulation
+      class FV_solver_base *,  ///< spatial solver, for gradients
+      class SimParams &,       ///< simulation params (including BCs)
+      const int,               ///< My level in grid hierarchy.
+      const int,               ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+      const int                ///< Full order of accuracy of simulation
   );
 
   /// clear the non-blocking MPI sends when they have been

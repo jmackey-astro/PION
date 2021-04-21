@@ -56,7 +56,7 @@ using namespace std;
 // This version is specific to solving the equation in the Exact Riemann Solver.
 // Other versions could be specified, taking more or fewer parameters.
 int riemann_Euler::FR_find_root(
-    pion_flt* ans,      ///< pointer to result
+    pion_flt *ans,      ///< pointer to result
     const pion_flt p1,  ///< p_g left
     const pion_flt p2,  ///< p_g right
     const pion_flt p3,  ///< eq_gamma
@@ -131,7 +131,7 @@ pion_flt riemann_Euler::FR_root_function(pion_flt pp)
 //
 riemann_Euler::riemann_Euler(
     const int nv,           ///< number of vars.
-    const pion_flt* state,  ///< reference vec.
+    const pion_flt *state,  ///< reference vec.
     const double g          ///< gas EOS.
     ) :
     eqns_base(nv),
@@ -246,9 +246,9 @@ void riemann_Euler::testing()
 // err_code  solve(left,     right,    result  );
 //
 int riemann_Euler::JMs_riemann_solve(
-    const pion_flt* l,
-    const pion_flt* r,
-    pion_flt* ans,
+    const pion_flt *l,
+    const pion_flt *r,
+    pion_flt *ans,
     const int mode,
     ///< Solve Type (1=LinearRS,2=ExactRS,3=HybridRS)
     const double g)

@@ -60,14 +60,14 @@ public:
   /// Constructor
   ///
   MPv10(
-      const int,              ///< grid dimensions
-      const int,              ///< Coordinate System flag
-      const int,              ///< Total number of variables in state vector
-      const int,              ///< Number of tracer variables in state vector.
-      const std::string*,     ///< List of what the tracer variables mean.
-      struct which_physics*,  ///< pointer to extra physics flags.
-      struct rad_sources*,    ///< radiation sources.
-      const double            ///< EOS Gamma
+      const int,               ///< grid dimensions
+      const int,               ///< Coordinate System flag
+      const int,               ///< Total number of variables in state vector
+      const int,               ///< Number of tracer variables in state vector.
+      const std::string *,     ///< List of what the tracer variables mean.
+      struct which_physics *,  ///< pointer to extra physics flags.
+      struct rad_sources *,    ///< radiation sources.
+      const double             ///< EOS Gamma
   );
 
   /// MPv10::MPv10
@@ -79,7 +79,7 @@ public:
   /// Function for updating vectors according to species found in tracer list.
   ///
   void species_tracer_initialise(
-      const std::string*,  ///< List of what the tracer variables mean.
+      const std::string *,  ///< List of what the tracer variables mean.
       int,          ///< index of current tracer in for loop (i in s=tracers[i])
       std::string,  /// < current tracer in for loop
       std::string,  ///< element symbol, e.g. "He", "H"
@@ -99,27 +99,27 @@ public:
   /// input vector.
   ///
   int TimeUpdateMP(
-      const pion_flt*,  ///< Primitive Vector to be updated.
-      pion_flt*,        ///< Destination Vector for updated values.
-      const double,     ///< Time Step to advance by.
-      const double,     ///< EOS gamma.
-      const int,        ///< Switch for what type of integration to use.
-      double*           ///< Vector of extra data (column densities, etc.).
+      const pion_flt *,  ///< Primitive Vector to be updated.
+      pion_flt *,        ///< Destination Vector for updated values.
+      const double,      ///< Time Step to advance by.
+      const double,      ///< EOS gamma.
+      const int,         ///< Switch for what type of integration to use.
+      double *           ///< Vector of extra data (column densities, etc.).
   );
 
   ///
   /// UNUSED FUNCTION!!
   ///
   int TimeUpdate_RTsinglesrc(
-      const pion_flt*,  ///< Primitive Vector to be updated.
-      pion_flt*,        ///< Destination Vector for updated values.
-      const double,     ///< Time Step to advance by.
-      const double,     ///< EOS gamma.
-      const int,        ///< Switch for what type of integration to use.
-      const double,     ///< flux in per unit length along ray (F/ds or L/dV)
-      const double,     ///< path length ds through cell.
-      const double,     ///< Optical depth to entry point of ray into cell.
-      double*           ///< return optical depth through cell in this variable.
+      const pion_flt *,  ///< Primitive Vector to be updated.
+      pion_flt *,        ///< Destination Vector for updated values.
+      const double,      ///< Time Step to advance by.
+      const double,      ///< EOS gamma.
+      const int,         ///< Switch for what type of integration to use.
+      const double,      ///< flux in per unit length along ray (F/ds or L/dV)
+      const double,      ///< path length ds through cell.
+      const double,      ///< Optical depth to entry point of ray into cell.
+      double *  ///< return optical depth through cell in this variable.
   )
   {
     cout << "MPv10::TimeUpdate_RTsinglesrc() not implemented\n";
@@ -130,18 +130,18 @@ public:
   /// Not used for this class, so far
   ///
   virtual int TimeUpdateMP_RTnew(
-      const pion_flt*,  ///< Primitive Vector to be updated.
-      const int,        ///< Number of UV heating sources.
-      const std::vector<struct rt_source_data>&,
+      const pion_flt *,  ///< Primitive Vector to be updated.
+      const int,         ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
       ///< list of UV-heating column densities and source properties.
       const int,  ///< number of ionising radiation sources.
-      const std::vector<struct rt_source_data>&,
+      const std::vector<struct rt_source_data> &,
       ///< list of ionising src column densities and source properties.
-      pion_flt*,     ///< Destination Vector for updated values
+      pion_flt *,    ///< Destination Vector for updated values
       const double,  ///< Time Step to advance by.
       const double,  ///< EOS gamma.
       const int,     ///< Switch for what type of integration to use.
-      double*        ///< any returned data (final temperature?).
+      double *       ///< any returned data (final temperature?).
   )
   {
     cout << "MPv10::TimeUpdateMP_RTnew() not implemented\n";
@@ -154,8 +154,8 @@ public:
   /// - Is threadsafe.
   ///
   double Temperature(
-      const pion_flt*,  ///< primitive vector
-      const double      ///< eos gamma
+      const pion_flt *,  ///< primitive vector
+      const double       ///< eos gamma
   );
 
   ///
@@ -163,7 +163,7 @@ public:
   /// Needed if you want this feature to set initial conditions.
   ///
   int Set_Temp(
-      pion_flt*,     ///< primitive vector.
+      pion_flt *,    ///< primitive vector.
       const double,  ///< temperature
       const double   ///< eos gamma.
   );
@@ -173,11 +173,11 @@ public:
   /// arguments.
   ///
   virtual double timescales(
-      const pion_flt*,  ///< Current cell.
-      const double,     ///< EOS gamma.
-      const bool,       ///< set to 'true' if including cooling time.
-      const bool,       ///< set to 'true' if including recombination time.
-      const bool        ///< set to 'true' if including photo-ionsation time.
+      const pion_flt *,  ///< Current cell.
+      const double,      ///< EOS gamma.
+      const bool,        ///< set to 'true' if including cooling time.
+      const bool,        ///< set to 'true' if including recombination time.
+      const bool         ///< set to 'true' if including photo-ionsation time.
   );
 
   ///
@@ -188,12 +188,12 @@ public:
   /// used for now so the vectors can be null.
   ///
   virtual double timescales_RT(
-      const pion_flt*,  ///< Current cell.
-      const int,        ///< Number of UV heating sources.
-      const std::vector<struct rt_source_data>&,
+      const pion_flt *,  ///< Current cell.
+      const int,         ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
       ///< list of UV-heating column densities and source properties.
       const int,  ///< number of ionising radiation sources.
-      const std::vector<struct rt_source_data>&,
+      const std::vector<struct rt_source_data> &,
       ///< list of ionising src column densities and source properties.
       const double  ///< EOS gamma.
   );
@@ -204,7 +204,7 @@ public:
   /// generator.  Not implemented here.
   ///
   int Init_ionfractions(
-      pion_flt*,     ///< Primitive vector to be updated.
+      pion_flt *,    ///< Primitive vector to be updated.
       const double,  ///< eos gamma.
       const double   ///< optional gas temperature to end up at.
   )
@@ -224,12 +224,12 @@ public:
   /// simulation data only -- IT IS NOT OPTIMISED FOR SPEED.
   ///
   virtual double total_cooling_rate(
-      const pion_flt*,  ///< Current cell values.
-      const int,        ///< Number of UV heating sources.
-      const std::vector<struct rt_source_data>&,
+      const pion_flt *,  ///< Current cell values.
+      const int,         ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
       ///< list of UV-heating column densities and source properties.
       const int,  ///< number of ionising radiation sources.
-      const std::vector<struct rt_source_data>&,
+      const std::vector<struct rt_source_data> &,
       ///< list of ionising src column densities and source properties.
       const double  ///< EOS gamma.
   )
@@ -243,9 +243,9 @@ public:
   /// state vector.
   ///
   virtual double get_recombination_rate(
-      const int,        ///< ion index in tracer array (optional).
-      const pion_flt*,  ///< input state vector (primitive).
-      const double      ///< EOS gamma (optional)
+      const int,         ///< ion index in tracer array (optional).
+      const pion_flt *,  ///< input state vector (primitive).
+      const double       ///< EOS gamma (optional)
   )
   {
     cout << "MPv10::get_recombination_rate() not implemented\n";
@@ -262,8 +262,8 @@ protected:
   /// convert state vector from grid cell into local microphysics vector.
   ///
   virtual int convert_prim2local(
-      const pion_flt*,  ///< primitive vector from grid cell (length nv_prim)
-      double*           ///< local vector [x(H0),E](n+1).
+      const pion_flt *,  ///< primitive vector from grid cell (length nv_prim)
+      double *           ///< local vector [x(H0),E](n+1).
   );
 
   ///
@@ -271,10 +271,10 @@ protected:
   /// This is the inverse of convert_prim2local.
   ///
   virtual int convert_local2prim(
-      const double*,    ///< local (updated) vector [x(H0),E](n+1).
-      const pion_flt*,  ///< input primitive vector from grid cell (length
-                        ///< nv_prim)
-      pion_flt*  ///< updated primitive vector for grid cell (length nv_prim)
+      const double *,    ///< local (updated) vector [x(H0),E](n+1).
+      const pion_flt *,  ///< input primitive vector from grid cell (length
+                         ///< nv_prim)
+      pion_flt *  ///< updated primitive vector for grid cell (length nv_prim)
   );
 
   ///
@@ -283,17 +283,17 @@ protected:
   /// ionised whenever H is.
   ///
   virtual double get_temperature(
-      double*,  // const double, ///< nH //< y_ion_fraction (by y_ion_index)
-      vector<pion_flt>&,  ///< y_ion_number_density
-      const double        ///< E_int (per unit volume)
+      double *,  // const double, ///< nH //< y_ion_fraction (by y_ion_index)
+      vector<pion_flt> &,  ///< y_ion_number_density
+      const double         ///< E_int (per unit volume)
   );
 
   ///
   /// Returns total number of particles.
   ///
   virtual double get_ntot(
-      double*,  // const double, ///< nH //< y_ion_fraction (by y_ion_index)
-      vector<pion_flt>&  ///< y_ion_number_density
+      double *,  // const double, ///< nH //< y_ion_fraction (by y_ion_index)
+      vector<pion_flt> &  ///< y_ion_number_density
   );
 
   ///
@@ -429,7 +429,7 @@ public:
       double,  ///< current time (probably not needed for rate equations)
       const N_Vector,  ///< current Y-value
       N_Vector,        ///< vector for Y-dot values
-      const double*    ///< extra user-data vector, P, for evaluating
+      const double *   ///< extra user-data vector, P, for evaluating
                        ///< ydot(y,t,p)
   );
 
@@ -443,7 +443,7 @@ public:
       double,          ///< time, t
       const N_Vector,  ///< current Y-value
       const N_Vector,  ///< vector for Y-dot values
-      const double*,   ///< extra user-data vector, P, for evaluating
+      const double *,  ///< extra user-data vector, P, for evaluating
                        ///< ydot(y,t,p)
       CVMatrix         ///< Jacobian matrix
   )
@@ -456,8 +456,8 @@ public:
   /// Get the number of extra parameters and the number of equations.
   ///
   virtual void get_problem_size(
-      int*,  ///< number of equations
-      int*   ///< number of parameters in user_data vector.
+      int *,  ///< number of equations
+      int *   ///< number of parameters in user_data vector.
   );
 
 protected:
@@ -465,8 +465,8 @@ protected:
   /// set the relative and absolute error tolerances
   ///
   virtual void get_error_tolerances(
-      double*,  ///< relative error tolerance (single value)
-      double[]  ///< absolute error tolerance (array)
+      double *,  ///< relative error tolerance (single value)
+      double[]   ///< absolute error tolerance (array)
   );
 
   //---------------------------------------------------------------------------

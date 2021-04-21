@@ -88,8 +88,8 @@ public:
 
 private:
   const int Nspl;  ///< number of tabulated values in spline table.
-  double* Tarray;  ///< array for tabulated temperatures.
-  double* Larray;  ///< Array for tabulated cooling rates.
+  double *Tarray;  ///< array for tabulated temperatures.
+  double *Larray;  ///< Array for tabulated cooling rates.
   int spline_id;   ///< id of spline in interpolation class.
 
   double MaxTemp;         ///< Max. tabulated temperature.

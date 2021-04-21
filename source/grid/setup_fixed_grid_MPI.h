@@ -35,16 +35,16 @@ public:
   /// parameters to the UniformGrid class.
   ///
   int setup_grid(
-      vector<class GridBaseClass*>&,  ///< grid pointers.
-      class SimParams&                ///< simulation parameters
+      vector<class GridBaseClass *> &,  ///< grid pointers.
+      class SimParams &                 ///< simulation parameters
   );
 
   ///
   /// Decide if I need to setup RT class, and do it if i need to.
   ///
   virtual int setup_raytracing(
-      class SimParams&,     ///< pointer to simulation parameters
-      class GridBaseClass*  ///< pointer to computational grid
+      class SimParams &,     ///< pointer to simulation parameters
+      class GridBaseClass *  ///< pointer to computational grid
   );
 
   ///
@@ -54,23 +54,23 @@ public:
   /// boundary cells as such.
   ///
   virtual int boundary_conditions(
-      class SimParams&,              ///< simulation parameters
-      vector<class GridBaseClass*>&  ///< grid pointers.
+      class SimParams &,               ///< simulation parameters
+      vector<class GridBaseClass *> &  ///< grid pointers.
   );
 
 protected:
   /// function to setup data-I/O class.
   virtual void setup_dataio_class(
-      class SimParams&,  ///< pointer to simulation parameters
-      const int          ///< type of I/O: 1=text,2=fits,5=silo
+      class SimParams &,  ///< pointer to simulation parameters
+      const int           ///< type of I/O: 1=text,2=fits,5=silo
   );
 
   ///
   /// Set the boundary conditions string and initialise BC_bd
   ///
   virtual int setup_boundary_structs(
-      class SimParams&,           ///< reference to SimParams list.
-      class GridBaseClass* grid,  ///< pointer to grid.
+      class SimParams &,          ///< reference to SimParams list.
+      class GridBaseClass *grid,  ///< pointer to grid.
       const int                   ///< unused
   );
 

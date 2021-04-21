@@ -27,8 +27,8 @@ IC_HD_2D_ShockCloud::~IC_HD_2D_ShockCloud() {}
 // ##################################################################
 
 int IC_HD_2D_ShockCloud::setup_data(
-    class ReadParams* rrp,    ///< pointer to parameter list.
-    class GridBaseClass* ggg  ///< pointer to grid
+    class ReadParams *rrp,    ///< pointer to parameter list.
+    class GridBaseClass *ggg  ///< pointer to grid
 )
 {
   int err = 0;
@@ -100,7 +100,7 @@ int IC_HD_2D_ShockCloud::setup_data(
   // The outer index is the element of the state vector.
   //
   std::vector<double> radius;
-  std::vector<std::vector<double>> data;
+  std::vector<std::vector<double> > data;
   data.resize(SimPM.nvar);
 
   ifstream infile;
@@ -190,7 +190,7 @@ int IC_HD_2D_ShockCloud::setup_data(
   // - For all other positions we calculate r=sqrt(R^2+Z^2) and assume a
   //  spherical clump with properties at that value of r.
   //
-  cell* c = ggg->FirstPt();
+  cell *c = ggg->FirstPt();
   double dpos[SimPM.ndim], data_vals[SimPM.nvar];
   do {
     CI.get_dpos(c, dpos);
@@ -212,12 +212,12 @@ int IC_HD_2D_ShockCloud::setup_data(
 // ##################################################################
 
 void IC_HD_2D_ShockCloud::get_data_vals(
-    double* dpos,                  ///< Cell centre
-    const double Rshock,           ///< Shock position (negative number).
-    vector<double>& radius,        ///< radius vector
-    vector<vector<double>>& data,  ///< arrays of variable data.
-    const int nvar,                ///< number of variables.
-    double* out                    ///< array for output data values at pos.
+    double *dpos,                   ///< Cell centre
+    const double Rshock,            ///< Shock position (negative number).
+    vector<double> &radius,         ///< radius vector
+    vector<vector<double> > &data,  ///< arrays of variable data.
+    const int nvar,                 ///< number of variables.
+    double *out                     ///< array for output data values at pos.
 )
 {
   //

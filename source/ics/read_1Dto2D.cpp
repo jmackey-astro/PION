@@ -26,8 +26,8 @@ IC_read_1Dto2D::~IC_read_1Dto2D() {}
 // ##################################################################
 
 int IC_read_1Dto2D::setup_data(
-    class ReadParams* rrp,    ///< pointer to parameter list.
-    class GridBaseClass* ggg  ///< pointer to grid
+    class ReadParams *rrp,    ///< pointer to parameter list.
+    class GridBaseClass *ggg  ///< pointer to grid
 )
 {
   int err = 0;
@@ -48,7 +48,7 @@ int IC_read_1Dto2D::setup_data(
   // The outer index is the element of the state vector.
   //
   std::vector<double> radius;
-  std::vector<std::vector<double>> data;
+  std::vector<std::vector<double> > data;
   data.resize(SimPM->nvar);
 
   ifstream infile;
@@ -92,7 +92,7 @@ int IC_read_1Dto2D::setup_data(
   // Now write the data to the grid... calculate r=sqrt(R^2+Z^2)
   // and assume spherical symmetry with properties at that value of r.
   //
-  cell* c = ggg->FirstPt();
+  cell *c = ggg->FirstPt();
   double dpos[SimPM->ndim], data_vals[SimPM->nvar];
   for (int v = 0; v < SimPM->nvar; v++)
     data_vals[v] = 0.0;
@@ -145,11 +145,11 @@ int IC_read_1Dto2D::setup_data(
 // ##################################################################
 
 void IC_read_1Dto2D::get_data_vals(
-    double* dpos,                  ///< Cell centre
-    vector<double>& radius,        ///< radius vector
-    vector<vector<double>>& data,  ///< arrays of variable data.
-    const int nvar,                ///< number of variables.
-    double* out                    ///< array for output data values at pos.
+    double *dpos,                   ///< Cell centre
+    vector<double> &radius,         ///< radius vector
+    vector<vector<double> > &data,  ///< arrays of variable data.
+    const int nvar,                 ///< number of variables.
+    double *out                     ///< array for output data values at pos.
 )
 {
   int imin = 0, imax = 0, len = radius.size();
@@ -187,11 +187,11 @@ void IC_read_1Dto2D::get_data_vals(
 // ##################################################################
 
 void IC_read_1Dto2D::get_3D_data_vals(
-    double* dpos,                  ///< Cell centre
-    vector<double>& radius,        ///< radius vector
-    vector<vector<double>>& data,  ///< arrays of variable data.
-    const int nvar,                ///< number of variables.
-    double* out                    ///< array for output data values at pos.
+    double *dpos,                   ///< Cell centre
+    vector<double> &radius,         ///< radius vector
+    vector<vector<double> > &data,  ///< arrays of variable data.
+    const int nvar,                 ///< number of variables.
+    double *out                     ///< array for output data values at pos.
 )
 {
   int imin = 0, imax = 0, len = radius.size();

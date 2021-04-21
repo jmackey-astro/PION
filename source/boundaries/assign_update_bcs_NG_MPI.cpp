@@ -19,13 +19,13 @@ using namespace std;
 // ##################################################################
 
 int assign_update_bcs_NG_MPI::assign_boundary_data(
-    class SimParams& par,      ///< simulation parameters
+    class SimParams &par,      ///< simulation parameters
     const int level,           ///< level in grid hierarchy
-    class GridBaseClass* grid  ///< pointer to grid.
+    class GridBaseClass *grid  ///< pointer to grid.
 )
 {
   int err = 0;
-  struct boundary_data* b;
+  struct boundary_data *b;
 
   //
   // assign data for each boundary.
@@ -188,10 +188,10 @@ int assign_update_bcs_NG_MPI::assign_boundary_data(
 // ##################################################################
 
 int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
-    class SimParams& par,          ///< pointer to sim parameters
+    class SimParams &par,          ///< pointer to sim parameters
     const int level,               ///< level in grid hierarchy
-    class GridBaseClass* grid,     ///< pointer to grid.
-    class FV_solver_base* solver,  ///< pointer to equations
+    class GridBaseClass *grid,     ///< pointer to grid.
+    class FV_solver_base *solver,  ///< pointer to equations
     const double simtime,          ///< current simulation time
     const int cstep,
     const int maxstep)
@@ -200,7 +200,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
   cout << "LEVEL " << level << ": update_bcs_NG_MPI: ext BC update" << endl;
 #endif
 
-  struct boundary_data* b;
+  struct boundary_data *b;
   int err  = 0;
   size_t i = 0;
 

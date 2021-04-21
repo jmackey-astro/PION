@@ -49,9 +49,9 @@ public:
   /// return sorted list of files.
   ///
   virtual int get_files_in_dir(
-      const std::string,       ///< directory to list.
-      const std::string,       ///< string that files start with
-      std::list<std::string>*  ///< list to put filenames in.
+      const std::string,        ///< directory to list.
+      const std::string,        ///< string that files start with
+      std::list<std::string> *  ///< list to put filenames in.
   );
 
 protected:
@@ -59,8 +59,8 @@ protected:
   /// Return list of files in a given directory.
   ///
   virtual int get_dir_listing(
-      const std::string,       ///< directory to list.
-      std::list<std::string>*  ///< list to put filenames in.
+      const std::string,        ///< directory to list.
+      std::list<std::string> *  ///< list to put filenames in.
   );
 
 private:

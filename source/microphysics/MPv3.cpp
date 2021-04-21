@@ -227,7 +227,7 @@ using namespace std;
 // ##################################################################
 
 void MPv3::get_error_tolerances(
-    double* reltol,  ///< relative error tolerance.
+    double *reltol,  ///< relative error tolerance.
     double atol[]    ///< absolute error tolerances
 )
 {
@@ -242,8 +242,8 @@ void MPv3::get_error_tolerances(
 // ##################################################################
 
 void MPv3::get_problem_size(
-    int* ne,  ///< number of equations
-    int* np   ///< number of parameters in user_data vector.
+    int *ne,  ///< number of equations
+    int *np   ///< number of parameters in user_data vector.
 )
 {
   *ne = N_equations;
@@ -259,9 +259,9 @@ MPv3::MPv3(
     const int csys,  ///< Coordinate System flag
     const int nv,    ///< Total number of variables in state vector
     const int ntr,   ///< Number of tracer variables in state vector.
-    const std::string* tracers,   ///< List of what the tracer variables mean.
-    struct which_physics* ephys,  ///< pointer to extra physics flags.
-    struct rad_sources* rsrcs,    ///< radiation sources.
+    const std::string *tracers,   ///< List of what the tracer variables mean.
+    struct which_physics *ephys,  ///< pointer to extra physics flags.
+    struct rad_sources *rsrcs,    ///< radiation sources.
     const double g                ///< EOS Gamma
     ) :
     microphysics_base(nv, ntr, tracers, ephys, rsrcs),
@@ -682,8 +682,8 @@ int MPv3::Tr(const string s)
 // ##################################################################
 
 int MPv3::set_multifreq_source_properties(
-    const struct rad_src_info* rsi,  ///< source data
-    double* str  ///< O/P source strength in different energy bins.
+    const struct rad_src_info *rsi,  ///< source data
+    double *str  ///< O/P source strength in different energy bins.
 )
 {
   // cout <<"MPv3: updating radiation source properties\n";
@@ -702,10 +702,10 @@ int MPv3::set_multifreq_source_properties(
   //
   // mincol is the minimum Tau we care about, maxcol is the max Tau
   // we care about, Emax is the max. energy (in ergs) to integrate
-  // to in the fit.  I think 1000eV is a bit excessive...
+  // to in the fit.  I think 100eV is OK
   //
-  double mincol = 1.0e-3, maxcol = 1.0e6, Emax = 1000.0 * 1.602e-12;
-  int Nspl = 50, Nsub = 800;
+  double mincol = 1.0e-4, maxcol = 1.0e6, Emax = 1000.0 * 1.602e-12;
+  int Nspl = 75, Nsub = 800;
 
 #ifdef HE_INERT
   //
@@ -797,7 +797,7 @@ double MPv3::get_ntot(
 // ##################################################################
 // ##################################################################
 
-double MPv3::get_n_elec(const pion_flt* pv  ///< primitive state vector.
+double MPv3::get_n_elec(const pion_flt *pv  ///< primitive state vector.
 )
 {
   double P[nvl];
@@ -810,7 +810,7 @@ double MPv3::get_n_elec(const pion_flt* pv  ///< primitive state vector.
 // ##################################################################
 // ##################################################################
 
-double MPv3::get_n_Hplus(const pion_flt* pv  ///< primitive state vector.
+double MPv3::get_n_Hplus(const pion_flt *pv  ///< primitive state vector.
 )
 {
   double P[nvl];
@@ -823,7 +823,7 @@ double MPv3::get_n_Hplus(const pion_flt* pv  ///< primitive state vector.
 
 double MPv3::get_n_ion(
     std::string ion,    ///< ion name
-    const pion_flt* pv  ///< primitive state vector.
+    const pion_flt *pv  ///< primitive state vector.
 )
 {
   if (ion != "H1+") {
@@ -838,7 +838,7 @@ double MPv3::get_n_ion(
 // ##################################################################
 // ##################################################################
 
-double MPv3::get_n_Hneutral(const pion_flt* pv  ///< primitive state vector.
+double MPv3::get_n_Hneutral(const pion_flt *pv  ///< primitive state vector.
 )
 {
   double P[nvl];
@@ -850,8 +850,8 @@ double MPv3::get_n_Hneutral(const pion_flt* pv  ///< primitive state vector.
 // ##################################################################
 
 int MPv3::convert_prim2local(
-    const pion_flt* p_in,  ///< primitive vector (length nv_prim)
-    double* p_local)
+    const pion_flt *p_in,  ///< primitive vector (length nv_prim)
+    double *p_local)
 {
   //
   // Set internal energy density, H+ fraction, and number density of H.
@@ -922,9 +922,9 @@ int MPv3::convert_prim2local(
 // ##################################################################
 
 int MPv3::convert_local2prim(
-    const double* p_local,
-    const pion_flt* p_in,  ///< input primitive vector
-    pion_flt* p_out        ///< updated primitive vector
+    const double *p_local,
+    const pion_flt *p_in,  ///< input primitive vector
+    pion_flt *p_out        ///< updated primitive vector
 )
 {
   for (int v = 0; v < nv_prim; v++)
@@ -985,7 +985,7 @@ int MPv3::convert_local2prim(
 // ##################################################################
 
 double MPv3::Temperature(
-    const pion_flt* pv,  ///< primitive vector
+    const pion_flt *pv,  ///< primitive vector
     const double         ///< eos gamma
 )
 {
@@ -1018,7 +1018,7 @@ double MPv3::Temperature(
 // ##################################################################
 
 int MPv3::Set_Temp(
-    pion_flt* p_pv,  ///< primitive vector.
+    pion_flt *p_pv,  ///< primitive vector.
     const double T,  ///< temperature
     const double     ///< eos gamma.
 )
@@ -1043,10 +1043,10 @@ int MPv3::Set_Temp(
 // ##################################################################
 
 void MPv3::get_dtau(
-    const rad_source* s,   ///< pointer to radiation source struct
+    const rad_source *s,   ///< pointer to radiation source struct
     const pion_flt ds,     ///< ds, thickness of the cell
-    const pion_flt* p_in,  ///< input primitive vector
-    pion_flt* dtau         ///< output dtau vector
+    const pion_flt *p_in,  ///< input primitive vector
+    pion_flt *dtau         ///< output dtau vector
 )
 {
   // dTau for MPv3 is n(H0)*sigma(H0)*ds at 13.6eV for the ionizing
@@ -1078,12 +1078,12 @@ void MPv3::get_dtau(
 // ##################################################################
 
 int MPv3::TimeUpdateMP(
-    const pion_flt* p_in,  ///< Primitive Vector to be updated.
-    pion_flt* p_out,       ///< Destination Vector for updated values.
+    const pion_flt *p_in,  ///< Primitive Vector to be updated.
+    pion_flt *p_out,       ///< Destination Vector for updated values.
     const double dt,       ///< Time Step to advance by.
     const double,          ///< EOS gamma.
     const int,             ///< Switch for what type of integration to use.
-    double* random_stuff   ///< Vector of extra data (column densities, etc.).
+    double *random_stuff   ///< Vector of extra data (column densities, etc.).
 )
 {
   //
@@ -1099,20 +1099,20 @@ int MPv3::TimeUpdateMP(
 // ##################################################################
 
 int MPv3::TimeUpdateMP_RTnew(
-    const pion_flt* p_in,  ///< Primitive Vector to be updated.
+    const pion_flt *p_in,  ///< Primitive Vector to be updated.
     const int N_heat,      ///< Number of UV heating sources.
-    const std::vector<struct rt_source_data>& heat_src,
+    const std::vector<struct rt_source_data> &heat_src,
     ///< list of UV-heating column densities and source properties.
     const int N_ion,  ///< number of ionising radiation sources.
-    std::vector<struct rt_source_data>& ion_src,
+    std::vector<struct rt_source_data> &ion_src,
     ///< list of ionising src column densities and source properties.
-    pion_flt* p_out,  ///< Destination Vector for updated values
+    pion_flt *p_out,  ///< Destination Vector for updated values
                       ///< (can be same as first Vector.
     const double dt,  ///< Time Step to advance by.
     const double,     ///< EOS gamma.
     const int,        ///< Switch for what type of integration to use.
                       ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-    double* random_stuff  ///< final temperature (not strictly needed).
+    double *random_stuff  ///< final temperature (not strictly needed).
 )
 {
   //
@@ -1160,7 +1160,7 @@ int MPv3::TimeUpdateMP_RTnew(
         P[v] = NV_Ith_S(y_out, v);
       rep.printVec("Pfinal", P, nvl);
       cout << "ds=" << mpv_delta_S << ", vs=" << mpv_Vshell
-           << ", tao0=" << mpv_Tau0 << ", dtau=" << mpv_dTau0 << "\n";
+           << ", tau0=" << mpv_Tau0 << ", dtau=" << mpv_dTau0 << "\n";
       cout.flush();
       rep.error("integration failed again: MPv3::TimeUpdateMP_RTnew()", err);
     }
@@ -1188,11 +1188,15 @@ int MPv3::TimeUpdateMP_RTnew(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 double MPv3::timescales(
-    const pion_flt* p_in,  ///< Current cell state vector.
+    const pion_flt *p_in,  ///< Current cell state vector.
     const double,          ///< EOS gamma.
     const bool,            ///< set to 'true' if including cooling time.
     const bool,            ///< set to 'true' if including recombination time.
@@ -1221,12 +1225,12 @@ double MPv3::timescales(
 /// DT02, which limits by 0.25/ydot (and not by E/Edot)
 ///
 double MPv3::timescales_RT(
-    const pion_flt* p_in,  ///< Current cell state vector.
+    const pion_flt *p_in,  ///< Current cell state vector.
     const int N_heat,      ///< Number of UV heating sources.
-    const std::vector<struct rt_source_data>& heat_src,
+    const std::vector<struct rt_source_data> &heat_src,
     ///< list of UV-heating column densities and source properties.
     const int N_ion,  ///< number of ionising radiation sources.
-    const std::vector<struct rt_source_data>& ion_src,
+    const std::vector<struct rt_source_data> &ion_src,
     ///< list of ionising src column densities and source properties.
     const double  ///< EOS gamma.
 )
@@ -1313,12 +1317,12 @@ double MPv3::timescales_RT(
 // ##################################################################
 
 double MPv3::total_cooling_rate(
-    const pion_flt* p_in,  ///< primitive input state vector.
+    const pion_flt *p_in,  ///< primitive input state vector.
     const int N_heat,      ///< Number of UV heating sources.
-    const std::vector<struct rt_source_data>& heat_src,
+    const std::vector<struct rt_source_data> &heat_src,
     ///< list of UV-heating column densities and source properties.
     const int N_ion,  ///< number of ionising radiation sources.
-    const std::vector<struct rt_source_data>& ion_src,
+    const std::vector<struct rt_source_data> &ion_src,
     ///< list of ionising src column densities and source properties.
     const double  ///< EOS gamma.
 )
@@ -1346,7 +1350,7 @@ double MPv3::total_cooling_rate(
 
 double MPv3::get_recombination_rate(
     const int,             ///< ion index in tracer array (optional).
-    const pion_flt* p_in,  ///< input state vector (primitive).
+    const pion_flt *p_in,  ///< input state vector (primitive).
     const double g         ///< EOS gamma (optional)
 )
 {
@@ -1376,13 +1380,13 @@ double MPv3::get_recombination_rate(
 // ##################################################################
 
 void MPv3::setup_radiation_source_parameters(
-    const pion_flt* p_in,  ///< primitive input state vector.
-    double* P,             ///< local input state vector (x_in,E_int)
+    const pion_flt *p_in,  ///< primitive input state vector.
+    double *P,             ///< local input state vector (x_in,E_int)
     const int N_heat,      ///< Number of UV heating sources.
-    const std::vector<struct rt_source_data>& heat_src,
+    const std::vector<struct rt_source_data> &heat_src,
     ///< list of UV-heating column densities and source properties.
     const int N_ion,  ///< number of ionising radiation sources.
-    const std::vector<struct rt_source_data>& ion_src
+    const std::vector<struct rt_source_data> &ion_src
     ///< list of ionising src column densities and source properties.
 )
 {
@@ -1566,14 +1570,18 @@ void MPv3::setup_radiation_source_parameters(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int MPv3::ydot(
     double,                ///< current time (UNUSED)
     const N_Vector y_now,  ///< current Y-value
     N_Vector y_dot,        ///< vector for Y-dot values
-    const double*          ///< extra user-data vector (UNUSED)
+    const double *         ///< extra user-data vector (UNUSED)
 )
 {
   //
@@ -1880,44 +1888,51 @@ int MPv3::ydot(
   }
 #endif
 
-  if (1 == 0 && x_in > 0.98 && T > 6000.0) {
-    cout << T << "  ";
+  if (1 == 0 && x_in > 0.98 && T > 40.0) {
+    cout << "T, rates: " << T << "  ";
+    cout << OneMinusX << "  " << oneminusx_dot << "  ";
+    cout << E_in << "  " << Edot << " \n ";
     cout << ne << "  ";
     cout << ne * ne << "  ";
     cout << (lt.rrhp[iT] + dT * lt.s_rrhp[iT]) * x_in * ne * 1.5 * 1.602e-12
          << "  ";
     temp1 = mpv_nH * mpv_delta_S * OneMinusX
             * Hi_monochromatic_photo_ion_xsection(JUST_IONISED);
+    cout << temp1 << "  ";
     cout << Hi_discrete_multifreq_photoheating_rate(
                 mpv_Tau0, temp1, mpv_nH, mpv_delta_S, mpv_Vshell)
          << "  ";
-    cout << 1.9e-26 * METALLICITY * mpv_G0_UV
-                / (1.0 + 6.4 * (mpv_G0_UV / mpv_nH))
-         << "  ";
-    cout << 7.7e-32 * METALLICITY * mpv_G0_IR / pow(1.0 + 3.0e4 / mpv_nH, 2)
-         << "  ";
-    cout << 5.0e-28 * OneMinusX << "  ";
-    cout << (lt.H_pah[iT][ie] + dT * lt.st_H_pah[iT][ie]
-             + dne * lt.se_H_pah[iT][ie])
-                * temp1
-         << "  ";
-    cout << -(lt.C_cih0[iT] + dT * lt.s_C_cih0[iT]) * ne * OneMinusX << "  ";
-    cout << -(lt.C_rrh[iT] + dT * lt.s_C_rrh[iT]) * x_in * ne << "  ";
-    cout << -(lt.C_cxh0[iT] + dT * lt.s_C_cxh0[iT]) * OneMinusX * ne << "  ";
-    cout << -(lt.C_fbdn[iT] + dT * lt.s_C_fbdn[iT]) * x_in * ne << "  ";
-    cout << -(lt.C_cie[iT] + dT * lt.s_C_cie[iT]) * x_in * x_in * mpv_nH
-         << "  ";
-    cout << -(lt.C_cxce[iT][ie] + dT * lt.st_C_cxce[iT][ie]
-              + dne * lt.se_C_cxce[iT][ie])
-         << "  ";
-    cout << -(lt.C_cxch[iT] + dT * lt.s_C_cxch[iT]) * mpv_nH * OneMinusX * expnh
-         << "  ";
-    cout << -(lt.C_cxo[iT] + dT * lt.s_C_cxo[iT]) * mpv_nH * OneMinusX << "  ";
-    cout << -(lt.C_pah[iT][ie] + dT * lt.st_C_pah[iT][ie]
-              + dne * lt.se_C_pah[iT][ie])
-         << "  ";
-    // cout << - <<"  ";
+    /*    cout << 1.9e-26 * METALLICITY * mpv_G0_UV
+                    / (1.0 + 6.4 * (mpv_G0_UV / mpv_nH))
+             << "  ";
+        cout << 7.7e-32 * METALLICITY * mpv_G0_IR / pow(1.0 + 3.0e4 / mpv_nH, 2)
+             << "  ";
+        cout << 5.0e-28 * OneMinusX << "  ";
+        cout << (lt.H_pah[iT][ie] + dT * lt.st_H_pah[iT][ie]
+                 + dne * lt.se_H_pah[iT][ie])
+                    * temp1
+             << "  ";
+        cout << -(lt.C_cih0[iT] + dT * lt.s_C_cih0[iT]) * ne * OneMinusX << " ";
+        cout << -(lt.C_rrh[iT] + dT * lt.s_C_rrh[iT]) * x_in * ne << "  ";
+        cout << -(lt.C_cxh0[iT] + dT * lt.s_C_cxh0[iT]) * OneMinusX * ne << " ";
+        cout << -(lt.C_fbdn[iT] + dT * lt.s_C_fbdn[iT]) * x_in * ne << "  ";
+        cout << -(lt.C_cie[iT] + dT * lt.s_C_cie[iT]) * x_in * x_in * mpv_nH
+             << "  ";
+        cout << -(lt.C_cxce[iT][ie] + dT * lt.st_C_cxce[iT][ie]
+                  + dne * lt.se_C_cxce[iT][ie])
+             << "  ";
+        cout << -(lt.C_cxch[iT] + dT * lt.s_C_cxch[iT]) * mpv_nH * OneMinusX *
+       expnh
+             << "  ";
+        cout << -(lt.C_cxo[iT] + dT * lt.s_C_cxo[iT]) * mpv_nH * OneMinusX << "
+       "; cout << -(lt.C_pah[iT][ie] + dT * lt.st_C_pah[iT][ie]
+                  + dne * lt.se_C_pah[iT][ie])
+             << "  ";
+        // cout << - <<"  ";
+    */
     cout << "\n";
+    // cout <<"CIE: "<<lt.C_cie[iT]<< "  "<<dT<< "  "<<lt.s_C_cie[iT];
+    // cout << "  "<<x_in<< "  "<<mpv_nH<< "  "<<T<<"\n";
   }
 
   return 0;

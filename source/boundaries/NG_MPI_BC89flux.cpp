@@ -28,8 +28,8 @@ using namespace std;
 // ##################################################################
 
 int NG_MPI_BC89flux::setup_flux_recv(
-    class SimParams& par,       ///< simulation params (including BCs)
-    class GridBaseClass* grid,  // pointer to coarse grid.
+    class SimParams &par,       ///< simulation params (including BCs)
+    class GridBaseClass *grid,  // pointer to coarse grid.
     const int lp1               ///< fine level to receive from
 )
 {
@@ -42,8 +42,8 @@ int NG_MPI_BC89flux::setup_flux_recv(
   int ixmin[MAX_DIM], ixmax[MAX_DIM], ncell[MAX_DIM];  // interface region
   int f_lxmin[MAX_DIM], f_lxmax[MAX_DIM];              // finer grid
   int d_xmin[MAX_DIM], d_xmax[MAX_DIM];                // full domain
-  struct flux_interface* fi = 0;
-  class MCMDcontrol* MCMD   = &(par.levels[l].MCMD);
+  struct flux_interface *fi = 0;
+  class MCMDcontrol *MCMD   = &(par.levels[l].MCMD);
   vector<struct cgrid> cg;
   MCMD->get_child_grid_info(cg);
   int nchild = cg.size();
@@ -221,7 +221,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
     int edge = -1, axis = -1, perp[2];
     size_t nsub = 0;
     size_t nel  = 0;
-    std::vector<std::vector<struct cgrid>> cgngb;
+    std::vector<std::vector<struct cgrid> > cgngb;
 
     MCMD->get_level_lp1_ngb_info(cgngb);
     if (cgngb.size() != static_cast<size_t>(2 * par.ndim)) {
@@ -326,7 +326,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
 #ifdef TEST_BC89FLUX
   for (int l = 0; l < par.grid_nlevels; l++) {
     for (unsigned int d = 0; d < flux_update_send[l].size(); d++) {
-      struct flux_update* fup = &(flux_update_send[l][d]);
+      struct flux_update *fup = &(flux_update_send[l][d]);
       cout << "l=" << l << ", FUP_SEND: d=" << d << " info: \n";
       cout << "\t ranks: ";
       for (unsigned int r = 0; r < fup->rank.size(); r++)
@@ -336,7 +336,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
            << ", ax=" << fup->ax << "\n";
     }
     for (unsigned int d = 0; d < flux_update_recv[l].size(); d++) {
-      struct flux_update* fup = &(flux_update_recv[l][d]);
+      struct flux_update *fup = &(flux_update_recv[l][d]);
       cout << "l=" << l << ", FUP_RECV: d=" << d << " info: \n";
       cout << "\t ranks: ";
       for (unsigned int r = 0; r < fup->rank.size(); r++)
@@ -355,8 +355,8 @@ int NG_MPI_BC89flux::setup_flux_recv(
 // ##################################################################
 
 int NG_MPI_BC89flux::setup_flux_send(
-    class SimParams& par,       ///< simulation params (including BCs)
-    class GridBaseClass* grid,  // pointer to finer grid.
+    class SimParams &par,       ///< simulation params (including BCs)
+    class GridBaseClass *grid,  // pointer to finer grid.
     const int lm1               ///< level to send to
 )
 {
@@ -390,7 +390,7 @@ int NG_MPI_BC89flux::setup_flux_send(
     // Usually send to parent, sometimes send to neighbour of parent
     // if boundary between parent and neighbour sits on the edge of
     // my level.
-    class MCMDcontrol* MCMD = &(par.levels[l].MCMD);
+    class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
 
     // get data on parent grid, and neighbours of parent grid.
     struct cgrid pg;
@@ -486,7 +486,7 @@ void NG_MPI_BC89flux::clear_sends_BC89_fluxes()
 // ##################################################################
 
 int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
-    class SimParams& par,  ///< simulation params (including BCs)
+    class SimParams &par,  ///< simulation params (including BCs)
     const int l,           ///< My level in grid hierarchy.
     const int step,        ///< OA1 or OA2
     const int ooa          ///< Full order of accuracy of simulation
@@ -508,11 +508,11 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
   int err = 0;
 
   // else we have to send data to at least one other MPI process:
-  class MCMDcontrol* MCMD = &(par.levels[l].MCMD);
+  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   int n_send              = flux_update_send[l].size();
   for (int isend = 0; isend < n_send; isend++) {
     // loop over boundaries (some send to more than one process)
-    struct flux_update* fup = &(flux_update_send[l][isend]);
+    struct flux_update *fup = &(flux_update_send[l][isend]);
     // some sends may be null, so we skip them:
     if (fup->fi[0] == 0) {
 #ifdef TEST_BC89FLUX
@@ -529,7 +529,7 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
     }
     size_t n_el    = fup->fi.size();
     size_t n_data  = n_el * par.nvar;
-    pion_flt* data = 0;  // buffer for sending by MPI
+    pion_flt *data = 0;  // buffer for sending by MPI
     data           = mem.myalloc(data, n_data);
     size_t iel     = 0;
     for (size_t ii = 0; ii < n_el; ii++) {
@@ -584,8 +584,8 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
 // ##################################################################
 
 int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
-    class FV_solver_base* spatial_solver,  ///< solver, for gradients
-    class SimParams& par,  ///< simulation params (including BCs)
+    class FV_solver_base *spatial_solver,  ///< solver, for gradients
+    class SimParams &par,  ///< simulation params (including BCs)
     const int l,           ///< My level in grid hierarchy.
     const int step,        ///< OA1 or OA2
     const int ooa          ///< Full order of accuracy of simulation
@@ -607,13 +607,13 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
   double ftmp[par.nvar], utmp[par.nvar];
   for (int v = 0; v < par.nvar; v++)
     ftmp[v] = 0.0;
-  class GridBaseClass* grid = par.levels[l].grid;
-  class MCMDcontrol* MCMD   = &(par.levels[l].MCMD);
+  class GridBaseClass *grid = par.levels[l].grid;
+  class MCMDcontrol *MCMD   = &(par.levels[l].MCMD);
   int n_bd                  = flux_update_recv[l].size();
   double dt                 = par.levels[l].dt;
 
   for (int irecv = 0; irecv < n_bd; irecv++) {
-    struct flux_update* fup = &(flux_update_recv[l][irecv]);
+    struct flux_update *fup = &(flux_update_recv[l][irecv]);
     // some recvs may be null, so we skip them:
     if (fup->fi[0] == 0) {
 #ifdef TEST_BC89FLUX
@@ -627,7 +627,7 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
       cout << " (same rank). dir=" << fup->dir << endl;
 #endif
       int d                     = fup->dir;
-      struct flux_update* fsend = &(flux_update_send[l + 1][d]);
+      struct flux_update *fsend = &(flux_update_send[l + 1][d]);
       err                       = recv_BC89_flux_boundary(
           spatial_solver, par, grid, dt, *fsend, *fup, d,
           static_cast<axes>(fup->ax));
@@ -651,10 +651,10 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
     // else                      dir = irecv;
     dir = fup->dir;
 
-    struct flux_interface* fi = 0;
+    struct flux_interface *fi = 0;
     size_t n_el               = fup->fi.size();
     size_t n_data             = n_el * par.nvar;
-    pion_flt* buf             = 0;
+    pion_flt *buf             = 0;
     buf                       = mem.myalloc(buf, n_data);
 
     // receive data: comm_tag ensures that we select the data

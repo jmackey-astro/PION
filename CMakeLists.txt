@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.0)
 
 project(
     pion
-    VERSION 0.0.1
+    VERSION 3.0.0
     LANGUAGES CXX
 )
 
@@ -101,7 +101,13 @@ endif(PION_USE_FITS)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
-find_package(GSL REQUIRED COMPONENTS spline)
+#find_package(GSL REQUIRED COMPONENTS spline)
+set(Boost_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/extra_libraries/boost/include)
+find_package(Boost 1.75.0 REQUIRED)
+if(Boost_FOUND)
+  include_directories(${Boost_INCLUDE_DIRS})
+endif()
+
 find_package(SUNDIALS REQUIRED)
 
 add_definitions("-DCVODE${SUNDIALS_VERSION_MAJOR}")

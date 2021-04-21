@@ -49,10 +49,10 @@ public:
   /// dynamics timestep.
   ///
   virtual int calculate_timestep(
-      class SimParams&,       ///< pointer to simulation parameters
-      class GridBaseClass*,   ///< pointer to grid.
-      class FV_solver_base*,  ///< solver/equations class
-      const int               ///< level in NG grid (if applicable)
+      class SimParams &,       ///< pointer to simulation parameters
+      class GridBaseClass *,   ///< pointer to grid.
+      class FV_solver_base *,  ///< solver/equations class
+      const int                ///< level in NG grid (if applicable)
   );
 
 protected:
@@ -62,25 +62,25 @@ protected:
   /// (negative if error).
   ///
   double calc_microphysics_dt(
-      class SimParams&,      ///< pointer to simulation parameters
-      class GridBaseClass*,  ///< pointer to grid.
-      const int              ///< level in NG grid (if applicable)
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      const int               ///< level in NG grid (if applicable)
   );
 
   ///
   /// Old microphysics timescales calculation with no radiation field.
   ///
   double get_mp_timescales_no_radiation(
-      class SimParams&,  ///< pointer to simulation parameters
-      class GridBaseClass*);
+      class SimParams &,  ///< pointer to simulation parameters
+      class GridBaseClass *);
 
   ///
   /// New microphysics timescales calculation with pre-calculated radiation
   /// field.
   ///
   double get_mp_timescales_with_radiation(
-      class SimParams&,  ///< pointer to simulation parameters
-      class GridBaseClass*);
+      class SimParams &,  ///< pointer to simulation parameters
+      class GridBaseClass *);
 
   ///
   /// Calculate the dynamics timestep, based on the Courant condition that
@@ -88,9 +88,9 @@ protected:
   /// the minimum timestep on the local grid, or negative if an error occurs.
   ///
   double calc_dynamics_dt(
-      class SimParams&,  ///< pointer to simulation parameters
-      class GridBaseClass*,
-      class FV_solver_base*  ///< solver/equations class
+      class SimParams &,  ///< pointer to simulation parameters
+      class GridBaseClass *,
+      class FV_solver_base *  ///< solver/equations class
   );
 
 #ifdef THERMAL_CONDUCTION
@@ -102,9 +102,9 @@ protected:
   /// the timestep dt in spatial_solver->preprocess_data().
   ///
   double calc_conduction_dt_and_Edot(
-      class SimParams&,      ///< pointer to simulation parameters
-      class GridBaseClass*,  ///< pointer to grid.
-      class FV_solver_base*  ///< solver/equations class
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      class FV_solver_base *  ///< solver/equations class
   );
 #endif  // THERMAL CONDUCTION
 
@@ -115,8 +115,8 @@ protected:
   /// can affect stability).
   ///
   void timestep_checking_and_limiting(
-      class SimParams&,  ///< pointer to simulation parameters
-      const int          ///< level of NG grid.
+      class SimParams &,  ///< pointer to simulation parameters
+      const int           ///< level of NG grid.
   );
 
   // ----------------------------------------------------------------

@@ -63,13 +63,13 @@ using namespace std;
 #include "sim_control/sim_control.h"
 #include "tools/reporting.h"
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
 
   //
   // Set up simulation controller class.
   //
-  class sim_control* sim_control = 0;
+  class sim_control *sim_control = 0;
   sim_control                    = new class sim_control();
   if (!sim_control)
     rep.error("(pion) Couldn't initialise sim_control", sim_control);
@@ -83,7 +83,7 @@ int main(int argc, char** argv)
   }
 
   int err      = 0;
-  string* args = 0;
+  string *args = 0;
   args         = new string[argc];
   for (int i = 0; i < argc; i++)
     args[i] = argv[i];
@@ -121,7 +121,7 @@ int main(int argc, char** argv)
   //
   // set up vector of grids.
   //
-  vector<class GridBaseClass*> grid;
+  vector<class GridBaseClass *> grid;
 
   //
   // Initialise the grid.

@@ -53,8 +53,8 @@ IC_photevap_random_clumps::~IC_photevap_random_clumps()
 // ##################################################################
 
 int IC_photevap_random_clumps::setup_data(
-    class ReadParams* rrp,    ///< pointer to parameter list.
-    class GridBaseClass* ggg  ///< pointer to grid
+    class ReadParams *rrp,    ///< pointer to parameter list.
+    class GridBaseClass *ggg  ///< pointer to grid
 )
 {
   int err = 0;
@@ -278,7 +278,7 @@ int IC_photevap_random_clumps::setup_data(
   //
   // cout <<"ntracer = "<<SimPM->ntracer<<"\t
   // amb[tr1]="<<ambient[SimPM->ftr+1]<<"\tcl[tr1]="<<cltr[1];
-  cell* c = gg->FirstPt();
+  cell *c = gg->FirstPt();
   cout << "\tamb-density=" << ambdens << " clump_mass=" << clump_mass << endl;
   do {
     for (int v = SimPM->ftr; v < SimPM->nvar; v++) {
@@ -335,7 +335,7 @@ int IC_photevap_random_clumps::setup_perc_fixedmass()
   srand(atoi(str.c_str()));
 
   // clump_mass is as a fraction of the ambient mass.
-  class cell* cpt = gg->FirstPt();
+  class cell *cpt = gg->FirstPt();
   double vol      = gg->CellVolume(cpt, 0);
   cout << clump_mass * (ambient[RO] * vol * SimPM->Ncell)
        << "\n\t\t(=" << clump_mass;
@@ -419,7 +419,7 @@ int IC_photevap_random_clumps::setup_perc()
   rep.printVec("ambient ", ambient, SimPM->nvar);
 
   cout << "\t\tAssigning primitive vectors.\n";
-  class cell* cpt = gg->FirstPt();
+  class cell *cpt = gg->FirstPt();
   do {
     // Set values of primitive variables.
     for (int v = 0; v < SimPM->nvar; v++)
@@ -957,7 +957,7 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel()
 // ##################################################################
 // ##################################################################
 
-void IC_photevap_random_clumps::print_clump(struct clump* rc)
+void IC_photevap_random_clumps::print_clump(struct clump *rc)
 {
   cout << "--clump overdensity:" << rc->overdensity << "  mass:" << rc->mass
        << endl;
@@ -971,7 +971,7 @@ void IC_photevap_random_clumps::print_clump(struct clump* rc)
 // ##################################################################
 // ##################################################################
 
-int IC_photevap_random_clumps::clumps_random_set_dens(class cell* c)
+int IC_photevap_random_clumps::clumps_random_set_dens(class cell *c)
 {
   int err = 0;
   double x0[ndim], x1[ndim], dpos[ndim];

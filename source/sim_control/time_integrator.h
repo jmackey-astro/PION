@@ -42,8 +42,8 @@ public:
   /// either a first-order or second-order time update.
   ///
   virtual double advance_time(
-      const int,            ///< level in grid hierarchy
-      class GridBaseClass*  ///< grid pointer
+      const int,             ///< level in grid hierarchy
+      class GridBaseClass *  ///< grid pointer
   );
 
   ///
@@ -58,9 +58,9 @@ public:
   /// if this is a half step 0.5*dt is passed to the function.
   ///
   int first_order_update(
-      const double,         ///< dt, time interval to advance by.
-      const int,            ///< time order of accuracy OA1/OA2.
-      class GridBaseClass*  ///< grid pointer
+      const double,          ///< dt, time interval to advance by.
+      const int,             ///< time order of accuracy OA1/OA2.
+      class GridBaseClass *  ///< grid pointer
   );
 
   ///
@@ -70,9 +70,9 @@ public:
   /// the half-step must have been already called before this one.
   ///
   int second_order_update(
-      const double,         ///< dt, time interval to advance by.
-      const int,            ///< time order of accuracy (must be OA2).
-      class GridBaseClass*  ///< grid pointer
+      const double,          ///< dt, time interval to advance by.
+      const int,             ///< time order of accuracy (must be OA2).
+      class GridBaseClass *  ///< grid pointer
   );
 
   ///
@@ -82,8 +82,8 @@ public:
   /// calc_microphysics_dU().
   ///
   int calc_microphysics_dU(
-      const double,         ///< dt, timestep to integrate MP spatial_solvers.
-      class GridBaseClass*  ///< grid pointer
+      const double,          ///< dt, timestep to integrate MP spatial_solvers.
+      class GridBaseClass *  ///< grid pointer
   );
 
   ///
@@ -95,8 +95,8 @@ public:
   /// radiation sources involved.
   ///
   int calc_RT_microphysics_dU(
-      const double,         ///< dt, timestep to integrate
-      class GridBaseClass*  ///< grid pointer
+      const double,          ///< dt, timestep to integrate
+      class GridBaseClass *  ///< grid pointer
   );
 
   ///
@@ -109,8 +109,8 @@ public:
   /// processes only).
   ///
   int calc_noRT_microphysics_dU(
-      const double,         ///< dt, timestep to integrate
-      class GridBaseClass*  ///< grid pointer
+      const double,          ///< dt, timestep to integrate
+      class GridBaseClass *  ///< grid pointer
   );
 
   ///
@@ -123,9 +123,9 @@ public:
   /// calc_dU().
   ///
   int calc_dynamics_dU(
-      const double,         ///< dt, timestep to integrate
-      const int,            ///< spatial order of accuracy for update.
-      class GridBaseClass*  ///< grid pointer
+      const double,          ///< dt, timestep to integrate
+      const int,             ///< spatial order of accuracy for update.
+      class GridBaseClass *  ///< grid pointer
   );
 
   ///
@@ -137,9 +137,9 @@ public:
   /// grid that are active.
   ///
   int set_dynamics_dU(
-      const double,         ///< dt, timestep for this calculation
-      const int,            ///< space OOA for this calculation
-      class GridBaseClass*  ///< grid pointer
+      const double,          ///< dt, timestep for this calculation
+      const int,             ///< space OOA for this calculation
+      class GridBaseClass *  ///< grid pointer
   );
 
   ///
@@ -156,12 +156,12 @@ public:
   /// -F_{i+\frac{1}{2}}) \f$.
   ///
   int dynamics_dU_column(
-      class cell*,           ///< starting point for column.
+      class cell *,          ///< starting point for column.
       const enum direction,  ///< direction to traverse column in.
       const enum direction,  ///< opposite direction.
       const double,          ///< dt, timestep for this calculation
       const int,             ///< Spatial Order of accuracy to use.
-      class GridBaseClass*   ///< grid pointer
+      class GridBaseClass *  ///< grid pointer
   );
 
   ///
@@ -170,10 +170,10 @@ public:
   /// also updates P[] so that it and Ph[] are identical.
   ///
   virtual int grid_update_state_vector(
-      const double,         ///< dt, timestep
-      const int,            ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
-      const int,            ///< Full order of accuracy of simulation
-      class GridBaseClass*  ///< grid pointer
+      const double,          ///< dt, timestep
+      const int,             ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+      const int,             ///< Full order of accuracy of simulation
+      class GridBaseClass *  ///< grid pointer
   );
 };
 

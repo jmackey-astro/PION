@@ -64,16 +64,16 @@ setup_fixed_grid_pllel::~setup_fixed_grid_pllel()
 // ##################################################################
 
 int setup_fixed_grid_pllel::setup_grid(
-    vector<class GridBaseClass*>& g,  ///< grid pointers.
-    class SimParams& SimPM            ///< simulation parameters
+    vector<class GridBaseClass *> &g,  ///< grid pointers.
+    class SimParams &SimPM             ///< simulation parameters
 )
 {
 #ifdef TESTING
   cout << "setup_fixed_grid_pllel: setting up parallel grid.\n";
 #endif
   cout << "(pion mpi) setting up grid\n";
-  class GridBaseClass** grid = &g[0];
-  class MCMDcontrol* MCMD    = &(SimPM.levels[0].MCMD);
+  class GridBaseClass **grid = &g[0];
+  class MCMDcontrol *MCMD    = &(SimPM.levels[0].MCMD);
 
   if (SimPM.gridType != 1) {
     SimPM.gridType = 1;
@@ -171,8 +171,8 @@ int setup_fixed_grid_pllel::setup_grid(
 // ##################################################################
 
 int setup_fixed_grid_pllel::setup_raytracing(
-    class SimParams& SimPM,    ///< pointer to simulation parameters
-    class GridBaseClass* grid  ///< pointer to grid
+    class SimParams &SimPM,    ///< pointer to simulation parameters
+    class GridBaseClass *grid  ///< pointer to grid
 )
 {
   //
@@ -325,8 +325,8 @@ int setup_fixed_grid_pllel::setup_raytracing(
 // ##################################################################
 
 int setup_fixed_grid_pllel::boundary_conditions(
-    class SimParams& par,               ///< pointer to simulation parameters
-    vector<class GridBaseClass*>& grid  ///< grid pointers.
+    class SimParams &par,                ///< pointer to simulation parameters
+    vector<class GridBaseClass *> &grid  ///< grid pointers.
     // class GridBaseClass *grid ///< pointer to grid.
 )
 {
@@ -356,8 +356,8 @@ int setup_fixed_grid_pllel::boundary_conditions(
 // ##################################################################
 
 int setup_fixed_grid_pllel::setup_boundary_structs(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
     const int l                 ///< level
 )
 {
@@ -406,7 +406,7 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
   // wrap around.  So set the number of procs in each direction.
   //
   int nx[par.ndim];
-  class MCMDcontrol* ppar = &(par.levels[0].MCMD);
+  class MCMDcontrol *ppar = &(par.levels[0].MCMD);
   for (i = 0; i < par.ndim; i++) {
     nx[i] = static_cast<int>(
         ONE_PLUS_EPS * par.Range[i] / grid->Range(static_cast<axes>(i)));
@@ -464,7 +464,7 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
 // ##################################################################
 
 void setup_fixed_grid_pllel::setup_dataio_class(
-    class SimParams& par,  ///< simulation parameters
+    class SimParams &par,  ///< simulation parameters
     const int typeOfFile   ///< type of I/O: 1=text,2=fits,5=silo
 )
 {

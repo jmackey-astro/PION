@@ -13,9 +13,9 @@ using namespace std;
 // ##################################################################
 
 int double_Mach_ref_bc::BC_assign_DMACH(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    boundary_data* b)
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    boundary_data *b)
 {
 #ifdef TESTING
   cout << "Setting up DMACH boundary... starting.\n";
@@ -43,9 +43,9 @@ int double_Mach_ref_bc::BC_assign_DMACH(
   // Run through all boundary cells, and give them either upstream or
   // downstream value, depending on their position.
   //
-  list<cell*>::iterator bpt = b->data.begin();
-  unsigned int ct           = 0;
-  double bpos               = 0.0;
+  list<cell *>::iterator bpt = b->data.begin();
+  unsigned int ct            = 0;
+  double bpos                = 0.0;
   do {
     (*bpt)->isdomain = false;
     //
@@ -93,9 +93,9 @@ int double_Mach_ref_bc::BC_assign_DMACH(
 // ##################################################################
 
 int double_Mach_ref_bc::BC_assign_DMACH2(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    boundary_data* b)
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    boundary_data *b)
 {
 #ifdef TESTING
   cout << "Setting up DMACH2 boundary... starting.\n";
@@ -126,8 +126,8 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
   if (!b->data.empty()) {
     rep.error("BC_assign_DMACH2: Not empty boundary data", b->itype);
   }
-  cell* c    = grid->FirstPt();
-  cell* temp = 0;
+  cell *c    = grid->FirstPt();
+  cell *temp = 0;
   do {
     //
     // check if we are <1/6 in case we are in a parallel grid where
@@ -159,15 +159,15 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
 // ##################################################################
 
 int double_Mach_ref_bc::BC_update_DMACH(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
     const double simtime,       ///< current simulation time
-    struct boundary_data* b,
+    struct boundary_data *b,
     const int cstep,
     const int maxstep)
 {
-  double bpos             = 0.0;
-  list<cell*>::iterator c = b->data.begin();
+  double bpos              = 0.0;
+  list<cell *>::iterator c = b->data.begin();
   for (c = b->data.begin(); c != b->data.end(); ++c) {
     //
     // This is the boundary position:
@@ -202,16 +202,16 @@ int double_Mach_ref_bc::BC_update_DMACH(
 // ##################################################################
 
 int double_Mach_ref_bc::BC_update_DMACH2(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    struct boundary_data* b,
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    struct boundary_data *b,
     const int,
     const int)
 {
   //
   // Fixed at all times, so no difference between full and half step.
   //
-  list<cell*>::iterator c = b->data.begin();
+  list<cell *>::iterator c = b->data.begin();
   for (c = b->data.begin(); c != b->data.end(); ++c) {
     for (int v = 0; v < par.nvar; v++)
       (*c)->dU[v] = 0.;

@@ -22,17 +22,17 @@ class fixed_bc {
 protected:
   /// Assigns data to a fixed boundary.
   virtual int BC_assign_FIXED(
-      class SimParams&,      ///< pointer to simulation parameters
-      class GridBaseClass*,  ///< pointer to grid.
-      boundary_data*);
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *);
 
   /// Updates data on a fixed boundary (data don't change).
   virtual int BC_update_FIXED(
-      class SimParams&,      ///< pointer to simulation parameters
-      class GridBaseClass*,  ///< pointer to grid.
-      boundary_data*,        ///< Boundary to update.
-      const int,             ///< current fractional step being taken.
-      const int              ///< final step.
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *,        ///< Boundary to update.
+      const int,              ///< current fractional step being taken.
+      const int               ///< final step.
   );
 };
 

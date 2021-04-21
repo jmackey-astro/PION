@@ -13,9 +13,9 @@ using namespace std;
 // ##################################################################
 
 int fixed_bc::BC_assign_FIXED(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    boundary_data* b)
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    boundary_data *b)
 {
 #ifdef TESTING
   cout << " setup_fixed_grid::BC_assign_FIXED starting\n";
@@ -28,9 +28,9 @@ int fixed_bc::BC_assign_FIXED(
     b->refval = mem.myalloc(b->refval, par.nvar);
   }
 
-  list<cell*>::iterator bpt = b->data.begin();
-  cell* temp                = 0;
-  unsigned int ct           = 0;
+  list<cell *>::iterator bpt = b->data.begin();
+  cell *temp                 = 0;
+  unsigned int ct            = 0;
   //
   // First find an on-grid cell near a boundary point.  Because of
   // corner cells, we can't guarantee that every boundary cell will
@@ -83,9 +83,9 @@ int fixed_bc::BC_assign_FIXED(
 // ##################################################################
 
 int fixed_bc::BC_update_FIXED(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    struct boundary_data* b,
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    struct boundary_data *b,
     const int cstep,
     const int maxstep)
 {
@@ -93,7 +93,7 @@ int fixed_bc::BC_update_FIXED(
   // Fixed means all boundary points have same fixed value, stored
   // in refval.
   //
-  list<cell*>::iterator c = b->data.begin();
+  list<cell *>::iterator c = b->data.begin();
   for (c = b->data.begin(); c != b->data.end(); ++c) {
     for (int v = 0; v < par.nvar; v++)
       (*c)->dU[v] = 0.;

@@ -177,7 +177,7 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
   // and vector absolute tolerances
   //
   double reltol = 0.0;
-  double* atol  = NV_DATA_S(abstol);
+  double *atol  = NV_DATA_S(abstol);
   get_error_tolerances(&reltol, atol);  // both args passed by reference.
 
 #ifdef CVODE_DEBUG
@@ -240,7 +240,7 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
 
 int cvode_solver::integrate_cvode_step(
     N_Vector Y_Input,
-    void* user_data,  ///<  user_data
+    void *user_data,  ///<  user_data
     double t_now,
     double dt,
     N_Vector Y_Output)
@@ -248,9 +248,9 @@ int cvode_solver::integrate_cvode_step(
   int err = 0;
   //
   // user_data is a pointer to this class, but I can just use the 'this'
-  // pointer instead.  YES! It works.
+  // pointer instead.
   //
-  err = CVodeSetUserData(cvode_mem, static_cast<void*>(this));
+  err = CVodeSetUserData(cvode_mem, static_cast<void *>(this));
   if (err != CV_SUCCESS) {
     cerr << "integrate_cvode_step() CVodeSetUserData: err=" << err << "\n";
     return 3;
@@ -400,13 +400,13 @@ int Ydot_for_cvode(
     double t,     ///< current time
     N_Vector y,   ///< current Y-value
     N_Vector yd,  ///< vector for Y-dot values
-    void* data    ///< extra user-data pointer to the solver class
+    void *data    ///< extra user-data pointer to the solver class
 )
 {
   //
   // Now call the class member ydot() function:
   //
-  class cvode_solver* S = static_cast<cvode_solver*>(data);
+  class cvode_solver *S = static_cast<cvode_solver *>(data);
   return S->ydot(t, y, yd, 0);
 }
 
@@ -421,7 +421,7 @@ int Jacobian_for_cvode(
     N_Vector y,     ///< y
     N_Vector yd,    ///< ydot
     CVMatrix J,     ///< Jacobian matrix
-    void* data,     ///< extra user-data pointer to the solver class
+    void *data,     ///< extra user-data pointer to the solver class
     N_Vector tmp1,  ///< temp vector, must be for internal use
     N_Vector tmp2,  ///< temp vector, must be for internal use
     N_Vector tmp3   ///< temp vector, must be for internal use
@@ -432,7 +432,7 @@ int Jacobian_for_cvode(
   // This is stored in J as a 'CVMatrix' stuct, so we don't
   // to post-process anything afterwards.
   //
-  class cvode_solver* S = static_cast<cvode_solver*>(data);
+  class cvode_solver *S = static_cast<cvode_solver *>(data);
 #if defined CVODE2
   return S->Jacobian(N, t, y, yd, 0, J);
 #else

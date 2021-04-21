@@ -40,15 +40,15 @@ public:
   /// Populate the array SimPM.levels with Xmin,Xmax,Range,dx,etc.
   ///
   virtual void setup_NG_grid_levels(
-      class SimParams&  ///< pointer to simulation parameters
+      class SimParams &  ///< pointer to simulation parameters
   );
 
   ///
   /// Sets up a NG grid.
   ///
   virtual int setup_grid(
-      vector<class GridBaseClass*>&,  ///< grid pointers.
-      class SimParams&                ///< pointer to simulation parameters
+      vector<class GridBaseClass *> &,  ///< grid pointers.
+      class SimParams &                 ///< pointer to simulation parameters
   );
 
   ///
@@ -56,8 +56,8 @@ public:
   /// raytracer associated with each grid.
   ///
   virtual int setup_raytracing(
-      class SimParams&,              ///< simulation parameters
-      vector<class GridBaseClass*>&  ///< grid pointers.
+      class SimParams &,               ///< simulation parameters
+      vector<class GridBaseClass *> &  ///< grid pointers.
   );
 
   ///
@@ -67,8 +67,8 @@ public:
   /// boundary cells as such.
   ///
   virtual int boundary_conditions(
-      class SimParams&,              ///< pointer to simulation parameters
-      vector<class GridBaseClass*>&  ///< grid pointers.
+      class SimParams &,               ///< pointer to simulation parameters
+      vector<class GridBaseClass *> &  ///< grid pointers.
   );
 
   //---------------------------------------
@@ -77,24 +77,24 @@ protected:
 
   /// function to setup data-I/O class.
   virtual void setup_dataio_class(
-      class SimParams&,  ///< pointer to simulation parameters
-      const int          ///< type of I/O: 1=text,2=fits,5=silo
+      class SimParams &,  ///< pointer to simulation parameters
+      const int           ///< type of I/O: 1=text,2=fits,5=silo
   );
 
   ///
   /// Set the boundary conditions string and initialise BC_bd
   ///
   virtual int setup_boundary_structs(
-      class SimParams&,      ///< reference to SimParams list.
-      class GridBaseClass*,  ///< pointer to grid.
-      const int              ///< level of grid in NG
+      class SimParams &,      ///< reference to SimParams list.
+      class GridBaseClass *,  ///< pointer to grid.
+      const int               ///< level of grid in NG
   );
 
   /// set flag for cells if they are not leaf cells (i.e. if there is
   /// a finer-level grid that covers the same volume).
   virtual void set_leaf_cells(
-      vector<class GridBaseClass*>&,  ///< grid pointers.
-      class SimParams&                ///< pointer to simulation parameters
+      vector<class GridBaseClass *> &,  ///< grid pointers.
+      class SimParams &                 ///< pointer to simulation parameters
   );
 
 };  // setup_NG_grid

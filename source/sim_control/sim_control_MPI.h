@@ -43,11 +43,11 @@ public:
   /// \retval 1 failure
   ///
   virtual int Init(
-      string,   ///< Name of input file.
-      int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...).
-      int,      ///< Number of command-line arguments.
-      string*,  ///< Pointer to array of command-line arguments.
-      vector<class GridBaseClass*>&  ///< address of vector of grid pointers.
+      string,    ///< Name of input file.
+      int,       ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...).
+      int,       ///< Number of command-line arguments.
+      string *,  ///< Pointer to array of command-line arguments.
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
   );
 
   ///
@@ -65,7 +65,7 @@ public:
   /// end of the allowed runtime.
   ///
   virtual int Time_Int(
-      vector<class GridBaseClass*>&  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
   );
 
 protected:
@@ -78,10 +78,10 @@ protected:
   /// all processor's local timesteps, and uses that as the timestep.
   ///
   int calculate_timestep(
-      class SimParams&,       ///< pointer to simulation parameters
-      class GridBaseClass*,   ///< pointer to grid.
-      class FV_solver_base*,  ///< solver/equations class
-      const int               ///< level in NG grid (if applicable)
+      class SimParams &,       ///< pointer to simulation parameters
+      class GridBaseClass *,   ///< pointer to grid.
+      class FV_solver_base *,  ///< solver/equations class
+      const int                ///< level in NG grid (if applicable)
   );
 
 };  // sim_control_pllel

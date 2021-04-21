@@ -90,10 +90,10 @@ public:
   /// reference purposes, when deciding whether a quantity is 'small' or not.
   ///
   riemann_MHD(
-      const int,        ///< Length of state vectors, nvar.
-      const pion_flt*,  ///< Mean values of primitive variables on grid
-                        ///< [vector, length nvar]
-      const double      ///< Gamma for state vector.
+      const int,         ///< Length of state vectors, nvar.
+      const pion_flt *,  ///< Mean values of primitive variables on grid
+                         ///< [vector, length nvar]
+      const double       ///< Gamma for state vector.
   );
 
   /// \brief Destructor: deletes dynamically allocated arrays.
@@ -111,11 +111,11 @@ public:
   /// conditions.
   ///
   int JMs_riemann_solve(
-      const pion_flt*,  ///< Left state vector.
-      const pion_flt*,  ///< Right state vector.
-      pion_flt*,        ///< Result state vector.
-      const int,        ///< mode to solve (FLUX_RSlinear is only option!)
-      const double      ///< Gas eos constant gamma.
+      const pion_flt *,  ///< Left state vector.
+      const pion_flt *,  ///< Right state vector.
+      pion_flt *,        ///< Result state vector.
+      const int,         ///< mode to solve (FLUX_RSlinear is only option!)
+      const double       ///< Gas eos constant gamma.
   );
 
 private:
@@ -143,19 +143,19 @@ private:
       alphas;  ///< The slow speed normalisation constant
                ///< \f$=(c_f^2-a^2)/(c_f^2-c_s^2)\f$.
 
-  pion_flt* RS_pdiff;     ///< Difference between left and right states (for
+  pion_flt *RS_pdiff;     ///< Difference between left and right states (for
                           ///< calculation).
-  pion_flt* RS_evalue;    ///< The eignevalues of the matrix \f$\bar{A}\f$.
-  pion_flt* RS_strength;  ///< The wavestrengths for each wave.
+  pion_flt *RS_evalue;    ///< The eignevalues of the matrix \f$\bar{A}\f$.
+  pion_flt *RS_strength;  ///< The wavestrengths for each wave.
 
   /// Left state vector (local copy)
-  pion_flt* RS_left;
+  pion_flt *RS_left;
   /// Right state vector (local copy)
-  pion_flt* RS_right;
+  pion_flt *RS_right;
   /// Resolved state vector (local copy)
-  pion_flt* RS_pstar;
+  pion_flt *RS_pstar;
   /// Mean state vector
-  pion_flt* RS_meanp;
+  pion_flt *RS_meanp;
 
   /// The elements of the 7 left eigenvectors... evec[E-val][Element]
   pion_flt RS_leftevec[7][7];
@@ -185,8 +185,8 @@ private:
   /// solver!!!
   ///
   void assign_data(
-      const pion_flt*,  ///< Pointer to left state vector
-      const pion_flt*   ///< Pointer to right state vector
+      const pion_flt *,  ///< Pointer to left state vector
+      const pion_flt *   ///< Pointer to right state vector
   );
 
   /// \brief  Calculates the average state vector, e.g. (P_L+P_R)/2
@@ -239,9 +239,9 @@ private:
   /// \retval value of dot product if successful.
   ///
   double dot_product(
-      pion_flt*,  ///< Pointer to Vector 1.
-      pion_flt*,  ///< Pointer to Vector 2.
-      int         ///< Length of vectors.
+      pion_flt *,  ///< Pointer to Vector 1.
+      pion_flt *,  ///< Pointer to Vector 2.
+      int          ///< Length of vectors.
   );
 
   /// \brief Calculates the wave strengths alpha_i
@@ -287,12 +287,12 @@ private:
   /// primitive.
   ///
   ///
-  void solver2codevars(pion_flt*  ///< Vector to convert.
+  void solver2codevars(pion_flt *  ///< Vector to convert.
   );
 
   /// \brief Change order of variables in state vector from code to solver
   /// variables.
-  void code2solvervars(pion_flt*  ///< Vector to convert.
+  void code2solvervars(pion_flt *  ///< Vector to convert.
   );
 };
 

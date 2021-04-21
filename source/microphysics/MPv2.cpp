@@ -238,8 +238,8 @@ void mp_rates_ExpH_ImpMetals::set_gamma_and_srcs(
 // ##################################################################
 
 void mp_rates_ExpH_ImpMetals::get_error_tolerances(
-    double& reltol,            ///< relative error tolerance.
-    std::vector<double>& atol  ///< absolute error tolerances
+    double &reltol,            ///< relative error tolerance.
+    std::vector<double> &atol  ///< absolute error tolerances
 )
 {
   reltol  = 0.01 * JM_RELTOL;
@@ -252,7 +252,7 @@ void mp_rates_ExpH_ImpMetals::get_error_tolerances(
 // ##################################################################
 
 void mp_rates_ExpH_ImpMetals::set_parameters_for_current_step(
-    const std::vector<double>& P  ///< list of parameters in an array.
+    const std::vector<double> &P  ///< list of parameters in an array.
 )
 {
   //
@@ -314,8 +314,8 @@ void mp_rates_ExpH_ImpMetals::set_parameters_for_current_step(
 // ##################################################################
 
 void mp_rates_ExpH_ImpMetals::get_problem_size(
-    int* ne,  ///< number of equations
-    int* np   ///< number of parameters in user_data vector.
+    int *ne,  ///< number of equations
+    int *np   ///< number of parameters in user_data vector.
 )
 {
   *ne = n_eq;
@@ -353,8 +353,8 @@ double mp_rates_ExpH_ImpMetals::get_temperature(
 int mp_rates_ExpH_ImpMetals::dYdt(
     const double OneMinusX,  // neutral fraction!
     const double E_in,
-    double* xdot,  // change in neutral fraction!
-    double* Edot)
+    double *xdot,  // change in neutral fraction!
+    double *Edot)
 {
   //
   //  1-x
@@ -698,9 +698,9 @@ MPv2::MPv2(
     const int csys,  ///< Coordinate System flag
     const int nv,    ///< Total number of variables in state vector
     const int ntr,   ///< Number of tracer variables in state vector.
-    const std::string* tracers,   ///< List of what the tracer variables mean.
-    struct which_physics* ephys,  ///< pointer to extra physics flags.
-    struct rad_sources* rsrcs,    ///< radiation sources.
+    const std::string *tracers,   ///< List of what the tracer variables mean.
+    struct which_physics *ephys,  ///< pointer to extra physics flags.
+    struct rad_sources *rsrcs,    ///< radiation sources.
     const double g                ///< EOS Gamma
     ) :
     microphysics_base(nv, ntr, tracers, ephys, rsrcs),
@@ -939,7 +939,7 @@ int MPv2::Tr(const string t)
 
 // Set the properties of a multifrequency ionising radiation source.
 //
-int MPv2::set_multifreq_source_properties(const struct rad_src_info* rsi)
+int MPv2::set_multifreq_source_properties(const struct rad_src_info *rsi)
 {
   //
   // Some sanity checks:
@@ -970,12 +970,12 @@ int MPv2::set_multifreq_source_properties(const struct rad_src_info* rsi)
 // ##################################################################
 
 int MPv2::TimeUpdateMP(
-    const double* p_in,   ///< Primitive Vector to be updated.
-    double* p_out,        ///< Destination Vector for updated values.
+    const double *p_in,   ///< Primitive Vector to be updated.
+    double *p_out,        ///< Destination Vector for updated values.
     const double dt,      ///< Time Step to advance by.
     const double,         ///< EOS gamma.
     const int,            ///< Switch for what type of integration to use.
-    double* random_stuff  ///< Vector of extra data (column densities, etc.).
+    double *random_stuff  ///< Vector of extra data (column densities, etc.).
 )
 {
   std::vector<struct rt_source_data> temp;
@@ -988,15 +988,15 @@ int MPv2::TimeUpdateMP(
 // ##################################################################
 
 int MPv2::TimeUpdate_RTsinglesrc(
-    const double*,  ///< Primitive Vector to be updated.
-    double*,        ///< Destination Vector for updated values.
-    const double,   ///< Time Step to advance by.
-    const double,   ///< EOS gamma.
-    const int,      ///< Switch for what type of integration to use.
-    const double,   ///< flux in per unit length along ray (F/ds or L/dV)
-    const double,   ///< path length ds through cell.
-    const double,   ///< Optical depth to entry point of ray into cell.
-    double*         ///< return optical depth through cell in this variable.
+    const double *,  ///< Primitive Vector to be updated.
+    double *,        ///< Destination Vector for updated values.
+    const double,    ///< Time Step to advance by.
+    const double,    ///< EOS gamma.
+    const int,       ///< Switch for what type of integration to use.
+    const double,    ///< flux in per unit length along ray (F/ds or L/dV)
+    const double,    ///< path length ds through cell.
+    const double,    ///< Optical depth to entry point of ray into cell.
+    double *         ///< return optical depth through cell in this variable.
 )
 {
   cout << "MPv2::TimeUpdate_RTsinglesrc() is not implemented!\n";
@@ -1007,20 +1007,20 @@ int MPv2::TimeUpdate_RTsinglesrc(
 // ##################################################################
 
 int MPv2::TimeUpdateMP_RTnew(
-    const double* p_in,  ///< Primitive Vector to be updated.
+    const double *p_in,  ///< Primitive Vector to be updated.
     const int N_heat,    ///< Number of UV heating sources.
-    const std::vector<struct rt_source_data>& heat_src,
+    const std::vector<struct rt_source_data> &heat_src,
     ///< list of UV-heating column densities and source properties.
     const int N_ion,  ///< number of ionising radiation sources.
-    const std::vector<struct rt_source_data>& ion_src,
+    const std::vector<struct rt_source_data> &ion_src,
     ///< list of ionising src column densities and source properties.
-    double* p_out,    ///< Destination Vector for updated values
+    double *p_out,    ///< Destination Vector for updated values
                       ///< (can be same as first Vector.
     const double dt,  ///< Time Step to advance by.
     const double,     ///< EOS gamma.
     const int,        ///< Switch for what type of integration to use.
                       ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-    double* random_stuff  ///< final temperature (not strictly needed).
+    double *random_stuff  ///< final temperature (not strictly needed).
 )
 {
   int err = 0;
@@ -1085,7 +1085,7 @@ int MPv2::TimeUpdateMP_RTnew(
 // ##################################################################
 
 double MPv2::Temperature(
-    const double* pv,  ///< primitive vector
+    const double *pv,  ///< primitive vector
     const double       ///< eos gamma
 )
 {
@@ -1106,7 +1106,7 @@ double MPv2::Temperature(
 // ##################################################################
 
 int MPv2::Set_Temp(
-    double* p,       ///< primitive vector.
+    double *p,       ///< primitive vector.
     const double T,  ///< temperature
     const double     ///< eos gamma.
 )
@@ -1133,7 +1133,7 @@ int MPv2::Set_Temp(
 // ##################################################################
 
 int MPv2::Init_ionfractions(
-    double*,       ///< Primitive vector to be updated.
+    double *,      ///< Primitive vector to be updated.
     const double,  ///< eos gamma.
     const double   ///< optional gas temperature to end up
                    ///< at. (negative means use pressure)
@@ -1147,8 +1147,8 @@ int MPv2::Init_ionfractions(
 // ##################################################################
 
 int MPv2::convert_prim2local(
-    const double* p_in,  ///< primitive vector from grid cell (length nv_prim)
-    double* p_local)
+    const double *p_in,  ///< primitive vector from grid cell (length nv_prim)
+    double *p_local)
 {
   //
   // Set internal energy density, H+ fraction, and number density of H.
@@ -1201,10 +1201,10 @@ int MPv2::convert_prim2local(
 // ##################################################################
 
 int MPv2::convert_local2prim(
-    const double* p_local,
-    const double*
-        p_in,      ///< input primitive vector from grid cell (length nv_prim)
-    double* p_out  ///< updated primitive vector for grid cell (length nv_prim)
+    const double *p_local,
+    const double
+        *p_in,     ///< input primitive vector from grid cell (length nv_prim)
+    double *p_out  ///< updated primitive vector for grid cell (length nv_prim)
 )
 {
   for (int v = 0; v < nv_prim; v++)
@@ -1254,7 +1254,7 @@ int MPv2::convert_local2prim(
 // ##################################################################
 
 double MPv2::timescales(
-    const double* p_in,  ///< Current cell state vector.
+    const double *p_in,  ///< Current cell state vector.
     const double,        ///< EOS gamma.
     const bool,          ///< set to 'true' if including cooling time.
     const bool,          ///< set to 'true' if including recombination time.
@@ -1284,12 +1284,12 @@ double MPv2::timescales(
 /// greater capability than the other timescales function.
 ///
 double MPv2::timescales_RT(
-    const double* p_in,  ///< Current cell state vector.
+    const double *p_in,  ///< Current cell state vector.
     const int N_heat,    ///< Number of UV heating sources.
-    const std::vector<struct rt_source_data>& heat_src,
+    const std::vector<struct rt_source_data> &heat_src,
     ///< list of UV-heating column densities and source properties.
     const int N_ion,  ///< number of ionising radiation sources.
-    const std::vector<struct rt_source_data>& ion_src,
+    const std::vector<struct rt_source_data> &ion_src,
     ///< list of ionising src column densities and source properties.
     const double  ///< EOS gamma.
 )
@@ -1353,13 +1353,13 @@ double MPv2::timescales_RT(
 // ##################################################################
 
 void MPv2::setup_radiation_source_parameters(
-    const double* p_in,  ///< primitive input state vector.
-    double* P,           ///< local input state vector (x_in,E_int)
+    const double *p_in,  ///< primitive input state vector.
+    double *P,           ///< local input state vector (x_in,E_int)
     const int N_heat,    ///< Number of UV heating sources.
-    const std::vector<struct rt_source_data>& heat_src,
+    const std::vector<struct rt_source_data> &heat_src,
     ///< list of UV-heating column densities and source properties.
     const int N_ion,  ///< number of ionising radiation sources.
-    const std::vector<struct rt_source_data>& ion_src
+    const std::vector<struct rt_source_data> &ion_src
     ///< list of ionising src column densities and source properties.
 )
 {
@@ -1641,11 +1641,11 @@ int MPv2::setup_cvodes_solver_without_Jacobian()
 // ##################################################################
 
 int MPv2::integrate_cvodes_step(
-    const vector<double>& Y0,  ///< input vector
-    double* params,            ///< parameters for user_data
+    const vector<double> &Y0,  ///< input vector
+    double *params,            ///< parameters for user_data
     double t_now,              ///< start time.
     double dt,                 ///< time-step.
-    vector<double>& Yf         ///< output vector.
+    vector<double> &Yf         ///< output vector.
 )
 {
 #ifdef MP_DEBUG
@@ -1671,7 +1671,7 @@ int MPv2::integrate_cvodes_step(
   // may be passed in to integrator in variable params.
   //
   if (n_xd > 0) {
-    err = CVodeSetUserData(cvode_mem, reinterpret_cast<void*>(params));
+    err = CVodeSetUserData(cvode_mem, reinterpret_cast<void *>(params));
     if (err != CV_SUCCESS) {
       cerr << "integrate_cvodes_step() CVodeSetUserData: err=" << err << "\n";
       return 3;
@@ -1775,7 +1775,7 @@ int MPv2::integrate_cvodes_step(
 
 double MPv2::get_recombination_rate(
     const int,             ///< ion index in tracer array (optional).
-    const pion_flt* p_in,  ///< input state vector (primitive).
+    const pion_flt *p_in,  ///< input state vector (primitive).
     const double g         ///< EOS gamma (optional)
 )
 {
@@ -1812,7 +1812,7 @@ int Ydot_for_cvodes(
     double t,     ///< current time
     N_Vector y,   ///< current Y-value
     N_Vector yd,  ///< vector for Y-dot values
-    void* data    ///< extra user-data vector, P, for evaluating ydot(y,t,p)
+    void *data    ///< extra user-data vector, P, for evaluating ydot(y,t,p)
 )
 {
   //

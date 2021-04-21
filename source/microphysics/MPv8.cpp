@@ -34,9 +34,9 @@ MPv8::MPv8(
     const int csys,  ///< Coordinate System flag
     const int nv,    ///< Total number of variables in state vector
     const int ntr,   ///< Number of tracer variables in state vector.
-    const std::string* tracers,   ///< List of what the tracer variables mean.
-    struct which_physics* ephys,  ///< pointer to extra physics flags.
-    struct rad_sources* rsrcs,    ///< radiation sources.
+    const std::string *tracers,   ///< List of what the tracer variables mean.
+    struct which_physics *ephys,  ///< pointer to extra physics flags.
+    struct rad_sources *rsrcs,    ///< radiation sources.
     const double g                ///< EOS Gamma
     ) :
     MPv3(nd, csys, nv, ntr, tracers, ephys, rsrcs, g)
@@ -114,8 +114,8 @@ MPv8::~MPv8()
 // ##################################################################
 
 int MPv8::convert_prim2local(
-    const double* p_in,  ///< primitive vector from grid cell (length nv_prim)
-    double* p_local)
+    const double *p_in,  ///< primitive vector from grid cell (length nv_prim)
+    double *p_local)
 {
   //
   // Set internal energy density, H+ fraction, and number density of H.
@@ -152,10 +152,10 @@ int MPv8::convert_prim2local(
 // ##################################################################
 
 int MPv8::convert_local2prim(
-    const double* p_local,
-    const double*
-        p_in,      ///< input primitive vector from grid cell (length nv_prim)
-    double* p_out  ///< updated primitive vector for grid cell (length nv_prim)
+    const double *p_local,
+    const double
+        *p_in,     ///< input primitive vector from grid cell (length nv_prim)
+    double *p_out  ///< updated primitive vector for grid cell (length nv_prim)
 )
 {
   for (int v = 0; v < nv_prim; v++)
@@ -222,7 +222,7 @@ int MPv8::ydot(
     double,                ///< current time (UNUSED)
     const N_Vector y_now,  ///< current Y-value
     N_Vector y_dot,        ///< vector for Y-dot values
-    const double*          ///< extra user-data vector (UNUSED)
+    const double *         ///< extra user-data vector (UNUSED)
 )
 {
 
@@ -369,7 +369,7 @@ int MPv8::ydot(
 
 double MPv8::get_recombination_rate(
     const int,           ///< ion index in tracer array (optional).
-    const double* p_in,  ///< input state vector (primitive).
+    const double *p_in,  ///< input state vector (primitive).
     const double g       ///< EOS gamma (optional)
 )
 {

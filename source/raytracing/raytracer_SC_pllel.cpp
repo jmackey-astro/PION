@@ -63,10 +63,10 @@ using namespace std;
 // ##################################################################
 
 raytracer_USC_pllel::raytracer_USC_pllel(
-    class GridBaseClass* ggg,      ///< Pointer to grid
-    class microphysics_base* mmm,  ///< Pointer to MicroPhysics Class.
-    class SimParams* sp,           ///< simulation parameters
-    class MCMDcontrol* mcmd,       ///< domain decomposition info
+    class GridBaseClass *ggg,      ///< Pointer to grid
+    class microphysics_base *mmm,  ///< Pointer to MicroPhysics Class.
+    class SimParams *sp,           ///< simulation parameters
+    class MCMDcontrol *mcmd,       ///< domain decomposition info
     int nd,                        ///< number of dimensions of grid
     int csys,                      ///< coordinate system
     int nv,                        ///< number of variables in state vector
@@ -93,7 +93,7 @@ raytracer_USC_pllel::~raytracer_USC_pllel()
 // ##################################################################
 // ##################################################################
 
-int raytracer_USC_pllel::Add_Source(struct rad_src_info* src  ///< source info.
+int raytracer_USC_pllel::Add_Source(struct rad_src_info *src  ///< source info.
 )
 {
   //
@@ -156,7 +156,7 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
 #endif
 
   // Find source in list.
-  struct rad_src_info* RS = 0;
+  struct rad_src_info *RS = 0;
   for (vector<rad_source>::iterator i = SourceList.begin();
        i != SourceList.end(); ++i) {
     if ((*i).s->id == s_id) RS = (*i).s;

@@ -49,8 +49,8 @@ using namespace std;
 // ##################################################################
 
 DataIOFits_pllel::DataIOFits_pllel(
-    class SimParams& SimPM,  ///< pointer to simulation parameters
-    class MCMDcontrol* p) :
+    class SimParams &SimPM,  ///< pointer to simulation parameters
+    class MCMDcontrol *p) :
     DataIOFits(SimPM)
 {
   cout << "Setting up DataIOFits_pllel class.\n";
@@ -108,9 +108,9 @@ std::string DataIOFits_pllel::choose_filename(
 // ##################################################################
 
 int DataIOFits_pllel::OutputData(
-    string outfilebase,                ///< base filename
-    vector<class GridBaseClass*>& cg,  ///< address of vector of grid pointers.
-    class SimParams& SimPM,            ///< pointer to simulation parameters
+    string outfilebase,                 ///< base filename
+    vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
+    class SimParams &SimPM,             ///< pointer to simulation parameters
     const long int file_counter  ///< number to stamp file with (e.g. timestep)
 )
 {
@@ -148,8 +148,8 @@ int DataIOFits_pllel::OutputData(
 int DataIOFits_pllel::SaveLevelData(
     string outfilebase,          ///< base filename
     const int l,                 ///< level to save
-    class GridBaseClass* cg,     ///< address of vector of grid pointers.
-    class SimParams& SimPM,      ///< pointer to simulation parameters
+    class GridBaseClass *cg,     ///< address of vector of grid pointers.
+    class SimParams &SimPM,      ///< pointer to simulation parameters
     const long int file_counter  ///< number to stamp file with (e.g. timestep)
 )
 {
@@ -166,12 +166,12 @@ int DataIOFits_pllel::SaveLevelData(
     // DataIOFits_pllel::OutputData() Not outputting Eint/divB/Ptot b/c no
     // way to calculate it!\n";
   }
-  fitsfile* ff = 0;
+  fitsfile *ff = 0;
   int status = 0, err = 0;
 
   // Add variables to list based on what equations we are solving.
   int nvar        = SimPM.nvar;
-  string* extname = 0;
+  string *extname = 0;
   if (SimPM.ntracer > 5)
     rep.error(
         "OutputFitsData:: only handles up to 5 tracer variables! Add "
@@ -369,7 +369,7 @@ int DataIOFits_pllel::SaveLevelData(
     //
     // for each image, create image and write my portion of it.
     //
-    double* data = 0;
+    double *data = 0;
     for (int i = 0; i < nvar; i++) {
       if (mpiPM->WriteFullImage) {  // write full image, with only local
                                     // part being non-zero.
@@ -451,7 +451,7 @@ int DataIOFits_pllel::SaveLevelData(
       //
       for (int i = 0; i < nvar; i++) {
         err += create_fits_image(ff, extname[i], SimPM.ndim, SimPM.NG);
-        double* data = 0;
+        double *data = 0;
         err += put_variable_into_data_array(
             SimPM, extname[i], mpiPM->LocalNcell, &data);
         err += write_fits_image(
@@ -497,7 +497,7 @@ int DataIOFits_pllel::SaveLevelData(
             "don't match",
             err);
       // write my portion of image.
-      double* data = 0;
+      double *data = 0;
       err += put_variable_into_data_array(
           SimPM, extname[i], mpiPM->LocalNcell, &data);
       err += write_fits_image(
@@ -543,8 +543,8 @@ int DataIOFits_pllel::SaveLevelData(
 
 int DataIOFits_pllel::ReadData(
     string infile,
-    vector<class GridBaseClass*>& cg,  ///< address of vector of grid pointers.
-    class SimParams& SimPM             ///< pointer to simulation parameters
+    vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
+    class SimParams &SimPM              ///< pointer to simulation parameters
 )
 {
   string fname = "DataIOFits_pllel::ReadData";
@@ -552,7 +552,7 @@ int DataIOFits_pllel::ReadData(
 
   // -------------------------------------------------------
   int nvar    = SimPM.nvar;
-  string* var = 0;
+  string *var = 0;
   if (SimPM.ntracer > 5) {
     rep.error(
         "Fits_pllel::ReadData() too many tracer variables!", SimPM.ntracer);
@@ -614,7 +614,7 @@ int DataIOFits_pllel::ReadData(
     }
 
     int status = 0;
-    fitsfile* ff;
+    fitsfile *ff;
     cout << "DataIOFits_pllel::ReadData() opening fits file to read data...";
     err = fits_open_file(&ff, infile.c_str(), READONLY, &status);
     if (status) {
@@ -677,7 +677,7 @@ int DataIOFits_pllel::ReadData(
 
       if (err != 0) {
         // If can't find variable, set them all to zero.
-        cell* c = gp->FirstPt();
+        cell *c = gp->FirstPt();
         do {
           c->P[v] = 0.;
         } while ((c = gp->NextPt(c)) != 0);
@@ -747,7 +747,7 @@ int DataIOFits_pllel::ReadData(
     //  cout <<"Closed fits file. err="<<err<<"\n";
 
     // Now assign Ph to be equal to P for each cell.
-    cell* cpt = gp->FirstPt();
+    cell *cpt = gp->FirstPt();
     do {
       for (int v = 0; v < nvar; v++)
         cpt->Ph[v] = cpt->P[v];

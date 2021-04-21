@@ -81,7 +81,7 @@ public:
   /// struct though, so each particular class may not have consecutively
   /// numbered sources.
   ///
-  virtual int Add_Source(struct rad_src_info*  ///< ptr to source info.
+  virtual int Add_Source(struct rad_src_info *  ///< ptr to source info.
                          ) = 0;
 
   ///
@@ -121,7 +121,7 @@ public:
   /// changes over time.
   ///
   virtual void update_RT_source_properties(
-      const struct rad_src_info*  ///< ptr to source info.
+      const struct rad_src_info *  ///< ptr to source info.
       ) = 0;
 
   /// Returns the number of ionising sources
@@ -138,8 +138,8 @@ public:
   /// checking.
   ///
   virtual int populate_ionising_src_list(
-      std::vector<struct rt_source_data>&  ///< list of data for ionising
-                                           ///< sources
+      std::vector<struct rt_source_data> &  ///< list of data for ionising
+                                            ///< sources
       ) = 0;
 
   ///
@@ -150,15 +150,15 @@ public:
   /// checking.
   ///
   virtual int populate_UVheating_src_list(
-      std::vector<struct rt_source_data>&  ///< list of data for UV-heating
-                                           ///< sources
+      std::vector<struct rt_source_data> &  ///< list of data for UV-heating
+                                            ///< sources
       ) = 0;
 };
 
 // ##################################################################
 // ##################################################################
 
-extern class RayTracingBase* RT;  ///< Raytracer for all radiation sources
+extern class RayTracingBase *RT;  ///< Raytracer for all radiation sources
 // ************************** RAY TRACER ***************************
 // *****************************************************************
 

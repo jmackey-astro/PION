@@ -48,11 +48,11 @@ public:
   /// Constructor sets up parameters used by derived classes.
   ///
   microphysics_base(
-      const int,              ///< Total number of variables in state vector
-      const int,              ///< Number of tracer variables in state vector
-      const std::string*,     ///< List of tracer variable names.
-      struct which_physics*,  ///< which physics to calculate.
-      struct rad_sources*     ///< radiation sources.
+      const int,               ///< Total number of variables in state vector
+      const int,               ///< Number of tracer variables in state vector
+      const std::string *,     ///< List of tracer variable names.
+      struct which_physics *,  ///< which physics to calculate.
+      struct rad_sources *     ///< radiation sources.
   );
   virtual ~microphysics_base() {}  ///< non-virtual destructor.
 
@@ -62,13 +62,13 @@ public:
   /// internal energy.
   ///
   virtual int TimeUpdateMP(
-      const pion_flt*,  ///< Primitive Vector to be updated.
-      pion_flt*,        ///< Destination Vector for updated values.
-      const double,     ///< Time Step to advance by.
-      const double,     ///< EOS gamma.
+      const pion_flt *,  ///< Primitive Vector to be updated.
+      pion_flt *,        ///< Destination Vector for updated values.
+      const double,      ///< Time Step to advance by.
+      const double,      ///< EOS gamma.
       const int,  ///< Switch for what type of integration to use. (0=adaptive
                   ///< RK5, 1=adaptive Euler,2=onestep o4-RK)
-      double*     ///< final temperature.
+      double *    ///< final temperature.
       ) = 0;
 
   ///
@@ -77,21 +77,21 @@ public:
   /// given an external radiation flux.
   ///
   virtual int TimeUpdate_RTsinglesrc(
-      const pion_flt*,  ///< Primitive Vector to be updated.
-      pion_flt*,        ///< Destination Vector for updated values.
-      const double,     ///< Time Step to advance by.
-      const double,     ///< EOS gamma.
+      const pion_flt *,  ///< Primitive Vector to be updated.
+      pion_flt *,        ///< Destination Vector for updated values.
+      const double,      ///< Time Step to advance by.
+      const double,      ///< EOS gamma.
       const int,  ///< Switch for what type of integration to use. (0=adaptive
                   ///< RK5, 1=adaptive Euler,2=onestep o4-RK)
       const double,  ///< flux in per unit length along ray (F/ds or L/dV)
       const double,  ///< path length ds through cell.
       const double,  ///< Optical depth to entry point of ray into cell.
-      double*        ///< return optical depth through cell in this variable.
+      double *       ///< return optical depth through cell in this variable.
       ) = 0;
 
   /// Initialise microphysics ionisation fractions to an equilibrium value.
   virtual int Init_ionfractions(
-      pion_flt*,     ///< Primitive vector to be updated.
+      pion_flt *,    ///< Primitive vector to be updated.
       const double,  ///< eos gamma.
       const double   ///< optional gas temperature to end up at.
                      ///< (negative means use pressure)
@@ -115,11 +115,11 @@ public:
   /// THE C2RAY METHOD UPDATES FOR MANY SOURCES.
   ///
   virtual int Get_MP_Rates(
-      cell*,         ///< current cell.
+      cell *,        ///< current cell.
       const double,  ///< timestep
       const double,  ///< column to cell
       const double,  ///< Flux entering cell?
-      double*        ///< initial (and final) column density through cell?
+      double *       ///< initial (and final) column density through cell?
   )
   {
     return 0;
@@ -134,20 +134,20 @@ public:
   /// ordered in a list of UV heating sources and a list of ionising sources.
   ///
   virtual int TimeUpdateMP_RTnew(
-      const pion_flt*,  ///< Primitive Vector to be updated.
-      const int,        ///< Number of UV heating sources.
-      const std::vector<struct rt_source_data>&,
+      const pion_flt *,  ///< Primitive Vector to be updated.
+      const int,         ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
       ///< list of UV-heating column densities and source properties.
       const int,  ///< number of ionising radiation sources.
-      std::vector<struct rt_source_data>&,
+      std::vector<struct rt_source_data> &,
       ///< list of ionising src column densities and source properties.
-      pion_flt*,  ///< Destination Vector for updated values
+      pion_flt *,  ///< Destination Vector for updated values
       ///< (can be same as first Vector.
       const double,  ///< Time Step to advance by.
       const double,  ///< EOS gamma.
       const int,     ///< Switch for what type of integration to use.
       ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-      double*  ///< final temperature (not strictly needed).
+      double *  ///< final temperature (not strictly needed).
   )
   {
     return 1;
@@ -164,7 +164,7 @@ public:
   /// Sets the pressure in p-vec to be such that temperature is
   /// what you want it to be.
   virtual int Set_Temp(
-      pion_flt*,     ///< primitive vector.
+      pion_flt *,    ///< primitive vector.
       const double,  ///< temperature.
       const double   ///< eos gamma.
       ) = 0;
@@ -174,8 +174,8 @@ public:
   /// Assumes primitive vector is in cgs units.
   ///
   virtual double Temperature(
-      const pion_flt*,  ///< primitive vector
-      const double      ///< eos gamma
+      const pion_flt *,  ///< primitive vector
+      const double       ///< eos gamma
       ) = 0;
 
   ///
@@ -183,11 +183,11 @@ public:
   /// arguments.  Time is returned in seconds.
   ///
   virtual double timescales(
-      const pion_flt*,  ///< Current cell.
-      const double,     ///< EOS gamma.
-      const bool,       ///< set to true if including cooling time.
-      const bool,       ///< set to true if including recombination time.
-      const bool        ///< set to true if including photo-ionsation time.
+      const pion_flt *,  ///< Current cell.
+      const double,      ///< EOS gamma.
+      const bool,        ///< set to true if including cooling time.
+      const bool,        ///< set to true if including recombination time.
+      const bool         ///< set to true if including photo-ionsation time.
       ) = 0;
 
   ///
@@ -197,12 +197,12 @@ public:
   /// substantially greater capability than the other timescales function.
   ///
   virtual double timescales_RT(
-      const pion_flt*,  ///< Current cell.
-      const int,        ///< Number of UV heating sources.
-      const std::vector<struct rt_source_data>&,
+      const pion_flt *,  ///< Current cell.
+      const int,         ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
       ///< list of UV-heating column densities and source properties.
       const int,  ///< number of ionising radiation sources.
-      const std::vector<struct rt_source_data>&,
+      const std::vector<struct rt_source_data> &,
       ///< list of ionising src column densities and source properties.
       const double  ///< EOS gamma.
       ) = 0;
@@ -211,8 +211,8 @@ public:
   /// Set the properties of a multifrequency ionising radiation source.
   ///
   virtual int set_multifreq_source_properties(
-      const struct rad_src_info*,  ///< source data
-      double*  ///< source strength in different energy bins.
+      const struct rad_src_info *,  ///< source data
+      double *  ///< source strength in different energy bins.
   )
   {
     return -999;
@@ -225,12 +225,12 @@ public:
   /// between heating and cooling.
   ///
   virtual double total_cooling_rate(
-      const pion_flt*,  ///< Current cell values.
-      const int,        ///< Number of UV heating sources.
-      const std::vector<struct rt_source_data>&,
+      const pion_flt *,  ///< Current cell values.
+      const int,         ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
       ///< list of UV-heating column densities and source properties.
       const int,  ///< number of ionising radiation sources.
-      const std::vector<struct rt_source_data>&,
+      const std::vector<struct rt_source_data> &,
       ///< list of ionising src column densities and source properties.
       const double  ///< EOS gamma.
   )
@@ -243,9 +243,9 @@ public:
   /// state vector.
   ///
   virtual double get_recombination_rate(
-      const int,        ///< ion index in tracer array (optional).
-      const pion_flt*,  ///< input state vector (primitive).
-      const double      ///< EOS gamma (optional)
+      const int,         ///< ion index in tracer array (optional).
+      const pion_flt *,  ///< input state vector (primitive).
+      const double       ///< EOS gamma (optional)
       ) = 0;
 
   ///
@@ -255,8 +255,8 @@ public:
   /// Used for modifying tracer fluxes, normalising state vec.
   ///
   virtual void sCMA(
-      pion_flt*,       ///< input corrector vector
-      const pion_flt*  ///< input primitive vector from grid cell
+      pion_flt *,       ///< input corrector vector
+      const pion_flt *  ///< input primitive vector from grid cell
   );
 
   ///
@@ -265,10 +265,10 @@ public:
   /// vector.
   ///
   virtual void get_dtau(
-      const rad_source*,  ///< pointer to radiation source struct
-      const pion_flt,     ///< ds, thickness of the cell
-      const pion_flt*,    ///< input primitive vector from cell
-      pion_flt*           ///< output dtau vector
+      const rad_source *,  ///< pointer to radiation source struct
+      const pion_flt,      ///< ds, thickness of the cell
+      const pion_flt *,    ///< input primitive vector from cell
+      pion_flt *           ///< output dtau vector
   )
   {
     return;
@@ -288,8 +288,8 @@ public:
   /// Return number density of a given element.
   ///
   virtual double get_n_el(
-      const pion_flt*,  ///< primitive state vector.
-      const int         ///< integer identifier for the element.
+      const pion_flt *,  ///< primitive state vector.
+      const int          ///< integer identifier for the element.
   )
   {
     return -1.0e99;
@@ -298,7 +298,7 @@ public:
   ///
   /// Get electron number density (cm^{-3})
   ///
-  virtual double get_n_elec(const pion_flt*  ///< primitive state vector.
+  virtual double get_n_elec(const pion_flt *  ///< primitive state vector.
   )
   {
     return -1.0e99;
@@ -308,8 +308,8 @@ public:
   /// Get ion number density (cm^{-3})
   ///
   virtual double get_n_ion(
-      std::string,     ///< ion name
-      const pion_flt*  ///< primitive state vector.
+      std::string,      ///< ion name
+      const pion_flt *  ///< primitive state vector.
   )
   {
     return -1.0e99;
@@ -318,7 +318,7 @@ public:
   ///
   /// Get H+ number density (cm^{-3})
   ///
-  virtual double get_n_Hplus(const pion_flt*  ///< primitive state vector.
+  virtual double get_n_Hplus(const pion_flt *  ///< primitive state vector.
   )
   {
     return -1.0e99;
@@ -327,7 +327,7 @@ public:
   ///
   /// Get neutral H number density (cm^{-3})
   ///
-  virtual double get_n_Hneutral(const pion_flt*  ///< primitive state vector.
+  virtual double get_n_Hneutral(const pion_flt *  ///< primitive state vector.
   )
   {
     return -1.0e99;
@@ -340,9 +340,9 @@ public:
 
 protected:
   /// Struct with flags for which extra physics we are (not) doing.
-  struct which_physics* EP;
+  struct which_physics *EP;
   /// Struct with list of radiation sources
-  struct rad_sources* RS;
+  struct rad_sources *RS;
   /// map tracer names to state-vec index
   std::map<std::string, int> tr_map;
   /// map element names to state-vec index
@@ -358,6 +358,6 @@ protected:
 ///
 /// Global pointed to the microphysics class.
 ///
-extern class microphysics_base* MP;
+extern class microphysics_base *MP;
 
 #endif  // MICROPHYSICS_BASE_H

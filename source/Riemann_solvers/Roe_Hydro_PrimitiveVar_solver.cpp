@@ -55,10 +55,10 @@ Riemann_Roe_Hydro_PV::~Riemann_Roe_Hydro_PV()
 }
 
 int Riemann_Roe_Hydro_PV::Roe_prim_var_solver(
-    const pion_flt* rpv_left,
-    const pion_flt* rpv_right,
+    const pion_flt *rpv_left,
+    const pion_flt *rpv_right,
     const double rpv_g,
-    pion_flt* rpv_pstar)
+    pion_flt *rpv_pstar)
 {
 #ifdef FUNCTION_ID
   cout << "Riemann_Roe_Hydro_PV::Roe_prim_var_solver ...starting.\n";

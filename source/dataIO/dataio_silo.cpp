@@ -74,7 +74,7 @@ using namespace std;
 // ##################################################################
 
 dataio_silo::dataio_silo(
-    class SimParams& SimPM,  ///< pointer to simulation parameters
+    class SimParams &SimPM,  ///< pointer to simulation parameters
     std::string dtype        // read/write either FLOAT or DOUBLE to/from file
     ) :
     DataIOBase(SimPM)
@@ -143,16 +143,16 @@ dataio_silo::~dataio_silo()
   // freeing memory for void arrays:
   //
   if (silo_dtype == DB_FLOAT) {
-    mem.myfree(reinterpret_cast<float*>(nodex));
-    mem.myfree(reinterpret_cast<float*>(nodey));
-    mem.myfree(reinterpret_cast<float*>(nodez));
-    mem.myfree(reinterpret_cast<float**>(node_coords));
+    mem.myfree(reinterpret_cast<float *>(nodex));
+    mem.myfree(reinterpret_cast<float *>(nodey));
+    mem.myfree(reinterpret_cast<float *>(nodez));
+    mem.myfree(reinterpret_cast<float **>(node_coords));
   }
   if (silo_dtype == DB_DOUBLE) {
-    mem.myfree(reinterpret_cast<double*>(nodex));
-    mem.myfree(reinterpret_cast<double*>(nodey));
-    mem.myfree(reinterpret_cast<double*>(nodez));
-    mem.myfree(reinterpret_cast<double**>(node_coords));
+    mem.myfree(reinterpret_cast<double *>(nodex));
+    mem.myfree(reinterpret_cast<double *>(nodey));
+    mem.myfree(reinterpret_cast<double *>(nodez));
+    mem.myfree(reinterpret_cast<double **>(node_coords));
   }
   nodex       = 0;
   nodey       = 0;
@@ -172,7 +172,7 @@ dataio_silo::~dataio_silo()
 // ##################################################################
 // ##################################################################
 
-void dataio_silo::SetSolver(FV_solver_base* solver)
+void dataio_silo::SetSolver(FV_solver_base *solver)
 {
 #ifdef TESTING
   cout << "dataio_silo::SetSolver() Setting solver pointer.\n";
@@ -185,7 +185,7 @@ void dataio_silo::SetSolver(FV_solver_base* solver)
 
 int dataio_silo::WriteHeader(
     const string overwritefile,  ///< file to write to (full, exact filename).
-    class SimParams& SimPM       ///< pointer to simulation parameters
+    class SimParams &SimPM       ///< pointer to simulation parameters
 )
 {
   rep.error("dataio_silo::WriteHeader() don't call me!", 1);
@@ -197,9 +197,9 @@ int dataio_silo::WriteHeader(
 
 int dataio_silo::OutputData(
     const string outfile,
-    vector<class GridBaseClass*>& cg,  ///< grid pointers.
-    class SimParams& SimPM,            ///< simulation parameters
-    const long int file_counter        ///< timestep
+    vector<class GridBaseClass *> &cg,  ///< grid pointers.
+    class SimParams &SimPM,             ///< simulation parameters
+    const long int file_counter         ///< timestep
 )
 {
   int err = 0;
@@ -306,12 +306,12 @@ int dataio_silo::OutputData(
     meshtypes[0] = DB_QUAD_RECT;
     groups[0]    = 0;
     ranks[0]     = 0;
-    char** mm_names;
+    char **mm_names;
     mm_names    = mem.myalloc(mm_names, 1);
     mm_names[0] = mem.myalloc(mm_names[0], 512);
     string s    = "/rank_0000_domain_0000/unigrid0000";
     strcpy(mm_names[0], s.c_str());
-    DBoptlist* mm_opts = DBMakeOptlist(7);
+    DBoptlist *mm_opts = DBMakeOptlist(7);
     DBAddOption(mm_opts, DBOPT_DTIME, &SimPM.simtime);
     DBAddOption(mm_opts, DBOPT_CYCLE, &SimPM.timestep);
     int blockorigin = 0;
@@ -388,7 +388,7 @@ int dataio_silo::OutputData(
 
 int dataio_silo::ReadHeader(
     string infile,          ///< file to read from
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   int err  = 0;
@@ -431,8 +431,8 @@ int dataio_silo::ReadHeader(
 
 int dataio_silo::ReadData(
     string infile,
-    vector<class GridBaseClass*>& cg,  ///< address of vector of grid pointers.
-    class SimParams& SimPM             ///< pointer to simulation parameters
+    vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
+    class SimParams &SimPM              ///< pointer to simulation parameters
 )
 {
   silofile = infile;
@@ -547,8 +547,8 @@ int dataio_silo::choose_filename(const string codefile, const int counter)
 // ##################################################################
 
 int dataio_silo::setup_grid_properties(
-    class GridBaseClass* grid,
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class GridBaseClass *grid,
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   // set grid parameters -- UNIFORM FIXED GRID
@@ -560,16 +560,16 @@ int dataio_silo::setup_grid_properties(
     nodedims = mem.myfree(nodedims);
     zonedims = mem.myfree(zonedims);
     if (silo_dtype == DB_FLOAT) {
-      mem.myfree(reinterpret_cast<float*>(nodex));
-      mem.myfree(reinterpret_cast<float*>(nodey));
-      mem.myfree(reinterpret_cast<float*>(nodez));
-      mem.myfree(reinterpret_cast<float**>(node_coords));
+      mem.myfree(reinterpret_cast<float *>(nodex));
+      mem.myfree(reinterpret_cast<float *>(nodey));
+      mem.myfree(reinterpret_cast<float *>(nodez));
+      mem.myfree(reinterpret_cast<float **>(node_coords));
     }
     if (silo_dtype == DB_DOUBLE) {
-      mem.myfree(reinterpret_cast<double*>(nodex));
-      mem.myfree(reinterpret_cast<double*>(nodey));
-      mem.myfree(reinterpret_cast<double*>(nodez));
-      mem.myfree(reinterpret_cast<double**>(node_coords));
+      mem.myfree(reinterpret_cast<double *>(nodex));
+      mem.myfree(reinterpret_cast<double *>(nodey));
+      mem.myfree(reinterpret_cast<double *>(nodez));
+      mem.myfree(reinterpret_cast<double **>(node_coords));
     }
     nodex       = 0;
     nodey       = 0;
@@ -609,17 +609,17 @@ int dataio_silo::setup_grid_properties(
     //
     // Allocate memory for node_coords, and set pointers.
     //
-    float** d   = 0;
+    float **d   = 0;
     float *posx = 0, *posy = 0, *posz = 0;
 
     if (node_coords) {
-      posx = reinterpret_cast<float*>(nodex);
-      posy = reinterpret_cast<float*>(nodey);
-      posz = reinterpret_cast<float*>(nodez);
+      posx = reinterpret_cast<float *>(nodex);
+      posy = reinterpret_cast<float *>(nodey);
+      posz = reinterpret_cast<float *>(nodez);
     }
     else {
       d           = mem.myalloc(d, ndim);
-      node_coords = reinterpret_cast<void**>(d);
+      node_coords = reinterpret_cast<void **>(d);
       posx        = mem.myalloc(posx, nx);
       if (ndim > 1) posy = mem.myalloc(posy, ny);
       if (ndim > 2) posz = mem.myalloc(posz, nz);
@@ -635,7 +635,7 @@ int dataio_silo::setup_grid_properties(
       posx[i] = static_cast<float>(grid->Xmin(XX) + i * dx);
 #endif
     }
-    nodex           = reinterpret_cast<void*>(posx);
+    nodex           = reinterpret_cast<void *>(posx);
     node_coords[XX] = nodex;
     if (ndim > 1) {
       for (int i = 0; i < ny; i++) {
@@ -645,7 +645,7 @@ int dataio_silo::setup_grid_properties(
         posy[i] = static_cast<float>(grid->Xmin(YY) + i * dx);
 #endif
       }
-      nodey           = reinterpret_cast<void*>(posy);
+      nodey           = reinterpret_cast<void *>(posy);
       node_coords[YY] = nodey;
     }
     if (ndim > 2) {
@@ -656,7 +656,7 @@ int dataio_silo::setup_grid_properties(
         posz[i] = static_cast<float>(grid->Xmin(ZZ) + i * dx);
 #endif
       }
-      nodez           = reinterpret_cast<void*>(posz);
+      nodez           = reinterpret_cast<void *>(posz);
       node_coords[ZZ] = nodez;
     }
   }
@@ -664,17 +664,17 @@ int dataio_silo::setup_grid_properties(
     //
     // Allocate memory for node_coords, and set pointers.
     //
-    double** d   = 0;
+    double **d   = 0;
     double *posx = 0, *posy = 0, *posz = 0;
 
     if (node_coords) {
-      posx = reinterpret_cast<double*>(nodex);
-      posy = reinterpret_cast<double*>(nodey);
-      posz = reinterpret_cast<double*>(nodez);
+      posx = reinterpret_cast<double *>(nodex);
+      posy = reinterpret_cast<double *>(nodey);
+      posz = reinterpret_cast<double *>(nodez);
     }
     else {
       d           = mem.myalloc(d, ndim);
-      node_coords = reinterpret_cast<void**>(d);
+      node_coords = reinterpret_cast<void **>(d);
       posx        = mem.myalloc(posx, nx);
       if (ndim > 1) posy = mem.myalloc(posy, ny);
       if (ndim > 2) posz = mem.myalloc(posz, nz);
@@ -689,7 +689,7 @@ int dataio_silo::setup_grid_properties(
       posx[i] = static_cast<double>(grid->Xmin(XX) + i * dx);
 #endif
     }
-    nodex           = reinterpret_cast<void*>(posx);
+    nodex           = reinterpret_cast<void *>(posx);
     node_coords[XX] = nodex;
 
     if (ndim > 1) {
@@ -701,7 +701,7 @@ int dataio_silo::setup_grid_properties(
         posy[i] = static_cast<double>(grid->Xmin(YY) + i * dx);
 #endif
       }
-      nodey           = reinterpret_cast<void*>(posy);
+      nodey           = reinterpret_cast<void *>(posy);
       node_coords[YY] = nodey;
     }
     if (ndim > 2) {
@@ -712,7 +712,7 @@ int dataio_silo::setup_grid_properties(
         posz[i] = static_cast<double>(grid->Xmin(ZZ) + i * dx);
 #endif
       }
-      nodez           = reinterpret_cast<void*>(posz);
+      nodez           = reinterpret_cast<void *>(posz);
       node_coords[ZZ] = nodez;
     }
   }
@@ -741,16 +741,16 @@ int dataio_silo::setup_grid_properties(
   else
     rep.error("bad coord system", SimPM.coord_sys);
   err = DBAddOption(
-      GridOpts, DBOPT_COORDSYS, reinterpret_cast<void*>(&silo_coordsys));
+      GridOpts, DBOPT_COORDSYS, reinterpret_cast<void *>(&silo_coordsys));
   // rep.errorTest("add coord-sys opt silo qmesh",0,err);
   err = DBAddOption(
-      GridOpts, DBOPT_DTIME, reinterpret_cast<void*>(&SimPM.simtime));
+      GridOpts, DBOPT_DTIME, reinterpret_cast<void *>(&SimPM.simtime));
   // rep.errorTest("add time opt silo qmesh",0,err);
   err = DBAddOption(
-      GridOpts, DBOPT_CYCLE, reinterpret_cast<void*>(&SimPM.timestep));
+      GridOpts, DBOPT_CYCLE, reinterpret_cast<void *>(&SimPM.timestep));
   // rep.errorTest("add cycle opt silo qmesh",0,err);
-  err =
-      DBAddOption(GridOpts, DBOPT_NSPACE, reinterpret_cast<void*>(&SimPM.ndim));
+  err = DBAddOption(
+      GridOpts, DBOPT_NSPACE, reinterpret_cast<void *>(&SimPM.ndim));
   // rep.errorTest("add nspace opt silo qmesh",0,err);
   int *lo_off = 0, *hi_off = 0;
   lo_off = mem.myalloc(lo_off, ndim);
@@ -770,9 +770,11 @@ int dataio_silo::setup_grid_properties(
   for (int i = 0; i < ndim; i++)
     hi_off[i] = 0;
 #endif
-  err = DBAddOption(GridOpts, DBOPT_LO_OFFSET, reinterpret_cast<void*>(lo_off));
+  err =
+      DBAddOption(GridOpts, DBOPT_LO_OFFSET, reinterpret_cast<void *>(lo_off));
   rep.errorTest("add lo-offset opt silo qmesh", 0, err);
-  err = DBAddOption(GridOpts, DBOPT_HI_OFFSET, reinterpret_cast<void*>(hi_off));
+  err =
+      DBAddOption(GridOpts, DBOPT_HI_OFFSET, reinterpret_cast<void *>(hi_off));
   rep.errorTest("add hi-offset opt silo qmesh", 0, err);
   // rep.errorTest("add GridOpts silo qmesh",0,err);
   // rep.printVec("lo-off",lo_off,ndim);
@@ -797,7 +799,7 @@ int dataio_silo::setup_grid_properties(
 // ##################################################################
 
 int dataio_silo::setup_write_variables(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   if (!varnames.empty())
@@ -956,28 +958,28 @@ int dataio_silo::setup_write_variables(
 // ##################################################################
 // ##################################################################
 
-int dataio_silo::write_header_param(class pm_base* p)
+int dataio_silo::write_header_param(class pm_base *p)
 {
   int err = 0;
   int i   = p->type;
   if (i == MY_INT) {
     int dim1 = 1;
-    int* x   = static_cast<int*>(p->get_ptr());
+    int *x   = static_cast<int *>(p->get_ptr());
     err += DBWrite(*db_ptr, p->name.c_str(), x, &dim1, 1, DB_INT);
   }
   else if (i == MY_DOUBLE) {
     int dim1  = 1;
-    double* x = static_cast<double*>(p->get_ptr());
+    double *x = static_cast<double *>(p->get_ptr());
     err += DBWrite(*db_ptr, p->name.c_str(), x, &dim1, 1, DB_DOUBLE);
   }
   else if (i == MY_FLOAT) {
     int dim1 = 1;
-    float* x = static_cast<float*>(p->get_ptr());
+    float *x = static_cast<float *>(p->get_ptr());
     err += DBWrite(*db_ptr, p->name.c_str(), x, &dim1, 1, DB_FLOAT);
   }
   else if (i == MY_LONG) {
     int dim1    = 1;
-    long int* x = static_cast<long int*>(p->get_ptr());
+    long int *x = static_cast<long int *>(p->get_ptr());
     err += DBWrite(*db_ptr, p->name.c_str(), x, &dim1, 1, DB_LONG);
   }
   else if (i == MY_STRING) {
@@ -985,24 +987,24 @@ int dataio_silo::write_header_param(class pm_base* p)
     // strings are harder -- need to get pointer and copy to char[]
     //
     int dim2 = strlength;
-    string x(*(static_cast<string*>(p->get_ptr())));
+    string x(*(static_cast<string *>(p->get_ptr())));
     char temp[strlength];
     strcpy(temp, x.c_str());
     err += DBWrite(*db_ptr, p->name.c_str(), temp, &dim2, 1, DB_CHAR);
   }
   else if (i == MY_DDIMARR) {
     int dim3  = MAX_DIM;
-    double* x = static_cast<double*>(p->get_ptr());
+    double *x = static_cast<double *>(p->get_ptr());
     err += DBWrite(*db_ptr, p->name.c_str(), x, &dim3, 1, DB_DOUBLE);
   }
   else if (i == MY_IDIMARR) {
     int dim3 = MAX_DIM;
-    int* x   = static_cast<int*>(p->get_ptr());
+    int *x   = static_cast<int *>(p->get_ptr());
     err += DBWrite(*db_ptr, p->name.c_str(), x, &dim3, 1, DB_INT);
   }
   else if (i == MY_DVARARR) {
     int dimN  = MAX_NVAR;
-    double* x = static_cast<double*>(p->get_ptr());
+    double *x = static_cast<double *>(p->get_ptr());
     err += DBWrite(*db_ptr, p->name.c_str(), x, &dimN, 1, DB_DOUBLE);
   }
 
@@ -1020,9 +1022,9 @@ int dataio_silo::write_header_param(class pm_base* p)
 // ##################################################################
 
 int dataio_silo::generate_quadmesh(
-    DBfile* dbfile,
+    DBfile *dbfile,
     string meshname,
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   int err = 0;
@@ -1047,7 +1049,7 @@ int dataio_silo::generate_quadmesh(
   // set coordinate axis names.  This has to be char **, so I can't just
   // send in strings to the silo function.
   //
-  char** coordnames = 0;
+  char **coordnames = 0;
   coordnames        = mem.myalloc(coordnames, ndim);
   for (int i = 0; i < ndim; i++) {
     coordnames[i] = mem.myalloc(coordnames[i], 32);
@@ -1093,7 +1095,7 @@ int dataio_silo::generate_quadmesh(
 // ##################################################################
 
 void dataio_silo::create_data_arrays(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   //
@@ -1105,34 +1107,34 @@ void dataio_silo::create_data_arrays(
   //
   if (!data0) {
     if (silo_dtype == DB_FLOAT) {
-      float* d = 0;
+      float *d = 0;
 #ifdef WRITE_GHOST_ZONES
       d = mem.myalloc(d, gp->Ncell_all());
 #else
       d = mem.myalloc(d, gp->Ncell());
 #endif
-      data0 = reinterpret_cast<void*>(d);
+      data0 = reinterpret_cast<void *>(d);
     }
     else {
-      double* d = 0;
+      double *d = 0;
 #ifdef WRITE_GHOST_ZONES
       d = mem.myalloc(d, gp->Ncell_all());
 #else
       d = mem.myalloc(d, gp->Ncell());
 #endif
-      data0 = reinterpret_cast<void*>(d);
+      data0 = reinterpret_cast<void *>(d);
     }
   }
 
   // set up array for mask variable for nested grid.
   if (!mask) {
-    int* m = 0;
+    int *m = 0;
 #ifdef WRITE_GHOST_ZONES
     m = mem.myalloc(m, gp->Ncell_all());
 #else
     m = mem.myalloc(m, gp->Ncell());
 #endif
-    mask = reinterpret_cast<void*>(m);
+    mask = reinterpret_cast<void *>(m);
   }
 
   //
@@ -1149,57 +1151,57 @@ void dataio_silo::create_data_arrays(
   //
   if ((vec_length > 1) && (!data1)) {
     if (silo_dtype == DB_FLOAT) {
-      float* d = 0;
+      float *d = 0;
 #ifdef WRITE_GHOST_ZONES
       d = mem.myalloc(d, gp->Ncell_all());
 #else
       d = mem.myalloc(d, gp->Ncell());
 #endif
-      data1 = reinterpret_cast<void*>(d);
+      data1 = reinterpret_cast<void *>(d);
     }
     else {
-      double* d = 0;
+      double *d = 0;
 #ifdef WRITE_GHOST_ZONES
       d = mem.myalloc(d, gp->Ncell_all());
 #else
       d = mem.myalloc(d, gp->Ncell());
 #endif
-      data1 = reinterpret_cast<void*>(d);
+      data1 = reinterpret_cast<void *>(d);
     }
     // data1 = mem.myalloc(data1, SimPM.Ncell);
   }
   if ((vec_length > 2) && (!data2)) {
     if (silo_dtype == DB_FLOAT) {
-      float* d = 0;
+      float *d = 0;
 #ifdef WRITE_GHOST_ZONES
       d = mem.myalloc(d, gp->Ncell_all());
 #else
       d = mem.myalloc(d, gp->Ncell());
 #endif
-      data2 = reinterpret_cast<void*>(d);
+      data2 = reinterpret_cast<void *>(d);
     }
     else {
-      double* d = 0;
+      double *d = 0;
 #ifdef WRITE_GHOST_ZONES
       d = mem.myalloc(d, gp->Ncell_all());
 #else
       d = mem.myalloc(d, gp->Ncell());
 #endif
-      data2 = reinterpret_cast<void*>(d);
+      data2 = reinterpret_cast<void *>(d);
     }
     // data2 = mem.myalloc(data2, SimPM.Ncell);
   }
 
   if ((vec_length > 1) && (!vec_data)) {
     if (silo_dtype == DB_FLOAT) {
-      float** d = 0;
+      float **d = 0;
       d         = mem.myalloc(d, vec_length);
-      vec_data  = reinterpret_cast<void**>(d);
+      vec_data  = reinterpret_cast<void **>(d);
     }
     else {
-      double** d = 0;
+      double **d = 0;
       d          = mem.myalloc(d, vec_length);
-      vec_data   = reinterpret_cast<void**>(d);
+      vec_data   = reinterpret_cast<void **>(d);
     }
     // vec_data = mem.myalloc(vec_data, vec_length);
     vec_data[0] = data0;
@@ -1219,18 +1221,18 @@ void dataio_silo::delete_data_arrays()
   // freeing memory for void arrays:
   //
   if (silo_dtype == DB_FLOAT) {
-    mem.myfree(reinterpret_cast<float*>(data0));
-    mem.myfree(reinterpret_cast<float*>(data1));
-    mem.myfree(reinterpret_cast<float*>(data2));
-    mem.myfree(reinterpret_cast<float**>(vec_data));
+    mem.myfree(reinterpret_cast<float *>(data0));
+    mem.myfree(reinterpret_cast<float *>(data1));
+    mem.myfree(reinterpret_cast<float *>(data2));
+    mem.myfree(reinterpret_cast<float **>(vec_data));
   }
   if (silo_dtype == DB_DOUBLE) {
-    mem.myfree(reinterpret_cast<double*>(data0));
-    mem.myfree(reinterpret_cast<double*>(data1));
-    mem.myfree(reinterpret_cast<double*>(data2));
-    mem.myfree(reinterpret_cast<double**>(vec_data));
+    mem.myfree(reinterpret_cast<double *>(data0));
+    mem.myfree(reinterpret_cast<double *>(data1));
+    mem.myfree(reinterpret_cast<double *>(data2));
+    mem.myfree(reinterpret_cast<double **>(vec_data));
   }
-  mem.myfree(reinterpret_cast<int*>(mask));
+  mem.myfree(reinterpret_cast<int *>(mask));
   data0    = 0;
   data1    = 0;
   data2    = 0;
@@ -1243,8 +1245,8 @@ void dataio_silo::delete_data_arrays()
 // ##################################################################
 
 int dataio_silo::write_variable2mesh(
-    class SimParams& SimPM,  ///< pointer to simulation parameters
-    DBfile* dbfile,          ///< pointer to silo file.
+    class SimParams &SimPM,  ///< pointer to simulation parameters
+    DBfile *dbfile,          ///< pointer to silo file.
     string meshname,         ///< name of mesh to write to.
     string variable          ///< variable name to write.
 )
@@ -1286,17 +1288,17 @@ int dataio_silo::write_variable2mesh(
 
 int dataio_silo::get_int_scalar_data_array(
     string variable,         ///< variable name to get.
-    class SimParams& SimPM,  ///< pointer to simulation parameters
-    void* data_array         ///< array to write to.
+    class SimParams &SimPM,  ///< pointer to simulation parameters
+    void *data_array         ///< array to write to.
 )
 {
   if (variable == "NG_Mask") {
     // save a mask: 0 if cell is not a leaf, 1 if it is.
-    int* m = reinterpret_cast<int*>(data_array);
+    int *m = reinterpret_cast<int *>(data_array);
 #ifdef WRITE_GHOST_ZONES
-    cell* c = gp->FirstPt_All();
+    cell *c = gp->FirstPt_All();
 #else
-    cell* c = gp->FirstPt();
+    cell *c = gp->FirstPt();
 #endif
     long int ct = 0;
     do {
@@ -1321,8 +1323,8 @@ int dataio_silo::get_int_scalar_data_array(
 
 int dataio_silo::get_scalar_data_array(
     string variable,         ///< variable name to get.
-    class SimParams& SimPM,  ///< pointer to simulation parameters
-    void* data_array         ///< array to write to.
+    class SimParams &SimPM,  ///< pointer to simulation parameters
+    void *data_array         ///< array to write to.
 )
 {
   int v       = 999;
@@ -1454,19 +1456,19 @@ int dataio_silo::get_scalar_data_array(
   // data_array is a void pointer, so we need a temporary data array
   // for floats and doubles to write the numbers to data_array.
   //
-  float* farr  = 0;
-  double* darr = 0;
+  float *farr  = 0;
+  double *darr = 0;
   if (silo_dtype == DB_FLOAT) {
-    farr = reinterpret_cast<float*>(data_array);
+    farr = reinterpret_cast<float *>(data_array);
   }
   else {
-    darr = reinterpret_cast<double*>(data_array);
+    darr = reinterpret_cast<double *>(data_array);
   }
 
 #ifdef WRITE_GHOST_ZONES
-  cell* c = gp->FirstPt_All();
+  cell *c = gp->FirstPt_All();
 #else
-  cell* c = gp->FirstPt();
+  cell *c = gp->FirstPt();
 #endif
   long int ct = 0;
   if (v >= 0) {
@@ -1827,8 +1829,8 @@ int dataio_silo::get_scalar_data_array(
 
 int dataio_silo::get_vector_data_array(
     string variable,         ///< variable name to get.
-    class SimParams& SimPM,  ///< pointer to simulation parameters
-    void** buffer            ///< array to write to.
+    class SimParams &SimPM,  ///< pointer to simulation parameters
+    void **buffer            ///< array to write to.
 )
 {
   int err = 0;
@@ -1857,10 +1859,10 @@ int dataio_silo::get_vector_data_array(
 // ##################################################################
 
 int dataio_silo::write_scalar2mesh(
-    DBfile* dbfile,   ///< silo file pointer.
+    DBfile *dbfile,   ///< silo file pointer.
     string meshname,  ///< mesh name
     string variable,  ///< variable name
-    void* data        ///< pointer to data array.
+    void *data        ///< pointer to data array.
 )
 {
   // cout <<"writing variable "<<variable<<" to mesh.\n";
@@ -1888,10 +1890,10 @@ int dataio_silo::write_scalar2mesh(
 // ##################################################################
 
 int dataio_silo::write_vector2mesh(
-    DBfile* dbfile,   ///< silo file pointer.
+    DBfile *dbfile,   ///< silo file pointer.
     string meshname,  ///< mesh name
     string variable,  ///< variable name
-    void** data       ///< pointer to data array.
+    void **data       ///< pointer to data array.
 )
 {
   int err = 0;
@@ -1901,7 +1903,7 @@ int dataio_silo::write_vector2mesh(
   //
   // Set up array of vector element names.  Has to be done with (char **).
   //
-  char** vnames = 0;
+  char **vnames = 0;
   vnames        = mem.myalloc(vnames, vec_length);
   for (int i = 0; i < vec_length; i++)
     vnames[i] = mem.myalloc(vnames[i], strlength);
@@ -1932,7 +1934,7 @@ int dataio_silo::write_vector2mesh(
 /************************************************************
  **************** READ FUNCTIONS ****************************
  ************************************************************/
-int dataio_silo::read_header_param(class pm_base* p)
+int dataio_silo::read_header_param(class pm_base *p)
 {
   int err = 0;
 
@@ -2002,7 +2004,7 @@ int dataio_silo::read_header_param(class pm_base* p)
 // ##################################################################
 // ##################################################################
 
-int dataio_silo::set_readvars(class SimParams& SimPM)
+int dataio_silo::set_readvars(class SimParams &SimPM)
 {
   // select variables based on what equations we are using.
   // All equations have density, pressure, and velocity.
@@ -2072,8 +2074,8 @@ int dataio_silo::set_readvars(class SimParams& SimPM)
 // ##################################################################
 
 int dataio_silo::read_variable2grid(
-    class SimParams& SimPM,  ///< pointer to simulation parameters
-    DBfile* dbfile,          ///< pointer to silo file.
+    class SimParams &SimPM,  ///< pointer to simulation parameters
+    DBfile *dbfile,          ///< pointer to silo file.
     string,           ///< name of mesh to read from (can use it for debugging)
     string variable,  ///< variable name to read.
     long int npt      ///< number of points we are expecting.
@@ -2083,7 +2085,7 @@ int dataio_silo::read_variable2grid(
   // get data from silo file: DBGetQuadvar will allocate memory and
   // return a pointer with all the data in it.
   //
-  DBquadvar* silodata = 0;
+  DBquadvar *silodata = 0;
   silodata            = DBGetQuadvar(dbfile, variable.c_str());
   if (!silodata) {
     rep.error(
@@ -2113,13 +2115,13 @@ int dataio_silo::read_variable2grid(
   // is a void pointer, so I have to reinterpret it to get data that
   // PION can understand.
   //
-  float** fdata  = 0;
-  double** ddata = 0;
+  float **fdata  = 0;
+  double **ddata = 0;
   if (silo_dtype == DB_FLOAT) {
-    fdata = reinterpret_cast<float**>(silodata->vals);
+    fdata = reinterpret_cast<float **>(silodata->vals);
   }
   else {
-    ddata = reinterpret_cast<double**>(silodata->vals);
+    ddata = reinterpret_cast<double **>(silodata->vals);
   }
 
   //
@@ -2149,9 +2151,9 @@ int dataio_silo::read_variable2grid(
     // cout <<"reading variable "<<variable<<" into element "<<v1<<" of
     // state vec.\n";
 #ifdef WRITE_GHOST_ZONES
-    cell* c = gp->FirstPt_All();
+    cell *c = gp->FirstPt_All();
 #else
-    cell* c = gp->FirstPt();
+    cell *c = gp->FirstPt();
 #endif
     long int ct = 0;
 
@@ -2249,9 +2251,9 @@ int dataio_silo::read_variable2grid(
       // cout <<"reading variable "<<variable<<" into element "<<v1<<" of
       // state vec.\n";
 #ifdef WRITE_GHOST_ZONES
-    cell* c = gp->FirstPt_All();
+    cell *c = gp->FirstPt_All();
 #else
-    cell* c = gp->FirstPt();
+    cell *c = gp->FirstPt();
 #endif
     long int ct = 0;
     if (silo_dtype == DB_FLOAT) {

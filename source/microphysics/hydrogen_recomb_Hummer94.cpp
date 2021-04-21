@@ -83,9 +83,9 @@ Hummer94_Hrecomb::Hummer94_Hrecomb() : kB(1.381e-16)
     hr_beta[i]  = coolb[i] / sqrt(hr_t[i]);
     hr_btot[i]  = CoolTot[i] / sqrt(hr_t[i]);
   }
-  interpolate.spline(hr_t, hr_alpha, hr_Nspl, 1.e99, 1.e99, hr_alpha_id);
-  interpolate.spline(hr_t, hr_beta, hr_Nspl, 1.e99, 1.e99, hr_beta_id);
-  interpolate.spline(hr_t, hr_btot, hr_Nspl, 1.e99, 1.e99, hr_btot_id);
+  interpolate.spline(hr_t, hr_alpha, hr_Nspl, 0.0, 0.0, hr_alpha_id);
+  interpolate.spline(hr_t, hr_beta, hr_Nspl, 0.0, 0.0, hr_beta_id);
+  interpolate.spline(hr_t, hr_btot, hr_Nspl, 0.0, 0.0, hr_btot_id);
 
   MinTemp = hr_t[0];
   MaxTemp = hr_t[hr_Nspl - 1];

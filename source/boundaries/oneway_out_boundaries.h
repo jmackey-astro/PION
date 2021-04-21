@@ -30,9 +30,9 @@ protected:
   /// velocity.
   ///
   int BC_assign_ONEWAY_OUT(
-      class SimParams&,      ///< pointer to simulation parameters
-      class GridBaseClass*,  ///< pointer to grid.
-      boundary_data*);
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *);
 
   ///
   /// Update the one-way outflow (zero gradient) boundary.
@@ -41,11 +41,11 @@ protected:
   /// velocity.
   ///
   int BC_update_ONEWAY_OUT(
-      class SimParams&,      ///< pointer to simulation parameters
-      class GridBaseClass*,  ///< pointer to grid.
-      boundary_data*,        ///< Boundary to update.
-      const int,             ///< current fractional step being taken.
-      const int              ///< final step.
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *,        ///< Boundary to update.
+      const int,              ///< current fractional step being taken.
+      const int               ///< final step.
   );
 };
 

@@ -21,21 +21,21 @@
 ///
 class dataio_text : public DataIOBase {
 public:
-  dataio_text(class SimParams&  ///< pointer to simulation parameters
+  dataio_text(class SimParams &  ///< pointer to simulation parameters
   );
 
   ~dataio_text();
 
   /// Set a pointer to the solver.
   virtual void SetSolver(
-      FV_solver_base*  ///< Pointer to the solver (to get Eint,divB,Ptot)
+      FV_solver_base *  ///< Pointer to the solver (to get Eint,divB,Ptot)
   );
 
   /// Write simulation data to file.
   virtual int OutputData(
-      const string,                   ///< File to write to
-      vector<class GridBaseClass*>&,  ///< address of vector of grid pointers.
-      class SimParams&,               ///< pointer to simulation parameters
+      const string,                     ///< File to write to
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
+      class SimParams &,                ///< pointer to simulation parameters
       const long int  ///< number to stamp file with (e.g. timestep)
   );
 
@@ -44,15 +44,15 @@ public:
   ///
   virtual int ReadHeader(
       string,                 ///< file to read from
-      class SimParams& SimPM  ///< pointer to simulation parameters
+      class SimParams &SimPM  ///< pointer to simulation parameters
   );
 
   ///
   /// Write simulation header info to file
   ///
   virtual int WriteHeader(
-      const string,     ///< file to write to (full, exact filename).
-      class SimParams&  ///< pointer to simulation parameters
+      const string,      ///< file to write to (full, exact filename).
+      class SimParams &  ///< pointer to simulation parameters
   )
   {
     cout << "can't write text header!\n";
@@ -63,16 +63,16 @@ public:
   /// Read Simulation data form a file.
   ///
   virtual int ReadData(
-      string,                         ///< file to read from
-      vector<class GridBaseClass*>&,  ///< address of vector of grid pointers.
-      class SimParams&                ///< pointer to simulation parameters
+      string,                           ///< file to read from
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
+      class SimParams &                 ///< pointer to simulation parameters
   );
 
 protected:
-  class GridBaseClass* gp;    ///< pointer to computational grid.
-  class FV_solver_base* eqn;  ///< pointer to the solver, which knows the
+  class GridBaseClass *gp;    ///< pointer to computational grid.
+  class FV_solver_base *eqn;  ///< pointer to the solver, which knows the
                               ///< equations we are solving.
-  class ReadParams* rp;       ///< pointer to read_parameters class instance.
+  class ReadParams *rp;       ///< pointer to read_parameters class instance.
 
   ///
   /// set filename based on counter, outfile-base-name.
@@ -90,8 +90,8 @@ protected:
   /// required parameters in its header. \retval 0 success \retval 1 failure
   ///
   int get_parameters(
-      string,           ///< Name of parameterfile.
-      class SimParams&  ///< pointer to simulation parameters
+      string,            ///< Name of parameterfile.
+      class SimParams &  ///< pointer to simulation parameters
   );
 
   /// Get initial conditions and populate grid with them.
@@ -104,7 +104,7 @@ protected:
   /// \retval 1 failure
   ///
   int assign_initial_data(
-      class SimParams&  ///< pointer to simulation parameters
+      class SimParams &  ///< pointer to simulation parameters
   );
 
   ///  \brief Gets Initial left and right states for a Riemann Problem to
@@ -116,12 +116,12 @@ protected:
   /// \retval 1 failure
   ///
   int get_riemann_ics(
-      class SimParams&,  ///< pointer to simulation parameters
+      class SimParams &,  ///< pointer to simulation parameters
       int,  ///< int value of which_riemann, to tell it which problem to solve
-      double*,  ///< pointer to left state.
-      double*,  ///< pointer to right state.
-      double*   ///< pointer to left/right interface value (as a fraction of
-                ///< the range).
+      double *,  ///< pointer to left state.
+      double *,  ///< pointer to right state.
+      double *   ///< pointer to left/right interface value (as a fraction of
+                 ///< the range).
   );
 
   /// Add a low level of pseudo-random noise to the data.
@@ -139,8 +139,8 @@ protected:
   /// \retval 1 failure
   ///
   int add_noise2data(
-      class SimParams&,  ///< pointer to simulation parameters
-      int,               ///< flag saying what kind of noise to add.
+      class SimParams &,  ///< pointer to simulation parameters
+      int,                ///< flag saying what kind of noise to add.
       double  ///< fractional level of noise you want, wrt mean value on grid.
   );
 
@@ -152,16 +152,16 @@ protected:
   /// \retval 1 failure
   ///
   int output_ascii_data(
-      string,           ///< File name to write to.
-      class SimParams&  ///< pointer to simulation parameters
+      string,            ///< File name to write to.
+      class SimParams &  ///< pointer to simulation parameters
   );
 
-  int read_header_param(class pm_base*)
+  int read_header_param(class pm_base *)
   {
     rep.error("WHY USE read_header_param FOR TEXTIO?", 0);
     return 0;
   }
-  int write_header_param(class pm_base*)
+  int write_header_param(class pm_base *)
   {
     rep.error("WHY USE write_header_param FOR TEXTIO?", 0);
     return 0;

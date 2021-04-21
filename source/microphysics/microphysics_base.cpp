@@ -10,7 +10,7 @@ using namespace std;
 ///
 /// Global pointer to microphysics class.
 ///
-class microphysics_base* MP = 0;
+class microphysics_base *MP = 0;
 
 // ##################################################################
 // ##################################################################
@@ -18,9 +18,9 @@ class microphysics_base* MP = 0;
 microphysics_base::microphysics_base(
     const int nv,           ///< Total number of variables in state vector
     const int ntr,          ///< Number of tracer variables in state vector
-    const std::string* tr,  ///< List of tracer variable names.
-    struct which_physics* ephys,  ///< which physics to calculate.
-    struct rad_sources* rsrcs     ///< radiation sources.
+    const std::string *tr,  ///< List of tracer variable names.
+    struct which_physics *ephys,  ///< which physics to calculate.
+    struct rad_sources *rsrcs     ///< radiation sources.
     ) :
     nv_prim(nv),
     ntracer(ntr)
@@ -74,8 +74,8 @@ microphysics_base::microphysics_base(
 //#define DEBUG_SCMA
 
 void microphysics_base::sCMA(
-    pion_flt* corrector,  ///< input corrector vector
-    const pion_flt* p_in  ///< input primitive vector (nv_prim)
+    pion_flt *corrector,  ///< input corrector vector
+    const pion_flt *p_in  ///< input primitive vector (nv_prim)
 )
 {
 #ifdef DEBUG_SCMA

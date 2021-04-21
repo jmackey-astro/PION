@@ -68,7 +68,7 @@ setup_NG_grid::~setup_NG_grid() {}
 // ##################################################################
 
 void setup_NG_grid::setup_NG_grid_levels(
-    class SimParams& SimPM  ///< pointer to simulation parameters
+    class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
   cout << "(pion-ng)  Setting up nested grid parameters\n";
@@ -179,8 +179,8 @@ void setup_NG_grid::setup_NG_grid_levels(
 // ##################################################################
 
 int setup_NG_grid::setup_grid(
-    vector<class GridBaseClass*>& grid,  ///< grid pointers.
-    class SimParams& SimPM               ///< pointer to simulation parameters
+    vector<class GridBaseClass *> &grid,  ///< grid pointers.
+    class SimParams &SimPM                ///< pointer to simulation parameters
 )
 {
   cout << "(pion ng)  Setting up computational grid\n";
@@ -299,8 +299,8 @@ int setup_NG_grid::setup_grid(
 // ##################################################################
 
 void setup_NG_grid::set_leaf_cells(
-    vector<class GridBaseClass*>& grid,  ///< grid pointers.
-    class SimParams& par                 ///< pointer to simulation parameters
+    vector<class GridBaseClass *> &grid,  ///< grid pointers.
+    class SimParams &par                  ///< pointer to simulation parameters
 )
 {
   //
@@ -313,7 +313,7 @@ void setup_NG_grid::set_leaf_cells(
   CI.get_ipos_vec(par.levels[0].Xmax, sxmax);
 
   for (int l = 0; l < par.grid_nlevels; l++) {
-    class cell* c = grid[l]->FirstPt_All();
+    class cell *c = grid[l]->FirstPt_All();
     do {
       // if outside domain, then cell is not a leaf.
       for (int v = 0; v < par.ndim; v++) {
@@ -339,8 +339,8 @@ void setup_NG_grid::set_leaf_cells(
 // ##################################################################
 
 int setup_NG_grid::setup_raytracing(
-    class SimParams& SimPM,             ///< simulation parameters
-    vector<class GridBaseClass*>& grid  ///< vector of grids.
+    class SimParams &SimPM,              ///< simulation parameters
+    vector<class GridBaseClass *> &grid  ///< vector of grids.
 )
 {
   if (!SimPM.EP.raytracing) {
@@ -371,8 +371,8 @@ int setup_NG_grid::setup_raytracing(
 // ##################################################################
 
 int setup_NG_grid::boundary_conditions(
-    class SimParams& par,               ///< pointer to simulation parameters
-    vector<class GridBaseClass*>& grid  ///< grid pointers.
+    class SimParams &par,                ///< pointer to simulation parameters
+    vector<class GridBaseClass *> &grid  ///< grid pointers.
 )
 {
   // For uniform fixed cartesian grid.
@@ -402,8 +402,8 @@ int setup_NG_grid::boundary_conditions(
 // ##################################################################
 
 int setup_NG_grid::setup_boundary_structs(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
     const int l                 ///< level in NG grid
 )
 {
@@ -457,14 +457,14 @@ int setup_NG_grid::setup_boundary_structs(
       cxmin[v] = par.levels[l + 1].Xmin[v];
       cxmax[v] = par.levels[l + 1].Xmax[v];
     }
-    struct boundary_data* bd = new boundary_data;
+    struct boundary_data *bd = new boundary_data;
     bd->itype                = FINE_TO_COARSE;
     bd->type                 = "FINE_TO_COARSE";
     bd->dir                  = NO;
     bd->ondir                = NO;
     bd->refval               = 0;
     bd->NGrecvF2C.resize(1);
-    cell* c = grid->FirstPt();
+    cell *c = grid->FirstPt();
     do {
       within_child = true;
       CI.get_dpos(c, cpos);
@@ -500,7 +500,7 @@ int setup_NG_grid::setup_boundary_structs(
 // ##################################################################
 
 void setup_NG_grid::setup_dataio_class(
-    class SimParams& par,  ///< simulation parameters
+    class SimParams &par,  ///< simulation parameters
     const int typeOfFile   ///< type of I/O: 1=text,2=fits,5=silo
 )
 {

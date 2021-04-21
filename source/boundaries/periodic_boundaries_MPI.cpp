@@ -13,17 +13,17 @@ using namespace std;
 // ##################################################################
 
 int periodic_pllel_bc::BC_assign_PERIODIC(
-    class SimParams& par,       ///< pointer to simulation parameters
+    class SimParams &par,       ///< pointer to simulation parameters
     const int level,            ///< level in grid hierarchy
-    class GridBaseClass* grid,  ///< pointer to grid.
-    boundary_data* b)
+    class GridBaseClass *grid,  ///< pointer to grid.
+    boundary_data *b)
 {
   //
   // For parallel grid, periodic data may be on a different proc.,
   // which is already pointed to by ppar->ngbprocs[b->dir]
   // So I just have to call BC_assign_BCMPI and it will do the job.
   int err                 = 0;
-  class MCMDcontrol* ppar = &(par.levels[level].MCMD);
+  class MCMDcontrol *ppar = &(par.levels[level].MCMD);
   if (ppar->ngbprocs[b->dir] < 0) {
     // cout <<"BC_assign_PERIODIC: non comm periodic in direction ";
     // cout <<b->dir<<"\n";
@@ -42,10 +42,10 @@ int periodic_pllel_bc::BC_assign_PERIODIC(
 // ##################################################################
 
 int periodic_pllel_bc::BC_update_PERIODIC(
-    class SimParams& par,       ///< pointer to simulation parameters
+    class SimParams &par,       ///< pointer to simulation parameters
     const int level,            ///< level in grid hierarchy
-    class GridBaseClass* grid,  ///< pointer to grid.
-    struct boundary_data* b,
+    class GridBaseClass *grid,  ///< pointer to grid.
+    struct boundary_data *b,
     const int cstep,
     const int maxstep)
 {
@@ -55,7 +55,7 @@ int periodic_pllel_bc::BC_update_PERIODIC(
   // So I just have to call BC_update_BCMPI and it will do the job.
   //
   int err                 = 0;
-  class MCMDcontrol* ppar = &(par.levels[level].MCMD);
+  class MCMDcontrol *ppar = &(par.levels[level].MCMD);
   if (ppar->ngbprocs[b->dir] < 0) {
 #ifdef TESTING
     cout << "BC_update_PERIODIC: non-communicating periodic BC in ";

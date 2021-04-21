@@ -148,8 +148,8 @@ struct stellarwind_params {
 };
 
 struct stellarwind_list {
-  std::vector<struct stellarwind_params*> params;  ///< list of params.
-  int Nsources;                                    ///< number of sources.
+  std::vector<struct stellarwind_params *> params;  ///< list of params.
+  int Nsources;                                     ///< number of sources.
 };
 
 extern struct stellarwind_list SWP;
@@ -161,9 +161,9 @@ extern struct stellarwind_list SWP;
 ///
 class level {
 public:
-  class GridBaseClass* grid;    ///< grid at this level
-  class GridBaseClass* parent;  ///< pointer to parent grid.
-  class GridBaseClass* child;   ///< pointer to child grid.
+  class GridBaseClass *grid;    ///< grid at this level
+  class GridBaseClass *parent;  ///< pointer to parent grid.
+  class GridBaseClass *child;   ///< pointer to child grid.
   long int Ncell;  ///< Total number of 'real' grid zones within the domain
                    ///< (Total for level).
   long int step;   ///< number of steps taken on this level.
@@ -206,7 +206,7 @@ public:
   std::string chem_code;  ///< Code for what kind of chemistry we are running.
   std::string
       TRTYPE;  ///< LEGACY CODE for what kind of chemistry we are running.
-  std::string* tracers;  ///< array of strings for the tracer type
+  std::string *tracers;  ///< array of strings for the tracer type
 
   // Timing
   double simtime;     ///< current time in simulation.
@@ -246,7 +246,7 @@ public:
   std::string BC_ZN;      ///< Type of boundary condition.
   std::string BC_ZP;      ///< Type of boundary condition.
   int BC_Nint;            ///< Number of internal boundary regions
-  std::string* BC_INT;    ///< List of internal boundary regions.
+  std::string *BC_INT;    ///< List of internal boundary regions.
   std::string BC_STRING;  ///< For reading pre-2018 data-files.
 
   int Nbc;     ///< Depth of boundary/ghost cells from edge of grid.
@@ -332,7 +332,7 @@ public:
   int jetic;      ///< 0=not a jet sim, 1=is a jet sim
   int jetradius;  ///< Radius of jet in units of cellsize. Jet always centred
                   ///< at origin of XN boundary.
-  pion_flt* jetstate;  ///< State vector for jet inflow.
+  pion_flt *jetstate;  ///< State vector for jet inflow.
 };
 // *******************************************************************
 // *******************************************************************

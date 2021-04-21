@@ -53,7 +53,7 @@ public:
       const int,     ///< number of space dimensions in grid.
       const double,  ///< CFL number
       const double,  ///< gas eos gamma.
-      pion_flt*,     ///< State vector of mean values for simulation.
+      pion_flt *,    ///< State vector of mean values for simulation.
       const double,  ///< Artificial Viscosity Parameter etav.
       const int      ///< Number of tracer variables.
   );
@@ -61,59 +61,59 @@ public:
 
   /// Calculates Flux based on a left and right state vector (primitive).
   virtual int inviscid_flux(
-      class SimParams&,      ///< simulation parameters
-      class GridBaseClass*,  ///< pointer to grid
-      const double,          ///< cell-size dx (for LF method)
-      class cell*,           ///< Left state cell pointer
-      class cell*,           ///< Right state cell pointer
-      const pion_flt*,       ///< Left Primitive state vector.
-      const pion_flt*,       ///< Right Primitive state vector.
-      pion_flt*,             ///< Resultant Flux state vector.
-      pion_flt*,             ///< State vector at interface.
-      const int,             ///< Which Riemann solver
-      const double           ///< Gas constant gamma.
+      class SimParams &,      ///< simulation parameters
+      class GridBaseClass *,  ///< pointer to grid
+      const double,           ///< cell-size dx (for LF method)
+      class cell *,           ///< Left state cell pointer
+      class cell *,           ///< Right state cell pointer
+      const pion_flt *,       ///< Left Primitive state vector.
+      const pion_flt *,       ///< Right Primitive state vector.
+      pion_flt *,             ///< Resultant Flux state vector.
+      pion_flt *,             ///< State vector at interface.
+      const int,              ///< Which Riemann solver
+      const double            ///< Gas constant gamma.
   );
 
   ///
   /// Adds the contribution from flux in the current direction to dU.
   ///
   virtual int dU_Cell(
-      class GridBaseClass*,
-      cell*,            ///< Current cell.
-      const axes,       ///< Which axis we are looking along.
-      const pion_flt*,  ///< Negative direction flux.
-      const pion_flt*,  ///< Positive direction flux.
-      const pion_flt*,  ///< slope vector for cell c.
-      const int,        ///< spatial order of accuracy.
-      const double,     ///< cell length dx.
-      const double      ///< cell TimeStep, dt.
+      class GridBaseClass *,
+      cell *,            ///< Current cell.
+      const axes,        ///< Which axis we are looking along.
+      const pion_flt *,  ///< Negative direction flux.
+      const pion_flt *,  ///< Positive direction flux.
+      const pion_flt *,  ///< slope vector for cell c.
+      const int,         ///< spatial order of accuracy.
+      const double,      ///< cell length dx.
+      const double       ///< cell TimeStep, dt.
   );
 
   ///
   /// calculate Powell and GLM source terms for multi-D MHD
   ///
   virtual int MHDsource(
-      class GridBaseClass*,  ///< pointer to grid.
-      class cell*,           ///< pointer to cell of left state
-      class cell*,           ///< pointer to cell of right state
-      pion_flt*,             ///< left edge state
-      pion_flt*,             ///< right edge state
-      const axes,            ///< Which axis we are looking along.
-      enum direction,        ///< positive direction normal to interface
-      enum direction,        ///< negative direction normal to interface
-      const double           ///< timestep dt
+      class GridBaseClass *,  ///< pointer to grid.
+      class cell *,           ///< pointer to cell of left state
+      class cell *,           ///< pointer to cell of right state
+      pion_flt *,             ///< left edge state
+      pion_flt *,             ///< right edge state
+      const axes,             ///< Which axis we are looking along.
+      enum direction,         ///< positive direction normal to interface
+      enum direction,         ///< negative direction normal to interface
+      const double            ///< timestep dt
   );
 
   ///
   /// Geometric source terms (does nothing for Cartesian geometry).
   ///
   virtual void geometric_source(
-      cell*,            ///< Current cell.
-      const axes,       ///< Which axis we are looking along.
-      const pion_flt*,  ///< slope vector for cell c.
-      const int,        ///< spatial order of accuracy.
-      const double,     ///< cell length dx.
-      pion_flt*         ///< update vector to add source term to [OUTPUT]
+      cell *,            ///< Current cell.
+      const axes,        ///< Which axis we are looking along.
+      const pion_flt *,  ///< slope vector for cell c.
+      const int,         ///< spatial order of accuracy.
+      const double,      ///< cell length dx.
+      pion_flt *         ///< update vector to add source term to [OUTPUT]
   )
   {
     return;
@@ -124,12 +124,12 @@ public:
   /// primitive state vector, for homogeneous equations.
   ///
   virtual int CellAdvanceTime(
-      class cell* c,    ///< cell to update.
-      const pion_flt*,  ///< Initial Primitive State Vector.
-      pion_flt*,        ///< Update vector dU
-      pion_flt*,     ///< Final Primitive state vector (can be same as initial
+      class cell *c,     ///< cell to update.
+      const pion_flt *,  ///< Initial Primitive State Vector.
+      pion_flt *,        ///< Update vector dU
+      pion_flt *,    ///< Final Primitive state vector (can be same as initial
                      ///< vec.).
-      pion_flt*,     ///< Tracks change of energy if I have to correct for
+      pion_flt *,    ///< Tracks change of energy if I have to correct for
                      ///< negative pressure
       const double,  ///< gas EOS gamma.
       const double,  ///< Min Temperature allowed on grid.
@@ -140,7 +140,7 @@ public:
   /// Given a cell, calculate the MHD/hydrodynamic timestep.
   ///
   virtual double CellTimeStep(
-      const cell*,   ///< pointer to cell
+      const cell *,  ///< pointer to cell
       const double,  ///< gas EOS gamma.
       const double   ///< Cell size dx.
   );
@@ -154,9 +154,9 @@ public:
   /// conserved variable is the mass density of this.
   ///
   virtual void PtoU(
-      const pion_flt*,  ///< pointer to Primitive variables.
-      pion_flt*,        ///< pointer to conserved variables.
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< pointer to Primitive variables.
+      pion_flt *,        ///< pointer to conserved variables.
+      const double       ///< Gas constant gamma.
   );
 
   ///
@@ -168,10 +168,10 @@ public:
   /// conserved variable is the mass density of this.
   ///
   virtual int UtoP(
-      const pion_flt*,  ///< pointer to conserved variables.
-      pion_flt*,        ///< pointer to Primitive variables.
-      const double,     ///< Min Temperature allowed on grid.
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< pointer to conserved variables.
+      pion_flt *,        ///< pointer to Primitive variables.
+      const double,      ///< Min Temperature allowed on grid.
+      const double       ///< Gas constant gamma.
   );
 
   ///
@@ -183,9 +183,9 @@ public:
   /// state tracer var. if the mass flux is to the right, and vice versa.
   ///
   virtual void PUtoFlux(
-      const pion_flt*,  ///< pointer to Primitive variables.
-      const pion_flt*,  ///< pointer to conserved variables.
-      pion_flt*         ///< Pointer to flux variable.
+      const pion_flt *,  ///< pointer to Primitive variables.
+      const pion_flt *,  ///< pointer to conserved variables.
+      pion_flt *         ///< Pointer to flux variable.
   );
   ///
   /// This calls the original version and then adds conversion of tracer
@@ -196,9 +196,9 @@ public:
   /// state tracer var. if the mass flux is to the right, and vice versa.
   ///
   virtual void UtoFlux(
-      const pion_flt*,  ///< Pointer to conserved variables state vector.
-      pion_flt*,        ///< Pointer to flux variable state vector.
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< Pointer to conserved variables state vector.
+      pion_flt *,        ///< Pointer to flux variable state vector.
+      const double       ///< Gas constant gamma.
   );
 
 protected:
@@ -209,12 +209,12 @@ protected:
   /// Viscosity Calculation (one-dimensional).
   ///
   int AVFalle(
-      const pion_flt*,  ///< Left Primitive state vector.
-      const pion_flt*,  ///< Right Primitive state vector.
-      const pion_flt*,  ///< Resolved (P*) state vector.
-      pion_flt*,        ///< Pointer to associated Flux Vector.
-      const double,     ///< Artificial Viscosity parameter, etav.
-      const double      ///< gamma
+      const pion_flt *,  ///< Left Primitive state vector.
+      const pion_flt *,  ///< Right Primitive state vector.
+      const pion_flt *,  ///< Resolved (P*) state vector.
+      pion_flt *,        ///< Pointer to associated Flux Vector.
+      const double,      ///< Artificial Viscosity parameter, etav.
+      const double       ///< gamma
   );
 
   /// shut off reporting if we get more than 1000 negative pressures.
@@ -250,7 +250,7 @@ public:
       const int,     ///< number of space dimensions in grid.
       const double,  ///< CFL number
       const double,  ///< gas eos gamma.
-      pion_flt*,     ///< State vector of mean values for simulation.
+      pion_flt *,    ///< State vector of mean values for simulation.
       const double,  ///< Artificial Viscosity Parameter etav.
       const int      ///< Number of tracer variables.
   );
@@ -262,7 +262,7 @@ public:
   /// velocity on the domain.
   ///
   virtual double CellTimeStep(
-      const cell*,   ///< pointer to cell
+      const cell *,  ///< pointer to cell
       const double,  ///< gas EOS gamma.
       const double   ///< Cell size dx.
   );
@@ -274,12 +274,12 @@ public:
   /// update of Psi and the total energy.
   ///
   virtual int CellAdvanceTime(
-      class cell* c,    ///< cell to update.
-      const pion_flt*,  ///< Initial Primitive State Vector.
-      pion_flt*,        ///< Update vector dU
-      pion_flt*,     ///< Final Primitive state vector (can be same as initial
+      class cell *c,     ///< cell to update.
+      const pion_flt *,  ///< Initial Primitive State Vector.
+      pion_flt *,        ///< Update vector dU
+      pion_flt *,    ///< Final Primitive state vector (can be same as initial
                      ///< vec.).
-      pion_flt*,     ///< Tracks change of energy if I have to correct for
+      pion_flt *,    ///< Tracks change of energy if I have to correct for
                      ///< negative pressure
       const double,  ///< gas EOS gamma.
       const double,  ///< Min Temperature allowed on grid.
@@ -315,29 +315,29 @@ public:
   /// \frac{1}{2}(\psi_L+\psi_R) - \frac{c_h}{2}(B_x(R)-B_X(L)) \f]
   ///
   virtual int inviscid_flux(
-      class SimParams&,      ///< simulation parameters
-      class GridBaseClass*,  ///< pointer to grid
-      const double,          ///< cell-size dx (for LF method)
-      class cell*,           ///< Left state cell pointer
-      class cell*,           ///< Right state cell pointer
-      const pion_flt*,       ///< Left Primitive state vector.
-      const pion_flt*,       ///< Right Primitive state vector.
-      pion_flt*,             ///< Resultant Flux state vector.
-      pion_flt*,             ///< State vector at interface.
-      const int,             ///< Which Riemann Solver
-      const double           ///< Gas constant gamma.
+      class SimParams &,      ///< simulation parameters
+      class GridBaseClass *,  ///< pointer to grid
+      const double,           ///< cell-size dx (for LF method)
+      class cell *,           ///< Left state cell pointer
+      class cell *,           ///< Right state cell pointer
+      const pion_flt *,       ///< Left Primitive state vector.
+      const pion_flt *,       ///< Right Primitive state vector.
+      pion_flt *,             ///< Resultant Flux state vector.
+      pion_flt *,             ///< State vector at interface.
+      const int,              ///< Which Riemann Solver
+      const double            ///< Gas constant gamma.
   );
 
   virtual int MHDsource(
-      class GridBaseClass*,  ///< pointer to grid.
-      class cell*,           ///< pointer to cell of left state
-      class cell*,           ///< pointer to cell of right state
-      pion_flt*,             ///< left edge state
-      pion_flt*,             ///< right edge state
-      const axes,            ///< Which axis we are looking along.
-      enum direction,        ///< positive direction normal to interface
-      enum direction,        ///< negative direction normal to interface
-      const double           ///< timestep dt
+      class GridBaseClass *,  ///< pointer to grid.
+      class cell *,           ///< pointer to cell of left state
+      class cell *,           ///< pointer to cell of right state
+      pion_flt *,             ///< left edge state
+      pion_flt *,             ///< right edge state
+      const axes,             ///< Which axis we are looking along.
+      enum direction,         ///< positive direction normal to interface
+      enum direction,         ///< negative direction normal to interface
+      const double            ///< timestep dt
   );
 
   ///
@@ -345,9 +345,9 @@ public:
   /// contribution from psi, and includes psi conversion.
   ///
   virtual void PtoU(
-      const pion_flt*,  ///< pointer to Primitive variables.
-      pion_flt*,        ///< pointer to conserved variables.
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< pointer to Primitive variables.
+      pion_flt *,        ///< pointer to conserved variables.
+      const double       ///< Gas constant gamma.
   );
 
   ///
@@ -356,10 +356,10 @@ public:
   /// includes psi conversion.
   ///
   virtual int UtoP(
-      const pion_flt*,  ///< pointer to conserved variables.
-      pion_flt*,        ///< pointer to Primitive variables.
-      const double,     ///< Min Temperature allowed on grid.
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< pointer to conserved variables.
+      pion_flt *,        ///< pointer to Primitive variables.
+      const double,      ///< Min Temperature allowed on grid.
+      const double       ///< Gas constant gamma.
   );
 };
 
@@ -382,7 +382,7 @@ public:
       const int,     ///< number of space dimensions in grid.
       const double,  ///< CFL number
       const double,  ///< gas eos gamma.
-      pion_flt*,     ///< State vector of mean values for simulation.
+      pion_flt *,    ///< State vector of mean values for simulation.
       const double,  ///< Artificial Viscosity Parameter etav.
       const int      ///< Number of tracer variables.
   );
@@ -395,12 +395,12 @@ public:
   /// spatial accuracy.
   ///
   virtual void geometric_source(
-      cell*,            ///< Current cell.
-      const axes,       ///< Which axis we are looking along.
-      const pion_flt*,  ///< slope vector for cell c.
-      const int,        ///< spatial order of accuracy.
-      const double,     ///< cell length dx.
-      pion_flt*         ///< update vector to add source term to [OUTPUT]
+      cell *,            ///< Current cell.
+      const axes,        ///< Which axis we are looking along.
+      const pion_flt *,  ///< slope vector for cell c.
+      const int,         ///< spatial order of accuracy.
+      const double,      ///< cell length dx.
+      pion_flt *         ///< update vector to add source term to [OUTPUT]
   );
 
   ///
@@ -408,15 +408,15 @@ public:
   /// using the cylindrical coordinate divergence operator
   ///
   virtual int MHDsource(
-      class GridBaseClass*,  ///< pointer to grid.
-      class cell*,           ///< pointer to cell of left state
-      class cell*,           ///< pointer to cell of right state
-      pion_flt*,             ///< left edge state
-      pion_flt*,             ///< right edge state
-      const axes,            ///< Which axis we are looking along.
-      enum direction,        ///< positive direction normal to interface
-      enum direction,        ///< negative direction normal to interface
-      const double           ///< timestep dt
+      class GridBaseClass *,  ///< pointer to grid.
+      class cell *,           ///< pointer to cell of left state
+      class cell *,           ///< pointer to cell of right state
+      pion_flt *,             ///< left edge state
+      pion_flt *,             ///< right edge state
+      const axes,             ///< Which axis we are looking along.
+      enum direction,         ///< positive direction normal to interface
+      enum direction,         ///< negative direction normal to interface
+      const double            ///< timestep dt
   );
 };
 
@@ -436,7 +436,7 @@ public:
       const int,     ///< number of space dimensions in grid.
       const double,  ///< CFL number
       const double,  ///< gas eos gamma.
-      pion_flt*,     ///< State vector of mean values for simulation.
+      pion_flt *,    ///< State vector of mean values for simulation.
       const double,  ///< Artificial Viscosity Parameter etav.
       const int      ///< Number of tracer variables.
   );
@@ -449,12 +449,12 @@ public:
   /// spatial accuracy, and the GLM Psi source terms.
   ///
   virtual void geometric_source(
-      cell*,            ///< Current cell.
-      const axes,       ///< Which axis we are looking along.
-      const pion_flt*,  ///< slope vector for cell c.
-      const int,        ///< spatial order of accuracy.
-      const double,     ///< cell length dx.
-      pion_flt*         ///< update vector to add source term to [OUTPUT]
+      cell *,            ///< Current cell.
+      const axes,        ///< Which axis we are looking along.
+      const pion_flt *,  ///< slope vector for cell c.
+      const int,         ///< spatial order of accuracy.
+      const double,      ///< cell length dx.
+      pion_flt *         ///< update vector to add source term to [OUTPUT]
   );
 
   ///
@@ -463,15 +463,15 @@ public:
   /// Powell terms
   ///
   virtual int MHDsource(
-      class GridBaseClass*,  ///< pointer to grid.
-      class cell*,           ///< pointer to cell of left state
-      class cell*,           ///< pointer to cell of right state
-      pion_flt*,             ///< left edge state
-      pion_flt*,             ///< right edge state
-      const axes,            ///< Which axis we are looking along.
-      enum direction,        ///< positive direction normal to interface
-      enum direction,        ///< negative direction normal to interface
-      const double           ///< timestep dt
+      class GridBaseClass *,  ///< pointer to grid.
+      class cell *,           ///< pointer to cell of left state
+      class cell *,           ///< pointer to cell of right state
+      pion_flt *,             ///< left edge state
+      pion_flt *,             ///< right edge state
+      const axes,             ///< Which axis we are looking along.
+      enum direction,         ///< positive direction normal to interface
+      enum direction,         ///< negative direction normal to interface
+      const double            ///< timestep dt
   );
 };
 

@@ -48,8 +48,8 @@ MPv9::MPv9(
     const int nv,
     const int ntracer,
     const int ftr,  ///< first tracer.
-    const std::string& tracers,
-    struct which_physics* ephys) :
+    const std::string &tracers,
+    struct which_physics *ephys) :
     kB(GS.kB()),
     m_p(GS.m_p()),
     nv_prim(nv)
@@ -147,7 +147,7 @@ MPv9::~MPv9()
 // ##################################################################
 
 double MPv9::Temperature(
-    const pion_flt* pv,  ///< primitive vector
+    const pion_flt *pv,  ///< primitive vector
     const double g       ///< eos gamma
 )
 {
@@ -176,7 +176,7 @@ double MPv9::Temperature(
 /// Set the gas temperature to a specified value.
 ///
 int MPv9::Set_Temp(
-    double* p_in,             ///< primitive vector.
+    double *p_in,             ///< primitive vector.
     const double T_required,  ///< temperature
     const double g            ///< eos gamma.
 )
@@ -215,7 +215,7 @@ int MPv9::Set_Temp(
 // ##################################################################
 // ##################################################################
 
-int MPv9::convert_prim2local(const double* p_in, const double gam)
+int MPv9::convert_prim2local(const double *p_in, const double gam)
 {
   density = p_in[RO];
   Eint    = p_in[PG] / (gam - 1.0);
@@ -251,7 +251,7 @@ int MPv9::convert_prim2local(const double* p_in, const double gam)
 // ##################################################################
 
 int MPv9::convert_local2prim(
-    const double* p_in, double* p_out, const double gam)
+    const double *p_in, double *p_out, const double gam)
 {
   //
   // This is so we don't forget the velocity, B-field, etc.
@@ -286,12 +286,12 @@ int MPv9::convert_local2prim(
 // ##################################################################
 
 int MPv9::TimeUpdateMP(
-    const double* p_in,
-    double* p_out,
+    const double *p_in,
+    double *p_out,
     const double dt,
     const double g,
     const int sw_int,
-    double* ttt)
+    double *ttt)
 {
   int err     = 0;
   MPv9::gamma = g;
@@ -354,22 +354,22 @@ int MPv9::TimeUpdateMP(
 // ##################################################################
 
 int MPv9::TimeUpdateMP_RTnew(
-    const double* p_in,
+    const double *p_in,
     const int N_heating_srcs,  ///< Number of UV heating sources.
-    const std::vector<struct rt_source_data>& heating_srcs,
+    const std::vector<struct rt_source_data> &heating_srcs,
     ///< list of UV-heating column densities and source properties.
     const int N_ionising_srcs,  ///< number of ionising radiation sources.
-    const std::vector<struct rt_source_data>& ionising_srcs,
+    const std::vector<struct rt_source_data> &ionising_srcs,
     ///< list of ionising src column densities and source properties.
     // const std::vector<int> &sources, ///< (Ndiff-ION, Ndiff-UV, Npt-ION,
     // Npt-UV)
     // const std::vector<double> &projected_density, ///< list of column
     // densities.
-    double* p_out,
+    double *p_out,
     const double dt,
     const double g,
     const int sw_int,
-    double* ttt  ///< final temperature (not strictly needed).
+    double *ttt  ///< final temperature (not strictly needed).
 )
 {
   int err     = 0;
@@ -436,12 +436,12 @@ int MPv9::TimeUpdateMP_RTnew(
 
 void MPv9::get_column_densities(
     const int N_heating_srcs,  ///< Number of UV heating sources.
-    const std::vector<struct rt_source_data>& heating_srcs,
+    const std::vector<struct rt_source_data> &heating_srcs,
     ///< list of UV-heating column densities and source properties.
     const int N_ionising_srcs,  ///< number of ionising radiation sources.
-    const std::vector<struct rt_source_data>& ionising_srcs,
+    const std::vector<struct rt_source_data> &ionising_srcs,
     ///< list of ionising src column densities and source properties.
-    std::vector<double>& cols)
+    std::vector<double> &cols)
 {
   //
   // The "cols" array hold the column densities, organised as follows:
@@ -551,8 +551,8 @@ void MPv9::get_column_densities(
 // ##################################################################
 
 int MPv9::TimeUpdate_RTsinglesrc(
-    const double* p_in,  ///< Primitive Vector to be updated.
-    double* p_out,       ///< Destination Vector for updated values.
+    const double *p_in,  ///< Primitive Vector to be updated.
+    double *p_out,       ///< Destination Vector for updated values.
     const double dt,     ///< Time Step to advance by.
     const double g,      ///< EOS gamma.
     const int sw_int,    ///< Switch for what type of integration to use.
@@ -560,7 +560,7 @@ int MPv9::TimeUpdate_RTsinglesrc(
     const double phot_in,  ///< flux in per unit length along ray (F/ds or L/dV)
     const double ds,       ///< path length ds through cell.
     const double tau2cell,  ///< Optical depth to entry point of ray into cell.
-    double* deltau  ///< return optical depth through cell in this variable.
+    double *deltau  ///< return optical depth through cell in this variable.
 )
 {
   if (!ep.phot_ionisation)
@@ -582,7 +582,7 @@ int MPv9::TimeUpdate_RTsinglesrc(
 /// arguments.  Time is returned in seconds.
 ///
 double MPv9::timescales(
-    const double* p_in,    ///< Current cell primitive vector.
+    const double *p_in,    ///< Current cell primitive vector.
     const double gam,      ///< EOS gamma.
     const bool f_cool,     ///< set to true if including cooling time.
     const bool f_recomb,   ///< set to true if including recombination time.
@@ -614,12 +614,12 @@ double MPv9::timescales(
 /// greater capability than the other timescales function.
 ///
 double MPv9::timescales_RT(
-    const double* p_in,        ///< Current cell primitive vector.
+    const double *p_in,        ///< Current cell primitive vector.
     const int N_heating_srcs,  ///< Number of UV heating sources.
-    const std::vector<struct rt_source_data>& heating_srcs,
+    const std::vector<struct rt_source_data> &heating_srcs,
     ///< list of UV-heating column densities and source properties.
     const int N_ionising_srcs,  ///< number of ionising radiation sources.
-    const std::vector<struct rt_source_data>& ionising_srcs,
+    const std::vector<struct rt_source_data> &ionising_srcs,
     ///< list of ionising src column densities and source properties.
     const double gam  ///< EOS gamma
 )
@@ -682,7 +682,7 @@ double MPv9::timescales_RT(
 // ##################################################################
 
 int MPv9::Init_ionfractions(
-    double* p,       ///< Primitive vector to be updated.
+    double *p,       ///< Primitive vector to be updated.
     const double g,  ///< eos gamma.
     const double     ///< optional gas temperature to end up
                      ///< at. (-ve means use pressure)

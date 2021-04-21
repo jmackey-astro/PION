@@ -130,8 +130,8 @@ using namespace std;
 // ##################################################################
 
 raytracer_USC_infinity::raytracer_USC_infinity(
-    class GridBaseClass* ggg,      ///< Pointer to grid
-    class microphysics_base* mmm,  ///< Pointer to MicroPhysics.
+    class GridBaseClass *ggg,      ///< Pointer to grid
+    class microphysics_base *mmm,  ///< Pointer to MicroPhysics.
     int nd,                        ///< number of dimensions of grid
     int csys,                      ///< coordinate system
     int nv,                        ///< number of variables in state vector
@@ -186,7 +186,7 @@ raytracer_USC_infinity::~raytracer_USC_infinity()
     //    cout <<(*i).pos[0]<<"\n";
     // if ((*i).pos !=0) (*i).pos  = mem.myfree((*i).pos);
     // if ((*i).ipos!=0) (*i).ipos = mem.myfree((*i).ipos);
-    struct rad_source* s = &(*i);
+    struct rad_source *s = &(*i);
     s                    = mem.myfree(s);
   }
   SourceList.clear();
@@ -199,7 +199,7 @@ raytracer_USC_infinity::~raytracer_USC_infinity()
 // ##################################################################
 
 int raytracer_USC_infinity::Add_Source(
-    struct rad_src_info* src  ///< source info.
+    struct rad_src_info *src  ///< source info.
 )
 {
   //
@@ -231,10 +231,10 @@ int raytracer_USC_infinity::Add_Source(
 // ##################################################################
 
 void raytracer_USC_infinity::add_source_to_list(
-    struct rad_src_info* src  ///< source info.
+    struct rad_src_info *src  ///< source info.
 )
 {
-  rad_source* rs = new rad_source;
+  rad_source *rs = new rad_source;
 
   //
   // Set pointer in rad_source to *src.  This sets the position, id,
@@ -293,7 +293,7 @@ void raytracer_USC_infinity::add_source_to_list(
 #ifdef RT_TESTING
   cout << "Add_Source() finding source.\n";
 #endif
-  cell* c = gridptr->FirstPt();
+  cell *c = gridptr->FirstPt();
   //
   // first find direction to source at infinity, and error if not at infinity.
   //
@@ -372,7 +372,7 @@ void raytracer_USC_infinity::add_source_to_list(
 // ##################################################################
 // ##################################################################
 
-void raytracer_USC_infinity::set_Vshell_for_source(struct rad_source* this_src)
+void raytracer_USC_infinity::set_Vshell_for_source(struct rad_source *this_src)
 {
   //
   // Now we need to set Vshell in every grid point for this source.
@@ -391,7 +391,7 @@ void raytracer_USC_infinity::set_Vshell_for_source(struct rad_source* this_src)
 
   double ds = 0.0, Nc[MAX_TAU];
   int err   = 0;
-  cell* c   = gridptr->FirstPt_All();
+  cell *c   = gridptr->FirstPt_All();
   do {
     err += cell_cols_1d(this_src, c, XN, Nc, &ds);
     err += ProcessCell(c, Nc, ds, this_src, 0.0);
@@ -407,7 +407,7 @@ void raytracer_USC_infinity::set_Vshell_for_source(struct rad_source* this_src)
 // ##################################################################
 
 void raytracer_USC_infinity::update_local_variables_for_new_source(
-    struct rad_source* rs_new)
+    struct rad_source *rs_new)
 {
   //
   // Set local class variables:
@@ -433,7 +433,7 @@ void raytracer_USC_infinity::update_local_variables_for_new_source(
 // ##################################################################
 
 void raytracer_USC_infinity::update_RT_source_properties(
-    const struct rad_src_info* rs  ///< ptr to source info.
+    const struct rad_src_info *rs  ///< ptr to source info.
 )
 {
   //
@@ -442,7 +442,7 @@ void raytracer_USC_infinity::update_RT_source_properties(
   // First find the source in the list and make sure it is a multi-frequency
   // photoionising source.
   //
-  struct rad_source* src = 0;
+  struct rad_source *src = 0;
   for (vector<rad_source>::iterator i = SourceList.begin();
        i != SourceList.end(); ++i)
     if ((*i).s->id == rs->id) src = &(*i);
@@ -484,7 +484,7 @@ void raytracer_USC_infinity::update_RT_source_properties(
 // ##################################################################
 
 int raytracer_USC_infinity::populate_ionising_src_list(
-    std::vector<struct rt_source_data>& ion_list
+    std::vector<struct rt_source_data> &ion_list
     ///< list of data for ionising sources
 )
 {
@@ -520,7 +520,7 @@ int raytracer_USC_infinity::populate_ionising_src_list(
 // ##################################################################
 
 int raytracer_USC_infinity::populate_UVheating_src_list(
-    std::vector<struct rt_source_data>& uvh_list
+    std::vector<struct rt_source_data> &uvh_list
     ///< list of data for UV-heating sources
 )
 {
@@ -595,7 +595,7 @@ int raytracer_USC_infinity::RayTrace_Column_Density(
   cout << " calling RayTrace_SingleSource().\n";
 #endif  // RT_TESTING
 
-  struct rad_source* source = 0;
+  struct rad_source *source = 0;
   for (vector<rad_source>::iterator i = SourceList.begin();
        i != SourceList.end(); ++i) {
     if ((*i).s->id == s_id) source = &(*i);
@@ -627,7 +627,7 @@ int raytracer_USC_infinity::RayTrace_SingleSource(
   //
   // Testing, to make sure we assign column densities to all cells.
   //
-  cell* c = gridptr->FirstPt();
+  cell *c = gridptr->FirstPt();
   double Tau[MAX_TAU];
   do {
     cout << "cell " << c->id << " setting Tau to -1\n";
@@ -639,7 +639,7 @@ int raytracer_USC_infinity::RayTrace_SingleSource(
   } while ((c = gridptr->NextPt(c)) != 0);
 #endif  // RT_TESTING
 
-  struct rad_source* source = 0;
+  struct rad_source *source = 0;
   for (vector<rad_source>::iterator i = SourceList.begin();
        i != SourceList.end(); ++i) {
     if ((*i).s->id == s_id) source = &(*i);
@@ -667,12 +667,12 @@ int raytracer_USC_infinity::RayTrace_SingleSource(
 // ##################################################################
 
 int raytracer_USC_infinity::trace_parallel_rays(
-    const rad_source* source,  ///< source we are dealing with.
+    const rad_source *source,  ///< source we are dealing with.
     const enum direction dir   ///< direction to source at infinity.
 )
 {
   int err = 0;
-  cell* c = source->sc;
+  cell *c = source->sc;
   // make sure source cell is at the edge of the grid, in direction dir.
   if (gridptr->NextPt(c, dir) != 0 && gridptr->NextPt(c, dir)->isgd)
     rep.error("source cell not set up right", source->s->id);
@@ -719,7 +719,7 @@ int raytracer_USC_infinity::trace_parallel_rays(
     }
     else
       rep.error("bad dir in trace_parallel_rays()", dir);
-    cell* cp;
+    cell *cp;
     do {
       cp = c;
       do {
@@ -735,8 +735,8 @@ int raytracer_USC_infinity::trace_parallel_rays(
 // ##################################################################
 
 int raytracer_USC_infinity::trace_column_parallel(
-    const rad_source* source,  ///< source we are tracing from.
-    cell* c,                   ///< cell to start from.
+    const rad_source *source,  ///< source we are tracing from.
+    cell *c,                   ///< cell to start from.
     const enum direction dir   ///< direction we are looking.
 )
 {
@@ -778,11 +778,11 @@ int raytracer_USC_infinity::trace_column_parallel(
 // ##################################################################
 
 int raytracer_USC_infinity::cell_cols_1d(
-    const rad_source* src,
-    cell* c,
+    const rad_source *src,
+    cell *c,
     const enum direction sdir,  // direction to source
     double Nc[],
-    double* ds)
+    double *ds)
 {
   if (!c) rep.error("cell_cols_1d() null cell", c);
   //
@@ -805,7 +805,7 @@ int raytracer_USC_infinity::cell_cols_1d(
     }
   }
   else {
-    cell* ngb = gridptr->NextPt(c, sdir);
+    cell *ngb = gridptr->NextPt(c, sdir);
     // assume if neighbour doesn't exist, that the source is coming
     // in from off grid to cell c.
     if (ngb) {
@@ -826,10 +826,10 @@ int raytracer_USC_infinity::cell_cols_1d(
 // ##################################################################
 
 int raytracer_USC_infinity::ProcessCell(
-    cell* c,                   ///< Current cell.
+    cell *c,                   ///< Current cell.
     double col2cell[],         ///< Column to cell (optical depth)
     double ds,                 ///< Path length through cell.
-    const rad_source* source,  ///< pointer to source struct.
+    const rad_source *source,  ///< pointer to source struct.
     const double dt            ///< Timestep
 )
 {
@@ -1032,9 +1032,9 @@ int raytracer_USC_infinity::ProcessCell(
 // ##################################################################
 
 void raytracer_USC_infinity::set_Vshell_in_cell(
-    cell* c,              ///< current cell.
+    cell *c,              ///< current cell.
     double ds,            ///< Path Length through cell.
-    const rad_source* rs  ///< pointer to source struct.
+    const rad_source *rs  ///< pointer to source struct.
 )
 {
   //
@@ -1068,8 +1068,8 @@ void raytracer_USC_infinity::set_Vshell_in_cell(
 // ##################################################################
 
 raytracer_USC::raytracer_USC(
-    class GridBaseClass* ggg,      ///< Pointer to grid
-    class microphysics_base* mmm,  ///< Pointer to MicroPhysics Class.
+    class GridBaseClass *ggg,      ///< Pointer to grid
+    class microphysics_base *mmm,  ///< Pointer to MicroPhysics Class.
     int nd,                        ///< number of dimensions of grid
     int csys,                      ///< coordinate system
     int nv,                        ///< number of variables in state vector
@@ -1130,7 +1130,7 @@ raytracer_USC::~raytracer_USC()
 // ##################################################################
 // ##################################################################
 
-int raytracer_USC::Add_Source(struct rad_src_info* src  ///< source info.
+int raytracer_USC::Add_Source(struct rad_src_info *src  ///< source info.
 )
 {
 #ifdef RT_TESTING
@@ -1160,13 +1160,13 @@ int raytracer_USC::Add_Source(struct rad_src_info* src  ///< source info.
 // ##################################################################
 
 void raytracer_USC::add_source_to_list(
-    struct rad_src_info* src  ///< source info.
+    struct rad_src_info *src  ///< source info.
 )
 {
   //
   // Create a new radiation source struct.
   //
-  rad_source* rs = new rad_source;
+  rad_source *rs = new rad_source;
 
   //
   // Set pointer in rad_source to *src.  This sets the position, id,
@@ -1311,7 +1311,7 @@ void raytracer_USC::Print_SourceList()
 // ##################################################################
 // ##################################################################
 
-void raytracer_USC::set_Vshell_for_source(struct rad_source* this_src)
+void raytracer_USC::set_Vshell_for_source(struct rad_source *this_src)
 {
   //
   // Now we need to set Vshell in every grid point for this source.
@@ -1334,7 +1334,7 @@ void raytracer_USC::set_Vshell_for_source(struct rad_source* this_src)
 
   double ds = 0.0, Nc[MAX_TAU];
   int err   = 0;
-  cell* c   = gridptr->FirstPt_All();
+  cell *c   = gridptr->FirstPt_All();
   do {
     err += get_cell_columns(this_src, c, Nc, &ds);
     err += ProcessCell(c, Nc, ds, this_src, 0.0);
@@ -1376,7 +1376,7 @@ int raytracer_USC::RayTrace_SingleSource(
   //
   // Testing, to make sure we assign column densities to all cells.
   //
-  cell* sc = gridptr->FirstPt();
+  cell *sc = gridptr->FirstPt();
   double tau[MAX_TAU];
   for (unsigned short int iT = 0; iT < MAX_TAU; iT++)
     tau[iT] = -1.0;
@@ -1385,7 +1385,7 @@ int raytracer_USC::RayTrace_SingleSource(
   } while ((sc = gridptr->NextPt(sc)) != 0);
 #endif  // RT_TESTING
 
-  rad_source* source = 0;
+  rad_source *source = 0;
   for (vector<rad_source>::iterator i = SourceList.begin();
        i != SourceList.end(); ++i) {
     if ((*i).s->id == s_id) {
@@ -1450,11 +1450,11 @@ int raytracer_USC::RayTrace_SingleSource(
   int ndirs = 1;
   for (int i = 0; i < ndim; i++)
     ndirs *= 2;
-  cell* startcell[ndirs];
+  cell *startcell[ndirs];
   for (int v = 0; v < ndirs; v++)
     startcell[v] = 0;
 #ifdef RT_TESTING
-  cell* temp = sc;  // for testing.
+  cell *temp = sc;  // for testing.
 #endif              // RT_TESTING
   set_startcells(source->sc, startcell, src_off_grid);
 #ifdef RT_TESTING
@@ -1468,7 +1468,7 @@ int raytracer_USC::RayTrace_SingleSource(
   // Loop over all lines/quads/octs.
   for (int oct = 0; oct < ndirs; oct++) {
     enum direction dirs[ndim];
-    cell* c = startcell[oct];
+    cell *c = startcell[oct];
 #ifdef RT_TESTING
     cout << "oct " << oct << " and startcell = " << c << " dirs: ";
     cout << dir1[oct] << " " << dir2[oct] << " " << dir3[oct] << "\n";
@@ -1506,16 +1506,16 @@ int raytracer_USC::RayTrace_SingleSource(
 // ##################################################################
 
 void raytracer_USC::set_startcells(
-    cell* sc,          ///< source cell, or cell nearest to source if off grid.
-    cell** startcell,  ///< list of startcells for each line/quadrant/octant.
-    enum direction* src_off_grid  ///< list of dirs if source is off grid.
+    cell *sc,          ///< source cell, or cell nearest to source if off grid.
+    cell **startcell,  ///< list of startcells for each line/quadrant/octant.
+    enum direction *src_off_grid  ///< list of dirs if source is off grid.
 )
 {
   if (ndim == 1) {
     bool in_my_half = false;
     // Loop over two directions along the 1D line.
     for (int i = 0; i < 2; i++) {
-      cell* c            = sc;
+      cell *c            = sc;
       enum direction dir = dir1[i];
 
       // First make sure this direction contains some cells to traverse.
@@ -1564,7 +1564,7 @@ void raytracer_USC::set_startcells(
     for (int i = 0; i < NQUADS; i++) {
       // Now have 4 quadrants to go around, instead of two sides of
       // a line.
-      cell* c = sc;
+      cell *c = sc;
       //  test if starting cell is in my quad
       if (i == Q1) {  // XP,YP quadrant.
         if (src_off_grid[XX] == XP || src_off_grid[YY] == YP)
@@ -1841,19 +1841,19 @@ void raytracer_USC::set_startcells(
 // ##################################################################
 // ##################################################################
 
-cell* raytracer_USC::find_source_cell(double* pos  ///< position of source.
+cell *raytracer_USC::find_source_cell(double *pos  ///< position of source.
 )
 {
 #ifdef RT_TESTING
   cout << "find source cell N-Dim algorithm. ndim=" << ndim << "\n";
 #endif
-  cell* sc = gridptr->FirstPt();
+  cell *sc = gridptr->FirstPt();
   int ipos[ndim];
   // rep.printVec("First-cell POS",sc->pos,ndim);
 
   // move onto boundary cells, to near the edge.
   for (int i = 0; i < ndim; i++) {
-    cell* t;
+    cell *t;
     enum axes a           = static_cast<axes>(i);
     enum direction posdir = static_cast<direction>(2 * static_cast<int>(a) + 1);
     enum direction negdir = gridptr->OppDir(posdir);
@@ -1897,7 +1897,7 @@ cell* raytracer_USC::find_source_cell(double* pos  ///< position of source.
 // ##################################################################
 
 void raytracer_USC::centre_source_on_cell(
-    double* pos,    ///< position of source (size ndim).
+    double *pos,    ///< position of source (size ndim).
     enum axes axis  ///< axis to find source along.
 )
 {
@@ -1973,8 +1973,8 @@ void raytracer_USC::centre_source_on_cell(
 // ##################################################################
 
 int raytracer_USC::trace_column(
-    const rad_source* source,  ///< source we are tracing from.
-    cell* c,                   ///< cell to start from.
+    const rad_source *source,  ///< source we are tracing from.
+    cell *c,                   ///< cell to start from.
     const enum direction dir   ///< direction we are looking.
 )
 {
@@ -2004,8 +2004,8 @@ int raytracer_USC::trace_column(
 // ##################################################################
 
 int raytracer_USC::trace_plane(
-    const rad_source* source,
-    cell* cy,
+    const rad_source *source,
+    cell *cy,
     const enum direction xdir,
     const enum direction ydir)
 {
@@ -2015,7 +2015,7 @@ int raytracer_USC::trace_plane(
   // CI.print_cell(cy);
 #endif
   int err  = 0;
-  cell* cx = 0;
+  cell *cx = 0;
   if (cy != 0) {
     do {
 #ifdef RT_TESTING
@@ -2033,15 +2033,15 @@ int raytracer_USC::trace_plane(
 // ##################################################################
 
 int raytracer_USC::trace_octant(
-    const rad_source* source,   ///< source we are dealing with.
-    cell* cz,                   ///< starting cell in octant
+    const rad_source *source,   ///< source we are dealing with.
+    cell *cz,                   ///< starting cell in octant
     const enum direction xdir,  ///< x-direction from starting cell to go in.
     const enum direction ydir,  ///< y-direction from starting cell to go in.
     const enum direction zdir   ///< z-direction from starting cell to go in.
 )
 {
   int err  = 0;
-  cell* cy = 0;
+  cell *cy = 0;
   if (cz != 0) {
     do {
 #ifdef RT_TESTING
@@ -2058,7 +2058,7 @@ int raytracer_USC::trace_octant(
 // ##################################################################
 
 int raytracer_USC::get_cell_columns(
-    const rad_source* s, cell* c, double* Nc, double* ds)
+    const rad_source *s, cell *c, double *Nc, double *ds)
 {
   int err = 0;
   if (ndim == 3) {
@@ -2080,7 +2080,7 @@ int raytracer_USC::get_cell_columns(
 // ##################################################################
 
 int raytracer_USC::cell_cols_2d(
-    const rad_source* src, cell* c, double Nc[], double* ds)
+    const rad_source *src, cell *c, double Nc[], double *ds)
 {
   //  cout <<"raytracer_USC::cell_cols_2d() start\n";
   double delta             = 0.0;
@@ -2153,7 +2153,7 @@ int raytracer_USC::cell_cols_2d(
         // we can just take the distance from source to cell, taking care to
         // change the distance because the angle to the source has changed.
         //
-    cell* ngb = gridptr->NextPt(c, entryface);
+    cell *ngb = gridptr->NextPt(c, entryface);
     //
     // assume if neighbour doesn't exist, that the source is coming
     // in from off grid to cell c.
@@ -2228,7 +2228,7 @@ int raytracer_USC::cell_cols_2d(
 // ##################################################################
 
 int raytracer_USC::cell_cols_3d(
-    const rad_source* src, cell* c, double Nc[], double* ds)
+    const rad_source *src, cell *c, double Nc[], double *ds)
 {
 
   int dx[3];  // relative position vector.
@@ -2303,7 +2303,7 @@ int raytracer_USC::cell_cols_3d(
 #ifdef RT_TESTING
     cout << "In source column, so doing 1D column calculation.";
 #endif  // RT_TESTING
-    cell* ngb = gridptr->NextPt(c, entryface);
+    cell *ngb = gridptr->NextPt(c, entryface);
     //
     // assume if neighbour doesn't exist, that the source is coming
     // in from off grid to cell c.
@@ -2440,25 +2440,25 @@ int raytracer_USC::cell_cols_3d(
 // ##################################################################
 
 void raytracer_USC::col2cell_2d(
-    const rad_source* src,           ///< source we are working on.
-    const cell* c,                   ///< cell to get column to.
+    const rad_source *src,           ///< source we are working on.
+    const cell *c,                   ///< cell to get column to.
     const enum direction entryface,  ///< face ray enters cell through.
-    const enum direction* perpdir,  ///< array of perp dirs tosource (only 1 el)
-    const double* delta,  ///< array of tan(theta) (1 el) (angle in [0,45]deg)
-    double* Nc            ///< Column densities.
+    const enum direction *perpdir,  ///< array of perp dirs tosource (only 1 el)
+    const double *delta,  ///< array of tan(theta) (1 el) (angle in [0,45]deg)
+    double *Nc            ///< Column densities.
 )
 {
 #ifdef TEST_INF
   if (!c) rep.error("col2cell_2d for non-existent cell!", c);
 #endif
   double col1[MAX_TAU], col2[MAX_TAU];
-  cell* c1 = gridptr->NextPt(c, entryface);
+  cell *c1 = gridptr->NextPt(c, entryface);
   if (!c1) {
     for (short unsigned int iT = 0; iT < src->s->NTau; iT++)
       col1[iT] = col2[iT] = 0.0;
   }
   else {
-    cell* c2 = gridptr->NextPt(c1, (*perpdir));
+    cell *c2 = gridptr->NextPt(c1, (*perpdir));
     if (!c2) {
       CI.get_col(c1, src->s->id, col1);
       for (short unsigned int iT = 0; iT < src->s->NTau; iT++)
@@ -2483,12 +2483,12 @@ void raytracer_USC::col2cell_2d(
 // ##################################################################
 
 void raytracer_USC::col2cell_3d(
-    const rad_source* src,           ///< source we are working on.
-    const cell* c,                   ///< cell to get column to.
+    const rad_source *src,           ///< source we are working on.
+    const cell *c,                   ///< cell to get column to.
     const enum direction entryface,  ///< face ray enters cell through.
-    const enum direction* perpdir,   ///< array of perp dirs to source (1 el)
-    const double* dx,  ///< array of tan(theta) (angle in [0,45]deg)
-    double* Nc         ///< Column densities.
+    const enum direction *perpdir,   ///< array of perp dirs to source (1 el)
+    const double *dx,  ///< array of tan(theta) (angle in [0,45]deg)
+    double *Nc         ///< Column densities.
 )
 {
   // Algorithm is the same as that describe in Mellema et al.,2006,
@@ -2623,9 +2623,9 @@ double raytracer_USC::interpolate_3D(
 // ##################################################################
 
 void raytracer_USC::set_Vshell_in_cell(
-    cell* c,                  ///< current cell.
+    cell *c,                  ///< current cell.
     double ds,                ///< Path Length through cell.
-    const rad_source* source  ///< pointer to source struct.
+    const rad_source *source  ///< pointer to source struct.
 )
 {
   //

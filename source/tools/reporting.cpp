@@ -62,7 +62,7 @@ reporting::~reporting()
 // ##################################################################
 // ##################################################################
 
-int reporting::redirect(const string& path)
+int reporting::redirect(const string &path)
 {
   string temp;
 

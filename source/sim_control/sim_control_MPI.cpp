@@ -113,8 +113,9 @@ int sim_control_pllel::Init(
     string infile,
     int typeOfFile,
     int narg,
-    string* args,
-    vector<class GridBaseClass*>& grid  ///< address of vector of grid pointers.
+    string *args,
+    vector<class GridBaseClass *>
+        &grid  ///< address of vector of grid pointers.
 )
 {
 #ifdef TESTING
@@ -240,7 +241,7 @@ int sim_control_pllel::Init(
   //
   // Set Ph[] = P[], and then implement the boundary conditions.
   //
-  cell* c = grid[0]->FirstPt();
+  cell *c = grid[0]->FirstPt();
   do {
     for (int v = 0; v < SimPM.nvar; v++)
       c->Ph[v] = c->P[v];
@@ -356,7 +357,7 @@ int sim_control_pllel::Init(
 /*********************** TIME INTEGRATION ************************/
 /*****************************************************************/
 int sim_control_pllel::Time_Int(
-    vector<class GridBaseClass*>& grid  ///< vector of grids.
+    vector<class GridBaseClass *> &grid  ///< vector of grids.
 )
 {
   cout << "-------------------------------------------------------\n";
@@ -487,9 +488,9 @@ int sim_control_pllel::Time_Int(
 // ##################################################################
 
 int sim_control_pllel::calculate_timestep(
-    class SimParams& par,             ///< simulation parameters
-    class GridBaseClass* grid,        ///< pointer to grid.
-    class FV_solver_base* sp_solver,  ///< solver/equations class
+    class SimParams &par,             ///< simulation parameters
+    class GridBaseClass *grid,        ///< pointer to grid.
+    class FV_solver_base *sp_solver,  ///< solver/equations class
     const int l                       ///< level to advance (for NG grid)
 )
 {

@@ -49,7 +49,7 @@ VectorOps_Sph::~VectorOps_Sph() {}
 // ##################################################################
 // ##################################################################
 
-double VectorOps_Sph::CellVolume(const cell* c, const double dR)
+double VectorOps_Sph::CellVolume(const cell *c, const double dR)
 {
   ///
   /// The volume of a cell is
@@ -65,7 +65,7 @@ double VectorOps_Sph::CellVolume(const cell* c, const double dR)
 // ##################################################################
 
 double VectorOps_Sph::CellInterface(
-    const cell* c, const direction dir, const double dR)
+    const cell *c, const direction dir, const double dR)
 {
   double temp = 0.0;
 
@@ -93,7 +93,7 @@ double VectorOps_Sph::CellInterface(
 // ##################################################################
 
 double VectorOps_Sph::maxGradAbs(
-    const cell* c, const int sv, const int var, class GridBaseClass* grid)
+    const cell *c, const int sv, const int var, class GridBaseClass *grid)
 {
 #ifdef TESTING
   for (int i = 0; i < 2 * VOnd; i++)
@@ -109,7 +109,7 @@ double VectorOps_Sph::maxGradAbs(
   //
   double grad = 0, temp = 0;
   double dR = grid->DX();
-  cell* cn;
+  cell *cn;
   switch (sv) {
     case 0:  // Use vector c->P
       cn   = grid->NextPt(c, RPsph);
@@ -138,11 +138,11 @@ double VectorOps_Sph::maxGradAbs(
 // ##################################################################
 
 void VectorOps_Sph::Gradient(
-    const cell* c,
+    const cell *c,
     const int sv,
     const int var,
-    class GridBaseClass* grid,
-    pion_flt* grad)
+    class GridBaseClass *grid,
+    pion_flt *grad)
 {
 #ifdef TESTING
   for (int i = 0; i < 2 * VOnd; i++)
@@ -186,7 +186,7 @@ void VectorOps_Sph::Gradient(
 // ##################################################################
 
 double VectorOps_Sph::Divergence(
-    cell* c, const int sv, const int* var, class GridBaseClass* grid)
+    cell *c, const int sv, const int *var, class GridBaseClass *grid)
 {
 
   if (VOnd != 1) rep.error("Spherical coordinates only work in 1D!", VOnd);
@@ -230,11 +230,11 @@ double VectorOps_Sph::Divergence(
 // ##################################################################
 
 void VectorOps_Sph::Curl(
-    const cell* c,
+    const cell *c,
     const int vec,
-    const int* var,
-    class GridBaseClass* grid,
-    pion_flt* ans)
+    const int *var,
+    class GridBaseClass *grid,
+    pion_flt *ans)
 {
 #ifdef TESTING
   for (int i = 0; i < 2 * VOnd; i++)
@@ -257,13 +257,13 @@ void VectorOps_Sph::Curl(
 // ##################################################################
 
 int VectorOps_Sph::SetEdgeState(
-    const cell* c,        ///< Current Cell.
+    const cell *c,        ///< Current Cell.
     const direction dir,  ///< Add or subtract the slope depending on direction.
     const int nv,         ///< length of state vectors.
-    const pion_flt* dpdx,  ///< Slope vector.
-    pion_flt* edge,        ///< vector for edge state.
+    const pion_flt *dpdx,  ///< Slope vector.
+    pion_flt *edge,        ///< vector for edge state.
     const int OA,          ///< Order of spatial Accuracy.
-    class GridBaseClass* grid)
+    class GridBaseClass *grid)
 {
 
   if (VOnd != 1) rep.error("Spherical coordinates only work in 1D!", VOnd);
@@ -321,12 +321,12 @@ int VectorOps_Sph::SetEdgeState(
 // ##################################################################
 
 int VectorOps_Sph::SetSlope(
-    const cell* c,   ///< Current Cell.
+    const cell *c,   ///< Current Cell.
     const axes d,    ///< Which direction to calculate slope in.
     const int nv,    ///< length of state vectors.
-    pion_flt* dpdx,  ///< Slope vector to be written to.
+    pion_flt *dpdx,  ///< Slope vector to be written to.
     const int OA,    ///< Order of spatial Accuracy.
-    class GridBaseClass* grid)
+    class GridBaseClass *grid)
 {
   //
   // first order accurate so zero slope.
@@ -416,13 +416,13 @@ int VectorOps_Sph::SetSlope(
 // ##################################################################
 
 int VectorOps_Sph::DivStateVectorComponent(
-    const cell* c,  ///< current cell.
-    class GridBaseClass* grid,
+    const cell *c,  ///< current cell.
+    class GridBaseClass *grid,
     const axes d,        ///< current coordinate axis we are looking along.
     const int nv,        ///< length of state vectors.
-    const pion_flt* fn,  ///< Negative direction flux.
-    const pion_flt* fp,  ///< Positive direction flux.
-    pion_flt* dudt       ///< Vector to assign divergence component to.
+    const pion_flt *fn,  ///< Negative direction flux.
+    const pion_flt *fp,  ///< Positive direction flux.
+    pion_flt *dudt       ///< Vector to assign divergence component to.
 )
 {
   ///

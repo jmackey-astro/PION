@@ -39,8 +39,8 @@ IC_laser_ablation::~IC_laser_ablation()
 // ##################################################################
 
 int IC_laser_ablation::setup_data(
-    class ReadParams* rrp,    ///< pointer to parameter list.
-    class GridBaseClass* ggg  ///< pointer to grid
+    class ReadParams *rrp,    ///< pointer to parameter list.
+    class GridBaseClass *ggg  ///< pointer to grid
 )
 {
   int err = 0;
@@ -170,7 +170,7 @@ int IC_laser_ablation::setup_LaserAblationAxi()
   double r0 = rho0;
   double r1 = rho0 / Dratio;
 
-  class cell* c = gg->FirstPt();
+  class cell *c = gg->FirstPt();
   double pos[SimPM->ndim];
   do {
     CI.get_dpos(c, pos);

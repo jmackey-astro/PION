@@ -83,12 +83,12 @@ protected:
   /// This is the one-sided flux calculation (only waves with v<0).
   ///
   int MHD_Roe_CV_flux_solver_onesided(
-      const pion_flt*,  ///< input left state
-      const pion_flt*,  ///< input right state
-      const double,     ///< input gamma
-      const pion_flt,   ///< H-correction eta-max value.
-      pion_flt*,        ///< output pstar
-      pion_flt*         ///< output flux
+      const pion_flt *,  ///< input left state
+      const pion_flt *,  ///< input right state
+      const double,      ///< input gamma
+      const pion_flt,    ///< H-correction eta-max value.
+      pion_flt *,        ///< output pstar
+      pion_flt *         ///< output flux
   );
 
   ///
@@ -99,12 +99,12 @@ protected:
   /// This is the symmetric flux calculation (all waves summed over).
   ///
   int MHD_Roe_CV_flux_solver_symmetric(
-      const pion_flt*,  ///< input left state
-      const pion_flt*,  ///< input right state
-      const double,     ///< input gamma
-      const pion_flt,   ///< H-correction eta-max value.
-      pion_flt*,        ///< output pstar
-      pion_flt*         ///< output flux
+      const pion_flt *,  ///< input left state
+      const pion_flt *,  ///< input right state
+      const double,      ///< input gamma
+      const pion_flt,    ///< H-correction eta-max value.
+      pion_flt *,        ///< output pstar
+      pion_flt *         ///< output flux
   );
 
 private:
@@ -112,7 +112,7 @@ private:
   /// Set Pstar[] from Roe_meanp[] (need to replace enthalpy with
   /// pressure).
   ///
-  void set_pstar_from_meanp(pion_flt*  ///< output pstar vector
+  void set_pstar_from_meanp(pion_flt *  ///< output pstar vector
   );
 
   ///
@@ -120,8 +120,8 @@ private:
   /// From Stone et al. (2009), ApJS, 178, 137, eq.65.
   ///
   int Roe_get_average_state(
-      const pion_flt*,  ///< left primitive vec.
-      const pion_flt*   ///< right primitive vec.
+      const pion_flt *,  ///< left primitive vec.
+      const pion_flt *   ///< right primitive vec.
   );
 
   ///
@@ -129,8 +129,8 @@ private:
   /// variables: From Stone et al. (2009), ApJS, 178, 137, eq.65.
   ///
   int Roe_get_difference_states(
-      const pion_flt*,  ///< left primitive vec.
-      const pion_flt*   ///< right primitive vec.
+      const pion_flt *,  ///< left primitive vec.
+      const pion_flt *   ///< right primitive vec.
   );
   ///
   /// Get the Roe-averaged wavespeeds
@@ -162,12 +162,12 @@ private:
   /// Roe-average Flux from the left state across to zero.
   ///
   int Roe_get_flux_onesided(
-      const pion_flt*,  ///< left primitive vec.
-      const pion_flt*,  ///< right primitive vec.
+      const pion_flt *,  ///< left primitive vec.
+      const pion_flt *,  ///< right primitive vec.
 #ifdef MHD_ROE_USE_USTAR
-      pion_flt*,  ///< output Pstar vector
-#endif            // MHD_ROE_USE_USTAR
-      pion_flt*   ///< output flux vector.
+      pion_flt *,  ///< output Pstar vector
+#endif             // MHD_ROE_USE_USTAR
+      pion_flt *   ///< output flux vector.
   );
 
   ///
@@ -176,19 +176,19 @@ private:
   /// symmetric summation.
   ///
   int calculate_symmetric_flux(
-      const pion_flt*,  ///< left primitive vec.
-      const pion_flt*,  ///< right primitive vec.
-      pion_flt*         ///< output flux vector.
+      const pion_flt *,  ///< left primitive vec.
+      const pion_flt *,  ///< right primitive vec.
+      pion_flt *         ///< output flux vector.
   );
 
-  pion_flt* Roe_evalues;       ///< eigenvalues vector.
-  pion_flt* Roe_strengths;     ///< wave strengths.
-  pion_flt* Roe_meanp;         ///< Mean state vector (prim.var.).
-  pion_flt* Roe_UL;            ///< left state (conserved var.).
-  pion_flt* Roe_UR;            ///< right state (conserved var.).
-  pion_flt* Roe_udiff;         ///< conserved variable differences.
-  pion_flt* Roe_pdiff;         ///< primitive variable differences.
-  pion_flt** Roe_right_evecs;  ///< the seven right eigenvectors.
+  pion_flt *Roe_evalues;       ///< eigenvalues vector.
+  pion_flt *Roe_strengths;     ///< wave strengths.
+  pion_flt *Roe_meanp;         ///< Mean state vector (prim.var.).
+  pion_flt *Roe_UL;            ///< left state (conserved var.).
+  pion_flt *Roe_UR;            ///< right state (conserved var.).
+  pion_flt *Roe_udiff;         ///< conserved variable differences.
+  pion_flt *Roe_pdiff;         ///< primitive variable differences.
+  pion_flt **Roe_right_evecs;  ///< the seven right eigenvectors.
   double Roe_V,                ///< mean state velocity magnitude
       Roe_B,                   ///< mean state B-field magnitude
       Roe_a,                   ///< sound speed
@@ -205,8 +205,8 @@ private:
       Roe_CGparamX;            ///< CG97's parameter X=deltaB^2/(2(rrl+rrr)^2)
   enum primitive eqHH;  ///< location of enthalpy in primitive var vector.
   double Enthalpy(
-      const pion_flt*,  ///< State Vector.
-      const double      ///< gas EOS gamma.
+      const pion_flt *,  ///< State Vector.
+      const double       ///< gas EOS gamma.
   );
 };
 

@@ -33,17 +33,17 @@ public:
 
   /// \brief Converts from primitive to conserved variables.
   virtual void PtoU(
-      const pion_flt*,  ///< pointer to Primitive variables.
-      pion_flt*,        ///< pointer to conserved variables.
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< pointer to Primitive variables.
+      pion_flt *,        ///< pointer to conserved variables.
+      const double       ///< Gas constant gamma.
   );
 
   /// \brief convert from conserved to primitive variables.
   virtual int UtoP(
-      const pion_flt*,  ///< pointer to conserved variables.
-      pion_flt*,        ///< pointer to Primitive variables.
-      const double,     ///< minimum temperature/pressure allowed
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< pointer to conserved variables.
+      pion_flt *,        ///< pointer to Primitive variables.
+      const double,      ///< minimum temperature/pressure allowed
+      const double       ///< Gas constant gamma.
   );
 
   /// \brief Converts from primitive and conserved variables to corresponding
@@ -52,33 +52,33 @@ public:
   /// This assumes that the direction has been set correctly.
   ///
   virtual void PUtoFlux(
-      const pion_flt*,  ///< pointer to Primitive variables.
-      const pion_flt*,  ///< pointer to conserved variables.
-      pion_flt*         ///< Pointer to flux variable.
+      const pion_flt *,  ///< pointer to Primitive variables.
+      const pion_flt *,  ///< pointer to conserved variables.
+      pion_flt *         ///< Pointer to flux variable.
   );
 
   /// \brief Converts from conserved variables to flux.
   virtual void UtoFlux(
-      const pion_flt*,  ///< Pointer to conserved variables state vector.
-      pion_flt*,        ///< Pointer to flux variable state vector.
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< Pointer to conserved variables state vector.
+      pion_flt *,        ///< Pointer to flux variable state vector.
+      const double       ///< Gas constant gamma.
   );
 
   ///  convert direct from primitive variables to flux.
   /// Creates conserved variable array as an intermediate step,
   /// and then calls PUtoFlux().
   virtual void PtoFlux(
-      const pion_flt*,  ///< pointer to Primitive variables.
-      pion_flt*,        ///< Pointer to flux variable.
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< pointer to Primitive variables.
+      pion_flt *,        ///< Pointer to flux variable.
+      const double       ///< Gas constant gamma.
   );
 
   ///
   /// Hydro sound speed sqrt(gamma*P_g/rho)
   ///
   double chydro(
-      const pion_flt*,  ///< Pointer to primitive variables.
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< Pointer to primitive variables.
+      const double       ///< Gas constant gamma.
   );
 
   ///
@@ -87,8 +87,8 @@ public:
   /// \retval -1     Failure
   ///
   double cfast(
-      const pion_flt*,  ///< Pointer to primitive variables.
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< Pointer to primitive variables.
+      const double       ///< Gas constant gamma.
   );
 
   /// \brief Calculate fast magnetosonic wavespeed from components of state
@@ -107,8 +107,8 @@ public:
   /// \retval -1     Failure
   ///
   double cslow(
-      const pion_flt*,  ///< Pointer to primitive variables.
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< Pointer to primitive variables.
+      const double       ///< Gas constant gamma.
   );
 
   /// \brief Returns the fastest wavespeed for the relevant equations.
@@ -119,7 +119,7 @@ public:
   /// the magnetic field.
   ///
   inline double maxspeed(
-      const pion_flt* p,  ///< Pointer to primitive variables.
+      const pion_flt *p,  ///< Pointer to primitive variables.
       const double g      ///< Gas constant gamma.
   )
   {
@@ -130,9 +130,9 @@ public:
   /// rotates the two vectors of velocity and b-field.
   ///
   void rotate(
-      pion_flt*,  ///< State vector
-      enum axes,  ///< Initial orientation.
-      enum axes   ///< Final Orientation.
+      pion_flt *,  ///< State vector
+      enum axes,   ///< Initial orientation.
+      enum axes    ///< Final Orientation.
   );
 
   /// \brief Rotates a state vector through theta radians.
@@ -142,21 +142,21 @@ public:
   /// version rotates the fluid velocity and b-field components.
   ///
   void rotateXY(
-      pion_flt*,  ///< State vector
-      double      ///< angle to rotate through in 2d plane.
+      pion_flt *,  ///< State vector
+      double       ///< angle to rotate through in 2d plane.
   );
 
   ///  Returns Internal Energy (per unit mass, so 'Temperature'), given
   ///  primitive variable vector.
   virtual double eint(
-      const pion_flt*,  ///< Primitive State Vector.
-      const double      ///< gas EOS gamma.
+      const pion_flt *,  ///< Primitive State Vector.
+      const double       ///< gas EOS gamma.
   );
 
   ///  Returns Enthalpy (per unit mass), given primitive variable vector.
   virtual double Enthalpy(
-      const pion_flt*,  ///< State Vector.
-      const double      ///< gas EOS gamma.
+      const pion_flt *,  ///< State Vector.
+      const double       ///< gas EOS gamma.
   )
   {
     rep.error("ENTHALPY FOR Ideal MHD EQNS", 456);
@@ -166,15 +166,15 @@ public:
   /// \brief Returns Total Energy (per unit volume), given primitive variable
   /// vector.
   virtual double Etot(
-      const pion_flt*,  ///< State Vector.
-      const double      ///< gas EOS gamma.
+      const pion_flt *,  ///< State Vector.
+      const double       ///< gas EOS gamma.
   );
 
   /// \brief Returns Total Pressure (per unit Volume), given primitive
   /// variable vector.
   virtual double Ptot(
-      const pion_flt*,  ///< Primitive State Vector.
-      const double      ///< gas EOS gamma.
+      const pion_flt *,  ///< Primitive State Vector.
+      const double       ///< gas EOS gamma.
   );
 
   /// \brief Given a pressure ratio and initial density, calculate adiabatic
@@ -189,8 +189,8 @@ public:
   /// Set Values for mean velocity, pressure, density, B-field.
   ///
   virtual void SetAvgState(
-      const pion_flt*,  ///< Mean Primitive var. state vector
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< Mean Primitive var. state vector
+      const double       ///< Gas constant gamma.
   );
 
 protected:
@@ -198,9 +198,9 @@ protected:
   /// if needed.  Also check for negative density.  Returns non-zero
   /// if negative pressure/density was found.
   int check_pressure(
-      const pion_flt*,  ///< pointer to conserved variables.
-      pion_flt*,        ///< Primitive State Vector.
-      const double,     ///< minimum temperature/pressure allowed
+      const pion_flt *,  ///< pointer to conserved variables.
+      pion_flt *,        ///< Primitive State Vector.
+      const double,      ///< minimum temperature/pressure allowed
       const double);
 };
 
@@ -228,9 +228,9 @@ public:
   /// the mhd_ideal function and copy Psi into the conserved variable.
   ///
   void PtoU(
-      const pion_flt*,  ///< pointer to Primitive variables.
-      pion_flt*,        ///< pointer to conserved variables.
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< pointer to Primitive variables.
+      pion_flt *,        ///< pointer to conserved variables.
+      const double       ///< Gas constant gamma.
   );
 
   /// \brief convert from conserved to primitive variables.
@@ -239,10 +239,10 @@ public:
   /// the eqns_mhd_ideal function and copy Psi into the primitive variable.
   ///
   int UtoP(
-      const pion_flt*,  ///< pointer to conserved variables.
-      pion_flt*,        ///< pointer to Primitive variables.
-      const double,     ///< minimum temperature/pressure allowed
-      const double      ///< Gas constant gamma.
+      const pion_flt *,  ///< pointer to conserved variables.
+      pion_flt *,        ///< pointer to Primitive variables.
+      const double,      ///< minimum temperature/pressure allowed
+      const double       ///< Gas constant gamma.
   );
 
   /// \brief Calculates the source term contribution to updating Psi
@@ -255,7 +255,7 @@ public:
   /// using Dedner's variable \f$ c_r = c_p^2/c_h \f$ in place of \f$c_p\f$.
   ///
   void GLMsource(
-      pion_flt*,    ///< Primitive Psi variable.
+      pion_flt *,   ///< Primitive Psi variable.
       const double  ///< timestep
   );
 

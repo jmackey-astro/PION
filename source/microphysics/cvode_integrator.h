@@ -87,7 +87,7 @@ int Ydot_for_cvode(
     double,    ///< current time
     N_Vector,  ///< current Y-value
     N_Vector,  ///< vector for Y-dot values
-    void*      ///< extra user-data vector, P, for evaluating ydot(y,t,p)
+    void *     ///< extra user-data vector, P, for evaluating ydot(y,t,p)
 );
 
 int Jacobian_for_cvode(
@@ -98,7 +98,7 @@ int Jacobian_for_cvode(
     N_Vector,  ///< y
     N_Vector,  ///< ydot
     CVMatrix,  ///< Jacobian matrix
-    void*,     ///< extra user-data vector, P, for evaluating ydot(y,t,p)
+    void *,    ///< extra user-data vector, P, for evaluating ydot(y,t,p)
     N_Vector,  ///< temp vector, must be for internal use
     N_Vector,  ///< temp vector, must be for internal use
     N_Vector   ///< temp vector, must be for internal use
@@ -111,7 +111,7 @@ public:
       double,    ///< current time
       N_Vector,  ///< current Y-value
       N_Vector,  ///< vector for Y-dot values
-      void*      ///< extra user-data vector, P, for evaluating ydot(y,t,p)
+      void *     ///< extra user-data vector, P, for evaluating ydot(y,t,p)
   );
 
   friend int Jacobian_for_cvode(
@@ -120,7 +120,7 @@ public:
       N_Vector,  ///< y
       N_Vector,  ///< ydot
       CVMatrix,  ///< Jacobian matrix
-      void*,     ///< extra user-data vector, P, for evaluating ydot(y,t,p)
+      void *,    ///< extra user-data vector, P, for evaluating ydot(y,t,p)
       N_Vector,  ///< temp vector, must be for internal use
       N_Vector,  ///< temp vector, must be for internal use
       N_Vector   ///< temp vector, must be for internal use
@@ -144,7 +144,7 @@ public:
   ///
   int integrate_cvode_step(
       N_Vector,  ///< input vector (may be overwritten during integration!)
-      void*,     ///< parameters for user_data (pointer to instance of this
+      void *,    ///< parameters for user_data (pointer to instance of this
                  ///< class!)
       double,    ///< start time.
       double,    ///< time-step.
@@ -159,7 +159,7 @@ private:
   SUNLinearSolver LS;
 #endif
 
-  void* cvode_mem;         ///< pointer to memory allocation for the solver.
+  void *cvode_mem;         ///< pointer to memory allocation for the solver.
   int n_eq;                ///< number of equations to solve.
   int n_xd;                ///< number of elements in user-data array.
   bool have_setup_cvodes;  ///< flag to make sure we only set up CVODES once.
@@ -176,7 +176,7 @@ public:
       double,          ///< current time
       const N_Vector,  ///< current Y-value
       N_Vector,        ///< vector for Y-dot values
-      const double*    ///< extra user-data vector, P
+      const double *   ///< extra user-data vector, P
       ) = 0;
 
   ///
@@ -190,7 +190,7 @@ public:
       double,          ///< time, t
       const N_Vector,  ///< current Y-value
       const N_Vector,  ///< vector for Y-dot values
-      const double*,   ///< extra user-data vector, P
+      const double *,  ///< extra user-data vector, P
       CVMatrix         ///< Jacobian matrix
       ) = 0;
 
@@ -199,8 +199,8 @@ public:
   /// (NOT IMPLEMENTED HERE).
   ///
   virtual void get_problem_size(
-      int*,  ///< number of equations
-      int*   ///< number of parameters in user_data vector.
+      int *,  ///< number of equations
+      int *   ///< number of parameters in user_data vector.
       ) = 0;
 
 protected:
@@ -208,8 +208,8 @@ protected:
   /// set the relative and absolute error tolerances
   ///
   virtual void get_error_tolerances(
-      double*,  ///< relative error tolerance (single value)
-      double[]  ///< absolute error tolerance (array)
+      double *,  ///< relative error tolerance (single value)
+      double[]   ///< absolute error tolerance (array)
       ) = 0;
 
   //---------------------------------------------------------------------------

@@ -34,7 +34,7 @@ using namespace std;
 // ##################################################################
 // ##################################################################
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
 
   if (argc < 2) {
@@ -44,7 +44,7 @@ int main(int argc, char** argv)
   }
 
   int err      = 0;
-  string* args = 0;
+  string *args = 0;
   args         = new string[argc];
   for (int i = 0; i < argc; i++)
     args[i] = argv[i];
@@ -59,10 +59,10 @@ int main(int argc, char** argv)
     }
   }
 
-  class DataIOBase* dataio    = 0;
-  class get_sim_info* siminfo = 0;
-  class ICsetup_base* ic      = 0;
-  class ReadParams* rp        = 0;
+  class DataIOBase *dataio    = 0;
+  class get_sim_info *siminfo = 0;
+  class ICsetup_base *ic      = 0;
+  class ReadParams *rp        = 0;
   class SimParams SimPM;
   MP = 0;  // global microphysics class pointer.
 
@@ -73,7 +73,7 @@ int main(int argc, char** argv)
   else
     icftype = "silo";  // This is the default for now.
 
-  class setup_NG_grid* SimSetup = new setup_NG_grid();
+  class setup_NG_grid *SimSetup = new setup_NG_grid();
 
   siminfo = 0;
   siminfo = new class get_sim_info();
@@ -85,7 +85,7 @@ int main(int argc, char** argv)
   siminfo = 0;
 
   SimSetup->setup_NG_grid_levels(SimPM);
-  vector<class GridBaseClass*> grid;
+  vector<class GridBaseClass *> grid;
   grid.resize(SimPM.grid_nlevels);
 
   //
@@ -109,7 +109,7 @@ int main(int argc, char** argv)
 
   err = SimSetup->set_equations(SimPM);
   rep.errorTest("(icgen::set_equations) err!=0 Fix me!", 0, err);
-  class FV_solver_base* solver = SimSetup->get_solver_ptr();
+  class FV_solver_base *solver = SimSetup->get_solver_ptr();
 
   if (SimPM.EP.cooling && !SimPM.EP.chemistry) {
     // don't need to set up the class, because it just does cooling and
@@ -128,7 +128,7 @@ int main(int argc, char** argv)
 
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     // Set Ph=P in every cell.
-    cell* c = grid[l]->FirstPt();
+    cell *c = grid[l]->FirstPt();
     do {
       for (int v = 0; v < SimPM.nvar; v++)
         c->Ph[v] = c->P[v];
@@ -256,7 +256,7 @@ int main(int argc, char** argv)
   //
   while (SWP.params.size() > 0) {
     int i                           = static_cast<int>(SWP.params.size()) - 1;
-    struct stellarwind_params* temp = SWP.params[i];
+    struct stellarwind_params *temp = SWP.params[i];
     SWP.params.pop_back();    // remove struct from list.
     temp = mem.myfree(temp);  // delete struct.
   }

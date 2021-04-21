@@ -51,47 +51,47 @@ public:
   ///
   /// Returns pointer to the first grid point (ex. boundary data).
   ///
-  virtual cell* FirstPt() = 0;
+  virtual cell *FirstPt() = 0;
 
   ///
   /// Returns pointer to the first grid point (inc. boundary data).
   ///
-  virtual cell* FirstPt_All() = 0;
+  virtual cell *FirstPt_All() = 0;
 
   ///
   /// Returns pointer to the last grid point (ex. boundary data).
   ///
-  virtual cell* LastPt() = 0;
+  virtual cell *LastPt() = 0;
 
   ///
   /// Returns pointer to the last grid point (inc. boundary data).
   ///
-  virtual cell* LastPt_All() = 0;
+  virtual cell *LastPt_All() = 0;
 
   ///
   /// returns a pointer to a neighbouring cell in the given direction.
   ///
-  virtual cell* NextPt(
-      const cell*,          ///< Current cell.
+  virtual cell *NextPt(
+      const cell *,         ///< Current cell.
       const enum direction  ///< direction of neighbour.
       ) = 0;
 
   ///
   /// returns a pointer to the next cell (ex. boundary data).
   ///
-  virtual cell* NextPt(const cell*) = 0;
+  virtual cell *NextPt(const cell *) = 0;
 
   ///
   /// returns a pointer to the next cell (inc. boundary data).
   ///
-  virtual cell* NextPt_All(const cell*) = 0;
+  virtual cell *NextPt_All(const cell *) = 0;
 
   ///
   /// Like nextPt(cell,dir), but in reverse direction.
   ///
-  virtual class cell* PrevPt(
-      const class cell*,  ///< Current Point.
-      enum direction      ///< Direction to go in.
+  virtual class cell *PrevPt(
+      const class cell *,  ///< Current Point.
+      enum direction       ///< Direction to go in.
       ) = 0;
   // ---------- ACCESSING AND MOVING FROM CELL TO CELL --------------
 
@@ -108,12 +108,12 @@ public:
   virtual size_t Ncell_all() const = 0;  ///< number of grid+ghost cells
 
   virtual double CellVolume(
-      const cell*,  ///< Cell
-      const double  /// unused
-      ) = 0;        ///< Returns Volume of cell.
+      const cell *,  ///< Cell
+      const double   /// unused
+      ) = 0;         ///< Returns Volume of cell.
 
   virtual double CellInterface(
-      const cell*,      ///< Cell
+      const cell *,     ///< Cell
       const direction,  ///< outward normal to interface.
       const double      ///< unused
       ) = 0;            ///< Returns Surface area of interface.
@@ -125,7 +125,7 @@ public:
   /// Returns cell diameter for a given cell along a given axis.
   ///
   virtual double DX(
-      const cell*,     ///< cell to get dx for
+      const cell *,    ///< cell to get dx for
       const enum axes  ///< axis along which to get dx.
       ) const = 0;
 
@@ -211,19 +211,19 @@ public:
   /// Add boundary cells to a grid.
   ///
   virtual int SetupBCs(
-      class SimParams&  ///< List of simulation params (including BCs)
+      class SimParams &  ///< List of simulation params (including BCs)
       ) = 0;
 
   /// array of all boundaries.
-  std::vector<struct boundary_data*> BC_bd;
+  std::vector<struct boundary_data *> BC_bd;
 
-  class stellar_wind* Wind;  ///< stellar wind boundary condition.
-  class RayTracingBase* RT;  ///< pointer to raytracing class
+  class stellar_wind *Wind;  ///< stellar wind boundary condition.
+  class RayTracingBase *RT;  ///< pointer to raytracing class
 
   ///
   /// prints all the cells in the given boundary data pointer.
   ///
-  virtual int BC_printBCdata(boundary_data*) = 0;
+  virtual int BC_printBCdata(boundary_data *) = 0;
 
   ///
   /// Destructor for all the boundary data, BC_bd.  Needed because
@@ -237,7 +237,7 @@ public:
   /// we need to delete some cells in the list, and others we just need to
   /// delete the pointers to them.
   ///
-  virtual void BC_deleteBoundaryData(boundary_data*) = 0;
+  virtual void BC_deleteBoundaryData(boundary_data *) = 0;
 
   // ----------- SETUP AND UPDATE BOUNDARY DATA ---------------------
 
@@ -248,8 +248,8 @@ public:
   /// physical units.
   ///
   virtual double distance(
-      const double*,  ///< position 1 (physical)
-      const double*   ///< position 2 (physical)
+      const double *,  ///< position 1 (physical)
+      const double *   ///< position 2 (physical)
       ) = 0;
 
   ///
@@ -258,8 +258,8 @@ public:
   /// geometry).  Here both input and output are physical units.
   ///
   virtual double distance_vertex2cell(
-      const double*,  ///< vertex (physical)
-      const cell*     ///< cell
+      const double *,  ///< vertex (physical)
+      const cell *     ///< cell
       ) = 0;
 
   ///
@@ -268,8 +268,8 @@ public:
   /// Result returned in physical units (e.g. centimetres).
   ///
   virtual double distance_cell2cell(
-      const cell*,  ///< cell 1
-      const cell*   ///< cell 2
+      const cell *,  ///< cell 1
+      const cell *   ///< cell 2
       ) = 0;
 
   ///
@@ -278,9 +278,9 @@ public:
   /// the *cell* coordinate minus the *vertex* coordinate.
   ///
   virtual double difference_vertex2cell(
-      const double*,  ///< vertex (double)
-      const cell*,    ///< cell
-      const axes      ///< Axis to calculate.
+      const double *,  ///< vertex (double)
+      const cell *,    ///< cell
+      const axes       ///< Axis to calculate.
       ) = 0;
 
   ///
@@ -290,8 +290,8 @@ public:
   /// integer units (but obviously the answer is not an integer).
   ///
   virtual double idistance(
-      const int*,  ///< position 1 (integer)
-      const int*   ///< position 2 (integer)
+      const int *,  ///< position 1 (integer)
+      const int *   ///< position 2 (integer)
       ) = 0;
 
   ///
@@ -300,8 +300,8 @@ public:
   /// Result returned in grid--integer units (one cell has dx=2).
   ///
   virtual double idistance_cell2cell(
-      const cell*,  ///< cell 1
-      const cell*   ///< cell 2
+      const cell *,  ///< cell 1
+      const cell *   ///< cell 2
       ) = 0;
 
   ///
@@ -310,8 +310,8 @@ public:
   /// geometry).  Here both input and output are code-integer units.
   ///
   virtual double idistance_vertex2cell(
-      const int*,  ///< vertex (integer)
-      const cell*  ///< cell
+      const int *,  ///< vertex (integer)
+      const cell *  ///< cell
       ) = 0;
 
   ///
@@ -320,9 +320,9 @@ public:
   /// the *cell* coordinate minus the *vertex* coordinate.
   ///
   virtual double idifference_vertex2cell(
-      const int*,   ///< vertex (integer)
-      const cell*,  ///< cell
-      const axes    ///< Axis to calculate.
+      const int *,   ///< vertex (integer)
+      const cell *,  ///< cell
+      const axes     ///< Axis to calculate.
       ) = 0;
 
   ///
@@ -331,19 +331,19 @@ public:
   /// It returns *cell2* coordinate minus *cell1* coordinate.
   ///
   virtual double idifference_cell2cell(
-      const cell*,  ///< cell 1
-      const cell*,  ///< cell 2
-      const axes    ///< Axis.
+      const cell *,  ///< cell 1
+      const cell *,  ///< cell 2
+      const axes     ///< Axis.
       ) = 0;
 
   ///
   /// Returns true if the position is on the grid, false otherwise
   ///
-  virtual bool point_on_grid(const double*  ///< position
+  virtual bool point_on_grid(const double *  ///< position
                              ) = 0;
 
   /// Set pointer to child grid (for NG grids)
-  virtual void set_child_grid(class GridBaseClass*  ///< pointer to child grid.
+  virtual void set_child_grid(class GridBaseClass *  ///< pointer to child grid.
   )
   {
     return;
@@ -351,7 +351,7 @@ public:
 
   /// Set pointer to parent grid (for NG grids)
   virtual void set_parent_grid(
-      class GridBaseClass*  ///< pointer to parent grid.
+      class GridBaseClass *  ///< pointer to parent grid.
   )
   {
     return;

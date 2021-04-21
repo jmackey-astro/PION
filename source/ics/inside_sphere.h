@@ -21,15 +21,15 @@ using namespace std;
 class inside_sphere {
 public:
   inside_sphere(
-      double*,  ///< centre coordinates of circle/sphere
-      double,   ///< radius of circle/sphere.
-      double,   ///< size of cell (length of one side)
-      int,      ///< number of subcells to use per cell dimension.
-      int       ///< number of spatial dimensions on grid.
+      double *,  ///< centre coordinates of circle/sphere
+      double,    ///< radius of circle/sphere.
+      double,    ///< size of cell (length of one side)
+      int,       ///< number of subcells to use per cell dimension.
+      int        ///< number of spatial dimensions on grid.
   );
-  ~inside_sphere() {}            ///< trivial destructor
-  double volumeFraction(cell*);  ///< calculates fraction of cell that is
-                                 ///< within radius r of a point.
+  ~inside_sphere() {}             ///< trivial destructor
+  double volumeFraction(cell *);  ///< calculates fraction of cell that is
+                                  ///< within radius r of a point.
 private:
   const double sr;    ///< radius of sphere.
   double spos[3];     ///< centre coords of sphere.
@@ -42,8 +42,8 @@ private:
   const int ndim;     ///< dimensionality of space.
   bool equalD(const double, const double);  ///< test for equality.
   double distance(
-      const double*,
-      const double*,
+      const double *,
+      const double *,
       int);  ///< distance between two points.
 };
 

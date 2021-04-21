@@ -9,7 +9,10 @@ image: debian:stable
           libgsl-dev 
           libopenmpi-dev 
           libcurl4-openssl-dev 
-          libbz2-dev 
+          libbz2-dev wget;
+        cd extra_libraries;
+        bash install_boost.sh;
+        cd ..
     - &configure
         mkdir build
         && pushd build

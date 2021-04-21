@@ -17,15 +17,15 @@ using namespace std;
 // ##################################################################
 
 int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
-    class SimParams& par,  ///< simulation parameters
+    class SimParams &par,  ///< simulation parameters
     const int l,           ///< level of this grid.
-    boundary_data* b       ///< boundary data
+    boundary_data *b       ///< boundary data
 )
 {
 
-  class GridBaseClass* grid = par.levels[l].grid;
+  class GridBaseClass *grid = par.levels[l].grid;
   // see how many child grids I have
-  class MCMDcontrol* MCMD = &(par.levels[l].MCMD);
+  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   vector<struct cgrid> fg;
   MCMD->get_child_grid_info(fg);
   int nchild = fg.size();
@@ -99,7 +99,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
           rep.printVec("localxmin", MCMD->LocalXmin, 3);
           rep.printVec("Childxmin", fg[i].Xmin, 3);
 #endif
-          struct c2f* bdata = new struct c2f;
+          struct c2f *bdata = new struct c2f;
           bdata->rank       = fg[i].rank;
           bdata->dir        = 2 * d;
           bdata->c.clear();
@@ -120,7 +120,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
 #ifdef TEST_C2F
           cout << "C2F_SEND: child " << i << ", dim " << d << " POS DIR\n";
 #endif
-          struct c2f* bdata = new struct c2f;
+          struct c2f *bdata = new struct c2f;
           bdata->rank       = fg[i].rank;
           bdata->dir        = 2 * d + 1;
           bdata->c.clear();
@@ -141,7 +141,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
   // We've now dealt with C2F boundaries that are within my domain,
   // so we have to also consider boundaries coincident with my
   // domain boundary, where level l+1 only intersects at the boundary
-  std::vector<std::vector<struct cgrid>> fgngb;
+  std::vector<std::vector<struct cgrid> > fgngb;
   MCMD->get_level_lp1_ngb_info(fgngb);
   if (fgngb.size() != static_cast<size_t>(2 * par.ndim)) {
     rep.error("l+1 neigbouring grids vector not set up right", fgngb.size());
@@ -169,7 +169,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
           else {
             CI.get_ipos_vec(fgngb[dir][f].Xmin, fg_ixmin);
             CI.get_ipos_vec(fgngb[dir][f].Xmax, fg_ixmax);
-            struct c2f* bdata = new struct c2f;
+            struct c2f *bdata = new struct c2f;
             bdata->rank       = fgngb[dir][f].rank;
             bdata->dir        = 2 * d + 1;  // outward normal of child is +ve
             bdata->c.clear();
@@ -203,7 +203,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
           else {
             CI.get_ipos_vec(fgngb[dir][f].Xmin, fg_ixmin);
             CI.get_ipos_vec(fgngb[dir][f].Xmax, fg_ixmax);
-            struct c2f* bdata = new struct c2f;
+            struct c2f *bdata = new struct c2f;
             bdata->rank       = fgngb[dir][f].rank;
             bdata->dir        = 2 * d;  // outward normal of child is -ve dir
             bdata->c.clear();
@@ -224,11 +224,11 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
 // ##################################################################
 
 int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
-    class SimParams& par,          ///< simulation parameters
-    class GridBaseClass* grid,     ///< pointer to coarse-level grid
-    class FV_solver_base* solver,  ///< pointer to equations
+    class SimParams &par,          ///< simulation parameters
+    class GridBaseClass *grid,     ///< pointer to coarse-level grid
+    class FV_solver_base *solver,  ///< pointer to equations
     const int l,                   ///< level in the NG hierarchy
-    struct boundary_data* b,       ///< pointer to boundary struct
+    struct boundary_data *b,       ///< pointer to boundary struct
     const int cstep,               ///< fractional step
     const int maxstep              ///< number of fractional steps
 )
@@ -245,7 +245,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
   cout << endl;
 #endif
 #ifdef TEST_C2F
-  class MCMDcontrol* MCMD = &(par.levels[l].MCMD);
+  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
 #endif
   int err = 0;
 
@@ -265,7 +265,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     for (unsigned int ib = 0; ib < b->NGsendC2F.size(); ib++) {
       for (unsigned int c_iter = 0; c_iter < b->NGsendC2F[ib]->c.size();
            c_iter++) {
-        cell* c = b->NGsendC2F[ib]->c[c_iter];
+        cell *c = b->NGsendC2F[ib]->c[c_iter];
         solver->PtoU(c->P, U, par.gamma);
         for (int v = 0; v < par.nvar; v++)
           U[v] += 0.5 * c->dU[v];
@@ -308,7 +308,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
       n_el = n_cell * ((1 + par.ndim) * par.nvar + 1 + par.ndim);
     else
       rep.error("bad spOOA in MPI C2F", par.spOOA);
-    pion_flt* buf = new pion_flt[n_el];
+    pion_flt *buf = new pion_flt[n_el];
     double slope[par.nvar];
     double cpos[par.ndim];
 
@@ -316,7 +316,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     size_t ibuf = 0;
     for (unsigned int c_iter = 0; c_iter < b->NGsendC2F[ib]->c.size();
          c_iter++) {
-      cell* c = b->NGsendC2F[ib]->c[c_iter];
+      cell *c = b->NGsendC2F[ib]->c[c_iter];
       for (int v = 0; v < par.nvar; v++)
         buf[ibuf + v] = c->Ph[v];
       ibuf += par.nvar;
@@ -403,9 +403,9 @@ void NG_MPI_coarse_to_fine_bc::BC_COARSE_TO_FINE_SEND_clear_sends()
 // ##################################################################
 
 int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
-    class SimParams& par,  ///< simulation parameters
+    class SimParams &par,  ///< simulation parameters
     const int l,           ///< level of this grid.
-    boundary_data* b       ///< boundary data
+    boundary_data *b       ///< boundary data
 )
 {
   // The boundary is already a regular external boundary, so just
@@ -413,8 +413,8 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
   // the serial version) or on a different MPI process (and set up
   // some data structures to receive the coarse-grid data for
   // interpolation).
-  class MCMDcontrol* MCMD   = &(par.levels[l].MCMD);
-  class GridBaseClass* grid = par.levels[l].grid;
+  class MCMDcontrol *MCMD   = &(par.levels[l].MCMD);
+  class GridBaseClass *grid = par.levels[l].grid;
 
   int cl_ixmin[MAX_DIM], cl_ixmax[MAX_DIM];
   int fl_ixmin[MAX_DIM], fl_ixmax[MAX_DIM];
@@ -500,12 +500,12 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
     for (int idim = 0; idim < par.ndim; idim++)
       n_cell /= 2;
     b->NGrecvC2F.resize(n_cell);
-    size_t ic                    = 0;
-    list<cell*>::iterator f_iter = b->data.begin();
+    size_t ic                     = 0;
+    list<cell *>::iterator f_iter = b->data.begin();
 
     if (par.ndim == 1) {
       for (f_iter = b->data.begin(); f_iter != b->data.end(); ++f_iter) {
-        cell* c = (*f_iter);
+        cell *c = (*f_iter);
         b->NGrecvC2F[ic].push_back(c);
         f_iter++;
         c = (*f_iter);
@@ -600,10 +600,10 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
 // ##################################################################
 
 int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
-    class SimParams& par,          ///< simulation parameters
-    class FV_solver_base* solver,  ///< pointer to equations
+    class SimParams &par,          ///< simulation parameters
+    class FV_solver_base *solver,  ///< pointer to equations
     const int l,                   ///< level in the NG grid structure
-    struct boundary_data* b,       ///< boundary to update
+    struct boundary_data *b,       ///< boundary to update
     const int step                 ///< timestep on this (fine) grid
 )
 {
@@ -615,8 +615,8 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
   cout << l << ", updating boundary dir = " << b->dir << endl;
 #endif
   int err                   = 0;
-  class MCMDcontrol* MCMD   = &(par.levels[l].MCMD);
-  class GridBaseClass* grid = par.levels[l].grid;
+  class MCMDcontrol *MCMD   = &(par.levels[l].MCMD);
+  class GridBaseClass *grid = par.levels[l].grid;
 
   if (MCMD->get_myrank() == b->NGrecvC2F_parent) {
 #ifdef TEST_C2F
@@ -666,7 +666,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
       n_el = n_cell * ((1 + par.ndim) * par.nvar + 1 + par.ndim);
     else
       rep.error("bad spOOA in MPI C2F", par.spOOA);
-    pion_flt* buf = 0;
+    pion_flt *buf = 0;
     buf           = mem.myalloc(buf, n_el);
 #ifdef TEST_C2F
     if (1 == 1) {
@@ -695,7 +695,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
       double off[par.ndim];
 #endif
       // double c_vol=0.0;
-      cell* c = 0;
+      cell *c = 0;
       for (unsigned int ic = 0; ic < b->NGrecvC2F.size(); ic++) {
         // read data for this coarse cell into arrays
         for (int v = 0; v < par.nvar; v++)
@@ -707,7 +707,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
           cpos[v] = buf[ibuf + v];
         ibuf += par.ndim;
 
-        list<cell*>::iterator f_iter = b->NGrecvC2F[ic].begin();
+        list<cell *>::iterator f_iter = b->NGrecvC2F[ic].begin();
         for (f_iter = b->NGrecvC2F[ic].begin();
              f_iter != b->NGrecvC2F[ic].end(); ++f_iter) {
           c = (*f_iter);
@@ -731,7 +731,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
         double Ph[par.nvar];
         double cpos[par.ndim], c_vol = 0.0;
         double sx[par.nvar];
-        cell* f[2];
+        cell *f[2];
         for (unsigned int ic = 0; ic < b->NGrecvC2F.size(); ic++) {
           // read data for this coarse cell into arrays
           for (int v = 0; v < par.nvar; v++)
@@ -745,7 +745,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
           for (int v = 0; v < par.nvar; v++)
             sx[v] = buf[ibuf + v];
           ibuf += par.nvar;
-          list<cell*>::iterator f_iter = b->NGrecvC2F[ic].begin();
+          list<cell *>::iterator f_iter = b->NGrecvC2F[ic].begin();
           for (int v = 0; v < 2; v++) {
             f[v] = *f_iter;
             f_iter++;
@@ -761,7 +761,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
         ipos[0] = 0;
         ipos[1] = 0;
         double sx[par.nvar], sy[par.nvar];
-        cell* f[4];
+        cell *f[4];
         for (unsigned int ic = 0; ic < b->NGrecvC2F.size(); ic++) {
           // read data for this coarse cell into arrays
           for (int v = 0; v < par.nvar; v++)
@@ -778,7 +778,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
           for (int v = 0; v < par.nvar; v++)
             sy[v] = buf[ibuf + v];
           ibuf += par.nvar;
-          list<cell*>::iterator f_iter = b->NGrecvC2F[ic].begin();
+          list<cell *>::iterator f_iter = b->NGrecvC2F[ic].begin();
           for (int v = 0; v < 4; v++) {
             f[v] = *f_iter;
             f_iter++;
@@ -800,7 +800,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
 #endif
         int ipos[par.ndim];
         double sx[par.nvar], sy[par.nvar], sz[par.nvar];
-        cell* fch[8];
+        cell *fch[8];
         for (unsigned int ic = 0; ic < b->NGrecvC2F.size(); ic++) {
           // read data for this coarse cell into arrays
           for (int v = 0; v < par.nvar; v++)
@@ -824,7 +824,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
           // for (int v=0;v<par.ndim;v++) cpos2[v] = cpos[v]/3.086e18;
           // rep.printVec("*********** cpos",cpos2,par.ndim);
 #endif
-          list<cell*>::iterator f_iter = b->NGrecvC2F[ic].begin();
+          list<cell *>::iterator f_iter = b->NGrecvC2F[ic].begin();
           for (int v = 0; v < 8; v++) {
             fch[v] = *f_iter;
 #ifdef TEST_C2F
@@ -856,14 +856,14 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
 // ##################################################################
 
 void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to coarse-level grid
-    struct c2f* bdata,          ///< pointer to list of cells
-    int* ixmin,                 ///< child grid xmin (integer)
-    int* ixmax,                 ///< child grid xmax (integer)
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to coarse-level grid
+    struct c2f *bdata,          ///< pointer to list of cells
+    int *ixmin,                 ///< child grid xmin (integer)
+    int *ixmax,                 ///< child grid xmax (integer)
     const int lf,               ///< level of fine grid.
-    const int* fl_xmin,         ///< level xmin of fine grid.
-    const int* fl_xmax          ///< level xmax of fine grid.
+    const int *fl_xmin,         ///< level xmin of fine grid.
+    const int *fl_xmax          ///< level xmax of fine grid.
 )
 {
   // In XN,XP direction we add cells with faces that touch the fine-
@@ -903,14 +903,14 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list(
 // ##################################################################
 
 void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_1D(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to coarse-level grid
-    struct c2f* bdata,          ///< pointer to list of cells
-    int* ixmin,                 ///< child grid xmin (integer)
-    int* ixmax,                 ///< child grid xmax (integer)
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to coarse-level grid
+    struct c2f *bdata,          ///< pointer to list of cells
+    int *ixmin,                 ///< child grid xmin (integer)
+    int *ixmax,                 ///< child grid xmax (integer)
     const int lf,               ///< level of fine grid.
-    const int* fl_xmin,         ///< level xmin of fine grid.
-    const int* fl_xmax          ///< level xmax of fine grid.
+    const int *fl_xmin,         ///< level xmin of fine grid.
+    const int *fl_xmax          ///< level xmax of fine grid.
 )
 {
   int bsize = grid->idx() * par.Nbc / 2;  // idx is >=2, Nbc is >=1.
@@ -932,7 +932,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_1D(
       rep.error("bad direction in 1D C2F", bdata->dir);
   }
 
-  cell* c = grid->FirstPt_All();
+  cell *c = grid->FirstPt_All();
   do {
     if (c->pos[XX] > xn && c->pos[XX] < xp) bdata->c.push_back(c);
   } while ((c = grid->NextPt_All(c)) != 0);
@@ -944,14 +944,14 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_1D(
 // ##################################################################
 
 void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to coarse-level grid
-    struct c2f* bdata,          ///< pointer to list of cells
-    int* ixmin,                 ///< child grid xmin (integer)
-    int* ixmax,                 ///< child grid xmax (integer)
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to coarse-level grid
+    struct c2f *bdata,          ///< pointer to list of cells
+    int *ixmin,                 ///< child grid xmin (integer)
+    int *ixmax,                 ///< child grid xmax (integer)
     const int lf,               ///< level of fine grid.
-    const int* fl_xmin,         ///< level xmin of fine grid.
-    const int* fl_xmax          ///< level xmax of fine grid.
+    const int *fl_xmin,         ///< level xmin of fine grid.
+    const int *fl_xmax          ///< level xmax of fine grid.
 )
 {
   // depth of boundary region, in integer coordinates.
@@ -1007,7 +1007,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
 
   // cout <<"boundary: x in ["<<xn<<","<<xp<<"], y in["<<yn<<","<<yp<<"]\n";
   size_t ct = 0;
-  cell* c   = grid->FirstPt_All();
+  cell *c   = grid->FirstPt_All();
   do {
     // rep.printVec("cpos",c->pos,par.ndim);
     if (c->pos[XX] > xn && c->pos[XX] < xp && c->pos[YY] > yn
@@ -1027,14 +1027,14 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
 // ##################################################################
 
 void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to coarse-level grid
-    struct c2f* bdata,          ///< pointer to list of cells
-    int* ixmin,                 ///< child grid xmin (integer)
-    int* ixmax,                 ///< child grid xmax (integer)
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to coarse-level grid
+    struct c2f *bdata,          ///< pointer to list of cells
+    int *ixmin,                 ///< child grid xmin (integer)
+    int *ixmax,                 ///< child grid xmax (integer)
     const int lf,               ///< level of fine grid.
-    const int* fl_xmin,         ///< level xmin of fine grid.
-    const int* fl_xmax          ///< level xmax of fine grid.
+    const int *fl_xmin,         ///< level xmin of fine grid.
+    const int *fl_xmax          ///< level xmax of fine grid.
 )
 {
 #ifdef TEST_C2F
@@ -1138,7 +1138,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
 #endif
 
   int ct  = 0;
-  cell* c = grid->FirstPt_All();
+  cell *c = grid->FirstPt_All();
   do {
     if ((c->pos[XX] > xn && c->pos[XX] < xp)
         && (c->pos[YY] > yn && c->pos[YY] < yp)

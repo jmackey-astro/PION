@@ -14,10 +14,10 @@ using namespace std;
 // ##################################################################
 
 int MCMD_bc::BC_assign_BCMPI(
-    class SimParams& par,       ///< pointer to simulation parameters
+    class SimParams &par,       ///< pointer to simulation parameters
     const int level,            ///< level in grid hierarchy
-    class GridBaseClass* grid,  ///< pointer to grid.
-    boundary_data* b,
+    class GridBaseClass *grid,  ///< pointer to grid.
+    boundary_data *b,
     int comm_tag)
 {
   //
@@ -46,11 +46,11 @@ int MCMD_bc::BC_assign_BCMPI(
 // ##################################################################
 
 int MCMD_bc::BC_select_data2send(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
-    list<cell*>* l,
-    int* nc,
-    boundary_data* b,
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    list<cell *> *l,
+    int *nc,
+    boundary_data *b,
     int comm_tag)
 {
   // Check inputs.
@@ -81,10 +81,10 @@ int MCMD_bc::BC_select_data2send(
   // N.B. The domain decomposition boundaries are max. 4 cells deep,
   //      whereas periodic boundaries are Nbc cells deep (6 for NG).
   //
-  int count               = 0;
-  list<cell*>::iterator c = b->data.begin();
-  cell* temp              = 0;
-  int Nc                  = 0;
+  int count                = 0;
+  list<cell *>::iterator c = b->data.begin();
+  cell *temp               = 0;
+  int Nc                   = 0;
   if (comm_tag == BC_PERtag)
     Nc = par.Nbc;
   else if (comm_tag == BC_MPItag)
@@ -115,10 +115,10 @@ int MCMD_bc::BC_select_data2send(
 // ##################################################################
 
 int MCMD_bc::BC_update_BCMPI(
-    class SimParams& par,       ///< simulation parameters
+    class SimParams &par,       ///< simulation parameters
     const int level,            ///< level in grid hierarchy
-    class GridBaseClass* grid,  ///< pointer to grid.
-    boundary_data* b,
+    class GridBaseClass *grid,  ///< pointer to grid.
+    boundary_data *b,
     const int cstep,
     const int maxstep,
     int comm_tag)
@@ -137,7 +137,7 @@ int MCMD_bc::BC_update_BCMPI(
   // send the data.
   //
   int err                 = 0;
-  class MCMDcontrol* ppar = &(par.levels[level].MCMD);
+  class MCMDcontrol *ppar = &(par.levels[level].MCMD);
   string send_id;
 #ifdef TEST_COMMS
   cout << "BC_update_BCMPI: sending data...\n";
@@ -209,7 +209,7 @@ int MCMD_bc::BC_update_BCMPI(
   //
   if (cstep == maxstep) {
     // struct boundary_data *b2 = grid->BC_bd[static_cast<int>(dir)];
-    list<cell*>::iterator c = b->data.begin();
+    list<cell *>::iterator c = b->data.begin();
     for (c = b->data.begin(); c != b->data.end(); ++c) {
       for (int v = 0; v < par.nvar; v++)
         (*c)->P[v] = (*c)->Ph[v];

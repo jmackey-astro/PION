@@ -33,7 +33,7 @@ NG_BC89flux::NG_BC89flux() {}
 
 NG_BC89flux::~NG_BC89flux()
 {
-  struct flux_interface* fi = 0;
+  struct flux_interface *fi = 0;
   for (unsigned int l = 0; l < flux_update_recv.size(); l++) {
     for (unsigned int d = 0; d < flux_update_recv[l].size(); d++) {
       for (unsigned int f = 0; f < flux_update_recv[l][d].fi.size(); f++) {
@@ -84,8 +84,8 @@ void NG_BC89flux::setup_flux_vectors(
 // ##################################################################
 
 int NG_BC89flux::setup_flux_recv(
-    class SimParams& par,       // simulation params (including BCs)
-    class GridBaseClass* grid,  // pointer to coarse grid.
+    class SimParams &par,       // simulation params (including BCs)
+    class GridBaseClass *grid,  // pointer to coarse grid.
     const int lp1               // fine level to receive from
 )
 {
@@ -103,7 +103,7 @@ int NG_BC89flux::setup_flux_recv(
 
   bool recv[2 * par.ndim];   // whether to get data in this direction
   size_t nel[2 * par.ndim];  // number of interfaces in each direction
-  struct flux_interface* fi = 0;
+  struct flux_interface *fi = 0;
   int idx                   = grid->idx();
 
   if (grid != par.levels[lp1].parent)
@@ -218,8 +218,8 @@ int NG_BC89flux::setup_flux_recv(
 // ##################################################################
 
 int NG_BC89flux::setup_flux_send(
-    class SimParams& par,       ///< simulation params (including BCs)
-    class GridBaseClass* grid,  // pointer to finer grid.
+    class SimParams &par,       ///< simulation params (including BCs)
+    class GridBaseClass *grid,  // pointer to finer grid.
     const int lm1               ///< level to send to
 )
 {
@@ -237,7 +237,7 @@ int NG_BC89flux::setup_flux_send(
   int fg_ixmin[MAX_DIM], fg_ixmax[MAX_DIM];  // finer grid
   bool send[2 * par.ndim];   // whether to send data in this direction
   size_t nel[2 * par.ndim];  // number of interfaces in each direction
-  struct flux_interface* fi = 0;
+  struct flux_interface *fi = 0;
   int idx                   = grid->idx();
 
 #ifdef TEST_BC89FLUX
@@ -378,18 +378,18 @@ int NG_BC89flux::setup_flux_send(
 // ##################################################################
 
 int NG_BC89flux::add_cells_to_face(
-    class SimParams& par,       ///< simulation parameters
-    class GridBaseClass* grid,  ///< pointer to grid.
+    class SimParams &par,       ///< simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
     enum direction d,           ///< which direction we're facing
-    int* ixmin,                 ///< xmin of interface region (integer units)
-    int* ixmax,                 ///< xmax of interface region (integer units)
-    int* nface,                 ///< number of elements in interface region
+    int *ixmin,                 ///< xmin of interface region (integer units)
+    int *ixmax,                 ///< xmax of interface region (integer units)
+    int *nface,                 ///< number of elements in interface region
     const int ncell,            ///< number of cells per face.
-    struct flux_update& flux    ///< list to populate
+    struct flux_update &flux    ///< list to populate
 )
 {
   int a   = static_cast<int>(d) / 2;
-  cell* c = grid->FirstPt_All();
+  cell *c = grid->FirstPt_All();
   int idx = grid->idx();
 
 #ifdef TEST_BC89FLUX
@@ -699,7 +699,7 @@ int NG_BC89flux::add_cells_to_face(
 // ##################################################################
 
 void NG_BC89flux::save_fine_fluxes(
-    class SimParams& par,  ///< simulation parameters
+    class SimParams &par,  ///< simulation parameters
     const int l            ///< level
 )
 {
@@ -712,7 +712,7 @@ void NG_BC89flux::save_fine_fluxes(
 #endif
   int level_step            = par.levels[l].step;
   double dt                 = par.levels[l].dt;
-  struct flux_interface* fi = 0;
+  struct flux_interface *fi = 0;
 
   for (unsigned int d = 0; d < flux_update_send[l].size(); d++) {
 
@@ -777,7 +777,7 @@ void NG_BC89flux::save_fine_fluxes(
 // ##################################################################
 
 void NG_BC89flux::save_coarse_fluxes(
-    class SimParams& par,  ///< simulation parameters
+    class SimParams &par,  ///< simulation parameters
     const int l            ///< level
 )
 {
@@ -790,7 +790,7 @@ void NG_BC89flux::save_coarse_fluxes(
   cout << flux_update_recv[l].size() << "\n";
 #endif
   double dt                 = par.levels[l].dt;
-  struct flux_interface* fi = 0;
+  struct flux_interface *fi = 0;
 
   for (unsigned int d = 0; d < flux_update_recv[l].size(); d++) {
     int a = flux_update_recv[l][d].ax;  // normal axis to face
@@ -826,8 +826,8 @@ void NG_BC89flux::save_coarse_fluxes(
 // ##################################################################
 
 int NG_BC89flux::recv_BC89_fluxes_F2C(
-    class FV_solver_base* spatial_solver,  ///< solver, for gradients
-    class SimParams& par,                  ///< simulation parameters
+    class FV_solver_base *spatial_solver,  ///< solver, for gradients
+    class SimParams &par,                  ///< simulation parameters
     const int l,                           ///< My level in grid hierarchy.
     const int step,                        ///< OA2 or OA1
     const int ooa  ///< Full order of accuracy of simulation
@@ -848,7 +848,7 @@ int NG_BC89flux::recv_BC89_fluxes_F2C(
 #endif
 
   int err                   = 0;
-  class GridBaseClass* grid = par.levels[l].grid;
+  class GridBaseClass *grid = par.levels[l].grid;
   enum axes ax;
   double dt = par.levels[l].dt;
 
@@ -883,12 +883,12 @@ int NG_BC89flux::recv_BC89_fluxes_F2C(
 // ##################################################################
 
 int NG_BC89flux::recv_BC89_flux_boundary(
-    class FV_solver_base* spatial_solver,  ///< solver, for gradients
-    class SimParams& par,                  ///< pointer to simulation parameters
-    class GridBaseClass* grid,             ///< pointer to coarse grid
+    class FV_solver_base *spatial_solver,  ///< solver, for gradients
+    class SimParams &par,                  ///< pointer to simulation parameters
+    class GridBaseClass *grid,             ///< pointer to coarse grid
     const double dt,                       ///< timestep
-    struct flux_update& send,              ///< data for fine grid
-    struct flux_update& recv,              ///< data for coarse grid
+    struct flux_update &send,              ///< data for fine grid
+    struct flux_update &recv,              ///< data for coarse grid
     const unsigned int d,                  ///< direction of outward normal
     const axes ax                          ///< axis of normal direction.
 )
@@ -896,8 +896,8 @@ int NG_BC89flux::recv_BC89_flux_boundary(
 #ifdef SKIP_BC89_FLUX
   return 0;
 #endif
-  struct flux_interface* fc = 0;
-  struct flux_interface* ff = 0;
+  struct flux_interface *fc = 0;
+  struct flux_interface *ff = 0;
   double ftmp[par.nvar], utmp[par.nvar];
   for (int v = 0; v < par.nvar; v++)
     ftmp[v] = 0.0;

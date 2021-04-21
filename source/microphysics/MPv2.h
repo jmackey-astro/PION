@@ -103,8 +103,8 @@ public:
   int dYdt(
       const double,  ///< (1-x_in): input neutral fraction
       const double,  ///< E_in: input internal energy density
-      double*,       ///< xdot returned rate
-      double*        ///< Edot returned rate
+      double *,      ///< xdot returned rate
+      double *       ///< Edot returned rate
   );
 
   ///
@@ -112,7 +112,7 @@ public:
   /// density, column densities, Vshell, etc.
   ///
   void set_parameters_for_current_step(
-      const std::vector<double>&  ///< list of parameters in an array.
+      const std::vector<double> &  ///< list of parameters in an array.
   );
 
   ///
@@ -131,8 +131,8 @@ public:
   /// Only needed by the CVodes Ydot function.
   ///
   void get_problem_size(
-      int*,  ///< number of equations
-      int*   ///< number of parameters in user_data vector.
+      int *,  ///< number of equations
+      int *   ///< number of parameters in user_data vector.
   );
 
   ///
@@ -140,8 +140,8 @@ public:
   /// equations, and absolute error tolerances for both x(H+) and E_int
   ///
   void get_error_tolerances(
-      double&,              ///< relative error tolerance.
-      std::vector<double>&  ///< absolute error tolerances
+      double &,              ///< relative error tolerance.
+      std::vector<double> &  ///< absolute error tolerances
   );
 
   //
@@ -236,7 +236,7 @@ int Ydot_for_cvodes(
     double,    ///< current time
     N_Vector,  ///< current Y-value
     N_Vector,  ///< vector for Y-dot values
-    void*      ///< extra user-data vector, P, for evaluating ydot(y,t,p)
+    void *     ///< extra user-data vector, P, for evaluating ydot(y,t,p)
 );
 
 // ##################################################################
@@ -254,14 +254,14 @@ public:
   /// vector.
   ///
   MPv2(
-      const int,              ///< grid dimensions
-      const int,              ///< Coordinate System flag
-      const int,              ///< Total number of variables in state vector
-      const int,              ///< Number of tracer variables in state vector.
-      const std::string*,     ///< List of what the tracer variables mean.
-      struct which_physics*,  ///< pointer to extra physics flags.
-      struct rad_sources*,    ///< radiation sources.
-      const double            ///< EOS Gamma
+      const int,               ///< grid dimensions
+      const int,               ///< Coordinate System flag
+      const int,               ///< Total number of variables in state vector
+      const int,               ///< Number of tracer variables in state vector.
+      const std::string *,     ///< List of what the tracer variables mean.
+      struct which_physics *,  ///< pointer to extra physics flags.
+      struct rad_sources *,    ///< radiation sources.
+      const double             ///< EOS Gamma
   );
 
   ~MPv2();
@@ -279,12 +279,12 @@ public:
   /// fraction relaxes exponentially to its equilibrium value.
   ///
   int TimeUpdateMP(
-      const double*,  ///< Primitive Vector to be updated.
-      double*,        ///< Destination Vector for updated values.
-      const double,   ///< Time Step to advance by.
-      const double,   ///< EOS gamma.
-      const int,      ///< Switch for what type of integration to use.
-      double*         ///< Vector of extra data (column densities, etc.).
+      const double *,  ///< Primitive Vector to be updated.
+      double *,        ///< Destination Vector for updated values.
+      const double,    ///< Time Step to advance by.
+      const double,    ///< EOS gamma.
+      const int,       ///< Switch for what type of integration to use.
+      double *         ///< Vector of extra data (column densities, etc.).
   );
 
   ///
@@ -294,15 +294,15 @@ public:
   ///
   ///
   int TimeUpdate_RTsinglesrc(
-      const double*,  ///< Primitive Vector to be updated.
-      double*,        ///< Destination Vector for updated values.
-      const double,   ///< Time Step to advance by.
-      const double,   ///< EOS gamma.
-      const int,      ///< Switch for what type of integration to use.
-      const double,   ///< flux in per unit length along ray (F/ds or L/dV)
-      const double,   ///< path length ds through cell.
-      const double,   ///< Optical depth to entry point of ray into cell.
-      double*         ///< return optical depth through cell in this variable.
+      const double *,  ///< Primitive Vector to be updated.
+      double *,        ///< Destination Vector for updated values.
+      const double,    ///< Time Step to advance by.
+      const double,    ///< EOS gamma.
+      const int,       ///< Switch for what type of integration to use.
+      const double,    ///< flux in per unit length along ray (F/ds or L/dV)
+      const double,    ///< path length ds through cell.
+      const double,    ///< Optical depth to entry point of ray into cell.
+      double *         ///< return optical depth through cell in this variable.
   );
 
   ///
@@ -321,20 +321,20 @@ public:
   /// - Number of UV point sources.
   ///
   int TimeUpdateMP_RTnew(
-      const double*,  ///< Primitive Vector to be updated.
-      const int,      ///< Number of UV heating sources.
-      const std::vector<struct rt_source_data>&,
+      const double *,  ///< Primitive Vector to be updated.
+      const int,       ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
       ///< list of UV-heating column densities and source properties.
       const int,  ///< number of ionising radiation sources.
-      const std::vector<struct rt_source_data>&,
+      const std::vector<struct rt_source_data> &,
       ///< list of ionising src column densities and source properties.
-      double*,       ///< Destination Vector for updated values
+      double *,      ///< Destination Vector for updated values
                      ///< (can be same as first Vector.
       const double,  ///< Time Step to advance by.
       const double,  ///< EOS gamma.
       const int,     ///< Switch for what type of integration to use.
                      ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-      double*        ///< final temperature (not strictly needed).
+      double *       ///< final temperature (not strictly needed).
   );
 
   ///
@@ -343,8 +343,8 @@ public:
   /// - Is threadsafe.
   ///
   double Temperature(
-      const double*,  ///< primitive vector
-      const double    ///< eos gamma
+      const double *,  ///< primitive vector
+      const double     ///< eos gamma
   );
 
   ///
@@ -353,7 +353,7 @@ public:
   /// generator.
   ///
   int Set_Temp(
-      double*,       ///< primitive vector.
+      double *,      ///< primitive vector.
       const double,  ///< temperature
       const double   ///< eos gamma.
   );
@@ -365,11 +365,11 @@ public:
   /// the newer timescales interface.
   ///
   double timescales(
-      const double*,  ///< Current cell.
-      const double,   ///< EOS gamma.
-      const bool,     ///< set to 'true' if including cooling time.
-      const bool,     ///< set to 'true' if including recombination time.
-      const bool      ///< set to 'true' if including photo-ionsation time.
+      const double *,  ///< Current cell.
+      const double,    ///< EOS gamma.
+      const bool,      ///< set to 'true' if including cooling time.
+      const bool,      ///< set to 'true' if including recombination time.
+      const bool       ///< set to 'true' if including photo-ionsation time.
   );
 
   ///
@@ -379,12 +379,12 @@ public:
   /// substantially greater capability than the other timescales function.
   ///
   double timescales_RT(
-      const double*,  ///< Current cell.
-      const int,      ///< Number of UV heating sources.
-      const std::vector<struct rt_source_data>&,
+      const double *,  ///< Current cell.
+      const int,       ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
       ///< list of UV-heating column densities and source properties.
       const int,  ///< number of ionising radiation sources.
-      const std::vector<struct rt_source_data>&,
+      const std::vector<struct rt_source_data> &,
       ///< list of ionising src column densities and source properties.
       const double  ///< EOS gamma.
   );
@@ -395,7 +395,7 @@ public:
   /// implemented here.
   ///
   int Init_ionfractions(
-      double*,       ///< Primitive vector to be updated.
+      double *,      ///< Primitive vector to be updated.
       const double,  ///< eos gamma.
       const double   ///< optional gas temperature to end up at.
                      ///< (negative means use pressure)
@@ -411,16 +411,16 @@ public:
   ///
   /// Set the properties of a multifrequency ionising radiation source.
   ///
-  int set_multifreq_source_properties(const struct rad_src_info*);
+  int set_multifreq_source_properties(const struct rad_src_info *);
 
   ///
   /// Get the total recombination rate for an ion, given the input
   /// state vector.
   ///
   double get_recombination_rate(
-      const int,        ///< ion index in tracer array (optional).
-      const pion_flt*,  ///< input state vector (primitive).
-      const double      ///< EOS gamma (optional)
+      const int,         ///< ion index in tracer array (optional).
+      const pion_flt *,  ///< input state vector (primitive).
+      const double       ///< EOS gamma (optional)
   );
 
 private:
@@ -428,8 +428,8 @@ private:
   /// convert state vector from grid cell into local microphysics vector.
   ///
   int convert_prim2local(
-      const double*,  ///< primitive vector from grid cell (length nv_prim)
-      double*         ///< local vector [x,E](n+1).
+      const double *,  ///< primitive vector from grid cell (length nv_prim)
+      double *         ///< local vector [x,E](n+1).
   );
 
   ///
@@ -437,10 +437,10 @@ private:
   /// This is the inverse of convert_prim2local.
   ///
   int convert_local2prim(
-      const double*,  ///< local (updated) vector [x,E](n+1).
-      const double*,  ///< input primitive vector from grid cell (length
-                      ///< nv_prim)
-      double*  ///< updated primitive vector for grid cell (length nv_prim)
+      const double *,  ///< local (updated) vector [x,E](n+1).
+      const double *,  ///< input primitive vector from grid cell (length
+                       ///< nv_prim)
+      double *  ///< updated primitive vector for grid cell (length nv_prim)
   );
 
   ///
@@ -453,11 +453,11 @@ private:
   /// fails.
   ///
   int integrate_cvodes_step(
-      const std::vector<double>&,  ///< input vector
-      double*,                     ///< parameters for user_data
-      double,                      ///< start time.
-      double,                      ///< time-step.
-      std::vector<double>&         ///< output vector.
+      const std::vector<double> &,  ///< input vector
+      double *,                     ///< parameters for user_data
+      double,                       ///< start time.
+      double,                       ///< time-step.
+      std::vector<double> &         ///< output vector.
   );
 
   ///
@@ -466,20 +466,20 @@ private:
   /// dYdt() needs to know for both heating and ionisation sources.
   ///
   void setup_radiation_source_parameters(
-      const double*,  ///< primitive input state vector.
-      double*,        ///< local input state vector (x_in,E_int)
-      const int,      ///< Number of UV heating sources.
-      const std::vector<struct rt_source_data>&,
+      const double *,  ///< primitive input state vector.
+      double *,        ///< local input state vector (x_in,E_int)
+      const int,       ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
       ///< list of UV-heating column densities and source properties.
       const int,  ///< number of ionising radiation sources.
-      const std::vector<struct rt_source_data>&
+      const std::vector<struct rt_source_data> &
       ///< list of ionising src column densities and source properties.
   );
 
   N_Vector y_in,    ///< current y-vector
       y_out,        ///< output y-vector
       abstol;       ///< vector of absolute error tolerances for y-elements.
-  void* cvode_mem;  ///< pointer to memory allocation for the solver.
+  void *cvode_mem;  ///< pointer to memory allocation for the solver.
   int n_eq;         ///< number of equations to solve.
   int n_xd;         ///< number of elements in user-data array.
 

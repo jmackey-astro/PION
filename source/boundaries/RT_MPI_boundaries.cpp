@@ -32,9 +32,9 @@ RT_MPI_bc::~RT_MPI_bc()
   // Have to delete lists of cells, and boundary_data, and maybe cells.
   //
   for (unsigned int isrc = 0; isrc < RT_source_list.size(); isrc++) {
-    struct RT_source_comms_info* rc = &(RT_source_list[isrc]);
+    struct RT_source_comms_info *rc = &(RT_source_list[isrc]);
     if (!rc->RT_recv_list.empty()) {
-      struct boundary_data* b;
+      struct boundary_data *b;
       for (unsigned int ii = 0; ii < rc->RT_recv_list.size(); ii++) {
         int n = rc->RT_recv_list[ii].dir;
         b     = rc->RT_recv_list[ii].RT_bd;
@@ -77,7 +77,7 @@ RT_MPI_bc::~RT_MPI_bc()
     //
     if (!rc->RT_send_list.empty()) {
       // cout <<"\tDeleting RT Send List.\n";
-      struct boundary_data* b;
+      struct boundary_data *b;
       for (unsigned int ii = 0; ii < rc->RT_send_list.size(); ii++) {
         b = rc->RT_send_list[ii].RT_bd;
         if (!b) {
@@ -107,11 +107,11 @@ RT_MPI_bc::~RT_MPI_bc()
 // ##################################################################
 
 int RT_MPI_bc::Setup_RT_Boundaries(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class MCMDcontrol& ppar,    ///< domain decomposition info
-    class GridBaseClass* grid,  ///< pointer to grid.
+    class SimParams &par,       ///< pointer to simulation parameters
+    class MCMDcontrol &ppar,    ///< domain decomposition info
+    class GridBaseClass *grid,  ///< pointer to grid.
     const int src_id,
-    struct rad_src_info& RS)
+    struct rad_src_info &RS)
 {
 #ifdef RT_TESTING
   cout << "RT_MPI_bc::Setup_RT_Boundaries() starting!\n";
@@ -176,11 +176,11 @@ int RT_MPI_bc::Setup_RT_Boundaries(
 // ##################################################################
 
 int RT_MPI_bc::Receive_RT_Boundaries(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class MCMDcontrol& ppar,    ///< domain decomposition info
-    class GridBaseClass* grid,  ///< pointer to grid.
+    class SimParams &par,       ///< pointer to simulation parameters
+    class MCMDcontrol &ppar,    ///< domain decomposition info
+    class GridBaseClass *grid,  ///< pointer to grid.
     const int src_id,           ///< source id
-    struct rad_src_info& RS)
+    struct rad_src_info &RS)
 {
 #ifdef RT_TESTING
   cout << "\tReceive_RT_Boundaries() src=" << src_id << ": Starting\n";
@@ -217,7 +217,7 @@ int RT_MPI_bc::Receive_RT_Boundaries(
   //  if (RT_source_list[src_id].source_id != src_id) {
   //    rep.error("source id for boundary indexed by src_id is wrong",src_id);
   //  }
-  struct RT_source_comms_info* i_src = &(RT_source_list[sle]);
+  struct RT_source_comms_info *i_src = &(RT_source_list[sle]);
 
   //
   // See how many boundaries to receive, and create a list of them
@@ -250,8 +250,8 @@ int RT_MPI_bc::Receive_RT_Boundaries(
     //
     // Now receive the n_recv boundaries, in any order:
     //
-    double* buf = 0;
-    struct boundary_data* b;
+    double *buf = 0;
+    struct boundary_data *b;
     int from_rank, comm_tag, ct, i_recv;
     string id;
     for (int i = 0; i < n_recv; i++) {
@@ -330,8 +330,8 @@ int RT_MPI_bc::Receive_RT_Boundaries(
       // c->col. Hopefully they are ordered the same way in packing as
       // unpacking!!!
       //
-      list<cell*>::iterator c = b->data.begin();
-      int count               = 0;
+      list<cell *>::iterator c = b->data.begin();
+      int count                = 0;
       double tau[MAX_TAU];
       for (short unsigned int v = 0; v < MAX_TAU; v++)
         tau[v] = 0.0;
@@ -409,11 +409,11 @@ int RT_MPI_bc::Receive_RT_Boundaries(
 // ##################################################################
 
 int RT_MPI_bc::Send_RT_Boundaries(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class MCMDcontrol& ppar,    ///< domain decomposition info
-    class GridBaseClass* grid,  ///< pointer to grid.
+    class SimParams &par,       ///< pointer to simulation parameters
+    class MCMDcontrol &ppar,    ///< domain decomposition info
+    class GridBaseClass *grid,  ///< pointer to grid.
     const int src_id,           ///< source id
-    struct rad_src_info& RS)
+    struct rad_src_info &RS)
 {
   int err = 0;
 #ifdef RT_TESTING
@@ -449,7 +449,7 @@ int RT_MPI_bc::Send_RT_Boundaries(
   //  if (RT_source_list[src_id].source_id != src_id) {
   //    rep.error("source id for boundary indexed by src_id is wrong",src_id);
   //  }
-  struct RT_source_comms_info* i_src = &(RT_source_list[sle]);
+  struct RT_source_comms_info *i_src = &(RT_source_list[sle]);
 
   //
   // See how many boundaries to send:
@@ -471,15 +471,15 @@ int RT_MPI_bc::Send_RT_Boundaries(
     cout << "\tSend_RT_Boundaries() src=" << src_id;
     cout << ": Allocating " << n_send << " data buffers.\n";
 #endif
-    double* data    = 0;
-    std::string* id = 0;
+    double *data    = 0;
+    std::string *id = 0;
     id              = mem.myalloc(id, n_send);
     //
     // Loop over Boundaries, put c->col into data, send it.
     // I'm going to use non-blocking sends, so they all send at once.
     //
     for (int i = 0; i < n_send; i++) {
-      struct boundary_data* b = i_src->RT_send_list[i].RT_bd;
+      struct boundary_data *b = i_src->RT_send_list[i].RT_bd;
       data                    = 0;
 
 #ifdef RT_TESTING
@@ -498,8 +498,8 @@ int RT_MPI_bc::Send_RT_Boundaries(
       //
       // Put columns into data
       //
-      list<cell*>::iterator c = b->data.begin();
-      int count               = 0;
+      list<cell *>::iterator c = b->data.begin();
+      int count                = 0;
       double tau[MAX_TAU];
       for (short unsigned int v = 0; v < MAX_TAU; v++)
         tau[v] = 0.0;
@@ -619,13 +619,13 @@ int RT_MPI_bc::Send_RT_Boundaries(
 // ##################################################################
 
 int RT_MPI_bc::setup_RT_infinite_src_BD(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class MCMDcontrol& ppar,    ///< domain decomposition info
-    class GridBaseClass* grid,  ///< pointer to grid.
+    class SimParams &par,       ///< pointer to simulation parameters
+    class MCMDcontrol &ppar,    ///< domain decomposition info
+    class GridBaseClass *grid,  ///< pointer to grid.
     const int src_id,
-    struct rad_src_info& RS,
-    std::vector<struct RT_boundary_list_element>& RT_recv_list,
-    std::vector<struct RT_boundary_list_element>& RT_send_list)
+    struct rad_src_info &RS,
+    std::vector<struct RT_boundary_list_element> &RT_recv_list,
+    std::vector<struct RT_boundary_list_element> &RT_send_list)
 {
 #ifdef RT_TESTING
   cout << "RT_MPI_bc::setup_RT_diffuse_radn_src_BD() starting.\n";
@@ -780,9 +780,9 @@ int RT_MPI_bc::setup_RT_infinite_src_BD(
 // ##################################################################
 
 enum direction RT_MPI_bc::RT_src_at_infty_direction(
-    class SimParams& par,  ///< pointer to simulation parameters
+    class SimParams &par,  ///< pointer to simulation parameters
     const int src_id,
-    struct rad_src_info& RS)
+    struct rad_src_info &RS)
 {
   //
   // Get source position vector; compare values to find the
@@ -806,13 +806,13 @@ enum direction RT_MPI_bc::RT_src_at_infty_direction(
 // ##################################################################
 
 int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
-    class SimParams& par,       ///< pointer to simulation parameters
-    class MCMDcontrol& ppar,    ///< domain decomposition info
-    class GridBaseClass* grid,  ///< pointer to grid.
+    class SimParams &par,       ///< pointer to simulation parameters
+    class MCMDcontrol &ppar,    ///< domain decomposition info
+    class GridBaseClass *grid,  ///< pointer to grid.
     const int src_id,
-    struct rad_src_info& RS,
-    std::vector<struct RT_boundary_list_element>& RT_recv_list,
-    std::vector<struct RT_boundary_list_element>& RT_send_list)
+    struct rad_src_info &RS,
+    std::vector<struct RT_boundary_list_element> &RT_recv_list,
+    std::vector<struct RT_boundary_list_element> &RT_send_list)
 {
 #ifdef RT_TESTING
   cout << "RT_MPI_bc::setup_RT_finite_ptsrc_BD() starting.\n";
@@ -1133,8 +1133,8 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
 // ##################################################################
 
 int RT_MPI_bc::setup_RT_recv_boundary(
-    class GridBaseClass* grid,          ///< pointer to grid.
-    struct RT_boundary_list_element& b  ///< boundary info.
+    class GridBaseClass *grid,          ///< pointer to grid.
+    struct RT_boundary_list_element &b  ///< boundary info.
 )
 {
 #ifdef RT_TESTING
@@ -1198,8 +1198,8 @@ int RT_MPI_bc::setup_RT_recv_boundary(
 // ##################################################################
 
 int RT_MPI_bc::RT_populate_recv_boundary(
-    struct boundary_data* b,         ///< pointer to RT boundary data.
-    const struct boundary_data* b2,  ///< pointer to BC boundary data.
+    struct boundary_data *b,         ///< pointer to RT boundary data.
+    const struct boundary_data *b2,  ///< pointer to BC boundary data.
     const enum direction offdir      ///< face dir
 )
 {
@@ -1215,7 +1215,7 @@ int RT_MPI_bc::RT_populate_recv_boundary(
   //
   // Add all boundary cells to the RT boundary list.
   //
-  list<cell*>::const_iterator bpt = b2->data.begin();
+  list<cell *>::const_iterator bpt = b2->data.begin();
   do {
     b->data.push_back(*bpt);
 #ifdef RT_TESTING
@@ -1231,8 +1231,8 @@ int RT_MPI_bc::RT_populate_recv_boundary(
 // ##################################################################
 
 int RT_MPI_bc::setup_RT_send_boundary(
-    class GridBaseClass* grid,               ///< pointer to grid.
-    struct RT_boundary_list_element& send_b  ///< boundary info.
+    class GridBaseClass *grid,               ///< pointer to grid.
+    struct RT_boundary_list_element &send_b  ///< boundary info.
 )
 {
 #ifdef RT_TESTING
@@ -1243,7 +1243,7 @@ int RT_MPI_bc::setup_RT_send_boundary(
   //
   // get a pointer to the existing grid boundary.
   //
-  boundary_data* grid_b = grid->BC_bd[send_b.dir];
+  boundary_data *grid_b = grid->BC_bd[send_b.dir];
   if (!grid_b) {
     rep.error("RT boundary in dir with no real boundary!", send_b.dir);
   }
@@ -1260,8 +1260,8 @@ int RT_MPI_bc::setup_RT_send_boundary(
   // Now get every cell in the grid boundary, and add the 'Nbc'th
   // cell in the on-grid-direction to the send-boundary list.
   //
-  list<cell*>::const_iterator bpt = grid_b->data.begin();
-  cell* target                    = 0;
+  list<cell *>::const_iterator bpt = grid_b->data.begin();
+  cell *target                     = 0;
   do {
     target = (*bpt);
     for (int v = 0; v < grid_b->depth; v++)

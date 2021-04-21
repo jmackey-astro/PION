@@ -44,7 +44,7 @@ enum rt_dirs {
 struct RT_boundary_list_element {
   int rank;
   int dir;
-  struct boundary_data* RT_bd;
+  struct boundary_data *RT_bd;
 };
 
 // ##################################################################
@@ -81,32 +81,32 @@ public:
   /// and setup extra boundaries at corners.
   ///
   virtual int Setup_RT_Boundaries(
-      class SimParams&,      ///< pointer to simulation parameters
-      class MCMDcontrol&,    ///< domain decomposition info
-      class GridBaseClass*,  ///< pointer to grid.
-      const int,             ///< source id
-      struct rad_src_info&);
+      class SimParams &,      ///< pointer to simulation parameters
+      class MCMDcontrol &,    ///< domain decomposition info
+      class GridBaseClass *,  ///< pointer to grid.
+      const int,              ///< source id
+      struct rad_src_info &);
 
   ///
   /// Receive all optical depths for boundaries closer to source.
   ///
   virtual int Receive_RT_Boundaries(
-      class SimParams&,      ///< pointer to simulation parameters
-      class MCMDcontrol&,    ///< domain decomposition info
-      class GridBaseClass*,  ///< pointer to grid.
-      const int,             ///< source id
-      struct rad_src_info&);
+      class SimParams &,      ///< pointer to simulation parameters
+      class MCMDcontrol &,    ///< domain decomposition info
+      class GridBaseClass *,  ///< pointer to grid.
+      const int,              ///< source id
+      struct rad_src_info &);
 
   ///
   /// Send all optical depths for boundaries to domains further from
   /// source.
   ///
   virtual int Send_RT_Boundaries(
-      class SimParams&,      ///< pointer to simulation parameters
-      class MCMDcontrol&,    ///< domain decomposition info
-      class GridBaseClass*,  ///< pointer to grid.
-      const int,             ///< source id
-      struct rad_src_info&);
+      class SimParams &,      ///< pointer to simulation parameters
+      class MCMDcontrol &,    ///< domain decomposition info
+      class GridBaseClass *,  ///< pointer to grid.
+      const int,              ///< source id
+      struct rad_src_info &);
 
 protected:
   ///
@@ -123,15 +123,15 @@ protected:
   /// element, and this function finds them and sets them up.
   ///
   int setup_RT_infinite_src_BD(
-      class SimParams&,      ///< pointer to simulation parameters
-      class MCMDcontrol&,    ///< domain decomposition info
-      class GridBaseClass*,  ///< pointer to grid.
-      const int,             ///< Source id.
-      struct rad_src_info&,
-      std::vector<struct RT_boundary_list_element>&,  ///< RECV list for this
-                                                      ///< source.
-      std::vector<struct RT_boundary_list_element>&   ///< SEND list for this
-                                                      ///< source.
+      class SimParams &,      ///< pointer to simulation parameters
+      class MCMDcontrol &,    ///< domain decomposition info
+      class GridBaseClass *,  ///< pointer to grid.
+      const int,              ///< Source id.
+      struct rad_src_info &,
+      std::vector<struct RT_boundary_list_element> &,  ///< RECV list for this
+                                                       ///< source.
+      std::vector<struct RT_boundary_list_element> &   ///< SEND list for this
+                                                       ///< source.
   );
 
   ///
@@ -139,9 +139,9 @@ protected:
   /// from the grid to the source.
   ///
   enum direction RT_src_at_infty_direction(
-      class SimParams&,  ///< pointer to simulation parameters
-      const int,         ///< source id.
-      struct rad_src_info&);
+      class SimParams &,  ///< pointer to simulation parameters
+      const int,          ///< source id.
+      struct rad_src_info &);
 
   ///
   /// If the source is a monochromatic point source (not at infinity), then
@@ -150,31 +150,31 @@ protected:
   /// the send and recv lists.
   ///
   int setup_RT_finite_ptsrc_BD(
-      class SimParams&,      ///< pointer to simulation parameters
-      class MCMDcontrol&,    ///< domain decomposition info
-      class GridBaseClass*,  ///< pointer to grid.
-      const int,             ///< Source id.
-      struct rad_src_info&,  ///< SimParams list of radiation sources.
-      std::vector<struct RT_boundary_list_element>&,  ///< RECV list for this
-                                                      ///< source.
-      std::vector<struct RT_boundary_list_element>&   ///< SEND list for this
-                                                      ///< source.
+      class SimParams &,      ///< pointer to simulation parameters
+      class MCMDcontrol &,    ///< domain decomposition info
+      class GridBaseClass *,  ///< pointer to grid.
+      const int,              ///< Source id.
+      struct rad_src_info &,  ///< SimParams list of radiation sources.
+      std::vector<struct RT_boundary_list_element> &,  ///< RECV list for this
+                                                       ///< source.
+      std::vector<struct RT_boundary_list_element> &   ///< SEND list for this
+                                                       ///< source.
   );
 
   ///
   /// allocate memory for new cells and attach them to the grid.
   ///
   int setup_RT_recv_boundary(
-      class GridBaseClass*,             ///< pointer to grid.
-      struct RT_boundary_list_element&  ///< pointer to boundary info.
+      class GridBaseClass *,             ///< pointer to grid.
+      struct RT_boundary_list_element &  ///< pointer to boundary info.
   );
 
   ///
   /// find cells needed for send boundary, and add them to the list.
   ///
   int setup_RT_send_boundary(
-      class GridBaseClass*,             ///< pointer to grid.
-      struct RT_boundary_list_element&  ///< pointer to boundary info.
+      class GridBaseClass *,             ///< pointer to grid.
+      struct RT_boundary_list_element &  ///< pointer to boundary info.
   );
 
   ///
@@ -182,9 +182,9 @@ protected:
   /// expect.
   ///
   int RT_populate_recv_boundary(
-      struct boundary_data*,        ///< pointer to RT boundary data.
-      const struct boundary_data*,  ///< pointer to BC boundary data.
-      const enum direction          ///< face direction
+      struct boundary_data *,        ///< pointer to RT boundary data.
+      const struct boundary_data *,  ///< pointer to BC boundary data.
+      const enum direction           ///< face direction
   );
 };
 

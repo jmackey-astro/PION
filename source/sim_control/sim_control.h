@@ -86,7 +86,7 @@ public:
   /// repeatedly until end-of-sim is reached.
   ///
   virtual int Time_Int(
-      vector<class GridBaseClass*>&  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
   );
 
   ///
@@ -94,7 +94,7 @@ public:
   /// This function finished the simulation gracefully (hopefully!).
   ///
   virtual int Finalise(
-      vector<class GridBaseClass*>&  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
   );
 
   //---------------------------------------
@@ -105,7 +105,7 @@ protected:
   /// pressure on the full domain and outputs it to screen
   ///
   virtual void calculate_magnetic_pressure(
-      class GridBaseClass*  ///< address of grid pointer.
+      class GridBaseClass *  ///< address of grid pointer.
   );
 #endif  // CHECK_MAGP
 
@@ -115,7 +115,7 @@ protected:
   /// position and output to screen.
   ///
   virtual void calculate_blastwave_radius(
-      class GridBaseClass*  ///< address of grid pointer.
+      class GridBaseClass *  ///< address of grid pointer.
   );
 #endif  // BLAST_WAVE_CHECK
 
@@ -133,7 +133,7 @@ protected:
   /// message if not.
   ///
   int check_energy_cons(
-      class GridBaseClass*  ///< address of vector of grid pointers.
+      class GridBaseClass *  ///< address of vector of grid pointers.
   );
 
 };  // sim_control

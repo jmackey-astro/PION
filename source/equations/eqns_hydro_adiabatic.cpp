@@ -81,7 +81,7 @@ eqns_Euler::~eqns_Euler()
 // ##################################################################
 // ##################################################################
 
-void eqns_Euler::PtoU(const pion_flt* p, pion_flt* u, const double gamma)
+void eqns_Euler::PtoU(const pion_flt *p, pion_flt *u, const double gamma)
 {
   // First rho
   u[eqRHO] = p[eqRO];
@@ -101,8 +101,8 @@ void eqns_Euler::PtoU(const pion_flt* p, pion_flt* u, const double gamma)
 // ##################################################################
 
 int eqns_Euler::UtoP(
-    const pion_flt* u,
-    pion_flt* p,
+    const pion_flt *u,
+    pion_flt *p,
     const double MinTemp,  ///< minimum temperature/pressure allowed
     const double gamma)
 {
@@ -199,7 +199,7 @@ int eqns_Euler::UtoP(
 // ##################################################################
 
 double eqns_Euler::chydro(
-    const pion_flt* p,  ///< Pointer to primitive variables.
+    const pion_flt *p,  ///< Pointer to primitive variables.
     const double g      ///< Gas constant gamma.
 )
 {
@@ -212,8 +212,8 @@ double eqns_Euler::chydro(
 int eqns_Euler::HydroWave(
     int lr,
     const pion_flt pp,
-    const pion_flt* prewave,
-    pion_flt* u,
+    const pion_flt *prewave,
+    pion_flt *u,
     const double gamma)
 {
   double pratio = pp / prewave[eqPG];
@@ -260,9 +260,9 @@ int eqns_Euler::HydroWave(
 int eqns_Euler::HydroWaveFull(
     int lr,
     const pion_flt pp,
-    const pion_flt* prewave,
-    pion_flt* u,
-    pion_flt* rho,
+    const pion_flt *prewave,
+    pion_flt *u,
+    pion_flt *rho,
     const double gamma)
 {
   double pratio = pp / prewave[eqPG];
@@ -294,7 +294,7 @@ int eqns_Euler::HydroWaveFull(
 // ##################################################################
 // ##################################################################
 
-void eqns_Euler::PUtoFlux(const pion_flt* p, const pion_flt* u, pion_flt* f)
+void eqns_Euler::PUtoFlux(const pion_flt *p, const pion_flt *u, pion_flt *f)
 {
   f[eqRHO] = u[eqMMX];
   f[eqMMX] = u[eqMMX] * p[eqVX] + p[eqPG];
@@ -308,7 +308,7 @@ void eqns_Euler::PUtoFlux(const pion_flt* p, const pion_flt* u, pion_flt* f)
 // ##################################################################
 // ##################################################################
 
-void eqns_Euler::UtoFlux(const pion_flt* u, pion_flt* f, const double gamma)
+void eqns_Euler::UtoFlux(const pion_flt *u, pion_flt *f, const double gamma)
 {
   double pg =
       (gamma - 1.)
@@ -328,7 +328,7 @@ void eqns_Euler::UtoFlux(const pion_flt* u, pion_flt* f, const double gamma)
 
 ///  Returns Enthalpy (per unit mass), given primitive variable vector.
 double eqns_Euler::Enthalpy(
-    const pion_flt* p,  ///< Primitive State Vector.
+    const pion_flt *p,  ///< Primitive State Vector.
     const double g      ///< gas EOS gamma.
 )
 {
@@ -344,7 +344,7 @@ double eqns_Euler::Enthalpy(
 ///  Returns Internal Energy (per unit mass, so 'Temperature'), given primitive
 ///  variable vector.
 double eqns_Euler::eint(
-    const pion_flt* p,  ///< Primitive State Vector.
+    const pion_flt *p,  ///< Primitive State Vector.
     const double g      ///< gas EOS gamma.
 )
 {
@@ -356,7 +356,7 @@ double eqns_Euler::eint(
 
 ///  Returns Total Energy (per unit volume), given primitive variable vector.
 double eqns_Euler::Etot(
-    const pion_flt* p,  ///< State Vector.
+    const pion_flt *p,  ///< State Vector.
     const double g      ///< gas EOS gamma.
 )
 {
@@ -370,7 +370,7 @@ double eqns_Euler::Etot(
 
 ///  Returns Total Pressure (per unit Volume)
 double eqns_Euler::Ptot(
-    const pion_flt* p,  ///< Primitive State Vector.
+    const pion_flt *p,  ///< Primitive State Vector.
     const double        ///< gas EOS gamma.
 )
 {
@@ -395,7 +395,7 @@ double eqns_Euler::AdiabaticRho(
 // ##################################################################
 
 void eqns_Euler::SetAvgState(
-    const pion_flt* ms,  ///< Mean Prim. var. state vector
+    const pion_flt *ms,  ///< Mean Prim. var. state vector
     const double g       ///< Gas constant gamma.
 )
 {

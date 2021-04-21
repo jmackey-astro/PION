@@ -41,7 +41,7 @@ stellar_wind_angle::stellar_wind_angle(
     const int nv,           ///< nvar
     const int nt,           ///< ntracer
     const int ft,           ///< ftr
-    const std::string* tr,  ///< List of tracer variable names.
+    const std::string *tr,  ///< List of tracer variable names.
     const int cs,           ///< coord_sys
     const int eq,           ///< eqn_type
     const double mt,        ///< Minimum temperature allowed on grid
@@ -440,9 +440,9 @@ double stellar_wind_angle::fn_density_interp(
 // ##################################################################
 
 void stellar_wind_angle::set_wind_cell_reference_state(
-    class GridBaseClass* grid,
-    struct wind_cell* wc,
-    const struct wind_source* WS,
+    class GridBaseClass *grid,
+    struct wind_cell *wc,
+    const struct wind_source *WS,
     const double eos_gamma  ///< EOS gamma
 )
 {
@@ -493,7 +493,7 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   double Vinf =
       fn_v_inf(std::min(0.9999, WS->v_rot / WS->vcrit), WS->Vinf, wc->theta);
 
-  cell* c = wc->c;
+  cell *c = wc->c;
   double x, y, z, xf, yf;
   switch (ndim) {
     case 1:
@@ -674,10 +674,10 @@ void stellar_wind_angle::set_wind_cell_reference_state(
 // ##################################################################
 
 int stellar_wind_angle::add_evolving_source(
-    const double* pos,    ///< position (physical units).
+    const double *pos,    ///< position (physical units).
     const double rad,     ///< radius (physical units).
     const int type,       ///< type (must be WINDTYPE_ANGLE).
-    pion_flt* trv,        ///< Any (constant) wind tracer values.
+    pion_flt *trv,        ///< Any (constant) wind tracer values.
     const string infile,  ///< file name to read data from.
     const int enhance,    ///< enhance mdot based on rotation (0=no,1=yes).
     const double
@@ -706,7 +706,7 @@ int stellar_wind_angle::add_evolving_source(
   // the array, and the timings (offset, update frequency).
   // They are stored in local data.
   //
-  struct evolving_wind_data* temp = 0;
+  struct evolving_wind_data *temp = 0;
   temp                            = mem.myalloc(temp, 1);
   int err                         = read_evolution_file(infile, temp);
   if (err) rep.error("couldn't read wind evolution file", infile);
@@ -817,7 +817,7 @@ int stellar_wind_angle::add_evolving_source(
 // ##################################################################
 
 int stellar_wind_angle::add_rotating_source(
-    const double* pos,   ///< position (cm from grid origin)
+    const double *pos,   ///< position (cm from grid origin)
     const double rad,    ///< radius (cm)
     const int type,      ///< type (2=lat-dep.)
     const double mdot,   ///< Mdot (g/s)
@@ -827,10 +827,10 @@ int stellar_wind_angle::add_rotating_source(
     const double Twind,  ///< Wind Temperature (p_g.m_p/(rho.k_b))
     const double Rstar,  ///< radius of star (cm)
     const double Bstar,  ///< Surface Magnetic field of star (Gauss).
-    pion_flt* trv        ///< Tracer values of wind (if any)
+    pion_flt *trv        ///< Tracer values of wind (if any)
 )
 {
-  struct wind_source* ws = 0;
+  struct wind_source *ws = 0;
   ws                     = mem.myalloc(ws, 1);
   ws->id                 = wlist.size();
   ws->ncell              = 0;
@@ -916,8 +916,8 @@ int stellar_wind_angle::add_rotating_source(
 // ##################################################################
 
 void stellar_wind_angle::update_source(
-    class GridBaseClass* grid,
-    struct evolving_wind_data* wd,
+    class GridBaseClass *grid,
+    struct evolving_wind_data *wd,
     const double t_now,
     const double eos_gamma)
 {

@@ -104,9 +104,9 @@ enum BoundaryTypes {
 /// Struct to hold data on 2^ndim cells on a fine grid that should
 /// be averaged to be sent to a coarser grid.
 struct averaging {
-  std::vector<cell*> c;    ///< list of cells to be averaged
+  std::vector<cell *> c;   ///< list of cells to be averaged
   pion_flt cpos[MAX_DIM];  ///< position of cell-centre of coarse cell
-  pion_flt* avg_state;
+  pion_flt *avg_state;
 };
 
 // ##################################################################
@@ -114,9 +114,9 @@ struct averaging {
 
 /// struct to hold cells that should be sent to a finer-level grid
 struct c2f {
-  std::vector<cell*> c;  ///< list of cells to be sent/received
-  int rank;              ///< rank of process to send to/receive from.
-  int dir;               ///< location of boundary on finer-level grid.
+  std::vector<cell *> c;  ///< list of cells to be sent/received
+  int rank;               ///< rank of process to send to/receive from.
+  int dir;                ///< location of boundary on finer-level grid.
 };
 
 // ##################################################################
@@ -128,20 +128,20 @@ struct c2f {
 struct boundary_data {
   enum direction
       dir;  ///< Outward Normal direction of boundary (NO dir if internal).
-  enum direction ondir;   ///< direction back onto grid.
-  std::string type;       ///< What type of boundary it is (Periodic, Absorbing,
-                          ///< Fixed, Reflective, etc.).
-  int itype;              ///< Integer flag for boundary type.
-  int bloc;               ///< boundary location, e.g. x=0
-  int depth;              ///< how many cells deep the boundary is.
-  bool bpos;              ///< whether boundary is in +ve direction?
-  enum axes baxis;        ///< index in position vector relating to bpos.
-  std::list<cell*> data;  ///< STL linked list for boundary data cells.
+  enum direction ondir;  ///< direction back onto grid.
+  std::string type;      ///< What type of boundary it is (Periodic, Absorbing,
+                         ///< Fixed, Reflective, etc.).
+  int itype;             ///< Integer flag for boundary type.
+  int bloc;              ///< boundary location, e.g. x=0
+  int depth;             ///< how many cells deep the boundary is.
+  bool bpos;             ///< whether boundary is in +ve direction?
+  enum axes baxis;       ///< index in position vector relating to bpos.
+  std::list<cell *> data;  ///< STL linked list for boundary data cells.
   ///
   /// STL linked list for grid cells to send to neighbouring
   /// MPI process (parallel only), on the same grid level.
   ///
-  std::list<cell*> send_data;
+  std::list<cell *> send_data;
   /// vector of data to be sent to coarser level grid (MPI-NG only)
   std::vector<struct averaging> avg;
   /// Vector of lists of cells, for a coarse grid that
@@ -155,17 +155,17 @@ struct boundary_data {
   /// - Used by parallel NG code:
   ///    - NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV()
   ///    - NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV()
-  std::vector<std::list<cell*>> NGrecvF2C;
+  std::vector<std::list<cell *> > NGrecvF2C;
   std::vector<int> NGrecvF2C_ranks;
   /// as NGrecvF2C, but C2F
-  std::vector<std::list<cell*>> NGrecvC2F;
+  std::vector<std::list<cell *> > NGrecvC2F;
   int NGrecvC2F_parent;  ///< process containing coarse level data.
   /// (MPI-NG only) list of lists of cells, for a coarse grid that
   /// sends data to a number of child grids for their external
   /// boundaries.  Vector length is the number of child boundaries
   /// to update.
-  std::vector<struct c2f*> NGsendC2F;
-  pion_flt* refval;  ///< Optional reference state vector.
+  std::vector<struct c2f *> NGsendC2F;
+  pion_flt *refval;  ///< Optional reference state vector.
 };
 
 #endif  // BOUNDARIES_H

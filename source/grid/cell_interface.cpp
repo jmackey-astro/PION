@@ -38,7 +38,7 @@
 using namespace std;
 
 #ifdef COUNT_ENERGETICS
-struct energetics* GLOBAL_CE = 0;
+struct energetics *GLOBAL_CE = 0;
 ///< for tracking rates in microphysics/raytracing.
 #endif
 
@@ -49,6 +49,8 @@ class cell_interface CI;
 
 // ##################################################################
 // ##################################################################
+
+
 
 cell_interface::cell_interface()
 {
@@ -101,8 +103,12 @@ cell_interface::cell_interface()
     iHcorr[v] = 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 cell_interface::~cell_interface()
 {
@@ -117,8 +123,12 @@ cell_interface::~cell_interface()
   }
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void cell_interface::set_minimal_cell_data()
 {
@@ -126,8 +136,12 @@ void cell_interface::set_minimal_cell_data()
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void cell_interface::unset_minimal_cell_data()
 {
@@ -135,8 +149,12 @@ void cell_interface::unset_minimal_cell_data()
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void cell_interface::set_ndim(const int nd)
 {
@@ -144,8 +162,12 @@ void cell_interface::set_ndim(const int nd)
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void cell_interface::set_nvar(const int nv)
 {
@@ -153,10 +175,14 @@ void cell_interface::set_nvar(const int nv)
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
-void cell_interface::set_xmin(const double* xm)
+
+
+void cell_interface::set_xmin(const double *xm)
 {
   if (!xmin) {
     xmin = new double[ndim];
@@ -167,8 +193,12 @@ void cell_interface::set_xmin(const double* xm)
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 //
 // Set variables for extra_data based on what we need per cell.
@@ -176,7 +206,7 @@ void cell_interface::set_xmin(const double* xm)
 // H-correction needs Ndim doubles, and Lapidus viscosity one double.
 //
 void cell_interface::setup_extra_data(
-    const struct rad_sources& rsi,  ///< Flag for ray-tracing
+    const struct rad_sources &rsi,  ///< Flag for ray-tracing
     const int hc_flag,              ///< Flag for H-correction
     const int dv_flag,              ///< Flag for Div(V).
     const int gp_flag               ///< Flag for |grad(P)|.
@@ -291,8 +321,12 @@ void cell_interface::setup_extra_data(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 // returns true if using minimal cells.
 bool cell_interface::query_minimal_cells()
@@ -300,10 +334,14 @@ bool cell_interface::query_minimal_cells()
   return minimal_cell;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
-cell* cell_interface::new_cell()
+
+
+cell *cell_interface::new_cell()
 {
   if (!have_setup_extra_data)
     rep.error("Setup extra data before calling new_cell!", using_RT);
@@ -316,7 +354,7 @@ cell* cell_interface::new_cell()
   if (ndim < 0) rep.error("Cell Interface: set ndim", ndim);
   if (nvar < 0) rep.error("Cell Interface: set nvar", nvar);
 
-  cell* c = 0;
+  cell *c = 0;
   c       = mem.myalloc(c, 1);
   c->pos  = 0;
 
@@ -376,10 +414,14 @@ cell* cell_interface::new_cell()
   return c;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
-void cell_interface::delete_cell(cell* c)
+
+
+void cell_interface::delete_cell(cell *c)
 {
   c->pos      = mem.myfree(c->pos);
   c->P        = mem.myfree(c->P);
@@ -398,13 +440,17 @@ void cell_interface::delete_cell(cell* c)
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 void cell_interface::set_pos(
-    cell* c,  ///< pointer to cell
-    const double*
-        p_in  ///< double array of size ndim, containing cell position.
+    cell *c,  ///< pointer to cell
+    const double
+        *p_in  ///< double array of size ndim, containing cell position.
 )
 {
   //
@@ -419,12 +465,16 @@ void cell_interface::set_pos(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 void cell_interface::set_pos(
-    cell* c,         ///< pointer to cell
-    const int* p_in  ///< integer array of size ndim, containing cell position.
+    cell *c,         ///< pointer to cell
+    const int *p_in  ///< integer array of size ndim, containing cell position.
 )
 {
   //
@@ -439,12 +489,16 @@ void cell_interface::set_pos(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 void cell_interface::get_dpos(
-    const cell* c,  ///< pointer to cell
-    double* p_out   ///< array to write position into.
+    const cell *c,  ///< pointer to cell
+    double *p_out   ///< array to write position into.
 )
 {
   for (int v = 0; v < ndim; v++)
@@ -452,23 +506,31 @@ void cell_interface::get_dpos(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 double cell_interface::get_dpos(
-    const cell* c,  ///< pointer to cell
+    const cell *c,  ///< pointer to cell
     const int v     ///< element of position vector we want
 )
 {
   return xmin[v] + c->pos[v] * dxo2;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 void cell_interface::get_ipos(
-    const cell* c,  ///< pointer to cell
-    int* ipos_out   ///< array to write integer position into.
+    const cell *c,  ///< pointer to cell
+    int *ipos_out   ///< array to write integer position into.
 )
 {
   for (int v = 0; v < ndim; v++)
@@ -476,23 +538,31 @@ void cell_interface::get_ipos(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 int cell_interface::get_ipos(
-    const cell* c,  ///< pointer to cell
+    const cell *c,  ///< pointer to cell
     const int v     ///< element of position we want.
 )
 {
   return c->pos[v];
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 void cell_interface::get_ipos_vec(
-    const double* p_in,  ///< physical position (input)
-    int* p_out           ///< integer position (output)
+    const double *p_in,  ///< physical position (input)
+    int *p_out           ///< integer position (output)
 )
 {
   if (dxo2 < 0.0)
@@ -512,12 +582,16 @@ void cell_interface::get_ipos_vec(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 void cell_interface::get_ipos_as_double(
-    const double* p_in,  ///< physical position (input)
-    double* p_out        ///< integer position (output)
+    const double *p_in,  ///< physical position (input)
+    double *p_out        ///< integer position (output)
 )
 {
   if (dxo2 < 0.0)
@@ -531,12 +605,16 @@ void cell_interface::get_ipos_as_double(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 void cell_interface::get_dpos_vec(
-    const int* p_in,  ///< integer position (input)
-    double* p_out     ///< physical position (output)
+    const int *p_in,  ///< integer position (input)
+    double *p_out     ///< physical position (output)
 )
 {
   for (int v = 0; v < ndim; v++)
@@ -544,10 +622,14 @@ void cell_interface::get_dpos_vec(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
-void cell_interface::copy_cell(const cell* c1, cell* c2)
+
+
+void cell_interface::copy_cell(const cell *c1, cell *c2)
 {
   for (int i = 0; i < ndim; i++)
     c2->pos[i] = c1->pos[i];
@@ -578,10 +660,14 @@ void cell_interface::copy_cell(const cell* c1, cell* c2)
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
-void cell_interface::print_cell(const cell* c)
+
+
+void cell_interface::print_cell(const cell *c)
 {
   if (c == 0) {
     cout << "Null Pointer!\n";
@@ -636,15 +722,23 @@ void cell_interface::print_cell(const cell* c)
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 // ----------------------------------------------------------------
 // *** Methods for a NG grid ***
 // ----------------------------------------------------------------
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void cell_interface::set_nlevels(
     const double dx,  ///< dx on coarsest grid.
@@ -674,6 +768,8 @@ void cell_interface::set_nlevels(
 
   return;
 }
+
+
 
 // ##################################################################
 // ##################################################################
