@@ -51,7 +51,7 @@ if(NOT SUNDIALS_FOUND)
         DOC "Sundials libraries"
     )
 
-    find_package_handle_standard_args(sundials
+    find_package_handle_standard_args(SUNDIALS
             FOUND_VAR SUNDIALS_FOUND
             REQUIRED_VARS SUNDIALS_INCLUDE_DIR SUNDIALS_LIBRARY SUNDIALS_VERSION_MAJOR
             VERSION_VAR SUNDIALS_VERSION_STRING

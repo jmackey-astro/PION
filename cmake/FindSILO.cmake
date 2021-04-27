@@ -30,7 +30,7 @@ if(NOT SILO_FOUND)
         DOC "Silo libraries"
     )
 
-    find_package_handle_standard_args(silo
+    find_package_handle_standard_args(SILO
             REQUIRED_VARS SILO_INCLUDE_DIR SILO_LIBRARY
     )            
 endif(NOT SILO_FOUND)

@@ -1,4 +1,4 @@
-image: debian:stable
+image: debian:unstable
 
 .snippets:
     - &install_dependencies
@@ -9,10 +9,8 @@ image: debian:stable
           libgsl-dev 
           libopenmpi-dev 
           libcurl4-openssl-dev 
-          libbz2-dev wget;
-        cd extra_libraries;
-        bash install_boost.sh;
-        cd ..
+          libbz2-dev wget
+          libboost-math-dev
     - &configure
         mkdir build
         && pushd build
@@ -70,6 +68,7 @@ stages:
 
 Format:
     <<: *default_job
+    image: debian:stable
     stage: static analysis
     variables:
         <<: *default_cmake_variables

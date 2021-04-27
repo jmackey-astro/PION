@@ -30,7 +30,7 @@ if(NOT FITS_FOUND)
         DOC "Fits libraries"
     )
 
-    find_package_handle_standard_args(fits
+find_package_handle_standard_args(FITS
             REQUIRED_VARS FITS_INCLUDE_DIR FITS_LIBRARY
     )            
 endif(NOT FITS_FOUND)

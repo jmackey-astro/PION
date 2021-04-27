@@ -87,6 +87,13 @@ if(PION_USE_SILO AND PION_USE_FITS)
     return()
 endif(PION_USE_SILO AND PION_USE_FITS)
 
+if(NOT PION_USE_SILO AND NOT PION_USE_FITS)
+    message("Cannot build without Silo or Fits libraries...")
+    message("Please rerun the CMake command with one of them set to `ON`.")
+    message("Eg. -DPION_USE_FITS=ON.")
+    return()
+endif(NOT PION_USE_SILO AND NOT PION_USE_FITS)
+
 if(PION_USE_SILO)
     add_definitions(-DSILO)
 endif(PION_USE_SILO)
@@ -101,12 +108,8 @@ endif(PION_USE_FITS)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
-#find_package(GSL REQUIRED COMPONENTS spline)
-set(Boost_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/extra_libraries/boost/include)
-find_package(Boost 1.75.0 REQUIRED)
-if(Boost_FOUND)
-  include_directories(${Boost_INCLUDE_DIRS})
-endif()
+find_package(Boost 1.7.0 REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
 
 find_package(SUNDIALS REQUIRED)
 
@@ -114,6 +117,7 @@ add_definitions("-DCVODE${SUNDIALS_VERSION_MAJOR}")
 
 if(PION_USE_SILO)
     find_package(SILO REQUIRED)
+    include_directories(${SILO_INCLUDE_DIR})
 endif(PION_USE_SILO)
 
 if(PION_USE_FITS)
@@ -137,9 +141,6 @@ include_directories(
     SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/source
 )
 
-include_directories(
-    SYSTEM PUBLIC ${SILO_INCLUDE_DIR}
-)
 
 #
 # Setup the Pion library
