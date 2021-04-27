@@ -1053,6 +1053,7 @@ int stellar_wind_evolution::add_evolving_source(
   pion_flt *trv,        ///< Any (constant) wind tracer values.
   const string infile,      ///< file name to read data from.
   const int ,   ///< enhance mdot based on rotation (0=no,1=yes).
+  const double Bstar,   ///< Surface B field (G)
   const double time_offset, ///< time offset = [t(sim)-t(wind_file)] in years
   const double t_now,       ///< current simulation time, to see if src is active.
   const double update_freq, ///< frequency with which to update wind properties.
@@ -1161,8 +1162,8 @@ int stellar_wind_evolution::add_evolving_source(
   // Set B-field of star
   // TODO: Decide how to set this better!  For now pick B=10G at
   //       radius 10 R_sun, and scale with R^-2 for constant flux.
-  //
-  double Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
+  // One solution: just set it to a constant throughout evolution.
+  //Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
 
   // Now add source using constant wind version.
   stellar_wind::add_source(pos,rad,type,mdot,vinf,vrot,Twind,rstar,Bstar,trv);
@@ -1253,8 +1254,8 @@ void stellar_wind_evolution::update_source(
   // Set B-field of star
   // TODO: Decide how to set this better!  For now pick B=10G at
   //       radius 10 R_sun, and scale with R^-2 for constant flux.
-  //
-  wd->ws->Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
+  // One solution: leave it constant
+  //wd->ws->Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
   
   //
   // Now re-assign state vector of each wind-boundary-cell with

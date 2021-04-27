@@ -153,6 +153,7 @@ class stellar_wind {
       pion_flt *, ///< Any (constant) wind tracer values.
       const string,   ///< file name to read data from.
       const int,      ///< enhance mdot based on rotation (0=no,1=yes).
+      const double,   ///< Surface B field (G)
       const double,   ///< time offset = [t(sim)-t(wind_file)]
       const double,   ///< current time.
       const double,   ///< frequency with which to update wind properties.
@@ -403,6 +404,7 @@ class stellar_wind_evolution : virtual public stellar_wind {
       pion_flt *, ///< Any (constant) wind tracer values.
       const string,   ///< file name to read data from.
       const int,      ///< enhance mdot based on rotation (0=no,1=yes).
+      const double,   ///< Surface B field (G)
       const double,   ///< time offset = [t(sim)-t(wind_file)]
       const double,   ///< current time.
       const double,   ///< frequency with which to update wind properties.

@@ -528,6 +528,7 @@ int stellar_wind_latdep::add_evolving_source(
       pion_flt *trv,       ///< Any (constant) wind tracer values.
       const string infile, ///< file name to read data from.
       const int enhance,   ///< enhance mdot based on rotation (0=no,1=yes).
+      const double Bstar,   ///< Surface B field (G)
       const double time_offset, ///< time offset = [t(sim)-t(wind_file)] (seconds)
       const double t_now,       ///< current sim time, to see if src is active.
       const double update_freq, ///< frequency to update wind properties (seconds).
@@ -563,11 +564,12 @@ int stellar_wind_latdep::add_evolving_source(
     temp->vesc_evo.push_back(temp->vcrt_evo[i]*pconst.sqrt2());
 
   // optionally enhance Mdot artificially
+  // Mdot = Mdot_0 * (1 + {omega-0.5}/0.5*enhance) for omega>0.5
   if (enhance) {
-    cout <<"Enhancing Mdot by factor of 2 at Omega=1\n";
+    cout <<"Enhancing Mdot by factor of (1+"<<enhance<<") at Omega=1\n";
     for (int i=0; i<temp->Npt; i++) {
       om = temp->vrot_evo[i]/temp->vcrt_evo[i];
-      if (om>0.5) temp->Mdot_evo[i] *= 2.0*om;
+      if (om>0.5) temp->Mdot_evo[i] *= 1.0 + 2.0*enhance*(om-0.5);
     }
   }
 
@@ -648,8 +650,9 @@ int stellar_wind_latdep::add_evolving_source(
   // Set B-field of star
   // TODO: Decide how to set this better!  For now pick B=10G at
   //       radius 10 R_sun, and scale with R^-2 for constant flux.
-  //
-  double Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
+  // One solution: just set it to a constant throughout evolution.
+  //double Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
+  //double Bstar= 1.0; // fix to 1 Gauss at the surface, regardless of radius
 
   // get the mass-loss rate of an equivalent non-rotating star from 
   // Brott et al. (2011) recipe
@@ -850,8 +853,8 @@ void stellar_wind_latdep::update_source(
   // Set B-field of star
   // TODO: Decide how to set this better!  For now pick B=10G at
   //       radius 10 R_sun, and scale with R^-2 for constant flux.
-  //
-  wd->ws->Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
+  // One solution: leave it constant
+  //wd->ws->Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
   
   // get the mass-loss rate of an equivalent non-rotating star from 
   // Brott et al. (2011) recipe

@@ -158,6 +158,7 @@ int stellar_wind_bc::BC_assign_STWIND(
         SWP.params[isw]->tr,
         SWP.params[isw]->evolving_wind_file,
         SWP.params[isw]->enhance_mdot,
+        SWP.params[isw]->Bstar,
         SWP.params[isw]->time_offset,
         par.simtime,
         SWP.params[isw]->update_freq,
