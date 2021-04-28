@@ -108,7 +108,7 @@ endif(PION_USE_FITS)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
-find_package(Boost 1.7.0 REQUIRED)
+find_package(Boost 1.73.0 REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
 find_package(SUNDIALS REQUIRED)
