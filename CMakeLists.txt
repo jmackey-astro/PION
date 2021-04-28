@@ -102,6 +102,9 @@ if(PION_USE_FITS)
     add_definitions(-DFITS)
 endif(PION_USE_FITS)
 
+#  This is required on OSX so that the Boost code will compile successfully
+set(CMAKE_CXX_STANDARD 14)
+
 #
 # Find dependant libraries
 #
