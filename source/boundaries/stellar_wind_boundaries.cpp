@@ -171,6 +171,8 @@ int stellar_wind_bc::BC_assign_STWIND(
   //
   // loop over sources, adding cells to boundary data list in order.
   //
+  //Perform only if t=0
+
   for (int id=0;id<Ns;id++) {
     //cout <<"\tBC_assign_STWIND: Adding cells to source ";
     //cout <<id<<"\n";
@@ -256,7 +258,41 @@ int stellar_wind_bc::BC_update_STWIND(
       const int ,  ///< current fractional step being taken.
       const int    ///< final step (not needed b/c fixed BC).
       )
-{
+{  
+  //Moving wind stuff
+  //cout <<"stellar_wind_bc: Stuff\n";
+  //delete wind cells
+  //Only performe when simulation started. IF STATEMENT STILL NEEDED?
+  int err=0;
+//  if (simtime>0.0) {
+  for (int id=0;id<grid->Wind->Nsources();id++) {
+  double srcpos[MAX_DIM];
+  double srcrad;
+  grid->Wind->get_src_posn(id,srcpos);
+  grid->Wind->get_src_drad(id,&srcrad);
+  cell *c = grid->FirstPt_All();
+  do {
+#ifdef TESTING
+    cout <<"cell: "<<grid->distance_vertex2cell(srcpos,c)<<"\n";
+#endif
+    if (grid->distance_vertex2cell(srcpos,c) <= srcrad) {
+      //ncell--;
+      err += grid->Wind->remove_cells(grid, id,c);
+    }
+  } while ((c=grid->NextPt_All(c))!=0);
+   err += grid->Wind->set_num_cells(id,0);
+  //Update positions
+  double newpos[2];
+  newpos[0] = 25e5*simtime;
+  newpos[1] = 0.0;
+  grid->Wind->set_src_posn(id,newpos);
+  //Asign new Boundary cells  
+  grid->Wind->get_src_posn(id,srcpos);
+  grid->Wind->get_src_drad(id,&srcrad);
+  BC_assign_STWIND_add_cells2src(par, grid, id);
+  //End of source loop
+  }
+  
   //
   // The stellar_wind class already has a list of cells to update
   // for each source, together with pre-calculated state vectors,
@@ -265,7 +301,7 @@ int stellar_wind_bc::BC_update_STWIND(
 #ifdef TESTING
   cout <<"stellar_wind_bc: updating wind boundary\n";
 #endif
-  int err=0;
+  //int err=0;
   for (int id=0;id<grid->Wind->Nsources();id++) {
 #ifdef TESTING
     cout <<"stellar_wind_bc: updating wind boundary for id="<<id<<"\n";

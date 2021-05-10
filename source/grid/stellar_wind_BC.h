@@ -198,6 +198,16 @@ class stellar_wind {
       );
 
   ///
+  /// Remove a cell from the list of boundary cells.
+  /// Returns non-zero on error.
+  ///
+  int remove_cells(
+      class GridBaseClass *,
+      const int, ///< src id
+      cell *     ///< cell to add to list.
+      );
+
+  ///
   /// Set the total number of cells for this source; function 
   /// checks with internal counting to make sure we got all the
   /// cells in the internal list.
@@ -230,6 +240,10 @@ class stellar_wind {
   void get_src_posn(const int, ///< src id
         double *   ///< position vector (output)
         );
+        
+  void set_src_posn(const int, ///< src id
+        double *   ///< position vector (output)
+        );      
 
   void get_src_drad(const int, ///< src id
         double *   ///< radius (output) (physical units).

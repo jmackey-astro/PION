@@ -332,6 +332,28 @@ int stellar_wind::add_cell(
   return 0;
 }
 
+// ##################################################################
+// ##################################################################
+
+int stellar_wind::remove_cells(
+      class GridBaseClass *grid,
+      const int id, ///< src id
+      cell *c       ///< cell to add to list.
+      )
+{
+  if (id<0 || id>=nsrc)
+    rep.error("bad src id",id);
+  struct wind_source *WS = wlist[id];
+  //Set former wind-cells to normal domain cells	
+  c->isbd=false;
+  c->isdomain=true;
+  c->timestep = true;
+  //Clear list of Windcells
+  WS->wcells.clear();
+  //Set counter for windcells to zero
+  WS->ncell=0;
+  return 0;
+}
 
 // ##################################################################
 // ##################################################################
@@ -649,6 +671,14 @@ void stellar_wind::get_src_posn(
       )
 {
   for (int v=0;v<ndim;v++) x[v] = wlist[id]->dpos[v];
+}
+
+void stellar_wind::set_src_posn(
+      const int id, ///< src id
+      double *x     ///< position vector (output)
+      )
+{
+  for (int v=0;v<ndim;v++) wlist[id]->dpos[v] = x[v];
 }
 
 
