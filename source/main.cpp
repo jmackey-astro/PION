@@ -1,14 +1,14 @@
 ///
 /// \file main.cpp
 /// 
-/// \brief Main program which sets up a uniform grid and runs the simulation.
+/// \brief Main program which sets up a uniform grid and runs PION.
 /// 
 /// \author Jonathan Mackey
 /// 
 /// This file just contains the main() function, which sets a number of 
 /// parameters based on command line arguments, then initialised the grid, 
 /// starts the time integration, and cleans up when the simulation is 
-/// finished.
+/// finished.  This is for the serial version of PION without a nested grid
 /// 
 /// Arguments: \<main\> \<icfile\> [override options]\n
 /// Parameters:

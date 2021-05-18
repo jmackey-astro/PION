@@ -1,0 +1,37 @@
+#!/bin/sh 
+#
+# NOTES:
+# Submit job using:
+#    sbatch kay.<filename>.txt
+# Query the queue using:
+#    squeue --account=<account>
+# N.B. Kay has 40 processors per node, so 64-core job needs 2 nodes, etc.
+
+#SBATCH --time=01:00:00
+#SBATCH --nodes=1
+#SBATCH -A eurocc-af-2
+#SBATCH -p DevQ
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=jmackey@cp.dias.ie
+#SBATCH --job-name=d2l1_np001
+
+module load intel/2018u4
+module load gsl/intel/2.5
+
+PION_DIR=/ichec/home/users/jmackey/active/pion
+DDIR=/ichec/work/EuroCC-AF-2/jm/Test2D
+mkdir -p $DDIR
+
+# Run Uniform Grid with 32 MPI processes
+NP=1
+PION=${PION_DIR}/pion-ug
+ICGEN=${PION_DIR}/icgen-ug
+# Get the 2nd last snapshot
+RESTART=`ls ${DDIR}/Ostar2_d2l1n0256_np032_0000.*.silo | tail -n2 | head -n1`
+mpirun -np $NP $PION $RESTART \
+  opfreq=1024 \
+  redirect=${DDIR}/log_restart_test \
+  outfile=${DDIR}/Ostar2_d2l1n0256_np001
+exit
+
+

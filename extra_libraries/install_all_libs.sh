@@ -116,9 +116,8 @@ case $HOSTNAME in
     #module purge
     module load cmake3
     module load intel/2018u4
-    #module load cmake3/3.12.3
-    #module load python py/intel
-    #module load python numpy
+    module load conda
+    source activate
     module list
     MAKE_UNAME=KAY
     NCORES=8
@@ -126,6 +125,10 @@ case $HOSTNAME in
     export CXX=icpc
     export FC=ifort
     SHARED=NO
+    . ./install_python_silo.sh
+    COMPILE_SILO=yes
+    COMPILE_SUNDIALS=yes
+    COMPILE_FITS=no
     ;;
 esac
 #######################

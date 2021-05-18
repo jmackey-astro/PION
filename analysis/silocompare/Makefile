@@ -210,6 +210,39 @@ ifeq ($(MAKE_UNAME), osx)
 endif
 #################### --- OS X Darwin --- #############################
 
+################### --- KAY at ICHEC.IE ---######################
+# Options for kay.ichec.ie
+######################################################################
+ifeq ($(MAKE_UNAME), KAY)
+  CXX=mpiicpc
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3
+    #CXXFLAGS = -O2 -g -shared-intel
+  else
+    CXXFLAGS = -O0 -Wall -g
+    # -wd981 -wd383
+  endif
+  # -wd981 disables a warning about order of evaluation of operands:
+  #  see http://software.intel.com/en-us/forums/showthread.php?t=62309
+  #  and also http://software.intel.com/en-us/articles/cdiag981/
+  # -wd383 also diasables a warning about passing a temporary object to a function.
+  #CXXFLAGS += -DMPICH_IGNORE_CXX_SEEK
+  #CXXFLAGS += -fp-stack-check -fstack-security-check
+  OPT += -DINTEL -DCVODE5
+  MYLIB = $(CURDIR)/../../extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -Wl,-L${MYLIB}/lib
+  LDFLAGS += -Wl,-L${MYLIB}/lib64
+  LDFLAGS += -lsilo 
+  #LDFLAGS += -lcfitsio
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+  LDFLAGS += -lgsl -lgslcblas
+  LDFLAGS += -lm
+
+endif
+################### --- KAY at ICHEC.IE ---######################
+
 
 ##################################################
 ##################################################
