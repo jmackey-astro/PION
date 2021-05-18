@@ -27,11 +27,14 @@ image: debian:unstable
                 -DPION_PARALLEL="${PION_PARALLEL}"
                 -DPION_USE_SILO="${PION_USE_SILO}"
                 -DPION_USE_FITS="${PION_USE_FITS}"
+                -DPION_TOOLS="${PION_TOOLS}"
                 ..
         )
         && popd
     - &build
         make -C build
+    - &double-mach-reflection
+        cd tools && bash run_DMR_test.sh
 
 .cmake_variables:
     default_cmake_variables: &default_cmake_variables
@@ -45,6 +48,7 @@ image: debian:unstable
         PION_PARALLEL: "ON"
         PION_USE_SILO: "OFF"
         PION_USE_FITS: "OFF"
+        PION_TOOLS: "OFF"
 
 .default_job: &default_job
     tags:
@@ -65,6 +69,7 @@ image: debian:unstable
 stages:
     - static analysis
     - build
+    - double-mach-reflection
 
 Format:
     <<: *default_job
@@ -124,4 +129,21 @@ Uniform_Serial:
         PION_UNIFORM_GRID: "ON"
         PION_PARALLEL: "OFF"
         PION_USE_FITS: "ON"
+
+DMR_TEST:
+    <<: *default_job
+    stage: double-mach-reflection
+    variables:
+        <<: *default_cmake_variables
+        CXX: mpicxx
+        PION_UNIFORM_GRID: "ON"
+        PION_PARALLEL: "ON"
+        PION_USE_SILO: "ON"
+        PION_TOOLS: "ON"
+    script:
+        - *configure
+        - *build
+        - *double-mach-reflection
+
+
 

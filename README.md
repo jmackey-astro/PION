@@ -75,7 +75,8 @@ Option | Effect
 `-DPION_UNIFORM_GRID=...`| Set to `ON` to build uniform grid simulations (default `OFF`).
 `-DPION_PARALLEL_=...`  | Set to `ON` to enable MPI for the Pion build, or `OFF` to disable MPI (default `ON`).
 `-DPION_USE_SILO=...`   | Set to `ON` to use Silo for handling data I/O (default `OFF`).
-`-DPION_USE_FITS=...`   | Set to `ON` to use Fits for handlin data I/O (default `OFF`).
+`-DPION_USE_FITS=...`   | Set to `ON` to use Fits for handling data I/O (default `OFF`).
+`-DPION_TOOLS=...`   | Set to `ON` to also compile support programs in analysis subdir (default `OFF`).
 
 #### Dependency Helpers
 Option | Effect
@@ -106,6 +107,7 @@ The following people have contributed to the development of PION:
   * Andrew Lim
   * Jonathan Mackey       <jmackey@cp.dias.ie>
   * Maria Moutzouri    
+  * Ciarán O'Rourke
   * Davit Zargaryan
 
 

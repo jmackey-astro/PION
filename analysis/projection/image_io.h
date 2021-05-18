@@ -23,6 +23,7 @@
 //
 // Includes for inheritance, and fits definitions:
 //
+#include "dataIO/file_status.h"
 #include "dataIO/dataio_fits.h"
 #include <fitsio.h>
 

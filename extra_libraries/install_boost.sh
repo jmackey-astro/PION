@@ -45,7 +45,7 @@ then
   FILE=boost_1_75_0.tar.bz2
   VERSION=1.75.0
   BLD_DIR=boost_build
-  REMOTE_URL=https://dl.bintray.com/boostorg/release/1.75.0/source/${FILE}
+  REMOTE_URL=https://boostorg.jfrog.io/artifactory/main/release/1.75.0/source/${FILE}
   echo "********************************"
   echo "*** INSTALLING BOOST FILE=${FILE}****"
   echo "********************************"

@@ -1,0 +1,119 @@
+# parameter file for Initial Condition Generation.
+
+## Basic Properties
+ndim 2
+eqn euler
+coordinates cartesian
+solver 3
+OrderOfAccSpace 2
+OrderOfAccTime  2
+CFL 0.4
+ArtificialViscosity 1
+EtaViscosity 0.1
+ntracer 0
+chem_code none
+
+ics DoubleMachRef
+DMRmach 10.0
+DMRtheta 60
+GAMMA 1.4
+StartTime 0.0
+FinishTime 0.2
+
+# Which physics to use
+EP_dynamics     1
+EP_raytracing   0
+EP_phot_ionisation   0
+EP_cooling      0
+EP_chemistry    0
+EP_coll_ionisation   0
+EP_rad_recombination 0
+EP_update_erg 0
+
+EP_MP_timestep_limit 0.0
+EP_Min_Temperature   1.0
+EP_Max_Temperature   1.0
+EP_Hydrogen_MassFrac 1.0
+EP_Helium_MassFrac   1.0
+EP_Metal_MassFrac    1.0
+
+# Smooth Data by n cells? (n<=0 means no).
+smooth -1
+# Add noise at level of f% to Data? (f<=0 means no).
+noise -1.0
+
+## Grid Parameters
+# Number of gridpoints in each direction (note cells must be cubic!)
+# INT
+NGridX  160
+NGridY  40
+NGridZ  1
+Xmin 0.0
+Ymin 0.0
+Zmin 0.0
+Xmax 4.0
+Ymax 1.0
+Zmax 1.0
+
+grid_nlevels 1
+grid_aspect_ratio_XX
+grid_aspect_ratio_YY
+grid_aspect_ratio_ZZ
+NG_centre_XX
+NG_centre_YY
+NG_centre_ZZ
+NG_refine_XX
+NG_refine_YY
+NG_refine_ZZ
+
+# Snapshots
+OutputPath ./
+OutputFile DMRm10t60_n160
+OutputFileType silo
+OutputFrequency 0
+OutputCriterion 1
+OPfreqTime 0.3
+
+# Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
+BC_XN inflow
+BC_XP outflow
+BC_YN reflecting
+BC_YP DMR
+BC_Ninternal 1
+BC_INTERNAL_000 DMR2
+
+
+# Code Units
+# Reference systems of units are MKS (i.e. SI), CGS, others?
+units SI
+# One code unit is this number of reference units.
+rhoval 1.0
+lenval 1.0
+velval 1.0
+magval 1.0
+
+# winds and radiative transfer
+RT_Nsources 0
+WIND_NSRC   0
+N_JET 0
+
+
+# Reference Vector
+refvec0 1.0
+refvec1 1.0
+refvec2 1.0
+refvec3 1.0
+refvec4 1.0
+refvec5 1.0
+refvec6 1.0
+refvec7 1.0
+refvec8 1.0
+refvec9 1.0
+refvec10 1.0
+refvec11 1.0
+refvec12 1.0
+refvec13 1.0
+refvec14 1.0
+refvec15 1.0
+
+# Anything else?  

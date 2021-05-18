@@ -22,7 +22,6 @@ if(PION_USE_SILO)
             dataio_silo
 
             dataio_silo.cpp
-            dataio_silo_utility.cpp
         )
     endif(PION_PARALLEL)
 
@@ -58,4 +57,7 @@ if(PION_USE_FITS)
     target_link_libraries(dataio PUBLIC dataio_fits)
 endif(PION_USE_FITS)
 
-target_link_libraries(dataio PUBLIC tools) 
+target_link_libraries(dataio PUBLIC
+    global
+    tools
+    ) 

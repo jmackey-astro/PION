@@ -1654,7 +1654,7 @@ void point_velocity::four1(
         )
 {
   //
-  // This is the NR version of the FFT.  Instead of trying to convert it
+  // This is close to the NR version of the FFT.  Instead of trying to convert it
   // all for zero-offset arrays, I copied Martin White, and access the
   // (n-1)th element of data[] whenever I need to.
   //

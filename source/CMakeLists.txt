@@ -147,3 +147,12 @@ if(PION_UNIFORM_GRID)
         INCLUDES DESTINATION ${PION_INSTALL_INCLUDEDIR}
     )
 endif(PION_UNIFORM_GRID)
+
+add_library(
+  global
+
+  sim_params.cpp
+  constants.cpp
+)
+
+

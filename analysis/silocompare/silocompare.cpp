@@ -406,6 +406,7 @@ int main(int argc, char **argv)
     // Output differences to screen/file.
     // Write difference data to file.
     //
+    double sum=0.0;
     ofstream outf;
     switch (optype) {
     case 0: case 1:
@@ -433,6 +434,8 @@ int main(int argc, char **argv)
 	outf <<v<<"    "<<absdiff[v]<<"    "<<reldiff[v]<<"    "<<absdiff[v]<<endl;
       }
       cout <<"\t\t***********************\n";
+      for (int v=0;v<SimPM.nvar;v++) sum += absdiff[v];
+      if (sum<1.0e-10) cout <<"RESULTS ARE THE SAME ... L1 error <1e-10\n";
       outf.close();
       break;
     default:

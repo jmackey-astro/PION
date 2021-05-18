@@ -74,6 +74,12 @@ option(
     OFF
 )
 
+option(
+    PION_TOOLS
+    "Build postprocessing programmes in analysis dir.  Default is disabled."
+    OFF
+)
+
 if(PION_PARALLEL)
     add_definitions(-DPARALLEL)
     add_definitions(-DUSE_MPI)
@@ -82,9 +88,7 @@ else()
 endif(PION_PARALLEL)
 
 if(PION_USE_SILO AND PION_USE_FITS)
-    message("Cannot build with both Silo and Fits libraries...")
-    message("Please rerun the CMake command without one of them set to `ON`.")
-    return()
+    message("WARNING: building with both Silo and Fits libraries compiled...")
 endif(PION_USE_SILO AND PION_USE_FITS)
 
 if(NOT PION_USE_SILO AND NOT PION_USE_FITS)
@@ -148,8 +152,15 @@ include_directories(
 #
 # Setup the Pion library
 #
-
 add_subdirectory(source)
+
+if(PION_TOOLS)
+    add_subdirectory(analysis)
+    if (NOT PION_PARALLEL)
+      message("WARNING: Requested PION_TOOLS: most tools need PION_PARALLEL")
+      message("WARNING: but this is not set.  Most tools will not be compiled")
+    endif(NOT PION_PARALLEL)
+endif(PION_TOOLS)
 
 # Output project build options
 message(STATUS "Build options:")
@@ -158,3 +169,4 @@ message(STATUS "    PION_USE_SILO     = ${PION_USE_SILO}")
 message(STATUS "    PION_USE_FITS     = ${PION_USE_FITS}")
 message(STATUS "    PION_NESTED_GRID  = ${PION_NESTED_GRID}")
 message(STATUS "    PION_UNIFORM_GRID = ${PION_UNIFORM_GRID}")
+message(STATUS "    PION_TOOLS        = ${PION_TOOLS}")
