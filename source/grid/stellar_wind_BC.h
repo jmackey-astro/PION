@@ -89,7 +89,12 @@ struct wind_source {
     vcrit,  ///< critical rotation velocity (cm/s)
     Tw,     ///< wind temperature (K)
     Rstar,  ///< radius of star (cm)
-    Bstar;  ///< magnetic field strength of split monopole at Rstar (G)
+    Bstar,  ///< magnetic field strength of split monopole at Rstar (G)
+    ecentricity, ///<relative ecentricity of the stellar orbit
+    PeriastronX, ///Vector pointing from the inital location (dpos) to the center of gravity of the orbit; hard-coded to be in the x-y-plane
+    PeriastronY, ///Vector pointing from the inital location (dpos) to the center of gravity of the orbit; hard-coded to be in the x-y-plane
+    OrbPeriod,  ///Orbital period in years
+    dpos_init[MAX_DIM]; ///Initial position of the source
   pion_flt
     *tracers; ///< tracer values of wind.
   bool
@@ -140,7 +145,11 @@ class stellar_wind {
       const double,   ///< Surface Temperature (K)
       const double,   ///< Stellar Radius (cm)
       const double,   ///< Surface B field (G)
-      pion_flt *  ///< Tracer values of wind (if any)
+      pion_flt *,  ///< Tracer values of wind (if any)
+      const double, ///ecentricity 
+      const double, ///< periastronX vectror (cgs units).
+      const double, ///< periastronY vectror (cgs units).
+      const double  ///< Orbital period (years)
       );
 
   ///
@@ -157,7 +166,11 @@ class stellar_wind {
       const double,   ///< time offset = [t(sim)-t(wind_file)]
       const double,   ///< current time.
       const double,   ///< frequency with which to update wind properties.
-      const double    ///< time scale factor (t(sim)=[t(evo_file)-offset]/scalefactor
+      const double,    ///< time scale factor (t(sim)=[t(evo_file)-offset]/scalefactor
+      const double, 	///< ecentricity
+      const double, ///< periastronX vectror (cgs units).
+      const double, ///< periastronY vectror (cgs units).
+      const double  ///< Orbital period (years)
       )
   {rep.error("Don't call add_evolving_source from here.",99);return 99;}
 
@@ -178,7 +191,8 @@ class stellar_wind {
       const double,   ///< Wind Temperature at surface
       const double,   ///< Stellar Radius (cm)
       const double,   ///< Surface B field (G)
-      pion_flt *  ///< Tracer values of wind (if any)
+      pion_flt */*,  ///< Tracer values of wind (if any)
+      const double*/
       )
   {rep.error("Don't call add_rotating_source from here.",99);return 99;}
 
@@ -240,6 +254,14 @@ class stellar_wind {
   void get_src_posn(const int, ///< src id
         double *   ///< position vector (output)
         );
+        
+  void get_src_orbit(const int, ///< src id
+        double *,   ///< 
+        double *,
+        double *,
+        double *,
+        double *
+        );      
         
   void set_src_posn(const int, ///< src id
         double *   ///< position vector (output)
@@ -403,7 +425,11 @@ class stellar_wind_evolution : virtual public stellar_wind {
       const double,   ///< Surface Temperature (K)
       const double,   ///< Stellar Radius (cm)
       const double,   ///< Surface B field (G)
-      pion_flt *  ///< Tracer values of wind (if any)
+      pion_flt *,  ///< Tracer values of wind (if any)
+      const double, ///<relative ecentricity of the stellar orbit
+      const double, ///Vector pointing from the inital location (dpos) to the center of gravity of the orbit; hard-coded to be in the x-y-plane
+      const double, ///Vector pointing from the inital location (dpos) to the center of gravity of the orbit; hard-coded to be in the x-y-plane
+      const double   ///Orbital period in years
       );
 
   ///
@@ -422,7 +448,11 @@ class stellar_wind_evolution : virtual public stellar_wind {
       const double,   ///< time offset = [t(sim)-t(wind_file)]
       const double,   ///< current time.
       const double,   ///< frequency with which to update wind properties.
-      const double    ///< scale factor for time (t(sim)=[t(evo_file)-offset]/scalefactor
+      const double,    ///< scale factor for time (t(sim)=[t(evo_file)-offset]/scalefactor
+      const double, ///<relative ecentricity of the stellar orbit
+      const double, ///Vector pointing from the inital location (dpos) to the center of gravity of the orbit; hard-coded to be in the x-y-plane
+      const double, ///Vector pointing from the inital location (dpos) to the center of gravity of the orbit; hard-coded to be in the x-y-plane
+      const double   ///Orbital period in years
       );
 
   ///

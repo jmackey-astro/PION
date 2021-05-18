@@ -141,8 +141,13 @@ int stellar_wind_bc::BC_assign_STWIND(
         SWP.params[isw]->Tstar,
         SWP.params[isw]->Rstar,
         SWP.params[isw]->Bstar,
-        SWP.params[isw]->tr
+        SWP.params[isw]->tr,
+        SWP.params[isw]->ecentricity,
+        SWP.params[isw]->PeriastronX,
+        SWP.params[isw]->PeriastronY,
+        SWP.params[isw]->OrbPeriod
         );
+        //cout <<"add_cource call: "<<SWP.params[isw]->Periastron[0]<<", "<<SWP.params[isw]->Periastron[1]<<"\n";
     }
     else  {
       //
@@ -162,7 +167,11 @@ int stellar_wind_bc::BC_assign_STWIND(
         SWP.params[isw]->time_offset,
         par.simtime,
         SWP.params[isw]->update_freq,
-        SWP.params[isw]->t_scalefactor
+        SWP.params[isw]->t_scalefactor,
+        SWP.params[isw]->ecentricity,
+        SWP.params[isw]->PeriastronX,
+        SWP.params[isw]->PeriastronY,
+        SWP.params[isw]->OrbPeriod
         );
     }
     if (err) rep.error("Error adding wind source",isw);
@@ -260,31 +269,51 @@ int stellar_wind_bc::BC_update_STWIND(
       )
 {  
   //Moving wind stuff
-  //cout <<"stellar_wind_bc: Stuff\n";
   //delete wind cells
-  //Only performe when simulation started. IF STATEMENT STILL NEEDED?
   int err=0;
-//  if (simtime>0.0) {
+  //loop over wind-sources
   for (int id=0;id<grid->Wind->Nsources();id++) {
   double srcpos[MAX_DIM];
   double srcrad;
+  double ecentricity_fac, periastron_vec[2], orbital_period, initial_position[MAX_DIM]; //orbital parameters
+  double newpos[MAX_DIM]; //new source-position that will be assigned
+  double cos_a, sin_a, a, b, e, sin_t, cos_t; //elipse parameters
+  //Get the orbital parameters for the source
+  grid->Wind->get_src_orbit(id,&ecentricity_fac,&periastron_vec[0],&periastron_vec[1],&orbital_period, initial_position);
+  //execute only if orbit exsists == orbital_period!=0
+  if (orbital_period !=0){
   grid->Wind->get_src_posn(id,srcpos);
   grid->Wind->get_src_drad(id,&srcrad);
   cell *c = grid->FirstPt_All();
+  //loop over all cells
   do {
 #ifdef TESTING
     cout <<"cell: "<<grid->distance_vertex2cell(srcpos,c)<<"\n";
 #endif
     if (grid->distance_vertex2cell(srcpos,c) <= srcrad) {
       //ncell--;
+      //delete wind-cell list; loop needed?
       err += grid->Wind->remove_cells(grid, id,c);
     }
   } while ((c=grid->NextPt_All(c))!=0);
    err += grid->Wind->set_num_cells(id,0);
   //Update positions
-  double newpos[2];
-  newpos[0] = 25e5*simtime;
-  newpos[1] = 0.0;
+  //Elipse needs to be rotated -> get rotation matrix entries
+  cos_a = -1*periastron_vec[0]/abs(periastron_vec[0])*cos(atan(periastron_vec[1]/periastron_vec[0]));
+  sin_a = sin(-1*periastron_vec[1]/abs(periastron_vec[1])*acos(cos_a)); //sqrt(1-cos_a*cos_a);
+  //Get elipse parameters
+  a = sqrt(periastron_vec[0]*periastron_vec[0]+periastron_vec[1]*periastron_vec[1])*ecentricity_fac;
+  e = a*(ecentricity_fac-1)/ecentricity_fac;
+  b = sqrt(a*a-e*e);
+  sin_t = sin(2*pconst.pi()*simtime/(orbital_period*pconst.year()));
+  cos_t = cos(2*pconst.pi()*simtime/(orbital_period*pconst.year()));
+  //Set new position from orbital parameters
+  newpos[0] = initial_position[0]-a*cos_a+cos_a*a*cos_t-sin_a*b*sin_t;
+  newpos[1] = initial_position[1]-a*sin_a+sin_a*a*cos_t+cos_a*b*sin_t;
+  //Orbit has to be in the x-y-plane -> z-component unchanged
+  if (MAX_DIM >2)
+  	newpos[2]=initial_position[2];
+  //Set new source position	
   grid->Wind->set_src_posn(id,newpos);
   //Asign new Boundary cells  
   grid->Wind->get_src_posn(id,srcpos);
@@ -292,7 +321,7 @@ int stellar_wind_bc::BC_update_STWIND(
   BC_assign_STWIND_add_cells2src(par, grid, id);
   //End of source loop
   }
-  
+  }
   //
   // The stellar_wind class already has a list of cells to update
   // for each source, together with pre-calculated state vectors,

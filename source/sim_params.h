@@ -150,6 +150,10 @@ struct stellarwind_params {
   pion_flt tr[MAX_NVAR]; ///< tracer values in wind at Rstar.
   std::string evolving_wind_file; ///< name of file containing evolving wind data.
   int enhance_mdot;     ///< 0=no, 1=yes, for rapidly rotating stars.
+  double ecentricity;
+  double OrbPeriod;
+  double PeriastronX;
+  double PeriastronY;
 };
 
 struct stellarwind_list {

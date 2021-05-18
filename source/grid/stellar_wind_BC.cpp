@@ -132,7 +132,11 @@ int stellar_wind::add_source(
       const double temp, ///< Wind Temperature (K)
       const double Rstar, ///< Radius of star (cm).
       const double Bstar, ///< Surface Magnetic field of star (Gauss).
-      pion_flt *trv  ///< Tracer values of wind (if any)
+      pion_flt *trv,  ///< Tracer values of wind (if any)
+      const double ecentricity,
+      const double PeriastronX, ///< periastronX vectror (cgs units).
+      const double PeriastronY, ///< periastronY vectror (cgs units).      
+      const double OrbPeriod ///< Orbital period (years)
       )
 {
   struct wind_source *ws = 0;
@@ -149,8 +153,9 @@ int stellar_wind::add_source(
     break;
   }
 
-  for (int v=0;v<ndim;v++)
+  for (int v=0;v<ndim;v++){
     ws->dpos[v] = pos[v];
+    ws->dpos_init[v] = pos[v];}
   //rep.printVec("ws->dpos",ws->dpos,ndim);
 
   for (int v=ndim;v<MAX_DIM;v++)
@@ -170,6 +175,12 @@ int stellar_wind::add_source(
   ws->Tw    = temp;
   ws->Rstar = Rstar;
   ws->Bstar = Bstar;
+  
+  ws->ecentricity = ecentricity;
+  ws->OrbPeriod = OrbPeriod;
+  ws->PeriastronX = PeriastronX;
+  ws->PeriastronY = PeriastronY;
+  //cout <<"wind_BC.cpp: "<<Periastron[0]<<", "<<Periastron[1]<<"\n";
 
   ws->tracers=0;
   ws->tracers = mem.myalloc(ws->tracers,ntracer);
@@ -673,6 +684,22 @@ void stellar_wind::get_src_posn(
   for (int v=0;v<ndim;v++) x[v] = wlist[id]->dpos[v];
 }
 
+void stellar_wind::get_src_orbit(
+      const int id, ///< src id
+      double *x,     ///< ecentricity (output)
+      double *y1,     ///< PeriastronX Vec (output)
+      double *y2,     ///< PeriastronY Vec (output)      
+      double *z,     ///< Orbital period (output)
+      double *w
+      )
+{
+  *x = wlist[id]->ecentricity;
+  *y1 = wlist[id]->PeriastronX;
+  *y2 = wlist[id]->PeriastronY;
+  *z = wlist[id]->OrbPeriod;
+  for (int v=0;v<ndim;v++) w[v] = wlist[id]->dpos_init[v];
+}
+
 void stellar_wind::set_src_posn(
       const int id, ///< src id
       double *x     ///< position vector (output)
@@ -916,7 +943,11 @@ int stellar_wind_evolution::add_source(
       const double Twnd, ///< Wind Temperature (K)
       const double Rstar, ///< Stellar radius.
       const double Bstar, ///< Surface Magnetic field of star (Gauss).
-      pion_flt *trv  ///< Tracer values of wind (if any)
+      pion_flt *trv,  ///< Tracer values of wind (if any)
+      const double ecentricity, ///<relative ecentricity of the stellar orbit
+      const double PeriastronX, ///Vector pointing from the inital location (dpos) to the center of gravity of the orbit; hard-coded to be in the x-y-plane
+      const double PeriastronY, ///Vector pointing from the inital location (dpos) to the center of gravity of the orbit; hard-coded to be in the x-y-plane      
+      const double OrbPeriod  ///Orbital period in years
       )
 {
   //
@@ -943,9 +974,8 @@ int stellar_wind_evolution::add_source(
 
   // find indices of elements and dust in tracers list.
   set_element_indices(temp);
-
   // Now add source using constant wind version.
-  stellar_wind::add_source(pos,rad,type,mdot,vinf,vrot,Twnd,Rstar,Bstar,trv);
+  stellar_wind::add_source(pos,rad,type,mdot,vinf,vrot,Twnd,Rstar,Bstar,trv,ecentricity, PeriastronX, PeriastronY, OrbPeriod);
   temp->ws = wlist.back();
   wdata_evol.push_back(temp);
 
@@ -1087,7 +1117,11 @@ int stellar_wind_evolution::add_evolving_source(
   const double time_offset, ///< time offset = [t(sim)-t(wind_file)] in years
   const double t_now,       ///< current simulation time, to see if src is active.
   const double update_freq, ///< frequency with which to update wind properties.
-  const double t_scalefactor ///< wind evolves this factor times faster than normal
+  const double t_scalefactor, ///< wind evolves this factor times faster than normal
+  const double ecentricity, ///<relative ecentricity of the stellar orbit
+  const double PeriastronX, ///Vector pointing from the inital location (dpos) to the center of gravity of the orbit; hard-coded to be in the x-y-plane
+  const double PeriastronY, ///Vector pointing from the inital location (dpos) to the center of gravity of the orbit; hard-coded to be in the x-y-plane
+  const double  OrbPeriod  ///Orbital period in years
   )
 {
   if (type != WINDTYPE_EVOLVING) {
@@ -1196,7 +1230,7 @@ int stellar_wind_evolution::add_evolving_source(
   //Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
 
   // Now add source using constant wind version.
-  stellar_wind::add_source(pos,rad,type,mdot,vinf,vrot,Twind,rstar,Bstar,trv);
+  stellar_wind::add_source(pos,rad,type,mdot,vinf,vrot,Twind,rstar,Bstar,trv,ecentricity, PeriastronX, PeriastronY, OrbPeriod);
   temp->ws = wlist.back();
 
   // Add evolutionary data to list of wind sources and return
