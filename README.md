@@ -57,6 +57,7 @@ make -j 4
 popd # build_dir
 ```
 
+An example script for [Debian10/Ubuntu20.04 is here](https://homepages.dias.ie/jmackey/pion-dev-doc/_downloads/c09c3b85afae16c99963dfd1d25965d5/build_debian.sh).
 To install execute `make -C ${build_dir} install`.
 
 ### Useful Options

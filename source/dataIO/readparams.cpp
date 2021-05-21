@@ -91,7 +91,7 @@ string ReadParams::find_parameter(const string &p)
   while (i != params.end() && (*i).name != p)
     ++i;
   if (i == params.end()) {
-    cerr << "Error: findparameter: couldn't find parameter: " << p
+    cerr << "\tWarning: findparameter: couldn't find parameter: " << p
          << " in file. Returning empty string."
          << "\n";
     return ("");

@@ -1,5 +1,6 @@
-#ifndef STELLAR_WIND_ANGLE_H
-#define STELLAR_WIND_ANGLE_H
+#ifndef STELLAR_WIND_LATDEP_H
+#define STELLAR_WIND_LATDEP_H
+
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -9,18 +10,20 @@
 #include "tools/interpolate.h"
 #include "tools/reporting.h"
 
-//
-// Stellar wind class for angle dependent winds, developed for BSGs etc.
-// Added by Robert Kavanagh (21/7/17)
-//
-class stellar_wind_angle :
+
+///
+/// Stellar wind class for angle dependent winds, developed for BSGs etc.
+/// Modified version of the Langer et al. (1999) prescription that
+/// ensures that the polar wind is not enhanced by rotation.
+///
+class stellar_wind_latdep :
     virtual public stellar_wind_evolution,
     virtual public interpolate_arrays {
 public:
   ///
   /// Constructor:
   ///
-  stellar_wind_angle(
+  stellar_wind_latdep(
       const int,            ///< ndim
       const int,            ///< nvar
       const int,            ///< ntracer
@@ -31,24 +34,23 @@ public:
       const double,         ///< minimum temperature allowed
       const double,         ///< Simulation start time.
       const double,         ///< Simulation finish time.
-      const double          ///< xi value for equatorial flattening of wind
+      const double          ///< exponent of wind equatorial enhancement
   );
 
   ///
   /// Destructor (Delete spline arrays, etc.)
   ///
-  ~stellar_wind_angle();
+  ~stellar_wind_latdep();
 
   ///
-  /// Add an evolving source for rotating star: takes in the filename of the
-  /// source data, and a time offset between the start of the simulation and
-  /// the time in the stellar model (may need to be <0 so that wind feedback
-  /// starts immediately).
+  /// Add an evolving source for rotating star: takes in the filename
+  /// of the source data, and a time offset between the start of the
+  /// simulation and the time in the stellar model.
   ///
   virtual int add_evolving_source(
       const double *,  ///< position (physical units).
       const double,    ///< radius (physical units).
-      const int,       ///< type (must be WINDTYPE_ANGLE).
+      const int,       ///< type (must be WINDTYPE_LATDEP).
       pion_flt *,      ///< Any (constant) wind tracer values.
       const string,    ///< file name to read data from.
       const int,       ///< enhance mdot based on rotation (0=no,1=yes).
@@ -89,84 +91,59 @@ public:
 
   /// Wind terminal velocity function
   double fn_v_inf(
-      double,  ///< omega (v_rot/v_crit)
-      double,  ///< terminal velocity at pole (cm/s)
-      double   ///< theta (latitude, measured from pole)
+      double,  ///< theta (latitude, measured from pole)
+      double,  ///< Omega (v_rot/v_crit)
+      double   ///< terminal velocity at pole (cm/s)
   );
 
-  /// Analytic wind density function
-  double fn_density(
-      double,  ///< omega (v_rot/v_crit)
-      double,  ///< terminal velocity at pole (cm/s)
-      double,  ///< mass loss rate (g/s)
-      double,  ///< radius (cm)
+  /// Wind terminal velocity function (interpolated from table)
+  double interp_v_inf(
       double,  ///< theta (latitude, measured from pole)
-      double   ///< Teff (K)
+      double,  ///< Omega (v_rot/v_crit)
+      double   ///< terminal velocity at pole (cm/s)
   );
+
 
   /// Interpolated wind density function
-  double fn_density_interp(
-      double,  ///< omega (v_rot/v_crit)
-      double,  ///< terminal velocity at pole (cm/s)
-      double,  ///< mass loss rate (g/s)
-      double,  ///< radius
-      double,  ///< theta
-      double   ///< Teff
+  double interp_density(
+      double,  ///< radius (cm)
+      double,  ///< theta (latitude, measured from pole)
+      double,  ///< terminal velocity at co-latitude theta (cm/s)
+      double,  ///< Omega (v_rot/v_crit)
+      double,  ///< actual mass loss rate (g/s)
+      double   ///< mass-loss rate for non-rotating star (g/s).
   );
 
 private:
-  /// Simpson's rule integration of function f
+  /// Simpson's rule integration of function f(t,O)
   double integrate_Simpson(
       const double,    ///< lower limit
       const double,    ///< upper limit
       const long int,  ///< Number of points (must be even)
-      const double,    ///< omega
-      const double     ///< Teff (K)
+      const double     ///< Omega
   );
 
-  /// Phi' function
-  double fn_phi(
-      double,  ///< omega
+  /// Integrand to be integrated to get normalisation A
+  double f(
       double,  ///< theta
-      double   ///< Teff (K)
-  );
-
-  /// Alpha function
-  double fn_alpha(
-      double,  ///< omega
-      double,  ///< theta
-      double   ///< Teff (K)
-  );
-
-  /// Integrand to be integrated to get delta
-  double integrand(
-      double,       ///< theta
-      double,       ///< omega
-      const double  ///< Teff
-  );
-
-  /// Delta function
-  double fn_delta(
-      double,  ///< omega
-      double   ///< Teff (K)
+      double   ///< Omega
   );
 
   double c_gamma;  ///< exponent in velocity formula
   double c_xi;     ///< exponent in density formula
-  double c_beta;   ///< exponent in factor added to mass loss - Mdot = Mdot*(1
-                   ///< - omega)^c_beta
 
-  int npts_theta;  ///< number of points in theta vector
-  int npts_omega;  ///< number of points in omega vector
-  int npts_Teff;   ///< number of points in Teff vector
+  int Ntheta;  ///< number of points in theta vector
+  int NOmega;  ///< number of points in Omega vector
 
   vector<double> theta_vec;   ///< theta vector
-  vector<double> log_mu_vec;  ///< log(mu) = log(1 - omega) vector
-  vector<double> omega_vec;   ///< omega vector
-  vector<double> Teff_vec;    ///< Teff vector
+  vector<double> log_mu_vec;  ///< log(mu) = log(1 - Omega) vector
+  vector<double> Omega_vec;   ///< Omega vector
 
-  vector<vector<double> > delta_vec;           ///< delta table
-  vector<vector<vector<double> > > alpha_vec;  ///< alpha table
+  vector<vector<double> > vinf_vec;  ///< vinf interpolation table
+  vector<size_t> vinf_vsize;
+  vector<vector<double> > f_vec;  ///< density interpolation table
+  vector<size_t> f_vsize;
+  vector<double> norm_vec;  ///< normalising func interpolation table
 
 protected:
   ///
@@ -191,5 +168,6 @@ protected:
       const double                  ///< EOS Gamma
   );
 };
+
 
 #endif

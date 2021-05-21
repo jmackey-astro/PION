@@ -52,7 +52,6 @@ public:
       pion_flt *,      ///< Any (constant) wind tracer values.
       const string,    ///< file name to read data from.
       const int,       ///< enhance mdot based on rotation (0=no,1=yes).
-      const double,    ///< Surface B field (G)
       const double,    ///< time offset = [t(sim)-t(wind_file)]
       const double,    ///< current time.
       const double,    ///< frequency with which to update wind properties.
@@ -74,7 +73,6 @@ public:
       const double,    ///< radius (cm)
       const int,       ///< type (2=lat-dep.)
       const double,    ///< Mdot (g/s)
-      const double,    ///< Md0, equiv. non-rotating star (g/s)
       const double,    ///< Vinf (cm/s)
       const double,    ///< Vrot (cm/s)
       const double,    ///< Vcrit (cm/s)
@@ -84,6 +82,15 @@ public:
       pion_flt *       ///< Tracer values of wind (if any)
   );
 
+<<<<<<< HEAD
+  /// Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
+  double pow_fast(
+      double,  ///< a
+      double   ///< b
+  );
+
+=======
+>>>>>>> updated stellar winds a bit, still working on lat-dep model.
   /// setup tables for interpolation.
   void setup_tables();
 

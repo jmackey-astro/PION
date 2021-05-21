@@ -1,7 +1,8 @@
 
 If you use PION for your research, please cite it appropriately as follows:
 
-+ A code-release paper is in preparation (for 2021).  In the meantime please cite one or more of the following papers, depending on which physical processes you use:
++ Please cite at least one of the following papers, depending on relevance of the methods:
+    + First public release: "PION: simulations of wind-blown nebulae", Mackey et al., 2021, MNRAS, (in press), doi:10.1093/mnras/stab781, arXiv:2103.07555
     + Radiative Transfer: "Accuracy and efficiency of raytracing photoionisation algorithms," Mackey, 2012, A&A, 539, A147.
     + MHD: "Effects of magnetic fields on photoionized pillars and globules," Mackey & Lim, 2011, MNRAS, 412, Issue 3, pp. 2079-2094.
     + Hydrodynamics: "Dynamical Models for the Formation of Elephant Trunks in H II Regions," Mackey & Lim, 2010, MNRAS, 403, 714-730.
@@ -14,6 +15,39 @@ If you use PION for your research, please cite it appropriately as follows:
 
 LaTeX/bibtex source for the citations:
 ========================================
+
+@ARTICLE{2021MNRAS.tmp..790M,
+       author = {{Mackey}, Jonathan and {Green}, Samuel and {Moutzouri}, Maria and {Haworth}, Thomas J. and {Kavanagh}, Robert D. and {Zargaryan}, Davit and {Celeste}, Maggie},
+        title = "{PION: Simulating bow shocks and circumstellar nebulae}",
+      journal = {\mnras},
+     keywords = {Hydrodynamics, radiative transfer, methods: numerical, ISM: bubbles, Stars: winds, outflows, Astrophysics - Astrophysics of Galaxies, Astrophysics - Solar and Stellar Astrophysics},
+         year = 2021,
+        month = mar,
+          doi = {10.1093/mnras/stab781},
+archivePrefix = {arXiv},
+       eprint = {2103.07555},
+ primaryClass = {astro-ph.GA},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2021MNRAS.tmp..790M},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+
+@ARTICLE{2012A&A...539A.147M,
+       author = {{Mackey}, J.},
+        title = "{Accuracy and efficiency of raytracing photoionisation algorithms}",
+      journal = {\aap},
+     keywords = {radiative transfer, methods: numerical, Hii regions, Astrophysics - Galaxy Astrophysics, Physics - Computational Physics},
+         year = "2012",
+        month = "Mar",
+       volume = {539},
+          eid = {A147},
+        pages = {A147},
+          doi = {10.1051/0004-6361/201117984},
+archivePrefix = {arXiv},
+       eprint = {1201.5651},
+ primaryClass = {astro-ph.GA},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2012A&A...539A.147M},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
 
 @ARTICLE{2011MNRAS.412.2079M,
        author = {{Mackey}, Jonathan and {Lim}, Andrew J.},
@@ -51,23 +85,11 @@ archivePrefix = {arXiv},
       adsnote = {Provided by the SAO/NASA Astrophysics Data System}
 }
 
-@ARTICLE{2012A&A...539A.147M,
-       author = {{Mackey}, J.},
-        title = "{Accuracy and efficiency of raytracing photoionisation algorithms}",
-      journal = {\aap},
-     keywords = {radiative transfer, methods: numerical, Hii regions, Astrophysics - Galaxy Astrophysics, Physics - Computational Physics},
-         year = "2012",
-        month = "Mar",
-       volume = {539},
-          eid = {A147},
-        pages = {A147},
-          doi = {10.1051/0004-6361/201117984},
-archivePrefix = {arXiv},
-       eprint = {1201.5651},
- primaryClass = {astro-ph.GA},
-       adsurl = {https://ui.adsabs.harvard.edu/abs/2012A&A...539A.147M},
-      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-}
 
+ADS links:
+========================================
 
-
++ https://ui.adsabs.harvard.edu/abs/2021MNRAS.tmp..790M/abstract
++ https://ui.adsabs.harvard.edu/abs/2012A%26A...539A.147M/abstract
++ https://ui.adsabs.harvard.edu/abs/2011MNRAS.412.2079M/abstract
++ https://ui.adsabs.harvard.edu/abs/2010MNRAS.403..714M/abstract

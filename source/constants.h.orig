@@ -117,12 +117,21 @@ public:
   ///
   /// tests if two doubles are equal to an accuracy of 1e-8.
   ///
+<<<<<<< HEAD
   bool equalD(const double, const double);
+=======
+  bool equalD(
+        const double, 
+        const double
+        );
+
   /// Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
   double pow_fast(
-      double,  ///< a
-      double   ///< b
-  );
+	double, ///< a
+	double ///< b
+	);
+
+>>>>>>> updated stellar winds a bit, still working on lat-dep model.
 };
 
 extern class constants pconst;

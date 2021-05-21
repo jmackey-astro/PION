@@ -985,6 +985,72 @@ int DataIOBase::read_simulation_parameters(
       }
       ++iter;
       // cout<<nm.str()<<" = "<<wind->t_scalefactor<<"\n";
+      // Test for moving source
+      nm.str("");
+      nm << "WIND_" << isw << "_ecentricity_fac";
+      if ((*iter)->name.compare(nm.str()) != 0) {
+        rep.error(
+            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+      }
+      (*iter)->set_ptr(static_cast<void *>(&wind->ecentricity));
+      err = read_header_param(*iter);
+      if (err) {
+        cout << "Error reading parameter " << (*iter)->name;
+        cout << " setting to default value of 1.0.\n";
+        wind->ecentricity = 1.0;
+        err               = 0;
+      }
+      // cout<<nm.str()<<" = "<<wind->ecentricity<<"\n";
+      iter++;
+
+      nm.str("");
+      nm << "WIND_" << isw << "_orbital_period";
+      if ((*iter)->name.compare(nm.str()) != 0) {
+        rep.error(
+            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+      }
+      (*iter)->set_ptr(static_cast<void *>(&wind->OrbPeriod));
+      err = read_header_param(*iter);
+      if (err) {
+        cout << "Error reading parameter " << (*iter)->name;
+        cout << " setting to default value of 0.0.\n";
+        wind->OrbPeriod = 0.0;
+        err             = 0;
+      }
+      // cout<<nm.str()<<" = "<<wind->OrbPeriod<<"\n";
+      iter++;
+
+      nm.str("");
+      nm << "WIND_" << isw << "_periastron_vec_x";
+      if ((*iter)->name.compare(nm.str()) != 0) {
+        rep.error(
+            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+      }
+      (*iter)->set_ptr(static_cast<void *>(&wind->PeriastronX));
+      err = read_header_param(*iter);
+      if (err) {
+        cout << "Error reading parameter " << (*iter)->name;
+        cout << " setting to default value of 0.0.\n";
+        wind->PeriastronX = 0.0;
+        err               = 0;
+      }
+      ++iter;
+
+      nm.str("");
+      nm << "WIND_" << isw << "_periastron_vec_y";
+      if ((*iter)->name.compare(nm.str()) != 0)
+        rep.error(
+            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+      //(*iter)->set_ptr(static_cast<void *>(posn));
+      (*iter)->set_ptr(static_cast<void *>(&wind->PeriastronY));
+      err = read_header_param(*iter);
+      if (err) {
+        cout << "Error reading parameter " << (*iter)->name;
+        cout << " setting to default value of 0.0.\n";
+        wind->PeriastronY = 0.0;
+        err               = 0;
+      }
+      ++iter;
 
       //
       // Now we should have got all the sources, so add the source to
@@ -1135,6 +1201,19 @@ void DataIOBase::set_windsrc_params()
     ostringstream temp12;
     temp12.str("");
     temp12 << "WIND_" << n << "_t_scalefac";
+    ostringstream temp17;
+    temp17.str("");
+    temp17 << "WIND_" << n << "_ecentricity_fac";
+    ostringstream temp18;
+    temp18.str("");
+    temp18 << "WIND_" << n << "_orbital_period";
+    ostringstream temp19;
+    temp19.str("");
+    temp19 << "WIND_" << n << "_periastron_vec_x";
+    ostringstream temp20;
+    temp20.str("");
+    temp20 << "WIND_" << n << "_periastron_vec_y";
+
 
     pm_ddimarr *w001 = new pm_ddimarr(temp01.str());  // position of source (cm)
     windsrc.push_back(w001);
@@ -1203,6 +1282,30 @@ void DataIOBase::set_windsrc_params()
     dv              = 1.0;
     w012->set_default_val(static_cast<void *>(&dv));
     windsrc.push_back(w012);
+
+    // ecentricity (default must be 1, parameter must not be critical).
+    pm_double *w017 = new pm_double(temp17.str());
+    w017->critical  = false;  // dv=1.0;
+    // w017->set_default_val(static_cast<void *>(&dv));
+    windsrc.push_back(w017);
+
+    // Orbital Period (default must be 0, parameter must not be critical).
+    pm_double *w018 = new pm_double(temp18.str());
+    w018->critical  = false;  // dv=1.0;
+    // w018->set_default_val(static_cast<void *>(&dv));
+    windsrc.push_back(w018);
+
+    // Periastron vectror (default must be 1, parameter must not be critical).
+    pm_double *w019 = new pm_double(temp19.str());
+    w019->critical  = false;  // dv=1.0;
+    // w019->set_default_val(static_cast<void *>(&dv));
+    windsrc.push_back(w019);
+
+    // Periastron vectror (default must be 1, parameter must not be critical).
+    pm_double *w020 = new pm_double(temp20.str());
+    w020->critical  = false;  // dv=1.0;
+    // w020->set_default_val(static_cast<void *>(&dv));
+    windsrc.push_back(w020);
   }
   have_setup_windsrc = true;
   return;
@@ -1759,6 +1862,54 @@ int DataIOBase::write_simulation_parameters(
       if (err) rep.error("Error writing parameter", (*iter)->name);
       ++iter;
       // cout<<nm<<" = "<<wind->t_scalefactor<<"\n";
+      // Test for moving source
+      nm.str("");
+      nm << "WIND_" << isw << "_ecentricity_fac";
+      if ((*iter)->name.compare(nm.str()) != 0) {
+        rep.error(
+            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+      }
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->ecentricity));
+      err = write_header_param(*iter);
+      if (err) rep.error("Error writing parameter", (*iter)->name);
+      ++iter;
+      // cout<<nm.str()<<" = "<<wind->ecentricity<<"\n";
+
+      nm.str("");
+      nm << "WIND_" << isw << "_orbital_period";
+      if ((*iter)->name.compare(nm.str()) != 0) {
+        rep.error(
+            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+      }
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->OrbPeriod));
+      err = write_header_param(*iter);
+      if (err) {
+        cout << "Error writing parameter " << (*iter)->name;
+      }
+      // cout<<nm.str()<<" = "<<wind->OrbPeriod<<"\n";
+      iter++;
+
+      nm.str("");
+      nm << "WIND_" << isw << "_periastron_vec_x";
+      if ((*iter)->name.compare(nm.str()) != 0)
+        rep.error(
+            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+      //(*iter)->set_ptr(static_cast<void *>(posn));
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->PeriastronX));
+      err = write_header_param(*iter);
+      if (err) rep.error("Error writing parameter", (*iter)->name);
+      ++iter;
+
+      nm.str("");
+      nm << "WIND_" << isw << "_periastron_vec_y";
+      if ((*iter)->name.compare(nm.str()) != 0)
+        rep.error(
+            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+      //(*iter)->set_ptr(static_cast<void *>(posn));
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->PeriastronY));
+      err = write_header_param(*iter);
+      if (err) rep.error("Error writing parameter", (*iter)->name);
+      ++iter;
 
     }  // loop over sources
   }    // write Stellar wind data.

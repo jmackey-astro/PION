@@ -797,7 +797,8 @@ int get_sim_info::read_wind_sources(
     //
     string evofile;
     int enhance_mdot = 0;
-    double time_offset, update_freq, time_scalefac;
+    double time_offset, update_freq, time_scalefac, ecentricity, OrbPeriod,
+        PeriastronX, PeriastronY;
 
     for (int v = 0; v < SimPM.ndim; v++) {
       temp.str("");
@@ -927,6 +928,45 @@ int get_sim_info::read_wind_sources(
     }
 
     temp.str("");
+    temp << "WIND_" << i << "_ecentricity_fac";
+    if ((a = rp->find_parameter(temp.str())) != "") {
+      ecentricity = atof(a.c_str());
+    }
+    else {
+      ecentricity = 0.0;  // default value
+    }
+
+    temp.str("");
+    temp << "WIND_" << i << "_orbital_period";
+    if ((a = rp->find_parameter(temp.str())) != "") {
+      OrbPeriod = atof(a.c_str());
+    }
+    else {
+      OrbPeriod = 0.0;  // default value
+    }
+
+    temp.str("");
+    temp << "WIND_" << i << "_periastron_vec_x";
+    if ((a = rp->find_parameter(temp.str())) != "")
+      PeriastronX = atof(a.c_str());
+    else {
+      cout << "No periastron_vec_x in pfile for wind " << i;
+      cout << ", setting to 0.0\n";
+      PeriastronX = 0.0;
+    }
+
+    temp.str("");
+    temp << "WIND_" << i << "_periastron_vec_y";
+    if ((a = rp->find_parameter(temp.str())) != "")
+      PeriastronY = atof(a.c_str());
+    else {
+      cout << "No periastron_vec_y in pfile for wind " << i;
+      cout << ", setting to 0.0\n";
+      PeriastronY = 0.0;
+    }
+
+
+    temp.str("");
     temp << "WIND_" << i << "_xi";
     if ((a = rp->find_parameter(temp.str())) != "") {
       xi = atof(a.c_str());
@@ -964,7 +1004,10 @@ int get_sim_info::read_wind_sources(
     wind->time_offset        = time_offset;
     wind->update_freq        = update_freq;
     wind->t_scalefactor      = time_scalefac;
-
+    wind->ecentricity        = ecentricity;
+    wind->OrbPeriod          = OrbPeriod;
+    wind->PeriastronX        = PeriastronX;
+    wind->PeriastronY        = PeriastronY;
     // cout <<"\tgot parameters, adding source! rad="<<rad<<"\n";
     SWP.params.push_back(wind);
     // cout <<"\tadded WIND source. returning.\n";

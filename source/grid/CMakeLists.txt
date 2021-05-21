@@ -7,6 +7,7 @@ if(PION_PARALLEL)
         setup_fixed_grid_MPI.cpp
         stellar_wind_angle.cpp
         stellar_wind_BC.cpp
+        stellar_wind_latdep.cpp
         uniform_grid.cpp
         uniform_grid_pllel.cpp
     )
@@ -24,6 +25,7 @@ else()
         setup_fixed_grid.cpp
         stellar_wind_angle.cpp
         stellar_wind_BC.cpp
+        stellar_wind_latdep.cpp
         uniform_grid.cpp
     )
     add_library(

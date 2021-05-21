@@ -117,16 +117,6 @@ stellar_wind::~stellar_wind()
 // ##################################################################
 // ##################################################################
 
-// Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
-// only works for all b when a>0
-double stellar_wind::pow_fast(double a, double b)
-{
-  return exp(b * log(a));
-}
-
-// ##################################################################
-// ##################################################################
-
 int stellar_wind::add_source(
     const double *pos,   ///< position (cm, w.r.t. grid origin)
     const double rad,    ///< radius (cm)
@@ -137,7 +127,11 @@ int stellar_wind::add_source(
     const double temp,   ///< Wind Temperature (K)
     const double Rstar,  ///< Radius of star (cm).
     const double Bstar,  ///< Surface Magnetic field of star (Gauss).
-    pion_flt *trv        ///< Tracer values of wind (if any)
+    pion_flt *trv,       ///< Tracer values of wind (if any)
+    const double ecentricity,
+    const double PeriastronX,  ///< periastronX vectror (cgs units).
+    const double PeriastronY,  ///< periastronY vectror (cgs units).
+    const double OrbPeriod     ///< Orbital period (years)
 )
 {
   struct wind_source *ws = 0;
@@ -155,8 +149,10 @@ int stellar_wind::add_source(
       break;
   }
 
-  for (int v = 0; v < ndim; v++)
-    ws->dpos[v] = pos[v];
+  for (int v = 0; v < ndim; v++) {
+    ws->dpos[v]      = pos[v];
+    ws->dpos_init[v] = pos[v];
+  }
   // rep.printVec("ws->dpos",ws->dpos,ndim);
 
   for (int v = ndim; v < MAX_DIM; v++)
@@ -176,6 +172,12 @@ int stellar_wind::add_source(
   ws->Tw    = temp;
   ws->Rstar = Rstar;
   ws->Bstar = Bstar;
+
+  ws->ecentricity = ecentricity;
+  ws->OrbPeriod   = OrbPeriod;
+  ws->PeriastronX = PeriastronX;
+  ws->PeriastronY = PeriastronY;
+  // cout <<"wind_BC.cpp: "<<Periastron[0]<<", "<<Periastron[1]<<"\n";
 
   ws->tracers = 0;
   ws->tracers = mem.myalloc(ws->tracers, ntracer);
@@ -334,6 +336,34 @@ int stellar_wind::add_cell(
 // ##################################################################
 // ##################################################################
 
+int stellar_wind::remove_cells(
+    class GridBaseClass *grid,
+    const int id,  ///< src id
+    cell *c        ///< cell to remove from list.
+)
+{
+  if (id < 0 || id >= nsrc) rep.error("bad src id", id);
+  struct wind_source *WS = wlist[id];
+  // Set former wind-cells to normal domain cells
+  c->isbd     = false;
+  c->isdomain = true;
+  c->timestep = true;
+  // Clear list of Windcells
+  for (int i = 0; i < WS->ncell; i++) {
+    if (WS->wcells[i]->c == c) {
+      WS->wcells[i]->p = mem.myfree(WS->wcells[i]->p);
+      WS->wcells[i]    = mem.myfree(WS->wcells[i]);
+      WS->wcells.erase(WS->wcells.begin() + i);
+    }
+  }
+  // WS->wcells.clear();
+  // Set counter for windcells to zero
+  WS->ncell--;
+  return 0;
+}
+// ##################################################################
+// ##################################################################
+
 void stellar_wind::set_wind_cell_reference_state(
     class GridBaseClass *grid,
     struct wind_cell *wc,
@@ -446,7 +476,7 @@ void stellar_wind::set_wind_cell_reference_state(
       wc->p[VX] = WS->Vinf * x / wc->dist;
       wc->p[VY] = WS->Vinf * y / wc->dist;
       // J is hardcoded to be parallel to positive z-axis
-      wc->p[VZ] = WS->v_rot * WS->Rstar * y / pow_fast(wc->dist, 2);
+      wc->p[VZ] = WS->v_rot * WS->Rstar * y / pconst.pow_fast(wc->dist, 2);
       break;
 
     case 3:
@@ -456,8 +486,8 @@ void stellar_wind::set_wind_cell_reference_state(
 
       // add non-radial component to x/y-dir from rotation.
       // J is hardcoded to be parallel to positive z-axis
-      wc->p[VX] += -WS->v_rot * WS->Rstar * y / pow_fast(wc->dist, 2);
-      wc->p[VY] += WS->v_rot * WS->Rstar * x / pow_fast(wc->dist, 2);
+      wc->p[VX] += -WS->v_rot * WS->Rstar * y / pconst.pow_fast(wc->dist, 2);
+      wc->p[VY] += WS->v_rot * WS->Rstar * x / pconst.pow_fast(wc->dist, 2);
       break;
 
     default:
@@ -579,8 +609,12 @@ int stellar_wind::set_num_cells(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int stellar_wind::get_num_cells(const int id  ///< src id
 )
@@ -589,8 +623,12 @@ int stellar_wind::get_num_cells(const int id  ///< src id
   return wlist[id]->ncell;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int stellar_wind::set_cell_values(
     class GridBaseClass *grid,
@@ -621,8 +659,12 @@ int stellar_wind::set_cell_values(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void stellar_wind::get_src_posn(
     const int id,  ///< src id
@@ -633,7 +675,48 @@ void stellar_wind::get_src_posn(
     x[v] = wlist[id]->dpos[v];
 }
 
+
+
 // ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind::get_src_orbit(
+    const int id,  ///< src id
+    double *x,     ///< ecentricity (output)
+    double *y1,    ///< PeriastronX Vec (output)
+    double *y2,    ///< PeriastronY Vec (output)
+    double *z,     ///< Orbital period (output)
+    double *w)
+{
+  *x  = wlist[id]->ecentricity;
+  *y1 = wlist[id]->PeriastronX;
+  *y2 = wlist[id]->PeriastronY;
+  *z  = wlist[id]->OrbPeriod;
+  for (int v = 0; v < ndim; v++)
+    w[v] = wlist[id]->dpos_init[v];
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind::set_src_posn(
+    const int id,  ///< src id
+    double *x      ///< position vector (output)
+)
+{
+  for (int v = 0; v < ndim; v++)
+    wlist[id]->dpos[v] = x[v];
+}
+
+
+
+/// ##################################################################
 // ##################################################################
 
 void stellar_wind::get_src_Mdot(
@@ -829,16 +912,24 @@ stellar_wind_evolution::~stellar_wind_evolution()
 // ##################################################################
 
 int stellar_wind_evolution::add_source(
-    const double *pos,   ///< position (physical units)
-    const double rad,    ///< radius (physical units)
-    const int type,      ///< type (0=fixed in time,1=slow switch on)
-    const double mdot,   ///< Mdot (Msun/yr)
-    const double vinf,   ///< Vinf (km/s)
-    const double vrot,   ///< Vrot (km/s)
-    const double Twnd,   ///< Wind Temperature (K)
-    const double Rstar,  ///< Stellar radius.
-    const double Bstar,  ///< Surface Magnetic field of star (Gauss).
-    pion_flt *trv        ///< Tracer values of wind (if any)
+    const double *pos,         ///< position (physical units)
+    const double rad,          ///< radius (physical units)
+    const int type,            ///< type (0=fixed in time,1=slow switch on)
+    const double mdot,         ///< Mdot (Msun/yr)
+    const double vinf,         ///< Vinf (km/s)
+    const double vrot,         ///< Vrot (km/s)
+    const double Twnd,         ///< Wind Temperature (K)
+    const double Rstar,        ///< Stellar radius.
+    const double Bstar,        ///< Surface Magnetic field of star (Gauss).
+    pion_flt *trv,             ///< Tracer values of wind (if any)
+    const double ecentricity,  ///< relative ecentricity of the stellar orbit
+    const double PeriastronX,  /// Vector pointing from the inital location
+                               /// (dpos) to the center of gravity of the orbit;
+                               /// hard-coded to be in the x-y-plane
+    const double PeriastronY,  /// Vector pointing from the inital location
+                               /// (dpos) to the center of gravity of the orbit;
+                               /// hard-coded to be in the x-y-plane
+    const double OrbPeriod     /// Orbital period in years
 )
 {
   //
@@ -865,10 +956,10 @@ int stellar_wind_evolution::add_source(
 
   // find indices of elements and dust in tracers list.
   set_element_indices(temp);
-
   // Now add source using constant wind version.
   stellar_wind::add_source(
-      pos, rad, type, mdot, vinf, vrot, Twnd, Rstar, Bstar, trv);
+      pos, rad, type, mdot, vinf, vrot, Twnd, Rstar, Bstar, trv, ecentricity,
+      PeriastronX, PeriastronY, OrbPeriod);
   temp->ws = wlist.back();
   wdata_evol.push_back(temp);
 
@@ -926,7 +1017,7 @@ int stellar_wind_evolution::read_evolution_file(
   //
   FILE *wf = 0;
   wf       = fopen(infile.c_str(), "r");
-  if (!wf) rep.error("can't open wind file, stellar_wind_angle", wf);
+  if (!wf) rep.error("can't open wind file, stellar_wind_evo", wf);
 
   // Skip first two lines
   char line[512];
@@ -968,7 +1059,7 @@ int stellar_wind_evolution::read_evolution_file(
     radi = sqrt(
         lumi
         / (4.0 * pconst.pi() * pconst.StefanBoltzmannConst()
-           * pow_fast(teff, 4.0)));
+           * pconst.pow_fast(teff, 4.0)));
     data->R_evo.push_back(radi);
 
     data->Mdot_evo.push_back(mdot);
@@ -1002,12 +1093,21 @@ int stellar_wind_evolution::add_evolving_source(
     pion_flt *trv,             ///< Any (constant) wind tracer values.
     const string infile,       ///< file name to read data from.
     const int,                 ///< enhance mdot based on rotation (0=no,1=yes).
+    const double Bstar,        ///< Surface B field (G)
     const double time_offset,  ///< time offset = [t(sim)-t(wind_file)] in years
     const double t_now,  ///< current simulation time, to see if src is active.
     const double
         update_freq,  ///< frequency with which to update wind properties.
     const double
-        t_scalefactor  ///< wind evolves this factor times faster than normal
+        t_scalefactor,  ///< wind evolves this factor times faster than normal
+    const double ecentricity,  ///< relative ecentricity of the stellar orbit
+    const double PeriastronX,  /// Vector pointing from the inital location
+                               /// (dpos) to the center of gravity of the orbit;
+                               /// hard-coded to be in the x-y-plane
+    const double PeriastronY,  /// Vector pointing from the inital location
+                               /// (dpos) to the center of gravity of the orbit;
+                               /// hard-coded to be in the x-y-plane
+    const double OrbPeriod     /// Orbital period in years
 )
 {
   if (type != WINDTYPE_EVOLVING) {
@@ -1119,12 +1219,13 @@ int stellar_wind_evolution::add_evolving_source(
   // Set B-field of star
   // TODO: Decide how to set this better!  For now pick B=10G at
   //       radius 10 R_sun, and scale with R^-2 for constant flux.
-  //
-  double Bstar = 10.0 * pow_fast(10.0 * pconst.Rsun() / rstar, 2.0);
+  // One solution: just set it to a constant throughout evolution.
+  // Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
 
   // Now add source using constant wind version.
   stellar_wind::add_source(
-      pos, rad, type, mdot, vinf, vrot, Twind, rstar, Bstar, trv);
+      pos, rad, type, mdot, vinf, vrot, Twind, rstar, Bstar, trv, ecentricity,
+      PeriastronX, PeriastronY, OrbPeriod);
   temp->ws = wlist.back();
 
   // Add evolutionary data to list of wind sources and return
@@ -1206,8 +1307,8 @@ void stellar_wind_evolution::update_source(
   // Set B-field of star
   // TODO: Decide how to set this better!  For now pick B=10G at
   //       radius 10 R_sun, and scale with R^-2 for constant flux.
-  //
-  wd->ws->Bstar = 10.0 * pow_fast(10.0 * pconst.Rsun() / rstar, 2.0);
+  // One solution: leave it constant
+  // wd->ws->Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
 
   //
   // Now re-assign state vector of each wind-boundary-cell with
@@ -1255,6 +1356,92 @@ int stellar_wind_evolution::set_cell_values(
 
   return err;
 }
+
+// ##################################################################
+// ##################################################################
+
+double stellar_wind_evolution::Mdot_Vink_hot(
+    const double L,  ///< luminosity (Lsun)
+    const double M,  ///< mass (Msun)
+    const double T,  ///< T_eff (K)
+    const double Z,  ///< Metallicity wrt solar
+    const double b   ///< beta of wind on hot side of BSJ
+)
+{
+  double md = -6.697 + 2.194 * log10(L * 1e-5) - 1.313 * log10(M / 30.0)
+              - 1.226 * log10(b / 2.0) + 0.933 * log10(T / 4.0e4)
+              - 10.92 * pow(log10(T / 4.0e4), 2) + 0.85 * log10(Z);
+  return exp(pconst.ln10() * md);
+}
+
+// ##################################################################
+// ##################################################################
+
+double stellar_wind_evolution::Mdot_Vink_cool(
+    const double L,  ///< luminosity (Lsun)
+    const double M,  ///< mass (Msun)
+    const double T,  ///< T_eff (K)
+    const double Z,  ///< Metallicity wrt solar
+    const double b   ///< beta of wind on hot side of BSJ
+)
+{
+  double md = -6.688 + 2.210 * log10(L * 1e-5) - 1.339 * log10(M / 30.0)
+              - 1.601 * log10(b / 2.0) + 1.070 * log10(T / 2.0e4)
+              + 0.850 * log10(Z);
+  return exp(pconst.ln10() * md);
+}
+
+// ##################################################################
+// ##################################################################
+
+double stellar_wind_evolution::Mdot_Nieuwenhuijzen(
+    const double L,  ///< luminosity (Lsun)
+    const double M,  ///< mass (Msun)
+    const double R,  ///< Radius (Rsun)
+    const double Z   ///< Metallicity wrt solar
+)
+{
+  double md = -14.02 + 1.24 * log10(L) + 0.16 * log10(M) + 0.81 * log10(R);
+  return exp(pconst.ln10() * md) * Z;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+double stellar_wind_evolution::Mdot_Brott(
+    const double L,  ///< luminosity (Lsun)
+    const double M,  ///< mass (Msun)
+    const double T,  ///< T_eff (K)
+    const double R,  ///< Radius (Rsun)
+    const double Z   ///< Metallicity wrt solar
+)
+{
+  double Tn    = 22.5e3;
+  double Tp    = 27.1e3;
+  double betaH = 2.6;  // wind velocity multiplier on hot side
+  double betaC = 1.3;  // wind velocity multiplier on cool side
+  double md = 0.0, mdc = 0.0, mdh = 0.0;
+  if (T > Tp) {
+    md = Mdot_Vink_hot(L, M, T, Z, betaH);
+  }
+  else if (T > Tn) {
+    mdh = Mdot_Vink_hot(L, M, T, Z, betaH);
+    mdc = Mdot_Vink_cool(L, M, T, Z, betaH);
+    md  = mdc + (T - Tn) * (mdh - mdc) / (Tp - Tn);
+  }
+  else {
+    mdh = Mdot_Vink_cool(L, M, T, Z, betaH);
+    mdc = Mdot_Nieuwenhuijzen(L, M, R, Z);
+    md  = std::max(mdh, mdc);
+  }
+  return md * pconst.Msun() / pconst.year();
+}
+
+
 
 // ##################################################################
 // ##################################################################

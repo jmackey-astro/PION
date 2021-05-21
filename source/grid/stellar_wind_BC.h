@@ -33,16 +33,11 @@
 #include "sim_params.h"
 #include "tools/reporting.h"
 
-//
 // Defines for type of wind:
-// 0=constant,
-// 1= switch on slowly over 100kyr,
-// 2=move boundary outwards over time (with v_inf),
-// 3=evolving in time according to a stellar evolution model.
-//
-#define WINDTYPE_CONSTANT 0
-#define WINDTYPE_EVOLVING 1
-#define WINDTYPE_ANGLE 2
+#define WINDTYPE_CONSTANT 0  // spherically symmetric, constant in time
+#define WINDTYPE_EVOLVING 1  // spherically symmetric, with evolution
+#define WINDTYPE_ANGLE 2     // Langer et al. (1999) model implemented
+#define WINDTYPE_LATDEP 3    // Modification of LGM99, original work
 
 // ##################################################################
 // ##################################################################
@@ -75,15 +70,25 @@ struct wind_source {
   double dpos[MAX_DIM],  ///< physical position of source
       radius,            ///< radius of fixed region (in cm).
       Mdot,              ///< mass loss rate  (g/s)
+      Md0,               ///< Mdot equiv. non-rotating star (lat-dep.wind) (g/s)
       Vinf,              ///< terminal wind velocity (cm/s)
       v_rot,             ///< stellar rotational velocity (cm/s)
       v_esc,             ///< wind escape velocity (cm/s)
       vcrit,             ///< critical rotation velocity (cm/s)
       Tw,                ///< wind temperature (K)
       Rstar,             ///< radius of star (cm)
-      Bstar;  ///< magnetic field strength of split monopole at Rstar (G)
-  pion_flt *tracers;  ///< tracer values of wind.
-  bool cells_added;   ///< false until we add all cells to the source list.
+      Bstar,        ///< magnetic field strength of split monopole at Rstar (G)
+      ecentricity,  ///< relative ecentricity of the stellar orbit
+      PeriastronX,  /// Vector pointing from the inital location (dpos) to the
+                    /// center of gravity of the orbit; hard-coded to be in the
+                    /// x-y-plane
+      PeriastronY,  /// Vector pointing from the inital location (dpos) to the
+                    /// center of gravity of the orbit; hard-coded to be in the
+                    /// x-y-plane
+      OrbPeriod,    /// Orbital period in years
+      dpos_init[MAX_DIM];  /// Initial position of the source
+  pion_flt *tracers;       ///< tracer values of wind.
+  bool cells_added;        ///< false until we add all cells to the source list.
   std::vector<struct wind_cell *> wcells;
 };
 
@@ -126,7 +131,11 @@ public:
       const double,    ///< Surface Temperature (K)
       const double,    ///< Stellar Radius (cm)
       const double,    ///< Surface B field (G)
-      pion_flt *       ///< Tracer values of wind (if any)
+      pion_flt *,      ///< Tracer values of wind (if any)
+      const double,    /// ecentricity
+      const double,    ///< periastronX vectror (cgs units).
+      const double,    ///< periastronY vectror (cgs units).
+      const double     ///< Orbital period (years)
   );
 
   ///
@@ -139,11 +148,16 @@ public:
       pion_flt *,      ///< Any (constant) wind tracer values.
       const string,    ///< file name to read data from.
       const int,       ///< enhance mdot based on rotation (0=no,1=yes).
+      const double,    ///< Surface B field (G)
       const double,    ///< time offset = [t(sim)-t(wind_file)]
       const double,    ///< current time.
       const double,    ///< frequency with which to update wind properties.
-      const double     ///< time scale factor
+      const double,    ///< time scale factor
                        ///< (t(sim)=[t(evo_file)-offset]/scalefactor
+      const double,    ///< ecentricity
+      const double,    ///< periastronX vectror (cgs units).
+      const double,    ///< periastronY vectror (cgs units).
+      const double     ///< Orbital period (years)
   )
   {
     rep.error("Don't call add_evolving_source from here.", 99);
@@ -160,13 +174,15 @@ public:
       const double,    ///< radius of boundary region (cm)
       const int,       ///< type (2=lat-dep.)
       const double,    ///< Mdot (g/s)
+      const double,    ///< Md0, equiv. non-rotating star (g/s)
       const double,    ///< Vesc (cm/s)
       const double,    ///< Vrot (cm/s)
       const double,    ///< Vcrit (cm/s)
       const double,    ///< Wind Temperature at surface
       const double,    ///< Stellar Radius (cm)
       const double,    ///< Surface B field (G)
-      pion_flt *       ///< Tracer values of wind (if any)
+      pion_flt *       /*,  ///< Tracer values of wind (if any)
+             const double*/
   )
   {
     rep.error("Don't call add_rotating_source from here.", 99);
@@ -183,6 +199,16 @@ public:
   /// (possibly fixed) boundary value.  Returns non-zero on error.
   ///
   int add_cell(
+      class GridBaseClass *,
+      const int,  ///< src id
+      cell *      ///< cell to add to list.
+  );
+
+  ///
+  /// Remove a cell from the list of boundary cells.
+  /// Returns non-zero on error.
+  ///
+  int remove_cells(
       class GridBaseClass *,
       const int,  ///< src id
       cell *      ///< cell to add to list.
@@ -223,6 +249,19 @@ public:
       double *    ///< position vector (output)
   );
 
+  void get_src_orbit(
+      const int,  ///< src id
+      double *,   ///<
+      double *,
+      double *,
+      double *,
+      double *);
+
+  void set_src_posn(
+      const int,  ///< src id
+      double *    ///< position vector (output)
+  );
+
   void get_src_drad(
       const int,  ///< src id
       double *    ///< radius (output) (physical units).
@@ -257,9 +296,6 @@ public:
       const int,  ///< src id
       int *       ///< type of wind (=0 for now) (output)
   );
-
-  // Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
-  double pow_fast(double a, double b);
 
   // --------------------------------------------------------------
 
@@ -383,7 +419,15 @@ public:
       const double,    ///< Surface Temperature (K)
       const double,    ///< Stellar Radius (cm)
       const double,    ///< Surface B field (G)
-      pion_flt *       ///< Tracer values of wind (if any)
+      pion_flt *,      ///< Tracer values of wind (if any)
+      const double,    ///< relative ecentricity of the stellar orbit
+      const double,  /// Vector pointing from the inital location (dpos) to the
+                     /// center of gravity of the orbit; hard-coded to be in the
+                     /// x-y-plane
+      const double,  /// Vector pointing from the inital location (dpos) to the
+                     /// center of gravity of the orbit; hard-coded to be in the
+                     /// x-y-plane
+      const double   /// Orbital period in years
   );
 
   ///
@@ -399,11 +443,20 @@ public:
       pion_flt *,      ///< Any (constant) wind tracer values.
       const string,    ///< file name to read data from.
       const int,       ///< enhance mdot based on rotation (0=no,1=yes).
+      const double,    ///< Surface B field (G)
       const double,    ///< time offset = [t(sim)-t(wind_file)]
       const double,    ///< current time.
       const double,    ///< frequency with which to update wind properties.
-      const double     ///< scale factor for time
+      const double,    ///< scale factor for time
                        ///< (t(sim)=[t(evo_file)-offset]/scalefactor
+      const double,    ///< relative ecentricity of the stellar orbit
+      const double,  /// Vector pointing from the inital location (dpos) to the
+                     /// center of gravity of the orbit; hard-coded to be in the
+                     /// x-y-plane
+      const double,  /// Vector pointing from the inital location (dpos) to the
+                     /// center of gravity of the orbit; hard-coded to be in the
+                     /// x-y-plane
+      const double   /// Orbital period in years
   );
 
   ///
@@ -455,6 +508,46 @@ protected:
       struct evolving_wind_data *,  ///< source to update.
       const double,                 ///< current simulation time.
       const double                  ///< EOS Gamma
+  );
+
+  /// Vink et al. (2000) mass-loss recipe for the hot side of the
+  /// bistability jump.
+  double Mdot_Vink_hot(
+      const double,  ///< luminosity (Lsun)
+      const double,  ///< mass (Msun)
+      const double,  ///< T_eff (K)
+      const double,  ///< Metallicity wrt solar
+      const double   ///< beta of wind on hot side of BSJ
+  );
+
+  /// Vink et al. (2000) mass-loss recipe for the cool side of the
+  /// bistability jump.
+  double Mdot_Vink_cool(
+      const double,  ///< luminosity (Lsun)
+      const double,  ///< mass (Msun)
+      const double,  ///< T_eff (K)
+      const double,  ///< Metallicity wrt solar
+      const double   ///< beta of wind on cool side of BSJ
+  );
+
+  ///  Nieuwenhuijzen, H.; de Jager, C. 1990, A&A, 231, 134 (eqn 2)
+  double Mdot_Nieuwenhuijzen(
+      const double,  ///< luminosity (Lsun)
+      const double,  ///< mass (Msun)
+      const double,  ///< Radius (Rsun)
+      const double   ///< Metallicity wrt solar
+  );
+
+  /// Implementation of the Brott et al. (2011) mass-loss recipe.
+  /// This uses beta=2.6 for hot side of bistability jump, and 1.3
+  /// for the cool side, and Nieuwenhuijzen & de Jager for RSG.
+  /// Returns mass-loss rate in g/s
+  double Mdot_Brott(
+      const double,  ///< luminosity (Lsun)
+      const double,  ///< mass (Msun)
+      const double,  ///< T_eff (K)
+      const double,  ///< Radius (Rsun)
+      const double   ///< Metallicity wrt solar
   );
 
   ///

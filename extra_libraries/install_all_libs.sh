@@ -30,10 +30,19 @@ source /usr/share/Modules/init/bash
 #module purge
 module load cmake3
 module load gcc
-#module load cmake3/3.12.3
-#module load python py/intel
-#module load python numpy
-module list
+    module load conda
+    source activate
+    module list
+    MAKE_UNAME=KAY
+    NCORES=8
+    export CC=icc
+    export CXX=icpc
+    export FC=ifort
+    SHARED=NO
+    . ./install_python_silo.sh
+    COMPILE_SILO=yes
+    COMPILE_SUNDIALS=yes
+    COMPILE_FITS=no
 
 export NCORES
 CURDIR=`pwd`

@@ -74,15 +74,16 @@ OPTION += -DFITS
 # This variable includes a #define for ABSORPTION, if requested
 OPTION += ${ABS}
 OPTION += ${NII}
+
+LDFLAGS  = -lreadline
 MT=""
 #MT=USE_THREADS
 ifeq ($(MT), USE_THREADS)
   LDFLAGS += -fopenmp
-  OPTION += -DPROJ_OMP
+  OPTION += -DPROJ_OMP -fopenmp
 endif
 
 # All machines and options need readline and maths
-LDFLAGS  = -lreadline
 LDFLAGS += -lm
 
 ######################################################################
@@ -102,7 +103,6 @@ ifeq ($(MAKE_UNAME), debian9)
   OPTION += -DCVODE2
   INC  = -I/usr/include
   INC += -I${srcdir}
-  LDFLAGS += -lm
   LDFLAGS += -L/usr/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
   LDFLAGS += -lcfitsio
@@ -132,7 +132,6 @@ ifeq ($(MAKE_UNAME), debian10)
   CXXFLAGS += -DCVODE3
   INC  = -I/usr/include
   INC += -I${srcdir}
-  LDFLAGS += -lm
   LDFLAGS += -L/usr/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
   LDFLAGS += -lcfitsio
@@ -360,7 +359,7 @@ icgen_NG_MPI.o: icgen_NG_MPI.cpp icgen.h get_sim_info.h \
 cell_interface.o: cell_interface.cpp cell_interface.h ${GLOBAL}
 
 uniform_grid.o: uniform_grid.cpp uniform_grid.h grid_base_class.h ${GLOBAL} \
-    stellar_wind_angle.h stellar_wind_BC.h \
+    stellar_wind_angle.h stellar_wind_BC.h stellar_wind_latdep.h \
     VectorOps.h VectorOps_spherical.h
 
 VectorOps.o:           VectorOps.cpp VectorOps.h ${GLOBAL} uniform_grid.h grid_base_class.h
@@ -407,7 +406,7 @@ setup_grid_NG_MPI.o: setup_grid_NG_MPI.cpp setup_grid_NG_MPI.h \
 
 uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid_pllel.h \
     uniform_grid.h ${GLOBAL} \
-    comms.h stellar_wind_angle.h stellar_wind_BC.h \
+    comms.h stellar_wind_angle.h stellar_wind_BC.h stellar_wind_latdep.h \
     VectorOps.h VectorOps_spherical.h
 
 #####################
@@ -454,6 +453,9 @@ stellar_wind_boundaries.o: stellar_wind_boundaries.cpp \
   grid_base_class.h stellar_wind_BC.h
 
 stellar_wind_angle.o: stellar_wind_angle.cpp stellar_wind_angle.h \
+  ${GLOBAL} cell_interface.h grid_base_class.h 
+
+stellar_wind_latdep.o: stellar_wind_latdep.cpp stellar_wind_latdep.h \
   ${GLOBAL} cell_interface.h grid_base_class.h 
 
 stellar_wind_BC.o: stellar_wind_BC.cpp stellar_wind_BC.h \
@@ -699,7 +701,7 @@ mpv9_HHe.o: mpv9_HHe.cpp mpv9_HHe.h microphysics_base.h \
 file_status.o: file_status.cpp file_status.h ${GLOBAL}
 
 parameter_defs.o:  parameter_defs.cpp parameter_defs.h ${GLOBAL} \
-    solver_eqn_base.h readparams.h \
+    solver_eqn_base.h readparams.h stellar_wind_latdep.h \
     stellar_wind_angle.h stellar_wind_BC.h cell_interface.h
 
 dataio_base.o:  dataio_base.cpp dataio_base.h parameter_defs.h \

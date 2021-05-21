@@ -77,6 +77,21 @@ stellar_wind_angle::~stellar_wind_angle() {}
 // ##################################################################
 // ##################################################################
 
+<<<<<<< HEAD
+// Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
+// (also added fn to stellar_wind - probably already inherited from
+// stellar_wind_evolution?)
+double stellar_wind_angle::pow_fast(double a, double b)
+{
+  return exp(b * log(a));
+}
+
+// ##################################################################
+// ##################################################################
+=======
+
+>>>>>>> updated stellar winds a bit, still working on lat-dep model.
+
 // Generate interpolating tables for wind density function
 void stellar_wind_angle::setup_tables()
 {
@@ -104,9 +119,17 @@ void stellar_wind_angle::setup_tables()
 
   // cout << "- Theta vector generated" << "\n";
 
+<<<<<<< HEAD
   //
   // Set up omega vector
   //
+=======
+    omega_vec.resize(npts_omega);
+    
+    // Iterate omega values - log spacing - spacing decreases as omega approaches 1
+    for (int j = 0; j < npts_omega; j++)
+      omega_vec[j] = 1 - pconst.pow_fast(10, log_mu_vec[j]);
+>>>>>>> updated stellar winds a bit, still working on lat-dep model.
 
   log_mu_vec.resize(npts_omega);
 
@@ -120,7 +143,7 @@ void stellar_wind_angle::setup_tables()
   // approaches
   // 1
   for (int j = 0; j < npts_omega; j++)
-    omega_vec[j] = 1 - pconst.pow_fast(10, log_mu_vec[j]);
+    omega_vec[j] = 1 - pow_fast(10, log_mu_vec[j]);
 
   // cout << "- Omega vector generated" << "\n";
 
@@ -216,9 +239,16 @@ double stellar_wind_angle::integrand(
     double Teff    // Teff (K)
 )
 {
-  return fn_alpha(omega, theta, Teff)
-         * pconst.pow_fast(1.0 - omega * sin(theta), c_xi) * sin(theta);
+<<<<<<< HEAD
+  return fn_alpha(omega, theta, Teff) * pow_fast(1.0 - omega * sin(theta), c_xi)
+         * sin(theta);
 }
+=======
+	return fn_alpha(omega, theta, Teff) * pconst.pow_fast(1.0 - omega*sin(theta), c_xi) * sin(theta);
+} 
+
+
+>>>>>>> updated stellar winds a bit, still working on lat-dep model.
 
 // ##################################################################
 // ##################################################################
@@ -274,9 +304,14 @@ double stellar_wind_angle::fn_phi(
     double Teff    // Teff (K)
 )
 {
+<<<<<<< HEAD
   double ans = (omega / (22.0 * pconst.sqrt2() * beta(Teff))) * sin(theta)
-               * pconst.pow_fast(1.0 - omega * sin(theta), -c_gamma);
+               * pow_fast(1.0 - omega * sin(theta), -c_gamma);
   return std::min(ans, 0.5 * pconst.pi() * ONE_MINUS_EPS);
+=======
+  double ans = (omega/(22.0*pconst.sqrt2()*beta(Teff))) * sin(theta) * pconst.pow_fast(1.0 - omega*sin(theta), -c_gamma);
+  return std::min(ans,0.5*pconst.pi()*ONE_MINUS_EPS);
+>>>>>>> updated stellar winds a bit, still working on lat-dep model.
 }
 
 // ##################################################################
@@ -289,15 +324,26 @@ double stellar_wind_angle::fn_alpha(
     double Teff    // Teff (K)
 )
 {
-  return pconst.pow_fast(
+<<<<<<< HEAD
+  return pow_fast(
       cos(fn_phi(omega, theta, Teff))
-          + pconst.pow_fast(tan(theta), -2.0)
+          + pow_fast(tan(theta), -2.0)
                 * (1.0
                    + c_gamma
                          * (omega * sin(theta) / (1.0 - omega * sin(theta))))
                 * fn_phi(omega, theta, Teff) * sin(fn_phi(omega, theta, Teff)),
       -1.0);
 }  // the cotan term will diverge here if theta = 0.0
+=======
+  return  pconst.pow_fast(cos(fn_phi(omega, theta, Teff))
+        + pconst.pow_fast(tan(theta),-2.0)
+	* (1.0 + c_gamma*( omega*sin(theta) / (1.0 - omega*sin(theta)) ))
+        * fn_phi(omega, theta, Teff)
+        * sin(fn_phi(omega, theta, Teff)), -1.0 );
+} // the cotan term will diverge here if theta = 0.0
+
+
+>>>>>>> updated stellar winds a bit, still working on lat-dep model.
 
 // ##################################################################
 // ##################################################################
@@ -308,11 +354,20 @@ double stellar_wind_angle::fn_delta(
     double Teff    // Teff (K)
 )
 {
+<<<<<<< HEAD
   return 2.0
-         * pconst.pow_fast(
+         * pow_fast(
                integrate_Simpson(0.001, pconst.pi() / 2.0, 230, omega, Teff),
                -1.0);
 }  // 230 points determined to give sufficient accuracy
+=======
+	return 2.0*pconst.pow_fast(
+          integrate_Simpson(0.001, pconst.pi()/2.0, 230, omega, Teff),
+          -1.0);
+} // 230 points determined to give sufficient accuracy
+
+
+>>>>>>> updated stellar winds a bit, still working on lat-dep model.
 
 // ##################################################################
 // ##################################################################
@@ -325,9 +380,14 @@ double stellar_wind_angle::fn_v_inf(
 )
 {
 
+<<<<<<< HEAD
   omega = std::min(omega, 0.999);
-  return std::max(
-      0.5e5, v_inf * pconst.pow_fast(1.0 - omega * sin(theta), c_gamma));
+  return std::max(0.5e5, v_inf * pow_fast(1.0 - omega * sin(theta), c_gamma));
+=======
+  omega = std::min(omega,0.999);
+  return std::max(0.5e5,
+    v_inf * pconst.pow_fast(1.0 - omega*sin(theta), c_gamma));
+>>>>>>> updated stellar winds a bit, still working on lat-dep model.
 }
 
 // ##################################################################
@@ -343,10 +403,18 @@ double stellar_wind_angle::fn_density(
     double Teff     // Teff (K)
 )
 {
+<<<<<<< HEAD
   return (mdot * fn_alpha(omega, theta, Teff) * fn_delta(omega, Teff)
-          * pconst.pow_fast(1.0 - omega * sin(theta), c_xi))
-         / (8.0 * pconst.pi() * pconst.pow_fast(radius, 2.0)
+          * pow_fast(1.0 - omega * sin(theta), c_xi))
+         / (8.0 * pconst.pi() * pow_fast(radius, 2.0)
             * fn_v_inf(omega, v_inf, theta));
+=======
+    return (mdot * fn_alpha(omega, theta, Teff)
+                 * fn_delta(omega, Teff)
+                 * pconst.pow_fast(1.0 - omega*sin(theta), c_xi) ) /
+            (8.0 * pconst.pi() * pconst.pow_fast(radius, 2.0)
+                 *  fn_v_inf(omega, v_inf, theta));
+>>>>>>> updated stellar winds a bit, still working on lat-dep model.
 }
 
 // ##################################################################
@@ -400,11 +468,12 @@ double stellar_wind_angle::fn_density_interp(
       omega_vec, theta_vec, Teff_vec, alpha_vec, alpha_vec_size, alpha_input);
 
   // Return interpolated density
+<<<<<<< HEAD
   double result =
       (mdot * alpha_interp * delta_interp
-       * pconst.pow_fast(1.0 - omega * sin(theta), c_xi));
+       * pow_fast(1.0 - omega * sin(theta), c_xi));
   result /=
-      (8.0 * pconst.pi() * pconst.pow_fast(radius, 2.0)
+      (8.0 * pconst.pi() * pow_fast(radius, 2.0)
        * fn_v_inf(omega, v_inf, theta));
 
 #ifdef TESTING
@@ -415,12 +484,32 @@ double stellar_wind_angle::fn_density_interp(
     cout << "  " << mdot;
     cout << "  " << alpha_interp;
     cout << "  " << delta_interp;
-    cout << "  " << pconst.pow_fast(1.0 - omega * sin(theta), c_xi);
-    cout << "  " << pconst.pow_fast(radius, 2.0);
+    cout << "  " << pow_fast(1.0 - omega * sin(theta), c_xi);
+    cout << "  " << pow_fast(radius, 2.0);
     cout << "  " << fn_v_inf(omega, v_inf, theta);
     cout << "  " << radius;
     cout << "  "
          << "\n";
+=======
+  double result = (mdot * alpha_interp * delta_interp *
+                          pconst.pow_fast(1.0 - omega*sin(theta), c_xi));
+  result /= (8.0 * pconst.pi() * pconst.pow_fast(radius, 2.0) *
+                          fn_v_inf(omega, v_inf, theta));
+
+#ifdef TESTING
+  if (!isfinite(result)) {
+    cout <<delta_interp <<"  "<< alpha_interp <<"  "<< result;
+    cout <<"  "<<fn_v_inf(omega, v_inf, theta)<< "  ";
+    cout <<omega<<"\n";
+    cout <<"  "<< mdot;
+    cout <<"  "<< alpha_interp;
+    cout <<"  "<< delta_interp;
+    cout <<"  "<< pconst.pow_fast(1.0 - omega*sin(theta), c_xi);
+    cout <<"  "<< pconst.pow_fast(radius, 2.0);
+    cout <<"  "<< fn_v_inf(omega, v_inf, theta);
+    cout <<"  "<< radius;
+    cout <<"  "<< "\n";
+>>>>>>> updated stellar winds a bit, still working on lat-dep model.
   }
 #endif
   return result;
@@ -470,13 +559,21 @@ void stellar_wind_angle::set_wind_cell_reference_state(
     //   p_star = rho_star.k.T_star/(mu.m_p)
     // So then p(r) = p_star (rho(r)/rho_star)^gamma
     //
+<<<<<<< HEAD
     wc->p[PG] = WS->Tw * pconst.kB() / pconst.m_p();  // taking mu = 1
-    wc->p[PG] *= pconst.pow_fast(
+    wc->p[PG] *= pow_fast(
         fn_density_interp(
             std::min(0.9999, WS->v_rot / WS->vcrit), WS->Vinf, WS->Mdot,
             WS->Rstar, wc->theta, WS->Tw),
         1.0 - eos_gamma);
+    wc->p[PG] *= pow_fast(wc->p[RO], eos_gamma);
+=======
+    wc->p[PG] = WS->Tw*pconst.kB()/pconst.m_p(); // taking mu = 1
+    wc->p[PG] *= pconst.pow_fast(fn_density_interp(std::min(0.9999,WS->v_rot/WS->vcrit),
+                          WS->Vinf, WS->Mdot, WS->Rstar, wc->theta, WS->Tw),
+                          1.0-eos_gamma);
     wc->p[PG] *= pconst.pow_fast(wc->p[RO], eos_gamma);
+>>>>>>> updated stellar winds a bit, still working on lat-dep model.
   }
 
   // calculate terminal wind velocity
@@ -514,6 +611,54 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   // TODO: Add axi-symmetric BC so that VZ,BZ not reflected at
   //       symmetry axis.  Otherwise 2D with rotation won't work.
   switch (ndim) {
+<<<<<<< HEAD
+=======
+  case 1:
+    wc->p[VX] = Vinf * x / wc->dist;
+    wc->p[VY] = 0.0;
+    wc->p[VZ] = 0.0;
+    break;
+
+  case 2:
+    wc->p[VX] = Vinf * x / wc->dist;
+    wc->p[VY] = Vinf * y / wc->dist;
+    wc->p[VZ] = 0.0;
+    break;
+
+  case 3:
+    wc->p[VX] = Vinf * x / wc->dist;
+    wc->p[VY] = Vinf * y / wc->dist;
+    wc->p[VZ] = Vinf * z / wc->dist;
+
+    // add non-radial component to x/y-dir from rotation.
+    // J is hardcoded to be parallel to z-axis
+    xf = -WS->v_rot * WS->Rstar * y / pconst.pow_fast(wc->dist,2);
+    yf =  WS->v_rot * WS->Rstar * x / pconst.pow_fast(wc->dist,2);
+    wc->p[VX] += xf;
+    wc->p[VY] += yf;
+    xf /= Vinf * x / wc->dist; // fraction of x-vel in non-radial dir.
+    yf /= Vinf * y / wc->dist;
+    break;
+
+  default:
+    rep.error("bad ndim in set_wind_cell_reference_state",ndim);
+    break;
+  }
+
+  // Magnetic field: cell-average values, i.e. values at the
+  // centre-of-volume.
+  // Use a split monopole plus a rotational term adding toroidal
+  // component.
+  // TODO: for general J vector, what is rotational component.
+  if (eqntype==EQMHD || eqntype==EQGLM) {
+    double B_s = WS->Bstar/sqrt(4.0*M_PI); // code units for B_surf
+    double D_s = WS->Rstar/wc->dist;     // 1/d in stellar radii
+    double D_2 = D_s*D_s;                // 1/d^2 in stellar radii
+    // this multiplies the toroidal component:
+    double beta_B_sint = (WS->v_rot /  Vinf) * B_s * D_s;
+
+    switch (ndim) {
+>>>>>>> updated stellar winds a bit, still working on lat-dep model.
     case 1:
       wc->p[VX] = Vinf * x / wc->dist;
       wc->p[VY] = 0.0;
@@ -533,8 +678,8 @@ void stellar_wind_angle::set_wind_cell_reference_state(
 
       // add non-radial component to x/y-dir from rotation.
       // J is hardcoded to be parallel to z-axis
-      xf = -WS->v_rot * WS->Rstar * y / pconst.pow_fast(wc->dist, 2);
-      yf = WS->v_rot * WS->Rstar * x / pconst.pow_fast(wc->dist, 2);
+      xf = -WS->v_rot * WS->Rstar * y / pow_fast(wc->dist, 2);
+      yf = WS->v_rot * WS->Rstar * x / pow_fast(wc->dist, 2);
       wc->p[VX] += xf;
       wc->p[VY] += yf;
       xf /= Vinf * x / wc->dist;  // fraction of x-vel in non-radial dir.
@@ -670,7 +815,6 @@ int stellar_wind_angle::add_evolving_source(
     pion_flt *trv,        ///< Any (constant) wind tracer values.
     const string infile,  ///< file name to read data from.
     const int enhance,    ///< enhance mdot based on rotation (0=no,1=yes).
-    const double Bstar,   ///< Surface B field (G)
     const double
         time_offset,     ///< time offset = [t(sim)-t(wind_file)] (seconds)
     const double t_now,  ///< current sim time, to see if src is active.
@@ -790,14 +934,18 @@ int stellar_wind_angle::add_evolving_source(
   // Set B-field of star
   // TODO: Decide how to set this better!  For now pick B=10G at
   //       radius 10 R_sun, and scale with R^-2 for constant flux.
-  // One solution: just set it to a constant throughout evolution.
-  // double Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
+  //
+<<<<<<< HEAD
+  double Bstar = 10.0 * pow_fast(10.0 * pconst.Rsun() / rstar, 2.0);
+=======
+  double Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
+>>>>>>> updated stellar winds a bit, still working on lat-dep model.
 
   //
   // Now add source using rotating star version.
   //
   add_rotating_source(
-      pos, rad, type, mdot, 0.0, vinf, vrot, vcrt, Twind, rstar, Bstar, trv);
+      pos, rad, type, mdot, vinf, vrot, vcrt, Twind, rstar, Bstar, trv);
   temp->ws = wlist.back();
 
   wdata_evol.push_back(temp);
@@ -812,7 +960,6 @@ int stellar_wind_angle::add_rotating_source(
     const double rad,    ///< radius (cm)
     const int type,      ///< type (2=lat-dep.)
     const double mdot,   ///< Mdot (g/s)
-    const double,        ///< Md0, equiv. non-rotating star (g/s)
     const double vinf,   ///< Vinf (cm/s)
     const double vrot,   ///< Vrot (cm/s)
     const double vcrit,  ///< Vcrit (cm/s)
@@ -973,9 +1120,14 @@ void stellar_wind_angle::update_source(
   // Set B-field of star
   // TODO: Decide how to set this better!  For now pick B=10G at
   //       radius 10 R_sun, and scale with R^-2 for constant flux.
-  // One solution: leave it constant
-  // wd->ws->Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
+  //
+<<<<<<< HEAD
+  wd->ws->Bstar = 10.0 * pow_fast(10.0 * pconst.Rsun() / rstar, 2.0);
 
+=======
+  wd->ws->Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
+  
+>>>>>>> updated stellar winds a bit, still working on lat-dep model.
   //
   // Now re-assign state vector of each wind-boundary-cell with
   // updated values.

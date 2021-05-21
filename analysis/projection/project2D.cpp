@@ -48,6 +48,9 @@ using namespace std;
 #include "angle_projection.h"
 #include "../xray/xray_emission.h"
 
+#ifdef PROJ_OMP
+#include <omp.h>
+#endif
 
 // ##################################################################
 // ##################################################################

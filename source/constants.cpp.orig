@@ -24,19 +24,34 @@ class constants pconst;
 
 constants::constants() {}
 
+<<<<<<< HEAD
+=======
 
+
+>>>>>>> updated stellar winds a bit, still working on lat-dep model.
 // ##################################################################
 // ##################################################################
 
 constants::~constants() {}
 
-
+<<<<<<< HEAD
 // ##################################################################
 // ##################################################################
-
-
 
 bool constants::equalD(const double a, const double b)
+=======
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+bool constants::equalD(
+        const double a,
+        const double b
+        )
+>>>>>>> updated stellar winds a bit, still working on lat-dep model.
 {
   if (a == b) {
     return (true);
@@ -56,6 +71,8 @@ bool constants::equalD(const double a, const double b)
   }
 }
 
+<<<<<<< HEAD
+=======
 
 
 // ##################################################################
@@ -63,11 +80,16 @@ bool constants::equalD(const double a, const double b)
 
 
 
-double constants::pow_fast(double a, double b)
+double constants::pow_fast(
+	double a,
+	double b
+	)
 {
-  return exp(b * log(a));
+	return exp(b*log(a));
 }
 
 
+
+>>>>>>> updated stellar winds a bit, still working on lat-dep model.
 // ##################################################################
 // ##################################################################

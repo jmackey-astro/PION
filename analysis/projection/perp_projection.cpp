@@ -56,6 +56,7 @@ int generate_perpendicular_image(
   cell *cz = grid->FirstPt();
   int iz=0;
   int err=0;
+  double ttsf=0.0;
 
 #ifdef PROJ_OMP
 #pragma omp parallel for private(ttsf)
