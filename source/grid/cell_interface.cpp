@@ -341,10 +341,108 @@ bool cell_interface::query_minimal_cells()
 
 
 
+#ifdef NEWGRIDDATA
+int cell_interface::get_Nel()
+{
+  if (!have_setup_extra_data)
+    rep.error("Setup extra data before calling get_Nel", using_RT);
+  int n = 0;
+  n += nvar;  // P
+  if (!minimal_cell) n += 2 * nvar;
+  n += N_extra_data;
+  return n;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+size_t cell_interface::set_cell_pointers(
+    cell *c,    ///< cell to add pointers to
+    double *d,  ///< data array
+    size_t ix   ///< index of first free element in array
+)
+{
+  if (!have_setup_extra_data)
+    rep.error("Setup extra data before calling new_cell", using_RT);
+  if (dxo2 < 0.0) rep.error("Cell Interface: set dx", dxo2);
+  if (ndim < 0) rep.error("Cell Interface: set ndim", ndim);
+  if (nvar < 0) rep.error("Cell Interface: set nvar", nvar);
+
+  c->ngb = mem.myalloc(c->ngb, 2 * MAX_DIM);
+  c->pos = mem.myalloc(c->pos, ndim);
+  c->P   = &(d[ix]);
+  ix += nvar;
+
+  for (int v = 0; v < ndim; v++)
+    c->pos[v] = 0;
+  for (int v = 0; v < nvar; v++)
+    c->P[v] = 0.0;
+  for (int v = 0; v < 2 * MAX_DIM; v++)
+    c->ngb[v] = 0;
+  c->npt      = 0;
+  c->npt_all  = 0;
+  c->id       = -9999;
+  c->isedge   = -999;
+  c->isbd     = false;
+  c->isgd     = false;
+  c->isdomain = false;
+  c->rt       = false;
+  c->timestep = false;
+  c->isbd_ref = mem.myalloc(c->isbd_ref, 2 * MAX_DIM);
+  for (int v = 0; v < 2 * MAX_DIM; v++)
+    c->isbd_ref[v] = false;
+
+  //
+  // If we need all the [dU,Ph] arrays, initialise them, but if we have
+  // set "minimal_cell" to true, then skip them to save memory in
+  // analysis code.
+  //
+  if (minimal_cell) {
+    // cout <<"Minimal cells!\n";
+    c->Ph = 0;
+    c->dU = 0;
+  }
+  else {
+    c->Ph = &(d[ix]);
+    ix += nvar;
+    for (int v = 0; v < nvar; v++)
+      c->Ph[v] = 0.0;
+    c->dU = &(d[ix]);
+    ix += nvar;
+    for (int v = 0; v < nvar; v++)
+      c->dU[v] = 0.0;
+  }
+  c->F.resize(ndim);
+  for (int i = 0; i < ndim; i++)
+    c->F[i] = 0;
+
+  // cout <<"Nxd="<<N_extra_data<<"\n";
+  if (N_extra_data >= 1) {
+    c->extra_data = &(d[ix]);
+    ix += N_extra_data;
+    for (short unsigned int v = 0; v < N_extra_data; v++)
+      c->extra_data[v] = 0.0;
+  }
+
+  return ix;
+}
+#endif  // NEWGRIDDATA
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 cell *cell_interface::new_cell()
 {
   if (!have_setup_extra_data)
-    rep.error("Setup extra data before calling new_cell!", using_RT);
+    rep.error("Setup extra data before calling new_cell", using_RT);
 
   //
   // If this is the first cell we are assigning, make sure we have set

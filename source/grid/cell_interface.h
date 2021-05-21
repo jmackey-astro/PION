@@ -140,6 +140,18 @@ public:
 
   bool query_minimal_cells();  ///< true if using minimal cells.
 
+#ifdef NEWGRIDDATA
+  int get_Nel();  ///< returns number of doubles needed for cell
+
+  /// Add pointers to data in cell (instead of calling new_cell()).
+  /// This function replaces new_cell().
+  size_t set_cell_pointers(
+      cell *,    ///< cell to add pointers to
+      double *,  ///< data array
+      size_t     ///< index of first free element in array
+  );
+#endif  // NEWGRIDDATA
+
   class cell *new_cell();  ///< Create a new cell.
 
   /// Delete all the dynamically allocated memory in a cell.

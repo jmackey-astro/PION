@@ -39,8 +39,8 @@ void setup_ics_type(
   // some basic tests...
   else if (
       ics == "OrszagTang" || ics == "Uniform" || ics == "Advection"
-      || ics == "AdvectSineWave" || ics == "KelvinHelmholz"
-      || ics == "KelvinHelmholzStone" || ics == "FieldLoop"
+      || ics == "AdvectSineWave" || ics == "KelvinHelmholtz"
+      || ics == "KelvinHelmholtzStone" || ics == "FieldLoop"
       || ics == "FieldLoopVz" || ics == "FieldLoopStatic"
       || ics == "LiskaWendroffImplosion")
     *ic = new IC_basic_tests();

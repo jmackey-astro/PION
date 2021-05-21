@@ -76,13 +76,13 @@ protected:
   int setup_OrszagTang();
   /** \brief Set up Woodward \& Colella (1984) Double Mach Reflection. */
   int setup_DoubleMachRef();
-  /** \brief Set up Kelvin Helmholz Instability, params from Stone's
+  /** \brief Set up Kelvin Helmholtz Instability, params from Stone's
    * Code Test page. */
-  int setup_KelvinHelmholz_Stone();
+  int setup_KelvinHelmholtz_Stone();
 
-  /// Setup Kelvin Helmholz Instability, params from Frank et al. 1996,
+  /// Setup Kelvin Helmholtz Instability, params from Frank et al. 1996,
   /// ApJ, 460, 777.
-  int setup_KelvinHelmholz();
+  int setup_KelvinHelmholtz();
 
   /// Setup Liska & Wendroff (2003) implosion test problem.
   int setup_LWImplosion();

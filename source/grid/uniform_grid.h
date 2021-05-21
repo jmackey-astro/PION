@@ -175,6 +175,12 @@ protected:
   int *L_ixmin;     ///< Min value of x,y,z in level domain: int coords
   int *L_ixmax;     ///< Max value of x,y,z in level domain: int coords
 
+#ifdef NEWGRIDDATA
+  pion_flt **griddata;     ///< array for state vectors of all cells
+  class cell **gridcells;  ///< array of grid cells
+#endif                     // NEWGRIDDATA
+
+
   ///
   /// Set cell dimensions based on grid properties.
   ///

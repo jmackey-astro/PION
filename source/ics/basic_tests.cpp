@@ -111,14 +111,14 @@ int IC_basic_tests::setup_data(
     // cout <<"\t\tSetting up Double Mach Reflection test problem.\n";
     err += setup_DoubleMachRef();
   }
-  else if (ics == "KelvinHelmholz") {
-    // cout <<"\t\tSetting up Kelvin-Helmholz Instability problems.\n";
-    err += setup_KelvinHelmholz();
+  else if (ics == "KelvinHelmholtz") {
+    // cout <<"\t\tSetting up Kelvin-Helmholtz Instability problems.\n";
+    err += setup_KelvinHelmholtz();
   }
-  else if (ics == "KelvinHelmholzStone") {
-    // cout <<"\t\tSetting up Stone's Kelvin-Helmholz Instability
+  else if (ics == "KelvinHelmholtzStone") {
+    // cout <<"\t\tSetting up Stone's Kelvin-Helmholtz Instability
     // problem.\n";
-    err += setup_KelvinHelmholz_Stone();
+    err += setup_KelvinHelmholtz_Stone();
   }
   else if (ics == "LiskaWendroffImplosion") {
     cout << "Setting up Liska & Wendroff (2003) implosion test\n";
@@ -866,7 +866,7 @@ int IC_basic_tests::setup_DoubleMachRef()
 // ##################################################################
 // ##################################################################
 
-int IC_basic_tests::setup_KelvinHelmholz_Stone()
+int IC_basic_tests::setup_KelvinHelmholtz_Stone()
 {
   cout << "KH Instability: assuming x=[-0.5,0.5], y=[-0.5,0.5]\n";
   int err  = 0;
@@ -926,7 +926,7 @@ int IC_basic_tests::setup_KelvinHelmholz_Stone()
 // ##################################################################
 // ##################################################################
 
-int IC_basic_tests::setup_KelvinHelmholz()
+int IC_basic_tests::setup_KelvinHelmholtz()
 {
   cout << "KH Instability: assuming x=[-0.5,0.5], y=[-0.5,0.5]\n";
   int err  = 0;
