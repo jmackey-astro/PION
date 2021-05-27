@@ -133,6 +133,7 @@ if(PION_USE_FITS)
     find_package(CURL REQUIRED)
     find_package(BZip2 REQUIRED)
     find_package(Threads REQUIRED)
+    include_directories(${FITS_INCLUDE_DIR})
 endif(PION_USE_FITS)
 
 if(PION_PARALLEL)

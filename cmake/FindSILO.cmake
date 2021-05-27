@@ -26,7 +26,7 @@ if(NOT SILO_FOUND)
                     lib/silo lib64/silo
                     lib/x86_64-linux-gnu lib64/x86_64-linux-gnu
                     lib/x86_64-linux-gnu/silo lib64/x86_64-linux-gnu/silo
-        NAMES libsilo.a libsilo.la libsiloh5.so
+        NAMES libsilo.so libsilo.la libsilo.a libsiloh5.so
         DOC "Silo libraries"
     )
 

@@ -33,8 +33,6 @@ image: debian:unstable
         && popd
     - &build
         make -C build
-    - &double-mach-reflection
-        cd tools && bash run_DMR_test.sh
 
 .cmake_variables:
     default_cmake_variables: &default_cmake_variables
@@ -69,7 +67,7 @@ image: debian:unstable
 stages:
     - static analysis
     - build
-    - double-mach-reflection
+    - test
 
 Format:
     <<: *default_job
@@ -132,7 +130,7 @@ Uniform_Serial:
 
 DMR_TEST:
     <<: *default_job
-    stage: double-mach-reflection
+    stage: test 
     variables:
         <<: *default_cmake_variables
         CXX: mpicxx
@@ -143,7 +141,7 @@ DMR_TEST:
     script:
         - *configure
         - *build
-        - *double-mach-reflection
+        - cd tools && bash run_DMR_test.sh
 
 
 
