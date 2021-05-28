@@ -10,6 +10,7 @@ if(NOT FITS_FOUND)
             ${FITS_DIR}/
         PATH_SUFFIXES include
                     include/fits
+                    include/cfitsio
                     include/x86_64-linux-gnu
                     include/x86_64-linux-gnu/fits
         NAMES fitsio.h
@@ -24,9 +25,11 @@ if(NOT FITS_FOUND)
             ${FITS_DIR}/
         PATH_SUFFIXES lib lib64
                     lib/fits lib64/fits
+                    lib/cfitsio lib64/cfitsio
                     lib/x86_64-linux-gnu lib64/x86_64-linux-gnu
                     lib/x86_64-linux-gnu/fits lib64/x86_64-linux-gnu/fits
-        NAMES libcfitsio.a
+                    lib/x86_64-linux-gnu/cfitsio lib64/x86_64-linux-gnu/cfitsio
+        NAMES libcfitsio.so libcfitsio.a
         DOC "Fits libraries"
     )
 

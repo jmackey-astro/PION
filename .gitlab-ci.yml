@@ -1,6 +1,11 @@
 image: debian:unstable
 
 .snippets:
+    - &install_common_dependencies
+        apt-get install -y
+          git 
+          cmake 
+          g++
     - &install_dependencies
         apt-get install -y 
           libsundials-dev 
@@ -28,11 +33,15 @@ image: debian:unstable
                 -DPION_USE_SILO="${PION_USE_SILO}"
                 -DPION_USE_FITS="${PION_USE_FITS}"
                 -DPION_TOOLS="${PION_TOOLS}"
+                -DPION_SKIP_SOURCE="${PION_SKIP_SOURCE}"
+                -DPION_BUILD_DOCUMENTATION="${PION_BUILD_DOCUMENTATION}"
                 ..
         )
         && popd
     - &build
         make -C build
+    - &doc
+        make -C build doc
 
 .cmake_variables:
     default_cmake_variables: &default_cmake_variables
@@ -47,6 +56,8 @@ image: debian:unstable
         PION_USE_SILO: "OFF"
         PION_USE_FITS: "OFF"
         PION_TOOLS: "OFF"
+        PION_SKIP_SOURCE: "OFF"
+        PION_BUILD_DOCUMENTATION: "OFF"
 
 .default_job: &default_job
     tags:
@@ -55,10 +66,7 @@ image: debian:unstable
         <<: *default_cmake_variables
     before_script:
         - apt-get update -y && apt-get upgrade -y
-        - apt-get install -y
-            cmake
-            git
-            g++
+        - *install_common_dependencies
         - *install_dependencies
     script:
         - *configure
@@ -128,6 +136,25 @@ Uniform_Serial:
         PION_PARALLEL: "OFF"
         PION_USE_FITS: "ON"
 
+Documentation:
+    <<: *default_job
+    stage: build 
+    variables:
+        <<: *default_cmake_variables
+        PION_SKIP_SOURCE: "ON"
+        PION_BUILD_DOCUMENTATION: "ON"
+    before_script:
+        - apt-get update -y && apt-get upgrade -y
+        - *install_common_dependencies
+        - apt-get install -y 
+            doxygen
+            graphviz
+            texlive
+    script:
+      - *configure
+      - *build
+      - *doc
+
 DMR_TEST:
     <<: *default_job
     stage: test 
@@ -142,6 +169,3 @@ DMR_TEST:
         - *configure
         - *build
         - cd tools && bash run_DMR_test.sh
-
-
-

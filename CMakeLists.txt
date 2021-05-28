@@ -80,31 +80,45 @@ option(
     OFF
 )
 
-if(PION_PARALLEL)
-    add_definitions(-DPARALLEL)
-    add_definitions(-DUSE_MPI)
-else()
-    add_definitions(-DSERIAL)
-endif(PION_PARALLEL)
+option(
+    PION_SKIP_SOURCE
+    "Do not build compile the Pion source files. Default is disabled."
+    OFF
+)
 
-if(PION_USE_SILO AND PION_USE_FITS)
-    message("WARNING: building with both Silo and Fits libraries compiled...")
-endif(PION_USE_SILO AND PION_USE_FITS)
+option(
+    PION_BUILD_DOCUMENTATION
+    "Build Pion documentation. Depends on Doxygen."
+    OFF
+)
 
-if(NOT PION_USE_SILO AND NOT PION_USE_FITS)
-    message("Cannot build without Silo or Fits libraries...")
-    message("Please rerun the CMake command with one of them set to `ON`.")
-    message("Eg. -DPION_USE_FITS=ON.")
-    return()
-endif(NOT PION_USE_SILO AND NOT PION_USE_FITS)
+if(NOT PION_SKIP_SOURCE)
+    if(PION_PARALLEL)
+        add_definitions(-DPARALLEL)
+        add_definitions(-DUSE_MPI)
+    else()
+        add_definitions(-DSERIAL)
+    endif(PION_PARALLEL)
 
-if(PION_USE_SILO)
-    add_definitions(-DSILO)
-endif(PION_USE_SILO)
+    if(PION_USE_SILO AND PION_USE_FITS)
+        message("WARNING: building with both Silo and Fits libraries compiled...")
+    endif(PION_USE_SILO AND PION_USE_FITS)
 
-if(PION_USE_FITS)
-    add_definitions(-DFITS)
-endif(PION_USE_FITS)
+    if(NOT PION_USE_SILO AND NOT PION_USE_FITS)
+        message("Cannot build without Silo or Fits libraries...")
+        message("Please rerun the CMake command with one of them set to `ON`.")
+        message("Eg. -DPION_USE_FITS=ON.")
+        return()
+    endif(NOT PION_USE_SILO AND NOT PION_USE_FITS)
+
+    if(PION_USE_SILO)
+        add_definitions(-DSILO)
+    endif(PION_USE_SILO)
+
+    if(PION_USE_FITS)
+        add_definitions(-DFITS)
+    endif(PION_USE_FITS)
+endif(NOT PION_SKIP_SOURCE)
 
 #  This is required on OSX so that the Boost code will compile successfully
 set(CMAKE_CXX_STANDARD 14)
@@ -113,47 +127,53 @@ set(CMAKE_CXX_STANDARD 14)
 # Find dependant libraries
 #
 
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+if(NOT PION_SKIP_SOURCE)
+    set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
-find_package(Boost 1.73.0 REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
+    find_package(Boost 1.73.0 REQUIRED)
+    include_directories(${Boost_INCLUDE_DIRS})
 
-find_package(SUNDIALS REQUIRED)
+    find_package(SUNDIALS REQUIRED)
 
-add_definitions("-DCVODE${SUNDIALS_VERSION_MAJOR}")
+    add_definitions("-DCVODE${SUNDIALS_VERSION_MAJOR}")
 
-if(PION_USE_SILO)
-    find_package(SILO REQUIRED)
-    include_directories(${SILO_INCLUDE_DIR})
-endif(PION_USE_SILO)
+    if(PION_USE_SILO)
+        find_package(SILO REQUIRED)
+        include_directories(${SILO_INCLUDE_DIR})
+    endif(PION_USE_SILO)
 
-if(PION_USE_FITS)
-    find_package(FITS REQUIRED)
-    find_package(ZLIB REQUIRED)
-    find_package(CURL REQUIRED)
-    find_package(BZip2 REQUIRED)
-    find_package(Threads REQUIRED)
-    include_directories(${FITS_INCLUDE_DIR})
-endif(PION_USE_FITS)
+    if(PION_USE_FITS)
+        find_package(FITS REQUIRED)
+        find_package(ZLIB REQUIRED)
+        find_package(CURL REQUIRED)
+        find_package(BZip2 REQUIRED)
+        find_package(Threads REQUIRED)
+        include_directories(${FITS_INCLUDE_DIR})
+    endif(PION_USE_FITS)
 
-if(PION_PARALLEL)
-    find_package(MPI REQUIRED COMPONENTS CXX)
-endif(PION_PARALLEL)
+    if(PION_PARALLEL)
+        find_package(MPI REQUIRED COMPONENTS CXX)
+    endif(PION_PARALLEL)
+endif(NOT PION_SKIP_SOURCE)
 
 
 #
 # Include optional subdirectories
 #
 
-include_directories(
-    SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/source
-)
+if(NOT PION_SKIP_SOURCE)
+    include_directories(
+        SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/source
+    )
+endif(NOT PION_SKIP_SOURCE)
 
 
 #
 # Setup the Pion library
 #
-add_subdirectory(source)
+if(NOT PION_SKIP_SOURCE)
+    add_subdirectory(source)
+endif(NOT PION_SKIP_SOURCE)
 
 if(PION_TOOLS)
     add_subdirectory(analysis)
@@ -163,11 +183,17 @@ if(PION_TOOLS)
     endif(NOT PION_PARALLEL)
 endif(PION_TOOLS)
 
+if(PION_BUILD_DOCUMENTATION)
+    add_subdirectory(doc)
+endif(PION_BUILD_DOCUMENTATION)
+
 # Output project build options
 message(STATUS "Build options:")
-message(STATUS "    PION_PARALLEL     = ${PION_PARALLEL}")
-message(STATUS "    PION_USE_SILO     = ${PION_USE_SILO}")
-message(STATUS "    PION_USE_FITS     = ${PION_USE_FITS}")
-message(STATUS "    PION_NESTED_GRID  = ${PION_NESTED_GRID}")
-message(STATUS "    PION_UNIFORM_GRID = ${PION_UNIFORM_GRID}")
-message(STATUS "    PION_TOOLS        = ${PION_TOOLS}")
+message(STATUS "    PION_PARALLEL            = ${PION_PARALLEL}")
+message(STATUS "    PION_USE_SILO            = ${PION_USE_SILO}")
+message(STATUS "    PION_USE_FITS            = ${PION_USE_FITS}")
+message(STATUS "    PION_NESTED_GRID         = ${PION_NESTED_GRID}")
+message(STATUS "    PION_UNIFORM_GRID        = ${PION_UNIFORM_GRID}")
+message(STATUS "    PION_TOOLS               = ${PION_TOOLS}")
+message(STATUS "    PION_SKIP_SOURCE         = ${PION_SKIP_SOURCE}")
+message(STATUS "    PION_BUILD_DOCUMENTATION = ${PION_BUILD_DOCUMENTATION}")

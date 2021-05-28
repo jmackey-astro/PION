@@ -72,12 +72,14 @@ Option | Effect
 #### Enabling/Disabling Aspects of Pion
 Option | Effect
 ------ | ------
-`-DPION_NESTED_GRID=...`  | Set to `ON` to build nested grid simulations (default `ON`).
-`-DPION_UNIFORM_GRID=...` | Set to `ON` to build uniform grid simulations (default `OFF`).
-`-DPION_PARALLEL_=...`    | Set to `ON` to enable MPI for the Pion build, or `OFF` to disable MPI (default `ON`).
-`-DPION_USE_SILO=...`     | Set to `ON` to use Silo for handling data I/O (default `OFF`).
-`-DPION_USE_FITS=...`     | Set to `ON` to use Fits for handling data I/O (default `OFF`).
-`-DPION_TOOLS=...`        | Set to `ON` to also compile support programs in analysis subdir (default `OFF`).
+`-DPION_NESTED_GRID=...`          | Set to `ON` to build nested grid simulations (default `ON`).
+`-DPION_UNIFORM_GRID=...`         | Set to `ON` to build uniform grid simulations (default `OFF`).
+`-DPION_PARALLEL_=...`            | Set to `ON` to enable MPI for the Pion build, or `OFF` to disable MPI (default `ON`).
+`-DPION_USE_SILO=...`             | Set to `ON` to use Silo for handling data I/O (default `OFF`).
+`-DPION_USE_FITS=...`             | Set to `ON` to use Fits for handling data I/O (default `OFF`).
+`-DPION_TOOLS=...`                | Set to `ON` to also compile support programs in analysis subdir (default `OFF`).
+`-DPION_SKIP_SOURCE=...`          | Set to `ON` to skip compilation of the Pion source files (default `OFF`).
+`-DPION_BUILD_DOCUMENTATION =...` | Set to `ON` to also compile support programs in analysis subdir (default `OFF`).
 
 #### Dependency Helpers
 Option | Effect
@@ -96,6 +98,9 @@ Option | Effect
 `-DPION_INSTALL_INCLUDEDIR=...`  |  Set the install diretory for Pion header files. Use a relative path to set the path relative to `${CMAKE_INSTALL_PREFIX}` (default `include`).
 `-DPION_INSTALL_DATADIR=...`  |  Set the install diretory for Pion data (eg. CMake scripts). Use a relative path to set the path relative to `${CMAKE_INSTALL_PREFIX}` (default `share`).
 
+### Documentation 
+
+The Doxygen documentation can be built with `make -C [build-dir] doc` provided the `-DPION_BUILD_DOCUMENTATION=ON` flag was provided to CMake.
 
 ## Developers
 
@@ -115,5 +120,3 @@ The following people have contributed to the development of PION:
 ## License
 
 PION is distributed under a BSD3 License.  Downloading, using, modifying and/or re-distributing the software implies acceptance of the License.  See [LICENSE.md](https://git.dias.ie/massive-stars-software/pion/-/blob/master/LICENSE.md).
-
-
