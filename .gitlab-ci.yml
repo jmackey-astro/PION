@@ -17,8 +17,8 @@ image: debian:unstable
           libbz2-dev wget
           libboost-math-dev
     - &configure
-        mkdir build
-        && pushd build
+        mkdir "${CMAKE_BUILD_DIR}"
+        && pushd "${CMAKE_BUILD_DIR}"
         && (
             set -x;
             cmake
@@ -35,18 +35,20 @@ image: debian:unstable
                 -DPION_TOOLS="${PION_TOOLS}"
                 -DPION_SKIP_SOURCE="${PION_SKIP_SOURCE}"
                 -DPION_BUILD_DOCUMENTATION="${PION_BUILD_DOCUMENTATION}"
+                -DPION_BUILD_TESTS="${PION_BUILD_TESTS}"
                 ..
         )
         && popd
     - &build
-        make -C build
+        make -C "${CMAKE_BUILD_DIR}"
     - &doc
-        make -C build doc
+        make -C "${CMAKE_BUILD_DIR}" doc
 
 .cmake_variables:
     default_cmake_variables: &default_cmake_variables
         CMAKE_EXPORT_COMPILE_COMMANDS: "OFF"
         CMAKE_VERBOSE_MAKEFILE: "ON"
+        CMAKE_BUILD_DIR: "${CI_PROJECT_DIR}/build"
         CMAKE_BUILD_TYPE: Debug
         CXX: g++
         CMAKE_PREFIX_PATH: "/usr/lib/x86_64-linux-gnu"
@@ -58,6 +60,7 @@ image: debian:unstable
         PION_TOOLS: "OFF"
         PION_SKIP_SOURCE: "OFF"
         PION_BUILD_DOCUMENTATION: "OFF"
+        PION_BUILD_TESTS: "OFF"
 
 .default_job: &default_job
     tags:
@@ -164,8 +167,9 @@ DMR_TEST:
         PION_UNIFORM_GRID: "ON"
         PION_PARALLEL: "ON"
         PION_USE_SILO: "ON"
+        PION_BUILD_TESTS: "ON"
         PION_TOOLS: "ON"
     script:
         - *configure
         - *build
-        - cd tools && bash run_DMR_test.sh
+        - make -C "${CMAKE_BUILD_DIR}" dmr_test

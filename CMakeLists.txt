@@ -175,17 +175,22 @@ if(NOT PION_SKIP_SOURCE)
     add_subdirectory(source)
 endif(NOT PION_SKIP_SOURCE)
 
+if(PION_BUILD_DOCUMENTATION)
+    add_subdirectory(doc)
+endif(PION_BUILD_DOCUMENTATION)
+
+if(PION_BUILD_TESTS)
+    add_subdirectory(test)
+    set(PION_TOOLS ON)
+endif(PION_BUILD_TESTS)
+
 if(PION_TOOLS)
     add_subdirectory(analysis)
-    if (NOT PION_PARALLEL)
+    if(NOT PION_PARALLEL)
       message("WARNING: Requested PION_TOOLS: most tools need PION_PARALLEL")
       message("WARNING: but this is not set.  Most tools will not be compiled")
     endif(NOT PION_PARALLEL)
 endif(PION_TOOLS)
-
-if(PION_BUILD_DOCUMENTATION)
-    add_subdirectory(doc)
-endif(PION_BUILD_DOCUMENTATION)
 
 # Output project build options
 message(STATUS "Build options:")

@@ -79,7 +79,9 @@ Option | Effect
 `-DPION_USE_FITS=...`             | Set to `ON` to use Fits for handling data I/O (default `OFF`).
 `-DPION_TOOLS=...`                | Set to `ON` to also compile support programs in analysis subdir (default `OFF`).
 `-DPION_SKIP_SOURCE=...`          | Set to `ON` to skip compilation of the Pion source files (default `OFF`).
-`-DPION_BUILD_DOCUMENTATION =...` | Set to `ON` to also compile support programs in analysis subdir (default `OFF`).
+`-DPION_BUILD_DOCUMENTATION =...` | Set to `ON` to build Doxygen documentation (default `OFF`).
+`-DPION_BUILD_TESTS=...`          | Set to `ON` to build tests (default `OFF`).
+
 
 #### Dependency Helpers
 Option | Effect
