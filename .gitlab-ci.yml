@@ -17,7 +17,7 @@ image: debian:unstable
           libbz2-dev wget
           libboost-math-dev
     - &configure
-        mkdir "${CMAKE_BUILD_DIR}"
+        mkdir -p "${CMAKE_BUILD_DIR}"
         && pushd "${CMAKE_BUILD_DIR}"
         && (
             set -x;
@@ -129,6 +129,9 @@ Uniform_Parallel:
         PION_UNIFORM_GRID: "ON"
         PION_PARALLEL: "ON"
         PION_USE_SILO: "ON"
+    artifacts:
+        paths:
+            - "${CMAKE_BUILD_DIR}"
 
 Uniform_Serial:
     <<: *default_job
@@ -173,3 +176,6 @@ DMR_TEST:
         - *configure
         - *build
         - make -C "${CMAKE_BUILD_DIR}" dmr_test
+    artifacts:
+        paths:
+            - "${CMAKE_BUILD_DIR}"
