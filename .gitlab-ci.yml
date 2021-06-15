@@ -1,181 +1,192 @@
-image: debian:unstable
+image: ciaranorourke/superpion:latest
 
 .snippets:
-    - &install_common_dependencies
-        apt-get install -y
-          git 
-          cmake 
-          g++
-    - &install_dependencies
-        apt-get install -y 
-          libsundials-dev 
-          libsilo-dev 
-          libcfitsio-dev 
-          libgsl-dev 
-          libopenmpi-dev 
-          libcurl4-openssl-dev 
-          libbz2-dev wget
-          libboost-math-dev
-    - &configure
-        mkdir -p "${CMAKE_BUILD_DIR}"
-        && pushd "${CMAKE_BUILD_DIR}"
-        && (
-            set -x;
-            cmake
-                -DCMAKE_VERBOSE_MAKEFILE="${CMAKE_VERBOSE_MAKEFILE}"
-                -DCMAKE_EXPORT_COMPILE_COMMANDS="${CMAKE_EXPORT_COMPILE_COMMANDS}"
-                -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
-                -DCMAKE_CXX_COMPILER=${CXX}
-                -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
-                -DPION_NESTED_GRID="${PION_NESTED_GRID}"
-                -DPION_UNIFORM_GRID="${PION_UNIFORM_GRID}"
-                -DPION_PARALLEL="${PION_PARALLEL}"
-                -DPION_USE_SILO="${PION_USE_SILO}"
-                -DPION_USE_FITS="${PION_USE_FITS}"
-                -DPION_TOOLS="${PION_TOOLS}"
-                -DPION_SKIP_SOURCE="${PION_SKIP_SOURCE}"
-                -DPION_BUILD_DOCUMENTATION="${PION_BUILD_DOCUMENTATION}"
-                -DPION_BUILD_TESTS="${PION_BUILD_TESTS}"
-                ..
-        )
-        && popd
-    - &build
-        make -C "${CMAKE_BUILD_DIR}"
-    - &doc
-        make -C "${CMAKE_BUILD_DIR}" doc
+  - &configure
+    mkdir -p "${CMAKE_BUILD_DIR}"
+    && pushd "${CMAKE_BUILD_DIR}"
+    && (
+      set -x;
+      cmake
+        -DCMAKE_VERBOSE_MAKEFILE="${CMAKE_VERBOSE_MAKEFILE}"
+        -DCMAKE_EXPORT_COMPILE_COMMANDS="${CMAKE_EXPORT_COMPILE_COMMANDS}"
+        -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
+        -DCMAKE_CXX_COMPILER=${CXX}
+        -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}"
+        -DPION_NESTED_GRID="${PION_NESTED_GRID}"
+        -DPION_UNIFORM_GRID="${PION_UNIFORM_GRID}"
+        -DPION_PARALLEL="${PION_PARALLEL}"
+        -DPION_USE_SILO="${PION_USE_SILO}"
+        -DPION_USE_FITS="${PION_USE_FITS}"
+        -DPION_TOOLS="${PION_TOOLS}"
+        -DPION_SKIP_SOURCE="${PION_SKIP_SOURCE}"
+        -DPION_BUILD_DOCUMENTATION="${PION_BUILD_DOCUMENTATION}"
+        -DPION_BUILD_TESTS="${PION_BUILD_TESTS}"
+        ..
+    )
+    && popd
+  - &build
+    make -C "${CMAKE_BUILD_DIR}"
+  - &doc
+    make -C "${CMAKE_BUILD_DIR}" doc
 
 .cmake_variables:
-    default_cmake_variables: &default_cmake_variables
-        CMAKE_EXPORT_COMPILE_COMMANDS: "OFF"
-        CMAKE_VERBOSE_MAKEFILE: "ON"
-        CMAKE_BUILD_DIR: "${CI_PROJECT_DIR}/build"
-        CMAKE_BUILD_TYPE: Debug
-        CXX: g++
-        CMAKE_PREFIX_PATH: "/usr/lib/x86_64-linux-gnu"
-        PION_NESTED_GRID: "OFF"
-        PION_UNIFORM_GRID: "OFF"
-        PION_PARALLEL: "ON"
-        PION_USE_SILO: "OFF"
-        PION_USE_FITS: "OFF"
-        PION_TOOLS: "OFF"
-        PION_SKIP_SOURCE: "OFF"
-        PION_BUILD_DOCUMENTATION: "OFF"
-        PION_BUILD_TESTS: "OFF"
+  default_cmake_variables: &default_cmake_variables
+    CMAKE_EXPORT_COMPILE_COMMANDS: "OFF"
+    CMAKE_VERBOSE_MAKEFILE: "ON"
+    CMAKE_BUILD_DIR: "${CI_PROJECT_DIR}/build"
+    CMAKE_BUILD_TYPE: Debug
+    CXX: g++
+    CMAKE_PREFIX_PATH: "/usr/lib/x86_64-linux-gnu"
+    PION_NESTED_GRID: "OFF"
+    PION_UNIFORM_GRID: "OFF"
+    PION_PARALLEL: "ON"
+    PION_USE_SILO: "OFF"
+    PION_USE_FITS: "OFF"
+    PION_TOOLS: "OFF"
+    PION_SKIP_SOURCE: "OFF"
+    PION_BUILD_DOCUMENTATION: "OFF"
+    PION_BUILD_TESTS: "OFF"
 
 .default_job: &default_job
-    tags:
-        - docker
-    variables:
-        <<: *default_cmake_variables
-    before_script:
-        - apt-get update -y && apt-get upgrade -y
-        - *install_common_dependencies
-        - *install_dependencies
-    script:
-        - *configure
-        - *build
+  tags:
+    - docker
+  variables:
+    <<: *default_cmake_variables
+  script:
+    - *configure
+    - *build
 
 stages:
-    - static analysis
-    - build
-    - test
+  - static analysis
+  - build libraries
+  - build executables
+  - test
+  - documentation
 
 Format:
-    <<: *default_job
-    image: debian:stable
-    stage: static analysis
-    variables:
-        <<: *default_cmake_variables
-        CXX: clang++
-    before_script:
-        - apt-get update -y && apt-get upgrade -y
-        - apt-get install -y
-            cmake
-            git
-            clang
-            clang-tools
-            clang-format
-    script:
-        - ./tools/run_format.sh
-            && git status
-            && git diff-index --quiet HEAD
-            || { echo "This commit contains unformatted files! Run tools/run_format.sh on the project to format them correctly."; false; }
+  <<: *default_job
+  image: debian:stable-slim
+  stage: static analysis
+  variables:
+    <<: *default_cmake_variables
+    CXX: clang++
+  before_script:
+    - apt-get update -y
+    - apt-get install --no-install-recommends -y
+      git
+      clang
+      clang-tools
+      clang-format
+  script:
+    - ./tools/run_format.sh
+      && git status
+      && git diff-index --quiet HEAD
+      || { echo "This commit contains unformatted files! Run tools/run_format.sh on the project to format them correctly."; false; }
 
-Nested_Parallel:
-    <<: *default_job
-    stage: build 
-    variables:
-        <<: *default_cmake_variables
-        CXX: mpicxx
-        PION_NESTED_GRID: "ON"
-        PION_PARALLEL: "ON"
-        PION_USE_SILO: "ON"
+Serial:
+  <<: *default_job
+  stage: build libraries
+  variables:
+    <<: *default_cmake_variables
+    PION_PARALLEL: "OFF"
+    PION_USE_FITS: "ON"
+  artifacts:
+    name: serial 
+    paths:
+      - "${CMAKE_BUILD_DIR}"
 
-Nested_Serial:
-    <<: *default_job
-    stage: build 
-    variables:
-        <<: *default_cmake_variables
-        PION_NESTED_GRID: "ON"
-        PION_PARALLEL: "OFF"
-        PION_USE_FITS: "ON"
-
-Uniform_Parallel:
-    <<: *default_job
-    stage: build 
-    variables:
-        <<: *default_cmake_variables
-        CXX: mpicxx
-        PION_UNIFORM_GRID: "ON"
-        PION_PARALLEL: "ON"
-        PION_USE_SILO: "ON"
-    artifacts:
-        paths:
-            - "${CMAKE_BUILD_DIR}"
+Parallel:
+  <<: *default_job
+  stage: build libraries
+  variables:
+    <<: *default_cmake_variables
+    CXX: mpicxx
+    PION_PARALLEL: "ON"
+    PION_USE_SILO: "ON"
+  artifacts:
+    name: parallel
+    paths:
+      - "${CMAKE_BUILD_DIR}"
 
 Uniform_Serial:
-    <<: *default_job
-    stage: build 
-    variables:
-        <<: *default_cmake_variables
-        PION_UNIFORM_GRID: "ON"
-        PION_PARALLEL: "OFF"
-        PION_USE_FITS: "ON"
+  <<: *default_job
+  stage: build executables
+  variables:
+    <<: *default_cmake_variables
+    PION_UNIFORM_GRID: "ON"
+    PION_PARALLEL: "OFF"
+    PION_USE_FITS: "ON"
+  dependencies:
+    - Serial
+
+Nested_Serial:
+  <<: *default_job
+  stage: build executables
+  variables:
+    <<: *default_cmake_variables
+    PION_NESTED_GRID: "ON"
+    PION_PARALLEL: "OFF"
+    PION_USE_FITS: "ON"
+  dependencies:
+    - Serial
+
+Uniform_Parallel:
+  <<: *default_job
+  stage: build executables
+  variables:
+    <<: *default_cmake_variables
+    CXX: mpicxx
+    PION_UNIFORM_GRID: "ON"
+    PION_PARALLEL: "ON"
+    PION_USE_SILO: "ON"
+  dependencies:
+    - Parallel
+
+Nested_Parallel:
+  <<: *default_job
+  stage: build executables
+  variables:
+    <<: *default_cmake_variables
+    CXX: mpicxx
+    PION_NESTED_GRID: "ON"
+    PION_PARALLEL: "ON"
+    PION_USE_SILO: "ON"
+  dependencies:
+    - Parallel
+      
+DMR_TEST:
+  <<: *default_job
+  stage: test 
+  variables:
+    <<: *default_cmake_variables
+    CXX: mpicxx
+    PION_UNIFORM_GRID: "ON"
+    PION_PARALLEL: "ON"
+    PION_USE_SILO: "ON"
+    PION_BUILD_TESTS: "ON"
+    PION_TOOLS: "ON"
+  script:
+    - *configure
+    - *build
+    - make -C "${CMAKE_BUILD_DIR}" dmr_test
+  dependencies:
+    - Parallel
 
 Documentation:
-    <<: *default_job
-    stage: build 
-    variables:
-        <<: *default_cmake_variables
-        PION_SKIP_SOURCE: "ON"
-        PION_BUILD_DOCUMENTATION: "ON"
-    before_script:
-        - apt-get update -y && apt-get upgrade -y
-        - *install_common_dependencies
-        - apt-get install -y 
-            doxygen
-            graphviz
-            texlive
-    script:
-      - *configure
-      - *build
-      - *doc
-
-DMR_TEST:
-    <<: *default_job
-    stage: test 
-    variables:
-        <<: *default_cmake_variables
-        CXX: mpicxx
-        PION_UNIFORM_GRID: "ON"
-        PION_PARALLEL: "ON"
-        PION_USE_SILO: "ON"
-        PION_BUILD_TESTS: "ON"
-        PION_TOOLS: "ON"
-    script:
-        - *configure
-        - *build
-        - make -C "${CMAKE_BUILD_DIR}" dmr_test
-    artifacts:
-        paths:
-            - "${CMAKE_BUILD_DIR}"
+  <<: *default_job
+  stage: documentation 
+  variables:
+    <<: *default_cmake_variables
+    PION_SKIP_SOURCE: "ON"
+    PION_BUILD_DOCUMENTATION: "ON"
+  before_script:
+    - apt-get update -y
+    - apt-get install --no-install-recommends -y 
+      doxygen
+      graphviz
+      texlive
+  script:
+    - *configure
+    - *build
+    - *doc
+  dependencies: []
