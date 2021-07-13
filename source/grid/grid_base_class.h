@@ -204,6 +204,12 @@ public:
   /// Returns lelel x,y,z range in integer coords.
   virtual int level_iRange(enum axes) const = 0;
 
+#ifdef NEWGRIDDATA
+  ///< Query number of bytes per cell in griddata
+  virtual size_t get_gdata_stride() const = 0;
+#endif  // NEWGRIDDATA
+
+
   // ---------- QUERY BASIC GRID PROPERTIES -------------------------
 
   // ----------- SETUP AND UPDATE BOUNDARY DATA ---------------------

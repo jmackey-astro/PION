@@ -150,6 +150,16 @@ public:
       double *,  ///< data array
       size_t     ///< index of first free element in array
   );
+
+  /// return byte offset of array P[] in cell data
+  unsigned int get_offset_P();
+  /// return byte offset of array Ph[] in cell data
+  unsigned int get_offset_Ph();
+  /// return byte offset of array dU[] in cell data
+  unsigned int get_offset_dU();
+  /// return byte offset of array xd[] in cell data
+  unsigned int get_offset_xd();
+
 #endif  // NEWGRIDDATA
 
   class cell *new_cell();  ///< Create a new cell.
@@ -544,6 +554,13 @@ private:
   short unsigned int
       using_GradP;            ///< Flag: 0=don't need |grad(P)|, 1=do need it
   unsigned int N_extra_data;  ///< Size of extra_data array (can be zero).
+
+#ifdef NEWGRIDDATA
+  unsigned int offset_P;   ///< offset of P array in griddata
+  unsigned int offset_Ph;  ///< offset of Ph array in griddata
+  unsigned int offset_dU;  ///< offset of dU array in griddata
+  unsigned int offset_xd;  ///< offset of xd array in griddata
+#endif
 
   ///
   /// array where the value of the 'i'th element is the number of

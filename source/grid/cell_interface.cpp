@@ -359,6 +359,50 @@ int cell_interface::get_Nel()
 // ##################################################################
 
 
+unsigned int cell_interface::get_offset_P()
+{
+  return offset_P;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+unsigned int cell_interface::get_offset_Ph()
+{
+  return offset_Ph;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+unsigned int cell_interface::get_offset_dU()
+{
+  return offset_dU;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+unsigned int cell_interface::get_offset_xd()
+{
+  return offset_xd;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 size_t cell_interface::set_cell_pointers(
     cell *c,    ///< cell to add pointers to
@@ -371,11 +415,14 @@ size_t cell_interface::set_cell_pointers(
   if (dxo2 < 0.0) rep.error("Cell Interface: set dx", dxo2);
   if (ndim < 0) rep.error("Cell Interface: set ndim", ndim);
   if (nvar < 0) rep.error("Cell Interface: set nvar", nvar);
+  int offset = 0;
 
-  c->ngb = mem.myalloc(c->ngb, 2 * MAX_DIM);
-  c->pos = mem.myalloc(c->pos, ndim);
-  c->P   = &(d[ix]);
+  c->ngb                   = mem.myalloc(c->ngb, 2 * MAX_DIM);
+  c->pos                   = mem.myalloc(c->pos, ndim);
+  c->P                     = &(d[ix]);
+  cell_interface::offset_P = offset;
   ix += nvar;
+  offset += nvar * sizeof(pion_flt);
 
   for (int v = 0; v < ndim; v++)
     c->pos[v] = 0;
@@ -407,11 +454,16 @@ size_t cell_interface::set_cell_pointers(
     c->dU = 0;
   }
   else {
-    c->Ph = &(d[ix]);
+    c->Ph                     = &(d[ix]);
+    cell_interface::offset_Ph = offset;
+    offset += nvar * sizeof(pion_flt);
     ix += nvar;
     for (int v = 0; v < nvar; v++)
       c->Ph[v] = 0.0;
-    c->dU = &(d[ix]);
+
+    c->dU                     = &(d[ix]);
+    cell_interface::offset_dU = offset;
+    offset += nvar * sizeof(pion_flt);
     ix += nvar;
     for (int v = 0; v < nvar; v++)
       c->dU[v] = 0.0;
@@ -422,12 +474,13 @@ size_t cell_interface::set_cell_pointers(
 
   // cout <<"Nxd="<<N_extra_data<<"\n";
   if (N_extra_data >= 1) {
-    c->extra_data = &(d[ix]);
+    c->extra_data             = &(d[ix]);
+    cell_interface::offset_xd = offset;
+    offset += N_extra_data * sizeof(pion_flt);
     ix += N_extra_data;
     for (short unsigned int v = 0; v < N_extra_data; v++)
       c->extra_data[v] = 0.0;
   }
-
   return ix;
 }
 #endif  // NEWGRIDDATA

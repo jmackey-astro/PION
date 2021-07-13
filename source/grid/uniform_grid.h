@@ -178,6 +178,7 @@ protected:
 #ifdef NEWGRIDDATA
   pion_flt **griddata;     ///< array for state vectors of all cells
   class cell **gridcells;  ///< array of grid cells
+  size_t gdata_stride;     ///< number of bytes per cell in griddata
 #endif                     // NEWGRIDDATA
 
 
@@ -365,6 +366,11 @@ public:
   {
     return VectorOps_Cart::CellInterface(c, dir, G_dx);
   }
+
+#ifdef NEWGRIDDATA
+  ///< Query number of bytes per cell in griddata
+  virtual size_t get_gdata_stride() const { return gdata_stride; }
+#endif
 
   // ---------- QUERY BASIC GRID PROPERTIES -------------------------
 

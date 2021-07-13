@@ -464,6 +464,10 @@ int UniformGrid::allocate_grid_data()
   size_t nel = static_cast<size_t>(CI.get_Nel());
   // * multiply by number of cells to get total array size
   nel *= G_ncell_all;
+
+  // set stride (number of bytes per cell in big array)
+  UniformGrid::gdata_stride = nel;
+
   // * allocate data for big array
   griddata  = mem.myalloc(griddata, 1);
   *griddata = mem.myalloc(*griddata, nel);
