@@ -205,6 +205,30 @@ endif
 ################### ---  DEBIAN 10 (buster)  ---######################
 
 ######################################################################
+# Options for a debian 11 (bullseye) workstation with system libs
+######################################################################
+ifeq ($(MAKE_UNAME), debian11)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3 -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
+  else
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  endif
+
+  INC  = -I/usr/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -lm
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl -lgslcblas
+  LDFLAGS += -L/usr/lib
+  LDFLAGS += -Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
+
+endif
+################### ---  DEBIAN 11 (bullseye)  ---######################
+
+######################################################################
 # Options for an Ubuntu 18 workstation with locally installed libraries.
 ######################################################################
 ifeq ($(MAKE_UNAME), ubuntu18)

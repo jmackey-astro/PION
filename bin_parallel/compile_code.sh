@@ -108,6 +108,15 @@ if [ "$LINUX" == "YES" ]; then
     #export PION_OPTIMISE=LOW
     #NCORES=1
     NCORES=$nc
+  elif [ "$id" == "Debian" ] && [ "$code" == "bullseye" ]; then
+    echo "Detected Debian 11 (bullseye), using system libs for SILO, FITS, GSL, SUNDIALS"
+    MAKE_UNAME=debian11
+    export CXX=mpicxx
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE4"
+    export PION_OPTIMISE=HIGH
+    #export PION_OPTIMISE=LOW
+    #NCORES=1
+    NCORES=$nc
   elif [ "$id" == "ManjaroLinux" ]; then
     echo "Detected ManjaroLinux, using local libs for SILO FITS SUNDIALS"
     echo "Assuming using system libs for MPI and GSL"
