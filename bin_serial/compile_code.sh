@@ -96,6 +96,15 @@ if [ "$LINUX" == "YES" ]; then
     NCORES=$nc
     export CXX=g++
     MAKE_UNAME=debian10
+  elif [ "$id" == "Debian" ] && [ "$code" == "bullseye" ]; then
+    echo "Detected Debian 11 (bullseye), using system libs for SILO, FITS, GSL, SUNDIALS"
+    export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DCVODE4"
+    export PION_OPTIMISE=HIGH
+    #export PION_OPTIMISE=LOW
+    #NCORES=1
+    NCORES=$nc
+    export CXX=g++
+    MAKE_UNAME=debian11
   else
     echo "Failed to find a known version of Linux: checking for other OS types."
     MAKE_UNAME=standard

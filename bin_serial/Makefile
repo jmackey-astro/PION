@@ -162,6 +162,28 @@ endif
 ######################################################################
 
 ######################################################################
+# Options for a debian 11 workstation, using system libraries
+######################################################################
+ifeq ($(MAKE_UNAME), debian11)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3
+    #CXXFLAGS = -O0 -Wall -g
+  else
+    CXXFLAGS = -O0 -Wall -g
+  endif
+  INC = -I/usr/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -lm
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl -lgslcblas
+  LDFLAGS += -L/usr/lib
+  LDFLAGS += -Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
+endif
+######################################################################
+
+######################################################################
 # Options for an Ubuntu 18 workstation with locally installed libraries.
 ######################################################################
 ifeq ($(MAKE_UNAME), ubuntu18)
@@ -295,7 +317,8 @@ OBJ_IO =  parameter_defs.o file_status.o readparams.o \
           dataio_base.o dataio_text.o
 
 OBJ_GRID =  cell_interface.o uniform_grid.o setup_fixed_grid.o \
-            stellar_wind_BC.o stellar_wind_angle.o MCMD_control.o raytracer_SC.o
+            stellar_wind_BC.o stellar_wind_angle.o MCMD_control.o \
+            raytracer_SC.o stellar_wind_latdep.o
 
 OBJ_EQNS =  eqns_base.o eqns_hydro_adiabatic.o eqns_mhd_adiabatic.o 
 
@@ -423,7 +446,7 @@ icgen_NG.o: icgen_NG.cpp icgen.h get_sim_info.h \
 cell_interface.o: cell_interface.cpp cell_interface.h ${GLOBAL}
 
 uniform_grid.o: uniform_grid.cpp uniform_grid.h grid_base_class.h ${GLOBAL} \
-    stellar_wind_angle.h stellar_wind_BC.h \
+    stellar_wind_angle.h stellar_wind_BC.h stellar_wind_latdep.h \
     VectorOps.h VectorOps_spherical.h
 
 VectorOps.o:           VectorOps.cpp VectorOps.h ${GLOBAL} uniform_grid.h grid_base_class.h
@@ -683,9 +706,11 @@ readparams.o:   readparams.cpp readparams.h ${GLOBAL}
 utility_fits_class.o: utility_fits_class.cpp dataio_fits.h parameter_defs.h ${GLOBAL} grid_base_class.h
 
 stellar_wind_BC.o: stellar_wind_BC.cpp stellar_wind_BC.h \
-   grid_base_class.h tools/interpolate.h ${GLOBAL}
+   grid_base_class.h interpolate.h ${GLOBAL}
 stellar_wind_angle.o: stellar_wind_angle.cpp stellar_wind_angle.h stellar_wind_BC.h \
-   grid_base_class.h tools/interpolate.h ${GLOBAL}
+   grid_base_class.h interpolate.h ${GLOBAL}
+stellar_wind_latdep.o: stellar_wind_latdep.cpp stellar_wind_latdep.h \
+  ${GLOBAL} interpolate.h cell_interface.h grid_base_class.h 
 
 dataio_silo_NG.o : dataio_silo_NG.cpp \
   dataio_silo_NG.h dataio_silo.h parameter_defs.h ${GLOBAL} \

@@ -682,10 +682,12 @@ stellar_wind_boundaries.o: stellar_wind_boundaries.cpp \
   grid_base_class.h stellar_wind_BC.h
 
 stellar_wind_angle.o: stellar_wind_angle.cpp stellar_wind_angle.h \
-  ${GLOBAL} cell_interface.h grid_base_class.h 
+  ${GLOBAL} cell_interface.h grid_base_class.h stellar_wind_BC.h \
+  interpolate.h
 
 stellar_wind_latdep.o: stellar_wind_latdep.cpp stellar_wind_latdep.h \
-  ${GLOBAL} cell_interface.h grid_base_class.h 
+  ${GLOBAL} cell_interface.h grid_base_class.h stellar_wind_BC.h \
+  interpolate.h
 
 stellar_wind_BC.o: stellar_wind_BC.cpp stellar_wind_BC.h \
   ${GLOBAL} cell_interface.h grid_base_class.h
