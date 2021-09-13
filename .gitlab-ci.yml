@@ -65,7 +65,7 @@ stages:
 
 Format:
   <<: *default_job
-  image: debian:stable-slim
+  image: debian:10.10-slim
   stage: static analysis
   variables:
     <<: *default_cmake_variables
@@ -75,7 +75,6 @@ Format:
     - apt-get install --no-install-recommends -y
       git
       clang
-      clang-tools
       clang-format
   script:
     - ./tools/run_format.sh

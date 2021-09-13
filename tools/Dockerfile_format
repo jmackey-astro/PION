@@ -1,0 +1,6 @@
+From debian:10.10-slim
+
+RUN apt-get update -y && apt-get upgrade -y
+RUN apt-get install -y clang clang-format
+
+CMD /home/tools/run_format.sh
