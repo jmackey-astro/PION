@@ -60,7 +60,7 @@ FV_solver_Hydro_Euler::FV_solver_Hydro_Euler(
     Riemann_Roe_Hydro_PV(nv, gam), Riemann_Roe_Hydro_CV(nv, gam),
     HLL_hydro(nv, gam), VectorOps_Cart(nd)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "FV_solver_Hydro_Euler::FV_solver_Hydro_Euler() constructor.\n";
   cout << "FV_solver_Hydro_Euler::FV_solver_Hydro_Euler() gamma = " << eq_gamma
        << "\n";
@@ -74,7 +74,7 @@ FV_solver_Hydro_Euler::FV_solver_Hydro_Euler(
 
 FV_solver_Hydro_Euler::~FV_solver_Hydro_Euler()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "FV_solver_Hydro_Euler::~FV_solver_Hydro_Euler() destructor.\n";
 #endif
   return;
@@ -336,7 +336,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
     const pion_flt *Pin,  // Initial State Vector.
     pion_flt *dU,         // Update vector dU
     pion_flt *Pf,         // Final state vector (can be same as initial vec.).
-    pion_flt *dE,  // TESTING Tracks change of energy for negative pressure
+    pion_flt *dE,  // NDEBUG Tracks change of energy for negative pressure
                    // correction.
     const double,  // gas EOS gamma.
     const double MinTemp,  ///< Min Temperature allowed on grid.
@@ -375,7 +375,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
 
   int err;
   if ((err = UtoP(u1, Pf, MinTemp, eq_gamma)) != 0) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "(FV_solver_Hydro_Euler::CellAdvanceTime) UtoP complained";
     cout << " (maybe about negative pressure...) fixing\n";
     rep.printVec("pin", Pin, eq_nvar);

@@ -4,7 +4,6 @@ add_subdirectory(comms)
 #add_subdirectory(contrib)
 add_subdirectory(coord_sys)
 add_subdirectory(dataIO)
-add_subdirectory(decomposition)
 add_subdirectory(equations)
 add_subdirectory(ics)
 add_subdirectory(microphysics)
@@ -14,6 +13,9 @@ add_subdirectory(Riemann_solvers)
 add_subdirectory(sim_control)
 add_subdirectory(spatial_solvers)
 add_subdirectory(tools)
+if (PION_PARALLEL)
+    add_subdirectory(decomposition)
+endif(PION_PARALLEL)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
@@ -34,6 +36,8 @@ if(PION_NESTED_GRID)
             sim_params.cpp
             constants.cpp
         ) 
+        target_link_libraries(pion-ng PUBLIC decomposition)
+        target_link_libraries(icgen-ng PUBLIC decomposition)
     else()
         add_executable(
             pion-ng
@@ -57,7 +61,6 @@ if(PION_NESTED_GRID)
     # pion-ng internal dependencies
     target_link_libraries(pion-ng PUBLIC 
         nested_sim_control
-        decomposition
         raytracing
         nested_boundaries
     )
@@ -65,7 +68,6 @@ if(PION_NESTED_GRID)
     # icgen-ng internal dependencies
     target_link_libraries(icgen-ng PUBLIC 
         ics
-        decomposition
         raytracing
         nested_boundaries
     )
@@ -99,6 +101,8 @@ if(PION_UNIFORM_GRID)
             sim_params.cpp
             constants.cpp
         ) 
+        target_link_libraries(pion-ug PUBLIC decomposition)
+        target_link_libraries(icgen-ug PUBLIC decomposition)
     else()
         add_executable(
             pion-ug
@@ -122,7 +126,6 @@ if(PION_UNIFORM_GRID)
     # pion-ug internal dependencies
     target_link_libraries(pion-ug PUBLIC 
         sim_control
-        decomposition
         raytracing
         boundaries
     )
@@ -130,7 +133,6 @@ if(PION_UNIFORM_GRID)
     # icgen-ug internal dependencies
     target_link_libraries(icgen-ug PUBLIC 
         ics
-        decomposition
         raytracing
         boundaries
     )

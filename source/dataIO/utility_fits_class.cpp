@@ -38,9 +38,9 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "dataIO/dataio_fits.h"
 #include "fitsio.h"

@@ -161,9 +161,9 @@
 #include "constants.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "microphysics/MPv3.h"
 
@@ -312,7 +312,7 @@ MPv3::MPv3(
 
     // ================================================================
     // ================================================================
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "MPv3:: EP and RS: " << EP << "\t" << RS << endl;
 #endif
 

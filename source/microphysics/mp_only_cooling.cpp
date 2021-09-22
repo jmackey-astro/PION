@@ -32,9 +32,9 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "microphysics/mp_only_cooling.h"
 
@@ -115,7 +115,7 @@ mp_only_cooling::mp_only_cooling(
   // generate lookup tables for WSS09_CIE_LINE_HEAT_COOL function.
   gen_mpoc_lookup_tables();
 
-#ifdef TESTING
+#ifndef NDEBUG
   ostringstream opfile;
   opfile << "coolingNOCHEM_" << cooling_flag << ".txt";
   ofstream outf(opfile.str().c_str());
@@ -233,7 +233,7 @@ int mp_only_cooling::Set_Temp(
     const double gam  ///< eos gamma.
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   //
   // check for bad input
   //
@@ -242,7 +242,7 @@ int mp_only_cooling::Set_Temp(
     cout << "temperature! T=" << T << "\n";
     return 1;
   }
-#endif  // TESTING
+#endif  // NDEBUG
   // cout <<"\n\t\t***** Set_Temp(): p="<<p_in[PG]<<", rho="<< p_in[RO];
   // cout <<", T="<<T<<", new p="<<p_in[RO]*T/Mu_tot_over_kB<<"\n";
   p_in[PG] = p_in[RO] * T / Mu_tot_over_kB;

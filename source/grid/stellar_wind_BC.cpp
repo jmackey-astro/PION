@@ -51,9 +51,9 @@
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
 #include "tools/timer.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "grid/grid_base_class.h"
 #include "grid/stellar_wind_BC.h"
@@ -61,7 +61,7 @@
 #include <sstream>
 using namespace std;
 
-//#define TESTING
+//
 
 // ##################################################################
 // ##################################################################
@@ -209,10 +209,10 @@ int stellar_wind::add_source(
 
   wlist.push_back(ws);
   nsrc++;
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "\tAdded wind source id=" << nsrc - 1 << " to list of ";
   cout << nsrc << " elements.\n";
-#endif  // TESTING
+#endif  // NDEBUG
   return 0;
 }
 
@@ -317,7 +317,7 @@ int stellar_wind::add_cell(
   WS->wcells.push_back(wc);
   WS->ncell += 1;
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "*** dist=" << wc->dist << ". ";
   rep.printVec("Wind BC cell pos", wc->c->pos, ndim);
   rep.printVec("Wind BC cell values", wc->p, nvar);
@@ -637,7 +637,7 @@ int stellar_wind::set_cell_values(
   // go through every cell in one go and update them all
   //
   struct wind_source *WS = wlist[id];
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "updating source " << id << " which has " << WS->ncell << " cells.\n";
 #endif
   for (int i = 0; i < WS->ncell; i++) {
@@ -874,7 +874,7 @@ stellar_wind_evolution::stellar_wind_evolution(
     stellar_wind(nd, nv, nt, ft, tr, cs, eq, mt),
     sim_start(ss), sim_finish(sf)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Stellar wind with time evolution, constructor.\n";
 #endif
 }
@@ -884,7 +884,7 @@ stellar_wind_evolution::stellar_wind_evolution(
 
 stellar_wind_evolution::~stellar_wind_evolution()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Stellar wind with time evolution, destructor.\n";
 #endif
 
@@ -1039,7 +1039,7 @@ int stellar_wind_evolution::read_evolution_file(
         &time, &mass, &lumi, &teff, &mdot, &vrot, &vcrt, &vinf, &xh, &xhe, &xc,
         &xn, &xo, &xz, &xd);
     // cout.precision(16);
-#ifdef TESTING
+#ifndef NDEBUG
     cout << time << "  " << mass << "  " << lumi << "  " << teff << "  ";
     cout << mdot << "  " << vrot << "  " << vcrt << "  " << vinf << "\n";
 #endif
@@ -1111,7 +1111,7 @@ int stellar_wind_evolution::add_evolving_source(
   // First we will read the file, and see when the source should
   // switch on in the simulation (it may not be needed for a while).
   //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "\t\tsw-evo: adding source from file " << infile << "\n";
 #endif
 
@@ -1142,7 +1142,7 @@ int stellar_wind_evolution::add_evolving_source(
   temp->tfinish       = temp->time_evo[temp->Npt - 1];
   temp->update_freq   = update_freq / t_scalefactor;
   temp->t_next_update = max(temp->tstart, t_now);
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "\t\t tstart=" << temp->tstart;
   cout << ", next update=" << temp->t_next_update;
   cout << ", and tfinish=" << temp->tfinish << "\n";
@@ -1183,7 +1183,7 @@ int stellar_wind_evolution::add_evolving_source(
     interpolate.root_find_linear_vec(temp->time_evo, temp->X_Z_evo, t_now, xz);
     interpolate.root_find_linear_vec(temp->time_evo, temp->X_D_evo, t_now, xd);
 
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "Source is Active\n";
     cout << "T = " << Twind << ",  mdot=" << mdot << ",  vinf=" << vinf;
     cout << ",  rstar=" << rstar << "\n";

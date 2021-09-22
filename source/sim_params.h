@@ -22,9 +22,11 @@
 #include "defines/testing_flags.h"
 
 #include "constants.h"
-#include "decomposition/MCMD_control.h"
 #include "raytracing/rad_src_data.h"
 #include "sim_constants.h"
+#ifdef PARALLEL
+#include "decomposition/MCMD_control.h"
+#endif
 
 // *******************************************************************
 ///
@@ -181,7 +183,9 @@ public:
   int NG[MAX_DIM];  ///< Number of 'real' grid zones in each direction (Total
                     ///< for level).
   int multiplier;   ///< 2^l, l=0=coarsest.
+#ifdef PARALLEL
   class MCMDcontrol MCMD;  ///< domain decomposition on this level
+#endif
 };
 // *******************************************************************
 
@@ -291,6 +295,9 @@ public:
   double addnoise;  ///< Whether to add noise or not, 0=no, 1-3 are for
                     ///< different types of noise.
   pion_flt RefVec[MAX_NVAR];  ///< Reference state vector for simulation.
+
+  std::vector<int> get_pbc_bools()
+      const;  ///< Return a boolean vector for periodic boundary conditions
 };
 
 // *******************************************************************

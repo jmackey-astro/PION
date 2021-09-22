@@ -54,10 +54,10 @@
 
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "raytracing/raytracer_base.h"
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "microphysics/microphysics_base.h"
 
@@ -79,7 +79,7 @@ dataio_silo::dataio_silo(
     ) :
     DataIOBase(SimPM)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "setting up dataio_silo class.\n";
 #endif
   dataio_silo::eqn = 0;
@@ -128,7 +128,7 @@ dataio_silo::dataio_silo(
 
 dataio_silo::~dataio_silo()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "deleting dataio_silo class.\n";
 #endif
   dataio_silo::eqn = 0;
@@ -174,7 +174,7 @@ dataio_silo::~dataio_silo()
 
 void dataio_silo::SetSolver(FV_solver_base *solver)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "dataio_silo::SetSolver() Setting solver pointer.\n";
 #endif
   dataio_silo::eqn = solver;
@@ -393,7 +393,7 @@ int dataio_silo::ReadHeader(
 {
   int err  = 0;
   silofile = infile;
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Reading Header from file: " << silofile << "\n";
 #endif
 
@@ -420,7 +420,7 @@ int dataio_silo::ReadHeader(
   dataio_silo::ndim = SimPM.ndim;
 
   DBClose(*db_ptr);  //*db_ptr=0;
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "FINISHED reading Header from file: " << silofile << "\n";
 #endif
   return err;
@@ -945,12 +945,12 @@ int dataio_silo::setup_write_variables(
     varnames.push_back(s);
   }
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "list of vars: ";
   for (unsigned int i = 0; i < varnames.size(); i++)
     cout << varnames[i] << "  ";
   cout << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
   have_setup_writevars = true;
   return 0;
 }
@@ -1063,7 +1063,7 @@ int dataio_silo::generate_quadmesh(
     strcpy(coordnames[i], s[i].c_str());
   }
 
-#ifdef TESTING
+#ifndef NDEBUG
   for (int i = 0; i < ndim; i++) {
     cout << "coords: ";
     cout << coordnames[i] << "  ";
@@ -1666,7 +1666,7 @@ int dataio_silo::get_scalar_data_array(
 #ifdef RT_TESTING_OUTPUTCOL
   else if (v <= -20 && v > -30) {
     // ionising-RT column density variable.
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "writing variable " << v << " corresponding to NH0 RT ";
     cout << "variable " << variable << "\n";
 #endif
@@ -1702,7 +1702,7 @@ int dataio_silo::get_scalar_data_array(
 
   else if (v <= -10 && v > -20) {
     // diffuse-RT column density variable.
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "writing variable " << v << " corresponding to Ntot RT ";
     cout << "variable " << variable << "\n";
 #endif

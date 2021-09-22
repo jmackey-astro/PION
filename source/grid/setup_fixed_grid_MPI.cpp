@@ -45,7 +45,7 @@ using namespace std;
 
 setup_fixed_grid_pllel::setup_fixed_grid_pllel()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "setup_fixed_grid_pllel constructor.\n";
 #endif
 }
@@ -55,7 +55,7 @@ setup_fixed_grid_pllel::setup_fixed_grid_pllel()
 
 setup_fixed_grid_pllel::~setup_fixed_grid_pllel()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "setup_fixed_grid_pllel destructor.\n";
 #endif
 }
@@ -68,7 +68,7 @@ int setup_fixed_grid_pllel::setup_grid(
     class SimParams &SimPM             ///< simulation parameters
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "setup_fixed_grid_pllel: setting up parallel grid.\n";
 #endif
   cout << "(pion mpi) setting up grid\n";
@@ -84,10 +84,10 @@ int setup_fixed_grid_pllel::setup_grid(
     //
     // Nbc is the depth of the boundary layer.
     //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting number of boundary cells == spatial OOA: ";
   cout << SimPM.spOOA << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
   if (SimPM.spOOA == OA2) {
     SimPM.Nbc    = 2;
     SimPM.Nbc_DD = 2;
@@ -126,7 +126,7 @@ int setup_fixed_grid_pllel::setup_grid(
   //
   // Now set up the parallel uniform grid.
   //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(setup_fixed_grid_pllel::setup_grid) Setting up grid...\n";
 #endif
 
@@ -156,7 +156,7 @@ int setup_fixed_grid_pllel::setup_grid(
     rep.error(
         "(setup_fixed_grid_pllel::setup_grid) Couldn't assign data!", *grid);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(setup_fixed_grid_pllel::setup_grid) Done. ";
   cout << "grid=" << *grid << ", and";
   cout << "\t DX = " << (*grid)->DX() << "\n";
@@ -331,7 +331,7 @@ int setup_fixed_grid_pllel::boundary_conditions(
 )
 {
   // For uniform fixed cartesian grid.
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting up BCs in Grid with Nbc=" << par.Nbc << "\n";
 #endif
   //
@@ -346,7 +346,7 @@ int setup_fixed_grid_pllel::boundary_conditions(
   err = grid[0]->SetupBCs(par);
   rep.errorTest("sfg::boundary_conditions::SetupBCs", 0, err);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(setup_fixed_grid::boundary_conditions) Done.\n";
 #endif
   return 0;
@@ -362,7 +362,7 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
 )
 {
   string fname = "setup_fixed_grid_pllel::setup_boundary_structs";
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "PLLEL: Set BC types...\n";
 #endif
   //
@@ -397,66 +397,13 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
     }
   }
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "PLLEL: BC types and data set up.\n";
-#endif
-
-  //
-  // If we have periodic boundaries, need to set neighbouring processors to
-  // wrap around.  So set the number of procs in each direction.
-  //
-  int nx[par.ndim];
-  class MCMDcontrol *ppar = &(par.levels[0].MCMD);
-  for (i = 0; i < par.ndim; i++) {
-    nx[i] = static_cast<int>(
-        ONE_PLUS_EPS * par.Range[i] / grid->Range(static_cast<axes>(i)));
+  for (int i = 0; i < 2 * par.ndim; i++) {
+    cout << "Neighbouring processor in dir " << i << " = "
+         << par.levels[0].MCMD.ngbprocs[i] << "\n";
   }
-  for (i = 0; i < 2 * par.ndim; i++) {
-    if (grid->BC_bd[i]->itype == PERIODIC) {
-      switch (i) {
-        case XN:
-          ppar->ngbprocs[XN] = ppar->get_myrank() + nx[XX] - 1;
-          break;
-        case XP:
-          ppar->ngbprocs[XP] = ppar->get_myrank() - nx[XX] + 1;
-          break;
-        case YN:
-          ppar->ngbprocs[YN] = ppar->get_myrank() + (nx[YY] - 1) * nx[XX];
-          break;
-        case YP:
-          ppar->ngbprocs[YP] = ppar->get_myrank() - (nx[YY] - 1) * nx[XX];
-          break;
-        case ZN:
-          ppar->ngbprocs[ZN] =
-              ppar->get_myrank() + (nx[ZZ] - 1) * nx[YY] * nx[XX];
-          break;
-        case ZP:
-          ppar->ngbprocs[ZP] =
-              ppar->get_myrank() - (nx[ZZ] - 1) * nx[YY] * nx[XX];
-          break;
-        default:
-          rep.error("sfg_pllel::setup_boundary_structs: Bad direction", i);
-          break;
-      }  // set neighbour according to direction.
-
-      if ((ppar->ngbprocs[i] < 0) || (ppar->ngbprocs[i] >= ppar->get_nproc()))
-        rep.error(
-            "sfg_pllel::setup_boundary_structs: Bad periodic \
-                   neighbour",
-            ppar->ngbprocs[i]);
-      if (ppar->ngbprocs[i] == ppar->get_myrank()) {
-        //  cout <<"setup_fixed_grid_pllel::setup_boundary_structs: ";
-        //  cout <<"only one proc in dir [i]: "<<i<<"\n";
-        //  cout <<"setup_fixed_grid_pllel::setup_boundary_structs: ";
-        //  cout <<"periodic on single proc, so setting ngb to -999.\n";
-        ppar->ngbprocs[i] = -999;
-      }
-    }  // if periodic
-#ifdef TESTING
-    cout << "Neighbouring processor in dir " << i << " = " << ppar->ngbprocs[i]
-         << "\n";
-#endif  // TESTING
-  }     // loop over directions.
+#endif
   return (0);
 }
 

@@ -152,17 +152,6 @@ protected:
       string,                 ///< multimesh name
       string                  ///< multimesh adjacency name.
   );
-
-  ///
-  /// Write an MRG tree object (replaces multimesh adjacency)
-  ///
-  int write_MRGtree(
-      class SimParams &,      ///< pointer to simulation parameters
-      DBfile *,               ///< pointer to silo file.
-      class GridBaseClass *,  ///< pointer to data.
-      string,                 ///< multimesh name
-      string                  ///< MRG tree name.
-  );
 };
 
 #endif  // if PARALLEL

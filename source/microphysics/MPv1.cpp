@@ -63,9 +63,9 @@
 #include "tools/interpolate.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "microphysics/microphysics.h"
 using namespace std;
@@ -198,7 +198,7 @@ MP_Hydrogen::MP_Hydrogen(
   interpolate.spline(hr_t, hr_alpha, hr_nspl, 0.0, 0.0, hr_alpha2);
   interpolate.spline(hr_t, hr_beta, hr_nspl, 0.0, 0.0, hr_beta2);
 
-#ifdef TESTING
+#ifndef NDEBUG
   //
   // can't have all procs fighting over file in parallel, so just
   // don't write if we are running parallel code.
@@ -221,7 +221,7 @@ MP_Hydrogen::MP_Hydrogen(
   } while (t < 1.e7);
   outf.close();
 #endif  // PARALLEL
-#endif  // TESTING
+#endif  // NDEBUG
 #endif  // HUMMER_RECOMB
 
   //  cout <<"\t\tinit done.\n";
@@ -359,13 +359,13 @@ int MP_Hydrogen::convert_prim2local(
   p_local[lv_nh]   = p_in[RO] / m_p;
   p_local[lv_eint] = p_in[PG] / (gam - 1.);
   if (p_in[PG] <= 0.) {
-#ifdef TESTING
+#ifndef NDEBUG
     commandline.console("Mmmm... negative pressure input to MP! >");
 #endif  // testing
     cout << "neg.pres. input to MP: e=" << p_local[lv_eint] << "\n";
     rep.error("Negative pressure input to RT solver!", p_in[PG]);
   }
-#ifdef TESTING
+#ifndef NDEBUG
   if (p_local[lv_eint] > 1.e-5) {
     // cout <<"cell with crazy temperature:"; CI.print_cell(dp.c);
     // rep.error("goodbye",0);
@@ -373,7 +373,7 @@ int MP_Hydrogen::convert_prim2local(
 #endif  // testing
   p_local[lv_Hp] = p_in[pv_Hp];
   if (p_local[lv_Hp] < 0.0 || (p_local[lv_Hp] - 1.0 > SMALLVALUE)) {
-#ifdef TESTING
+#ifndef NDEBUG
     // commandline.console("Mmmm... bad ion frac. input to MP! >");
 #endif  // testing
         //    rep.warning("bad ion frac. input to
@@ -447,7 +447,7 @@ int MP_Hydrogen::convert_local2prim(
 #endif  // ISOTHERMAL_MP
 
   if (p_out[PG] < 0.) {
-#ifdef TESTING
+#ifndef NDEBUG
     commandline.console("Mmmm... negative pressure! >");
 #endif  // testing
     cout << "neg.pres. e=" << p_local[lv_eint] << "\n";
@@ -713,7 +713,7 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
       // cout <<"  ...rejecting step. integrator gave code:
       // err="<<err<<"\n"; P2[lv_Hp] = 1.0; cout <<"irate =
       // "<<irate<<"\n";
-#ifdef TESTING
+#ifndef NDEBUG
       commandline.console("Mmmm>");
 #endif
     }
@@ -775,7 +775,7 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
     if (P[lv_Hp] > 1.00001) {
       cout << "H+ has i-frac=" << P[lv_Hp] << "  ...setting to 1.\n";
       //      P[lv_Hp] = 1.0;
-#ifdef TESTING
+#ifndef NDEBUG
       commandline.console("Mmmm>");
 #endif
       rep.error("FAILURE of method on every level! FIX ME!", P[lv_Hp]);
@@ -943,7 +943,7 @@ int MP_Hydrogen::implicit_step(
       // p_now[] to have crazy values, and go on to the next iteration.
       T = (gamma - 1.) * p_now[lv_eint] / kB / (1.0 + p_now[lv_Hp])
           / p_now[lv_nh];  // Temperature.
-#ifdef TESTING
+#ifndef NDEBUG
       if (dp.c->id == 17042) {
         cout << "\t\t\ttemperature=" << T << " gamma=" << gamma << "\n";
         rep.printVec("state:", p_now, 4);
@@ -952,7 +952,7 @@ int MP_Hydrogen::implicit_step(
 #endif
 
       if (T < 0.0 || isnan(T) || isinf(T)) {
-#ifdef TESTING
+#ifndef NDEBUG
         cout << "\t\t\ttemperature=" << T << " gamma=" << gamma << "\n";
         rep.printVec("state:", p_now, 4);
         // CI.print_cell(dp.c);
@@ -1046,7 +1046,7 @@ int MP_Hydrogen::implicit_step(
                 - e_int * (A * e_phot - B * e_ci + C * e_rr + LL);
 #endif  // not HUMMER_RECOMB
 
-#ifdef TESTING
+#ifndef NDEBUG
         // cout <<"ct="<<ct<<" i="<<i<<" out of "<<nsub<<"; hh="<<hh<<"
         // T="<<T<<", pnow=";rep.printVec("pnow",p_now,nvl); cout
         // <<"\t\tLL="<<LL<<" e_rr="<<e_rr<<" e_int="<<e_int<<"
@@ -1195,7 +1195,7 @@ int MP_Hydrogen::implicit_step(
     p_out[v] = p_now[v];
 
   // #ifdef USE_MM
-  // #ifdef TESTING
+  // #ifndef NDEBUG
   //   p_old = mem.myfree(p_old, "MP_H:Implicit_step: p_old");
   //   p_now = mem.myfree(p_now, "MP_H:Implicit_step: p_now");
   // #else
@@ -1264,7 +1264,7 @@ int MP_Hydrogen::Int_Adaptive_RKCK(
     }
     else {
       // accept the step.
-#ifdef TESTING
+#ifndef NDEBUG
       if (dp.c->id == 2773) {
         cout << "\t\t*** energy before = " << p1[lv_eint]
              << " and after step = " << p2[lv_eint] << "\n";
@@ -1293,7 +1293,7 @@ int MP_Hydrogen::Int_Adaptive_RKCK(
          << "\n";
     rep.printVec("p1", p1, nvl);
     if (!err) err = ct;
-#ifdef TESTING
+#ifndef NDEBUG
     commandline.console("bad luck! >");
 #endif
   }
@@ -1366,7 +1366,7 @@ int MP_Hydrogen::dPdt(
 #ifdef HUMMER_RECOMB
       R[lv_eint] -= rad_recomb_energy(T) * P[lv_Hp] * P[lv_Hp]
                     * P[lv_nh];  // rate [erg/s]
-#ifdef TESTING
+#ifndef NDEBUG
     if (dp.c->id == 2773) {
       cout << "\t\t*** energy rate after  recomb   =" << R[lv_eint] << "\n";
     }
@@ -1403,7 +1403,7 @@ int MP_Hydrogen::dPdt(
         temp * (1.0 - P[lv_Hp])
         * phot_ion_energy(
               T);  // this adds in X.XeV of energy per photo-ionisation.
-#ifdef TESTING
+#ifndef NDEBUG
     // if (dp.c->id==649090) {
     //  cout <<"photons_in="<<photons_in<<"\ttau="<<R[lv_dtau];
     //  cout <<"\tdxdt="<<R[lv_Hp]<<"\tdedt="<<R[lv_eint]<<"\n";
@@ -1427,7 +1427,7 @@ int MP_Hydrogen::dPdt(
   //}
   // cout <<"  total: rate="<<R[lv_Hp]<<"\n";
 
-  //#ifdef TESTING
+  //#ifndef NDEBUG
   //  if (dp.c->id==10446) cout <<"pre- cooling R[eint]="<<R[lv_eint]<<"\n";
   //#endif
   if (EP->cooling) {
@@ -1435,7 +1435,7 @@ int MP_Hydrogen::dPdt(
                T, P[lv_Hp], P[lv_nh], FUV_unattenuated_flux, FUV_extinction)
            / P[lv_nh];
 
-#ifdef TESTING
+#ifndef NDEBUG
     if (dp.c->id == 2773) {
       cout << "\t\t*** energy gain/loss to cooling = " << -temp << "\n";
     }
@@ -1447,7 +1447,7 @@ int MP_Hydrogen::dPdt(
     }
 #endif  // COUNT_ENERGETICS
   }
-  //#ifdef TESTING
+  //#ifndef NDEBUG
   //  if (dp.c->id==10446) cout <<"post-cooling R[eint]="<<R[lv_eint]<<"\n";
   //#endif
 
@@ -1497,7 +1497,7 @@ int MP_Hydrogen::dPdt(
   // **************************************************
 #endif  // ISOTHERMAL_MP
 
-#ifdef TESTING
+#ifndef NDEBUG
   if (dp.c->id == 2773) {
     rep.printVec("\t\ttt rate", R, nvl);
   }

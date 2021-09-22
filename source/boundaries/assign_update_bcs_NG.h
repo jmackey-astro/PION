@@ -15,7 +15,6 @@
 #include "boundaries/NG_fine_to_coarse_boundaries.h"
 #include "boundaries/assign_update_bcs.h"
 #include "boundaries/boundaries.h"
-#include "decomposition/MCMD_control.h"
 #include "spatial_solvers/solver_eqn_base.h"
 
 class assign_update_bcs_NG :

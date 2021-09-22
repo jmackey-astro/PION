@@ -55,15 +55,16 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #ifndef PARALLEL
 #error "PARALLEL not defined!  don't compile dataio_silo_MPI.cc without it!"
 #endif
 #include "dataio_silo_MPI.h"
 #include <cstring>
+#include <mpi.h>
 #include <sstream>
 
 // ##################################################################
@@ -75,7 +76,7 @@ dataio_silo_pllel::dataio_silo_pllel(
     class MCMDcontrol *p) :
     dataio_silo(SimPM, dtype)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting up parallel Silo I/O class.\n";
 #endif
   numfiles                 = -1;
@@ -88,7 +89,7 @@ dataio_silo_pllel::dataio_silo_pllel(
 
 dataio_silo_pllel::~dataio_silo_pllel()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Deleting parallel Silo I/O class.\n";
 #endif
   return;
@@ -104,7 +105,7 @@ int dataio_silo_pllel::ReadHeader(
 {
   int err  = 0;
   silofile = infile;
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Rank: " << mpiPM->get_myrank();
   cout << "\tReading Header from file: " << silofile << "\n";
 #endif
@@ -152,7 +153,7 @@ int dataio_silo_pllel::ReadHeader(
   if (err) {
     numfiles = 1;
     err      = 0;
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "Warning didn't read NUM_FILES from silo file.\n";
 #endif
   }
@@ -163,7 +164,7 @@ int dataio_silo_pllel::ReadHeader(
   err = COMM->silo_pllel_finish_with_file(file_id, db_ptr);
   if (err) rep.error("COMM->silo_pllel_finish_with_file() returned err", err);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Rank: " << mpiPM->get_myrank();
   cout << "\tFINISHED reading Header from file: " << silofile << "\n";
 #endif
@@ -183,7 +184,7 @@ int dataio_silo_pllel::ReadData(
   if (!gp) rep.error("dataio_silo_pllel::ReadData() null pointer to grid!", gp);
 
   int err = 0;
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "\n----Rank: " << mpiPM->get_myrank();
   cout << "\tReading Data from files: " << infile;
 #endif
@@ -230,7 +231,7 @@ int dataio_silo_pllel::ReadData(
     temp.width(4);
     temp << group_rank;
     infile.replace(pos, 4, temp.str());
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "\tNew infile: " << infile << "\n";
 #endif
     temp.str("");
@@ -396,7 +397,7 @@ int dataio_silo_pllel::ReadData(
   if (err) rep.error("COMM->silo_pllel_finish_with_file() returned err", err);
   COMM->barrier("dataio_silo_pllel__ReadData");
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "----Rank: " << mpiPM->get_myrank();
   cout << "\tFINISHED reading Data from file: " << silofile << "\n"
        << "\n";
@@ -505,19 +506,19 @@ int dataio_silo_pllel::SaveLevelData(
   cout << "myrank: " << mpiPM->get_myrank() << "\tnumfiles: ";
   cout << numfiles << "\tmy_group: ";
   cout << group_rank << "\tmy_index_in_group: " << myrank_ingroup << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // Choose output filename:
   //
 #ifdef TEST_SILO_IO
   cout << "setting strings... outfilebase=" << outfilebase << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   choose_pllel_filename(outfilebase, group_rank, file_counter, silofile);
 #ifdef TEST_SILO_IO
   cout << "string for outfile set...\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // Choose directory within silo file.
@@ -560,11 +561,32 @@ int dataio_silo_pllel::SaveLevelData(
   }
 
   //
+  // performance options:
+  //
+  /* must be communicated before serial region */
+  int ext_size = 2 * ndim;
+  int nmesh    = mpiPM->get_nproc();
+  double extents[ext_size * nmesh];
+  int zonecounts[nmesh];
+
+  SimPM.levels[level].MCMD.gather_ncells(zonecounts, 0);
+  SimPM.levels[level].MCMD.gather_extents(extents, 0);
+
+  //
   // Wait for my turn to write to the file.
   //
 #ifdef TEST_SILO_IO
   cout << "----dataio_silo_pllel::SaveLevelData() waiting for baton\n";
 #endif
+  /*
+   * TODO: non-root processes call this to pass required data to rank 0 when it
+   * calls it later on. This is horrific and must be changed. It also relies on
+   * rank 0 writing to file first
+   */
+  if (mpiPM->get_myrank() > 0) {
+    write_multimeshadj(SimPM, nullptr, gp, "", "");
+  }
+
   *db_ptr = 0;
   err     = COMM->silo_pllel_wait_for_file(file_id, silofile, mydir, db_ptr);
   if (err || !(*db_ptr))
@@ -696,7 +718,6 @@ int dataio_silo_pllel::SaveLevelData(
     //    cout <<"outfilebase="<<outfilebase<<" and fname="<<fname<<"\n";
 
     //  string mm_name="mesh";
-    int nmesh       = mpiPM->get_nproc();
     char **mm_names = 0;
     int *meshtypes  = 0;
     int *groups     = 0,  // lists which group each process is in.
@@ -763,27 +784,12 @@ int dataio_silo_pllel::SaveLevelData(
     // DBAddOption(mm_opts,DBOPT_MRGTREE_NAME,mrgt);
     int blockorigin = 0;
     DBAddOption(mm_opts, DBOPT_BLOCKORIGIN, &blockorigin);
-    //
-    // performance options:
-    //
-    int ext_size = 2 * ndim;
-    double extents[ext_size * nmesh];
-    int zonecounts[nmesh];
+
     int externalzones[nmesh];
-    class MCMDcontrol pp;
-    pp.set_nproc(mpiPM->get_nproc());
     for (int v = 0; v < nmesh; v++) {
-      pp.set_myrank(v);
-      pp.decomposeDomain(SimPM, SimPM.levels[level]);
-      zonecounts[v]    = pp.LocalNcell;
       externalzones[v] = 0;  // set to 1 if domain has zones outside multimesh.
-      for (int i = 0; i < ndim; i++)
-        extents[ext_size * v + i] = pp.LocalXmin[i];
-      for (int i = 0; i < ndim; i++)
-        extents[ext_size * v + ndim + i] = pp.LocalXmax[i];
-      // extents[ext_size*v+i     ] = gp->Xmin(static_cast<axes>(i));
-      // extents[ext_size*v+ndim+i] = gp->Xmax(static_cast<axes>(i));
-    }  // loop over meshes
+    }
+
     DBAddOption(mm_opts, DBOPT_EXTENTS_SIZE, &ext_size);
     DBAddOption(mm_opts, DBOPT_EXTENTS, extents);
     DBAddOption(mm_opts, DBOPT_ZONECOUNTS, zonecounts);
@@ -876,12 +882,6 @@ int dataio_silo_pllel::SaveLevelData(
       err = write_multimeshadj(SimPM, *db_ptr, gp, mm_name, mma_name);
       if (err) rep.error("Failed to write multimesh Adjacency Object", err);
     }
-    //
-    // Write an MRG Tree object (NOT IMPLEMENTED IN SILO/VISIT YET!!)
-    //
-    // err = write_MRGtree(SimPM, *db_ptr, gp, mm_name, mrgt_name);
-    // if (err) rep.error("Failed to write MRG tree Object",err);
-
   }  // if root processor of whole simulation
 
   //
@@ -893,7 +893,7 @@ int dataio_silo_pllel::SaveLevelData(
 
   //   cout <<"Got past barrier... finished outputting silo data.\n\n";
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "----dataio_silo_pllel::SaveLevelData() Finished writing data to "
           "file: "
        << silofile << "\n"
@@ -1199,17 +1199,8 @@ int dataio_silo_pllel::write_multimeshadj(
     string mma_name            ///< multimeshadj name.
 )
 {
-  int err = 0;
-#ifdef TESTING
-  cout << "Writing multimesh adjacency object into Silo file.\n";
-#endif
-
-  //
-  // Create temporary params class for repeated domain decomposition.
-  //
-  class MCMDcontrol pp;
-  int nmesh = mpiPM->get_nproc();
-  pp.set_nproc(mpiPM->get_nproc());
+  int err         = 0;
+  const int nmesh = mpiPM->get_nproc();
 
   int level = 0;
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
@@ -1225,43 +1216,33 @@ int dataio_silo_pllel::write_multimeshadj(
   }
 
   //
-  // Now go through all meshes, get number of neighbours in each of
-  // them, and also the running sum of the total number of neighbours,
-  // because we need some arrays of this length.
+  // get number of neighbours in each mesh, and also the running sum of the
+  // total number of neighbours, because we need some arrays of this length.
   //
   // Note neighbouring domains are not just in the six directions, but
   // also corner-abutting and edge-abutting domains.
   //
-  int Stot = 0;
-  std::vector<int> ngb_list;
-  for (int v = 0; v < nmesh; v++) {
-    pp.set_myrank(v);
-    pp.decomposeDomain(SimPM, SimPM.levels[level]);
-    //
-    // Get list of abutting domains.
-    //
-    std::vector<int> dl;
-    pp.get_abutting_domains(ndim, dl);
-    Nngb[v] = dl.size();
-    for (unsigned int i = 0; i < static_cast<unsigned int>(Nngb[v]); i++)
-      ngb_list.push_back(dl[i]);
-    // for (vector<int>::iterator i=dl.begin(); i!=dl.end(); i++)
-    //  ngb_list.push_back(*i);
-
-    if (v < nmesh - 1)
-      Sk[v + 1] = Sk[v] + Nngb[v];
-    else
-      Stot = Sk[v] + Nngb[v];
-    // cout <<"Sk["<<v<<"]="<<Sk[v]<<"\n";
-  }
-
-  //
   // Stot is the total number of neighbours over all meshes.  Sk[v] is
   // the number of meshes in all neighbours up to and including v-1.
   //
-  // cout <<"Stot="<<Stot<<"\n";
-  if (Stot != static_cast<int>(ngb_list.size()))
-    rep.error("counting error!", Stot - ngb_list.size());
+
+  std::vector<int> ngb_list;
+  mpiPM->gather_abutting_domains(ngb_list, Sk, Nngb, 0);
+
+  int Stot = ngb_list.size();
+
+  std::vector<int> offsets_list, localNG_list, ix_list;
+  mpiPM->gather_offsets(offsets_list, 0);
+  mpiPM->gather_localNG(localNG_list, 0);
+
+  /* non-root ranks were only here to share data with root rank */
+  if (mpiPM->get_myrank() > 0) {
+    return 0;
+  }
+
+#ifndef NDEBUG
+  cout << "Writing multimesh adjacency object into Silo file.\n";
+#endif
 
   //
   // Y ngb      = list of neighbour ids.
@@ -1289,12 +1270,14 @@ int dataio_silo_pllel::write_multimeshadj(
   }
 
   //
-  // loop over meshes again and populate the neighbour lists.
+  // loop over meshes and populate the neighbour lists.
   //
   // long int ct=0;
+
+  int *offsets, *LocalNG;
   for (int v = 0; v < nmesh; v++) {
-    pp.set_myrank(v);
-    pp.decomposeDomain(SimPM, SimPM.levels[level]);
+    offsets = &offsets_list[v * mpiPM->get_ndim()];
+    LocalNG = &localNG_list[v * mpiPM->get_ndim()];
     long int off1 =
         Sk[v];  // this should be the same as ct (maybe don't need ct then!)
 
@@ -1336,15 +1319,15 @@ int dataio_silo_pllel::write_multimeshadj(
       //
       // Local nodelist is the same for all of v's nodelists.
       //
-      nodelist[off1][0] = pp.offsets[XX] + 0;
-      nodelist[off1][1] = pp.offsets[XX] + pp.LocalNG[XX];
+      nodelist[off1][0] = offsets[XX] + 0;
+      nodelist[off1][1] = offsets[XX] + LocalNG[XX];
       if (ndim > 1) {
-        nodelist[off1][2] = pp.offsets[YY] + 0;
-        nodelist[off1][3] = pp.offsets[YY] + pp.LocalNG[YY];
+        nodelist[off1][2] = offsets[YY] + 0;
+        nodelist[off1][3] = offsets[YY] + LocalNG[YY];
       }
       if (ndim > 2) {
-        nodelist[off1][4] = pp.offsets[ZZ] + 0;
-        nodelist[off1][5] = pp.offsets[ZZ] + pp.LocalNG[ZZ];
+        nodelist[off1][4] = offsets[ZZ] + 0;
+        nodelist[off1][5] = offsets[ZZ] + LocalNG[ZZ];
       }
 
       //
@@ -1354,23 +1337,23 @@ int dataio_silo_pllel::write_multimeshadj(
       int my_ix[MAX_DIM], ngb_ix[MAX_DIM];
       for (int ii = 0; ii < MAX_DIM; ii++)
         my_ix[ii] = ngb_ix[ii] = -1;
-      pp.get_domain_ix(ndim, pp.get_myrank(), my_ix);
-      pp.get_domain_ix(ndim, ngb[off1], ngb_ix);
+      mpiPM->get_domain_coordinates(v, my_ix);
+      mpiPM->get_domain_coordinates(ngb[off1], ngb_ix);
 
       //
       // X-dir first.
       //
       if ((my_ix[XX] - ngb_ix[XX]) == 1) {
-        nodelist[off1][6] = pp.offsets[XX];
-        nodelist[off1][7] = pp.offsets[XX];
+        nodelist[off1][6] = offsets[XX];
+        nodelist[off1][7] = offsets[XX];
       }
       else if ((my_ix[XX] - ngb_ix[XX]) == -1) {
-        nodelist[off1][6] = pp.offsets[XX] + pp.LocalNG[XX];
-        nodelist[off1][7] = pp.offsets[XX] + pp.LocalNG[XX];
+        nodelist[off1][6] = offsets[XX] + LocalNG[XX];
+        nodelist[off1][7] = offsets[XX] + LocalNG[XX];
       }
       else if (my_ix[XX] == ngb_ix[XX]) {
-        nodelist[off1][6] = pp.offsets[XX];
-        nodelist[off1][7] = pp.offsets[XX] + pp.LocalNG[XX];
+        nodelist[off1][6] = offsets[XX];
+        nodelist[off1][7] = offsets[XX] + LocalNG[XX];
       }
       else
         rep.error("domains don't touch (X-dir)!", my_ix[XX] - ngb_ix[XX]);
@@ -1380,17 +1363,17 @@ int dataio_silo_pllel::write_multimeshadj(
       //
       if (ndim > 1) {
         if ((my_ix[YY] - ngb_ix[YY]) == 1) {  // neighbour below us
-          nodelist[off1][8] = pp.offsets[YY];
-          nodelist[off1][9] = pp.offsets[YY];
+          nodelist[off1][8] = offsets[YY];
+          nodelist[off1][9] = offsets[YY];
         }
         else if ((my_ix[YY] - ngb_ix[YY]) == -1) {  // neighbour above
                                                     // us
-          nodelist[off1][8] = pp.offsets[YY] + pp.LocalNG[YY];
-          nodelist[off1][9] = pp.offsets[YY] + pp.LocalNG[YY];
+          nodelist[off1][8] = offsets[YY] + LocalNG[YY];
+          nodelist[off1][9] = offsets[YY] + LocalNG[YY];
         }
         else if (my_ix[YY] == ngb_ix[YY]) {  // neighbour level with us.
-          nodelist[off1][8] = pp.offsets[YY];
-          nodelist[off1][9] = pp.offsets[YY] + pp.LocalNG[YY];
+          nodelist[off1][8] = offsets[YY];
+          nodelist[off1][9] = offsets[YY] + LocalNG[YY];
         }
         else
           rep.error("domains don't touch! (Y-dir)", my_ix[YY] - ngb_ix[YY]);
@@ -1401,17 +1384,17 @@ int dataio_silo_pllel::write_multimeshadj(
       //
       if (ndim > 2) {
         if ((my_ix[ZZ] - ngb_ix[ZZ]) == 1) {  // neighbour below us
-          nodelist[off1][10] = pp.offsets[ZZ];
-          nodelist[off1][11] = pp.offsets[ZZ];
+          nodelist[off1][10] = offsets[ZZ];
+          nodelist[off1][11] = offsets[ZZ];
         }
         else if ((my_ix[ZZ] - ngb_ix[ZZ]) == -1) {  // neighbour above
                                                     // us
-          nodelist[off1][10] = pp.offsets[ZZ] + pp.LocalNG[ZZ];
-          nodelist[off1][11] = pp.offsets[ZZ] + pp.LocalNG[ZZ];
+          nodelist[off1][10] = offsets[ZZ] + LocalNG[ZZ];
+          nodelist[off1][11] = offsets[ZZ] + LocalNG[ZZ];
         }
         else if (my_ix[ZZ] == ngb_ix[ZZ]) {  // neighbour level with us.
-          nodelist[off1][10] = pp.offsets[ZZ];
-          nodelist[off1][11] = pp.offsets[ZZ] + pp.LocalNG[ZZ];
+          nodelist[off1][10] = offsets[ZZ];
+          nodelist[off1][11] = offsets[ZZ] + LocalNG[ZZ];
         }
         else
           rep.error("domains don't touch! (Z-dir)", my_ix[ZZ] - ngb_ix[ZZ]);
@@ -1473,334 +1456,11 @@ int dataio_silo_pllel::write_multimeshadj(
   for (int s = 0; s < Stot; s++) {
     nodelist[s] = mem.myfree(nodelist[s]);
   }
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Finished writing mulitmesh adjacency info.\n";
 #endif
 
   return 0;
-}
-
-// ##################################################################
-// ##################################################################
-
-//
-// Write a MRG tree object
-//
-int dataio_silo_pllel::write_MRGtree(
-    class SimParams &SimPM,    ///< pointer to simulation parameters
-    DBfile *dbfile,            ///< pointer to silo file.
-    class GridBaseClass *ggg,  ///< pointer to data.
-    string mm_name,            ///< multimesh  name
-    string mrgt_name           ///< MRG tree name.
-)
-{
-  rep.error("MRGtree is not implemented or tested!", 999);
-  char datadir[strlength];
-  int err = DBGetDir(dbfile, datadir);
-  DBSetDir(dbfile, "/");
-
-  //
-  // Create the MRGtree object
-  //
-  int mesh_type      = DB_MULTIMESH;
-  int max_children   = 10;
-  DBoptlist *mt_opts = DBMakeOptlist(2);
-  DBAddOption(mt_opts, DBOPT_DTIME, &SimPM.simtime);
-  DBAddOption(mt_opts, DBOPT_CYCLE, &SimPM.timestep);
-
-  DBmrgtree *tree = DBMakeMrgtree(mesh_type, 0, max_children, mt_opts);
-  if (!tree) rep.error("Failed to create mrgtree!", tree);
-
-  //
-  // make top level MRG tree node named 'neighbors' (American spelling!)
-  //
-  char root[256];
-  strcpy(root, "neighbors");
-  err = DBAddRegion(tree, root, 0, max_children, 0, 0, 0, 0, 0, 0);
-  if (err < 0) rep.error("Failed to add root neighbours node", err);
-  err = 0;
-  DBSetCwr(tree, root);
-
-  //
-  // Next create a 'groupel map' with Nmesh segments.  Segment i will
-  // be of type DB_BLOCKCENT and enumerate the neighbouring blocks of
-  // block i.
-  //
-  // from silo.h:
-  // typedef struct _DBgroupelmap {
-  //     char *name;
-  //     int num_segments;
-  //     int *groupel_types;
-  //     int *segment_lengths;
-  //     int *segment_ids; // can be  zero if ordered 0...(n-1)
-  //     int **segment_data;
-  //     void **segment_fracs; // set to null if not needed (hope not!)
-  //     int fracs_data_type;  // set to null if previous el is null.
-  // } DBgroupelmap;
-  //
-  DBgroupelmap gmap;
-  char gmap_block[256];
-  strcpy(gmap_block, "gmap_block");
-  int nsegs = mpiPM->get_nproc();
-  int seg_types[nsegs];
-  int seg_ids[nsegs];
-  int seg_lens[nsegs];   // number of neighbours for mesh i
-  int *seg_data[nsegs];  // list of neighbours for mesh i
-  for (int i = 0; i < nsegs; i++) {
-    seg_types[i] = DB_BLOCKCENT;
-    seg_ids[i]   = i;
-    seg_lens[i]  = 0;
-  }
-
-  //
-  // Each seg_data[i] refers to a mesh, so we put its neighbour ids in
-  // the array.
-  //
-  MCMDcontrol pp;
-  pp.set_nproc(nsegs);
-  int ct = 0;
-  for (int v = 0; v < nsegs; v++) {
-    pp.set_myrank(v);
-    pp.decomposeDomain(SimPM, SimPM.levels[0]);
-    //
-    // Count how many neighbours we have
-    //
-    for (int i = 0; i < 2 * ndim; i++) {
-      if (pp.ngbprocs[i] >= 0) seg_lens[v]++;
-    }
-    //
-    // Allocate an array for those neighbours.
-    //
-    seg_data[v] = mem.myalloc(seg_data[v], seg_lens[v]);
-    //
-    // populate the array.
-    //
-    ct = 0;
-    for (int i = 0; i < 2 * ndim; i++) {
-      if (pp.ngbprocs[i] >= 0) {
-        seg_data[v][ct] = pp.ngbprocs[i];
-        ct++;
-      }
-    }  // loop over dirs.
-  }    // loop over meshes.
-
-  //
-  // Group all this in a groupel map struct:
-  //
-  gmap.name            = gmap_block;
-  gmap.num_segments    = nsegs;
-  gmap.groupel_types   = seg_types;
-  gmap.segment_ids     = seg_ids;
-  gmap.segment_lengths = seg_lens;
-  gmap.segment_data    = seg_data;
-
-  //
-  // Define a child node of the root named 'neighborhoods'.  Under
-  // this node definean array of regions, one for each block of the
-  // multiblock mesh and associate the groupel map with this array of
-  // regions.
-  //
-  char child[256];
-  strcpy(child, "neighborhoods");
-  err += DBAddRegion(tree, child, 0, max_children, 0, 0, 0, 0, 0, 0);
-  if (err < 0) rep.error("Failed to add neighborhoods region", err);
-  err = 0;
-  DBSetCwr(tree, child);
-
-  char *regn_names[1];
-  regn_names[0] = strdup("@blocklist_%03d@n");
-  err += DBAddRegionArray(
-      tree,
-      nsegs,                 // number of regions (# of meshes)
-      regn_names,            // names of regions, from scheme above.
-      0,                     // info_bits, unused
-      gmap.name,             // name of the groupel map (optional)
-      1,                     // number of map segs per region
-      gmap.segment_ids,      // list of ids (0...(n-1) here)
-      gmap.segment_lengths,  // list of lengths for each neighbour list.
-      gmap.groupel_types,    // list of block types.
-      0                      // DBoptlist
-  );
-  if (err < 0) rep.error("Failed to add first region array", err);
-  err = 0;  // addregion returns positive value on success!!!
-  //
-  // Write the map to file.
-  //
-  err += DBPutGroupelmap(
-      dbfile, gmap.name, gmap.num_segments, gmap.groupel_types,
-      gmap.segment_lengths, gmap.segment_ids, gmap.segment_data, 0, 0, 0);
-  if (err) rep.error("Failed to add first gmap", err);
-
-  //
-  // structured grid: define a 2nd groupel map with Nmesh segments.
-  // Segment i will be of type DB_NODECENT and will list the slabs of
-  // nodes the block i shares with each neighbour in the same order as
-  // those are listed in the neighbor map.  segment will have length
-  // Nngb[i]*6 (two 3-element lists with the min and max node ranges).
-  // NOTE THIS IS NODES, NOT ZONES!!!
-  //
-  char gmap_nodes[256];
-  strcpy(gmap_nodes, "gmap_nodes");
-  int ns_types[nsegs];
-  int ns_ids[nsegs];
-  int ns_lens[nsegs];   // number of neighbours for mesh i
-  int *ns_data[nsegs];  // list of neighbours for mesh i
-  for (int i = 0; i < nsegs; i++) {
-    ns_types[i] = DB_NODECENT;
-    ns_ids[i]   = i;
-    ns_lens[i]  = 0;
-  }
-
-  //
-  // loop over domains again.
-  //
-  pp.set_nproc(nsegs);
-  ct = 0;
-  for (int v = 0; v < nsegs; v++) {
-    pp.set_myrank(v);
-    pp.decomposeDomain(SimPM, SimPM.levels[0]);
-
-    //
-    // Count how many neighbours we have; length is 6 ints per
-    // neighbour. (# neighbours from prev. map).
-    //
-    ns_lens[v] = seg_lens[v] * 6;
-
-    //
-    // Allocate an array for those neighbours.
-    //
-    ns_data[v] = mem.myalloc(ns_data[v], ns_lens[v]);
-
-    //
-    // populate the array.
-    //
-    ct = 0;
-    enum direction dir;
-    for (int i = 0; i < 2 * ndim; i++) {
-      dir = static_cast<direction>(i);
-      if (pp.ngbprocs[i] >= 0) {
-        //
-        // xmin (nodes run from 0...N)
-        //
-        if (dir == XP)
-          ns_data[v][ct] = pp.LocalNG[XX];
-        else
-          ns_data[v][ct] = 0;
-        //
-        // ymin
-        //
-        if (dir == YP)
-          ns_data[v][ct + 1] = pp.LocalNG[YY];
-        else
-          ns_data[v][ct + 1] = 0;
-        //
-        // zmin
-        //
-        if (dir == ZP)
-          ns_data[v][ct + 2] = pp.LocalNG[ZZ];
-        else
-          ns_data[v][ct + 2] = 0;
-        //
-        // xmax
-        //
-        if (dir == XN)
-          ns_data[v][ct + 3] = 0;
-        else
-          ns_data[v][ct + 3] = pp.LocalNG[XX];
-        //
-        // ymax
-        //
-        if (dir == YN)
-          ns_data[v][ct + 4] = 0;
-        else
-          ns_data[v][ct + 4] = pp.LocalNG[YY];
-        //
-        // zmax
-        //
-        if (dir == ZN)
-          ns_data[v][ct + 5] = 0;
-        else
-          ns_data[v][ct + 5] = pp.LocalNG[ZZ];
-        //
-        // increment counter for next neighbour.
-        //
-        ct += 6;
-      }  // if neighbour exists
-    }    // loop over dirs.
-
-    //
-    // Check we got all the neighbours.
-    //
-    if (ct != ns_lens[v])
-      rep.error("number of neighbours doesn't match!", ct - ns_lens[v]);
-
-  }  // loop over meshes.
-
-  //
-  // Group all this in a groupel map struct:
-  //
-  DBgroupelmap gmap2;
-  gmap2.name            = gmap_nodes;
-  gmap2.num_segments    = nsegs;
-  gmap2.groupel_types   = ns_types;
-  gmap2.segment_ids     = ns_ids;
-  gmap2.segment_lengths = ns_lens;
-  gmap2.segment_data    = ns_data;
-  //
-  // Write this second groupel map:
-  //
-  err += DBPutGroupelmap(
-      dbfile, gmap2.name, gmap2.num_segments, gmap2.groupel_types,
-      gmap2.segment_lengths, gmap2.segment_ids, gmap2.segment_data, 0, 0, 0);
-  if (err) rep.error("Failed to add second gmap", err);
-
-  //
-  // Maybe add this as a second region???
-  //
-  char *regn_names2[1];
-  regn_names2[0] = strdup("@nodelist_%03d@n");
-  err += DBAddRegionArray(
-      tree,
-      nsegs,                  // number of regions (# of meshes)
-      regn_names2,            // names of regions, from scheme above.
-      0,                      // info_bits, unused
-      gmap2.name,             // name of the groupel map (optional)
-      1,                      // number of map segs per region
-      gmap2.segment_ids,      // list of ids (0...(n-1) here)
-      gmap2.segment_lengths,  // list of lengths for each neighbour list.
-      gmap2.groupel_types,    // list of block types.
-      0                       // DBoptlist
-  );
-  if (err < 0) rep.error("Failed to add second region array", err);
-  err = 0;  // addregion returns positive value on success!!!
-
-  //
-  // I think this should be the full mrgtree now, so write it to file.
-  //
-  char tname[256];
-  strcpy(tname, mrgt_name.c_str());
-  char mname[256];
-  strcpy(mname, mm_name.c_str());
-  err += DBPutMrgtree(dbfile, tname, mname, tree, mt_opts);
-  if (err < 0) rep.error("Failed to write MRG tree to file", err);
-  err = 0;
-
-  //
-  // Delete data:
-  //
-  DBClearOptlist(mt_opts);
-  DBFreeOptlist(mt_opts);
-  DBFreeMrgtree(tree);
-  for (int v = 0; v < nsegs; v++) {
-    seg_data[v] = mem.myfree(seg_data[v]);
-    ns_data[v]  = mem.myfree(ns_data[v]);
-  }
-  free(regn_names[0]);
-  free(regn_names2[0]);
-
-  DBSetDir(dbfile, "/");
-  DBSetDir(dbfile, datadir);
-  return err;
 }
 
 // ##################################################################

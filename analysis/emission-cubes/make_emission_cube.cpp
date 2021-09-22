@@ -308,7 +308,6 @@ int main(int argc, char **argv)
   }
   if (MP)     {delete MP; MP=0;}
 
-  COMM->finalise();
   delete COMM; COMM=0;
 
   return 0;

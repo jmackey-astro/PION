@@ -12,7 +12,6 @@
 #include "defines/testing_flags.h"
 
 #include "boundaries/boundaries.h"
-#include "decomposition/MCMD_control.h"
 #include "grid/grid_base_class.h"
 #include "sim_params.h"
 

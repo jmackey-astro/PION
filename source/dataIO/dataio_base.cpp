@@ -9,9 +9,9 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "dataio_base.h"
 #include <sstream>
@@ -1606,7 +1606,7 @@ int DataIOBase::write_simulation_parameters(
   // Now the radiation sources
   //
   if (SimPM.RS.Nsources > 0) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "WRITING Radiation Source PARAMETERS, Nsrc=" << SimPM.RS.Nsources
          << "\n";
 #endif
@@ -2078,10 +2078,10 @@ int DataIOBase::check_header_parameters(
     SimPM.outFileBase = "noname";
   }
 
-#ifdef TESTING
+#ifndef NDEBUG
   dp.initERG = dp.initMMX = dp.initMMY = dp.initMMZ = 0.;
   dp.ergTotChange = dp.mmxTotChange = dp.mmyTotChange = dp.mmzTotChange = 0.;
-#endif  // TESTING
+#endif  // NDEBUG
   SimPM.maxtime = false;
   SimPM.dt      = 0.;
 

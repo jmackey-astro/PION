@@ -107,9 +107,9 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "constants.h"
 #include "grid/uniform_grid.h"
@@ -756,7 +756,7 @@ int raytracer_USC_infinity::trace_column_parallel(
 #endif  // RT_TESTING
 
   do {
-#ifdef TESTING
+#ifndef NDEBUG
     //      cout <<"setting cell pointer.\n";
     dp.c = c;
 #endif
@@ -1988,7 +1988,7 @@ int raytracer_USC::trace_column(
     cout << "raytracer_USC::trace_column() running.\n";
 #endif
     do {
-#ifdef TESTING
+#ifndef NDEBUG
       dp.c = c;
 #endif
       err += get_cell_columns(source, c, Nc, &ds);

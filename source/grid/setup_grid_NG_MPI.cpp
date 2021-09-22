@@ -57,7 +57,7 @@ using namespace std;
 
 setup_grid_NG_MPI::setup_grid_NG_MPI()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "setup_grid_NG_MPI constructor called.\n";
 #endif
   return;
@@ -68,7 +68,7 @@ setup_grid_NG_MPI::setup_grid_NG_MPI()
 
 setup_grid_NG_MPI::~setup_grid_NG_MPI()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "setup_grid_NG_MPI destructor called.\n";
 #endif
   return;
@@ -91,7 +91,8 @@ void setup_grid_NG_MPI::setup_NG_grid_levels(
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     SimPM.levels[l].MCMD.set_myrank(myrank);
     SimPM.levels[l].MCMD.set_nproc(nproc);
-    err = SimPM.levels[l].MCMD.decomposeDomain(SimPM, SimPM.levels[l]);
+    err = SimPM.levels[l].MCMD.decomposeDomain(
+        SimPM.ndim, SimPM.levels[l], SimPM.get_pbc_bools());
     rep.errorTest("PLLEL Init():Decompose Domain!", 0, err);
     SimPM.levels[l].MCMD.ReadSingleFile = true;  // legacy option.
   }
@@ -119,10 +120,10 @@ int setup_grid_NG_MPI::setup_grid(
   if (SimPM.ndim < 1 || SimPM.ndim > 3)
     rep.error("Only know 1D,2D,3D methods!", SimPM.ndim);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting number of boundary cells == spatial OOA: ";
   cout << SimPM.spOOA << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // Nbc is the depth of the boundary layer around each grid.
@@ -155,11 +156,11 @@ int setup_grid_NG_MPI::setup_grid(
   //
   // Now we can setup the grid:
   //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(setup_grid_NG_MPI::setup_grid) Setting up grid...\n";
 #endif
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "Init: level=" << l << ",  &grid=" << &(grid[l]);
     cout << ", and grid=" << grid[l] << "\n";
 #endif
@@ -189,7 +190,7 @@ int setup_grid_NG_MPI::setup_grid(
 
     if (grid[l] == 0) rep.error("(setup_grid_NG_MPI::setup_grid)", grid[l]);
 
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "(setup_grid_NG_MPI::setup_grid) Done. &grid=";
     cout << &(grid[l]) << ", and grid=" << grid[l] << "\n";
     cout << "DX = " << (grid[l])->DX() << "\n";
@@ -241,21 +242,21 @@ int setup_grid_NG_MPI::setup_raytracing(
   }
   int err = 0;
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "setting up raytracing for grid level " << l << "\n";
 #endif
     err += setup_fixed_grid_pllel::setup_raytracing(SimPM, grid[l]);
     rep.errorTest("setup_grid_NG_MPI::setup_raytracing()", 0, err);
   }
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "NG-MPI setting up evolving RT sources from setup_raytracing.\n";
 #endif
   err += setup_evolving_RT_sources(SimPM);
   rep.errorTest("setup_grid_NG_MPI::setup_evolving_RT_sources()", 0, err);
 
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "NG-MPI l=" << l
          << ": updating evolving RT sources from setup_raytracing.\n";
 #endif
@@ -274,12 +275,12 @@ int setup_grid_NG_MPI::boundary_conditions(
     vector<class GridBaseClass *> &grid  ///< vec of grid pointers.
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting up BCs in MPI-NG Grid with Nbc=" << par.Nbc << "\n";
 #endif
   int err = setup_NG_grid::boundary_conditions(par, grid);
   rep.errorTest("setup_grid_NG_MPI::boundary_conditions", 0, err);
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(setup_grid_NG_MPI::boundary_conditions) Done.\n";
 #endif
   return 0;
@@ -294,13 +295,13 @@ int setup_grid_NG_MPI::setup_boundary_structs(
     const int l                 ///< level in NG grid
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Set BC types...\n";
 #endif
 
   // first call fixed grid version
   int err = 0;
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "setting up serial boundary structs\n";
 #endif
   err = setup_fixed_grid::setup_boundary_structs(par, grid, l);
@@ -314,7 +315,7 @@ int setup_grid_NG_MPI::setup_boundary_structs(
   if (1 == 0) {
 #endif
     if (l > 0) {
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "replacing external BCs with C2F as needed\n";
 #endif
       // replace external boundary conditions with one that
@@ -323,7 +324,7 @@ int setup_grid_NG_MPI::setup_boundary_structs(
         if (!pconst.equalD(par.levels[l - 1].Xmin[i], par.levels[l].Xmin[i])
             && pconst.equalD(
                    par.levels[l].Xmin[i], grid->Xmin(static_cast<axes>(i)))) {
-#ifdef TESTING
+#ifndef NDEBUG
           cout << "reassigning neg. bc for axis " << i
                << " to COARSE_TO_FINE\n";
 #endif
@@ -333,7 +334,7 @@ int setup_grid_NG_MPI::setup_boundary_structs(
         if (!pconst.equalD(par.levels[l - 1].Xmax[i], par.levels[l].Xmax[i])
             && pconst.equalD(
                    par.levels[l].Xmax[i], grid->Xmax(static_cast<axes>(i)))) {
-#ifdef TESTING
+#ifndef NDEBUG
           cout << "reassigning pos. bc for axis " << i
                << " to COARSE_TO_FINE\n";
 #endif
@@ -358,7 +359,7 @@ int setup_grid_NG_MPI::setup_boundary_structs(
 #ifdef SKIP_F2C_BC
     if (1 == 0) {
 #endif
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "Adding FINE_TO_COARSE_RECV boundary for level ";
       cout << l << ", current # boundaries: " << grid->BC_bd.size() << "\n";
 #endif
@@ -376,7 +377,7 @@ int setup_grid_NG_MPI::setup_boundary_structs(
 #ifdef SKIP_C2F_BC
     if (1 == 0) {
 #endif
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "Adding COARSE_TO_FINE_SEND boundary for level ";
       cout << l << ", current # boundaries: " << grid->BC_bd.size() << "\n";
 #endif
@@ -403,7 +404,7 @@ int setup_grid_NG_MPI::setup_boundary_structs(
       // Add it here, because we need to receive F2C data first, then
       // delete any previous F2C send buffers, and then send any new
       // F2C data after the old buffers are gone.
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "Adding FINE_TO_COARSE_SEND boundary for level ";
       cout << l << ", current # boundaries: " << grid->BC_bd.size() << "\n";
 #endif
@@ -419,7 +420,7 @@ int setup_grid_NG_MPI::setup_boundary_structs(
   }
 #endif
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "BC structs set up.\n";
   for (unsigned int v = 0; v < grid->BC_bd.size(); v++) {
     cout << "i=" << v << ", BC type= " << grid->BC_bd[v]->type;
@@ -427,13 +428,13 @@ int setup_grid_NG_MPI::setup_boundary_structs(
   }
 #endif
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "calling pll fixed grid setup function.\n";
 #endif
   err = setup_fixed_grid_pllel::setup_boundary_structs(par, grid, l);
   rep.errorTest("png::setup_boundary_structs pll fixed grid", 0, err);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "BC structs set up.\n";
   for (unsigned int v = 0; v < grid->BC_bd.size(); v++) {
     cout << "i=" << v << ", BC type= " << grid->BC_bd[v]->type << "\n";

@@ -12,9 +12,9 @@
 #include "tools/reporting.h"
 #include <iostream>
 
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "equations/eqns_mhd_adiabatic.h"
 #include "microphysics/microphysics_base.h"
@@ -34,7 +34,7 @@ HLLD_MHD::HLLD_MHD(
     eqns_base(nv),
     eqns_mhd_ideal(nv)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(HLLD_MHD::HLLD_MHD) Initialising HLL Multi-State Solver Class.\n";
   if (eq_nvar < 8) {
     rep.error("#elements!=8, QUIT.", eq_nvar);
@@ -66,7 +66,7 @@ HLLD_MHD::HLLD_MHD(
   HD_FLss = mem.myalloc(HD_FLss, HD_nvar);  // F**
   HD_FRss = mem.myalloc(HD_FRss, HD_nvar);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(HLLD_MHD::HLLD_MHD) All set.\n";
 #endif
   return;
@@ -79,7 +79,7 @@ HLLD_MHD::HLLD_MHD(
 HLLD_MHD::~HLLD_MHD()
 {
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(riemann_MHD::riemann_MHD) Commencing Destruction."
        << "\n";
 #endif
@@ -104,7 +104,7 @@ HLLD_MHD::~HLLD_MHD()
   HD_FLss = mem.myfree(HD_FLss);  // F**
   HD_FRss = mem.myfree(HD_FRss);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(riemann_MHD::riemann_MHD) Mission Accomplished."
        << "\n";
 #endif

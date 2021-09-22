@@ -12,9 +12,9 @@
 #include "tools/reporting.h"
 #include <iostream>
 
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "equations/eqns_hydro_adiabatic.h"
 #include "microphysics/microphysics_base.h"
@@ -32,7 +32,7 @@ HLL_hydro::HLL_hydro(
     eqns_base(nv),
     eqns_Euler(nv)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(HLL_hydro::HLL_hydro) Initialising HLL Solver Class.\n";
   if (eq_nvar < 5) {
     rep.error("#elements!=5, QUIT.", eq_nvar);
@@ -45,7 +45,7 @@ HLL_hydro::HLL_hydro(
   HD_FL     = mem.myalloc(HD_FL, eq_nvar);  // flux
   HD_FR     = mem.myalloc(HD_FR, eq_nvar);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(HLL_hydro::HLL_hydro) All set.\n";
 #endif
   return;
@@ -57,7 +57,7 @@ HLL_hydro::HLL_hydro(
 HLL_hydro::~HLL_hydro()
 {
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(HLL_hydro::HLL_hydro) Commencing Destruction."
        << "\n";
 #endif
@@ -68,7 +68,7 @@ HLL_hydro::~HLL_hydro()
   HD_FL     = mem.myfree(HD_FL);  // flux
   HD_FR     = mem.myfree(HD_FR);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(riemann_MHD::riemann_MHD) Mission Accomplished."
        << "\n";
 #endif

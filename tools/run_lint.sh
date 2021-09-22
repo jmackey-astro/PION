@@ -6,32 +6,37 @@ nprocs=1
 # Exit on first error
 set -o errexit
 
+# All the directories containing source files
+source_dirs="source"
 
-# Get the build directory from the command line
+# Get the build directory and optional source directories from the command line
 if [[ $# -ge 1 ]]
 then
     # Get absolute path of build_dir from first argument.
     build_dir="$(cd "$1" && pwd)"
     shift
-    echo
-    echo "BUILD_DIRECTORY: ${build_dir}"
-    echo
+    if [[ $# -ge 1 ]]
+    then
+        source_dirs="$(cd "$1" && pwd)"
+        shift
+    fi
 else
     echo
     echo "Error: wrong number of arguments"
     echo
-    echo "usage: $(basename $0) BUILD_DIRECTORY"
+    echo "usage: $(basename $0) BUILD_DIRECTORY [SOURCE_DIRECTORIES]"
     echo
 
     exit 1
 fi
 
+echo
+echo "BUILD_DIRECTORY: ${build_dir}"
+echo "SOURCE_DIRECTORIES: ${source_dirs}"
+echo
 
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source_dir="$( cd "${script_dir}/.." && pwd)"
-
-# All the directories containing source files
-source_dirs="source"
 
 # Run lint.sh on every source file in pion.
 #

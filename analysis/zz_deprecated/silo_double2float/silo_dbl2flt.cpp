@@ -224,7 +224,6 @@ int main(int argc, char **argv)
   // Finish up and quit.
   //
   if (grid) {delete grid; grid=0;}
-  COMM->finalise();
   delete COMM; COMM=0;
   //MPI_Finalize();
   return 0;

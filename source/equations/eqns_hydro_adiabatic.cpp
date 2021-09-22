@@ -39,9 +39,9 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "eqns_hydro_adiabatic.h"
 #include "microphysics/microphysics_base.h"
@@ -52,7 +52,7 @@ using namespace std;
 
 eqns_Euler::eqns_Euler(int nv) : eqns_base(nv)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(eqns_Euler::eqns_Euler) Setting up Euler Equations Class.\n";
   cout << "\tVector lengths: " << eq_nvar << "\n";
 #endif
@@ -73,7 +73,7 @@ eqns_Euler::eqns_Euler(int nv) : eqns_base(nv)
 
 eqns_Euler::~eqns_Euler()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(eqns_Euler::~eqns_Euler) Deleting Euler Equations Class.\n";
 #endif
 }
@@ -129,7 +129,7 @@ int eqns_Euler::UtoP(
   if (p[eqRO] <= 0.0) {
     rep.printVec("u", u, eq_nvar);
     rep.printVec("p", p, eq_nvar);
-#ifdef TESTING
+#ifndef NDEBUG
     //  cout <<"NEG.DENS.CELL:";CI.print_cell(dp.c);
 #endif
     rep.error("Negative density (eqns_Euler::UtoP)", p[eqRO]);
@@ -175,7 +175,7 @@ int eqns_Euler::UtoP(
 
 #else  // don't SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   if (p[eqPG] <= 0.0) {
-#ifdef TESTING
+#ifndef NDEBUG
     if (ct_pg < 1000) {
       ct_pg++;
       cout << "(eqns_Euler::UtoP) negative pressure...p=" << p[eqPG];

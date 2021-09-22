@@ -32,7 +32,7 @@
 //
 // Various defines for testing bits of the code (lots of sdtout).
 //
-//#define TESTING ///< Comment this out if not testing the code.
+// ///< Comment this out if not testing the code.
 
 // displays debugging information for time integration.
 //#define TEST_INT
@@ -66,4 +66,4 @@
 
 //#define GRIDV2
 
-#endif  // TESTING_FLAGS_H
+#endif  // NDEBUG_FLAGS_H

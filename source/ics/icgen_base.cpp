@@ -15,9 +15,9 @@
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
 #include "tools/timer.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "icgen.h"
 #include "icgen_base.h"
@@ -151,7 +151,7 @@ int ICsetup_base::equilibrate_MP(
       // to update anything, so we skip it
       //
       if (c->isbd) {
-#ifdef TESTING
+#ifndef NDEBUG
         cout << "skipping cell " << c->id << " in equilibrate_MP() c->isbd.\n";
 #endif
       }

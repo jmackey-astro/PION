@@ -132,3 +132,31 @@ SimParams::~SimParams()
 
   tracers = mem.myfree(tracers);
 }
+
+std::vector<int> SimParams::get_pbc_bools() const
+{
+  std::vector<int> pbc(2 * ndim, 0);
+  if (BC_XN == "periodic") {
+    pbc[0] = 1;
+  }
+  if (BC_XP == "periodic") {
+    pbc[1] = 1;
+  }
+  if (ndim > 1) {
+    if (BC_YN == "periodic") {
+      pbc[2] = 1;
+    }
+    if (BC_YP == "periodic") {
+      pbc[3] = 1;
+    }
+  }
+  if (ndim > 2) {
+    if (BC_ZN == "periodic") {
+      pbc[4] = 1;
+    }
+    if (BC_ZP == "periodic") {
+      pbc[5] = 1;
+    }
+  }
+  return pbc;
+}

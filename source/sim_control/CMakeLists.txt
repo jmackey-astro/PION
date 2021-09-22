@@ -8,13 +8,14 @@ if(PION_PARALLEL)
         sim_init.cpp
         time_integrator.cpp
     )
+    if(PION_NESTED_GRID)
     add_library(
         nested_sim_control
 
         sim_control_NG.cpp
         sim_control_NG_MPI.cpp
     )
-
+    endif(PION_NESTED_GRID)
 else()
     add_library(
         sim_control
@@ -24,11 +25,16 @@ else()
         sim_init.cpp
         time_integrator.cpp
     )
-    add_library(
-        nested_sim_control
+    if(PION_NESTED_GRID)
+        add_library(
+            nested_sim_control
 
-        sim_control_NG.cpp
-    )
+            sim_control_NG.cpp
+        )
+    endif(PION_NESTED_GRID)
 endif(PION_PARALLEL)
 
-target_link_libraries(nested_sim_control PUBLIC sim_control)
+if(PION_NESTED_GRID)
+    target_link_libraries(nested_sim_control PUBLIC sim_control)
+endif(PION_NESTED_GRID)
+

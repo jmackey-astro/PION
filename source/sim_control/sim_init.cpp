@@ -39,7 +39,7 @@ using namespace std;
 
 sim_init::sim_init()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(sim_init::Constructor)\n";
 #endif
   SimPM.checkpoint_freq = INT_MAX;
@@ -52,7 +52,7 @@ sim_init::sim_init()
 
 sim_init::~sim_init()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(sim_init::Destructor)\n";
 #endif
   if (dataio) {
@@ -177,7 +177,6 @@ int sim_init::Init(
   cout << "(pion)  Initialising"
        << "\n";
   int err = 0;
-  class MCMDcontrol ppar;  // unused for serial code.
 
 #ifdef SERIAL
   SimPM.typeofip = typeOfFile;
@@ -231,7 +230,7 @@ int sim_init::Init(
   // initialised to zero.
   //
   if (SimPM.eqntype == EQGLM && SimPM.timestep == 0) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "Initial state, zero-ing glm variable.\n";
 #endif
     c = grid[0]->FirstPt();
@@ -311,7 +310,7 @@ int sim_init::Init(
   cout << "-------------------------------------------------------\n";
 #endif  // SERIAL
 
-#ifdef TESTING
+#ifndef NDEBUG
   c = (grid[0])->FirstPt_All();
   do {
     if (pconst.equalD(c->P[RO], 0.0)) {
@@ -319,7 +318,7 @@ int sim_init::Init(
       CI.print_cell(c);
     }
   } while ((c = (grid[0])->NextPt_All(c)) != 0);
-#endif  // TESTING
+#endif  // NDEBUG
 
   return (0);
 }

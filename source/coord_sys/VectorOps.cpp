@@ -108,7 +108,7 @@ int BaseVectorOps::CrossProduct(
 
 VectorOps_Cart::VectorOps_Cart(int n) : VOnd(n)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting up VectorOpsCart with ndim=" << VOnd << "\n";
 #endif
   if (VOnd > 3) rep.error("Can't do more than 3D simulations!", VOnd);
@@ -176,12 +176,12 @@ double VectorOps_Cart::max_grad_abs(
     const cell *cpt, const int sv, const int var, class GridBaseClass *grid)
 {
   double VOdx = grid->DX();
-#ifdef TESTING
+#ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
     if (!grid->NextPt(cpt, static_cast<direction>(i)))
       rep.error(
           "VectorOps_Cart::max_grad_abs: Some neighbour cells don't exist", i);
-#endif  // TESTING
+#endif  // NDEBUG
 
   double grad = 0, temp = 0;
   switch (sv) {
@@ -221,11 +221,11 @@ void VectorOps_Cart::Gradient(
     class GridBaseClass *grid,
     pion_flt *grad)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
     if (!grid->NextPt(c, static_cast<direction>(i)))
       rep.error("VectorOps_Cart::Grad: Some neighbour cells don't exist", i);
-#endif  // TESTING
+#endif  // NDEBUG
   double VOdx = grid->DX();
 
   switch (sv) {
@@ -317,7 +317,7 @@ double VectorOps_Cart::GradZone(
 
     case 0:
       min_v = fmin(cp->P[ii], cn->P[ii]);
-#ifdef TESTING
+#ifndef NDEBUG
       if (!isfinite(1 / min_v)) {
         cout << "ZERO PRESSURE CELLS???\n";
       }
@@ -327,7 +327,7 @@ double VectorOps_Cart::GradZone(
 
     case 1:
       min_v = fmin(cp->Ph[ii], cn->Ph[ii]);
-#ifdef TESTING
+#ifndef NDEBUG
       if (!isfinite(1 / min_v)) {
         cout << "ZERO PRESSURE CELLS???\n";
       }
@@ -388,7 +388,7 @@ double VectorOps_Cart::Divergence(
         ndir = static_cast<direction>(2 * v);
         pdir = static_cast<direction>(2 * v + 1);
         divv += (ngb[pdir]->Ph[var[v]] - ngb[ndir]->Ph[var[v]]) / dx[v];
-#ifdef TESTING
+#ifndef NDEBUG
         if (!isfinite(divv)) {
           cout << "divv[" << v << "] = ";
           cout << (ngb[pdir]->Ph[var[v]] - ngb[ndir]->Ph[var[v]]) / dx[v];
@@ -418,11 +418,11 @@ void VectorOps_Cart::Curl(
     class GridBaseClass *grid,
     pion_flt *ans)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
     if (!grid->NextPt(c, static_cast<direction>(i)))
       rep.error("VectorOps_Cart::Curl: Some neighbour cells don't exist", i);
-#endif  // TESTING
+#endif  // NDEBUG
   if (!c->isgd) {
     // cout <<"curl of non-grid-cell, returning 0";
     ans[0] = ans[1] = ans[2] = 0.0;
@@ -643,7 +643,7 @@ int VectorOps_Cart::DivStateVectorComponent(
 
 VectorOps_Cyl::VectorOps_Cyl(int n) : VectorOps_Cart(n)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting up VectorOps_Cyl with ndim=" << VOnd << "\n";
 #endif
   // if (VOnd!=2 && VOnd!=3) rep.error("Why use cylindrical coords in not 2 or
@@ -732,12 +732,12 @@ double VectorOps_Cyl::CellInterface(
 double VectorOps_Cyl::max_grad_abs(
     const cell *c, const int sv, const int var, class GridBaseClass *grid)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
     if (!grid->NextPt(c, static_cast<direction>(i)))
       rep.error(
           "VectorOps_Cyl::max_grad_abs: Some neighbour cells don't exist", i);
-#endif  // TESTING
+#endif  // NDEBUG
 
   double dT = 0.;  // physical length R*dTheta
   double dR = grid->DX();
@@ -812,11 +812,11 @@ void VectorOps_Cyl::Gradient(
     class GridBaseClass *grid,
     pion_flt *grad)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
     if (!grid->NextPt(c, static_cast<direction>(i)))
       rep.error("VectorOps_Cart::Grad: Some neighbour cells don't exist", i);
-#endif  // TESTING
+#endif  // NDEBUG
 
   cell *cn, *cp;
   double dR = grid->DX();
@@ -951,11 +951,11 @@ void VectorOps_Cyl::Curl(
     class GridBaseClass *grid,
     pion_flt *ans)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
     if (!grid->NextPt(c, static_cast<direction>(i)))
       rep.error("VectorOps_Cyl::Curl: Some neighbour cells don't exist", i);
-#endif  // TESTING
+#endif  // NDEBUG
   if (!c->isgd)
     rep.error("Not Grid Cell! can't calculate curl. id follows", c->id);
   cout << "Cyl_Curl() is not tested!!! make sure it works!!!\n";

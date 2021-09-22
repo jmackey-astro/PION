@@ -95,12 +95,12 @@ double VectorOps_Sph::CellInterface(
 double VectorOps_Sph::maxGradAbs(
     const cell *c, const int sv, const int var, class GridBaseClass *grid)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
     if (!grid->NextPt(c, static_cast<direction>(i)))
       rep.error(
           "VectorOps_Sph::maxGradAbs: Some neighbour cells don't exist", i);
-#endif  // TESTING
+#endif  // NDEBUG
 
   if (VOnd != 1) rep.error("Spherical coordinates only work in 1D!", VOnd);
 
@@ -144,12 +144,12 @@ void VectorOps_Sph::Gradient(
     class GridBaseClass *grid,
     pion_flt *grad)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
     if (!grid->NextPt(c, static_cast<direction>(i)))
       rep.error(
           "VectorOps_Cart::maxGradAbs: Some neighbour cells don't exist", i);
-#endif  // TESTING
+#endif  // NDEBUG
 
   if (VOnd != 1) rep.error("Spherical coordinates only work in 1D!", VOnd);
   //
@@ -236,11 +236,11 @@ void VectorOps_Sph::Curl(
     class GridBaseClass *grid,
     pion_flt *ans)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
     if (!grid->NextPt(c, static_cast<direction>(i)))
       rep.error("VectorOps_Sph::Curl: Some neighbour cells don't exist", i);
-#endif  // TESTING
+#endif  // NDEBUG
   if (!c->isgd)
     rep.error("Not Grid Cell! can't calculate curl. id follows", c->id);
   if (VOnd != 1) rep.error("Spherical coordinates only work in 1D!", VOnd);
@@ -358,9 +358,9 @@ int VectorOps_Sph::SetSlope(
     }
     cp = grid->NextPt(c, dp);
     cn = grid->NextPt(c, dn);
-#ifdef TESTING
+#ifndef NDEBUG
     if (cp == 0 || cn == 0) rep.error("No left or right cell in SetSlope", cp);
-#endif  // TESTING
+#endif  // NDEBUG
 
     //
     // Calculate slope based on axes we are looking along.

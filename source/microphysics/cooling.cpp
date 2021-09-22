@@ -26,10 +26,10 @@
 #include "tools/interpolate.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "grid/cell_interface.h"
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "microphysics/cooling.h"
 #include <iostream>
@@ -408,7 +408,7 @@ double CoolingFn::CoolingRate(
     if (T > MaxTemp) {
       cout << "Temp out of range!! Too large: T=" << T
            << " and MAX.T=" << MaxTemp << "\n";
-#ifdef TESTING
+#ifndef NDEBUG
       CI.print_cell(dp.c);
 #endif
       cout << "Returning Lambda(MaxTemp) = Lambda(" << MaxTemp << ")\n";
@@ -465,7 +465,7 @@ double CoolingFn::CoolingRate(
     // Now the heating rate:
     //
     rate -= nH * 2.0e-26;
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "KI02 cooling: T=" << T << ", n=" << nH << ", rate=" << rate
          << "\n";
 #endif
@@ -477,7 +477,7 @@ double CoolingFn::CoolingRate(
     if (T > MaxTemp) {
       cout << "Temp out of range!! Too large: T=" << T
            << " and MAX.T=" << MaxTemp << "\n";
-#ifdef TESTING
+#ifndef NDEBUG
       CI.print_cell(dp.c);
 #endif
       cout << "Returning Lambda(MaxTemp) = Lambda(" << MaxTemp << ")\n";
@@ -585,7 +585,7 @@ double CoolingFn::CoolingRate(
     if (T > MaxTemp) {
       // cout <<"Temp out of range!! Too large: T="<<T<<" and
       // MAX.T="<<MaxTemp<<"\n";
-#ifdef TESTING
+#ifndef NDEBUG
       // CI.print_cell(dp.c);
 #endif
       // cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
@@ -636,7 +636,7 @@ double CoolingFn::CoolingRate(
     if (T > MaxTemp) {
       // cout <<"Temp out of range!! Too large: T="<<T<<" and
       // MAX.T="<<MaxTemp<<"\n";
-#ifdef TESTING
+#ifndef NDEBUG
       // CI.print_cell(dp.c);
 #endif
       // cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";

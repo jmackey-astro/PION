@@ -12,9 +12,9 @@
 #include "tools/interpolate.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "grid/grid_base_class.h"
 #include "grid/stellar_wind_latdep.h"
@@ -442,14 +442,14 @@ void stellar_wind_latdep::set_wind_cell_reference_state(
         beta_B_sint *= sqrt(x * x + y * y) / wc->dist;
         beta_B_sint = (z > 0.0) ? -beta_B_sint : beta_B_sint;
 
-        // TESTING
+        // NDEBUG
         // modulate strength near the equator by linearly reducing
         // torodial component for |theta|<1 degree from equator
         // See Pogorelov et al (2006,ApJ,644,1299).  This is for
         // testing the code.
         // t = fabs(z)/wc->dist * 180.0 / M_PI; // angle in degrees.
         // if (t < 2.0) beta_B_sint *= 0.5*t;
-        // TESTING
+        // NDEBUG
 
         wc->p[BX] += -beta_B_sint * y / wc->dist;
         wc->p[BY] += beta_B_sint * x / wc->dist;
@@ -499,7 +499,7 @@ void stellar_wind_latdep::set_wind_cell_reference_state(
   }
 #endif  // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "\n";
   rep.printVec("wc->p", wc->p, nvar);
 #endif
@@ -545,7 +545,7 @@ int stellar_wind_latdep::add_evolving_source(
   // First we will read the file, and see when the source should
   // switch on in the simulation (it may not be needed for a while).
   //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "\t\tsw-evo: adding source from file " << infile << "\n";
 #endif
 
@@ -582,7 +582,7 @@ int stellar_wind_latdep::add_evolving_source(
   temp->tfinish       = temp->time_evo[temp->Npt - 1];
   temp->update_freq   = update_freq / t_scalefactor;
   temp->t_next_update = max(temp->tstart, t_now);
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "\t\t tstart=" << temp->tstart;
   cout << ", next update=" << temp->t_next_update;
   cout << ", and tfinish=" << temp->tfinish << "\n";
@@ -635,7 +635,7 @@ int stellar_wind_latdep::add_evolving_source(
     interpolate.root_find_linear_vec(temp->time_evo, temp->X_Z_evo, t_now, xz);
     interpolate.root_find_linear_vec(temp->time_evo, temp->X_D_evo, t_now, xd);
 
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "Source is Active\n";
 #endif
   }
@@ -724,7 +724,7 @@ int stellar_wind_latdep::add_rotating_source(
 
   for (int v = 0; v < ndim; v++)
     ws->dpos[v] = pos[v];
-#ifdef TESTING
+#ifndef NDEBUG
   rep.printVec("ws->dpos", ws->dpos, ndim);
 #endif
 
@@ -748,7 +748,7 @@ int stellar_wind_latdep::add_rotating_source(
   ws->tracers = mem.myalloc(ws->tracers, ntracer);
   for (int v = 0; v < ntracer; v++) {
     ws->tracers[v] = trv[v];
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "ws->tracers[v] = " << ws->tracers[v] << "\n";
 #endif
   }
@@ -784,10 +784,10 @@ int stellar_wind_latdep::add_rotating_source(
 
   wlist.push_back(ws);
   nsrc++;
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "\tAdded wind source id=" << nsrc - 1 << " to list of ";
   cout << nsrc << " elements.\n";
-#endif  // TESTING
+#endif  // NDEBUG
   return ws->id;
 }
 

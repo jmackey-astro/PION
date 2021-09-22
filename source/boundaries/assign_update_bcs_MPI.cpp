@@ -103,7 +103,7 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
   int map[nb];
   int rank = par.levels[level].MCMD.get_myrank();
   int ix[MAX_DIM];
-  par.levels[level].MCMD.get_domain_ix(par.ndim, rank, ix);
+  par.levels[level].MCMD.get_domain_coordinates(rank, ix);
   // x-direction
   for (int j = 0; j < par.ndim; j++) {
     if (ix[j] % 2 == 0) {

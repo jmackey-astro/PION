@@ -34,9 +34,9 @@
 
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "microphysics/MPv9.h"
 using namespace std;
@@ -304,7 +304,7 @@ int MPv9::TimeUpdateMP(
 
 #ifdef MP_DEBUG
   //
-  // TESTING !!!
+  // NDEBUG !!!
   //
   double P[3];
   conversion_JMcode(density, col, P);
@@ -314,7 +314,7 @@ int MPv9::TimeUpdateMP(
     cout << "Input temperature to MP is too low!  T_in=" << *ttt << "\n";
   }
   //
-  // TESTING !!!
+  // NDEBUG !!!
   //
 #endif  // MP_DEBUG
 

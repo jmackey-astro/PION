@@ -20,9 +20,9 @@
 #include "tools/interpolate.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "microphysics/hydrogen_mp.h"
 #include "microphysics/hydrogen_recomb_Hummer94.h"
@@ -34,7 +34,7 @@ using namespace std;
 
 Hydrogen_chem::Hydrogen_chem() : Hummer94_Hrecomb(), hydrogen_photoion()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting up Hydrogen_chem().\n";
 #endif
 
@@ -52,7 +52,7 @@ Hydrogen_chem::Hydrogen_chem() : Hummer94_Hrecomb(), hydrogen_photoion()
 
 Hydrogen_chem::~Hydrogen_chem()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Deleting Hydrogen_chem() class.\n";
 #endif
   cx_T    = mem.myfree(cx_T);

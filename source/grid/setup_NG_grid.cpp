@@ -154,7 +154,7 @@ void setup_NG_grid::setup_NG_grid_levels(
     else
       SimPM.levels[i].step = SimPM.levels[i + 1].step / 2;
 
-#ifdef TESTING
+#ifndef NDEBUG
     ostringstream temp;
     temp << i;
     string lv = "level " + temp.str();
@@ -188,10 +188,10 @@ int setup_NG_grid::setup_grid(
   if (SimPM.ndim < 1 || SimPM.ndim > 3)
     rep.error("Only know 1D,2D,3D methods!", SimPM.ndim);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting number of boundary cells == spatial OOA: ";
   cout << SimPM.spOOA << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // Nbc is the depth of the boundary layer around each grid.
@@ -224,7 +224,7 @@ int setup_NG_grid::setup_grid(
   //
   // Now we can setup the grid:
   //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(setup_NG_grid::setup_grid) Setting up grid...\n";
 #endif
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
@@ -255,7 +255,7 @@ int setup_NG_grid::setup_grid(
     if (grid[l] == 0)
       rep.error("(setup_NG_grid::setup_grid) Couldn't assign data!", grid[l]);
 
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "(setup_NG_grid::setup_grid) Done. &grid=";
     cout << &(grid[l]) << ", and grid=" << grid[l] << "\n";
     cout << "DX = " << (grid[l])->DX() << "\n";
@@ -376,7 +376,7 @@ int setup_NG_grid::boundary_conditions(
 )
 {
   // For uniform fixed cartesian grid.
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting up BCs in Grid with Nbc=" << par.Nbc << "\n";
 #endif
   int err = 0;
@@ -392,7 +392,7 @@ int setup_NG_grid::boundary_conditions(
     err = grid[l]->SetupBCs(par);
     rep.errorTest("sng::boundary_conditions SetupBCs", 0, err);
   }
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(setup_NG_grid::boundary_conditions) Done.\n";
 #endif
   return 0;
@@ -407,7 +407,7 @@ int setup_NG_grid::setup_boundary_structs(
     const int l                 ///< level in NG grid
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Set BC types...\n";
 #endif
 
@@ -422,14 +422,14 @@ int setup_NG_grid::setup_boundary_structs(
   if (l > 0) {
     for (int i = 0; i < par.ndim; i++) {
       if (!pconst.equalD(par.levels[l - 1].Xmin[i], par.levels[l].Xmin[i])) {
-#ifdef TESTING
+#ifndef NDEBUG
         cout << "reassigning neg. bc for axis " << i << " to COARSE_TO_FINE\n";
 #endif
         grid->BC_bd[2 * i]->itype = COARSE_TO_FINE;
         grid->BC_bd[2 * i]->type  = "COARSE_TO_FINE";
       }
       if (!pconst.equalD(par.levels[l - 1].Xmax[i], par.levels[l].Xmax[i])) {
-#ifdef TESTING
+#ifndef NDEBUG
         cout << "reassigning pos. bc for axis " << i << " to COARSE_TO_FINE\n";
 #endif
         grid->BC_bd[2 * i + 1]->itype = COARSE_TO_FINE;
@@ -478,19 +478,19 @@ int setup_NG_grid::setup_boundary_structs(
         ct++;
       }
     } while ((c = grid->NextPt(c)) != 0);
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "Got " << ct << " cells for FINE_TO_COARSE boundary, ";
     cout << bd->data.size() << "\n";
 #endif
     grid->BC_bd.push_back(bd);
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "BC_data: ";
     cout << grid->BC_bd[grid->BC_bd.size() - 1]->NGrecvF2C[0].size();
     cout << "\n";
 #endif
   }
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "BC structs set up.\n";
 #endif
   return 0;

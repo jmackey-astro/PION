@@ -34,7 +34,7 @@ image: ciaranorourke/superpion:latest
     CMAKE_EXPORT_COMPILE_COMMANDS: "OFF"
     CMAKE_VERBOSE_MAKEFILE: "ON"
     CMAKE_BUILD_DIR: "${CI_PROJECT_DIR}/build"
-    CMAKE_BUILD_TYPE: Debug
+    CMAKE_BUILD_TYPE: Release 
     CXX: g++
     CMAKE_PREFIX_PATH: "/usr/lib/x86_64-linux-gnu"
     PION_NESTED_GRID: "OFF"

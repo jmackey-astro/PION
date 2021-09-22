@@ -91,7 +91,7 @@ using namespace std;
 
 sim_control_pllel::sim_control_pllel() : sim_control()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "sim_control_pllel constructor.\n";
 #endif
 }
@@ -101,7 +101,7 @@ sim_control_pllel::sim_control_pllel() : sim_control()
 
 sim_control_pllel::~sim_control_pllel()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "sim_control_pllel destructor.\n";
 #endif
 }
@@ -118,7 +118,7 @@ int sim_control_pllel::Init(
         &grid  ///< address of vector of grid pointers.
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(sim_control_pllel::init) Initialising grid: infile = " << infile
        << "\n";
 #endif
@@ -200,7 +200,9 @@ int sim_control_pllel::Init(
   SimPM.levels[0].dt         = 0.0;
   SimPM.levels[0].multiplier = 1;
 
-  err = SimPM.levels[0].MCMD.decomposeDomain(SimPM, SimPM.levels[0]);
+  std::vector<int> pbc = SimPM.get_pbc_bools();
+  err                  = SimPM.levels[0].MCMD.decomposeDomain(
+      SimPM.ndim, SimPM.levels[0], std::move(pbc));
   rep.errorTest("PLLEL Init():Couldn't Decompose Domain!", 0, err);
 
   // Now see if any commandline args override the Parameters from the file.
@@ -252,7 +254,7 @@ int sim_control_pllel::Init(
   // initialised to zero.
   //
   if (SimPM.eqntype == EQGLM && SimPM.timestep == 0) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "Initial state, zero-ing glm variable.\n";
 #endif
     c = grid[0]->FirstPt();
@@ -331,13 +333,13 @@ int sim_control_pllel::Init(
   if (textio) textio->SetSolver(spatial_solver);
 
   if (SimPM.timestep == 0) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "(PARALLEL INIT) Writing initial data.\n";
 #endif
     output_data(grid);
   }
 
-#ifdef TESTING
+#ifndef NDEBUG
   c = (grid[0])->FirstPt_All();
   do {
     if (pconst.equalD(c->P[RO], 0.0)) {
@@ -345,7 +347,7 @@ int sim_control_pllel::Init(
       CI.print_cell(c);
     }
   } while ((c = (grid[0])->NextPt_All(c)) != 0);
-#endif  // TESTING
+#endif  // NDEBUG
   cout << "------------------------------------------------------------\n";
   return (err);
 }
@@ -385,12 +387,12 @@ int sim_control_pllel::Time_Int(
     //
     // Update boundary data.
     //
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "MPI time_int: updating internal boundaries\n";
 #endif
     err += TimeUpdateInternalBCs(
         SimPM, 0, grid[0], spatial_solver, SimPM.simtime, OA2, OA2);
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "MPI time_int: updating external boundaries\n";
 #endif
     err += TimeUpdateExternalBCs(
@@ -398,20 +400,20 @@ int sim_control_pllel::Time_Int(
     if (err) rep.error("Boundary update at start of full step", err);
 
       // clk.start_timer("advance_time");
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "MPI time_int: calculating dt\n";
 #endif
     SimPM.levels[0].last_dt = SimPM.last_dt;
     err += calculate_timestep(SimPM, grid[0], spatial_solver, 0);
     rep.errorTest("TIME_INT::calc_timestep()", 0, err);
 
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "MPI time_int: stepping forward in time\n";
 #endif
     advance_time(0, grid[0]);
     // cout <<"advance_time took "<<clk.stop_timer("advance_time")<<"
     // secs.\n";
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "MPI time_int: finished timestep\n";
     log_freq = 1;
 #endif
@@ -424,9 +426,9 @@ int sim_control_pllel::Time_Int(
       tsf = clk.time_so_far("time_int");
       cout << "\t runtime: " << tsf << " s"
            << "\n";
-#ifdef TESTING
+#ifndef NDEBUG
       cout.flush();
-#endif  // TESTING
+#endif  // NDEBUG
     }
 
     //
@@ -501,7 +503,7 @@ int sim_control_pllel::calculate_timestep(
   t_dyn = calc_dynamics_dt(par, grid, sp_solver);
   t_mp  = calc_microphysics_dt(par, grid, l);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "calc_time: local t_dyn= " << t_dyn;
 #endif
 
@@ -511,7 +513,7 @@ int sim_control_pllel::calculate_timestep(
   t_dyn = COMM->global_operation_double("MIN", t_dyn);
   t_mp  = COMM->global_operation_double("MIN", t_mp);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << " , global t_dyn= " << t_dyn << endl;
   // Write step-limiting info every tenth timestep.
   if (t_mp < t_dyn && (par.timestep % 10) == 0)
@@ -578,7 +580,7 @@ int sim_control_pllel::calculate_timestep(
   //
   sp_solver->Setdt(par.dt);
 
-#ifdef TESTING
+#ifndef NDEBUG
   //
   // Check that if my processor has modified dt to get to either
   // an output time or finishtime, then all procs have done this too!
@@ -587,7 +589,7 @@ int sim_control_pllel::calculate_timestep(
   t_mp  = COMM->global_operation_double("MIN", t_dyn);
   if (!pconst.equalD(t_dyn, t_mp))
     rep.error("synchonisation trouble in timesteps!", t_dyn - t_mp);
-#endif  // TESTING
+#endif  // NDEBUG
 
   return 0;
 }

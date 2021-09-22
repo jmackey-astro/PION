@@ -137,7 +137,7 @@ riemann_MHD::~riemann_MHD()
        << "\n";
   cout << "\t Failed Tests: OnAxis: " << onaxis << " and OffAxis: " << offaxis
        << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
   RS_evalue   = mem.myfree(RS_evalue);
   RS_pdiff    = mem.myfree(RS_pdiff);
   RS_strength = mem.myfree(RS_strength);

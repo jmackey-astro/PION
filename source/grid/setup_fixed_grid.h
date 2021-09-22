@@ -17,7 +17,6 @@
 #include "defines/testing_flags.h"
 
 #include "boundaries/assign_update_bcs.h"
-#include "decomposition/MCMD_control.h"
 #include "grid/grid_base_class.h"
 #include "grid/uniform_grid.h"
 #include "spatial_solvers/solver_eqn_base.h"

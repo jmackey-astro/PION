@@ -178,7 +178,6 @@ int main(int argc, char **argv)
   delete[] args;
   args = 0;
 
-  COMM->finalise();
   cout << "rank: " << myrank << " nproc: " << nproc << "\n";
   delete COMM;
   COMM = 0;

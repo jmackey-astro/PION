@@ -57,14 +57,14 @@ int periodic_pllel_bc::BC_update_PERIODIC(
   int err                 = 0;
   class MCMDcontrol *ppar = &(par.levels[level].MCMD);
   if (ppar->ngbprocs[b->dir] < 0) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "BC_update_PERIODIC: non-communicating periodic BC in ";
     cout << "direction " << b->dir << "\n";
 #endif
     err = periodic_bc::BC_update_PERIODIC(par, level, grid, b, cstep, maxstep);
   }
   else {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "BC_update_PERIODIC: communicating periodic BC in ";
     cout << "direction " << b->dir << "\n";
     cout << "BC_update_PERIODIC: calling mpi update BC function\n";

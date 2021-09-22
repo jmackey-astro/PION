@@ -212,7 +212,7 @@ void cell_interface::setup_extra_data(
     const int gp_flag               ///< Flag for |grad(P)|.
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "\ncell_interface::setup_extra_data():\n";
 #endif
   //
@@ -268,7 +268,7 @@ void cell_interface::setup_extra_data(
       idS[s] = N_extra_data;
       N_extra_data++;
     }  // loop over radiation sources.
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "\t\t Adding RT: N=" << N_extra_data << "\n";
 #endif
   }
@@ -285,7 +285,7 @@ void cell_interface::setup_extra_data(
       iHcorr[v] = N_extra_data;
       N_extra_data += 1;
     }
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "\t\t Adding HCORR: N=" << N_extra_data << "\n";
 #endif
   }
@@ -297,7 +297,7 @@ void cell_interface::setup_extra_data(
     using_DivV = dv_flag;
     iDivV      = N_extra_data;
     N_extra_data += 1;
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "\t\t Adding DIVV: N=" << N_extra_data << "\n";
 #endif
   }
@@ -309,13 +309,13 @@ void cell_interface::setup_extra_data(
     using_GradP = dv_flag;
     iGradP      = N_extra_data;
     N_extra_data += 1;
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "\t\t Adding GRADP: N=" << N_extra_data << "\n";
 #endif
   }
 
   have_setup_extra_data = true;
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "\n";
 #endif
   return;

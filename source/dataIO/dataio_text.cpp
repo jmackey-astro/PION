@@ -11,9 +11,9 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "dataIO/dataio_text.h"
 #include "dataIO/readparams.h"
@@ -495,10 +495,10 @@ int dataio_text::get_parameters(
   SimPM.dt       = 0.;
   SimPM.timestep = 0;  // Counter for what timestep we are on.
 
-#ifdef TESTING
+#ifndef NDEBUG
   dp.initERG = dp.initMMX = dp.initMMY = dp.initMMZ = 0.;
   dp.ergTotChange = dp.mmxTotChange = dp.mmyTotChange = dp.mmzTotChange = 0.;
-#endif  // TESTING
+#endif  // NDEBUG
   SimPM.maxtime = false;
 
   // Ref state vec for riemann solver.

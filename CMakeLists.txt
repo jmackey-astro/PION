@@ -153,7 +153,14 @@ if(NOT PION_SKIP_SOURCE)
 
     if(PION_PARALLEL)
         find_package(MPI REQUIRED COMPONENTS CXX)
+        include_directories(${MPI_CXX_INCLUDE_DIRS})
     endif(PION_PARALLEL)
+
+    if(CMAKE_BUILD_TYPE MATCHES "Debug")
+        find_package(Curses)
+        find_package(READLINE REQUIRED)
+        include_directories(${READLINE_INCLUDE_DIR})
+    endif(CMAKE_BUILD_TYPE MATCHES "Debug")
 endif(NOT PION_SKIP_SOURCE)
 
 
@@ -194,6 +201,7 @@ endif(PION_TOOLS)
 
 # Output project build options
 message(STATUS "Build options:")
+message(STATUS "    CMAKE_BUILD_TYPE         = ${CMAKE_BUILD_TYPE}")
 message(STATUS "    PION_PARALLEL            = ${PION_PARALLEL}")
 message(STATUS "    PION_USE_SILO            = ${PION_USE_SILO}")
 message(STATUS "    PION_USE_FITS            = ${PION_USE_FITS}")
@@ -201,4 +209,5 @@ message(STATUS "    PION_NESTED_GRID         = ${PION_NESTED_GRID}")
 message(STATUS "    PION_UNIFORM_GRID        = ${PION_UNIFORM_GRID}")
 message(STATUS "    PION_TOOLS               = ${PION_TOOLS}")
 message(STATUS "    PION_SKIP_SOURCE         = ${PION_SKIP_SOURCE}")
+message(STATUS "    PION_BUILD_TESTS         = ${PION_BUILD_TESTS}")
 message(STATUS "    PION_BUILD_DOCUMENTATION = ${PION_BUILD_DOCUMENTATION}")

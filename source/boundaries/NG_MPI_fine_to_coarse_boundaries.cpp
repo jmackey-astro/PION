@@ -30,7 +30,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
   cout << "***F2C F2C F2C*** Adding F2C SEND for l=" << l << "\n";
 #endif
   // Check if parent grid is on my MPI process
-  int pproc               = par.levels[l].MCMD.parent_proc;
+  int pproc               = par.levels[l].MCMD.get_parent_proc();
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
 
   //
@@ -99,7 +99,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
 {
 
   // Check if parent grid is on my MPI process
-  int pproc               = par.levels[l].MCMD.parent_proc;
+  int pproc               = par.levels[l].MCMD.get_parent_proc();
   int err                 = 0;
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
 

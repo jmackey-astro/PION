@@ -465,7 +465,7 @@ double interpolate_arrays::root_find_trilinear_vec(
   if (x_index <= 0 || x_index >= vec_size[0]) {
     cout << "x out of range: x_index=" << x_index << ", " << vec_size[0];
     cout << "\n";
-    rep.printSTLVec<double>("xvec", x_vec);
+    rep.printVec<double>("xvec", x_vec);
     cout << "x=" << x << "\n";
     rep.error("Bug", 1);
   }

@@ -42,9 +42,9 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "ics/get_sim_info.h"
 
@@ -158,14 +158,14 @@ int get_sim_info::read_gridparams(
   //
   str = rp->find_parameter("ntracer");
   if (str == "") {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "Not using tracer variables.\n";
 #endif
     SimPM.ntracer = 0;
     SimPM.ftr     = SimPM.nvar;
   }
   else if (isfinite(SimPM.ntracer = atoi(str.c_str()))) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "using " << SimPM.ntracer << " passive tracer variables\n";
 #endif
     SimPM.ftr = SimPM.nvar;
@@ -187,7 +187,7 @@ int get_sim_info::read_gridparams(
       temp.fill('0');
       temp << i;
       SimPM.tracers[i] = rp->find_parameter(temp.str());
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "using tracer(s) described as " << SimPM.tracers[i] << "\n";
 #endif
       if (SimPM.tracers[i] == "") {

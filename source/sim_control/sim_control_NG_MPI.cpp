@@ -42,7 +42,7 @@ using namespace std;
 
 sim_control_NG_MPI::sim_control_NG_MPI()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "sim_control_NG_MPI constructor.\n";
 #endif
 }
@@ -52,7 +52,7 @@ sim_control_NG_MPI::sim_control_NG_MPI()
 
 sim_control_NG_MPI::~sim_control_NG_MPI()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "sim_control_NG_MPI destructor.\n";
 #endif
 }
@@ -97,11 +97,11 @@ int sim_control_NG_MPI::Init(
   // ----------------------------------------------------------------
   setup_NG_grid_levels(SimPM);
   grid.resize(SimPM.grid_nlevels);
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "NG_MPI Init: grid setup\n";
 #endif
   err = setup_grid(grid, SimPM);
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "NG_MPI Init: grid setup finished\n";
 #endif
   SimPM.dx = grid[0]->DX();
@@ -142,7 +142,7 @@ int sim_control_NG_MPI::Init(
     } while ((c = grid[l]->NextPt(c)) != 0);
 
     if (SimPM.eqntype == EQGLM && SimPM.timestep == 0) {
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "Initial state, zero-ing glm variable.\n";
 #endif
       c = grid[l]->FirstPt();
@@ -170,7 +170,7 @@ int sim_control_NG_MPI::Init(
 
   // ----------------------------------------------------------------
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "NG_MPI updating external boundaries for level " << l << "\n";
     cout << "UPDATING EXTERNAL BOUNDARIES FOR LEVEL ";
     cout << l << "\n";
@@ -184,7 +184,7 @@ int sim_control_NG_MPI::Init(
 
   // ----------------------------------------------------------------
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "NG_MPI updating C2F boundaries for level " << l << "\n";
     cout << "UPDATING C2F BOUNDARIES FOR LEVEL ";
     cout << l << "\n";
@@ -199,7 +199,7 @@ int sim_control_NG_MPI::Init(
     }
     if (l > 0) {
       for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
-#ifdef TESTING
+#ifndef NDEBUG
         cout << "Init: l=" << l << ", C2F recv i=" << i
              << ", type=" << grid[l]->BC_bd[i]->type << endl;
 #endif
@@ -217,7 +217,7 @@ int sim_control_NG_MPI::Init(
 
   // ----------------------------------------------------------------
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "NG_MPI updating external boundaries for level " << l << "\n";
     cout << "@@@@@@@@@@@@  UPDATING EXTERNAL BOUNDARIES FOR LEVEL ";
     cout << l << "\n";
@@ -231,7 +231,7 @@ int sim_control_NG_MPI::Init(
 
   // ----------------------------------------------------------------
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "NG_MPI updating internal boundaries for level " << l << "\n";
     cout << "@@@@@@@@@@@@  UPDATING INTERNAL BOUNDARIES FOR LEVEL ";
     cout << l << "\n";
@@ -245,7 +245,7 @@ int sim_control_NG_MPI::Init(
   // ----------------------------------------------------------------
   // update fine-to-coarse level boundaries
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "NG_MPI updating F2C boundaries for level " << l << "\n";
     cout << l << "\n";
 #endif
@@ -312,14 +312,14 @@ int sim_control_NG_MPI::Init(
   if (textio) textio->SetSolver(spatial_solver);
 
   if (SimPM.timestep == 0) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "(NG_MPI INIT) Writing initial data.\n";
 #endif
     output_data(grid);
   }
 
   // ----------------------------------------------------------------
-  //#ifdef TESTING
+  //#ifndef NDEBUG
   cell *c = 0;
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
     // cout <<"LEVEL-ZERO-CHECK L="<<l<<"\n";
@@ -331,7 +331,7 @@ int sim_control_NG_MPI::Init(
       }
     } while ((c = (grid[l])->NextPt_All(c)) != 0);
   }
-  //#endif // TESTING
+  //#endif // NDEBUG
   cout << "-------------------------------------------------------\n";
   return (err);
 }
@@ -516,7 +516,7 @@ int sim_control_NG_MPI::Time_Int(
     // --------------------------------------------------------------
 
     // --------------------------------------------------------------
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "NG_MPI time_int: stepping forward in time\n";
 #endif
     // Use a recursive algorithm to update the coarsest level.  This
@@ -526,7 +526,7 @@ int sim_control_NG_MPI::Time_Int(
     advance_time(0, grid[0]);
     SimPM.simtime = SimPM.levels[0].simtime;
     COMM->barrier("step");
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "MPI time_int: finished timestep\n";
 #endif
 
@@ -539,9 +539,9 @@ int sim_control_NG_MPI::Time_Int(
       tsf = clk.time_so_far("time_int");
       cout << "\t runtime: " << tsf << " s"
            << "\n";
-#ifdef TESTING
+#ifndef NDEBUG
       cout.flush();
-#endif  // TESTING
+#endif  // NDEBUG
     }
     // --------------------------------------------------------------
 
@@ -833,7 +833,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   }
   // --------------------------------------------------------
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "NG-MPI advance_step_OA1, level=" << l << ", returning. t=";
   cout << SimPM.levels[l].simtime << ", step=" << SimPM.levels[l].step;
   cout << ", next dt=" << SimPM.levels[l].dt << " next time=";
@@ -1155,7 +1155,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   }
   // --------------------------------------------------------
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "NG-MPI advance_step_OA2, level=" << l << ", returning. t=";
   cout << SimPM.levels[l].simtime << ", step=" << SimPM.levels[l].step;
   cout << ", next dt=" << SimPM.levels[l].dt << " next time=";

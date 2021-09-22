@@ -34,9 +34,9 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "microphysics/MPv7.h"
 
@@ -57,7 +57,7 @@ MPv7::MPv7(
     ) :
     MPv3(nd, csys, nv, ntr, tracers, ephys, rsrcs, g)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "MPv7 constructor setting up.\n";
 #endif
   //
@@ -100,11 +100,11 @@ MPv7::MPv7(
   //
   Min_NeutralFrac = 1.0e-15;
   Max_NeutralFrac = 1.0 - 1.0e-15;
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "MPv7: Y=" << EP->Helium_MassFrac;
   cout << ", Z=" << EP->Metal_MassFrac << ", mmpH=" << mean_mass_per_H;
   cout << ", NION=" << JM_NION << ", NELEC=" << JM_NELEC << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
   return;
 }
 
@@ -113,7 +113,7 @@ MPv7::MPv7(
 
 MPv7::~MPv7()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "MPv7 destructor.\n";
 #endif
   return;
@@ -142,7 +142,7 @@ int MPv7::convert_prim2local(
   //
   p_local[lv_eint] = p_in[PG] / (gamma_minus_one);
 
-#ifdef TESTING
+#ifndef NDEBUG
   //
   // Check for NAN/INF
   //
@@ -152,7 +152,7 @@ int MPv7::convert_prim2local(
   }
   if (mpv_nH < 0.0 || !isfinite(mpv_nH))
     rep.error("Bad density input to MPv7::convert_prim2local", mpv_nH);
-#endif  // TESTING
+#endif  // NDEBUG
 
   return 0;
 }
@@ -186,19 +186,19 @@ int MPv7::convert_local2prim(
   p_out[PG] = get_ntot(mpv_nH, p_out[pv_Hp]) * k_B
               * get_temperature(mpv_nH, 0.0, p_out[pv_Hp]);
 
-#ifdef TESTING
+#ifndef NDEBUG
   // cout <<"nH="<< mpv_nH <<", xp="<< p_out[pv_Hp] <<", ntot=";
   // cout <<get_ntot(mpv_nH,p_out[pv_Hp])<<"\n";
 #endif
 
-#ifdef TESTING
+#ifndef NDEBUG
   if (p_out[pv_Hp] < 0.0 || p_out[pv_Hp] > 1.0 * (1.0 + JM_RELTOL)
       || !isfinite(p_out[pv_Hp]))
     rep.error(
         "Bad output H+ value in MPv7::convert_local2prim", p_out[pv_Hp] - 1.0);
   if (p_out[PG] < 0.0 || !isfinite(p_out[PG]))
     rep.error("Bad output pressure in MPv7::convert_local2prim", p_out[PG]);
-#endif  // TESTING
+#endif  // NDEBUG
 
   return 0;
 }
@@ -267,12 +267,12 @@ int MPv7::ydot(
 )
 {
 
-#ifdef TESTING
+#ifndef NDEBUG
   // cout <<"MPv7::ydot(): Y="<< EP->Helium_MassFrac;
   // cout <<", Z="<< EP->Metal_MassFrac <<", mmpH="<<mean_mass_per_H;
   // cout <<", NION="<< JM_NION <<", NELEC="<< JM_NELEC;
   // cout <<", Nnt="<<TTI_Nnt<<"\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // Set initial values

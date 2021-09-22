@@ -37,9 +37,9 @@
 #include "tools/reporting.h"
 #include "tools/timer.h"
 
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "dataIO/dataio_silo_utility.h"
 #include <iostream>
@@ -490,7 +490,7 @@ int dataio_silo_utility::serial_read_pllel_silodata(
       // choose myrank, and decompose domain accordingly.
       //
       filePM->set_myrank(ifile * groupsize + igroup);
-      filePM->decomposeDomain(SimPM, SimPM.levels[level]);
+      filePM->decomposeDomain(SimPM.ndim, SimPM.levels[level]);
 
       //
       // set directory in file.
@@ -668,6 +668,8 @@ int dataio_silo_utility::ReadLevelData(
     cout << mpiPM->get_nproc() << "  " << numfiles << " " << groupsize;
     cout << " " << l << "\n";
 #endif
+    std::vector<int> cells_per_file;
+    mpiPM->allgather_ncells(cells_per_file);
     for (int count = 0; count < nloops; count++) {
       if ((mpiPM->get_myrank() + nloops) % nloops == count) {
 #ifdef TEST_SILO_IO
@@ -675,7 +677,8 @@ int dataio_silo_utility::ReadLevelData(
              << "  i=" << count;
 #endif
         err = parallel_read_parallel_silodata(
-            firstfile, ggg, SimPM, numfiles, groupsize, nproc, l);
+            firstfile, ggg, SimPM, numfiles, groupsize, nproc, l,
+            cells_per_file);
         rep.errorTest("Failed to read parallel data", 0, err);
       }
       else {
@@ -767,21 +770,17 @@ int dataio_silo_utility::parallel_read_serial_silodata(
 // ##################################################################
 
 int dataio_silo_utility::parallel_read_parallel_silodata(
-    string firstfile,          ///< file to read from
-    class GridBaseClass *ggg,  ///< pointer to data.
-    class SimParams &SimPM,    ///< simulation parameters
-    const int numfiles,        ///< number of files
-    const int groupsize,       ///< number of groups
-    const int nmesh,           ///< number of domains in file.
-    const int l                ///< level in grid hierarchy
+    string firstfile,                       ///< file to read from
+    class GridBaseClass *ggg,               ///< pointer to data.
+    class SimParams &SimPM,                 ///< simulation parameters
+    const int numfiles,                     ///< number of files
+    const int groupsize,                    ///< number of groups
+    const int nmesh,                        ///< number of domains in file.
+    const int l,                            ///< level in grid hierarchy
+    const std::vector<int> &cells_per_file  ///< number of cells in each file
 )
 {
   int err = 0;
-  //
-  // We need a MCMDcontrol struct to mimic the struct used to write the file.
-  //
-  class MCMDcontrol filePM;
-  filePM.set_nproc(nmesh);
 
   //
   // First loop over all files:
@@ -817,24 +816,23 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
     // int ng=min(nmesh-ifile*groupsize, groupsize);
 
     for (int igroup = 0; igroup < ng; igroup++) {
+      cout << "DBSetDir 1" << std::endl;
       DBSetDir(dbfile, "/");
       //
-      // choose myrank, and decompose domain accordingly.
-      // This is complicated by the first R files having one more file per
-      // group than the rest (but only if R!=0).
+      // choose pseudo-rank for reading file.
       //
+      int pseudo_rank;
       if (R != 0) {
         if (ifile < R)
-          filePM.set_myrank(ifile * groupsize + igroup);
+          pseudo_rank = ifile * groupsize + igroup;
         else
-          filePM.set_myrank(
-              (R * groupsize) + (ifile - R) * (groupsize - 1) + igroup);
+
+          pseudo_rank =
+              (R * groupsize) + (ifile - R) * (groupsize - 1) + igroup;
       }
       else {
-        filePM.set_myrank(ifile * groupsize + igroup);
+        pseudo_rank = ifile * groupsize + igroup;
       }
-
-      filePM.decomposeDomain(SimPM, SimPM.levels[l]);
 
       // mpiPM = &(filePM);
       // err = setup_grid_properties(gp, SimPM);
@@ -845,7 +843,8 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
       // set directory in file.
       //
       string qm_dir;
-      set_dir_in_file(qm_dir, filePM.get_myrank(), igroup, l);
+      set_dir_in_file(qm_dir, pseudo_rank, igroup, l);
+      cout << "DBSetDir 2:" << qm_dir.c_str() << std::endl;
       DBSetDir(dbfile, qm_dir.c_str());
 
       //
@@ -853,7 +852,7 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
       // and called "unigridXXXX" where XXXX=filePM.myrank
       //
       string qm_name;
-      mesh_name(filePM.get_myrank(), qm_name);
+      mesh_name(pseudo_rank, qm_name);
 #ifdef TEST_SILO_IO
       cout << "got mesh name= " << qm_name << " in mesh dir= ";
       cout << qm_dir << "\n";
@@ -912,7 +911,7 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
         for (std::vector<string>::iterator i = readvars.begin();
              i != readvars.end(); ++i) {
           err = PP_read_var2grid(
-              dbfile, ggg, SimPM, (*i), filePM.LocalNcell, mesh_iXmin,
+              dbfile, ggg, SimPM, (*i), cells_per_file[pseudo_rank], mesh_iXmin,
               mesh_iXmax);
           if (err) rep.error("error reading variable", (*i));
         }  // loop over variables.
@@ -968,20 +967,20 @@ void dataio_silo_utility::get_quadmesh_extents(
     create_data_arrays(SimPM);
   }
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout.setf(ios_base::scientific);
   cout.precision(15);
-#endif  // TESTING
+#endif  // NDEBUG
   if (silo_dtype == DB_FLOAT) {
     float *fqmmin = qm->min_extents;
     float *fqmmax = qm->max_extents;
     for (int v = 0; v < ndim; v++) {
       mesh_xmin[v] = fqmmin[v];
       mesh_xmax[v] = fqmmax[v];
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "dir: " << v << "\t min=" << mesh_xmin[v] << " and max=";
       cout << mesh_xmax[v] << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
     }
   }
   else {
@@ -990,10 +989,10 @@ void dataio_silo_utility::get_quadmesh_extents(
     for (int v = 0; v < ndim; v++) {
       mesh_xmin[v] = dqmmin[v];
       mesh_xmax[v] = dqmmax[v];
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "dir: " << v << "\t min=" << mesh_xmin[v] << " and max=";
       cout << mesh_xmax[v] << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
     }
   }
   DBFreeQuadmesh(qm);  // qm=0;
@@ -1048,12 +1047,12 @@ void dataio_silo_utility::get_quadmesh_integer_extents(
   CI.get_ipos_vec(mesh_xmin, iXmin);
   CI.get_ipos_vec(mesh_xmax, iXmax);
 
-#ifdef TESTING
+#ifndef NDEBUG
   rep.printVec("get_quadmesh_integer_extents: mesh_Xmin", mesh_xmin, ndim);
   rep.printVec("get_quadmesh_integer_extents: mesh_Xmax", mesh_xmax, ndim);
   rep.printVec("get_quadmesh_integer_extents: iXmin", iXmin, ndim);
   rep.printVec("get_quadmesh_integer_extents: iXmax", iXmax, ndim);
-#endif  // TESTING
+#endif  // NDEBUG
 
   return;
 }
@@ -1182,7 +1181,7 @@ int dataio_silo_utility::PP_read_var2grid(
   cell *c = ggg->FirstPt();
 
   for (int v = 0; v < ndim; v++) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "c->pos[v]=" << c->pos[v] << " : iXmin[v]=" << iXmin[v] << "\n";
 #endif
     enum direction posdir = static_cast<direction>(2 * v + 1);

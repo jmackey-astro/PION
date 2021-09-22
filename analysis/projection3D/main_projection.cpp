@@ -128,7 +128,7 @@ void reset_domain(class MCMDcontrol *MCMD)
   rep.printVec("New Xmin",SimPM.Xmin,SimPM.ndim);
   rep.printVec("New Xmax",SimPM.Xmax,SimPM.ndim);
   SimPM.grid_nlevels = 1;
-  MCMD->decomposeDomain(SimPM,SimPM.levels[0]);
+  MCMD->decomposeDomain(SimPM.ndim,SimPM.levels[0]);
   return;
 }
 #endif
@@ -1281,7 +1281,6 @@ int main(int argc, char **argv)
   //}
   if (MP)     {delete MP; MP=0;}
 
-  COMM->finalise();
   delete COMM; COMM=0;
 
   return 0;

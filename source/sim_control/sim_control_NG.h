@@ -14,7 +14,6 @@
 #include "defines/testing_flags.h"
 
 #include "dataIO/dataio_base.h"
-#include "decomposition/MCMD_control.h"
 #include "grid/grid_base_class.h"
 #include "grid/setup_NG_grid.h"
 #include "grid/uniform_grid.h"

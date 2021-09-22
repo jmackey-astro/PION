@@ -15,9 +15,9 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "grid/setup_fixed_grid.h"
 #include "microphysics/microphysics_base.h"
@@ -59,7 +59,7 @@ int calc_timestep::calculate_timestep(
     const int l                       ///< level to advance (for NG grid)
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "calc_timestep::calc_timestep(): g=" << grid << ", rt=" << grid->RT
        << "\n";
 #endif
@@ -72,7 +72,7 @@ int calc_timestep::calculate_timestep(
   t_mp  = calc_microphysics_dt(par, grid, l);
   // cout <<"l="<<l<<", \t t_dyn="<<t_dyn<<"and t_mp ="<<t_mp<<"\n";
 
-#ifdef TESTING
+#ifndef NDEBUG
   if (t_mp < t_dyn)
     cout << "Limiting timestep by MP: mp_t=" << t_mp << "\thydro_t=" << t_dyn
          << "\n";
@@ -90,7 +90,7 @@ int calc_timestep::calculate_timestep(
   // later multiplication is done in sp_solver->preprocess_data()
   //
   double t_cond = calc_conduction_dt_and_Edot();
-#ifdef TESTING
+#ifndef NDEBUG
   if (t_cond < t_dyn && t_cond < t_mp) {
     cout << "CONDUCTION IS LIMITING TIMESTEP: t_c=" << t_cond
          << ", t_m=" << t_mp;
@@ -138,7 +138,7 @@ int calc_timestep::calculate_timestep(
   // sets the timestep info in the solver class.
   sp_solver->Setdt(par.dt);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "calc_timestep::calc_timestep() finished.\n";
 #endif
   return 0;
@@ -266,7 +266,7 @@ double calc_timestep::calc_dynamics_dt(
   double dx     = grid->DX();
 
   class cell *c = grid->FirstPt();
-#ifdef TESTING
+#ifndef NDEBUG
   dp.c = c;
 #endif
 
@@ -276,7 +276,7 @@ double calc_timestep::calc_dynamics_dt(
   // already multiplied by the CFL coefficient.
   //
   do {
-#ifdef TESTING
+#ifndef NDEBUG
     dp.c = c;
 #endif
     if (c->timestep && !c->isbd) {
@@ -312,7 +312,7 @@ double calc_timestep::calc_dynamics_dt(
   }
 
   if (dt <= 0.0) rep.error("Got zero timestep!!!", dt);
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(calc_dynamics_dt)  min-dt=" << dt << "\n";
 #endif
 
@@ -373,7 +373,7 @@ double calc_timestep::calc_microphysics_dt(
       rep.error("get_mp_timescales_no_radiation() returned error", dt);
   }
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(calc_microphysics_dt)  min-dt=" << dt << "\n";
 #endif
 
@@ -387,7 +387,7 @@ double calc_timestep::get_mp_timescales_no_radiation(
     class SimParams &par,  ///< pointer to simulation parameters
     class GridBaseClass *grid)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   //
   // paranoid checking...
   //
@@ -396,7 +396,7 @@ double calc_timestep::get_mp_timescales_no_radiation(
     cout << "but no MP-dt limiting!\n";
     return -1.0;
   }
-#endif  // TESTING
+#endif  // NDEBUG
   //
   // So now we know we need to go through every cell and see what the limit
   // is.
@@ -404,7 +404,7 @@ double calc_timestep::get_mp_timescales_no_radiation(
   double tempdt = 0.0, dt = 1.0e99;
   class cell *c = grid->FirstPt();
   do {
-#ifdef TESTING
+#ifndef NDEBUG
     dp.c = c;
 #endif
     //
@@ -414,7 +414,7 @@ double calc_timestep::get_mp_timescales_no_radiation(
 
     //
     if (c->isbd || !c->isleaf) {
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "skipping cell " << c->id
            << " in get_mp_timescales_no_radiation() c->isbd.\n";
 #endif
@@ -495,7 +495,7 @@ double calc_timestep::get_mp_timescales_with_radiation(
     class SimParams &par,  ///< pointer to simulation parameters
     class GridBaseClass *grid)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   //
   // paranoid checking...
   //
@@ -507,7 +507,7 @@ double calc_timestep::get_mp_timescales_with_radiation(
   if (par.RS.Nsources == 0)
     rep.error(
         "calc_timestep::get_mp_timescales_with_radiation() no sources", 1);
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // RT source properties are already in structs for the microphysics calls.
@@ -516,7 +516,7 @@ double calc_timestep::get_mp_timescales_with_radiation(
   double tempdt = 0.0, dt = 1.0e99;
   class cell *c = grid->FirstPt();
   do {
-#ifdef TESTING
+#ifndef NDEBUG
     dp.c = c;
 #endif
     //
@@ -526,7 +526,7 @@ double calc_timestep::get_mp_timescales_with_radiation(
     // skip it.
     //
     if (c->isbd || !c->isleaf) {
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "skipping cell " << c->id
            << " in get_mp_timescales_with_radiation() c->isbd.\n";
 #endif
@@ -571,7 +571,7 @@ double calc_timestep::get_mp_timescales_with_radiation(
       tempdt = MP->timescales_RT(
           c->Ph, FVI_nheat, FVI_heating_srcs, FVI_nion, FVI_ionising_srcs,
           par.gamma);
-#ifdef TESTING
+#ifndef NDEBUG
       if (tempdt < dt) {
         cout << "(get_min_timestep) id=" << c->id << ":  dt=" << tempdt
              << ", min-dt=" << dt;

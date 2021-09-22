@@ -55,7 +55,7 @@ FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(
     riemann_MHD(nv, state, gam), Riemann_Roe_MHD_CV(nv, gam), HLLD_MHD(nv, gam),
     VectorOps_Cart(nd)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "::FV_solver_mhd_ideal_adi() constructor.\n";
   // cout <<"::FV_solver_mhd_ideal_adi() gamma = "<<eq_gamma<<"\n";
 #endif
@@ -73,7 +73,7 @@ FV_solver_mhd_ideal_adi::~FV_solver_mhd_ideal_adi()
   cout << "::~FV_solver_mhd_ideal_adi ...starting.\n";
 #endif  // FUNCTION_ID
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "FV_solver_mhd_ideal_adi::~FV_solver_mhd_ideal_adi() destructor.\n";
 #endif
 
@@ -100,7 +100,7 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
     const double eq_gamma       ///< Gas constant gamma.
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   // Check input density and pressure are 'reasonably large'
   if (Pl[eqRO] < TINYVALUE || Pl[eqPG] < TINYVALUE || Pr[eqRO] < TINYVALUE
       || Pr[eqPG] < TINYVALUE) {
@@ -110,7 +110,7 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
         "FV_solver_mhd_ideal_adi::calculate_flux() Density/Pressure too small",
         Pl[eqRO]);
   }
-#endif  // TESTING
+#endif  // NDEBUG
   int err = 0;
   double ustar[eq_nvar];
   for (int v = 0; v < eq_nvar; v++)
@@ -609,7 +609,7 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
     const double eq_gamma       ///< Gas constant gamma.
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   //
   // Check input density and pressure are positive
   //
@@ -622,7 +622,7 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
         "too small",
         Pl[eqRO]);
   }
-#endif  // TESTING
+#endif  // NDEBUG
 
   int err = 0;
 

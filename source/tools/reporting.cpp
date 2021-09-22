@@ -67,7 +67,7 @@ int reporting::redirect(const string &path)
   string temp;
 
 #if defined(SERIAL)
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(reporting::redirect): O/P goes to text files in " << path << "\n";
 #endif
   temp = path + "errors.txt";
@@ -94,7 +94,7 @@ int reporting::redirect(const string &path)
   cout.precision(7);
 
 #elif defined(PARALLEL)
-#ifndef TESTING
+#ifdef NDEBUG
   //
   // For parallel execution (production runs) we only want a single
   // log file, and errors should be printed to stderr.
@@ -149,7 +149,7 @@ int reporting::redirect(const string &path)
   errmsg.copyfmt(cerr);
   saved_buffer_cerr = cerr.rdbuf();
   cerr.rdbuf(errmsg.rdbuf());
-#endif  // TESTING
+#endif  // NDEBUG
 #else
 #error "Must define either SERIAL or PARALLEL (reporting::redirect)"
 #endif

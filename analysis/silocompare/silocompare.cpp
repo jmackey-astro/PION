@@ -184,7 +184,7 @@ int main(int argc, char **argv)
   for (int v=0;v<MAX_DIM;v++) SimPM.Xmin[v] = SimPM.levels[lev].Xmin[v];
   for (int v=0;v<MAX_DIM;v++) SimPM.Xmax[v] = SimPM.levels[lev].Xmax[v];
   SimPM.dx = SimPM.Range[XX]/SimPM.NG[XX];
-  SimPM.levels[0].MCMD.decomposeDomain(SimPM, SimPM.levels[0]);
+  SimPM.levels[0].MCMD.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
 
   //
   // Now we have read in parameters from the file, so set up a grid.
@@ -248,7 +248,7 @@ int main(int argc, char **argv)
     for (int v=0;v<MAX_DIM;v++) SimPM.Xmin[v] = SimPM.levels[lev].Xmin[v];
     for (int v=0;v<MAX_DIM;v++) SimPM.Xmax[v] = SimPM.levels[lev].Xmax[v];
     SimPM.dx = SimPM.Range[XX]/SimPM.NG[XX];
-    SimPM.levels[0].MCMD.decomposeDomain(SimPM, SimPM.levels[0]);
+    SimPM.levels[0].MCMD.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
     // ----------------------------------------------------------------
     // ----------------------------------------------------------------
 
@@ -454,7 +454,6 @@ int main(int argc, char **argv)
   // Finish up and quit.
   //
   if (grid) {delete grid; grid=0;}
-  COMM->finalise();
   delete COMM; COMM=0;
   //MPI_Finalize();
   return 0;

@@ -31,12 +31,12 @@ int assign_update_bcs_NG::assign_boundary_data(
   // Then check for NG-grid boundaries and assign data for them.
   //
   for (size_t i = 0; i < grid->BC_bd.size(); i++) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "NG grid assign BCs: BC[" << i << "] starting.\n";
 #endif
     switch (grid->BC_bd[i]->itype) {
       case FINE_TO_COARSE:
-#ifdef TESTING
+#ifndef NDEBUG
         cout << "NG grid setup: Assigning FINE_TO_COARSE BC\n";
 #endif
         err += BC_assign_FINE_TO_COARSE(
@@ -44,7 +44,7 @@ int assign_update_bcs_NG::assign_boundary_data(
         break;
 
       case COARSE_TO_FINE:
-#ifdef TESTING
+#ifndef NDEBUG
         cout << "assign_update_bcs_NG:: Assigning COARSE_TO_FINE BC\n";
 #endif
         err += BC_assign_COARSE_TO_FINE(
@@ -52,7 +52,7 @@ int assign_update_bcs_NG::assign_boundary_data(
         break;
 
       default:
-#ifdef TESTING
+#ifndef NDEBUG
         cout << "leaving BC " << i << " alone in NG grid assign fn.\n";
 #endif
         break;

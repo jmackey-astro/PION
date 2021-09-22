@@ -15,9 +15,9 @@
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
 
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "dataIO/dataio_base.h"
 #include "sim_control/time_integrator.h"
@@ -230,10 +230,10 @@ int time_integrator::calc_microphysics_dU(
   //
   if (!MP) return 0;
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "calc_microphysics_dU() Updating MicroPhysics. ";
   cout << "  RT-Nsrc=" << SimPM.RS.Nsources << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
   int err = 0;
 
   if (SimPM.RS.Nsources == 0 || !SimPM.EP.raytracing) {
@@ -295,7 +295,7 @@ int time_integrator::calc_RT_microphysics_dU(
     // boundary data, then we don't want to update anything, so we skip it
     //
     if (!c->isdomain) {
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "skipping cell " << c->id
            << " in calc_RT_microphysics_dU() c->isdomain.\n";
 #endif
@@ -408,7 +408,7 @@ int time_integrator::calc_noRT_microphysics_dU(
     class GridBaseClass *grid  ///< Computational grid.
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "calc_noRT_microphysics_dU starting.\n";
 #endif
   //
@@ -426,7 +426,7 @@ int time_integrator::calc_noRT_microphysics_dU(
     // boundary data, then we don't want to update anything, so we skip it
     //
     if (!c->isdomain) {
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "skipping cell " << c->id
            << " in calc_noRT_microphysics_dU() c->isdomain.\n";
 #endif
@@ -474,14 +474,14 @@ int time_integrator::calc_dynamics_dU(
   if (!SimPM.EP.dynamics) return 0;
   int err = 0;
 
-#ifdef TESTING
+#ifndef NDEBUG
   if (step == OA1)
     cout << "*****Updating dynamics: OA1\n";
   else if (step == OA2)
     cout << "*****Updating dynamics: OA2\n";
   else
     rep.error("Bad ooa", step);
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // First we pre-process the cells, if needed.  This is required for
@@ -677,7 +677,7 @@ int time_integrator::dynamics_dU_column(
   // vector.
   //
   do {
-#ifdef TESTING
+#ifndef NDEBUG
     dp.c = cpt;
 #endif
 #ifdef TEST_INT
@@ -773,7 +773,7 @@ int time_integrator::dynamics_dU_column(
   // Now n2pt=null. npt = bd-data, cpt= (gd/bd)-data.
   // So have to do something different.
   //
-#ifdef TESTING
+#ifndef NDEBUG
   dp.c = cpt;
 #endif
   // last cell 1st order.
@@ -817,7 +817,7 @@ int time_integrator::dynamics_dU_column(
   // Right Ghost Cell-- have to calculate it's left interface differently,
   //
   cpt = npt;
-#ifdef TESTING
+#ifndef NDEBUG
   dp.c = cpt;
 #endif
   for (int v = 0; v < SimPM.nvar; v++)
@@ -874,7 +874,7 @@ int time_integrator::grid_update_state_vector(
   class cell *c = grid->FirstPt_All();
   do {
 
-#ifdef TESTING
+#ifndef NDEBUG
     double dx       = grid->DX();
     dp.ergTotChange = 0.;
     temperg         = 0.;
@@ -891,7 +891,7 @@ int time_integrator::grid_update_state_vector(
           dt);
     }
 
-#ifdef TESTING
+#ifndef NDEBUG
     if (err) {
       cout << "______ Error in Cell-advance-time: ";
       CI.print_cell(c);
@@ -901,7 +901,7 @@ int time_integrator::grid_update_state_vector(
 #else
     // ignore negative pressures and try to continue
     if (err) err = 0;
-#endif  // TESTING
+#endif  // NDEBUG
 
     if (MP) {
       double T = MP->Temperature(c->Ph, SimPM.gamma);
@@ -919,21 +919,21 @@ int time_integrator::grid_update_state_vector(
       for (int v = 0; v < SimPM.nvar; v++)
         c->P[v] = c->Ph[v];
 
-#ifdef TESTING
+#ifndef NDEBUG
       //
       // Update Total Energy from fixing negative pressures. Reset
       // update variables.
       //
       dp.ergTotChange = temperg;
       dp.initERG += dp.ergTotChange * spatial_solver->CellVolume(c, dx);
-#endif  // TESTING
+#endif  // NDEBUG
     }
 
   } while ((c = grid->NextPt_All(c)) != 0);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "\tgrid_update_state_vector done. error=" << err << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
   return err;
 }
 

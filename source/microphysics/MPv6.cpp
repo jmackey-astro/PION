@@ -23,9 +23,9 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "microphysics/MPv6.h"
 
@@ -46,7 +46,7 @@ MPv6::MPv6(
     ) :
     MPv3(nd, csys, nv, ntr, tracers, ephys, rsrcs, g)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "MPv6 constructor setting up.\n";
 #endif
   //
@@ -60,11 +60,11 @@ MPv6::MPv6(
   METALLICITY         = 0.0;
   mean_mass_per_H     = m_p;
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "MPv6: Y=" << EP->Helium_MassFrac;
   cout << ", Z=" << EP->Metal_MassFrac << ", mmpH=" << mean_mass_per_H;
   cout << ", NION=" << JM_NION << ", NELEC=" << JM_NELEC << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
   return;
 }
 
@@ -73,7 +73,7 @@ MPv6::MPv6(
 
 MPv6::~MPv6()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "MPv6 destructor.\n";
 #endif
   return;
@@ -90,12 +90,12 @@ int MPv6::ydot(
 )
 {
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "MPv6::ydot(): Y=" << EP->Helium_MassFrac;
   cout << ", Z=" << EP->Metal_MassFrac << ", mmpH=" << mean_mass_per_H;
   cout << ", nH = " << mpv_nH;
   cout << ", NION=" << JM_NION << ", NELEC=" << JM_NELEC << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // fixes min-neutral-fraction to Min_NeutralFrac

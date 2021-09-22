@@ -146,7 +146,7 @@ int main(int argc, char **argv)
     MCMD->set_myrank(0);
     err = dataio.ReadHeader(infile,SimPM);
     if (err) rep.error("Didn't read header",err);
-    MCMD->decomposeDomain(SimPM, SimPM.levels[0]);
+    MCMD->decomposeDomain(SimPM.ndim, SimPM.levels[0]);
 
     //
     // Outfile:
@@ -216,7 +216,7 @@ int main(int argc, char **argv)
     for (int proc=0; proc<MCMD->get_nproc(); proc++) {
       cout <<"\t\tproc "<<proc<<": ";
       MCMD->set_myrank(proc);
-      MCMD->decomposeDomain(SimPM, SimPM.levels[0]);
+      MCMD->decomposeDomain(SimPM.ndim, SimPM.levels[0]);
       //
       // read infile header to get local ng/xmin/xmax
       //
@@ -232,7 +232,7 @@ int main(int argc, char **argv)
       err = dataio.ReadHeader(infile,SimPM);
       if (err) rep.error("Didn't read header",err);
       MCMD->set_myrank(proc);
-      MCMD->decomposeDomain(SimPM, SimPM.levels[0]);
+      MCMD->decomposeDomain(SimPM.ndim, SimPM.levels[0]);
 
       err = fits_open_file(&ffin, infile.c_str(), READONLY, &status);
       if(status) {fits_report_error(stderr,status); return(err);}

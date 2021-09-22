@@ -31,7 +31,7 @@ using namespace std;
 
 sim_control_NG::sim_control_NG()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(sim_control_NG::Constructor)\n";
 #endif
 }
@@ -41,7 +41,7 @@ sim_control_NG::sim_control_NG()
 
 sim_control_NG::~sim_control_NG()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(sim_control_NG::Destructor)\n";
 #endif
 }
@@ -58,7 +58,7 @@ int sim_control_NG::Init(
         &grid  ///< address of vector of grid pointers.
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(sim_control_NG::Init) Initialising grid"
        << "\n";
 #endif
@@ -111,7 +111,7 @@ int sim_control_NG::Init(
     } while ((c = grid[l]->NextPt(c)) != 0);
 
     if (SimPM.eqntype == EQGLM && SimPM.timestep == 0) {
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "Initial state, zero-ing glm variable.\n";
 #endif
       c = grid[l]->FirstPt();
@@ -141,7 +141,7 @@ int sim_control_NG::Init(
 
   // ----------------------------------------------------------------
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "updating external boundaries for level " << l << "\n";
 #endif
     err += TimeUpdateExternalBCs(
@@ -153,7 +153,7 @@ int sim_control_NG::Init(
 
   // ----------------------------------------------------------------
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "updating internal boundaries for level " << l << "\n";
 #endif
     err += TimeUpdateInternalBCs(
@@ -201,7 +201,7 @@ int sim_control_NG::Init(
   dataio->SetSolver(spatial_solver);
   if (textio) textio->SetSolver(spatial_solver);
 
-#ifdef TESTING
+#ifndef NDEBUG
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     cell *c = (grid[l])->FirstPt_All();
     do {
@@ -211,7 +211,7 @@ int sim_control_NG::Init(
       }
     } while ((c = (grid[l])->NextPt_All(c)) != 0);
   }
-#endif  // TESTING
+#endif  // NDEBUG
 
   return (0);
 }
@@ -498,7 +498,7 @@ int sim_control_NG::Finalise(vector<class GridBaseClass *>
   rep.errorTest("(FINALISE::output_data) Something went wrong", 0, err);
   cout << "\tSimTime = " << SimPM.simtime
        << "   #timesteps = " << SimPM.timestep << "\n";
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(sim_control::Finalise) DONE.\n";
 #endif
   cout << "------------------------------------------------------------\n";
@@ -513,7 +513,7 @@ double sim_control_NG::advance_time(
     class GridBaseClass *grid  ///< grid pointer
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "advance_time, level=" << l << ", starting.\n";
 #endif
 
@@ -536,13 +536,12 @@ double sim_control_NG::advance_time(
 double sim_control_NG::advance_step_OA1(const int l  ///< level to advance.
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "advance_step_OA1, level=" << l << ", starting.\n";
 #endif
   int err = 0;
   // double dt2_fine=0.0; // timestep for two finer level steps.
-  double dt2_this = 0.0;   // two timesteps for this level.
-  class MCMDcontrol ppar;  // unused for serial code.
+  double dt2_this           = 0.0;  // two timesteps for this level.
   class GridBaseClass *grid = SimPM.levels[l].grid;
 
   err = update_evolving_RT_sources(SimPM, SimPM.levels[l].simtime, grid->RT);
@@ -626,7 +625,7 @@ double sim_control_NG::advance_step_OA1(const int l  ///< level to advance.
   }
   // --------------------------------------------------------
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "advance_step_OA1, level=" << l << ", returning. t=";
   cout << SimPM.levels[l].simtime << ", step=" << SimPM.levels[l].step;
   cout << ", next dt=" << SimPM.levels[l].dt << " next time=";

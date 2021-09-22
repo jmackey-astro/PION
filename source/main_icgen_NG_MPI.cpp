@@ -10,9 +10,9 @@
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
 #include "tools/timer.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "ics/get_sim_info.h"
 #include "ics/icgen.h"
@@ -31,7 +31,7 @@
 #include <sstream>
 using namespace std;
 
-//#define TESTING
+//
 
 // ##################################################################
 // ##################################################################
@@ -69,7 +69,7 @@ int main(int argc, char **argv)
       rep.redirect(outpath);  // Redirects cout and cerr to text file.
     }
   }
-#ifndef TESTING
+#ifdef NDEBUG
   rep.kill_stdout_from_other_procs(0);
 #endif
 
@@ -167,20 +167,20 @@ int main(int argc, char **argv)
   // should be already set to its correct value in the initial
   // conditions file.
   //
-  //#ifdef TESTING
+  //#ifndef NDEBUG
   cout << "ICGEN_NG_MPI: Setting up boundaries\n";
   //#endif
   SimSetup->boundary_conditions(SimPM, grid);
   if (err) rep.error("icgen: Couldn't set up boundaries.", err);
 
-  //#ifdef TESTING
+  //#ifndef NDEBUG
   cout << "ICGEN_NG_MPI: Setting up raytracing\n";
   //#endif
   err += SimSetup->setup_raytracing(SimPM, grid);
   if (err) rep.error("icgen: Failed to setup raytracer", err);
 
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "icgen_NG_MPI: assigning boundary data for level " << l << "\n";
 #endif
     err = SimSetup->assign_boundary_data(SimPM, l, grid[l]);
@@ -190,10 +190,10 @@ int main(int argc, char **argv)
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
-  //#ifdef TESTING
+  //#ifndef NDEBUG
   cout << "icgen_NG_MPI: updating boundary data\n";
 //#endif
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "icgen_NG_MPI: updating external boundaries\n";
 #endif
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
@@ -204,11 +204,11 @@ int main(int argc, char **argv)
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "icgen_NG_MPI: updating C2F boundaries\n";
 #endif
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "NG_MPI updating C2F boundaries for level " << l << "\n";
     cout << "@@@@@@@@@@@@  UPDATING C2F BOUNDARIES FOR LEVEL ";
     cout << l << "\n";
@@ -221,7 +221,7 @@ int main(int argc, char **argv)
         }
       }
     }
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "icgen_NG_MPI: updating C2F boundaries, sent, now recv\n";
 #endif
     if (l > 0) {
@@ -232,7 +232,7 @@ int main(int argc, char **argv)
         }
       }
     }
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "icgen_NG_MPI: updating C2F boundaries: done with level\n";
 #endif
   }
@@ -242,7 +242,7 @@ int main(int argc, char **argv)
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "icgen_NG_MPI: updating external boundaries\n";
 #endif
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
@@ -254,11 +254,11 @@ int main(int argc, char **argv)
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "icgen_NG_MPI: updating internal boundaries\n";
 #endif
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "@@@@@@@@@@@@  UPDATING INTERNAL BOUNDARIES FOR LEVEL ";
     cout << l << "\n";
 #endif
@@ -270,11 +270,11 @@ int main(int argc, char **argv)
 
   // ----------------------------------------------------------------
   // update fine-to-coarse level boundaries
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "icgen_NG_MPI: updating F2C boundaries\n";
 #endif
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "NG_MPI updating F2C boundaries for level " << l << "\n";
     cout << l << "\n";
 #endif
@@ -315,7 +315,7 @@ int main(int argc, char **argv)
     if (err) rep.error("setting chemical states to equilibrium failed", err);
 
     SimPM.EP.update_erg = uerg;
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "MAIN: finished equilibrating the chemical species.\n";
 #endif
   }
@@ -390,7 +390,6 @@ int main(int argc, char **argv)
   args = 0;
   cout << "rank: " << SimPM.levels[0].MCMD.get_myrank();
   cout << " nproc: " << SimPM.levels[0].MCMD.get_nproc() << "\n";
-  COMM->finalise();
   delete COMM;
   COMM = 0;
   return err;

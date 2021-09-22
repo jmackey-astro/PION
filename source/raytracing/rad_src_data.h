@@ -11,8 +11,9 @@
 #ifndef RAD_SRC_DATA_H
 #define RAD_SRC_DATA_H
 
-#include "defines/functionality_flags.h"
-#include "defines/testing_flags.h"
+#include <defines/functionality_flags.h>
+#include <defines/testing_flags.h>
+#include <sim_constants.h>
 #include <string>
 #include <vector>
 

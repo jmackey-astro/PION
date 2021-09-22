@@ -24,9 +24,9 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "microphysics/integrator.h"
 #include <iostream>
@@ -497,7 +497,7 @@ int Integrator_Base::Stepper_RKCK(
   for (int v = 0; v < int_nvar; v++) {
     p1[v] = ptemp[v];
     if (isnan(p1[v]) || isinf(p1[v])) {
-#ifdef TESTING
+#ifndef NDEBUG
       commandline.console("Error >");
 #endif
       cerr << "\tSTEPPER:\t NANs encountered!\n";
@@ -509,7 +509,7 @@ int Integrator_Base::Stepper_RKCK(
     }
   }
 
-#ifdef TESTING
+#ifndef NDEBUG
   if (dp.c->id == 2773) {
     cout << "*********RKCK err estimate = " << maxerr * errtol << " after "
          << ct << " RKCK calls. rval=" << rval << " and dt=" << h << "\n";

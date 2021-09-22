@@ -38,9 +38,9 @@
 #include "tools/interpolate.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "microphysics/cooling_SD93_cie.h"
 
@@ -161,7 +161,7 @@ void cooling_function_SD93CIE::setup_SD93_cie()
 #ifdef DEBUG_COOL
   cout << "\t\t----------------------------------------------------\n";
 #endif
-#ifdef TESTING
+#ifndef NDEBUG
   ofstream outf("cooling_SD93_cie_solar.txt");
   if (!outf.is_open()) rep.error("couldn't open outfile", 1);
   outf << "SD93 Cooling: Temperature(K) Rate(cm^3/s) \n";
@@ -173,7 +173,7 @@ void cooling_function_SD93CIE::setup_SD93_cie()
     t *= 1.1;
   } while (t < 1.0e9);
   outf.close();
-#endif  // TESTING
+#endif  // NDEBUG
   return;
 }
 
@@ -273,7 +273,7 @@ void cooling_function_SD93CIE::setup_SD93_cie_OnlyMetals()
   interpolate.spline(Tarray, Larray, Nspl, 0.0, 0.0, spline_id);
 
   have_set_cooling = true;
-#ifdef TESTING
+#ifndef NDEBUG
   ofstream outf("cooling_SD93_cie_metalsonly.txt");
   if (!outf.is_open()) rep.error("couldn't open outfile", 1);
   outf << "SD93 Cooling: Temperature(K) Rate(cm^3/s) \n";
@@ -285,7 +285,7 @@ void cooling_function_SD93CIE::setup_SD93_cie_OnlyMetals()
     t *= 1.1;
   } while (t < 1.0e9);
   outf.close();
-#endif  // TESTING
+#endif  // NDEBUG
 #ifdef DEBUG_COOL
   cout << "\t\t----------------------------------------------------\n";
 #endif
@@ -390,7 +390,7 @@ void cooling_function_SD93CIE::setup_SD93_cie_MetalFree()
 #ifdef DEBUG_COOL
   cout << "\t\t----------------------------------------------------\n";
 #endif
-#ifdef TESTING
+#ifndef NDEBUG
   ofstream outf("cooling_SD93_cie_metalfree.txt");
   if (!outf.is_open()) rep.error("couldn't open outfile", 1);
   outf << "SD93 Cooling: Temperature(K) Rate(cm^3/s) \n";
@@ -402,7 +402,7 @@ void cooling_function_SD93CIE::setup_SD93_cie_MetalFree()
     t *= 1.1;
   } while (t < 1.0e9);
   outf.close();
-#endif  // TESTING
+#endif  // NDEBUG
   return;
 }
 
@@ -512,7 +512,7 @@ void cooling_function_SD93CIE::setup_WSS09_CIE_OnlyMetals()
   interpolate.spline(Tarray, Larray, Nspl, 0.0, 0.0, spline_id);
 
   have_set_cooling = true;
-#ifdef TESTING
+#ifndef NDEBUG
   ofstream outf("cooling_WSS09_CIE_metalsonly.txt");
   if (!outf.is_open()) rep.error("couldn't open outfile", 1);
   outf << "WSS09 metals-only Cooling: Temperature(K) Rate(cm^3/s) \n";
@@ -524,7 +524,7 @@ void cooling_function_SD93CIE::setup_WSS09_CIE_OnlyMetals()
     t *= 1.1;
   } while (t < 1.0e9);
   outf.close();
-#endif  // TESTING
+#endif  // NDEBUG
 #ifdef DEBUG_COOL
   cout << "\t\t----------------------------------------------------\n";
 #endif
@@ -637,7 +637,7 @@ void cooling_function_SD93CIE::setup_WSS09_CIE()
   interpolate.spline(Tarray, Larray, Nspl, 0.0, 0.0, spline_id);
 
   have_set_cooling = true;
-#ifdef TESTING
+#ifndef NDEBUG
   ofstream outf("cooling_WSS09_CIE_total.txt");
   if (!outf.is_open()) rep.error("couldn't open outfile", 1);
   outf << "WSS09 metals-only Cooling: Temperature(K) Rate(cm^3/s) \n";
@@ -649,7 +649,7 @@ void cooling_function_SD93CIE::setup_WSS09_CIE()
     t *= 1.1;
   } while (t < 1.0e9);
   outf.close();
-#endif  // TESTING
+#endif  // NDEBUG
 #ifdef DEBUG_COOL
   cout << "\t\t----------------------------------------------------\n";
 #endif

@@ -25,9 +25,9 @@
 
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "microphysics/MPv5.h"
 
@@ -50,7 +50,7 @@ MPv5::MPv5(
     ) :
     MPv3(nd, csys, nv, ntr, tracers, ephys, rsrcs, g)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "MPv5 constructor setting up.\n";
 #endif
   return;
@@ -61,7 +61,7 @@ MPv5::MPv5(
 
 MPv5::~MPv5()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "MPv5 destructor.\n";
 #endif
   return;

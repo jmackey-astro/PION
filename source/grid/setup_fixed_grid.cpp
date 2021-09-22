@@ -91,7 +91,7 @@ setup_fixed_grid::setup_fixed_grid()
 
 setup_fixed_grid::~setup_fixed_grid()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(setup_fixed_grid::Destructor) ..."
        << "\n";
 #endif
@@ -103,7 +103,7 @@ setup_fixed_grid::~setup_fixed_grid()
     delete spatial_solver;
     spatial_solver = 0;
   }
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(setup_fixed_grid::Destructor) Done."
        << "\n";
 #endif
@@ -156,9 +156,9 @@ int setup_fixed_grid::setup_grid(
 {
   cout << "(pion ug)  Setting up computational grid\n";
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Init::setup_grid: \n";
-#endif  // TESTING
+#endif  // NDEBUG
   class GridBaseClass **grid = &(g[0]);
 
   if (SimPM.ndim < 1 || SimPM.ndim > 3)
@@ -167,10 +167,10 @@ int setup_fixed_grid::setup_grid(
     //
     // Nbc is the depth of the boundary layer.
     //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting number of boundary cells == spatial OOA: ";
   cout << SimPM.spOOA << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
   if (SimPM.spOOA == OA2) {
     SimPM.Nbc    = 2;
     SimPM.Nbc_DD = 2;
@@ -209,7 +209,7 @@ int setup_fixed_grid::setup_grid(
   //
   // Now we can setup the grid:
   //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(setup_fixed_grid::setup_grid) Setting up grid...\n";
 #endif
   if (*grid) rep.error("Grid already set up!", *grid);
@@ -231,7 +231,7 @@ int setup_fixed_grid::setup_grid(
 
   if (*grid == 0)
     rep.error("(setup_fixed_grid::setup_grid) Couldn't assign data!", *grid);
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(setup_fixed_grid::setup_grid) Done. &grid=" << grid;
   cout << ", and grid=" << *grid << "\n";
   cout << "DX = " << (*grid)->DX() << "\n";
@@ -797,7 +797,7 @@ int setup_fixed_grid::boundary_conditions(
 )
 {
   // For uniform fixed cartesian grid.
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting up BCs in Grid with Nbc=" << par.Nbc << "\n";
 #endif
   //
@@ -812,7 +812,7 @@ int setup_fixed_grid::boundary_conditions(
   err = grid[0]->SetupBCs(par);
   rep.errorTest("sfg::boundary_conditions::SetupBCs", 0, err);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(setup_fixed_grid::boundary_conditions) Done.\n";
 #endif
   return 0;
@@ -826,17 +826,17 @@ int setup_fixed_grid::setup_boundary_structs(
     class GridBaseClass *grid,  ///< pointer to grid.
     const int)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Set BC types...\n";
 #endif
 
   // Set number of boundaries: 2 for each dimension, plus internal.
   int len = 2 * par.ndim + par.BC_Nint;
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Got " << len << " boundaries to set up.\n";
 #endif
   if (grid->BC_bd.size() == 0) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "size=" << grid->BC_bd.size() << " allocating boundaries\n";
 #endif
     for (int b = 0; b < len; b++) {
@@ -849,7 +849,7 @@ int setup_fixed_grid::setup_boundary_structs(
   else {
     // assume this has already been called so quit (happens for
     // MPI Nested Grid algorithm)
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "already set up boundaries, so returning here.\n";
 #endif
     return 0;
@@ -878,7 +878,7 @@ int setup_fixed_grid::setup_boundary_structs(
     grid->BC_bd[i]->dir =
         static_cast<direction>(i);  // XN=0,XP=1,YN=2,YP=3,ZN=4,ZP=5
     grid->BC_bd[i]->ondir = grid->OppDir(grid->BC_bd[i]->dir);
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "i=" << i << ", dir = " << grid->BC_bd[i]->dir
          << ", ondir=" << grid->BC_bd[i]->ondir << "\n";
 #endif
@@ -946,13 +946,13 @@ int setup_fixed_grid::setup_boundary_structs(
           "Boundary data not empty in constructor!",
           grid->BC_bd[i]->data.size());
     grid->BC_bd[i]->refval = 0;
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "\tBoundary type " << i << " is " << grid->BC_bd[i]->type << "\n";
 #endif
   }
 
   if (i < len) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "Got " << i << " boundaries, but have " << len << " boundaries.\n";
     cout << "Must have extra BCs... checking for internal BCs\n";
 #endif
@@ -987,14 +987,14 @@ int setup_fixed_grid::setup_boundary_structs(
             grid->BC_bd[i]->data.size());
       }
       grid->BC_bd[i]->refval = 0;
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "\tBoundary type " << i << " is " << grid->BC_bd[i]->type << "\n";
 #endif
       i++;
     } while (i < len);
   }
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << len << " BC structs set up.\n";
 #endif
   return 0;

@@ -18,9 +18,9 @@
 
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "microphysics/MPv8.h"
 
@@ -41,7 +41,7 @@ MPv8::MPv8(
     ) :
     MPv3(nd, csys, nv, ntr, tracers, ephys, rsrcs, g)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "MPv8 constructor setting up.\n";
 #endif
   gamma_minus_one = eos_gamma - 1.0;
@@ -91,11 +91,11 @@ MPv8::MPv8(
   cout << "\tPI-heating=" << SBHC_EEqHi << ", NT-heating=" << SBHC_EEqLo
        << "\n";
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "MPv8: Y=" << EP->Helium_MassFrac;
   cout << ", Z=" << EP->Metal_MassFrac << ", mmpH=" << mean_mass_per_H;
   cout << ", NION=" << JM_NION << ", NELEC=" << JM_NELEC << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
   return;
 }
 
@@ -104,7 +104,7 @@ MPv8::MPv8(
 
 MPv8::~MPv8()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "MPv8 destructor.\n";
 #endif
   return;
@@ -133,7 +133,7 @@ int MPv8::convert_prim2local(
   //
   p_local[lv_eint] = p_in[PG] / (gamma_minus_one);
 
-#ifdef TESTING
+#ifndef NDEBUG
   //
   // Check for NAN/INF
   //
@@ -143,7 +143,7 @@ int MPv8::convert_prim2local(
   }
   if (mpv_nH < 0.0 || !isfinite(mpv_nH))
     rep.error("Bad density input to MPv8::convert_prim2local", mpv_nH);
-#endif  // TESTING
+#endif  // NDEBUG
 
   return 0;
 }
@@ -175,14 +175,14 @@ int MPv8::convert_local2prim(
   //
   p_out[PG] = p_local[lv_eint] * (gamma_minus_one);
 
-#ifdef TESTING
+#ifndef NDEBUG
   if (p_out[pv_Hp] < 0.0 || p_out[pv_Hp] > 1.0 * (1.0 + JM_RELTOL)
       || !isfinite(p_out[pv_Hp]))
     rep.error(
         "Bad output H+ value in MPv8::convert_local2prim", p_out[pv_Hp] - 1.0);
   if (p_out[PG] < 0.0 || !isfinite(p_out[PG]))
     rep.error("Bad output pressure in MPv8::convert_local2prim", p_out[PG]);
-#endif  // TESTING
+#endif  // NDEBUG
 
   return 0;
 }
@@ -226,12 +226,12 @@ int MPv8::ydot(
 )
 {
 
-#ifdef TESTING
+#ifndef NDEBUG
   // cout <<"MPv8::ydot(): Y="<< EP->Helium_MassFrac;
   // cout <<", Z="<< EP->Metal_MassFrac <<", mmpH="<<mean_mass_per_H;
   // cout <<", NION="<< JM_NION <<", NELEC="<< JM_NELEC;
   // cout <<", Nnt="<<SBHC_Nnt<<"\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // Set initial values

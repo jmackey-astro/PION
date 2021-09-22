@@ -68,6 +68,7 @@ comm_mpi::~comm_mpi()
 #ifdef TEST_COMMS
   cout << "*** comm_mpi  destructor. ***\n";
 #endif
+  finalise();
 }
 
 // ##################################################################

@@ -50,9 +50,9 @@
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
 #include "tools/timer.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "ics/get_sim_info.h"
 #include "ics/icgen.h"
@@ -106,7 +106,6 @@ int main(int argc, char **argv)
   class get_sim_info *siminfo = 0;
   class ICsetup_base *ic      = 0;
   class ReadParams *rp        = 0;
-  class MCMDcontrol ppar;  // unused for serial code.
   class SimParams SimPM;
   MP = 0;  // global microphysics class pointer.
 

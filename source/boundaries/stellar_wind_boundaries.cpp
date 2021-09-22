@@ -33,7 +33,7 @@ int stellar_wind_bc::BC_assign_STWIND(
   // a stellar wind source to set up.
   //
   if (b->dir != NO) rep.error("STWIND not external boundary!", b->dir);
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Assigning data to STWIND boundary. Nsrc=";
   cout << SWP.Nsources << "\n";
 #endif
@@ -200,14 +200,14 @@ int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
   grid->Wind->get_src_posn(id, srcpos);
   grid->Wind->get_src_drad(id, &srcrad);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "*** srcrad=" << srcrad << "\n";
   rep.printVec("src", srcpos, par.ndim);
 #endif
 
   cell *c = grid->FirstPt_All();
   do {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "cell: " << grid->distance_vertex2cell(srcpos, c) << "\n";
 #endif
     if (grid->distance_vertex2cell(srcpos, c) <= srcrad) {
@@ -218,7 +218,7 @@ int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
 
   err += grid->Wind->set_num_cells(id, ncell);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "BC_assign_STWIND_add_cells2src: Added " << ncell;
   cout << " cells to wind boundary for WS " << id << "\n";
 #endif
@@ -265,7 +265,7 @@ int stellar_wind_bc::BC_update_STWIND(
       cell *c = grid->FirstPt_All();
       // loop over all cells
       do {
-#ifdef TESTING
+#ifndef NDEBUG
         cout << "cell: " << grid->distance_vertex2cell(srcpos, c) << "\n";
 #endif
         if (grid->distance_vertex2cell(srcpos, c) <= srcrad) {
@@ -312,12 +312,12 @@ int stellar_wind_bc::BC_update_STWIND(
   // for each source, together with pre-calculated state vectors,
   // so we just call the set_cell_values() function.
   //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "stellar_wind_bc: updating wind boundary\n";
 #endif
   // int err=0;
   for (int id = 0; id < grid->Wind->Nsources(); id++) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "stellar_wind_bc: updating wind boundary for id=" << id << "\n";
 #endif
     err += grid->Wind->set_cell_values(grid, id, simtime);

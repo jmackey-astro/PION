@@ -8,15 +8,19 @@
 /// Modifications:
 /// - 2015.01.12 JM: created file, moved class from global.h
 
-#include "constants.h"
-#include "defines/functionality_flags.h"
-#include "defines/testing_flags.h"
-#include "grid/cell_interface.h"
-#include "tools/command_line_interface.h"
-#include "tools/reporting.h"
+#include <constants.h>
+#include <defines/functionality_flags.h>
+#include <defines/testing_flags.h>
+#include <grid/cell_interface.h>
+#include <tools/command_line_interface.h>
+#include <tools/reporting.h>
 using namespace std;
 
-#ifdef TESTING
+#ifndef NDEBUG
+
+#include <readline/history.h>
+#include <readline/readline.h>
+
 class DebugParams dp;
 class CommandLineInterface commandline;
 
@@ -310,4 +314,4 @@ enum direction CommandLineInterface::parse_dir(const string s)
   return dir;
 }
 
-#endif  // TESTING
+#endif  // NDEBUG

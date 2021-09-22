@@ -17,7 +17,7 @@ int fixed_bc::BC_assign_FIXED(
     class GridBaseClass *grid,  ///< pointer to grid.
     boundary_data *b)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << " setup_fixed_grid::BC_assign_FIXED starting\n";
 #endif
   enum direction ondir = b->ondir;
@@ -36,7 +36,7 @@ int fixed_bc::BC_assign_FIXED(
   // corner cells, we can't guarantee that every boundary cell will
   // reach an on-grid cell by moving in the on-grid direction.
   //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Finding first on-grid cell, size=" << b->data.size() << ".\n";
 #endif
   do {
@@ -52,7 +52,7 @@ int fixed_bc::BC_assign_FIXED(
     //
     // Now set reference value to be the on-grid value.
     //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting reference value.\n";
 #endif
   for (int v = 0; v < par.nvar; v++)

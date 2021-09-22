@@ -21,9 +21,9 @@
 #include "tools/interpolate.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 //#define TEST_HUMMER94_COOLING_FUNCTION
 
@@ -117,7 +117,7 @@ Hummer94_Hrecomb::Hummer94_Hrecomb() : kB(1.381e-16)
   // cout << "\t\tB-tot min-slope="<<MinSlope_btot<<"
   // max-slope="<<MaxSlope_btot<<"\n";
 
-#ifdef TESTING
+#ifndef NDEBUG
   ofstream outf("hummer_recomb.txt");
   if (!outf.is_open()) rep.error("couldn't open outfile", 1);
   outf << "Hummer Recombination and Cooling Curve Data: Temperature(K) ";
@@ -137,7 +137,7 @@ Hummer94_Hrecomb::Hummer94_Hrecomb() : kB(1.381e-16)
     t *= 1.1;
   } while (t < 1.0e9);
   outf.close();
-#endif  // TESTING
+#endif  // NDEBUG
 
   return;
 }

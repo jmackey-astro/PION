@@ -18,7 +18,6 @@
 
 #include "boundaries/NG_BC89flux.h"
 #include "boundaries/assign_update_bcs_NG.h"
-#include "decomposition/MCMD_control.h"
 #include "grid/grid_base_class.h"
 #include "grid/uniform_grid.h"
 #include "setup_fixed_grid.h"

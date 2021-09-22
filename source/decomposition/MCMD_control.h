@@ -13,11 +13,12 @@
 #ifndef MCMD_CONTROL_H
 #define MCMD_CONTROL_H
 
-#include "constants.h"
-#include "defines/functionality_flags.h"
-#include "defines/testing_flags.h"
-#include "sim_constants.h"
+#include <constants.h>
+#include <defines/functionality_flags.h>
+#include <defines/testing_flags.h>
 #include <iostream>
+#include <mpi.h>
+#include <sim_constants.h>
 #include <vector>
 
 // ##################################################################
@@ -45,6 +46,7 @@ struct cgrid {
 class MCMDcontrol {
 public:
   MCMDcontrol();
+
   ~MCMDcontrol();
 
   /// Number of real grid-zones in each direction, on this
@@ -61,10 +63,8 @@ public:
   double LocalRange[MAX_DIM];  ///< Size of Processor's domain in
                                ///< x,y,z-direction.
 
-  int *ngbprocs;  ///< list with processor rank of neighbours in each
-                  ///< direction.
-
-  int parent_proc;  ///< process of the parent grid, if NG and l>0
+  std::vector<int> ngbprocs;  ///< list with processor rank of neighbours in
+                              ///< each direction.
 
   bool ReadSingleFile;   ///< If the ICs are in a single file, set this to true.
   bool WriteSingleFile;  ///< If you want all the processors to write to one
@@ -72,13 +72,27 @@ public:
   bool WriteFullImage;   ///< If you want multiple fits files, but each one is
                          ///< the full domain size
 
+  /// choose the topology of subdomains to minimise surface area
+  void calculate_process_topology(
+      std::vector<float> &&  ///< ranges of grid data
+  );
   ///
   /// Decompose the domain into blocks for each processor, and set up
   /// a structure which contains the domain of each processor.
   ///
   int decomposeDomain(
-      class SimParams &,  ///< pointer to simulation parameters
-      class level &       ///< pointer to domain parameters for NG grid level
+      const int &,         ///< number of dimensions
+      const class level &  ///< pointer to domain parameters for NG grid level
+  );
+
+  ///
+  /// Decompose the domain into blocks for each processor, and set up
+  /// a structure which contains the domain of each processor.
+  ///
+  int decomposeDomain(
+      const int &,          ///< number of dimensions
+      const class level &,  ///< pointer to domain parameters for NG grid level
+      std::vector<int> &&pbc  ///< boolean array of whether each face has pbc
   );
 
   ///
@@ -88,8 +102,70 @@ public:
   ///
   int decomposeDomain(
       const enum axes,
-      class SimParams &,  ///< simulation parameters
-      class level &       ///< domain parameters for NG grid level
+      const int &,         ///< number of dimensions
+      const class level &  ///< domain parameters for NG grid level
+  );
+
+  ///
+  /// Decompose the domain into blocks for each processor, and set up
+  /// a structure which contains the domain of each processor.
+  /// *** This version decomposes only along one axis ***
+  ///
+  int decomposeDomain(
+      const enum axes,
+      const int &,            ///< number of dimensions
+      const class level &,    ///< domain parameters for NG grid level
+      std::vector<int> &&pbc  ///< boolean array of whether each face has pbc
+  );
+
+  ///
+  /// Create a vector of child grids of this processes on level + 1
+  ///
+  void determine_parent_processes(
+      const class SimParams &par,  ///< simulation parameters
+      const int level              ///< level in grid hierarchy
+  );
+
+  ///
+  /// Determine the neighbours of this processes' children on level + 1
+  /// in neighbour_dimension recursively
+  ///
+  void determine_child_neighbour_ranks(
+      const class SimParams &par,   ///< simulation parameters
+      const int level,              ///< level in grid hierarchy
+      std::vector<double> &centre,  ///< centre of current local grid
+      std::vector<std::vector<int> >
+          &neighbours,  ///< resultant vector of child neighbour ranks
+      const int current_dimension,  ///< current dimension to traverse
+      const int
+          neighbour_dimension  ///< the dimension to search for neighbours in
+      ) const;
+
+  ///
+  /// Determine the neighbours of this processes' children on level + 1
+  ///
+  void determine_child_neighbours(
+      const class SimParams &par,  ///< simulation parameters
+      const int level              ///< level in grid hierarchy
+  );
+
+  ///
+  /// Determine the ranks of this processes children on level + 1
+  ///
+  void determine_child_ranks(
+      const class SimParams &par,   ///< simulation parameters
+      const int level,              ///< level in grid hierarchy
+      std::vector<int> &children,   ///< resultant vector of child process ranks
+      std::vector<double> &centre,  ///< centre of current local grid
+      const int current_dimension   ///< current dimension to traverse
+      ) const;
+
+  ///
+  /// Create a vector of child grids of this processes on level + 1
+  ///
+  void determine_child_processes(
+      const class SimParams &par,  ///< simulation parameters
+      const int level              ///< level in grid hierarchy
   );
 
   ///
@@ -103,33 +179,47 @@ public:
   ///
   /// Get a list of all abutting domains, including corner/edge
   /// intersections.
+  /// Helper function to recurse traversal of dimensions
   ///
-  void get_abutting_domains(
-      const int,          ///< grid dimensions
-      std::vector<int> &  ///< write list to this vector.
+  void create_abutting_domains_list(
+      int,   ///< current dimension to traverse
+      int[]  ///< position to traverse relative to
   );
+
+  ///
+  /// Get a list of all abutting domains, including corner/edge
+  /// intersections.
+  ///
+  void create_abutting_domains_list();
+
+  ///
+  /// Returns the rank of the parent process
+  ///
+  int get_parent_proc() { return pgrid.rank; }
 
   ///
   /// Returns the ix array for any requested rank.
   ///
-  void get_domain_ix(
-      const int,  ///< grid dimensions
+  void get_domain_coordinates(
       const int,  ///< rank ix requested for.
       int *       ///< array to put ix into.
-  );
+      ) const;
 
   ///
   /// Return rank of process that has grid that contains the
   /// requested position on a given refinement level.
   ///
-  int get_grid_rank(
-      class SimParams &,  ///< simulation parameters
-      const double *,     ///< location sought
-      const int           ///< grid level
-  );
+  int get_rank_from_grid_location(
+      const class SimParams &,      ///< simulation parameters
+      const std::vector<double> &,  ///< location sought
+      const int                     ///< grid level
+      ) const;
+
+  /// get number of active dimensions
+  int get_ndim() const { return m_ndim; }
 
   /// get my process rank
-  int get_myrank() { return myrank; }
+  int get_myrank() const { return myrank; }
   /// set my process rank
   void set_myrank(const int r)
   {
@@ -137,7 +227,7 @@ public:
     return;
   }
   /// get number of MPI processes
-  int get_nproc() { return nproc; }
+  int get_nproc() const { return nproc; }
   /// set number of MPI processes
   void set_nproc(const int n)
   {
@@ -146,16 +236,43 @@ public:
   }
 
   /// get data on parent grid, if it exists
-  void get_parent_grid_info(struct cgrid *cg);
+  void get_parent_grid_info(struct cgrid *cg) const;
 
   /// get data on neighbouring grids to parent grid, if they exist
-  void get_parent_ngb_grid_info(std::vector<struct cgrid> &pgngb);
+  void get_parent_ngb_grid_info(std::vector<struct cgrid> &pgngb) const;
 
   /// get data on child grids, if they exist
-  void get_child_grid_info(std::vector<struct cgrid> &cg);
+  void get_child_grid_info(std::vector<struct cgrid> &cg) const;
 
   /// get data on neighbouring grids on level l+1, if they exist.
-  void get_level_lp1_ngb_info(std::vector<std::vector<struct cgrid> > &cgngb);
+  void get_level_lp1_ngb_info(
+      std::vector<std::vector<struct cgrid> > &cgngb) const;
+
+  /// get the Cartesian communicator
+  MPI_Comm get_communicator() const { return cart_comm; }
+
+  /// gather each LocalNcell variable at the root process
+  void gather_ncells(int *recv_buffer, const int &root) const;
+
+  /// gather each LocalNcell variable at each process
+  void allgather_ncells(std::vector<int> &ncells_list) const;
+
+  /// gather LocalXmax and LocalXmin arrays at the root process
+  void gather_extents(double *recv_buffer, const int &root) const;
+
+  /// gather offsets arrays at the root process
+  void gather_offsets(std::vector<int> &offsets_list, const int &root) const;
+
+  /// gather localNG arrays at the root process
+  void gather_localNG(std::vector<int> &localNG_list, const int &root) const;
+
+  /// gather rank ordered list of number of local abutting domains and their
+  /// displacements in the global list
+  void gather_abutting_domains(
+      std::vector<int> &abutting_domains_list,
+      int *rank_displacements_in_abutting_domains_list,
+      int *num_abutting_domains_by_rank,
+      const int &root);
 
 protected:
   int nproc;   ///< Number of processors.
@@ -167,8 +284,14 @@ protected:
   ///< size of block of domains in each direction. (one block = one unit).
   int nx[MAX_DIM];
 
+  /// booleans for whether a dimension has pbc
+  std::vector<int> periodic;
+
+  /// number of active dimensions
+  int m_ndim;
+
   ///< list of abutting domains.
-  std::vector<int> full_ngb_list;
+  std::vector<int> abutting_domains;
 
   /// data for the parent grid (xmin,xmax,etc)
   struct cgrid pgrid;
@@ -186,23 +309,9 @@ protected:
   /// a process can have up to 2**NDIM child grids.
   std::vector<struct cgrid> child_procs;
 
-  ///
-  /// Called by decomposeDomain() to set neighbouring processor ids.
-  ///
-  /// This works if processors are ranked from zero to n-1 in integer steps.
-  /// If a subdomain is on the full domain boundary, the processor neighbour
-  /// in that direction is set to -999.
-  ///
-  /// The rank of processor i is defined by
-  /// \f[ \mbox{myrank} = n_x*n_y*i_z + n_x*i_y + i_x \f]
-  /// where the 'n's refer to number of processors that span the domain
-  /// in each direction, and 'i's refer to the location of the current
-  /// processor along that direction.
-  ///
-  int pointToNeighbours(
-      class SimParams &,  ///< pointer to simulation parameters
-      class level &       ///< pointer to domain parameters for NG grid level
-  );
+  /// communicator created by MPI_Cart_create with Cartesian domain
+  /// decomposition
+  MPI_Comm cart_comm;
 };
 
 #endif  // MCMD_CONTROL_H

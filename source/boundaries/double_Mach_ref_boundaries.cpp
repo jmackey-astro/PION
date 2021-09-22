@@ -17,9 +17,9 @@ int double_Mach_ref_bc::BC_assign_DMACH(
     class GridBaseClass *grid,  ///< pointer to grid.
     boundary_data *b)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting up DMACH boundary... starting.\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   if (b->data.empty()) {
     rep.error("BC_assign_DMACH: empty boundary data", b->itype);
@@ -83,9 +83,9 @@ int double_Mach_ref_bc::BC_assign_DMACH(
   if (ct != b->data.size()) {
     rep.error("BC_assign_: missed some cells!", ct - b->data.size());
   }
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting up DMACH boundary... finished.\n";
-#endif  // TESTING
+#endif  // NDEBUG
   return 0;
 }
 
@@ -97,9 +97,9 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
     class GridBaseClass *grid,  ///< pointer to grid.
     boundary_data *b)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting up DMACH2 boundary... starting.\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   if (b->dir != NO) {
     rep.error("DMACH2 not internal boundary!", b->dir);
@@ -126,7 +126,15 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
   if (!b->data.empty()) {
     rep.error("BC_assign_DMACH2: Not empty boundary data", b->itype);
   }
-  cell *c    = grid->FirstPt();
+  cell *c = grid->FirstPt();
+  //
+  // if running in parallel, need to check that YN boundary of grid
+  // is also YN boundary of full domain:
+  //
+  if (c->pos[YY] > grid->idx()) {
+    cout << "domain is not at YN boundary, returning.\n";
+    return 0;
+  }
   cell *temp = 0;
   do {
     //
@@ -149,9 +157,9 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
     }
   } while ((c = grid->NextPt(c, XP)) && (CI.get_dpos(c, XX) <= 1. / 6.));
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting up DMACH2 boundary... finished.\n";
-#endif  // TESTING
+#endif  // NDEBUG
   return 0;
 }
 

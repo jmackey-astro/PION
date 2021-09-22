@@ -171,13 +171,14 @@ protected:
   /// jobs, where M and N are not equal.
   ///
   int parallel_read_parallel_silodata(
-      string,                 ///< file to read from
-      class GridBaseClass *,  ///< pointer to data.
-      class SimParams &,      ///< pointer to simulation parameters
-      const int,              ///< number of files
-      const int,              ///< number of groups
-      const int,              ///< number of processes used to write file.
-      const int               ///< level in grid hierarchy
+      string,                   ///< file to read from
+      class GridBaseClass *,    ///< pointer to data.
+      class SimParams &,        ///< pointer to simulation parameters
+      const int,                ///< number of files
+      const int,                ///< number of groups
+      const int,                ///< number of processes used to write file.
+      const int,                ///< level in grid hierarchy
+      const std::vector<int> &  ///< number of cells in each file
   );
 
   ///

@@ -158,7 +158,7 @@ public:
   /// Print out a vector.
   ///
   template<class T>
-  inline void printSTLVec(
+  inline void printVec(
       string msg,                ///< Name of Vector
       const std::vector<T> &vec  ///< pointer to vector
   )

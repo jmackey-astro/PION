@@ -29,9 +29,9 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "eqns_mhd_adiabatic.h"
 #include "microphysics/microphysics_base.h"
@@ -50,7 +50,7 @@ eqns_mhd_ideal::eqns_mhd_ideal(int nv) : eqns_base(nv)
   cout << "eqns_mhd_ideal::eqns_mhd_ideal ...starting.\n";
 #endif  // FUNCTION_ID
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(eqns_mhd_ideal::eqns_mhd_ideal) Setting up Ideal MHD Equations "
           "class.\n";
 #endif
@@ -69,7 +69,7 @@ eqns_mhd_ideal::eqns_mhd_ideal(int nv) : eqns_base(nv)
 
 eqns_mhd_ideal::~eqns_mhd_ideal()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(eqns_mhd_ideal::~eqns_mhd_ideal) Deleting  Ideal MHD Equations "
           "class.\n";
 #endif
@@ -155,7 +155,7 @@ int eqns_mhd_ideal::check_pressure(
       cout << "(eqns_mhd_ideal::check_pressure) negative density!  ";
       rep.printVec("u", u, eq_nvar);
       rep.printVec("p", p, eq_nvar);
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "NEG.DENS.CELL:";
       CI.print_cell(dp.c);
 #endif
@@ -513,7 +513,7 @@ void eqns_mhd_ideal::SetAvgState(
   eq_refvec[eqVX] = eq_refvec[eqVY] = eq_refvec[eqVZ] = 0.1 * refvel;
   eq_refvec[eqBX] = eq_refvec[eqBY] = eq_refvec[eqBZ] = refB;
 
-#ifdef TESTING
+#ifndef NDEBUG
   rep.printVec("eq_refvec", eq_refvec, eq_nvar);
 #endif
   return;

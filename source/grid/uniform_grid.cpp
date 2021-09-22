@@ -137,7 +137,7 @@ UniformGrid::UniformGrid(
 // BC_nbc(Nbc)
 {
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting up UniformGrid with G_ndim=" << G_ndim
        << " and G_nvar=" << G_nvar << "\n";
   rep.printVec("\tXmin", g_xn, nd);
@@ -242,7 +242,7 @@ UniformGrid::UniformGrid(
     G_nbc[2 * i + 1] = 0;
   }
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "MIN.MAX for x = " << G_xmin[XX] << "\t" << G_xmax[XX] << "\n";
   cout << "Setting cell size...\n";
 #endif
@@ -271,38 +271,38 @@ UniformGrid::UniformGrid(
   // Now create the first cell, and then allocate data from there.
   // Safe to assume we have at least one cell...
   //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << " done.\n Initialising first cell...\n";
-#endif  // TESTING
+#endif  // NDEBUG
   G_fpt_all     = CI.new_cell();
   G_fpt_all->id = 0;
-#ifdef TESTING
+#ifndef NDEBUG
   cout << " done.\n";
-#endif  // TESTING
+#endif  // NDEBUG
   if (G_fpt_all == 0) {
     rep.error("Couldn't assign memory to first cell in grid.", G_fpt_all);
   }
 #endif  // NEWGRIDDATA
 
   // allocate memory for all cells, including boundary cells.
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "\t allocating memory for grid.\n";
-#endif  // TESTING
+#endif  // NDEBUG
   int err = allocate_grid_data();
   if (err != 0) rep.error("Error setting up grid, allocate_grid_data", err);
 
     // assign grid structure on cells, setting positions and ngb
     // pointers.
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "\t assigning pointers to neighbours.\n";
-#endif  // TESTING
+#endif  // NDEBUG
   err += assign_grid_structure();
   if (err != 0) rep.error("Error setting up grid, assign_grid_structure", err);
 
-#ifdef TESTING
+#ifndef NDEBUG
   rep.printVec("\tFirst Pt. integer position", FirstPt()->pos, nd);
   rep.printVec("\tLast  Pt. integer position", LastPt()->pos, nd);
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // Leave boundaries uninitialised.
@@ -352,7 +352,7 @@ UniformGrid::UniformGrid(
     }
   } while ((c = NextPt_All(c)) != 0);
 
-#ifdef TESTING
+#ifndef NDEBUG
   rep.printVec("grid ixmin ", G_ixmin, G_ndim);
   rep.printVec("grid ixmax ", G_ixmax, G_ndim);
   rep.printVec("grid irange", G_irange, G_ndim);
@@ -373,12 +373,12 @@ UniformGrid::UniformGrid(
   rep.printVec("boundary depth", G_nbc, 2 * G_ndim);
 #endif
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Cartesian grid: dr=" << G_dx << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
   RT = 0;
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "UniformGrid Constructor done.\n";
 #endif
 }  // UniformGrid Constructor
@@ -439,7 +439,7 @@ UniformGrid::~UniformGrid()
 
   BC_deleteBoundaryData();
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "UniformGrid Destructor:\tdone.\n";
 #endif
 }  // Destructor
@@ -453,7 +453,7 @@ UniformGrid::~UniformGrid()
 
 int UniformGrid::allocate_grid_data()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "\tAllocating grid data... G_ncell=" << G_ncell << "\n";
 #endif
 #ifdef NEWGRIDDATA
@@ -484,7 +484,7 @@ int UniformGrid::allocate_grid_data()
   // that the cells are a linked list.
   size_t ix = 0;
   for (size_t i = 0; i < G_ncell_all; i++) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "i=" << i << " of " << G_ncell_all;
     cout << ": ix=" << ix << ", nel=" << nel << "\n";
 #endif
@@ -508,9 +508,9 @@ int UniformGrid::allocate_grid_data()
   c->npt_all = 0;
   G_lpt_all  = c;
 #endif  // NEWGRIDDATA
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "\tFinished Allocating Data.\n";
-#endif  // TESTING
+#endif  // NDEBUG
   return 0;
 }  // allocate_grid_data
 
@@ -526,9 +526,9 @@ int UniformGrid::allocate_grid_data()
 
 int UniformGrid::assign_grid_structure()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "\tAssignGridStructure.\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   /// \section Structure
   /// There is a base grid, Nx,Ny,Nz elements, which is
@@ -556,7 +556,7 @@ int UniformGrid::assign_grid_structure()
   // for (int i=0; i<G_ndim; i++) {
   //  offset[i] = 1+
   //  2*static_cast<int>(ONE_PLUS_EPS*(G_xmin[i]-Sim_xmin[i])/G_dx);
-#ifdef TESTING
+#ifndef NDEBUG
   //  cout <<"************OFFSET["<<i<<"] = "<<offset[i]<<"\n";
 #endif
   //}
@@ -576,9 +576,9 @@ int UniformGrid::assign_grid_structure()
 
   class cell *c = FirstPt_All();
   do {
-#ifdef TESTING
+#ifndef NDEBUG
     // cout <<"Cell positions: id = "<<c->id<<"\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
     //
     // Assign positions, for integer positions the first on-grid cell
@@ -593,9 +593,9 @@ int UniformGrid::assign_grid_structure()
     for (int i = 0; i < G_ndim; i++)
       dpos[i] = G_xmin[i] + G_dx * (ix[i] + 0.5);
     CI.set_pos(c, dpos);
-#ifdef TESTING
+#ifndef NDEBUG
     // rep.printVec("    pos", c->pos, G_ndim);
-#endif  // TESTING
+#endif  // NDEBUG
 
     //
     // Initialise the cell data to zero.
@@ -614,24 +614,24 @@ int UniformGrid::assign_grid_structure()
     bool on_grid = true;
     for (int v = 0; v < G_ndim; v++)
       if (dpos[v] < G_xmin[v] || dpos[v] > G_xmax[v]) on_grid = false;
-#ifdef TESTING
+#ifndef NDEBUG
         // rep.printVec("    dpos",dpos,G_ndim);
         // rep.printVec("    xmax",G_xmax,G_ndim);
-#endif  // TESTING
+#endif  // NDEBUG
 
     if (on_grid) {
       c->isgd = true;
       c->isbd = false;
-#ifdef TESTING
+#ifndef NDEBUG
       // cout <<"    cell is on grid";
-#endif  // TESTING
+#endif  // NDEBUG
     }
     else {
       c->isgd = false;
       c->isbd = true;
-#ifdef TESTING
+#ifndef NDEBUG
       // cout <<"    cell NOT on grid";
-#endif  // TESTING
+#endif  // NDEBUG
     }
 
     ///
@@ -732,13 +732,13 @@ int UniformGrid::assign_grid_structure()
   } while ((c = NextPt_All(c)) != 0);
   // ---------------------- SET CELL POSITIONS ----------------------
   // ----------------------------------------------------------------
-#ifdef TESTING
+#ifndef NDEBUG
   // c = FirstPt_All();
   // do {
   //  cout <<"Cell id = "<<c->id<<"\n";
   //  rep.printVec("cell pos",c->pos,G_ndim);
   //} while ( (c=NextPt_All(c))!=0);
-#endif  // TESTING
+#endif  // NDEBUG
 
   // ----------------------------------------------------------------
   // ----------------------  SET npt POINTERS  ----------------------
@@ -916,7 +916,7 @@ int UniformGrid::set_cell_size()
   // Uniform Cartesian grid, with cells that have the same length in
   // each direction, so this is very easy...
   //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "\t Setting G_dx=constant for all cells.\n";
 #endif
 
@@ -1031,7 +1031,7 @@ class cell *UniformGrid::FirstPt_All()
 
 class cell *UniformGrid::LastPt()
 {
-  //#ifdef TESTING
+  //#ifndef NDEBUG
   //  cout <<"Last Point is :"<<G_lpt; CI.print_cell(G_lpt);
   //#endif
   return (G_lpt);
@@ -1068,10 +1068,10 @@ class cell *UniformGrid::PrevPt(const class cell *p, enum direction dir)
   /// this function, but to call NextPt in the reverse direction.
   ///
   enum direction opp = OppDir(dir);
-#ifdef TESTING
+#ifndef NDEBUG
   // This is going to be very inefficient...
   cout << "This function is very inefficient and probably shouldn't be used.\n";
-#endif  // TESTING
+#endif  // NDEBUG
   return (p->ngb[opp]);
 }
 
@@ -1329,7 +1329,7 @@ void UniformGrid::BC_deleteBoundaryData(boundary_data *b)
 
   list<cell *>::iterator i = b->data.begin();
   if (b->data.empty()) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "BC destructor: No boundary cells to delete.\n";
 #endif
   }
@@ -1392,7 +1392,7 @@ void UniformGrid::BC_deleteBoundaryData(boundary_data *b)
 
 void UniformGrid::BC_deleteBoundaryData()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "BC destructor: deleting Boundary data...\n";
 #endif
   struct boundary_data *b;
@@ -1662,14 +1662,14 @@ uniform_grid_cyl::uniform_grid_cyl(
         nd, nv, eqt, Nbc, g_xn, g_xp, g_nc, lev_xn, lev_xp, sim_xn, sim_xp),
     VectorOps_Cyl(nd)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting up cylindrical uniform grid with";
   cout << " G_ndim=" << G_ndim << " and G_nvar=" << G_nvar << "\n";
 #endif
   if (G_ndim != 2) rep.error("Need to write code for !=2 dimensions", G_ndim);
   G_coordsys = COORD_CYL;  // Cylindrical Coordinate system
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "cylindrical grid: dr=" << G_dx << "\n";
 #endif
   return;
@@ -1684,7 +1684,7 @@ uniform_grid_cyl::uniform_grid_cyl(
 
 uniform_grid_cyl::~uniform_grid_cyl()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "uniform_grid_cyl destructor. Present and correct!\n";
 #endif
 }
@@ -1969,14 +1969,14 @@ uniform_grid_sph::uniform_grid_sph(
         nd, nv, eqt, Nbc, g_xn, g_xp, g_nc, lev_xn, lev_xp, sim_xn, sim_xp),
     VectorOps_Cyl(nd), VectorOps_Sph(nd)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "Setting up spherical uniform grid with";
   cout << " G_ndim=" << G_ndim << " and G_nvar=" << G_nvar << "\n";
 #endif
   if (G_ndim != 1) rep.error("Need to write code for >1 dimension", G_ndim);
   G_coordsys = COORD_SPH;  // Spherical Coordinate system
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "spherical grid: dr=" << G_dx << "\n";
 #endif
   return;
@@ -1991,7 +1991,7 @@ uniform_grid_sph::uniform_grid_sph(
 
 uniform_grid_sph::~uniform_grid_sph()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "uniform_grid_sph destructor. Present and correct!\n";
 #endif
 }

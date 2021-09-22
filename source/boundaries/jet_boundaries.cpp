@@ -36,9 +36,9 @@ int jet_bc::BC_assign_JETBC(
   // Set the physical radius of jet.
   //
   double jr = JP.jetradius * grid->DX();
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "jetrad=" << JP.jetradius << " dx=" << grid->DX() << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // Assign reference values, containing Jet parameters:

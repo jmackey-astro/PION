@@ -11,17 +11,14 @@
 #ifndef COMMAND_LINE_INTERFACE_H
 #define COMMAND_LINE_INTERFACE_H
 
-#include "defines/functionality_flags.h"
-#include "defines/testing_flags.h"
+#include <defines/functionality_flags.h>
+#include <defines/testing_flags.h>
 
-#include "grid/grid_base_class.h"
+#include <grid/grid_base_class.h>
 
 #include <string>
 
-#ifdef TESTING
-
-#include <readline/history.h>
-#include <readline/readline.h>
+#ifndef NDEBUG
 
 /// \brief class for debugging the code, tracking energy/momentum to make
 /// sure it is conserved, etc.
@@ -113,6 +110,6 @@ private:
 
 extern class CommandLineInterface commandline;
 
-#endif  // TESTING
+#endif  // NDEBUG
 
 #endif  // COMMAND_LINE_INTERFACE_H

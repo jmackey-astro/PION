@@ -796,7 +796,6 @@ int main(int argc, char **argv)
 
   delete MP; MP=0;
 
-  COMM->finalise();
   delete COMM; COMM=0;
 
   return 0;

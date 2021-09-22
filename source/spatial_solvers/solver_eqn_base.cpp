@@ -401,9 +401,9 @@ int FV_solver_base::calc_Hcorrection(
     class SimParams &SimPM,  ///< pointer to simulation parameters
     class GridBaseClass *grid)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "\t\t\tcalc_Hcorrection() ndim = " << SimPM.ndim << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // This function is quite similar to calc_dU() and dU_column()
@@ -442,9 +442,9 @@ int FV_solver_base::calc_Hcorrection(
   // Loop through each direction.
   //
   for (int idim = 0; idim < SimPM.ndim; idim++) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "\t\t\tidim=" << idim << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
     SetDirection(axis[idim]);
     class cell *start  = grid->FirstPt_All();
     class cell *marker = grid->FirstPt_All();
@@ -651,10 +651,10 @@ double FV_solver_base::select_Hcorr_eta(
   //
   // Will want to comment this out later...
   //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "cell id=" << cl->id << " axis=" << axis << ", eta_max=" << eta
        << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   return eta;
 }

@@ -154,7 +154,7 @@ int main(int argc, char **argv)
     SimPM.levels[0].simtime = SimPM.simtime;
     SimPM.levels[0].dt = 0.0;
     SimPM.levels[0].multiplier = 1;
-    err  = SimPM.levels[0].MCMD.decomposeDomain(SimPM,SimPM.levels[0]);
+    err  = SimPM.levels[0].MCMD.decomposeDomain(SimPM.ndim,SimPM.levels[0]);
     if (err) rep.error("main: failed to decompose domain!",err);
   
     // *****************************************************
@@ -220,7 +220,6 @@ int main(int argc, char **argv)
   //
   // Finish up and quit.
   //
-  COMM->finalise();
   delete COMM; COMM=0;
   delete MP; MP=0;
   //MPI_Finalize();

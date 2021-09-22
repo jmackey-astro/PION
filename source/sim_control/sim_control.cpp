@@ -185,7 +185,7 @@ sim_control::sim_control() {}
 
 sim_control::~sim_control()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(sim_control::Destructor)\n";
 #endif
 }
@@ -208,8 +208,7 @@ int sim_control::Time_Int(
   SimPM.maxtime = false;
   clk.start_timer("time_int");
   double tsf = 0;
-  class MCMDcontrol ppar;  // unused for serial code.
-  err = update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
+  err        = update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
   rep.errorTest("TIME_INT:: initial RT src update()", 0, err);
   err = RT_all_sources(SimPM, grid[0], 0);
   rep.errorTest("TIME_INT:: initial RT()", 0, err);
@@ -446,7 +445,7 @@ int sim_control::Finalise(vector<class GridBaseClass *>
   rep.errorTest("(FINALISE::output_data) Something went wrong", 0, err);
   cout << "\tSimTime = " << SimPM.simtime
        << "   #timesteps = " << SimPM.timestep << "\n";
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "(sim_control::Finalise) DONE.\n";
 #endif
   cout << "------------------------------------------------------------\n";

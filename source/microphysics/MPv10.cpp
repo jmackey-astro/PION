@@ -35,9 +35,9 @@
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
 #include <set>
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "microphysics/MPv10.h"
 
@@ -384,7 +384,7 @@ MPv10::MPv10(
 
   // ================================================================
   // ================================================================
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "MPv10:: EP and RS: " << EP << "\t" << RS << endl;
 #endif
 
@@ -809,7 +809,7 @@ int MPv10::convert_prim2local(
     X_elem_number_density[i] = n_X;
   }
 
-  // rep.printSTLVec("n_x",X_elem_number_density);
+  // rep.printVec("n_x",X_elem_number_density);
   //
   // ==============================================================
   //                 Set INTERNAL ENERGY in local vector.

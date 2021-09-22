@@ -90,7 +90,7 @@ UniformGridParallel::UniformGridParallel(
     UniformGrid(nd, nv, eqt, nbc, xn, xp, nc, lev_xn, lev_xp, sim_xn, sim_xp)
 {
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "UniformGridParallel constructor.\n";
   rep.printVec("Local Xmin", xn, nd);
   rep.printVec("Local Xmax", xp, nd);
@@ -145,13 +145,13 @@ uniform_grid_cyl_parallel::uniform_grid_cyl_parallel(
     uniform_grid_cyl(
         nd, nv, eqt, nbc, xn, xp, nc, lev_xn, lev_xp, sim_xn, sim_xp)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "uniform_grid_cyl_parallel:: cyl. uniform PARALLEL grid";
   cout << " G_ndim=" << G_ndim << " and G_nvar=" << G_nvar << "\n";
 #endif
   if (G_ndim > 2) rep.error("Need to write code for 3 dimensions", G_ndim);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "cylindrical grid: dR=" << G_dx << "\n";
 #endif
   return;
@@ -162,7 +162,7 @@ uniform_grid_cyl_parallel::uniform_grid_cyl_parallel(
 
 uniform_grid_cyl_parallel::~uniform_grid_cyl_parallel()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "uniform_grid_cyl_parallel destructor. Present and correct!\n";
 #endif
 }
@@ -221,13 +221,13 @@ uniform_grid_sph_parallel::uniform_grid_sph_parallel(
     uniform_grid_sph(
         nd, nv, eqt, nbc, xn, xp, nc, lev_xn, lev_xp, sim_xn, sim_xp)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "uniform_grid_sph_parallel:: sph. uniform PARALLEL grid";
   cout << " G_ndim=" << G_ndim << " and G_nvar=" << G_nvar << "\n";
 #endif
   if (G_ndim != 1) rep.error("Need to write code for >1 dimension", G_ndim);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "spherical grid: dr=" << G_dx << "\n";
 #endif
   return;
@@ -238,7 +238,7 @@ uniform_grid_sph_parallel::uniform_grid_sph_parallel(
 
 uniform_grid_sph_parallel::~uniform_grid_sph_parallel()
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "uniform_grid_sph_parallel destructor. Present and correct!\n";
 #endif
 }

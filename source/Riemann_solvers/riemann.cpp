@@ -141,7 +141,7 @@ riemann_Euler::riemann_Euler(
   cout << "riemann_Euler::riemann_Euler ...starting.\n";
 #endif  // FUNCTION_ID
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "riemann_Euler::riemann_Euler: eqnvar=" << eq_nvar << "\n";
 #endif
   if (eq_nvar < 5) {

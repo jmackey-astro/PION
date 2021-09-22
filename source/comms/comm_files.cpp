@@ -191,7 +191,7 @@ int comm_files::abort()
 
 int comm_files::barrier(const std::string msg)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "comm_files::barrier(): " << msg << "\n";
 #endif
   //
@@ -220,7 +220,7 @@ int comm_files::barrier(const std::string msg)
   }
 
   remove(tmp.str().c_str());
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "comm_files::barrier(): barrier crossed: " << msg << "\n";
 #endif
   return 0;
@@ -263,7 +263,7 @@ double comm_files::global_operation_double(
       ifstream infile(f.str().c_str(), ios_base::binary);
       // infile >> vals[r];
       infile.read(reinterpret_cast<char *>(&(vals[r])), sizeof(double));
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "global_operation_double() " << s << " got value " << vals[r]
            << " from file " << f.str() << "\n";
 #endif
@@ -304,7 +304,7 @@ double comm_files::global_operation_double(
     outfile.write(reinterpret_cast<char *>(&global), sizeof(double));
     outfile.close();
     fs.release_lock(f.str());
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "global_operation_double() " << s << " : global value = " << global
          << "\n";
 #endif
@@ -329,7 +329,7 @@ double comm_files::global_operation_double(
     // infile >>global;
     infile.read(reinterpret_cast<char *>(&global), sizeof(double));
     infile.close();
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "global_operation_double() " << s
          << " : read global value = " << global << "\n";
 #endif
@@ -409,7 +409,7 @@ int comm_files::broadcast_data(
     wait_for_file(f.str());
     fs.acquire_lock(f.str());
     ifstream infile(f.str().c_str(), ios_base::binary);
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "broadcast_data() " << type << ": received data: [";
 #endif
     if (type == "DOUBLE") {
@@ -417,7 +417,7 @@ int comm_files::broadcast_data(
       for (int i = 0; i < n_el; i++)
         infile.read(reinterpret_cast<char *>(&(d[i])), sizeof(double));
         // infile>>d[i];
-#ifdef TESTING
+#ifndef NDEBUG
       for (int i = 0; i < n_el; i++)
         cout << d[i] << ", ";
 #endif
@@ -427,7 +427,7 @@ int comm_files::broadcast_data(
       for (int i = 0; i < n_el; i++)
         infile.read(reinterpret_cast<char *>(&(d[i])), sizeof(int));
         // infile>>d[i];
-#ifdef TESTING
+#ifndef NDEBUG
       for (int i = 0; i < n_el; i++)
         cout << d[i] << ", ";
 #endif
@@ -437,7 +437,7 @@ int comm_files::broadcast_data(
       for (int i = 0; i < n_el; i++)
         infile.read(reinterpret_cast<char *>(&(d[i])), sizeof(float));
         // infile>>d[i];
-#ifdef TESTING
+#ifndef NDEBUG
       for (int i = 0; i < n_el; i++)
         cout << d[i] << ", ";
 #endif
@@ -470,9 +470,9 @@ int comm_files::send_cell_data(
     const int comm_tag  ///< comm_tag, to say what kind of send this is.
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "rank: " << myrank << "  comm_files::send_cell_data() starting. \n";
-#endif  // TESTING
+#endif  // NDEBUG
   //
   // First initialise everything and check we have cells to get data from.
   //
@@ -498,11 +498,11 @@ int comm_files::send_cell_data(
   // Allocate memory for the record of the send.
   //
   struct sent_info *si = 0;
-#ifdef TESTING
+#ifndef NDEBUG
   si = mem.myalloc(si, 1, "comm_files:send_cell_data: si");
 #else
   si   = mem.myalloc(si, 1);
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // ALL SAME AS MPI VERSION UP TO HERE, NOW WE PACK+SEND DATA DIFFERENTLY IN
@@ -558,12 +558,12 @@ int comm_files::send_cell_data(
   outfile.close();
   fs.release_lock(f.str());
   f.str("");
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "rank: " << myrank
        << "  comm_files::send_cell_data() comm_tag=" << comm_tag << " nc=" << nc
        << " \n";
   cout << "rank: " << myrank << "  comm_files::send_cell_data() returning.\n";
-#endif  // TESTING
+#endif  // NDEBUG
   return 0;
 }
 
@@ -574,10 +574,10 @@ int comm_files::wait_for_send_to_finish(
     string &id  ///< identifier for the send we are waiting on.
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "rank: " << myrank
        << "  comm_files::wait_for_send_to_finish() starting\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // Find the send in the list of active sends, based on the identifier
@@ -586,12 +586,12 @@ int comm_files::wait_for_send_to_finish(
   int el = 0;
   list<sent_info *>::iterator i;
   struct sent_info *si = 0;
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "rank: " << myrank
        << "  comm_files::wait_for_send_to_finish() more than one send, so "
           "finding in list.\n";
   cout << "\t\tsend id=" << id << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   for (i = sent_list.begin(); i != sent_list.end(); ++i) {
     si = (*i);
@@ -600,11 +600,11 @@ int comm_files::wait_for_send_to_finish(
   }
 
   if (i == sent_list.end()) rep.error("Failed to find send with id:", id);
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "found send id=" << si->id << " and looking for id=" << id << "\n";
   cout << "rank: " << myrank
        << "  comm_files::wait_for_send_to_finish() found this send.\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // Now we have the record of the send, so we wait for receiver to finish
@@ -612,23 +612,23 @@ int comm_files::wait_for_send_to_finish(
   //
   wait_for_peer_to_read_file(si->id);
   remove((si->id).c_str());
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "rank: " << myrank
        << "  comm_files::wait_for_send_to_finish() peer has read file, and I "
           "deleted it.\n";
 #endif
 
-#ifdef TESTING
+#ifndef NDEBUG
   si = mem.myfree(si, "comm_files::wait_for_send_to_finish(): si");
 #else
   si   = mem.myfree(si);
 #endif
   sent_list.erase(i);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "rank: " << myrank
        << "  comm_files::wait_for_send_to_finish() returning\n";
-#endif  // TESTING
+#endif  // NDEBUG
   return 0;
 }
 
@@ -644,16 +644,16 @@ int comm_files::look_for_data_to_receive(
 )
 {
   int err = 0;
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "rank: " << myrank
        << "  comm_files::look_for_data_to_receive() starting\n";
-#endif  // TESTING
+#endif  // NDEBUG
   //
   // Create a new received info record.
   //
   //
   struct recv_info *ri = 0;
-#ifdef TESTING
+#ifndef NDEBUG
   ri = mem.myalloc(ri, 1, "comm_files:look_for_data_to_receive: ri");
 #else
   ri   = mem.myalloc(ri, 1);
@@ -668,10 +668,10 @@ int comm_files::look_for_data_to_receive(
   // This is a very inefficient method, but speed it not of the essence
   // here...
   //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "rank: " << myrank
        << "  comm_files::look_for_data_to_receive() looking for source\n";
-#endif  // TESTING
+#endif  // NDEBUG
   ostringstream f;
   bool found = false;
   do {
@@ -696,7 +696,7 @@ int comm_files::look_for_data_to_receive(
           // in case there is a queue of data and we could re-find the
           // data we just finished reading.
           //
-#ifdef TESTING
+#ifndef NDEBUG
           cout << "comm_files::look_for_data_to_receive: found data file : "
                << f.str() << "\n";
 #endif
@@ -717,7 +717,7 @@ int comm_files::look_for_data_to_receive(
   if (!infile.is_open()) rep.error("failed to open file for reading", f.str());
   infile.read(reinterpret_cast<char *>(comm_tag), sizeof(int));
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "comm_files::look_for_data_to_receive: got comm_tag: " << *comm_tag
        << " from file.\n";
 #endif
@@ -729,9 +729,9 @@ int comm_files::look_for_data_to_receive(
   ri->from_rank = *from_rank;
   comm_files::recv_list.push_back(ri);
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "comm_files::look_for_data_to_receive: returning.\n";
-#endif  // TESTING
+#endif  // NDEBUG
   return err;
 }
 
@@ -748,19 +748,19 @@ int comm_files::receive_cell_data(
 )
 {
   //  int err=0;
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "comm_files::receive_cell_data: starting.\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // Find the recv in the list of active receives.  I use a string identifier
   // for sends and receives, and the look_for_data() function returns a string
   // which should be passed to this function.
   //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "comm_files::receive_cell_data: recv_list size=" << recv_list.size()
        << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
   if (recv_list.empty())
     rep.error("Call look4data before receive_data", recv_list.size());
 
@@ -771,10 +771,10 @@ int comm_files::receive_cell_data(
     if (info->id == id) break;
   }
   if (i == recv_list.end()) rep.error("Failed to find recv with id:", id);
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "found recv id=" << info->id << " and looking for id=" << id << "\n";
   cout << "comm_files::receive_cell_data: found recv id\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // Check that everthing matches.
@@ -804,10 +804,10 @@ int comm_files::receive_cell_data(
   infile.read(reinterpret_cast<char *>(&(tmp)), sizeof(int));
   infile.read(reinterpret_cast<char *>(&(n_cells)), sizeof(long int));
   infile.read(reinterpret_cast<char *>(&(totalsize)), sizeof(long int));
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "comm_files::receive_cell_data: got comm:" << tmp
        << " n_cells=" << n_cells << " size=" << totalsize << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
   if (n_cells != nc)
     rep.error(
         "comm_files::receive_cell_data: n_cells has unexpected value",
@@ -851,23 +851,23 @@ int comm_files::receive_cell_data(
   //
   // Free memory and delete entry from recv_list
   //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "comm_files::receive_cell_data: freeing memory\n";
-#endif  // TESTING
+#endif  // NDEBUG
   if (recv_list.size() == 1) {
     recv_list.pop_front();
   }
   else
     rep.error("recv list is big!", recv_list.size());
-#ifdef TESTING
+#ifndef NDEBUG
   info = mem.myfree(info, "comm_files::receive_cell_data() info");
 #else
   info = mem.myfree(info);
-#endif  // TESTING
+#endif  // NDEBUG
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "comm_files::receive_cell_data: returning\n";
-#endif  // TESTING
+#endif  // NDEBUG
   return 0;
 }
 
@@ -885,11 +885,11 @@ int comm_files::send_double_data(
   // Allocate memory for a record of the send
   //
   struct sent_info *si = 0;
-#ifdef TESTING
+#ifndef NDEBUG
   si = mem.myalloc(si, 1, "comm_files:send_double_data: si");
 #else
   si   = mem.myalloc(si, 1);
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // filename for send: I tag with timestep just to be sure.  Set string
@@ -944,19 +944,19 @@ int comm_files::receive_double_data(
         *data  ///< Pointer to array to write to (must be already initialised).
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "comm_files::receive_double_data: starting.\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // Find the recv in the list of active receives, based on the id string
   // passed to the function.  This should have been obtained by the
   // look_for_data() function.
   //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "comm_files::receive_double_data: recv_list size=" << recv_list.size()
        << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
   if (recv_list.empty())
     rep.error("Call look4data before receive_data", recv_list.size());
 
@@ -967,10 +967,10 @@ int comm_files::receive_double_data(
     if (info->id == id) break;
   }
   if (i == recv_list.end()) rep.error("Failed to find recv with id:", id);
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "found recv id=" << info->id << " and looking for id=" << id << "\n";
   cout << "comm_files::receive_double_data: found recv id\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   //
   // Check that everthing matches.
@@ -999,10 +999,10 @@ int comm_files::receive_double_data(
   infile.read(reinterpret_cast<char *>(&(tmp)), sizeof(int));
   infile.read(reinterpret_cast<char *>(&(ct)), sizeof(long int));
   //  infile >> tmp >> ct;
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "comm_files::receive_cell_data: got comm:" << tmp << " n_el=" << ct
        << "\n";
-#endif  // TESTING
+#endif  // NDEBUG
 
   if (nel != ct)
     rep.error(
@@ -1029,19 +1029,19 @@ int comm_files::receive_double_data(
   //
   // Free memory and delete entry from recv_list
   //
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "comm_files::receive_cell_data: freeing memory\n";
-#endif  // TESTING
+#endif  // NDEBUG
   if (recv_list.size() == 1) {
     recv_list.pop_front();
   }
   else
     rep.error("recv list is big!", recv_list.size());
-#ifdef TESTING
+#ifndef NDEBUG
   info = mem.myfree(info, "comm_files::receive_cell_data() info");
 #else
   info = mem.myfree(info);
-#endif  // TESTING
+#endif  // NDEBUG
 
   return 0;
 }
@@ -1081,7 +1081,7 @@ int comm_files::silo_pllel_init(
   *rank_in_group          = myrank % ngrp;
   comm_files::grp_rank    = *group_rank;
   comm_files::rank_in_grp = *rank_in_group;
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "comm_files::silo_pllel_init() grp_rank=" << grp_rank
        << " and rank_in_grp=" << rank_in_grp << "\n";
 #endif
@@ -1096,7 +1096,7 @@ int comm_files::silo_pllel_wait_for_file(
     DBfile **dbfile                ///< pointer that file gets returned in.
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "comm_files::silo_pllel_wait_for_file() opening file: " << s_filename
        << " into directory: " << s_dir << "\n";
 #endif
@@ -1114,7 +1114,7 @@ int comm_files::silo_pllel_wait_for_file(
   // interface.
   //
   if (rank_in_grp == 0) {
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "comm_files::silo_pllel_wait_for_file() i'm first in group, "
             "creating/opening file and returning.\n";
 #endif
@@ -1159,7 +1159,7 @@ int comm_files::silo_pllel_wait_for_file(
       << finished_with_file;
     wait_for_file(f.str());
     fs.acquire_lock(f.str());
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "comm_files::silo_pllel_wait_for_file(): found file: " << f.str()
          << ", so my turn to write file.\n";
 #endif
@@ -1197,7 +1197,7 @@ int comm_files::silo_pllel_finish_with_file(
     DBfile **dbfile          ///< pointer to file we have been working on.
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "comm_files::silo_pllel_finish_with_file() passing file on to next "
           "proc.\n";
 #endif
@@ -1217,7 +1217,7 @@ int comm_files::silo_pllel_finish_with_file(
     //
     DBClose(*dbfile);
     *dbfile = 0;
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "comm_files::silo_pllel_finish_with_file() I'm last proc in group, "
             "returning.\n";
 #endif
@@ -1236,7 +1236,7 @@ int comm_files::silo_pllel_finish_with_file(
     ofstream outfile(f.str().c_str());
     outfile.close();
     fs.release_lock(f.str());
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "comm_files::silo_pllel_finish_with_file() closed file and created "
             "finished file, so returning.\n";
 #endif
@@ -1275,13 +1275,13 @@ void comm_files::wait_for_file(const string filename)
   do {
     usleep(FDELAY_USECS);
     if (!fs.file_exists(filename)) {
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "   rank " << myrank << ": ...still waiting for file " << filename
            << "\n";
 #endif
     }
     else {
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "   rank " << myrank << ": recieved signal (" << filename
            << ") - proceeding\n";
 #endif
@@ -1300,13 +1300,13 @@ void comm_files::wait_for_file_to_disappear(const string filename)
   do {
     usleep(FDELAY_USECS);
     if (fs.file_exists(filename)) {
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "   rank " << myrank << ": ...still waiting for file " << filename
            << " to be deleted\n";
 #endif
     }
     else {
-#ifdef TESTING
+#ifndef NDEBUG
       cout << "   rank " << myrank << ": file " << filename
            << " has been deleted -- proceeding.\n";
 #endif
@@ -1379,7 +1379,7 @@ void comm_files::master_wait_on_slave_files(
     const std::string identifier  ///< what slave files are called.
 )
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "master_wait_on_slave_files: " << msg << ": starting.\n";
 #endif
   ostringstream tmp;
@@ -1391,7 +1391,7 @@ void comm_files::master_wait_on_slave_files(
     tmp.str("");
     tmp << dir << "rank_" << rank << identifier;
     wait_for_file(tmp.str());
-#ifdef TESTING
+#ifndef NDEBUG
     cout << "master_wait_on_slave_files:" << msg << " got file:" << tmp.str()
          << "\n";
 #endif
@@ -1408,7 +1408,7 @@ void comm_files::wait_for_peer_to_read_file(
   ostringstream tmp;
   tmp << f << finished_with_file;
   wait_for_file(tmp.str());
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "wait_for_peer_to_read_file: got file: " << tmp.str()
        << " ...deleting it\n";
 #endif

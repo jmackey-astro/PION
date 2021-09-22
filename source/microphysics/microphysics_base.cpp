@@ -25,14 +25,14 @@ microphysics_base::microphysics_base(
     nv_prim(nv),
     ntracer(ntr)
 {
-#ifdef TESTING
+#ifndef NDEBUG
   cout << "microphysics_base:: setting up EP and RS: ";
 #endif
 
   EP = ephys;
   RS = rsrcs;
 
-#ifdef TESTING
+#ifndef NDEBUG
   cout << EP << "\t" << RS << "\n";
 #endif
 

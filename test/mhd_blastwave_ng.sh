@@ -26,7 +26,6 @@ mpirun --allow-run-as-root --oversubscribe -np 4 ../pion-ng \
   BW2d_StoneMHD_l2_B010_n128_level00_0000.00000000.silo solver=7 cfl=0.24 \
   opfreq_time=0.1 outfile=NG_B010_n128 redirect=pionlog
 
-
 REF_FILE=NG_B010_n128_level00_0000.00000824.silo
 NEW_FILE=`ls NG_B010_n128_level00_0000.*.silo | tail -n1`
 ../silocompare . $NEW_FILE ${script_dir}/data $REF_FILE 0 cmp 2 > tmp.txt

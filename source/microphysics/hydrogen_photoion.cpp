@@ -37,9 +37,9 @@
 #include "tools/interpolate.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 //#define HACK_MODIFY_BB ///< scale the high energy BB emission
 #define OSTERBROCK_XSEC  ///< use osterbrock photoionisation x-section.
@@ -390,7 +390,7 @@ void hydrogen_photoion::Setup_photoionisation_rate_table(
   //  L=1.0; // So that the radius is scaled by 1.0 below
   //}
 
-#ifdef TESTING
+#ifndef NDEBUG
   if (Nspl < 75) {
     cerr << "Setup_photoionisation_rate_table() using Nspl<75 is less "
             "accurate\n";
@@ -399,7 +399,7 @@ void hydrogen_photoion::Setup_photoionisation_rate_table(
     cerr << "Setup_photoionisation_rate_table() using Nsub<800 is less "
             "accurate\n";
   }
-#endif  // TESTING
+#endif  // NDEBUG
 
   PI_Nspl = Nspl;
 
@@ -795,7 +795,7 @@ double hydrogen_photoion::PH_LowTau_rate_source_integral(
 // ##################################################################
 // ##################################################################
 
-// TESTING CODE
+// NDEBUG CODE
 /*
 
 int main(int argc, char **argv)

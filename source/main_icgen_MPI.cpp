@@ -13,9 +13,9 @@
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
 #include "tools/timer.h"
-#ifdef TESTING
+#ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // TESTING
+#endif  // NDEBUG
 
 #include "ics/get_sim_info.h"
 #include "ics/icgen.h"
@@ -79,7 +79,7 @@ int main(int argc, char **argv)
       rep.redirect(outpath);  // Redirects cout and cerr to text file.
     }
   }
-#ifndef TESTING
+#ifdef NDEBUG
   rep.kill_stdout_from_other_procs(0);
 #endif
   // cout << "rank: " << MCMD.get_myrank();
@@ -135,7 +135,9 @@ int main(int argc, char **argv)
   vector<class GridBaseClass *> grid;
   // have to do something with SimPM.levels[0] because this
   // is used to set the local domain size in decomposeDomain
-  err = SimPM.levels[0].MCMD.decomposeDomain(SimPM, SimPM.levels[0]);
+  std::vector<int> pbc = SimPM.get_pbc_bools();
+  err                  = SimPM.levels[0].MCMD.decomposeDomain(
+      SimPM.ndim, SimPM.levels[0], std::move(pbc));
   rep.errorTest("Couldn't Decompose Domain!", 0, err);
 
   class MCMDcontrol *MCMD = &(SimPM.levels[0].MCMD);
@@ -291,7 +293,6 @@ int main(int argc, char **argv)
 
   cout << "rank: " << MCMD->get_myrank();
   cout << " nproc: " << MCMD->get_nproc() << "\n";
-  COMM->finalise();
   delete COMM;
   COMM = 0;
   delete[] args;
