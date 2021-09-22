@@ -101,11 +101,7 @@ MPv10::MPv10(
     const double g                ///< EOS Gamma
     ) :
     microphysics_base(nv, ntr, tracers, ephys, rsrcs),
-    ndim(nd),
-    eos_gamma(g),
-    coord_sys(csys),
-    T_min(1e0),
-    T_max(1e9),
+    ndim(nd), eos_gamma(g), coord_sys(csys), T_min(1e0), T_max(1e9),
     Num_temps(100),
     photo_xsections()  // photo_xsections(&Emin[0],&Emax[0],Nbins)
 {

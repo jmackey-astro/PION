@@ -51,11 +51,8 @@ FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(
     const int ntr          ///< Number of tracer variables.
     ) :
     eqns_base(nv),
-    FV_solver_base(nv, nd, cflno, gam, avcoeff, ntr),
-    eqns_mhd_ideal(nv),
-    riemann_MHD(nv, state, gam),
-    Riemann_Roe_MHD_CV(nv, gam),
-    HLLD_MHD(nv, gam),
+    FV_solver_base(nv, nd, cflno, gam, avcoeff, ntr), eqns_mhd_ideal(nv),
+    riemann_MHD(nv, state, gam), Riemann_Roe_MHD_CV(nv, gam), HLLD_MHD(nv, gam),
     VectorOps_Cart(nd)
 {
 #ifdef TESTING
@@ -562,11 +559,8 @@ FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi(
     const int ntr          ///< Number of tracer variables.
     ) :
     eqns_base(nv),
-    FV_solver_base(nv, nd, cflno, gam, avcoeff, ntr),
-    eqns_mhd_ideal(nv),
-    riemann_MHD(nv, state, gam),
-    Riemann_Roe_MHD_CV(nv, gam),
-    HLLD_MHD(nv, gam),
+    FV_solver_base(nv, nd, cflno, gam, avcoeff, ntr), eqns_mhd_ideal(nv),
+    riemann_MHD(nv, state, gam), Riemann_Roe_MHD_CV(nv, gam), HLLD_MHD(nv, gam),
     VectorOps_Cart(nd),
     FV_solver_mhd_ideal_adi(nv, nd, cflno, gam, state, avcoeff, ntr),
     eqns_mhd_mixedGLM(nv)
@@ -871,11 +865,8 @@ cyl_FV_solver_mhd_ideal_adi::cyl_FV_solver_mhd_ideal_adi(
     const int ntr          ///< Number of tracer variables.
     ) :
     eqns_base(nv),
-    FV_solver_base(nv, nd, cflno, gam, avcoeff, ntr),
-    eqns_mhd_ideal(nv),
-    riemann_MHD(nv, state, gam),
-    Riemann_Roe_MHD_CV(nv, gam),
-    HLLD_MHD(nv, gam),
+    FV_solver_base(nv, nd, cflno, gam, avcoeff, ntr), eqns_mhd_ideal(nv),
+    riemann_MHD(nv, state, gam), Riemann_Roe_MHD_CV(nv, gam), HLLD_MHD(nv, gam),
     VectorOps_Cart(nd),
     FV_solver_mhd_ideal_adi(nv, nd, cflno, gam, state, avcoeff, ntr),
     VectorOps_Cyl(nd)
@@ -1030,11 +1021,8 @@ cyl_FV_solver_mhd_mixedGLM_adi::cyl_FV_solver_mhd_mixedGLM_adi(
     const int ntr          ///< Number of tracer variables.
     ) :
     eqns_base(nv),
-    FV_solver_base(nv, nd, cflno, gam, avcoeff, ntr),
-    eqns_mhd_ideal(nv),
-    riemann_MHD(nv, state, gam),
-    Riemann_Roe_MHD_CV(nv, gam),
-    HLLD_MHD(nv, gam),
+    FV_solver_base(nv, nd, cflno, gam, avcoeff, ntr), eqns_mhd_ideal(nv),
+    riemann_MHD(nv, state, gam), Riemann_Roe_MHD_CV(nv, gam), HLLD_MHD(nv, gam),
     VectorOps_Cart(nd),
     FV_solver_mhd_ideal_adi(nv, nd, cflno, gam, state, avcoeff, ntr),
     eqns_mhd_mixedGLM(nv),

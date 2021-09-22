@@ -7,12 +7,16 @@
 # Assumes:
 # (1) That PION has been built in pion/build/ with SILO support, PARALLEL build
 # (2) That the file "data/DMRm10t60_n160_0000.00000365.silo" exists for comparison
-# (2) that "silocompare" has also been built, and is available to compare the two files
+# (3) that "silocompare" has also been built, and is available to compare the two files
 
 #if [[ $# -ne 1 ]]; then
 #    echo "Please provide the Pion build directory"
 #    exit 1
 #fi
+
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
 script="${BASH_SOURCE[0]:-${(%):-%x}}"
 script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
@@ -25,15 +29,13 @@ NEW_FILE=`ls DMR_new_n160_0000.*.silo | tail -n1`
 ../silocompare . $NEW_FILE ${script_dir}/data $REF_FILE 0 cmp 2 > tmp.txt
 
 if grep -q "RESULTS ARE THE SAME" tmp.txt; then
-  echo "*** TEST HAS BEEN PASSED ***"
+  echo -e "${GREEN}*** TEST HAS BEEN PASSED ***"
   tail -n10 tmp.txt
-  rm tmp.txt *.silo iclog_0_info.txt pionlog_0_info.txt cmp_0.txt
-  echo "*** TEST HAS BEEN PASSED ***"
+  echo -e "*** TEST HAS BEEN PASSED ***${NC}"
   exit 0
 else
-  echo "*** TEST HAS BEEN FAILED ***"
+  echo -e "${RED}*** TEST HAS BEEN FAILED ***"
   tail -n10 tmp.txt
-  echo "*** TEST HAS BEEN FAILED ***"
-  #rm tmp.txt *.silo
+  echo -e "*** TEST HAS BEEN FAILED ***${NC}"
   exit 1 
 fi

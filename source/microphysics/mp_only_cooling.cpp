@@ -60,9 +60,7 @@ mp_only_cooling::mp_only_cooling(
     struct rad_sources *rsrcs     ///< radiation sources.
     ) :
     microphysics_base(nv, ntr, tr, ephys, rsrcs),
-    cooling_function_SD93CIE(),
-    Hummer94_Hrecomb(),
-    CoolingFn(ephys->cooling),
+    cooling_function_SD93CIE(), Hummer94_Hrecomb(), CoolingFn(ephys->cooling),
     nv_prim(nv)
 {
   if (!EP->update_erg) {

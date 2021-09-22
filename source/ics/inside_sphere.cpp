@@ -16,10 +16,7 @@
 inside_sphere::inside_sphere(
     double *cen, double r, double size, int N, int nd) :
     sr(r),
-    clen(size),
-    del(size / 2.),
-    nint(N),
-    ndim(nd)
+    clen(size), del(size / 2.), nint(N), ndim(nd)
 {
   diag = sqrt(static_cast<double>(ndim)) * clen;
   for (int i = 0; i < ndim; i++)

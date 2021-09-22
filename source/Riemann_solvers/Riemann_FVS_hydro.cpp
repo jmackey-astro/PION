@@ -46,8 +46,7 @@ Riemann_FVS_Euler::Riemann_FVS_Euler(
     const double g  ///< Gamma for state vector.
     ) :
     eqns_base(nv),
-    eqns_Euler(nv),
-    rs_nvar(5)
+    eqns_Euler(nv), rs_nvar(5)
 {
   //
   // eq_gamma, eq_nvar are defined in eqns_base class

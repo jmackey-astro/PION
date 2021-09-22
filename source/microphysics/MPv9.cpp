@@ -51,8 +51,7 @@ MPv9::MPv9(
     const std::string &tracers,
     struct which_physics *ephys) :
     kB(GS.kB()),
-    m_p(GS.m_p()),
-    nv_prim(nv)
+    m_p(GS.m_p()), nv_prim(nv)
 {
   cout << "Welcome to MPv9: the low metallicity chemistry solver!\n";
   //

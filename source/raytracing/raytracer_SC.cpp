@@ -138,9 +138,7 @@ raytracer_USC_infinity::raytracer_USC_infinity(
     int ftr  ///< index of first tracer variable in state vector
     ) :
     ndim(nd),
-    coord_sys(csys),
-    nvar(nv),
-    first_tr(ftr)
+    coord_sys(csys), nvar(nv), first_tr(ftr)
 {
 #ifdef RT_TESTING
   cout << "SC src-at-infinity (parallel-rays) raytracer class constructor!\n";

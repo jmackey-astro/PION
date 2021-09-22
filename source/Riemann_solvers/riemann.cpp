@@ -135,9 +135,7 @@ riemann_Euler::riemann_Euler(
     const double g          ///< gas EOS.
     ) :
     eqns_base(nv),
-    eqns_Euler(nv),
-    findroot(),
-    rs_nvar(5)
+    eqns_Euler(nv), findroot(), rs_nvar(5)
 {
 #ifdef FUNCTION_ID
   cout << "riemann_Euler::riemann_Euler ...starting.\n";

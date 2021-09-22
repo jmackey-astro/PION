@@ -107,7 +107,7 @@ Parallel:
     paths:
       - "${CMAKE_BUILD_DIR}"
 
-Uniform_Serial:
+Uniform_serial:
   <<: *default_job
   stage: build executables
   variables:
@@ -115,10 +115,14 @@ Uniform_Serial:
     PION_UNIFORM_GRID: "ON"
     PION_PARALLEL: "OFF"
     PION_USE_FITS: "ON"
+  artifacts:
+    name: uniform_serial 
+    paths:
+      - "${CMAKE_BUILD_DIR}"
   dependencies:
     - Serial
 
-Nested_Serial:
+Nested_serial:
   <<: *default_job
   stage: build executables
   variables:
@@ -126,10 +130,14 @@ Nested_Serial:
     PION_NESTED_GRID: "ON"
     PION_PARALLEL: "OFF"
     PION_USE_FITS: "ON"
+  artifacts:
+    name: nested_serial 
+    paths:
+      - "${CMAKE_BUILD_DIR}"
   dependencies:
     - Serial
 
-Uniform_Parallel:
+Uniform_parallel:
   <<: *default_job
   stage: build executables
   variables:
@@ -138,10 +146,14 @@ Uniform_Parallel:
     PION_UNIFORM_GRID: "ON"
     PION_PARALLEL: "ON"
     PION_USE_SILO: "ON"
+  artifacts:
+    name: uniform_parallel 
+    paths:
+      - "${CMAKE_BUILD_DIR}"
   dependencies:
     - Parallel
 
-Nested_Parallel:
+Nested_parallel:
   <<: *default_job
   stage: build executables
   variables:
@@ -150,10 +162,14 @@ Nested_Parallel:
     PION_NESTED_GRID: "ON"
     PION_PARALLEL: "ON"
     PION_USE_SILO: "ON"
+  artifacts:
+    name: nested_parallel
+    paths:
+      - "${CMAKE_BUILD_DIR}"
   dependencies:
     - Parallel
       
-DMR_TEST:
+Uniform_test:
   <<: *default_job
   stage: test 
   variables:
@@ -167,9 +183,84 @@ DMR_TEST:
   script:
     - *configure
     - *build
-    - make -C "${CMAKE_BUILD_DIR}" dmr_test
+    - make -C "${CMAKE_BUILD_DIR}" ug-test
   dependencies:
-    - Parallel
+    - Uniform_parallel 
+
+Nested_test:
+  <<: *default_job
+  stage: test 
+  variables:
+    <<: *default_cmake_variables
+    CXX: mpicxx
+    PION_NESTED_GRID: "ON"
+    PION_PARALLEL: "ON"
+    PION_USE_SILO: "ON"
+    PION_BUILD_TESTS: "ON"
+    PION_TOOLS: "ON"
+  script:
+    - *configure
+    - *build
+    - make -C "${CMAKE_BUILD_DIR}" ng-test
+  dependencies:
+    - Nested_parallel 
+
+Pbc_test:
+  <<: *default_job
+  stage: test 
+  variables:
+    <<: *default_cmake_variables
+    CXX: mpicxx
+    PION_UNIFORM_GRID: "ON"
+    PION_PARALLEL: "ON"
+    PION_USE_SILO: "ON"
+    PION_BUILD_TESTS: "ON"
+    PION_TOOLS: "ON"
+  script:
+    - *configure
+    - *build
+    - make -C "${CMAKE_BUILD_DIR}" pbc-test
+  dependencies:
+    - Uniform_parallel 
+
+3d_test:
+  <<: *default_job
+  stage: test 
+  variables:
+    <<: *default_cmake_variables
+    CXX: mpicxx
+    PION_UNIFORM_GRID: "ON"
+    PION_PARALLEL: "ON"
+    PION_USE_SILO: "ON"
+    PION_BUILD_TESTS: "ON"
+    PION_TOOLS: "ON"
+  script:
+    - *configure
+    - *build
+    - make -C "${CMAKE_BUILD_DIR}" 3d-ug-test 
+  dependencies:
+    - Uniform_parallel 
+
+3d_ng_pbc_test:
+  <<: *default_job
+  stage: test 
+  variables:
+    <<: *default_cmake_variables
+    CXX: mpicxx
+    PION_NESTED_GRID: "ON"
+    PION_PARALLEL: "ON"
+    PION_USE_SILO: "ON"
+    PION_BUILD_TESTS: "ON"
+    PION_TOOLS: "ON"
+  script:
+    - *configure
+    - *build
+    - make -C "${CMAKE_BUILD_DIR}" 3d-ng-pbc-test 
+  dependencies:
+    - Nested_parallel 
+  only:
+    refs:
+      - devel
 
 Documentation:
   <<: *default_job

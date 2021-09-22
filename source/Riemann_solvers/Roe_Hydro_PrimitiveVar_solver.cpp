@@ -29,8 +29,7 @@ Riemann_Roe_Hydro_PV::Riemann_Roe_Hydro_PV(
     const double g  ///< Gamma for state vector.
     ) :
     eqns_base(nv),
-    eqns_Euler(nv),
-    rs_nvar(5)
+    eqns_Euler(nv), rs_nvar(5)
 {
 #ifdef FUNCTION_ID
   cout << "Riemann_Roe_Hydro_PV::Riemann_Roe_Hydro_PV ...starting.\n";

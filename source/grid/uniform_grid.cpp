@@ -133,9 +133,7 @@ UniformGrid::UniformGrid(
     double *sim_xp   // sim xmax
     ) :
     VectorOps_Cart(nd),
-    G_ndim(nd),
-    G_nvar(nv),
-    G_eqntype(eqt)  //,
+    G_ndim(nd), G_nvar(nv), G_eqntype(eqt)  //,
 // BC_nbc(Nbc)
 {
 
@@ -1969,8 +1967,7 @@ uniform_grid_sph::uniform_grid_sph(
     VectorOps_Cart(nd),
     UniformGrid(
         nd, nv, eqt, Nbc, g_xn, g_xp, g_nc, lev_xn, lev_xp, sim_xn, sim_xp),
-    VectorOps_Cyl(nd),
-    VectorOps_Sph(nd)
+    VectorOps_Cyl(nd), VectorOps_Sph(nd)
 {
 #ifdef TESTING
   cout << "Setting up spherical uniform grid with";

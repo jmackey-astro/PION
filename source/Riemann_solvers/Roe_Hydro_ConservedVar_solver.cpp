@@ -50,8 +50,7 @@ Riemann_Roe_Hydro_CV::Riemann_Roe_Hydro_CV(
     const double g  ///< Gamma for state vector.
     ) :
     eqns_base(nv),
-    eqns_Euler(nv),
-    rs_nvar(5)
+    eqns_Euler(nv), rs_nvar(5)
 {
 #ifdef FUNCTION_ID
   cout << "Riemann_Roe_Hydro_CV::Riemann_Roe_Hydro_CV ...starting.\n";

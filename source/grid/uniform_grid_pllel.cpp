@@ -217,8 +217,7 @@ uniform_grid_sph_parallel::uniform_grid_sph_parallel(
     UniformGrid(nd, nv, eqt, nbc, xn, xp, nc, lev_xn, lev_xp, sim_xn, sim_xp),
     UniformGridParallel(
         nd, nv, eqt, nbc, xn, xp, nc, lev_xn, lev_xp, sim_xn, sim_xp),
-    VectorOps_Cyl(nd),
-    VectorOps_Sph(nd),
+    VectorOps_Cyl(nd), VectorOps_Sph(nd),
     uniform_grid_sph(
         nd, nv, eqt, nbc, xn, xp, nc, lev_xn, lev_xp, sim_xn, sim_xp)
 {

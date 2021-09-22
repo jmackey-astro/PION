@@ -704,9 +704,7 @@ MPv2::MPv2(
     const double g                ///< EOS Gamma
     ) :
     microphysics_base(nv, ntr, tracers, ephys, rsrcs),
-    ndim(nd),
-    eos_gamma(g),
-    coord_sys(csys)
+    ndim(nd), eos_gamma(g), coord_sys(csys)
 {
   cout << "MPv2: new microphysics class.\n";
 

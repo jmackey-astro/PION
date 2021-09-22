@@ -72,11 +72,7 @@ FV_solver_base::FV_solver_base(
     const int ntr          ///< Number of tracer variables.
     ) :
     eqns_base(nv),
-    FV_gndim(nd),
-    FV_cfl(cflno),
-    FV_etav(avcoeff),
-    FV_etaB(avcoeff),
-    FV_ntr(ntr)
+    FV_gndim(nd), FV_cfl(cflno), FV_etav(avcoeff), FV_etaB(avcoeff), FV_ntr(ntr)
 {
   eq_gamma = gam;
   eqTR     = 0;

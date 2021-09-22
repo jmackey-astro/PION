@@ -70,7 +70,7 @@ CFL 0.3
 
 BC_XN outflow
 BC_XP outflow
-BC_YN reflecting
+BC_YN outflow
 BC_YP outflow
 BC_ZN outflow
 BC_ZP outflow

@@ -77,12 +77,7 @@ stellar_wind::stellar_wind(
     const double mt         ///< Minimum temperature allowed on grid
     ) :
     ndim(nd),
-    nvar(nv),
-    ntracer(nt),
-    ftr(ft),
-    coordsys(cs),
-    eqntype(eq),
-    Tmin(mt)
+    nvar(nv), ntracer(nt), ftr(ft), coordsys(cs), eqntype(eq), Tmin(mt)
 {
   nsrc = 0;
 
@@ -877,8 +872,7 @@ stellar_wind_evolution::stellar_wind_evolution(
     const double sf         ///< Simulation finish time.
     ) :
     stellar_wind(nd, nv, nt, ft, tr, cs, eq, mt),
-    sim_start(ss),
-    sim_finish(sf)
+    sim_start(ss), sim_finish(sf)
 {
 #ifdef TESTING
   cout << "Stellar wind with time evolution, constructor.\n";

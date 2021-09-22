@@ -77,8 +77,7 @@ MPv0::MPv0(
     struct rad_sources *rsrcs     ///< radiation sources.
     ) :
     microphysics_base(nv, ntr, tracers, ephys, rsrcs),
-    kB(pconst.kB()),
-    m_p(pconst.m_p())
+    kB(pconst.kB()), m_p(pconst.m_p())
 {
   cout << "\t\tMPv0 constructor.\n";
   cout << "WARNING: THIS CODE HAS NEVER BEEN USED IN PUBLICATIONS.\n";

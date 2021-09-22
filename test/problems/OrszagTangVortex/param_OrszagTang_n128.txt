@@ -1,0 +1,117 @@
+# parameter file for Initial Condition Generation for Orszag-Tang Vortex.
+
+ndim 2
+eqn glm-mhd
+solver 4
+coordinates cartesian
+
+ics OrszagTang
+OutputFile OrszagTang_n128_b3.33m1.0
+OutputPath ./
+OutputFileType silo
+OutputCriterion 1
+OPfreqTime 0.1
+OutputFrequency 256
+StartTime 0.0
+FinishTime 1.0
+
+# Number and type of tracers.
+ntracer 0
+chem_code none
+InitIons LEAVE
+
+smooth -1
+noise -1.0
+
+# Which physics to use
+EP_dynamics     1
+EP_raytracing   0
+EP_phot_ionisation   0
+EP_cooling      0
+EP_chemistry    0
+EP_coll_ionisation   0
+EP_rad_recombination 0
+EP_update_erg 1
+EP_MP_timestep_limit 0
+EP_Min_Temperature 0.0
+EP_Max_Temperature 1.0e99
+EP_Hydrogen_MassFrac 0.0
+EP_Helium_MassFrac 0.0
+EP_Metal_MassFrac  0.0
+
+
+## Grid Parameters
+# Number of gridpoints in each direction (note cells must be cubic!)
+# INT
+NGridX  128
+NGridY  128
+NGridZ  1
+# Boundaries of Simulation box:
+Xmin 0.0
+Ymin 0.0
+Zmin 0.0
+# Max values of x,y,z
+Xmax 1.0
+Ymax 1.0
+Zmax 1.0
+
+# Nested Grid
+grid_nlevels 1
+grid_aspect_ratio_XX 1
+grid_aspect_ratio_YY 1
+grid_aspect_ratio_ZZ 1
+NG_centre_XX 0.0
+NG_centre_YY 0.0
+NG_centre_ZZ 0.0
+NG_refine_XX 1
+NG_refine_YY 1
+NG_refine_ZZ 1
+
+
+OrderOfAccSpace 2
+OrderOfAccTime  2
+GAMMA 1.666666666666666666666666
+CFL 0.3
+ArtificialViscosity 1
+EtaViscosity 0.1
+
+BC_XN periodic
+BC_XP periodic
+BC_YN periodic
+BC_YP periodic
+BC_Ninternal 0
+
+## Parameters specific for various problems
+OTVbeta 3.3333333333333333333333
+#OTVbeta 1.2
+OTVmach 1.0
+
+RT_Nsources 0
+WIND_NSRC 0
+N_JET 0
+
+# Reference Vector
+refvec0 1.0
+refvec1 1.0
+refvec2 1.0
+refvec3 1.0
+refvec4 1.0
+refvec5 1.0
+refvec6 1.0
+refvec7 1.0
+refvec8 1.0
+refvec9 1.0
+refvec10 1.0
+refvec11 1.0
+refvec12 1.0
+refvec13 1.0
+refvec14 1.0
+refvec15 1.0
+
+# Code Units
+units cgs
+rhoval 1.0
+lenval 1.0
+velval 1.0
+magval 1.0
+

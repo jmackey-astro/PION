@@ -265,9 +265,7 @@ MPv3::MPv3(
     const double g                ///< EOS Gamma
     ) :
     microphysics_base(nv, ntr, tracers, ephys, rsrcs),
-    ndim(nd),
-    eos_gamma(g),
-    coord_sys(csys)
+    ndim(nd), eos_gamma(g), coord_sys(csys)
 {
 #ifdef MPV3_DEBUG
   cout << "\n------------------------------------------------------------------"

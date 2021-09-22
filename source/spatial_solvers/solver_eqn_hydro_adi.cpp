@@ -55,14 +55,10 @@ FV_solver_Hydro_Euler::FV_solver_Hydro_Euler(
     const int ntr          ///< Number of tracer variables.
     ) :
     eqns_base(nv),
-    FV_solver_base(nv, nd, cflno, gam, avcoeff, ntr),
-    eqns_Euler(nv),
-    riemann_Euler(nv, state, gam),
-    Riemann_FVS_Euler(nv, gam),
-    Riemann_Roe_Hydro_PV(nv, gam),
-    Riemann_Roe_Hydro_CV(nv, gam),
-    HLL_hydro(nv, gam),
-    VectorOps_Cart(nd)
+    FV_solver_base(nv, nd, cflno, gam, avcoeff, ntr), eqns_Euler(nv),
+    riemann_Euler(nv, state, gam), Riemann_FVS_Euler(nv, gam),
+    Riemann_Roe_Hydro_PV(nv, gam), Riemann_Roe_Hydro_CV(nv, gam),
+    HLL_hydro(nv, gam), VectorOps_Cart(nd)
 {
 #ifdef TESTING
   cout << "FV_solver_Hydro_Euler::FV_solver_Hydro_Euler() constructor.\n";
@@ -487,14 +483,10 @@ cyl_FV_solver_Hydro_Euler::cyl_FV_solver_Hydro_Euler(
     const int ntr          ///< Number of tracer variables.
     ) :
     eqns_base(nv),
-    FV_solver_base(nv, nd, cflno, gam, avcoeff, ntr),
-    eqns_Euler(nv),
-    riemann_Euler(nv, state, gam),
-    Riemann_FVS_Euler(nv, gam),
-    Riemann_Roe_Hydro_PV(nv, gam),
-    Riemann_Roe_Hydro_CV(nv, gam),
-    HLL_hydro(nv, gam),
-    VectorOps_Cart(nd),
+    FV_solver_base(nv, nd, cflno, gam, avcoeff, ntr), eqns_Euler(nv),
+    riemann_Euler(nv, state, gam), Riemann_FVS_Euler(nv, gam),
+    Riemann_Roe_Hydro_PV(nv, gam), Riemann_Roe_Hydro_CV(nv, gam),
+    HLL_hydro(nv, gam), VectorOps_Cart(nd),
     FV_solver_Hydro_Euler(nv, nd, cflno, gam, state, avcoeff, ntr),
     VectorOps_Cyl(nd)
 {
@@ -562,17 +554,12 @@ sph_FV_solver_Hydro_Euler::sph_FV_solver_Hydro_Euler(
     const int ntr          ///< Number of tracer variables.
     ) :
     eqns_base(nv),
-    FV_solver_base(nv, nd, cflno, gam, avcoeff, ntr),
-    eqns_Euler(nv),
-    riemann_Euler(nv, state, gam),
-    Riemann_FVS_Euler(nv, gam),
-    Riemann_Roe_Hydro_PV(nv, gam),
-    Riemann_Roe_Hydro_CV(nv, gam),
-    HLL_hydro(nv, gam),
-    VectorOps_Cart(nd),
+    FV_solver_base(nv, nd, cflno, gam, avcoeff, ntr), eqns_Euler(nv),
+    riemann_Euler(nv, state, gam), Riemann_FVS_Euler(nv, gam),
+    Riemann_Roe_Hydro_PV(nv, gam), Riemann_Roe_Hydro_CV(nv, gam),
+    HLL_hydro(nv, gam), VectorOps_Cart(nd),
     FV_solver_Hydro_Euler(nv, nd, cflno, gam, state, avcoeff, ntr),
-    VectorOps_Cyl(nd),
-    VectorOps_Sph(nd)
+    VectorOps_Cyl(nd), VectorOps_Sph(nd)
 {
   if (nd != 1)
     rep.error(

@@ -1,0 +1,156 @@
+# parameter file for Initial Condition Generation.
+# tuned for photoevaporation problem with random clumps
+
+ics BlastWave
+ndim 3
+coordinates cartesian
+eqn euler
+GAMMA 1.66666666666666666667
+
+StartTime 0.0
+FinishTime 1.578e12  # 50kyr
+OutputFile BW_NGcrt3Dpbc_NR032
+OutputPath ./
+OutputFileType silo
+OutputFrequency 128
+OutputCriterion 0
+OPfreqTime 6.312e10
+
+ntracer 0
+chem_code None
+InitIons LEAVE
+EP_dynamics     1
+EP_raytracing   0
+EP_phot_ionisation   0
+EP_cooling      0
+EP_chemistry    0
+EP_coll_ionisation   0
+EP_rad_recombination 0
+EP_update_erg 1
+EP_MP_timestep_limit 0
+EP_Min_Temperature 1.0e-100
+EP_Max_Temperature 1.0e100
+EP_Hydrogen_MassFrac 1.0
+EP_Helium_MassFrac   0.0
+EP_Metal_MassFrac    0.0
+
+smooth -1
+noise -1
+
+## Grid Parameters
+NGridX  32
+NGridY  32
+NGridZ  32
+
+Xmin -20.86e18
+Ymin -20.86e18
+Zmin -20.86e18
+
+Xmax  40.86e18
+Ymax  40.86e18 
+Zmax  40.86e18
+
+grid_nlevels 3
+grid_aspect_ratio_XX 1
+grid_aspect_ratio_YY 1
+grid_aspect_ratio_ZZ 1
+NG_centre_XX 10.0e18
+NG_centre_YY 10.0e18
+NG_centre_ZZ 10.0e18
+NG_refine_XX 1
+NG_refine_YY 1
+NG_refine_ZZ 1
+
+solver 4
+OrderOfAccSpace 2
+OrderOfAccTime  2
+ArtificialViscosity 1
+EtaViscosity 0.1
+CFL 0.3
+
+BC_XN periodic
+BC_XP periodic
+BC_YN periodic
+BC_YP periodic
+BC_ZN periodic
+BC_ZP periodic
+BC_Ninternal 0
+
+units 
+rhoval 1
+lenval 1
+velval 1
+magval 1
+
+
+##############################################
+## Parameters specific for various problems ##
+##############################################
+##################
+### BLAST WAVE ###
+##################
+#
+# Supernova energy is input as thermal energy in inner grid points.
+#
+# BWpressure is the ISM pressure.
+# BWdensity is ISM density.
+#
+# BW_energy is the SN energy in ergs.
+# BW_blast_dens is the density of gas to put the SN energy into.
+# BW_nzones is the radius of the hot region in grid zones.
+# 
+# magfield refers to magnetic field, and is not used.
+# BW_amb_TRX is list of tracer values for ISM.
+#
+BWpressure 1.38e-11 # ambient pressure (10^3K for 100 per c.c.)
+BWdensity  2.34e-22 # ambient density (~100 per c.c.)
+
+BWmagfieldX 0.0   # Magnetic field strength
+BWmagfieldY 0.0   # Magnetic field strength
+BWmagfieldZ 0.0   # Magnetic field strength
+
+BW_energy 1.0e51  # energy in ergs (all thermal)
+BW_nzones 4       # Radius of hot region.
+BW_blast_dens 2.34e-22  # here same as ambient density.
+
+# We can have a second ISM region, but here we ignore it by setting
+# the inteface to be far beyond the end of the grid.
+BW_interface 1.0e50  
+BW_amb2_RO 0.0
+BW_amb2_PG 0.0
+BW_amb2_VX 0.0
+BW_amb2_VY 0.0
+BW_amb2_VZ 0.0
+
+#########################
+# radiation source list #
+#########################
+RT_Nsources 0
+
+########################
+# stellar wind sources #
+########################
+WIND_NSRC 0
+N_JET 0
+
+####################
+# Reference Vector #
+####################
+refvec0 1.0e-22  # ~100 particles /cc
+refvec1 3.0e-10  # T ~ 10^3K
+refvec2 1.0e6    # v ~ 100 km/s = 1.e7 cm/s
+refvec3 1.0e6    # v 
+refvec4 1.0e6    # v 
+refvec5 1.0e-5   # B (gauss)
+refvec6 1.0e-5
+refvec7 1.0e-5
+refvec8 1.0
+refvec9 1.0
+refvec10 1.0
+refvec11 1.0
+refvec12 1.0
+refvec13 1.0
+refvec14 1.0
+refvec15 1.0
+
+# Anything else?  
