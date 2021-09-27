@@ -24,7 +24,8 @@ int periodic_pllel_bc::BC_assign_PERIODIC(
   // So I just have to call BC_assign_BCMPI and it will do the job.
   int err                 = 0;
   class MCMDcontrol *ppar = &(par.levels[level].MCMD);
-  if (ppar->ngbprocs[b->dir] < 0) {
+  if (ppar->ngbprocs[b->dir] < 0
+      || ppar->ngbprocs[b->dir] == ppar->get_myrank()) {
     // cout <<"BC_assign_PERIODIC: non comm periodic in direction ";
     // cout <<b->dir<<"\n";
     err = periodic_bc::BC_assign_PERIODIC(par, level, grid, b);
@@ -56,7 +57,8 @@ int periodic_pllel_bc::BC_update_PERIODIC(
   //
   int err                 = 0;
   class MCMDcontrol *ppar = &(par.levels[level].MCMD);
-  if (ppar->ngbprocs[b->dir] < 0) {
+  if (ppar->ngbprocs[b->dir] < 0
+      || ppar->ngbprocs[b->dir] == ppar->get_myrank()) {
 #ifndef NDEBUG
     cout << "BC_update_PERIODIC: non-communicating periodic BC in ";
     cout << "direction " << b->dir << "\n";

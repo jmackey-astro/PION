@@ -20,7 +20,7 @@ script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 mpirun --allow-run-as-root --oversubscribe -np 4 ../icgen-ug \
  ${script_dir}/problems/OrszagTangVortex/param_OrszagTang_n128.txt silo \
  redirect=iclog
-mpirun --allow-run-as-root --oversubscribe -np 4 ../pion-ug \
+mpirun --allow-run-as-root --oversubscribe -np 8 ../pion-ug \
  OrszagTang_n128_b3.33m1.0_0000.00000000.silo outfile=OrszagTang_n128_new \
  redirect=pionlog opfreq_time=1.0
 

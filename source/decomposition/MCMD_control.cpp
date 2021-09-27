@@ -22,6 +22,10 @@ using namespace std;
 //-------------- MPI PARAMETERS ------------------
 //------------------------------------------------
 
+// ##################################################################
+// ##################################################################
+
+
 MCMDcontrol::MCMDcontrol()
 {
   nproc      = -1;
@@ -42,6 +46,10 @@ MCMDcontrol::MCMDcontrol()
       false;  ///< If multiple fits files, each is the full domain size.
 }
 
+// ##################################################################
+// ##################################################################
+
+
 MCMDcontrol::~MCMDcontrol()
 {
   /* TODO: can't free because COMM object is deleted before this one */
@@ -49,6 +57,10 @@ MCMDcontrol::~MCMDcontrol()
   //    MPI_Comm_free(&cart_comm);
   //}
 }
+
+// ##################################################################
+// ##################################################################
+
 
 void MCMDcontrol::calculate_process_topology(vector<float> &&ratios)
 {
@@ -71,6 +83,31 @@ void MCMDcontrol::calculate_process_topology(vector<float> &&ratios)
     nx[max_index] *= 2;
   }
 }
+
+// ##################################################################
+// ##################################################################
+
+void MCMDcontrol::print_grid(
+    std::vector<int> &coords, int current_dimension) const
+{
+  for (coords[current_dimension] = 0;
+       coords[current_dimension] < nx[current_dimension];
+       coords[current_dimension]++) {
+    if (current_dimension == m_ndim - 1) {
+      int proc;
+      MPI_Cart_rank(cart_comm, &coords[0], &proc);
+      cout << proc << " ";
+    }
+    else {
+      print_grid(coords, current_dimension + 1);
+    }
+  }
+  cout << "\n";
+}
+
+// ##################################################################
+// ##################################################################
+
 
 int MCMDcontrol::decomposeDomain(
     const int &ndim,          ///< number of dimensions
@@ -117,25 +154,33 @@ int MCMDcontrol::decomposeDomain(
 #ifndef NDEBUG
   if (myrank == 0) {
     cout << "Global Ncell = " << level.Ncell << "\n";
-    cout << "Dim\t Range\t Xmin\t Xmax\n";
+    cout << "Dim\t Range\t Xmin\t Xmax\t Grid size\n";
     for (int i = 0; i < m_ndim; i++) {
       cout << i << "\t " << level.Range[i] << "\t " << level.Xmin[i] << "\t "
-           << level.Xmax[i] << "\n";
+           << level.Xmax[i] << "\t " << nx[i] << "\n";
     }
+    std::vector<int> coords(m_ndim, 0);
+    cout << "Process topology:\n";
+    print_grid(coords, 0);
   }
+
   cout << "Proc " << myrank << ":\n";
   cout << "Ncell = " << LocalNcell << "\n";
-  cout << "Dim\t Range\t Xmin\t Xmax\t -ngbr\t +ngbr\n";
+  cout << "Dim\t Range\t Xmin\t Xmax\t -ngbr\t +ngbr\t coords\n";
   for (int i = 0; i < m_ndim; i++) {
     cout << i << "\t " << LocalRange[i] << "\t " << LocalXmin[i] << "\t "
          << LocalXmax[i] << "\t " << ngbprocs[2 * i] << "\t "
-         << ngbprocs[2 * i + 1] << "\n";
+         << ngbprocs[2 * i + 1] << "\t " << ix[i] << "\n";
   }
   cout << "---MCMDcontrol::decomposeDomain() Domain decomposition done.\n"
        << endl;
 #endif
   return 0;
 }
+
+// ##################################################################
+// ##################################################################
+
 
 int MCMDcontrol::decomposeDomain(
     const enum axes daxis,  ///< Axis to decompose domain along.
@@ -154,6 +199,10 @@ int MCMDcontrol::decomposeDomain(
   return decomposeDomain(ndim, level);
 }
 
+// ##################################################################
+// ##################################################################
+
+
 int MCMDcontrol::decomposeDomain(
     const int &ndim,           ///< number of dimensions
     const class level &level,  ///< parameters for NG grid level
@@ -166,6 +215,10 @@ int MCMDcontrol::decomposeDomain(
 #endif
   return decomposeDomain(ndim, level);
 }
+
+// ##################################################################
+// ##################################################################
+
 
 int MCMDcontrol::decomposeDomain(
     const enum axes daxis,  ///< Axis to decompose domain along.
@@ -182,56 +235,77 @@ int MCMDcontrol::decomposeDomain(
   return decomposeDomain(daxis, ndim, level);
 }
 
+// ##################################################################
+// ##################################################################
+
+
 void MCMDcontrol::create_abutting_domains_list(
     int current_dimension,  ///< current dimension to traverse
-    int current_position[]  ///< position to traverse relative to
-)
+    int cursor[],           ///< position to traverse relative to
+    bool explore)
 {
-  if (current_dimension == m_ndim) return;
-  /*
-   * let higher order dimensions find neighbours independent of this dimension
-   * first
-   */
-  create_abutting_domains_list(current_dimension + 1, current_position);
-
-  /* get neighbouring directions */
-  int negative_direction[m_ndim], positive_direction[m_ndim];
-  copy(current_position, current_position + m_ndim, negative_direction);
-  copy(current_position, current_position + m_ndim, positive_direction);
-  negative_direction[current_dimension] -= 1;
-  positive_direction[current_dimension] += 1;
-
-  if (periodic[current_dimension]) {
-    negative_direction[current_dimension] =
-        (negative_direction[current_dimension] + nx[current_dimension])
-        % nx[current_dimension];
-    positive_direction[current_dimension] %= nx[current_dimension];
+  if (current_dimension != 0) {
+    create_abutting_domains_list(current_dimension - 1, cursor, explore);
   }
 
-  int neighbour_rank;
-  /* have neighbours in the negative direction */
-  if (negative_direction[current_dimension] >= 0) {
-    MPI_Cart_rank(cart_comm, negative_direction, &neighbour_rank);
-    abutting_domains.push_back(neighbour_rank);
-    create_abutting_domains_list(current_dimension + 1, negative_direction);
+  if (!explore) {
+    /* have neighbours in the negative direction */
+    if (--cursor[current_dimension] > -1) {
+      int neighbour_rank;
+      MPI_Cart_rank(cart_comm, cursor, &neighbour_rank);
+      abutting_domains.push_back(neighbour_rank);
+    }
+    /* have neighbours in the positive direction */
+    if ((cursor[current_dimension] += 2) < nx[current_dimension]) {
+      int neighbour_rank;
+      MPI_Cart_rank(cart_comm, cursor, &neighbour_rank);
+      abutting_domains.push_back(neighbour_rank);
+    }
+    cursor[current_dimension]--;
   }
-  /* have neighbours in the positive direction */
-  if (positive_direction[current_dimension] < nx[current_dimension]) {
-    MPI_Cart_rank(cart_comm, positive_direction, &neighbour_rank);
-    abutting_domains.push_back(neighbour_rank);
-    create_abutting_domains_list(current_dimension + 1, positive_direction);
+  else if (current_dimension != 0) {
+    /* have neighbours in the negative direction */
+    if (--cursor[current_dimension] > -1) {
+      create_abutting_domains_list(current_dimension - 1, cursor, false);
+      create_abutting_domains_list(current_dimension - 1, cursor, true);
+    }
+    /* have neighbours in the positive direction */
+    if ((cursor[current_dimension] += 2) < nx[current_dimension]) {
+      create_abutting_domains_list(current_dimension - 1, cursor, false);
+      create_abutting_domains_list(current_dimension - 1, cursor, true);
+    }
+    cursor[current_dimension]--;
   }
 }
+
+// ##################################################################
+// ##################################################################
+
 
 void MCMDcontrol::create_abutting_domains_list()
 {
-  if (abutting_domains.empty()) create_abutting_domains_list(0, ix);
+  int cursor[m_ndim];
+  for (int i = 0; i < m_ndim; i++) {
+    cursor[i] = ix[i];
+  }
+  if (abutting_domains.empty()) {
+    create_abutting_domains_list(m_ndim - 1, cursor, false);
+    create_abutting_domains_list(m_ndim - 1, cursor, true);
+  }
 }
+
+// ##################################################################
+// ##################################################################
+
 
 void MCMDcontrol::get_domain_coordinates(const int r, int *arr) const
 {
   MPI_Cart_coords(cart_comm, r, m_ndim, arr);
 }
+
+// ##################################################################
+// ##################################################################
+
 
 int MCMDcontrol::get_rank_from_grid_location(
     const class SimParams &par,  ///< simulation parameters
@@ -255,6 +329,10 @@ int MCMDcontrol::get_rank_from_grid_location(
   MPI_Cart_rank(cart_comm, grid_coordinates, &proc);
   return proc;
 }
+
+// ##################################################################
+// ##################################################################
+
 
 void MCMDcontrol::determine_parent_processes(
     const class SimParams &par, const int level)
@@ -324,6 +402,10 @@ void MCMDcontrol::determine_parent_processes(
 #endif
 }
 
+// ##################################################################
+// ##################################################################
+
+
 void MCMDcontrol::determine_child_ranks(
     const class SimParams &par,
     const int level,
@@ -345,6 +427,10 @@ void MCMDcontrol::determine_child_ranks(
     }
   }
 }
+
+// ##################################################################
+// ##################################################################
+
 
 void MCMDcontrol::determine_child_processes(
     const class SimParams &par, const int level)
@@ -395,6 +481,10 @@ void MCMDcontrol::determine_child_processes(
 #endif
 }
 
+// ##################################################################
+// ##################################################################
+
+
 void MCMDcontrol::determine_child_neighbour_ranks(
     const class SimParams &par,
     const int level,
@@ -428,6 +518,10 @@ void MCMDcontrol::determine_child_neighbour_ranks(
     }
   }
 }
+
+// ##################################################################
+// ##################################################################
+
 
 void MCMDcontrol::determine_child_neighbours(
     const class SimParams &par, const int level)
@@ -480,6 +574,10 @@ void MCMDcontrol::determine_child_neighbours(
 #endif
 }
 
+// ##################################################################
+// ##################################################################
+
+
 void MCMDcontrol::set_NG_hierarchy(
     class SimParams &par,  ///< simulation parameters
     const int l            ///< level to work on
@@ -508,6 +606,23 @@ void MCMDcontrol::set_NG_hierarchy(
   }
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+void MCMDcontrol::get_nx_subdomains(int *tmp) const
+{
+  for (int i = 0; i < MAX_DIM; i++)
+    tmp[i] = nx[i];
+  return;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
 void MCMDcontrol::get_parent_grid_info(struct cgrid *cg) const
 {
   cg->rank = pgrid.rank;
@@ -516,6 +631,10 @@ void MCMDcontrol::get_parent_grid_info(struct cgrid *cg) const
   for (int i = 0; i < MAX_DIM; i++)
     cg->Xmax[i] = pgrid.Xmax[i];
 }
+
+// ##################################################################
+// ##################################################################
+
 
 void MCMDcontrol::get_parent_ngb_grid_info(vector<struct cgrid> &pgngb) const
 {
@@ -529,6 +648,10 @@ void MCMDcontrol::get_parent_ngb_grid_info(vector<struct cgrid> &pgngb) const
   }
 }
 
+// ##################################################################
+// ##################################################################
+
+
 void MCMDcontrol::get_child_grid_info(vector<struct cgrid> &cg) const
 {
   cg.resize(child_procs.size());
@@ -540,6 +663,10 @@ void MCMDcontrol::get_child_grid_info(vector<struct cgrid> &cg) const
       cg[iter].Xmax[i] = child_procs[iter].Xmax[i];
   }
 }
+
+// ##################################################################
+// ##################################################################
+
 
 void MCMDcontrol::get_level_lp1_ngb_info(
     vector<vector<struct cgrid> > &cgngb) const
@@ -557,10 +684,18 @@ void MCMDcontrol::get_level_lp1_ngb_info(
   }
 }
 
+// ##################################################################
+// ##################################################################
+
+
 void MCMDcontrol::gather_ncells(int *recv_buffer, const int &root) const
 {
   MPI_Gather(&LocalNcell, 1, MPI_INT, recv_buffer, 1, MPI_INT, root, cart_comm);
 }
+
+// ##################################################################
+// ##################################################################
+
 
 void MCMDcontrol::allgather_ncells(vector<int> &ncells_list) const
 {
@@ -568,6 +703,10 @@ void MCMDcontrol::allgather_ncells(vector<int> &ncells_list) const
   MPI_Allgather(
       &LocalNcell, 1, MPI_INT, &ncells_list[0], 1, MPI_INT, cart_comm);
 }
+
+// ##################################################################
+// ##################################################################
+
 
 void MCMDcontrol::gather_extents(double *recv_buffer, const int &root) const
 {
@@ -581,6 +720,10 @@ void MCMDcontrol::gather_extents(double *recv_buffer, const int &root) const
       root, cart_comm);
 }
 
+// ##################################################################
+// ##################################################################
+
+
 void MCMDcontrol::gather_offsets(
     vector<int> &offsets_list, const int &root) const
 {
@@ -590,6 +733,10 @@ void MCMDcontrol::gather_offsets(
       cart_comm);
 }
 
+// ##################################################################
+// ##################################################################
+
+
 void MCMDcontrol::gather_localNG(
     vector<int> &localNG_list, const int &root) const
 {
@@ -598,6 +745,10 @@ void MCMDcontrol::gather_localNG(
       &LocalNG[0], m_ndim, MPI_INT, &localNG_list[0], m_ndim, MPI_INT, root,
       cart_comm);
 }
+
+// ##################################################################
+// ##################################################################
+
 
 void MCMDcontrol::gather_abutting_domains(
     vector<int> &abutting_domains_list,

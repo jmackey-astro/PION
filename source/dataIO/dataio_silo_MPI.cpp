@@ -1241,7 +1241,7 @@ int dataio_silo_pllel::write_multimeshadj(
   }
 
 #ifndef NDEBUG
-  cout << "Writing multimesh adjacency object into Silo file.\n";
+  cout << "Writing multimesh adjacency object into Silo file." << std::endl;
 #endif
 
   //
@@ -1272,14 +1272,11 @@ int dataio_silo_pllel::write_multimeshadj(
   //
   // loop over meshes and populate the neighbour lists.
   //
-  // long int ct=0;
-
   int *offsets, *LocalNG;
   for (int v = 0; v < nmesh; v++) {
-    offsets = &offsets_list[v * mpiPM->get_ndim()];
-    LocalNG = &localNG_list[v * mpiPM->get_ndim()];
-    long int off1 =
-        Sk[v];  // this should be the same as ct (maybe don't need ct then!)
+    offsets       = &offsets_list[v * mpiPM->get_ndim()];
+    LocalNG       = &localNG_list[v * mpiPM->get_ndim()];
+    long int off1 = Sk[v];
 
     //
     // Assign reverse neighbour's id for each of myrank's neighbours.
@@ -1334,11 +1331,12 @@ int dataio_silo_pllel::write_multimeshadj(
       // For neighbours nodelists, get their relative position in the
       // block structure.
       //
-      int my_ix[MAX_DIM], ngb_ix[MAX_DIM];
+      int my_ix[MAX_DIM], ngb_ix[MAX_DIM], nx[MAX_DIM];
       for (int ii = 0; ii < MAX_DIM; ii++)
-        my_ix[ii] = ngb_ix[ii] = -1;
+        my_ix[ii] = ngb_ix[ii] = nx[ii] = -1;
       mpiPM->get_domain_coordinates(v, my_ix);
       mpiPM->get_domain_coordinates(ngb[off1], ngb_ix);
+      mpiPM->get_nx_subdomains(nx);
 
       //
       // X-dir first.
@@ -1355,8 +1353,14 @@ int dataio_silo_pllel::write_multimeshadj(
         nodelist[off1][6] = offsets[XX];
         nodelist[off1][7] = offsets[XX] + LocalNG[XX];
       }
-      else
+      else {
+        cout << "i= " << i << " v=" << v << "  ix " << my_ix[XX] << "  "
+             << ngb_ix[XX] << "  " << nx[XX] << "\n";
+        rep.printVec("my_ix", my_ix, 3);
+        rep.printVec("ngb_ix", ngb_ix, 3);
         rep.error("domains don't touch (X-dir)!", my_ix[XX] - ngb_ix[XX]);
+        cout << std::endl;
+      }
 
       //
       // Now Y-dir

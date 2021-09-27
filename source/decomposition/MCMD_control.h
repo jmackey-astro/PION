@@ -182,9 +182,9 @@ public:
   /// Helper function to recurse traversal of dimensions
   ///
   void create_abutting_domains_list(
-      int,   ///< current dimension to traverse
-      int[]  ///< position to traverse relative to
-  );
+      int,    ///< current dimension to traverse
+      int[],  ///< position to traverse relative to
+      bool);
 
   ///
   /// Get a list of all abutting domains, including corner/edge
@@ -235,27 +235,29 @@ public:
     return;
   }
 
+  /// get nx[] array of subdomains
+  void get_nx_subdomains(int *) const;
+
   /// get data on parent grid, if it exists
-  void get_parent_grid_info(struct cgrid *cg) const;
+  void get_parent_grid_info(struct cgrid *) const;
 
   /// get data on neighbouring grids to parent grid, if they exist
-  void get_parent_ngb_grid_info(std::vector<struct cgrid> &pgngb) const;
+  void get_parent_ngb_grid_info(std::vector<struct cgrid> &) const;
 
   /// get data on child grids, if they exist
-  void get_child_grid_info(std::vector<struct cgrid> &cg) const;
+  void get_child_grid_info(std::vector<struct cgrid> &) const;
 
   /// get data on neighbouring grids on level l+1, if they exist.
-  void get_level_lp1_ngb_info(
-      std::vector<std::vector<struct cgrid> > &cgngb) const;
+  void get_level_lp1_ngb_info(std::vector<std::vector<struct cgrid> > &) const;
 
   /// get the Cartesian communicator
   MPI_Comm get_communicator() const { return cart_comm; }
 
   /// gather each LocalNcell variable at the root process
-  void gather_ncells(int *recv_buffer, const int &root) const;
+  void gather_ncells(int *, const int &) const;
 
   /// gather each LocalNcell variable at each process
-  void allgather_ncells(std::vector<int> &ncells_list) const;
+  void allgather_ncells(std::vector<int> &) const;
 
   /// gather LocalXmax and LocalXmin arrays at the root process
   void gather_extents(double *recv_buffer, const int &root) const;
@@ -273,6 +275,8 @@ public:
       int *rank_displacements_in_abutting_domains_list,
       int *num_abutting_domains_by_rank,
       const int &root);
+
+  void print_grid(std::vector<int> &coords, int current_dimension) const;
 
 protected:
   int nproc;   ///< Number of processors.
