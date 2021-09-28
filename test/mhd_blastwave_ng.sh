@@ -36,7 +36,7 @@ if grep -q "RESULTS ARE THE SAME" tmp.txt; then
   echo -e "*** TEST HAS BEEN PASSED ***${NC}"
   exit 0
 else
-  echo -e "${GREEN}*** TEST HAS BEEN FAILED ***"
+  echo -e "${RED}*** TEST HAS BEEN FAILED ***"
   tail -n10 tmp.txt
   echo -e "*** TEST HAS BEEN FAILED ***${NC}"
   exit 1 

@@ -30,7 +30,7 @@ if grep -q "RESULTS ARE THE SAME" tmp.txt; then
   echo -e "*** 3D-Blastwave TEST HAS BEEN PASSED ***${NC}"
   exit 0
 else
-  echo -e "${GREEN}*** 3D-Blastwave TEST HAS BEEN FAILED ***"
+  echo -e "${RED}*** 3D-Blastwave TEST HAS BEEN FAILED ***"
   tail -n10 tmp.txt
   echo -e "*** 3D-Blastwave TEST HAS BEEN FAILED ***${NC}"
   exit 1 
