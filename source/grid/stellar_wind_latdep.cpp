@@ -535,11 +535,20 @@ int stellar_wind_latdep::add_evolving_source(
     const double t_now,  ///< current sim time, to see if src is active.
     const double
         update_freq,  ///< frequency to update wind properties (seconds).
-    const double t_scalefactor  ///< wind evolves this factor faster than normal
+    const double
+        t_scalefactor,  ///< wind evolves this factor times faster than normal
+    const double ecentricity,  ///< relative eccentricity of the stellar orbit
+    const double PeriastronX,  /// Vector pointing from the inital location
+                               /// (dpos) to the center of gravity of the orbit;
+                               /// hard-coded to be in the x-y-plane
+    const double PeriastronY,  /// Vector pointing from the inital location
+                               /// (dpos) to the center of gravity of the orbit;
+                               /// hard-coded to be in the x-y-plane
+    const double OrbPeriod     /// Orbital period in years
 )
 {
   if (type != WINDTYPE_LATDEP) {
-    rep.error("Bad wind type for evolving stellar wind (rotating star)!", type);
+    rep.error("Bad wind type for evolving stellar wind (lat-dep)!", type);
   }
   //
   // First we will read the file, and see when the source should
@@ -678,7 +687,8 @@ int stellar_wind_latdep::add_evolving_source(
   // Now add source using rotating star version.
   //
   add_rotating_source(
-      pos, rad, type, mdot, md0, vinf, vrot, vcrt, Twind, rstar, Bstar, trv);
+      pos, rad, type, mdot, md0, vinf, vrot, vcrt, Twind, rstar, Bstar, trv,
+      ecentricity, PeriastronX, PeriastronY, OrbPeriod);
   temp->ws = wlist.back();
 
   wdata_evol.push_back(temp);
@@ -704,7 +714,11 @@ int stellar_wind_latdep::add_rotating_source(
     const double Twind,  ///< Wind Temperature (p_g.m_p/(rho.k_b))
     const double Rstar,  ///< radius of star (cm)
     const double Bstar,  ///< Surface Magnetic field of star (Gauss).
-    pion_flt *trv        ///< Tracer values of wind (if any)
+    pion_flt *trv,       ///< Tracer values of wind (if any)
+    const double ecentricity,
+    const double PeriastronX,  ///< periastronX vectror (cgs units).
+    const double PeriastronY,  ///< periastronY vectror (cgs units).
+    const double OrbPeriod     ///< Orbital period (years)
 )
 {
   struct wind_source *ws = 0;
@@ -743,6 +757,11 @@ int stellar_wind_latdep::add_rotating_source(
   ws->Tw    = Twind;
   ws->Rstar = Rstar;
   ws->Bstar = Bstar;
+
+  ws->ecentricity = ecentricity;
+  ws->OrbPeriod   = OrbPeriod;
+  ws->PeriastronX = PeriastronX;
+  ws->PeriastronY = PeriastronY;
 
   ws->tracers = 0;
   ws->tracers = mem.myalloc(ws->tracers, ntracer);

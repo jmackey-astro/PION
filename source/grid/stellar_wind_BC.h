@@ -154,7 +154,7 @@ public:
       const double,    ///< frequency with which to update wind properties.
       const double,    ///< time scale factor
                        ///< (t(sim)=[t(evo_file)-offset]/scalefactor
-      const double,    ///< ecentricity
+      const double,    ///< eccentricity
       const double,    ///< periastronX vectror (cgs units).
       const double,    ///< periastronY vectror (cgs units).
       const double     ///< Orbital period (years)
@@ -420,7 +420,7 @@ public:
       const double,    ///< Stellar Radius (cm)
       const double,    ///< Surface B field (G)
       pion_flt *,      ///< Tracer values of wind (if any)
-      const double,    ///< relative ecentricity of the stellar orbit
+      const double,    ///< relative eccentricity of the stellar orbit
       const double,  /// Vector pointing from the inital location (dpos) to the
                      /// center of gravity of the orbit; hard-coded to be in the
                      /// x-y-plane
@@ -449,7 +449,7 @@ public:
       const double,    ///< frequency with which to update wind properties.
       const double,    ///< scale factor for time
                        ///< (t(sim)=[t(evo_file)-offset]/scalefactor
-      const double,    ///< relative ecentricity of the stellar orbit
+      const double,    ///< relative eccentricity of the stellar orbit
       const double,  /// Vector pointing from the inital location (dpos) to the
                      /// center of gravity of the orbit; hard-coded to be in the
                      /// x-y-plane

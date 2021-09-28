@@ -56,8 +56,12 @@ public:
       const double,    ///< time offset = [t(sim)-t(wind_file)]
       const double,    ///< current time.
       const double,    ///< frequency with which to update wind properties.
-      const double     ///< scale factor for time
+      const double,    ///< scale factor for time
                        ///< (t(sim)=[t(evo_file)-offset]/scalefactor
+      const double,    ///< eccentricity
+      const double,    ///< periastronX vectror (cgs units).
+      const double,    ///< periastronY vectror (cgs units).
+      const double     ///< Orbital period (years)
   );
 
   ///
@@ -81,7 +85,11 @@ public:
       const double,    ///< Wind Temperature (p_g.m_p/(rho.k_b))
       const double,    ///< Radius of star (cm)
       const double,    ///< Surface B-field (Gauss)
-      pion_flt *       ///< Tracer values of wind (if any)
+      pion_flt *,      ///< Tracer values of wind (if any)
+      const double,    ///< eccentricity
+      const double,    ///< periastronX vectror (cgs units).
+      const double,    ///< periastronY vectror (cgs units).
+      const double     ///< Orbital period (years)
   );
 
   /// setup tables for interpolation.

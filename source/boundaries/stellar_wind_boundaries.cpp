@@ -142,7 +142,7 @@ int stellar_wind_bc::BC_assign_STWIND(
       // This works for spherically symmetric winds and for
       // latitude-dependent winds that evolve over time.
       //
-      // cout <<"Adding source "<<isw<<" with filename ";
+      // cout <<"Adding evolving source "<<isw<<" with filename ";
       // cout <<SWP.params[isw]->evolving_wind_file<<"\n";
       err = grid->Wind->add_evolving_source(
           SWP.params[isw]->dpos, SWP.params[isw]->radius, SWP.params[isw]->type,
@@ -259,7 +259,8 @@ int stellar_wind_bc::BC_update_STWIND(
         id, &ecentricity_fac, &periastron_vec[0], &periastron_vec[1],
         &orbital_period, initial_position);
     // execute only if orbit exsists == orbital_period!=0
-    if (orbital_period != 0) {
+    if (orbital_period > 1.0e-8) {
+      // cout <<"   >>> orbital period <<< "<<orbital_period<<" \n";
       grid->Wind->get_src_posn(id, srcpos);
       grid->Wind->get_src_drad(id, &srcrad);
       cell *c = grid->FirstPt_All();
