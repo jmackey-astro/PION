@@ -11,3 +11,7 @@ target_link_libraries(spatial_solvers PUBLIC
     equations
     coord_sys
 )
+
+if(PION_OMP)
+    target_link_libraries(spatial_solvers PUBLIC OpenMP::OpenMP_CXX)
+endif(PION_OMP)

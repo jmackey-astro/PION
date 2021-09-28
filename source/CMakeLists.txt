@@ -90,14 +90,14 @@ if(PION_UNIFORM_GRID)
         add_executable(
             pion-ug
 
-            main_MPI.cpp
+            main.cpp
             sim_params.cpp
             constants.cpp
         )
         add_executable(
             icgen-ug
 
-            main_icgen_MPI.cpp
+            main_icgen.cpp
             sim_params.cpp
             constants.cpp
         ) 
@@ -157,4 +157,7 @@ add_library(
   constants.cpp
 )
 
+#if(PION_OMP)
+#    target_link_libraries(global PUBLIC OpenMP::OpenMP_CXX)
+#endif(PION_OMP)
 

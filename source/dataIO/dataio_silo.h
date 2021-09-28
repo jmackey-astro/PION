@@ -77,12 +77,15 @@ public:
   ///
   virtual ~dataio_silo();
 
-  ///
   /// Class can run with or without a solver, but this function
-  /// allows you to set a pointer to the solver.#
-  ///
+  /// allows you to set a pointer to the solver.
   void SetSolver(
       FV_solver_base *  ///< Pointer to the solver (for Eint,divB,Ptot)
+  );
+
+  /// allows you to set a pointer to a microphysics class
+  void SetMicrophysics(
+      class microphysics_base *  ///< pointer to microphysics class
   );
 
   ///
@@ -133,8 +136,9 @@ public:
 protected:
   class GridBaseClass *gp;  ///< pointer to computational grid.
 
-  class FV_solver_base *eqn;  ///< pointer to the solver, which knows the
-                              ///< equations we are solving.
+  class FV_solver_base *eqn;    ///< pointer to the solver, which knows the
+                                ///< equations we are solving.
+  class microphysics_base *mp;  ///< pointer to microphysics class
 
   ///
   /// Whether to write float or double data (DB_FLOAT or DB_DOUBLE)

@@ -54,6 +54,7 @@
 /// - 2018.04.27 JM: removed some args (simpler command-line running).
 
 #include <iostream>
+#include <sstream>
 using namespace std;
 
 #include "defines/functionality_flags.h"
@@ -63,16 +64,38 @@ using namespace std;
 #include "sim_control/sim_control.h"
 #include "tools/reporting.h"
 
+#ifdef PARALLEL
+#include "sim_control/sim_control_MPI.h"
+#endif
+#ifdef PION_OMP
+#include <omp.h>
+#endif
+
+
 int main(int argc, char **argv)
 {
+  int err = 0;
+#ifdef PARALLEL
+  err = COMM->init(&argc, &argv);
+  // cout <<"argc="<<argc<<"\n";
+  int myrank = -1, nproc = -1;
+  COMM->get_rank_nproc(&myrank, &nproc);
+#endif
 
   //
   // Set up simulation controller class.
   //
   class sim_control *sim_control = 0;
-  sim_control                    = new class sim_control();
+
+#ifndef PARALLEL
+  sim_control = new class sim_control();
   if (!sim_control)
     rep.error("(pion) Couldn't initialise sim_control", sim_control);
+#else
+  sim_control = new class sim_control_pllel();
+  if (!sim_control)
+    rep.error("(PION) Couldn't initialise sim_control_pllel", sim_control);
+#endif
 
   //
   // Check that command-line arguments are sufficient.
@@ -82,7 +105,6 @@ int main(int argc, char **argv)
     rep.error("Bad arguments", argc);
   }
 
-  int err      = 0;
   string *args = 0;
   args         = new string[argc];
   for (int i = 0; i < argc; i++)
@@ -92,14 +114,51 @@ int main(int argc, char **argv)
   for (int i = 0; i < argc; i++) {
     if (args[i].find("redirect=") != string::npos) {
       string outpath = (args[i].substr(9));
+#ifdef PARALLEL
+      ostringstream path;
+      path << outpath << "_" << myrank << "_";
+      outpath = path.str();
+      if (myrank == 0) {
+        cout << "\tRedirecting stdout to " << outpath << "info.txt"
+             << "\n";
+      }
+#else
       cout << "Redirecting stdout to " << outpath << "info.txt"
            << "\n";
+#endif
       // Redirects cout and cerr to text files in the directory specified.
       rep.redirect(outpath);
     }
   }
+#ifdef PARALLEL
+#ifndef TESTING
+  rep.kill_stdout_from_other_procs(0);
+#endif
+#endif
+
+#ifdef PION_OMP
+  // set number of OpenMP threads, if included
+  int nth = 100;  // set to large number initially
+  for (int i = 0; i < argc; i++) {
+    if (args[i].find("omp-nthreads=") != string::npos) {
+      nth = atoi((args[i].substr(13)).c_str());
+      if (nth > omp_get_num_procs()) {
+        cout << "\toverride: requested too many threads.\n";
+        nth = min(nth, omp_get_num_procs());
+      }
+      cout << "\toverride: setting OpenMP N-threads to " << nth << "\n";
+    }
+  }
+  nth = min(nth, omp_get_num_procs());
+  omp_set_num_threads(nth);
+#endif
+
   cout << "-------------------------------------------------------\n";
+#ifdef PARALLEL
+  cout << "---------   pion UG MPI v2.0  running   ---------------\n";
+#else
   cout << "---------   pion UG SERIAL v2.0  running   ------------\n";
+#endif
   cout << "-------------------------------------------------------\n\n";
 
   // Set what type of file to open: 1=parameterfile, 2/5=restartfile.
@@ -124,14 +183,43 @@ int main(int argc, char **argv)
   vector<class GridBaseClass *> grid;
 
   //
+  // Reset max. walltime to run the simulation for, if needed.
+  // Input should be in hours.
+  //
+  for (int i = 0; i < argc; i++) {
+    if (args[i].find("maxwalltime=") != string::npos) {
+      double tmp = atof((args[i].substr(12)).c_str());
+      if (isnan(tmp) || isinf(tmp) || tmp < 0.0)
+        rep.error("Don't recognise max walltime as a valid runtime!", tmp);
+
+      sim_control->set_max_walltime(tmp * 3600.0);
+
+#ifdef PARALLEL
+      if (myrank == 0) {
+#endif
+        cout << "\tResetting MAXWALLTIME to ";
+        cout << sim_control->get_max_walltime() << " seconds, or ";
+        cout << sim_control->get_max_walltime() / 3600.0 << " hours.\n";
+#ifdef PARALLEL
+      }
+#endif
+    }
+  }
+
+  //
   // Initialise the grid.
   // inputs are infile_name, infile_type, nargs, *args[]
   //
   err = sim_control->Init(args[1], ft, argc, args, grid);
   if (err != 0) {
-    cerr << "(*pion*) err!=0 from Init"
+    cerr << "(PION) err!=0 from Init"
          << "\n";
     delete sim_control;
+#ifdef PARALLEL
+    COMM->finalise();
+    cout << "rank: " << myrank << " nproc: " << nproc << "\n";
+    delete COMM;
+#endif
     return 1;
   }
   //
@@ -139,10 +227,14 @@ int main(int argc, char **argv)
   //
   err += sim_control->Time_Int(grid);
   if (err != 0) {
-    cerr << "(*pion*) err!=0 from Time_Int"
+    cerr << "(PION) err!=0 from Time_Int"
          << "\n";
     delete sim_control;
-    // delete grid;
+#ifdef PARALLEL
+    COMM->finalise();
+    cout << "rank: " << myrank << " nproc: " << nproc << "\n";
+    delete COMM;
+#endif
     return 1;
   }
   //
@@ -150,10 +242,13 @@ int main(int argc, char **argv)
   //
   err += sim_control->Finalise(grid);
   if (err != 0) {
-    cerr << "(*pion*) err!=0 from Finalise"
+    cerr << "(PION) err!=0 from Finalise"
          << "\n";
     delete sim_control;
-    // delete grid;
+#ifdef PARALLEL
+    cout << "rank: " << myrank << " nproc: " << nproc << "\n";
+    delete COMM;
+#endif
     return 1;
   }
 
@@ -162,6 +257,11 @@ int main(int argc, char **argv)
   delete grid[0];
   delete[] args;
   args = 0;
+#ifdef PARALLEL
+  cout << "rank: " << myrank << " nproc: " << nproc << "\n";
+  delete COMM;
+  COMM = 0;
+#endif
 
   cout << "-------------------------------------------------------\n";
   cout << "---------   pion v.2.0  finished  ---------------------\n";

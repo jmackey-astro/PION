@@ -432,7 +432,6 @@ size_t cell_interface::set_cell_pointers(
     c->ngb[v] = 0;
   c->npt      = 0;
   c->npt_all  = 0;
-  c->id       = -9999;
   c->isedge   = -999;
   c->isbd     = false;
   c->isgd     = false;
@@ -824,7 +823,7 @@ void cell_interface::print_cell(const cell *c)
     cout << "Null Pointer!\n";
     return;
   }
-  cout << "cell:\t id = " << c->id << "\n";
+  cout << std::dec << "cell:\t id = " << c->id << "\n";
   cout << "\tcell pointer= " << c << "\n";
   cout << "\tisedge:" << c->isedge << "\tisbd:" << c->isbd
        << "\tisgd:" << c->isgd << "\n";

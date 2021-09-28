@@ -103,7 +103,7 @@ CoolingFn::CoolingFn(int flag)
     // derivative boundary conditions for extrapolation beyond the range of
     // the data.  It is dangerous to go beyond the range, but this boundary
     // condition means that extrapolation has a chance of being reasonable.
-    interpolate.spline(Temp, Lamb, Nspl, 0.0, 0.0, id);
+    spline(Temp, Lamb, Nspl, 0.0, 0.0, id);
   }  // SD93 function (NEQ)
 
   else if (flag == 2) {
@@ -164,7 +164,7 @@ CoolingFn::CoolingFn(int flag)
     // derivative boundary conditions for extrapolation beyond the range of
     // the data.  It is dangerous to go beyond the range, but this boundary
     // condition means that extrapolation has a chance of being reasonable.
-    interpolate.spline(Temp, Lamb, Nspl, 0.0, 0.0, id);
+    spline(Temp, Lamb, Nspl, 0.0, 0.0, id);
     rep.error(
         "Dalgarno and McCray cooling function is not usably coded -- get "
         "a better function",
@@ -220,7 +220,7 @@ CoolingFn::CoolingFn(int flag)
     MinSlope = (temp2[1] - temp2[0]) / (temp1[1] - temp1[0]);
     cout << "\t\tMinSlope (logarithmic) = " << MinSlope << "\n";
 #endif
-    interpolate.spline(Temp, Lamb, Nspl, 0.0, 0.0, id);
+    spline(Temp, Lamb, Nspl, 0.0, 0.0, id);
   }  // SD93 function (CIE)
 
   else if (flag == 5) {
@@ -333,7 +333,7 @@ CoolingFn::CoolingFn(int flag)
     MaxTemp  = Temp[Nspl - 1];
     MinSlope = (temp2[1] - temp2[0]) / (temp1[1] - temp1[0]);
     cout << "\t\tMinSlope (logarithmic) = " << MinSlope << "\n";
-    interpolate.spline(Temp, Lamb, Nspl, 0.0, 0.0, id);
+    spline(Temp, Lamb, Nspl, 0.0, 0.0, id);
   }  // SD93-CIE-ForbiddenLine
 
   else
@@ -412,7 +412,7 @@ double CoolingFn::CoolingRate(
       CI.print_cell(dp.c);
 #endif
       cout << "Returning Lambda(MaxTemp) = Lambda(" << MaxTemp << ")\n";
-      interpolate.splint(Temp, Lamb, spline_id, Nspl, MaxTemp, &rate);
+      splint(Temp, Lamb, spline_id, Nspl, MaxTemp, &rate);
     }
     else if (T <= 0.)
       rate = 0.0;
@@ -430,7 +430,7 @@ double CoolingFn::CoolingRate(
 #endif
     }
     else {
-      interpolate.splint(Temp, Lamb, spline_id, Nspl, T, &rate);
+      splint(Temp, Lamb, spline_id, Nspl, T, &rate);
     }
     //
     // Multiply by n_e.n_i
@@ -481,7 +481,7 @@ double CoolingFn::CoolingRate(
       CI.print_cell(dp.c);
 #endif
       cout << "Returning Lambda(MaxTemp) = Lambda(" << MaxTemp << ")\n";
-      interpolate.splint(Temp, Lamb, spline_id, Nspl, log10(MaxTemp), &rate);
+      splint(Temp, Lamb, spline_id, Nspl, log10(MaxTemp), &rate);
       rate = exp(log(10.0) * rate);
     }
     else if (T <= 0.)
@@ -497,7 +497,7 @@ double CoolingFn::CoolingRate(
 #endif
     }
     else {
-      interpolate.splint(Temp, Lamb, spline_id, Nspl, log10(T), &rate);
+      splint(Temp, Lamb, spline_id, Nspl, log10(T), &rate);
       rate = exp(log(10.0) * rate);
     }
     //
@@ -589,7 +589,7 @@ double CoolingFn::CoolingRate(
       // CI.print_cell(dp.c);
 #endif
       // cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
-      interpolate.splint(Temp, Lamb, spline_id, Nspl, MaxTemp, &rate);
+      splint(Temp, Lamb, spline_id, Nspl, MaxTemp, &rate);
     }
     else if (T <= 0.)
       rate = 0.0;
@@ -599,7 +599,7 @@ double CoolingFn::CoolingRate(
       rate = max(1.e-50, Lamb[0] * exp(25.0 * (log(T) - log(MinTemp))));
     }
     else {
-      interpolate.splint(Temp, Lamb, spline_id, Nspl, T, &rate);
+      splint(Temp, Lamb, spline_id, Nspl, T, &rate);
     }
     if (T < 2.0e4)
       rate += xHp * 2.0e-24 * T / 8000.0;  // exp(2.0*log(T/8000.0));
@@ -640,7 +640,7 @@ double CoolingFn::CoolingRate(
       // CI.print_cell(dp.c);
 #endif
       // cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
-      interpolate.splint(Temp, Lamb, spline_id, Nspl, MaxTemp, &rate);
+      splint(Temp, Lamb, spline_id, Nspl, MaxTemp, &rate);
     }
     else if (T <= 0.)
       rate = 0.0;
@@ -650,7 +650,7 @@ double CoolingFn::CoolingRate(
       rate = max(1.e-50, Lamb[0] * exp(25.0 * (log(T) - log(MinTemp))));
     }
     else {
-      interpolate.splint(Temp, Lamb, spline_id, Nspl, T, &rate);
+      splint(Temp, Lamb, spline_id, Nspl, T, &rate);
     }
 
     //

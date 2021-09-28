@@ -409,7 +409,7 @@ int main(int argc, char **argv)
   enum axes perpaxis = static_cast<axes>(static_cast<int>(perpdir)/2);
   cout <<"*** perpendicular axis = "<<perpaxis<<"\n";
   for (int l=0;l<SimPM.grid_nlevels;l++) {
-    SimPM.levels[l].MCMD.decomposeDomain(perpaxis,SimPM,SimPM.levels[l]);
+    SimPM.levels[l].MCMD.decomposeDomain(perpaxis,SimPM.ndim,SimPM.levels[l]);
   }
   for (int l=0;l<SimPM.grid_nlevels;l++) {
     SimPM.levels[l].MCMD.set_NG_hierarchy(SimPM,l);
@@ -455,6 +455,7 @@ int main(int argc, char **argv)
   err += SimSetup->setup_microphysics(SimPM);
   //err += setup_raytracing();
   if (err) rep.error("Setup of microphysics and raytracing",err);
+  class microphysics_base *MP = SimSetup->get_mp_ptr();
   
   // Assign boundary conditions to boundary points.
   //err = SimSetup->boundary_conditions(grid);
@@ -479,6 +480,7 @@ int main(int argc, char **argv)
   class image *IMG[SimPM.grid_nlevels];
   for (size_t v=0;v<SimPM.grid_nlevels;v++) {
     IMG[v] = new class image (normal, angle, perpdir, G[v]);
+    IMG[v]->SetMicrophysics(MP);
   }
 
   int npix[3]={-1,-1,-1}, num_pixels=0;

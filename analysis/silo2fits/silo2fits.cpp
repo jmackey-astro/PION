@@ -271,6 +271,7 @@ int main(int argc, char **argv)
   err += SimSetup->setup_microphysics(SimPM);
   //err += setup_raytracing();
   if (err) rep.error("Setup of microphysics",err);
+  class microphysics_base *MP = SimSetup->get_mp_ptr();
 
   cout <<"--------------- Finished Setting up Grid --------------\n";
   cout <<"-------------------------------------------------------\n";

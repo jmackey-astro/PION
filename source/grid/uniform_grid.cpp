@@ -488,7 +488,7 @@ int UniformGrid::allocate_grid_data()
     cout << "i=" << i << " of " << G_ncell_all;
     cout << ": ix=" << ix << ", nel=" << nel << "\n";
 #endif
-    carr[i].id = i;
+    carr[i].id = static_cast<long int>(i);
     ix         = CI.set_cell_pointers(&(carr[i]), data, ix);
     if (i < G_ncell_all - 1)
       carr[i].npt_all = &(carr[i + 1]);

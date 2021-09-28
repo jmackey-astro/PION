@@ -31,6 +31,11 @@ public:
       FV_solver_base *  ///< Pointer to the solver (to get Eint,divB,Ptot)
   );
 
+  /// allows you to set a pointer to a microphysics class
+  virtual void SetMicrophysics(
+      class microphysics_base *  ///< pointer to microphysics class
+  );
+
   /// Write simulation data to file.
   virtual int OutputData(
       const string,                     ///< File to write to
@@ -69,10 +74,11 @@ public:
   );
 
 protected:
-  class GridBaseClass *gp;    ///< pointer to computational grid.
-  class FV_solver_base *eqn;  ///< pointer to the solver, which knows the
-                              ///< equations we are solving.
-  class ReadParams *rp;       ///< pointer to read_parameters class instance.
+  class GridBaseClass *gp;      ///< pointer to computational grid.
+  class FV_solver_base *eqn;    ///< pointer to the solver, which knows the
+                                ///< equations we are solving.
+  class ReadParams *rp;         ///< pointer to read_parameters class instance.
+  class microphysics_base *mp;  ///< pointer to microphysics class
 
   ///
   /// set filename based on counter, outfile-base-name.

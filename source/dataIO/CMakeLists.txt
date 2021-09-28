@@ -25,7 +25,7 @@ if(PION_USE_SILO)
         )
     endif(PION_PARALLEL)
 
-    target_link_libraries(dataio_silo PUBLIC ${SILO_LIBRARY})
+    target_link_libraries(dataio_silo PUBLIC ${SILO_LIBRARY} microphysics)
     target_link_libraries(dataio PUBLIC dataio_silo)
 endif(PION_USE_SILO)
 
@@ -53,6 +53,9 @@ if(PION_USE_FITS)
         ${CURL_LIBRARY}
         ${BZIP2_LIBRARY}
         Threads::Threads
+        microphysics
+	global
+	tools
     )
     target_link_libraries(dataio PUBLIC dataio_fits)
 endif(PION_USE_FITS)

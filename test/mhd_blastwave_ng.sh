@@ -15,16 +15,34 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+###################################################################
+# Logic for whether to test MPI, OpenMP, or hybrid parallelisation
+# Default (also with no argument) is to use MPI with np=4
+nt=0    # number of threads
+mpi=""  # MPI command
+
+if [[ $1 -eq 1 ]]; then
+  nt=4
+  mpi=""
+elif [[ $1 -eq 2 ]]; then
+  nt=2
+  mpi="mpirun --allow-run-as-root --oversubscribe -np 2"
+else
+  nt=1
+  mpi="mpirun --allow-run-as-root --oversubscribe -np 4"
+fi
+###################################################################
+
 script="${BASH_SOURCE[0]:-${(%):-%x}}"
 script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 
-mpirun --allow-run-as-root --oversubscribe -np 4 ../icgen-ng \
+${mpi} ../icgen-ng \
   ${script_dir}/problems/MHD_Blastwave2D/params_MHD_blastwave2D_l2_B010_n128.txt \
   silo redirect=iclog
 
-mpirun --allow-run-as-root --oversubscribe -np 4 ../pion-ng \
+${mpi} ../pion-ng \
   BW2d_StoneMHD_l2_B010_n128_level00_0000.00000000.silo solver=7 cfl=0.24 \
-  opfreq_time=0.1 outfile=NG_B010_n128 redirect=pionlog
+  opfreq_time=0.1 outfile=NG_B010_n128 redirect=pionlog-bw2d-mhd omp-nthreads=${nt}
 
 REF_FILE=NG_B010_n128_level00_0000.00000824.silo
 NEW_FILE=`ls NG_B010_n128_level00_0000.*.silo | tail -n1`
@@ -33,6 +51,7 @@ NEW_FILE=`ls NG_B010_n128_level00_0000.*.silo | tail -n1`
 if grep -q "RESULTS ARE THE SAME" tmp.txt; then
   echo -e "${GREEN}*** TEST HAS BEEN PASSED ***"
   tail -n10 tmp.txt
+  rm *.silo
   echo -e "*** TEST HAS BEEN PASSED ***${NC}"
   exit 0
 else

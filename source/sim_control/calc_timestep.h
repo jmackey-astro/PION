@@ -48,10 +48,9 @@ public:
   /// dynamics timestep.
   ///
   virtual int calculate_timestep(
-      class SimParams &,       ///< pointer to simulation parameters
-      class GridBaseClass *,   ///< pointer to grid.
-      class FV_solver_base *,  ///< solver/equations class
-      const int                ///< level in NG grid (if applicable)
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      const int               ///< level in NG grid (if applicable)
   );
 
 protected:
@@ -88,9 +87,7 @@ protected:
   ///
   double calc_dynamics_dt(
       class SimParams &,  ///< pointer to simulation parameters
-      class GridBaseClass *,
-      class FV_solver_base *  ///< solver/equations class
-  );
+      class GridBaseClass *);
 
 #ifdef THERMAL_CONDUCTION
   ///
@@ -101,9 +98,8 @@ protected:
   /// the timestep dt in spatial_solver->preprocess_data().
   ///
   double calc_conduction_dt_and_Edot(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      class FV_solver_base *  ///< solver/equations class
+      class SimParams &,     ///< pointer to simulation parameters
+      class GridBaseClass *  ///< pointer to grid.
   );
 #endif  // THERMAL CONDUCTION
 

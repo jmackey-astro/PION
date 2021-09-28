@@ -736,9 +736,9 @@ int dataio_silo_utility::parallel_read_serial_silodata(
   err = set_readvars(SimPM);
   if (err) rep.error("failed to set readvars in ReadData", err);
 
-  string qm_dir("/");
+  string qm_dir("/rank_0000_domain_0000");
   DBSetDir(dbfile, qm_dir.c_str());
-  string qm_name = "UniformGrid";
+  string qm_name = "unigrid0000";
 
   //
   // Get max and min quadmesh positions (integers)

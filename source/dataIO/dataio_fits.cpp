@@ -113,6 +113,7 @@ DataIOFits::~DataIOFits()
   cout << "Deleting DataIOFits class.\n";
   DataIOFits::eqn = 0;
   DataIOFits::gp  = 0;
+  DataIOFits::mp  = 0;
 }
 
 // ##################################################################
@@ -123,6 +124,21 @@ void DataIOFits::SetSolver(FV_solver_base *solver)
   cout << "DataIOFits::SetSolver() Setting solver pointer.\n";
   DataIOFits::eqn = solver;
 }
+
+// ##################################################################
+// ##################################################################
+
+
+
+void DataIOFits::SetMicrophysics(class microphysics_base *ptr)
+{
+#ifdef TESTING
+  cout << "DataIOFits::SetMicrophysics() Setting solver pointer.\n";
+#endif
+  DataIOFits::mp = ptr;
+}
+
+
 
 // ##################################################################
 // ##################################################################
@@ -155,11 +171,11 @@ int DataIOFits::OutputData(
                        "TR0",     "TR1",     "TR2",   "TR3",   "TR4"};
     for (int i = 0; i < SimPM.nvar; i++)
       extname[i] = pvar[i];
-    if (DataIOFits::eqn != 0 && MP == 0) {
+    if (DataIOFits::eqn != 0 && mp == 0) {
       extname[nvar] = "Eint";
       nvar += 1;
     }
-    else if (MP != 0) {
+    else if (mp != 0) {
       extname[nvar] = "Temp";
       nvar += 1;
     }
@@ -171,19 +187,19 @@ int DataIOFits::OutputData(
                        "TR2",     "TR3",     "TR4"};
     for (int i = 0; i < SimPM.nvar; i++)
       extname[i] = pvar[i];
-    if (DataIOFits::eqn != 0 && MP == 0) {
+    if (DataIOFits::eqn != 0 && mp == 0) {
       extname[nvar]     = "Eint";
       extname[nvar + 1] = "divB";
       extname[nvar + 2] = "Ptot";
       nvar += 3;
     }
-    else if (DataIOFits::eqn != 0 && MP != 0) {
+    else if (DataIOFits::eqn != 0 && mp != 0) {
       extname[nvar]     = "Temp";
       extname[nvar + 1] = "divB";
       extname[nvar + 2] = "Ptot";
       nvar += 3;
     }
-    else if (MP != 0) {
+    else if (mp != 0) {
       extname[nvar] = "Temp";
       nvar += 1;
     }
@@ -195,20 +211,20 @@ int DataIOFits::OutputData(
                        "TR1",     "TR2",     "TR3",   "TR4"};
     for (int i = 0; i < SimPM.nvar; i++)
       extname[i] = pvar[i];
-    cout << "EQN=" << DataIOFits::eqn << ", MP=" << MP << "\n";
-    if (DataIOFits::eqn != 0 && MP == 0) {
+    cout << "EQN=" << DataIOFits::eqn << ", MP=" << mp << "\n";
+    if (DataIOFits::eqn != 0 && mp == 0) {
       extname[nvar]     = "Eint";
       extname[nvar + 1] = "divB";
       extname[nvar + 2] = "Ptot";
       nvar += 3;
     }
-    else if (DataIOFits::eqn != 0 && MP != 0) {
+    else if (DataIOFits::eqn != 0 && mp != 0) {
       extname[nvar]     = "Temp";
       extname[nvar + 1] = "divB";
       extname[nvar + 2] = "Ptot";
       nvar += 3;
     }
-    else if (MP != 0) {
+    else if (mp != 0) {
       extname[nvar] = "Temp";
       nvar += 1;
     }
@@ -885,7 +901,7 @@ int DataIOFits::put_variable_into_data_array(
 
   else if (v == -5) {  // temperature
     do {
-      (*data)[ct] = MP->Temperature(c->P, SimPM.gamma);
+      (*data)[ct] = mp->Temperature(c->P, SimPM.gamma);
       ct++;
     } while ((c = gp->NextPt(c)) != 0);
   }

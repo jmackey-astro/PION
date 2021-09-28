@@ -350,8 +350,8 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
   pion_flt Pintermediate[eq_nvar];
   pion_flt corrector[eq_nvar];
   // for (int v=0;v<eq_nvar;v++) corrector[v]=1.0;
-  if (MP) {
-    MP->sCMA(corrector, Pin);
+  if (mp) {
+    mp->sCMA(corrector, Pin);
     for (int t = 0; t < eq_nvar; t++)
       Pintermediate[t] = Pin[t] * corrector[t];
     PtoU(Pintermediate, u1, eq_gamma);
@@ -403,8 +403,8 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
 #endif
   // int final_correct_flag = 0;
   // for (int v=0;v<eq_nvar;v++) corrector[v]=1.0;
-  if (MP) {
-    MP->sCMA(corrector, Pf);
+  if (mp) {
+    mp->sCMA(corrector, Pf);
     for (int t = 0; t < eq_nvar; t++)
       Pf[t] = Pf[t] * corrector[t];
   }
@@ -431,7 +431,7 @@ double FV_solver_Hydro_Euler::CellTimeStep(
   /// Then multiply by the CFl no. and return.
   ///
 
-  pion_flt temp = 0.0;
+  pion_flt temp = 0.0, l_dt = 0.0;
   for (int v = 0; v < FV_gndim; v++)
     temp += c->P[eqVX + v] * c->P[eqVX + v];
   temp = sqrt(temp);
@@ -447,20 +447,20 @@ double FV_solver_Hydro_Euler::CellTimeStep(
   // Add the sound speed to this, and it is the max wavespeed.
   //
   // temp += chydro(c->P,eq_gamma);
-  FV_dt = dx / temp;
+  l_dt = dx / temp;
   //
   // Now scale the max. allowed timestep by the CFL number we are using (<1).
   //
-  FV_dt *= FV_cfl;
+  l_dt *= FV_cfl;
 
 #ifdef TEST_INF
-  if (!isfinite(FV_dt) || FV_dt <= 0.0) {
+  if (!isfinite(l_dt) || l_dt <= 0.0) {
     cout << "cell has invalid timestep\n";
     CI.print_cell(c);
     cout.flush();
   }
 #endif
-  return FV_dt;
+  return l_dt;
 }
 
 // ##################################################################

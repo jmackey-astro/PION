@@ -39,6 +39,19 @@ using namespace std;
 
 
 
+void point_quantities::SetMicrophysics(class microphysics_base *ptr)
+{
+#ifdef TESTING
+  cout << "point_quantities::SetSolver() Setting microphysics pointer.\n";
+#endif
+  point_quantities::MP = ptr;
+}
+
+// ##################################################################
+// ##################################################################
+
+
+
 double point_quantities::get_point_density(const struct point_4cellavg *pt)
 {
   double val=0.0;

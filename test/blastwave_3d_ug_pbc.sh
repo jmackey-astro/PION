@@ -10,16 +10,34 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+###################################################################
+# Logic for whether to test MPI, OpenMP, or hybrid parallelisation
+# Default (also with no argument) is to use MPI with np=4
+nt=0    # number of threads
+mpi=""  # MPI command
+
+if [[ $1 -eq 1 ]]; then
+  nt=4
+  mpi=""
+elif [[ $1 -eq 2 ]]; then
+  nt=2
+  mpi="mpirun --allow-run-as-root --oversubscribe -np 2"
+else
+  nt=1
+  mpi="mpirun --allow-run-as-root --oversubscribe -np 4"
+fi
+###################################################################
+
 script="${BASH_SOURCE[0]:-${(%):-%x}}"
 script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 
-mpirun --allow-run-as-root --oversubscribe -np 4 ../icgen-ug \
+${mpi} ../icgen-ug \
   ${script_dir}/problems/blastwave_crt3d/params_BW_UGcrt3Dpbc_NR032.txt \
   silo redirect=iclog
 
-mpirun --allow-run-as-root --oversubscribe -np 4 ../pion-ug \
+${mpi} ../pion-ug \
   BW_UGcrt3Dpbc_NR032_0000.00000000.silo \
-  outfile=BW_UGcrt3Dpbc_NR032_new redirect=pionlog
+  outfile=BW_UGcrt3Dpbc_NR032_new redirect=pionlog omp-nthreads=${nt}
 
 
 REF_FILE=BW_UGcrt3Dpbc_NR032_REF_0000.00000140.silo
@@ -30,6 +48,7 @@ if grep -q "RESULTS ARE THE SAME" tmp.txt; then
   echo -e "${GREEN}*** 3Dpbc-Blastwave TEST HAS BEEN PASSED ***"
   tail -n10 tmp.txt
   echo -e "*** 3Dpbc-Blastwave TEST HAS BEEN PASSED ***${NC}"
+  rm *.silo
   exit 0
 else
   echo -e "${RED}*** 3Dpbc-Blastwave TEST HAS BEEN FAILED ***"

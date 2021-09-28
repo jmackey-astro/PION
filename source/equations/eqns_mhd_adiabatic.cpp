@@ -188,9 +188,9 @@ int eqns_mhd_ideal::check_pressure(
     // Set minimum temperature to be 10K
     //
     // cout <<"UtoP() mhd set-neg-press-to-fixed-T.  P<0\n";
-    if (MP) {
+    if (mp) {
       // cout <<"UtoP() mhd set-neg-press-to-fixed-T.  T<Tmin\n";
-      MP->Set_Temp(p, MinTemp, gamma);
+      mp->Set_Temp(p, MinTemp, gamma);
     }
     else {
       //
@@ -199,14 +199,14 @@ int eqns_mhd_ideal::check_pressure(
       p[eqPG] = 0.01 * p[eqRO];
     }
   }
-  else if (MP && (MP->Temperature(p, gamma) < MinTemp)) {
+  else if (mp && (mp->Temperature(p, gamma) < MinTemp)) {
     //
     // If we have microphysics, just set T=MinTemp
     //
     // cout <<"UtoP() mhd set-small-press-to-fixed-T.  T<Tmin\n";
     // rep.printVec("U",u,eq_nvar);
     // rep.printVec("p0",p,eq_nvar);
-    MP->Set_Temp(p, MinTemp, gamma);
+    mp->Set_Temp(p, MinTemp, gamma);
     // rep.printVec("p1",p,eq_nvar);
   }
 

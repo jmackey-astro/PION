@@ -44,3 +44,9 @@ target_link_libraries(grid PUBLIC
 )
 
 target_link_libraries(nested_grid PUBLIC grid)
+
+if(PION_OMP)
+    target_link_libraries(grid PUBLIC OpenMP::OpenMP_CXX)
+    target_link_libraries(nested_grid PUBLIC OpenMP::OpenMP_CXX)
+endif(PION_OMP)
+

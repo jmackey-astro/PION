@@ -41,6 +41,7 @@
 #include <vector>
 //#define MP_DEBUG
 
+
 /// virtual base/interface class for in-cell microphysics update.
 class microphysics_base {
 public:
@@ -356,8 +357,7 @@ protected:
 };
 
 ///
-/// Global pointed to the microphysics class.
+/// Global pointer to the microphysics class.
 ///
-extern class microphysics_base *MP;
 
 #endif  // MICROPHYSICS_BASE_H

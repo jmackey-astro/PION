@@ -32,7 +32,9 @@ protected:
   int BC_assign_STWIND(
       class SimParams &,      ///< pointer to simulation parameters
       class GridBaseClass *,  ///< pointer to grid.
-      boundary_data *);
+      boundary_data *,
+      class microphysics_base *  ///< pointer to microphysics
+  );
 
   ///
   /// Update internal stellar wind boundaries -- these are (possibly

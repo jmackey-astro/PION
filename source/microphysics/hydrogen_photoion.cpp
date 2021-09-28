@@ -110,14 +110,14 @@ double hydrogen_photoion::Hi_discrete_multifreq_photoion_rate(
   if (dtau < MinTau) {
     // splint returns value to be multiplied by dNH0/(n(H0)*Vshell)
     ans = max(MinTau, min(MaxTau, Tau0));
-    interpolate.splint(PI_Tau, LTPIrate, LTPIrt_id, PI_Nspl, log10(ans), &ans);
+    splint(PI_Tau, LTPIrate, LTPIrt_id, PI_Nspl, log10(ans), &ans);
     ans = exp(LOGTEN * ans) * dTau0
           / (Hi_monochromatic_photo_ion_xsection(JUST_IONISED) * nH * Vshell);
   }
   else if (dtau < 3.0 * MinTau) {
     // Weighted average of the optically thin and thick calculation.
     ans = max(MinTau, min(MaxTau, Tau0));
-    interpolate.splint(PI_Tau, LTPIrate, LTPIrt_id, PI_Nspl, log10(ans), &ans);
+    splint(PI_Tau, LTPIrate, LTPIrt_id, PI_Nspl, log10(ans), &ans);
     ans = exp(LOGTEN * ans) * dTau0
           / (Hi_monochromatic_photo_ion_xsection(JUST_IONISED) * nH * Vshell);
     ans2 = Hi_multifreq_photoionisation_rate(Tau0, nH, Vshell)
@@ -164,7 +164,7 @@ double hydrogen_photoion::Hi_discrete_multifreq_photoheating_rate(
   if (dtau < MinTau) {
     // splint returns value to be multiplied by dNH0/(n(H0)*Vshell)
     ans = max(MinTau, min(MaxTau, Tau0));
-    interpolate.splint(PI_Tau, LTPIheat, LTPIht_id, PI_Nspl, log10(ans), &ans);
+    splint(PI_Tau, LTPIheat, LTPIht_id, PI_Nspl, log10(ans), &ans);
     ans = exp(LOGTEN * ans) * dTau0
           / (Hi_monochromatic_photo_ion_xsection(JUST_IONISED) * nH * Vshell);
     //      Hi_multifreq_photoionisation_heating_rate(NH0,     nH,Vshell) -
@@ -173,7 +173,7 @@ double hydrogen_photoion::Hi_discrete_multifreq_photoheating_rate(
   else if (dtau < 3.0 * MinTau) {
     // Weighted average of the optically thin and thick calculation.
     ans = max(MinTau, min(MaxTau, Tau0));
-    interpolate.splint(PI_Tau, LTPIheat, LTPIht_id, PI_Nspl, log10(ans), &ans);
+    splint(PI_Tau, LTPIheat, LTPIht_id, PI_Nspl, log10(ans), &ans);
     ans = exp(LOGTEN * ans) * dTau0
           / (Hi_monochromatic_photo_ion_xsection(JUST_IONISED) * nH * Vshell);
     ans2 =
@@ -216,7 +216,7 @@ double hydrogen_photoion::Hi_multifreq_photoionisation_rate(
   //
   ans = max(MinTau, min(MaxTau, Tau0));
   // ans = Tau0;
-  interpolate.splint(PI_Tau, PIrate, PIrt_id, PI_Nspl, log10(ans), &ans);
+  splint(PI_Tau, PIrate, PIrt_id, PI_Nspl, log10(ans), &ans);
   ans = exp(LOGTEN * ans) / (nH0 * Vshell);
   return ans;
 }
@@ -242,7 +242,7 @@ double hydrogen_photoion::Hi_multifreq_photoionisation_heating_rate(
   // that it gives a negligible photoionisation rate for any Vshell value.
   //
   ans = max(MinTau, min(MaxTau, Tau0));
-  interpolate.splint(PI_Tau, PIheat, PIht_id, PI_Nspl, log10(ans), &ans);
+  splint(PI_Tau, PIheat, PIht_id, PI_Nspl, log10(ans), &ans);
   ans = exp(LOGTEN * ans) / (nH0 * Vshell);
   return ans;
 }
@@ -456,12 +456,12 @@ void hydrogen_photoion::Setup_photoionisation_rate_table(
   // far as I can tell the makima() method is continuous and
   // piecewise-constant 1st derivatives (i.e. not differentiable).
   //
-  interpolate.spline(PI_Tau, PIrate, PI_Nspl, 0.0, 0.0, PIrt_id);
-  interpolate.spline(PI_Tau, PIheat, PI_Nspl, 0.0, 0.0, PIht_id);
+  spline(PI_Tau, PIrate, PI_Nspl, 0.0, 0.0, PIrt_id);
+  spline(PI_Tau, PIheat, PI_Nspl, 0.0, 0.0, PIht_id);
 
   // LOW-DTAU APPROX INTEGRAL ---------------
-  interpolate.spline(PI_Tau, LTPIrate, PI_Nspl, 0.0, 0.0, LTPIrt_id);
-  interpolate.spline(PI_Tau, LTPIheat, PI_Nspl, 0.0, 0.0, LTPIht_id);
+  spline(PI_Tau, LTPIrate, PI_Nspl, 0.0, 0.0, LTPIrt_id);
+  spline(PI_Tau, LTPIheat, PI_Nspl, 0.0, 0.0, LTPIht_id);
   // ----------------------------------------
 
   return;

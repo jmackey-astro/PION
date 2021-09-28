@@ -54,10 +54,14 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+#include "solver_eqn_base.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
 
-#include "solver_eqn_base.h"
+#ifdef PION_OMP
+#include <omp.h>
+#endif
+
 using namespace std;
 
 // ##################################################################
@@ -294,13 +298,13 @@ void FV_solver_base::set_interface_tracer_flux(
     }
 #endif
     if (flux[eqRHO] > 0.0) {
-      if (MP) MP->sCMA(corrector, left);
+      if (mp) mp->sCMA(corrector, left);
       for (int t = 0; t < FV_ntr; t++) {
         flux[eqTR[t]] = left[eqTR[t]] * flux[eqRHO] * corrector[eqTR[t]];
       }
     }
     else if (flux[eqRHO] < 0.0) {
-      if (MP) MP->sCMA(corrector, right);
+      if (mp) mp->sCMA(corrector, right);
       for (int t = 0; t < FV_ntr; t++) {
         flux[eqTR[t]] = right[eqTR[t]] * flux[eqRHO] * corrector[eqTR[t]];
       }
@@ -381,13 +385,31 @@ int FV_solver_base::preprocess_data(
     indices[0] = eqVX;
     indices[1] = eqVY;
     indices[2] = eqVZ;
-    do {
-      CI.set_DivV(c, Divergence(c, 1, indices, grid));
-      gradp = 0.0;
-      for (int i = 0; i < SimPM.ndim; i++)
-        gradp += GradZone(grid, c, i, 1, PG);
-      CI.set_MagGradP(c, gradp);
-    } while ((c = grid->NextPt_All(c)) != 0);
+
+    int index[3];
+#ifdef PION_OMP
+    #pragma omp parallel
+    {
+      #pragma omp for collapse(2) private(c,index)
+#endif
+      for (int ax3 = 0; ax3 < grid->NG_All(ZZ); ax3++) {
+        for (int ax2 = 0; ax2 < grid->NG_All(YY); ax2++) {
+          index[0] = 0;
+          index[1] = ax2;
+          index[2] = ax3;
+          c        = grid->get_cell_all(index[0], index[1], index[2]);
+          do {
+            CI.set_DivV(c, Divergence(c, 1, indices, grid));
+            gradp = 0.0;
+            for (int i = 0; i < SimPM.ndim; i++)
+              gradp += GradZone(grid, c, i, 1, PG);
+            CI.set_MagGradP(c, gradp);
+          } while ((c = grid->NextPt(c, XP)) != 0);
+        }  // ax2
+      }    // ax3
+#ifdef PION_OMP
+    }
+#endif
   }
 
   return err;
@@ -677,13 +699,13 @@ int FV_solver_base::set_thermal_conduction_Edot(
   // First we need to calculate the temperature in every cell.  This
   // is stored in dU[RHO] -- reset to zero at the end of function.
   //
-  if (!MP) {
-    rep.error("Why do conductivity without having Microphysics?", MP);
+  if (!mp) {
+    rep.error("Why do conductivity without having Microphysics?", mp);
   }
   cell *c = grid->FirstPt_All();
   do {
     // cout <<"dU[RHO]="<<c->dU[RHO];
-    c->dU[RHO] = MP->Temperature(c->Ph, SimPM.gamma);
+    c->dU[RHO] = mp->Temperature(c->Ph, SimPM.gamma);
     // cout <<", replaced with T="<<c->dU[RHO]<<"\n";
   } while ((c = grid->NextPt_All(c)) != 0);
 

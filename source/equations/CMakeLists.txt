@@ -5,3 +5,10 @@ add_library(
     eqns_hydro_adiabatic.cpp
     eqns_mhd_adiabatic.cpp
 )
+
+target_link_libraries(
+    equations
+    PUBLIC 
+    microphysics 
+)
+

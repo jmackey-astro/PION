@@ -350,6 +350,7 @@ void get_entry_exit_points(
 //
 void add_cell_emission_to_ray(
       class SimParams &SimPM,      ///< simulation parameters
+    class microphysics_base *MP, ///< microphysics class
       double integral, ///< the path-length/geometry part of the integral
       double *P,       ///< State vector of cell (primitive vars)
       class Xray_emission &XR, ///< pointer to class for getting X-ray em
@@ -409,6 +410,7 @@ void add_cell_emission_to_ray(
 //#define DEBUG
 int generate_angle_image(
     class SimParams &SimPM,    ///< simulation parameters
+    class microphysics_base *MP, ///< microphysics class
     class GridBaseClass *grid, ///< computational grid
     class Xray_emission &XR,   ///< pointer to class.
     double angle,        ///< angle between LOS and symmetry axis [1,89]
@@ -533,7 +535,7 @@ int generate_angle_image(
                 sqrt(entry[Rcyl]*entry[Rcyl]-pos[Rcyl]*pos[Rcyl]) -
                 sqrt(exit[Rcyl] *exit[Rcyl] -pos[Rcyl]*pos[Rcyl]) );
             // For each emission variable, add to ans[] vector
-            add_cell_emission_to_ray(SimPM,integral,ray->P,XR,ans);
+            add_cell_emission_to_ray(SimPM,MP,integral,ray->P,XR,ans);
             if (ans[PROJ_NtD] <0.0) {
               rep.printVec("Ray state vec",ray->P, SimPM.nvar);
               cout <<"ray  "<<ray<<",  next_cell="<<next_cell<<"\n";
@@ -584,7 +586,7 @@ int generate_angle_image(
         integral = invst * 2.0 *
                     sqrt(entry[Rcyl]*entry[Rcyl]-pos[Rcyl]*pos[Rcyl]);
         // For each emission variable, add to ans[] vector
-        add_cell_emission_to_ray(SimPM,integral,ray->P,XR,ans);
+        add_cell_emission_to_ray(SimPM,MP,integral,ray->P,XR,ans);
         ray = next_cell;
         ncell++;
 #ifdef DEBUG
@@ -651,7 +653,7 @@ int generate_angle_image(
                 sqrt(entry[Rcyl]*entry[Rcyl]-pos[Rcyl]*pos[Rcyl]) -
                 sqrt(exit[Rcyl] *exit[Rcyl] -pos[Rcyl]*pos[Rcyl]) );
             // For each emission variable, add to ans[] vector
-            add_cell_emission_to_ray(SimPM,integral,ray->P,XR,ans);
+            add_cell_emission_to_ray(SimPM,MP, integral,ray->P,XR,ans);
             //
             // move to next cell.
             //

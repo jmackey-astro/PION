@@ -57,6 +57,7 @@
 /// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
 ///    boundaries).  Changed default I/O to DOUBLE precision.
 /// - 2017.08.03 JM: Changed silo dataio class to be the utility class.
+/// - 2021.07.13 JM: updated Time_Int() to remove extra boundary updates.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -271,7 +272,7 @@ int sim_control_pllel::Init(
   rep.errorTest("(INIT::boundary_conditions) err!=0", 0, err);
 
   //  cout <<"assigning BC data\n";
-  err = assign_boundary_data(SimPM, 0, grid[0]);
+  err = assign_boundary_data(SimPM, 0, grid[0], MP);
   rep.errorTest("(INIT::assign_boundary_data) err!=0", 0, err);
 
   //
@@ -330,7 +331,11 @@ int sim_control_pllel::Init(
     if (!dataio) rep.error("INIT:: dataio initialisation", SimPM.typeofop);
   }
   dataio->SetSolver(spatial_solver);
-  if (textio) textio->SetSolver(spatial_solver);
+  dataio->SetMicrophysics(MP);
+  if (textio) {
+    textio->SetSolver(spatial_solver);
+    textio->SetMicrophysics(MP);
+  }
 
   if (SimPM.timestep == 0) {
 #ifndef NDEBUG
@@ -384,27 +389,12 @@ int sim_control_pllel::Time_Int(
     err = RT_all_sources(SimPM, grid[0], 0);
     rep.errorTest("TIME_INT:: loop RT()", 0, err);
 
-    //
-    // Update boundary data.
-    //
-#ifndef NDEBUG
-    cout << "MPI time_int: updating internal boundaries\n";
-#endif
-    err += TimeUpdateInternalBCs(
-        SimPM, 0, grid[0], spatial_solver, SimPM.simtime, OA2, OA2);
-#ifndef NDEBUG
-    cout << "MPI time_int: updating external boundaries\n";
-#endif
-    err += TimeUpdateExternalBCs(
-        SimPM, 0, grid[0], spatial_solver, SimPM.simtime, OA2, OA2);
-    if (err) rep.error("Boundary update at start of full step", err);
-
-      // clk.start_timer("advance_time");
+    // clk.start_timer("advance_time");
 #ifndef NDEBUG
     cout << "MPI time_int: calculating dt\n";
 #endif
     SimPM.levels[0].last_dt = SimPM.last_dt;
-    err += calculate_timestep(SimPM, grid[0], spatial_solver, 0);
+    err += calculate_timestep(SimPM, grid[0], 0);
     rep.errorTest("TIME_INT::calc_timestep()", 0, err);
 
 #ifndef NDEBUG
@@ -486,21 +476,24 @@ int sim_control_pllel::Time_Int(
   return (0);
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 int sim_control_pllel::calculate_timestep(
-    class SimParams &par,             ///< simulation parameters
-    class GridBaseClass *grid,        ///< pointer to grid.
-    class FV_solver_base *sp_solver,  ///< solver/equations class
-    const int l                       ///< level to advance (for NG grid)
+    class SimParams &par,       ///< simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    const int l                 ///< level to advance (for NG grid)
 )
 {
   //
   // First get the local grid dynamics and microphysics timesteps.
   //
   double t_dyn = 0.0, t_mp = 0.0;
-  t_dyn = calc_dynamics_dt(par, grid, sp_solver);
+  t_dyn = calc_dynamics_dt(par, grid);
   t_mp  = calc_microphysics_dt(par, grid, l);
 
 #ifndef NDEBUG
@@ -556,16 +549,23 @@ int sim_control_pllel::calculate_timestep(
     td = min(td, t_dyn / pow(2.0, par.grid_nlevels - 1 - l));
 
   double cr = 0.0;
-  if (par.grid_nlevels == 1) {
-    cr = 0.25 / par.dx;
-    spatial_solver->Set_GLM_Speeds(td, par.dx, cr);
+#ifdef PION_OMP
+  #pragma omp parallel private(cr)
+  {
+#endif
+    if (par.grid_nlevels == 1) {
+      cr = 0.25 / par.dx;
+      spatial_solver->Set_GLM_Speeds(td, par.dx, cr);
+    }
+    else {
+      cr = 0.25 / par.levels[par.grid_nlevels - 1].dx;
+      if (l == 0)
+        spatial_solver->Set_GLM_Speeds(
+            td, par.levels[par.grid_nlevels - 1].dx, cr);
+    }
+#ifdef PION_OMP
   }
-  else {
-    cr = 0.25 / par.levels[par.grid_nlevels - 1].dx;
-    if (l == 0)
-      spatial_solver->Set_GLM_Speeds(
-          td, par.levels[par.grid_nlevels - 1].dx, cr);
-  }
+#endif
 
   //
   // Check that the timestep doesn't increase too much between step,
@@ -578,13 +578,18 @@ int sim_control_pllel::calculate_timestep(
   //
   // Tell the solver class what the resulting timestep is.
   //
-  sp_solver->Setdt(par.dt);
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    spatial_solver->Setdt(par.dt);
+#ifdef PION_OMP
+  }
+#endif
 
 #ifndef NDEBUG
-  //
-  // Check that if my processor has modified dt to get to either
+  // Check that if my process has modified dt to get to either
   // an output time or finishtime, then all procs have done this too!
-  //
   t_dyn = par.dt;
   t_mp  = COMM->global_operation_double("MIN", t_dyn);
   if (!pconst.equalD(t_dyn, t_mp))

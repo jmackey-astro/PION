@@ -19,7 +19,13 @@
 #include "boundaries/assign_update_bcs.h"
 #include "grid/grid_base_class.h"
 #include "grid/uniform_grid.h"
+#include "microphysics/microphysics_base.h"
 #include "spatial_solvers/solver_eqn_base.h"
+
+#ifdef PION_OMP
+#include <omp.h>
+#endif
+
 
 #define TIMESTEP_FULL 2
 #define TIMESTEP_FIRST_PART 1
@@ -55,10 +61,8 @@ public:
       class SimParams &                 ///< pointer to simulation parameters
   );
 
-  ///
-  /// Decide if I need to setup MP class, and do it if i need to.
-  ///
-  virtual int setup_microphysics(
+  /// Decide if I need to setup MP class, and then set it up
+  int setup_microphysics(
       class SimParams &  ///< pointer to simulation parameters
   );
 
@@ -107,10 +111,11 @@ public:
   int set_equations(class SimParams &  ///< simulation parameters
   );
 
-  ///
   /// Get pointer to equations class.
-  ///
   class FV_solver_base *get_solver_ptr() { return spatial_solver; }
+
+  /// Get pointer to microphysics class.
+  class microphysics_base *get_mp_ptr() { return MP; }
 
   //---------------------------------------
 protected:
@@ -133,7 +138,15 @@ protected:
   /// Pointer to equations to solve, and routines for calculating
   /// fluxes on the grid.
   ///
-  class FV_solver_base *spatial_solver;
+  static class FV_solver_base *spatial_solver;
+#ifdef PION_OMP
+#pragma omp threadprivate(spatial_solver)
+#endif
+
+  static class microphysics_base *MP;
+#ifdef PION_OMP
+#pragma omp threadprivate(MP)
+#endif
 
   ///
   /// pointer to class for reading/writing data.
@@ -161,6 +174,7 @@ protected:
   );
 
 };  // setup_fixed_grid
+
 
 /*************************************************************************/
 /*************************************************************************/

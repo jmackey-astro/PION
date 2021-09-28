@@ -30,6 +30,7 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+#include "tools/interpolate.h"
 
 #define JUST_IONISED                                                           \
   2.178721e-11  ///< This is (1.0+5e-7) times the ionisation energy of H
@@ -51,7 +52,7 @@
 /// almost indistinguishable results, but at 250 eV the difference is
 /// noticeable.  For cool stars the cutoff could probably be lower.
 ///
-class hydrogen_photoion {
+class hydrogen_photoion : virtual public interpolate_arrays {
 public:
   hydrogen_photoion();
   ~hydrogen_photoion();

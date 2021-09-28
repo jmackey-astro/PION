@@ -8,6 +8,7 @@
 #define DATAIO_BASE_H
 
 #include "dataIO/file_status.h"
+#include "microphysics/microphysics_base.h"
 #include "parameter_defs.h"
 #include "sim_params.h"
 #include "spatial_solvers/solver_eqn_base.h"
@@ -30,6 +31,11 @@ public:
   /// Set a pointer to the solver.
   virtual void SetSolver(
       FV_solver_base *  ///< Pointer to solver (for Eint,divB,Ptot)
+      ) = 0;
+
+  /// Set a pointer to the microphysics class
+  virtual void SetMicrophysics(
+      class microphysics_base *  ///< pointer to microphysics class
       ) = 0;
 
   ///

@@ -133,12 +133,14 @@ public:
   /// Destructor (doensn't have much to do).
   virtual ~DataIOFits();
 
-  ///
-  /// Class can run with or without a solver, but this function
   /// allows you to set a pointer to the solver.
-  ///
   void SetSolver(
       FV_solver_base *  ///< Pointer to the solver (to get Eint,divB,Ptot)
+  );
+
+  /// allows you to set a pointer to a microphysics class
+  void SetMicrophysics(
+      class microphysics_base *  ///< pointer to microphysics class
   );
 
   ///
@@ -195,9 +197,10 @@ public:
   );
 
 protected:
-  class GridBaseClass *gp;    ///< pointer to computational grid.
-  class FV_solver_base *eqn;  ///< pointer to the solver, which knows the
-                              ///< equations we are solving.
+  class GridBaseClass *gp;      ///< pointer to computational grid.
+  class FV_solver_base *eqn;    ///< pointer to the solver, which knows the
+                                ///< equations we are solving.
+  class microphysics_base *mp;  ///< pointer to microphysics class
   fitsfile *file_ptr;
 
   ///

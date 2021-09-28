@@ -15,20 +15,25 @@
 #include <sstream>
 using namespace std;
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 int assign_update_bcs_MPI::assign_boundary_data(
-    class SimParams &par,      ///< pointer to simulation parameters
-    const int level,           ///< level in grid hierarchy
-    class GridBaseClass *grid  ///< pointer to grid.
+    class SimParams &par,        ///< pointer to simulation parameters
+    const int level,             ///< level in grid hierarchy
+    class GridBaseClass *grid,   ///< pointer to grid.
+    class microphysics_base *mp  ///< pointer to microphysics
 )
 {
 #ifdef TEST_MPI_BC
   class MCMDcontrol *ppar = &(par.levels[level].MCMD);
   cout << ppar->get_myrank() << " Setting up MPI boundaries..." << endl;
 #endif
-  int err = assign_update_bcs::assign_boundary_data(par, level, grid);
+  int err = assign_update_bcs::assign_boundary_data(par, level, grid, mp);
 
   rep.errorTest("assign_update_bcs::assign_boundary_data", err, 0);
   //
@@ -73,12 +78,15 @@ int assign_update_bcs_MPI::assign_boundary_data(
 #ifdef TEST_MPI_BC
   cout << ppar->get_myrank() << ": finished assigning boundaries\n";
 #endif
-
   return (err);
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int assign_update_bcs_MPI::TimeUpdateExternalBCs(
     class SimParams &par,          ///< pointer to sim parameters

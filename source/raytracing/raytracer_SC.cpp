@@ -471,7 +471,7 @@ void raytracer_USC_infinity::update_RT_source_properties(
   int err = 0;
   if (src->s->effect == RT_EFFECT_MFION) {
     // cout <<"updating source properties in MP\n";
-    err += MP->set_multifreq_source_properties(src->s, src->data.strength);
+    err += mpptr->set_multifreq_source_properties(src->s, src->data.strength);
     if (err) rep.error("update_evolving_RT_sources()", rs->id);
   }
 
@@ -906,7 +906,7 @@ int raytracer_USC_infinity::ProcessCell(
   switch (source->s->opacity_src) {
 
     case RT_OPACITY_MP:
-      MP->get_dtau(source, ds, c->Ph, cell_col);
+      mpptr->get_dtau(source, ds, c->Ph, cell_col);
       break;
 
     case RT_OPACITY_MINUS:
@@ -935,7 +935,7 @@ int raytracer_USC_infinity::ProcessCell(
       cell_col[0] = 0.22 * (c->Ph[RO] * mpptr->get_X_H() / pconst.m_p()) * 1.1
                     * c->Ph[source->s->opacity_var + first_tr]
                     * c->Ph[source->s->opacity_var + first_tr]
-                    * pow(MP->Temperature(c->Ph, gamma), -0.9);
+                    * pow(mpptr->Temperature(c->Ph, gamma), -0.9);
       // now set cell_col[0] to be I(out)
       cell_col[0] =
           cell_col[0]
@@ -953,7 +953,7 @@ int raytracer_USC_infinity::ProcessCell(
       temp            = c->Ph[first_tr];
       c->Ph[first_tr] = 1.0;
       cell_col[0] = CI.get_cell_Vshell(c, source->s->id) / source->s->strength
-                    * MP->get_recombination_rate(0, c->Ph, gamma);
+                    * mpptr->get_recombination_rate(0, c->Ph, gamma);
       c->Ph[first_tr] = temp;
       break;
 
@@ -968,19 +968,19 @@ int raytracer_USC_infinity::ProcessCell(
       //
       // ---------- H0 -----------
       ix          = source->s->opacity_var + first_tr;
-      cell_col[0] = ds * MP->get_n_el(c->Ph, EL_H)
-                    * MP->get_th_xsection(ION_H_N) * c->Ph[ix];
+      cell_col[0] = ds * mpptr->get_n_el(c->Ph, EL_H)
+                    * mpptr->get_th_xsection(ION_H_N) * c->Ph[ix];
       // ---------- He0 -----------
       ix++;
-      cell_col[1] = ds * MP->get_n_el(c->Ph, EL_HE)
-                    * MP->get_th_xsection(ION_HE_N) * c->Ph[ix];
+      cell_col[1] = ds * mpptr->get_n_el(c->Ph, EL_HE)
+                    * mpptr->get_th_xsection(ION_HE_N) * c->Ph[ix];
       // ---------- He+ -----------
       ix++;
-      cell_col[2] = ds * MP->get_n_el(c->Ph, EL_HE)
-                    * MP->get_th_xsection(ION_HE_P) * c->Ph[ix];
+      cell_col[2] = ds * mpptr->get_n_el(c->Ph, EL_HE)
+                    * mpptr->get_th_xsection(ION_HE_P) * c->Ph[ix];
       // ---------- DUST -----------
       cell_col[3] =
-          ds * MP->get_n_el(c->Ph, EL_H) * MP->get_th_xsection(ION_DUST);
+          ds * mpptr->get_n_el(c->Ph, EL_H) * mpptr->get_th_xsection(ION_DUST);
       break;
 
     default:

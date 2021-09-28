@@ -423,8 +423,8 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
   //
   // First convert from Primitive to Conserved Variables
   //
-  if (MP) {
-    MP->sCMA(corrector, Pin);
+  if (mp) {
+    mp->sCMA(corrector, Pin);
     for (int t = 0; t < eq_nvar; t++)
       Pintermediate[t] = Pin[t] * corrector[t];
     PtoU(Pintermediate, u1, eq_gamma);
@@ -455,8 +455,8 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
   // Reset the dU array for the next timestep.
   for (int v = 0; v < eq_nvar; v++)
     dU[v] = 0.;
-  if (MP) {
-    MP->sCMA(corrector, Pf);
+  if (mp) {
+    mp->sCMA(corrector, Pf);
     for (int t = 0; t < eq_nvar; t++)
       Pf[t] = Pf[t] * corrector[t];
   }
@@ -483,6 +483,7 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
   // Get Max velocity along a grid direction.
   //
   pion_flt u1[eq_nvar];
+  double l_dt   = 0.0;
   pion_flt temp = fabs(c->P[eqVX]);
   if (FV_gndim > 1) temp = max(temp, fabs(c->P[eqVY]));
   if (FV_gndim > 2) temp = max(temp, fabs(c->P[eqVZ]));
@@ -522,11 +523,11 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
 
   max_speed = max(max_speed, cf);
 
-  FV_dt = dx / temp;
-  FV_dt *= FV_cfl;
+  l_dt = dx / temp;
+  l_dt *= FV_cfl;
 
 #ifdef TEST_INF
-  if (!isfinite(FV_dt) || FV_dt <= 0.0) {
+  if (!isfinite(l_dt) || l_dt <= 0.0) {
     cout << "cell has invalid timestep\n";
     CI.print_cell(c);
     cout.flush();
@@ -535,7 +536,7 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
 #ifdef FUNCTION_ID
   cout << "FV_solver_mhd_ideal_adi::CellTimeStep ...returning.\n";
 #endif  // FUNCTION_ID
-  return FV_dt;
+  return l_dt;
 }
 
 // ##################################################################
@@ -548,6 +549,8 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
 
 // ##################################################################
 // ##################################################################
+
+
 
 FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi(
     const int nv,          ///< number of variables in state vector.
@@ -568,16 +571,24 @@ FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 FV_solver_mhd_mixedGLM_adi::~FV_solver_mhd_mixedGLM_adi()
 {
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 double FV_solver_mhd_mixedGLM_adi::CellTimeStep(
     const cell *c,   ///< pointer to cell
@@ -592,8 +603,12 @@ double FV_solver_mhd_mixedGLM_adi::CellTimeStep(
   return dt;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
     class SimParams &par,       ///< simulation parameters
@@ -712,13 +727,13 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
-//
-// calculate GLM source terms for multi-D MHD and add to Powell source
-// Not exactly as indicated in Dominik's paper, but it works.
-//
+
+
 int FV_solver_mhd_mixedGLM_adi::MHDsource(
     class GridBaseClass *grid,  ///< pointer to grid.
     class cell *Cl,             ///< pointer to cell of left state
@@ -731,6 +746,10 @@ int FV_solver_mhd_mixedGLM_adi::MHDsource(
     const double dt             ///< timestep dt
 )
 {
+  //
+  // calculate GLM source terms for multi-D MHD and add to Powell source
+  // Not exactly as indicated in Dominik's paper, but it works.
+  //
   double dx = grid->DX();
   double sm = 0.5 * (Cl->Ph[eqSI] + Cr->Ph[eqSI]);
   FV_solver_mhd_ideal_adi::MHDsource(grid, Cl, Cr, Pl, Pr, d, pos, neg, dt);
@@ -752,8 +771,12 @@ int FV_solver_mhd_mixedGLM_adi::MHDsource(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int FV_solver_mhd_mixedGLM_adi::CellAdvanceTime(
     class cell *c,
@@ -781,8 +804,12 @@ int FV_solver_mhd_mixedGLM_adi::CellAdvanceTime(
   return (err);
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void FV_solver_mhd_mixedGLM_adi::PtoU(
     const pion_flt *p, pion_flt *u, const double g)

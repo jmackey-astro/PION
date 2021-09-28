@@ -160,17 +160,17 @@ int eqns_Euler::UtoP(
   //
   if (p[eqPG] <= 0.0) {
     // enforce minimum temperature limit
-    if (MP) {
-      MP->Set_Temp(p, MinTemp, gamma);
+    if (mp) {
+      mp->Set_Temp(p, MinTemp, gamma);
     }
     else {
       // If not, assume dimensionless simulation and set p=rho/100
       p[eqPG] = 0.01 * p[eqRO];
     }
   }
-  else if (MP && (MP->Temperature(p, gamma) < MinTemp)) {
+  else if (mp && (mp->Temperature(p, gamma) < MinTemp)) {
     // If we have microphysics, just set T=10K.
-    MP->Set_Temp(p, MinTemp, gamma);
+    mp->Set_Temp(p, MinTemp, gamma);
   }
 
 #else  // don't SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE

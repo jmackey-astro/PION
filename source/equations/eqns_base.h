@@ -145,6 +145,11 @@ public:
   virtual void SetDirection(const enum axes  ///< Direction, XX,YY or ZZ.
   );
 
+  /// allows you to set a pointer to a microphysics class
+  void SetMicrophysics(
+      class microphysics_base *  ///< pointer to microphysics class
+  );
+
   ///
   ///  Returns the currently set direction of equations.
   ///
@@ -181,6 +186,7 @@ public:
       ) = 0;
 
 protected:
+  class microphysics_base *mp;  ///< pointer to microphysics class
   int eq_nvar;       ///< number of elements in state vector (total, including
                      ///< tracers, etc.)
   enum axes eq_dir;  ///< Which axis we are looking along XX,YY,ZZ.
@@ -196,10 +202,8 @@ protected:
   enum conserved eqMMX, eqMMY, eqMMZ, eqBBX, eqBBY, eqBBZ;
   double eq_gamma;  ///< Gas equation of state gamma.
 
-  ///
   /// state vector of typical values in the simulation (for testing
   /// if a variable value is small or large).
-  ///
   pion_flt *eq_refvec;
 };
 

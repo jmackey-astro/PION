@@ -27,3 +27,7 @@ target_link_libraries(
     PUBLIC 
     ${SUNDIALS_LIBRARY}
 )
+
+#if(PION_OMP)
+#    target_link_libraries(microphysics PUBLIC OpenMP::OpenMP_CXX)
+#endif(PION_OMP)

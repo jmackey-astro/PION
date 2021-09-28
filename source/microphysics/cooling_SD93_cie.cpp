@@ -155,7 +155,7 @@ void cooling_function_SD93CIE::setup_SD93_cie()
   cout << "\t\t min-slope=" << MinSlope << " max-slope=" << MaxSlope << "\n";
 #endif
 
-  interpolate.spline(Tarray, Larray, Nspl, 0.0, 0.0, spline_id);
+  spline(Tarray, Larray, Nspl, 0.0, 0.0, spline_id);
 
   have_set_cooling = true;
 #ifdef DEBUG_COOL
@@ -270,7 +270,7 @@ void cooling_function_SD93CIE::setup_SD93_cie_OnlyMetals()
   cout << "\t\t min-slope=" << MinSlope << " max-slope=" << MaxSlope << "\n";
 #endif
 
-  interpolate.spline(Tarray, Larray, Nspl, 0.0, 0.0, spline_id);
+  spline(Tarray, Larray, Nspl, 0.0, 0.0, spline_id);
 
   have_set_cooling = true;
 #ifndef NDEBUG
@@ -383,7 +383,7 @@ void cooling_function_SD93CIE::setup_SD93_cie_MetalFree()
   cout << "\t\t min-slope=" << MinSlope << " max-slope=" << MaxSlope << "\n";
 #endif
 
-  interpolate.spline(Tarray, Larray, Nspl, 0.0, 0.0, spline_id);
+  spline(Tarray, Larray, Nspl, 0.0, 0.0, spline_id);
 
   have_set_cooling = true;
 
@@ -509,7 +509,7 @@ void cooling_function_SD93CIE::setup_WSS09_CIE_OnlyMetals()
   cout << "\t\t min-slope=" << MinSlope << " max-slope=" << MaxSlope << "\n";
 #endif
 
-  interpolate.spline(Tarray, Larray, Nspl, 0.0, 0.0, spline_id);
+  spline(Tarray, Larray, Nspl, 0.0, 0.0, spline_id);
 
   have_set_cooling = true;
 #ifndef NDEBUG
@@ -634,7 +634,7 @@ void cooling_function_SD93CIE::setup_WSS09_CIE()
   cout << "\t\t min-slope=" << MinSlope << " max-slope=" << MaxSlope << "\n";
 #endif
 
-  interpolate.spline(Tarray, Larray, Nspl, 0.0, 0.0, spline_id);
+  spline(Tarray, Larray, Nspl, 0.0, 0.0, spline_id);
 
   have_set_cooling = true;
 #ifndef NDEBUG
@@ -696,7 +696,7 @@ double cooling_function_SD93CIE::cooling_rate_SD93CIE(double T
     rate = Larray[0] + MinSlope * (T - MinTemp);
   }
   else {
-    interpolate.splint(Tarray, Larray, spline_id, Nspl, T, &rate);
+    splint(Tarray, Larray, spline_id, Nspl, T, &rate);
   }
 
   return exp(pconst.ln10() * rate);

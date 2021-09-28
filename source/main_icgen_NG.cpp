@@ -64,7 +64,7 @@ int main(int argc, char **argv)
   class ICsetup_base *ic      = 0;
   class ReadParams *rp        = 0;
   class SimParams SimPM;
-  MP = 0;  // global microphysics class pointer.
+  class microphysics_base *MP = 0;
 
   string pfile = argv[1];
   string icftype;
@@ -111,12 +111,10 @@ int main(int argc, char **argv)
   rep.errorTest("(icgen::set_equations) err!=0 Fix me!", 0, err);
   class FV_solver_base *solver = SimSetup->get_solver_ptr();
 
-  if (SimPM.EP.cooling && !SimPM.EP.chemistry) {
-    // don't need to set up the class, because it just does cooling and
-    // there is no need to equilibrate anything.
-  }
-  // cout <<"setting up microphysics module\n";
+  cout << "MAIN: setting up microphysics module\n";
   SimSetup->setup_microphysics(SimPM);
+  MP = SimSetup->get_mp_ptr();
+  ic->set_mp_pointer(MP);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -159,7 +157,7 @@ int main(int argc, char **argv)
 
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     // cout <<"icgen_NG: assigning boundary data for level "<<l<<"\n";
-    err = SimSetup->assign_boundary_data(SimPM, l, grid[l]);
+    err = SimSetup->assign_boundary_data(SimPM, l, grid[l], MP);
     rep.errorTest("icgen_NG::assign_boundary_data", 0, err);
   }
   // ----------------------------------------------------------------

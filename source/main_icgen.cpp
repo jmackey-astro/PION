@@ -61,15 +61,24 @@
 #include "dataIO/dataio_base.h"
 #ifdef FITS
 #include "dataIO/dataio_fits.h"
+#ifdef PARALLEL
+#include "dataIO/dataio_fits_MPI.h"
+#endif
 #endif  // if FITS
 #ifdef SILO
 #include "dataIO/dataio_silo.h"
+#ifdef PARALLEL
+#include "dataIO/dataio_silo_MPI.h"
+#endif
 #endif  // if SILO
 
 #include "grid/setup_fixed_grid.h"
 #include "grid/uniform_grid.h"
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_base.h"
+#ifdef PARALLEL
+#include "grid/setup_fixed_grid_MPI.h"
+#endif
 
 #include <sstream>
 using namespace std;
@@ -79,6 +88,21 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
+  int err = 0;
+
+#ifdef PARALLEL
+  err = COMM->init(&argc, &argv);
+  if (err) rep.error("comms init error", err);
+  int r = -1, np = -1;
+  COMM->get_rank_nproc(&r, &np);
+  class SimParams SimPM;
+  SimPM.levels.clear();
+  SimPM.levels.resize(1);
+  SimPM.levels[0].MCMD.set_myrank(r);
+  SimPM.levels[0].MCMD.set_nproc(np);
+#else
+  class SimParams SimPM;
+#endif
 
   if (argc < 2) {
     cerr << "Error, please give a filename to read IC parameters from.\n";
@@ -86,7 +110,6 @@ int main(int argc, char **argv)
     return (1);
   }
 
-  int err      = 0;
   string *args = 0;
   args         = new string[argc];
   for (int i = 0; i < argc; i++)
@@ -95,19 +118,33 @@ int main(int argc, char **argv)
   for (int i = 0; i < argc; i++) {
     if (args[i].find("redirect=") != string::npos) {
       string outpath = (args[i].substr(9));
+#ifdef PARALLEL
+      ostringstream path;
+      path << outpath << "_" << SimPM.levels[0].MCMD.get_myrank() << "_";
+      outpath = path.str();
+      if (SimPM.levels[0].MCMD.get_myrank() == 0) {
+        cout << "Redirecting stdout to " << outpath << "info.txt"
+             << "\n";
+      }
+#else
       cout << "Redirecting stdout to " << outpath << "info.txt"
            << "\n";
+#endif
       rep.redirect(outpath);  // Redirects cout and cerr to text files in
                               // the directory specified.
     }
   }
+#ifdef PARALLEL
+#ifndef TESTING
+  rep.kill_stdout_from_other_procs(0);
+#endif
+#endif
 
   class DataIOBase *dataio    = 0;
   class get_sim_info *siminfo = 0;
   class ICsetup_base *ic      = 0;
   class ReadParams *rp        = 0;
-  class SimParams SimPM;
-  MP = 0;  // global microphysics class pointer.
+  class microphysics_base *MP = 0;
 
   string pfile = argv[1];
   string icftype;
@@ -125,8 +162,8 @@ int main(int argc, char **argv)
   delete siminfo;
   siminfo = 0;
 
-  SimPM.levels.clear();
-  SimPM.levels.resize(1);
+  // have to do something with SimPM.levels[0] because this
+  // is used to set the local domain size in decomposeDomain
   SimPM.grid_nlevels     = 1;
   SimPM.levels[0].parent = 0;
   SimPM.levels[0].child  = 0;
@@ -145,7 +182,11 @@ int main(int argc, char **argv)
   SimPM.levels[0].multiplier = 1;
 
   class setup_fixed_grid *SimSetup = 0;
-  SimSetup                         = new setup_fixed_grid();
+#ifdef PARALLEL
+  SimSetup = new setup_fixed_grid_pllel();
+#else
+  SimSetup = new setup_fixed_grid();
+#endif
 
   //
   // Set up the Xmin/Xmax/Range/dx of each level in the NG grid
@@ -153,6 +194,11 @@ int main(int argc, char **argv)
   // SimSetup->setup_NG_grid_levels(SimPM);
 
   vector<class GridBaseClass *> grid;
+#ifdef PARALLEL
+  err = SimPM.levels[0].MCMD.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
+  rep.errorTest("Couldn't Decompose Domain!", 0, err);
+  class MCMDcontrol *MCMD = &(SimPM.levels[0].MCMD);
+#endif
 
   //
   // Now we have read in parameters from the file, so set up a grid.
@@ -176,17 +222,21 @@ int main(int argc, char **argv)
   string ics  = rp->find_parameter(seek);
   setup_ics_type(ics, &ic);
   ic->set_SimPM(&SimPM);
+#ifdef PARALLEL
+  ic->set_MCMD_pointer(MCMD);
+#endif
 
-  if (SimPM.EP.cooling && !SimPM.EP.chemistry) {
-    // don't need to set up the class, because it just does cooling and
-    // there is no need to equilibrate anything.
-  }
-  else if (SimPM.ntracer > 0 && (SimPM.EP.cooling || SimPM.EP.chemistry)) {
-    cout << "MAIN: setting up microphysics module\n";
-    SimSetup->setup_microphysics(SimPM);
-    if (!MP) rep.error("microphysics init", MP);
-  }
+  cout << "MAIN: setting up microphysics module\n";
+  SimSetup->setup_microphysics(SimPM);
+  MP = SimSetup->get_mp_ptr();
+  ic->set_mp_pointer(MP);
   // ----------------------------------------------------------------
+
+  // have to setup jet simulation before setting up boundary
+  // conditions because jet boundary needs some grid data values.
+  if (ics == "Jet" || ics == "JET" || ics == "jet") {
+    ic->setup_data(rp, grid[0]);
+  }
 
   //
   // Set up the boundary conditions and data
@@ -204,10 +254,12 @@ int main(int argc, char **argv)
   // call "setup" to set up the data on the computational grid.
   err += ic->setup_data(rp, grid[0]);
   if (err) rep.error("Initial conditions setup failed.", err);
-  // ----------------------------------------------------------------
+    // ----------------------------------------------------------------
 
-  err = SimSetup->assign_boundary_data(SimPM, 0, grid[0]);
+#ifndef PARALLEL
+  err = SimSetup->assign_boundary_data(SimPM, 0, grid[0], MP);
   rep.errorTest("icgen::assign_boundary_data", 0, err);
+#endif
 
   // ----------------------------------------------------------------
   // if data initialised ok, maybe we need to equilibrate the
@@ -238,17 +290,22 @@ int main(int argc, char **argv)
   }
 
   dataio = 0;  // zero the class pointer.
+#ifndef PARALLEL
   if (icftype == "text") {
     cout << "WRITING ASCII TEXT FILE: ";
     cout << icfile << "\n";
   }
+#endif
 
 #ifdef FITS
   if (icftype == "fits") {
     cout << "WRITING FITS FILE: ";
     cout << icfile << "\n";
-    dataio = 0;
+#ifdef PARALLEL
+    dataio = new DataIOFits_pllel(SimPM, MCMD);
+#else
     dataio = new DataIOFits(SimPM);
+#endif
   }
 #endif  // if fits.
 
@@ -257,15 +314,17 @@ int main(int argc, char **argv)
     cout << "WRITING SILO FILE: ";
     //    icfile = icfile+".silo";
     cout << icfile << "\n";
-    dataio = 0;
+#ifdef PARALLEL
+    dataio = new dataio_silo_pllel(SimPM, "DOUBLE", MCMD);
+#else
     dataio = new dataio_silo(SimPM, "DOUBLE");
+#endif
   }
 #endif  // if SILO defined.
   if (!dataio) rep.error("IO class initialisation: ", icftype);
   err = dataio->OutputData(icfile, grid, SimPM, 0);
   if (err) rep.error("File write error", err);
   delete dataio;
-  dataio = 0;
   cout << icftype << " FILE WRITTEN... exiting\n";
 
   // delete everything and return
@@ -301,6 +360,14 @@ int main(int argc, char **argv)
 
   delete[] args;
   args = 0;
+
+#ifdef PARALLEL
+  cout << "rank: " << MCMD->get_myrank();
+  cout << " nproc: " << MCMD->get_nproc() << "\n";
+  delete COMM;
+  COMM = 0;
+#endif
+
   return err;
 }
 

@@ -26,7 +26,9 @@ using namespace std;
 int stellar_wind_bc::BC_assign_STWIND(
     class SimParams &par,       ///< pointer to simulation parameters
     class GridBaseClass *grid,  ///< pointer to grid.
-    boundary_data *b)
+    boundary_data *b,
+    class microphysics_base *mp  ///< pointer to microphysics
+)
 {
   //
   // Check that we have an internal boundary struct, and that we have
@@ -116,6 +118,8 @@ int stellar_wind_bc::BC_assign_STWIND(
           xi);
     }
   }
+
+  grid->Wind->SetMicrophysics(mp);
 
   //
   // Run through sources and add sources.

@@ -30,6 +30,15 @@ public:
     return;
   }
 
+  /// allows you to set a pointer to a microphysics class
+  void set_mp_pointer(
+      class microphysics_base *ptr  ///< pointer to microphysics class
+  )
+  {
+    mp = ptr;
+    return;
+  }
+
 #ifdef PARALLEL
   void set_MCMD_pointer(class MCMDcontrol *m)
   {
@@ -60,7 +69,8 @@ protected:
   class SimParams *SimPM;   ///< pointer to simulation parameters
 #ifdef PARALLEL
   class MCMDcontrol *MCMD;
-#endif  // PARALLEL
+#endif                          // PARALLEL
+  class microphysics_base *mp;  ///< pointer to microphysics class
 };
 
 ///

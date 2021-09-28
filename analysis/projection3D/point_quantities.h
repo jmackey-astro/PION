@@ -47,6 +47,8 @@ class point_quantities : public Xray_emission {
   ///
   virtual ~point_quantities() {}
 
+  /// set pointer to microphysics class.
+  void SetMicrophysics(class microphysics_base *);
   protected:
 
   ///
@@ -232,6 +234,8 @@ class point_quantities : public Xray_emission {
       double *,  ///< absorption coefficient (/cm)
       double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
       );
+
+  class microphysics_base *MP;
 
 };
 

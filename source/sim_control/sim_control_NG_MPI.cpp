@@ -162,7 +162,7 @@ int sim_control_NG_MPI::Init(
 
   // ----------------------------------------------------------------
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-    err = assign_boundary_data(SimPM, l, grid[l]);
+    err = assign_boundary_data(SimPM, l, grid[l], MP);
     rep.errorTest("NG_MPI INIT::assign_boundary_data", 0, err);
     COMM->barrier("level assign boundary data");
   }
@@ -309,7 +309,11 @@ int sim_control_NG_MPI::Init(
     if (!dataio) rep.error("NG_MPI INIT:: dataio", SimPM.typeofop);
   }
   dataio->SetSolver(spatial_solver);
-  if (textio) textio->SetSolver(spatial_solver);
+  dataio->SetMicrophysics(MP);
+  if (textio) {
+    textio->SetSolver(spatial_solver);
+    textio->SetMicrophysics(MP);
+  }
 
   if (SimPM.timestep == 0) {
 #ifndef NDEBUG
@@ -479,7 +483,7 @@ int sim_control_NG_MPI::Time_Int(
       else {
         SimPM.levels[l].last_dt = SimPM.last_dt / SimPM.levels[l].multiplier;
       }
-      err += calculate_timestep(SimPM, grid[l], spatial_solver, l);
+      err += calculate_timestep(SimPM, grid[l], l);
       rep.errorTest("TIME_INT::calc_timestep()", 0, err);
 
       mindt = std::min(mindt, SimPM.dt / scale);
@@ -704,7 +708,14 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
 #ifdef TEST_INT
   cout << "advance_step_OA1: l=" << l << " calc DU\n";
 #endif
-  spatial_solver->Setdt(dt2_this);
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    spatial_solver->Setdt(dt2_this);
+#ifdef PION_OMP
+  }
+#endif
   err += calc_microphysics_dU(dt2_this, grid);
   err += calc_dynamics_dU(dt2_this, OA1, grid);
 #ifdef THERMAL_CONDUCTION
@@ -751,7 +762,14 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
 #ifdef TEST_INT
   cout << "advance_step_OA1: l=" << l << " update state vec\n";
 #endif
-  spatial_solver->Setdt(dt2_this);
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    spatial_solver->Setdt(dt2_this);
+#ifdef PION_OMP
+  }
+#endif
 #ifndef SKIP_BC89_FLUX
   if (l < SimPM.grid_nlevels - 1) {
     err += recv_BC89_fluxes_F2C(spatial_solver, SimPM, l, OA1, OA1);
@@ -960,7 +978,14 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   cout << "advance_step_OA2: l=" << l << " calc DU half step" << endl;
 #endif
   double dt_now = dt2_this * 0.5;  // half of the timestep
-  spatial_solver->Setdt(dt_now);
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    spatial_solver->Setdt(dt_now);
+#ifdef PION_OMP
+  }
+#endif
   err += calc_microphysics_dU(dt_now, grid);
   err += calc_dynamics_dU(dt_now, OA1, grid);
 #ifdef THERMAL_CONDUCTION
@@ -1004,7 +1029,14 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   // 6. Calculate dU for the full step (OA2) on this level
   // --------------------------------------------------------
   dt_now = dt2_this;  // full step
-  spatial_solver->Setdt(dt_now);
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    spatial_solver->Setdt(dt_now);
+#ifdef PION_OMP
+  }
+#endif
 #ifdef TEST_INT
   cout << "advance_step_OA2: l=" << l << " raytracing" << endl;
 #endif
@@ -1060,7 +1092,14 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
 #ifdef TEST_INT
   cout << "advance_step_OA2: l=" << l << " full step update" << endl;
 #endif
-  spatial_solver->Setdt(dt_now);
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    spatial_solver->Setdt(dt_now);
+#ifdef PION_OMP
+  }
+#endif
 #ifndef SKIP_BC89_FLUX
   if (l < SimPM.grid_nlevels - 1) {
     err += recv_BC89_fluxes_F2C(spatial_solver, SimPM, l, OA2, OA2);

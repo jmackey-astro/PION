@@ -14,6 +14,7 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+#include "tools/interpolate.h"
 
 //#define COOL_TESTING ///< output cooling rate to a file.
 #define LOGSLP
@@ -23,7 +24,7 @@
 /** \brief Class to tabulate and interpolate various cooling functions, with a
  * public function to return the rate for any input temperature.
  * */
-class CoolingFn {
+class CoolingFn : virtual public interpolate_arrays {
 public:
   /** \brief Constructor.  Integer flag determines what cooling curve(s) to
    * use. Currently I only have the Sutherland \& Dopita (1993) Function

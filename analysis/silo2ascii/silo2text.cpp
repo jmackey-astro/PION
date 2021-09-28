@@ -221,8 +221,6 @@ int main(int argc, char **argv)
   // Finish up and quit.
   //
   delete COMM; COMM=0;
-  delete MP; MP=0;
-  //MPI_Finalize();
   return 0;
 }
 

@@ -13,13 +13,18 @@
 #include "tools/reporting.h"
 using namespace std;
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 int assign_update_bcs::assign_boundary_data(
-    class SimParams &par,      ///< simulation parameters
-    const int level,           ///< level in grid hierarchy
-    class GridBaseClass *grid  ///< pointer to grid.
+    class SimParams &par,        ///< simulation parameters
+    const int level,             ///< level in grid hierarchy
+    class GridBaseClass *grid,   ///< pointer to grid.
+    class microphysics_base *mp  ///< pointer to microphysics
 )
 {
   int err = 0;
@@ -112,7 +117,7 @@ int assign_update_bcs::assign_boundary_data(
         cout << "assign_bcs: assigning bc " << i << " with type " << b->type
              << "\n";
 #endif
-        err += BC_assign_STWIND(par, grid, grid->BC_bd[i]);
+        err += BC_assign_STWIND(par, grid, grid->BC_bd[i], mp);
         break;
       case BCMPI:
       case FINE_TO_COARSE:
@@ -131,8 +136,12 @@ int assign_update_bcs::assign_boundary_data(
   return (err);
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int assign_update_bcs::TimeUpdateInternalBCs(
     class SimParams &par,          ///< pointer to simulation parameters

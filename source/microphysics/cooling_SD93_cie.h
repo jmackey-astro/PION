@@ -12,6 +12,7 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+#include "tools/interpolate.h"
 
 ///
 /// Class which calculates the Sutherland & Dopita (1993) cooling
@@ -39,7 +40,7 @@
 /// - http://www.strw.leidenuniv.nl/WSS08/
 /// - http://www.strw.leidenuniv.nl/WSS08/z_collis.txt
 ///
-class cooling_function_SD93CIE {
+class cooling_function_SD93CIE : virtual public interpolate_arrays {
 public:
   cooling_function_SD93CIE();
   ~cooling_function_SD93CIE();
@@ -53,8 +54,7 @@ public:
   /// Calculate rate for a given temperature.  Result is returned in
   /// units of erg.cm^{3}.s^{-1}
   ///
-  double cooling_rate_SD93CIE(const double
-                              ///< Input Temperature.
+  double cooling_rate_SD93CIE(const double  ///< Input Temperature.
   );
 
   ///

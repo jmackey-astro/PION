@@ -51,9 +51,15 @@ option(
 )
 
 option(
+    PION_OMP
+    "Build Pion with OpenMP. Default is disbled."
+    OFF
+)
+
+option(
     PION_USE_SILO
     "Use the Silo library for data I/O. Default is enabled."
-    OFF
+    ON
 )
 
 option(
@@ -118,6 +124,10 @@ if(NOT PION_SKIP_SOURCE)
     if(PION_USE_FITS)
         add_definitions(-DFITS)
     endif(PION_USE_FITS)
+
+    if(PION_OMP)
+        add_definitions(-DPION_OMP)
+    endif(PION_OMP)
 endif(NOT PION_SKIP_SOURCE)
 
 #  This is required on OSX so that the Boost code will compile successfully
@@ -126,7 +136,6 @@ set(CMAKE_CXX_STANDARD 14)
 #
 # Find dependant libraries
 #
-
 if(NOT PION_SKIP_SOURCE)
     set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
@@ -161,6 +170,11 @@ if(NOT PION_SKIP_SOURCE)
         find_package(READLINE REQUIRED)
         include_directories(${READLINE_INCLUDE_DIR})
     endif(CMAKE_BUILD_TYPE MATCHES "Debug")
+    if (PION_OMP)
+        find_package(OpenMP REQUIRED COMPONENTS CXX)
+        include_directories(${OpenMP_CXX_INCLUDE_DIR})
+    endif(PION_OMP)
+
 endif(NOT PION_SKIP_SOURCE)
 
 
@@ -203,6 +217,7 @@ endif(PION_TOOLS)
 message(STATUS "Build options:")
 message(STATUS "    CMAKE_BUILD_TYPE         = ${CMAKE_BUILD_TYPE}")
 message(STATUS "    PION_PARALLEL            = ${PION_PARALLEL}")
+message(STATUS "    PION_OMP                 = ${PION_OMP}")
 message(STATUS "    PION_USE_SILO            = ${PION_USE_SILO}")
 message(STATUS "    PION_USE_FITS            = ${PION_USE_FITS}")
 message(STATUS "    PION_NESTED_GRID         = ${PION_NESTED_GRID}")

@@ -162,8 +162,12 @@ void sim_init::print_command_line_options(int argc, char **argv)
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int sim_init::Init(
     string infile,
@@ -201,13 +205,28 @@ int sim_init::Init(
   //
   err = set_equations(SimPM);
   rep.errorTest("(INIT::set_equations) err!=0 Fix me!", 0, err);
-  spatial_solver->SetEOS(SimPM.gamma);
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    spatial_solver->SetEOS(SimPM.gamma);
+#ifdef PION_OMP
+  }
+#endif
 
   //
   // Now setup Microphysics, if needed.
   //
   err = setup_microphysics(SimPM);
   rep.errorTest("(INIT::setup_microphysics) err!=0", 0, err);
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    spatial_solver->SetMicrophysics(MP);
+#ifdef PION_OMP
+  }
+#endif
 
   //
   // Now assign data to the grid, either from file, or via some function.
@@ -244,7 +263,7 @@ int sim_init::Init(
   //
   err = boundary_conditions(SimPM, grid);
   rep.errorTest("(INIT::boundary_conditions) err!=0", 0, err);
-  err = assign_boundary_data(SimPM, 0, grid[0]);
+  err = assign_boundary_data(SimPM, 0, grid[0], MP);
   rep.errorTest("(INIT::assign_boundary_data) err!=0", 0, err);
 
   //
@@ -299,7 +318,11 @@ int sim_init::Init(
     if (!dataio) rep.error("INIT:: dataio initialisation", SimPM.typeofop);
   }
   dataio->SetSolver(spatial_solver);
-  if (textio) textio->SetSolver(spatial_solver);
+  dataio->SetMicrophysics(MP);
+  if (textio) {
+    textio->SetSolver(spatial_solver);
+    textio->SetMicrophysics(MP);
+  }
 
 #ifdef SERIAL
   if (SimPM.timestep == 0) {
@@ -509,6 +532,11 @@ int sim_init::override_params(int narg, string *args)
     }
 
     else if (args[i].find("maxwalltime=") != string::npos) {
+      // this is already handled by mainMPI.cc, and ignored for serial
+      // code.
+    }
+
+    else if (args[i].find("omp-nthreads=") != string::npos) {
       // this is already handled by mainMPI.cc, and ignored for serial
       // code.
     }

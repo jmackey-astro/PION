@@ -35,6 +35,7 @@ dataio_text::dataio_text(
   rp  = 0;
   gp  = 0;
   eqn = 0;
+  mp  = 0;
 }
 
 // ##################################################################
@@ -97,8 +98,12 @@ int dataio_text::ReadData(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void dataio_text::SetSolver(FV_solver_base *solver)
 {
@@ -106,6 +111,23 @@ void dataio_text::SetSolver(FV_solver_base *solver)
   dataio_text::eqn = solver;
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void dataio_text::SetMicrophysics(class microphysics_base *ptr)
+{
+#ifdef TESTING
+  cout << "dataio_text::SetMicrophysics() Setting solver pointer.\n";
+#endif
+  dataio_text::mp = ptr;
+}
+
+
 
 // ##################################################################
 // ##################################################################
@@ -611,8 +633,8 @@ int dataio_text::output_ascii_data(
 #endif
 
     // internal energy/ temperature.
-    if (MP)
-      outf << MP->Temperature(cpt->P, SimPM.gamma);
+    if (mp)
+      outf << mp->Temperature(cpt->P, SimPM.gamma);
     else if (eqn) {
       outf << eqn->eint(cpt->P, SimPM.gamma);
       // total energy, x-momentum

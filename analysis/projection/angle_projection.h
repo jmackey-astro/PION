@@ -91,6 +91,7 @@ void get_entry_exit_points(
 ///
 void add_cell_emission_to_ray(
     class SimParams &,      ///< simulation parameters
+    class microphysics_base *, ///< microphysics class
     double,           ///< path-length/geometry part of integral
     double *,         ///< State vector of cell (primitive vars)
     class Xray_emission &, ///< class for getting emission
@@ -102,6 +103,7 @@ void add_cell_emission_to_ray(
 //
 int generate_angle_image(
     class SimParams &,      ///< simulation parameters
+    class microphysics_base *, ///< microphysics class
     class GridBaseClass *,  ///< computational grid
     class Xray_emission &,  ///< pointer to class.
     double,     ///< angle between LOS and symmetry axis [1,89]

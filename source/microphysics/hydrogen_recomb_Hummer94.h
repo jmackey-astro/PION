@@ -15,6 +15,7 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+#include "tools/interpolate.h"
 
 ///
 /// Set up Spline interpolation table for Hummer (1994) recombination rate
@@ -25,7 +26,7 @@
 ///
 /// Reference: Hummer, 1994, MNRAS, 268, 109.
 ///
-class Hummer94_Hrecomb {
+class Hummer94_Hrecomb : virtual public interpolate_arrays {
 public:
   Hummer94_Hrecomb();
   ~Hummer94_Hrecomb();

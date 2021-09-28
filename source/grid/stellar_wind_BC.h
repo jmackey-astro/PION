@@ -297,6 +297,15 @@ public:
       int *       ///< type of wind (=0 for now) (output)
   );
 
+  /// allows you to set a pointer to a microphysics class
+  void SetMicrophysics(
+      class microphysics_base *ptr  ///< pointer to microphysics class
+  )
+  {
+    MP = ptr;
+    return;
+  }
+
   // --------------------------------------------------------------
 
 protected:
@@ -304,10 +313,11 @@ protected:
   const int nvar;     ///< number of variables in state vec.
   const int ntracer;  ///< number of tracer variables in state vec.
   std::vector<std::string> tracers;
-  const int ftr;       ///< first tracer index in state vec.
-  const int coordsys;  ///< identifier of coordinate system
-  const int eqntype;   ///< Type of equations to solve
-  const double Tmin;   ///< Minimum Temperature allowed on grid.
+  const int ftr;                ///< first tracer index in state vec.
+  const int coordsys;           ///< identifier of coordinate system
+  const int eqntype;            ///< Type of equations to solve
+  const double Tmin;            ///< Minimum Temperature allowed on grid.
+  class microphysics_base *MP;  ///< pointer to microphysics class
 
   ///
   /// Set values of wind_cell reference state based on Wind-Source properties

@@ -370,6 +370,13 @@ public:
 #ifdef NEWGRIDDATA
   ///< Query number of bytes per cell in griddata
   virtual size_t get_gdata_stride() const { return gdata_stride; }
+
+  ///< get pointer to cell associated with i,j,k (including boundary data)
+  virtual cell *get_cell_all(const int i, const int j, const int k)
+  {
+    return &(
+        gridcells[0][G_ng_all[YY] * G_ng_all[XX] * k + G_ng_all[XX] * j + i]);
+  }
 #endif
 
   // ---------- QUERY BASIC GRID PROPERTIES -------------------------

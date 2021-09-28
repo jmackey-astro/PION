@@ -361,14 +361,14 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   c->P[VX] = c->P[VY] = c->P[VZ] = 0.0;
 
   //
-  // Neutral gas sound speed: MP->Set_Temp() sets the gas pressure to
+  // Neutral gas sound speed: mp->Set_Temp() sets the gas pressure to
   // correspond to the given temperature, then we can get sound speed
   // from c^2 = p/rho
   //
   c->P[PG] = 1.0e-10;
   for (int v = 0; v < SimPM->ntracer; v++)
     c->P[SimPM->ftr + v] = 0.0;
-  MP->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
+  mp->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
   c_n = sqrt(c->P[PG] / c->P[RO]);
 
   //
@@ -376,7 +376,7 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   //
   for (int v = 0; v < SimPM->ntracer; v++)
     c->P[SimPM->ftr + v] = 1.0;
-  MP->Set_Temp(c->P, SimPM->EP.MaxTemperature, SimPM->gamma);
+  mp->Set_Temp(c->P, SimPM->EP.MaxTemperature, SimPM->gamma);
   c_i = sqrt(c->P[PG] / c->P[RO]);
 
   cout << "c_n = " << c_n << ", c_i = " << c_i << "\n";
@@ -436,14 +436,14 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   c->P[RO] = d_dn;
   c->P[VX] = v_dn;
   c->P[PG] = 0.0;
-  MP->Set_Temp(c->P, SimPM->EP.MaxTemperature, SimPM->gamma);
+  mp->Set_Temp(c->P, SimPM->EP.MaxTemperature, SimPM->gamma);
   for (int v = 0; v < SimPM->ntracer; v++)
     c->P[SimPM->ftr + v] = 1.0;
 
   //
   // This is the local recombination rate (number per cm^3 per sec).
   //
-  double IF_pos = MP->get_recombination_rate(0, c->P, SimPM->gamma);
+  double IF_pos = mp->get_recombination_rate(0, c->P, SimPM->gamma);
   //
   // Length to absorb all photons is the source strength * IF_pos
   //
@@ -506,7 +506,7 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
       c->P[VY] = c->P[VZ] = 0.0;
       for (int v = 0; v < SimPM->ntracer; v++)
         c->P[SimPM->ftr + v] = 1.0;
-      MP->Set_Temp(c->P, SimPM->EP.MaxTemperature, SimPM->gamma);
+      mp->Set_Temp(c->P, SimPM->EP.MaxTemperature, SimPM->gamma);
     }
     else if (pos[XX] <= shock_pos) {
       //
@@ -518,7 +518,7 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
       c->P[VY] = c->P[VZ] = 0.0;
       for (int v = 0; v < SimPM->ntracer; v++)
         c->P[SimPM->ftr + v] = 1.0e-12;
-      MP->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
+      mp->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
     }
     else {
       //
@@ -530,7 +530,7 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
       c->P[VY] = c->P[VZ] = 0.0;
       for (int v = 0; v < SimPM->ntracer; v++)
         c->P[SimPM->ftr + v] = 1.0e-12;
-      MP->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
+      mp->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
     }
 
   } while ((c = ggg->NextPt(c)) != 0);
@@ -673,7 +673,7 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
       c->P[VX] = -v_dn * f_dn - v_sh * f_sh - v_up * f_up;
       for (int v = 0; v < SimPM->ntracer; v++)
         c->P[SimPM->ftr + v] = 1.0 * f_dn + 1.0e-12 * (f_sh + f_up);
-      MP->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
+      mp->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
 
     } while ((c = ggg->NextPt(c)) != 0);
   }  //  ptype==2 || 3
@@ -685,10 +685,10 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
     c->P[RO] = d_dn;
     c->P[VX] = v_dn;
     c->P[PG] = 0.0;
-    MP->Set_Temp(c->P, SimPM->EP.MaxTemperature, SimPM->gamma);
+    mp->Set_Temp(c->P, SimPM->EP.MaxTemperature, SimPM->gamma);
     for (int v = 0; v < SimPM->ntracer; v++)
       c->P[SimPM->ftr + v] = 1.0;
-    IF_pos = MP->get_recombination_rate(0, c->P, SimPM->gamma);
+    IF_pos = mp->get_recombination_rate(0, c->P, SimPM->gamma);
     IF_pos = 0.65 * SimPM->RS.sources[0].strength / IF_pos + ggg->SIM_Xmin(XX);
     //
     // Density sinusoidal perturbation, gaussian smoothed in x.
@@ -713,7 +713,7 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
         c->P[VY] = c->P[VZ] = 0.0;
         for (int v = 0; v < SimPM->ntracer; v++)
           c->P[SimPM->ftr + v] = 1.0;
-        MP->Set_Temp(c->P, SimPM->EP.MaxTemperature, SimPM->gamma);
+        mp->Set_Temp(c->P, SimPM->EP.MaxTemperature, SimPM->gamma);
       }
       else {
         deltarho =
@@ -729,7 +729,7 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
         c->P[VY] = c->P[VZ] = 0.0;
         for (int v = 0; v < SimPM->ntracer; v++)
           c->P[SimPM->ftr + v] = 1.0e-12;
-        MP->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
+        mp->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
       }
     } while ((c = ggg->NextPt(c)) != 0);
 

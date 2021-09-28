@@ -80,6 +80,7 @@ stellar_wind::stellar_wind(
     nvar(nv), ntracer(nt), ftr(ft), coordsys(cs), eqntype(eq), Tmin(mt)
 {
   nsrc = 0;
+  MP   = 0;
 
   for (int v = 0; v < nt; v++)
     tracers.push_back(tr[v]);

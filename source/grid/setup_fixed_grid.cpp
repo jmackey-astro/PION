@@ -72,6 +72,9 @@
 #include <time.h>
 using namespace std;
 
+class FV_solver_base *setup_fixed_grid::spatial_solver = 0;
+class microphysics_base *setup_fixed_grid::MP          = 0;
+
 // ##################################################################
 // ##################################################################
 
@@ -81,9 +84,17 @@ setup_fixed_grid::setup_fixed_grid()
   FVI_heating_srcs.clear();
   FVI_ionising_srcs.clear();
   FVI_need_column_densities_4dt = false;
-  spatial_solver                = 0;
-  dataio                        = 0;
-  textio                        = 0;
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    spatial_solver = 0;
+    MP             = 0;
+#ifdef PION_OMP
+  }
+#endif
+  dataio = 0;
+  textio = 0;
 }
 
 // ##################################################################
@@ -95,14 +106,21 @@ setup_fixed_grid::~setup_fixed_grid()
   cout << "(setup_fixed_grid::Destructor) ..."
        << "\n";
 #endif
-  if (MP) {
-    delete MP;
-    MP = 0;
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    if (MP) {
+      // delete MP;
+      // MP = 0;
+    }
+    if (spatial_solver) {
+      // delete spatial_solver;
+      // spatial_solver = 0;
+    }
+#ifdef PION_OMP
   }
-  if (spatial_solver) {
-    delete spatial_solver;
-    spatial_solver = 0;
-  }
+#endif
 #ifndef NDEBUG
   cout << "(setup_fixed_grid::Destructor) Done."
        << "\n";
@@ -146,8 +164,12 @@ void setup_fixed_grid::setup_cell_extra_data(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int setup_fixed_grid::setup_grid(
     vector<class GridBaseClass *> &g,  ///< grid pointers.
@@ -242,8 +264,12 @@ int setup_fixed_grid::setup_grid(
   return (0);
 }  // setup_grid()
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int setup_fixed_grid::setup_microphysics(
     class SimParams &SimPM  ///< pointer to simulation parameters
@@ -253,167 +279,193 @@ int setup_fixed_grid::setup_microphysics(
   // cout <<"----------------- MICROPHYSICS SETUP -----------------------\n";
   // cout <<"------------------------------------------------------------\n";
   cout << "(pion)  Setting up microphysics\n";
-  //
-  // Setup Microphysics class, if needed.
-  // First see if we want the only_cooling class (much simpler), and if
-  // not then check for the one of the bigger microphysics classes.
-  //
+
+  int mp = -1;
   if (SimPM.EP.cooling && !SimPM.EP.chemistry) {
-    cout << "\tRequested cooling but no chemistry... setting";
-    cout << " up mp_only_cooling() class. \n";
-    cout << "\tTimestep limit = " << SimPM.EP.MP_timestep_limit << "\n";
-    MP = new mp_only_cooling(
-        SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
-    if (!MP) rep.error("mp_only_cooling() init", MP);
+    mp = 100;
   }
   else if (SimPM.EP.chemistry) {
-    //    MP = 0;
-    string mptype;
-    mptype           = SimPM.chem_code;
-    bool have_set_MP = false;
-    cout << "setting up MP type: " << mptype << "\n";
+    string mptype = SimPM.chem_code;
+    if (mptype == "MPv0")
+      mp = 0;
+    else if (mptype == "MPv1")
+      mp = 1;
+    else if (mptype == "MPv2")
+      mp = 2;
+    else if (mptype == "MPv3")
+      mp = 3;
+    else if (mptype == "MPv4")
+      mp = 4;
+    else if (mptype == "MPv5")
+      mp = 5;
+    else if (mptype == "MPv6")
+      mp = 6;
+    else if (mptype == "MPv7")
+      mp = 7;
+    else if (mptype == "MPv8")
+      mp = 8;
+    else if (mptype == "MPv9")
+      mp = 9;
+    else if (mptype == "MPv10")
+      mp = 10;
+  }
 
-#ifdef LEGACY_CODE
-    if (mptype == "MPv0") {
-      cout << "\tsetting up MPv0 module\n";
-      if (have_set_MP) rep.error("MP already initialised", mptype);
-      MP = new MPv0(
-          SimPM.nvar, SimPM.ntracer, SimPM.chem_code, SimPM.tracers,
-          &(SimPM.EP), &(SimPM.RS));
+  // set timestep limiting behaviour
+  switch (mp) {
+    case 0:
       if (SimPM.EP.MP_timestep_limit < 0 || SimPM.EP.MP_timestep_limit > 5)
         rep.error("BAD dt LIMIT", SimPM.EP.MP_timestep_limit);
-      have_set_MP = true;
-    }
-
-    if (mptype == "MPv1") {
-      cout << "\tsetting up MPv1 microphysics module\n";
-      if (have_set_MP) rep.error("MP already initialised", mptype);
-      MP = new MPv1(
-          SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
-      cout << "\t**---** WARNING, THIS MODULE HAS BEEN SUPERSEDED BY MPv4. "
-              "**--**\n";
-      have_set_MP = true;
-    }
-
-    if (mptype == "MPv2") {
-      cout << "\tsetting up MPv2 module\n";
-      if (have_set_MP) rep.error("MP already initialised", mptype);
-      MP = new MPv2(
-          SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer, SimPM.tracers,
-          &(SimPM.EP), &(SimPM.RS));
+    case 2:
+    case 3:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 10:
       SimPM.EP.MP_timestep_limit = 1;
-      have_set_MP                = true;
-    }
-
-    if (mptype == "MPv4") {
-      cout << "\tsetting up MPv4 module\n";
+      break;
+    case 4:
 #if MPV4_DTLIMIT >= 5 && MPV4_DTLIMIT <= 12
-      // cout <<"\t******* N.B. dt05-12 Timestep limiting is enforced by
-      // #def"; cout <<" DTLIMIT="<<MPV4_DTLIMIT<<". **\n";
       SimPM.EP.MP_timestep_limit = 5;
 #elif MPV4_DTLIMIT >= 0 && MPV4_DTLIMIT <= 4
-      // cout <<"\t******* N.B. dt00-04 Timestep limiting is enforced by
-      // #def"; cout <<" MPV4_DTLIMIT="<<MPV4_DTLIMIT<<". **\n";
       SimPM.EP.MP_timestep_limit = 4;
 #else
-#error "No timestep-limiting is defined in source/defines/functionality_flags.h"
+#error "No timestep-limiting defined in source/defines/functionality_flags.h"
 #endif
-      if (have_set_MP) rep.error("MP already initialised", mptype);
-      MP = new MPv4(
-          SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer, SimPM.tracers,
-          &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
-      have_set_MP = true;
+      break;
+    default:
+      break;
+  }
+
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    if (MP) {
+      delete MP;
+      MP = 0;
     }
 
-    if (mptype == "MPv8") {
-      cout << "\tsetting up MPv8 module\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised", mptype);
-      MP = new MPv8(
-          SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer, SimPM.tracers,
-          &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
-      have_set_MP = true;
-    }
+    // Setup Microphysics class, if needed.
+    // First see if we want the only_cooling class (much simpler), and if
+    // not then check for the one of the bigger microphysics classes.
+    switch (mp) {
+      case -1:  // no MP, just return.
+        cout << "\tno microphysics requested... returning.\n";
+        break;
 
+      case 100:
+        cout << "\tRequested cooling but no chemistry... setting";
+        cout << " up mp_only_cooling() class. \n";
+        cout << "\tTimestep limit = " << SimPM.EP.MP_timestep_limit << "\n";
+        MP = new mp_only_cooling(
+            SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
+        if (!MP) rep.error("mp_only_cooling() init", MP);
+        break;
+
+#ifdef LEGACY_CODE
+      case 0:
+        cout << "\tsetting up MPv0 module\n";
+        MP = new MPv0(
+            SimPM.nvar, SimPM.ntracer, SimPM.chem_code, SimPM.tracers,
+            &(SimPM.EP), &(SimPM.RS));
+        if (SimPM.EP.MP_timestep_limit < 0 || SimPM.EP.MP_timestep_limit > 5)
+          rep.error("BAD dt LIMIT", SimPM.EP.MP_timestep_limit);
+        if (!MP) rep.error("microphysics init", MP);
+        break;
+
+      case 1:
+        cout << "\tsetting up MPv1 microphysics module\n";
+        MP = new MPv1(
+            SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
+        cout << "\t*-* WARNING, THIS MODULE HAS BEEN SUPERSEDED BY MPv4.*-*\n";
+        if (!MP) rep.error("microphysics init", MP);
+        break;
+
+      case 2:
+        cout << "\tsetting up MPv2 module\n";
+        MP = new MPv2(
+            SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer,
+            SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
+        if (!MP) rep.error("microphysics init", MP);
+        break;
+
+      case 4:
+        cout << "\tsetting up MPv4 module\n";
+        MP = new MPv4(
+            SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer,
+            SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
+        if (!MP) rep.error("microphysics init", MP);
+        break;
+
+      case 8:
+        cout << "\tsetting up MPv8 module\n";
+        MP = new MPv8(
+            SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer,
+            SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
+        if (!MP) rep.error("microphysics init", MP);
+        break;
 #endif  // LEGACY_CODE
 
 #ifndef EXCLUDE_HD_MODULE
-    if (mptype == "MPv9") {
-      cout << "\tsetting up microphysics_lowz module\n";
-      if (have_set_MP) rep.error("MP already initialised", mptype);
-      MP = new microphysics_lowz(
-          SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
-      have_set_MP = true;
-    }
+      case 9:
+        cout << "\tsetting up microphysics_lowz module\n";
+        MP = new microphysics_lowz(
+            SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
+        if (!MP) rep.error("microphysics init", MP);
+        break;
 #endif  // exclude Harpreet's module
 
-    if (mptype == "MPv3" || mptype == "MPv3__") {
-      cout << "\tsetting up MPv3 module\n";
-#if MPV3_DTLIMIT >= 0 && MPV4_DTLIMIT <= 12
-      // cout <<"\t******* N.B. Timestep limiting is enforced by #def";
-      // cout <<" MPV3_DTLIMIT="<<MPV3_DTLIMIT<<". **\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised", mptype);
-#else
-#error "No timestep-limiting is defined in source/defines/functionality_flags.h"
-#endif
+      case 3:
+        cout << "\tsetting up MPv3 module\n";
+        MP = new MPv3(
+            SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer,
+            SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
+        if (!MP) rep.error("microphysics init", MP);
+        break;
 
-      MP = new MPv3(
-          SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer, SimPM.tracers,
-          &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
-      // if (SimPM.EP.MP_timestep_limit != 1)
-      //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
-      have_set_MP = true;
-    }
+      case 5:
+        cout << "\tsetting up MPv5 module\n";
+        MP = new MPv5(
+            SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer,
+            SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
+        if (!MP) rep.error("microphysics init", MP);
+        break;
 
-    if (mptype == "MPv5" || mptype == "MPv5__") {
-      cout << "\tsetting up MPv5 module\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised", mptype);
-      MP = new MPv5(
-          SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer, SimPM.tracers,
-          &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
-      have_set_MP = true;
-    }
+      case 6:
+        cout << "\tsetting up MPv6 module\n";
+        MP = new MPv6(
+            SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer,
+            SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
+        if (!MP) rep.error("microphysics init", MP);
+        break;
 
-    if (mptype == "MPv6" || mptype == "MPv6__") {
-      cout << "\tsetting up MPv6 module\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised", mptype);
-      MP = new MPv6(
-          SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer, SimPM.tracers,
-          &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
-      have_set_MP = true;
-    }
-
-    if (mptype == "MPv7" || mptype == "MPv7__") {
-      cout << "\tsetting up MPv7 module\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised", mptype);
-      MP = new MPv7(
-          SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer, SimPM.tracers,
-          &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
-      have_set_MP = true;
-    }
+      case 7:
+        cout << "\tsetting up MPv7 module\n";
+        MP = new MPv7(
+            SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer,
+            SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
+        if (!MP) rep.error("microphysics init", MP);
+        cout << "\tDone.\n";
+        break;
 
 #ifdef CODE_EXT_HHE
-    if (mptype == "MPv10") {
-      cout << "\tsetting up MPv10 module\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised", mptype);
-      MP = new mpv9_HHe(
-          SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), SimPM.gamma);
-      have_set_MP = true;
-    }
+      case 10:
+        cout << "\tsetting up MPv10 module\n";
+        MP = new mpv9_HHe(
+            SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), SimPM.gamma);
+        cout << "\tDone.\n";
+        if (!MP) rep.error("microphysics init", MP);
+        break;
 #endif
 
-    if (!MP) rep.error("microphysics init", MP);
-    if (!have_set_MP) rep.error("have_set_MP", have_set_MP);
+      default:
+        rep.error("unhandled microphysics type", SimPM.chem_code);
+        break;
+    }
+#ifdef PION_OMP
   }
-  else {
-    cout << "\tno microphysics.\n";
-    MP = 0;
-  }
+#endif
 
   //
   // If we have a multifrequency ionising source, we can set its properties
@@ -421,13 +473,21 @@ int setup_fixed_grid::setup_microphysics(
   //
   int err = 0;
   double data[MAX_TAU];  // temp var not used
-  for (int isrc = 0; isrc < SimPM.RS.Nsources; isrc++) {
-    if (SimPM.RS.sources[isrc].type == RT_SRC_SINGLE
-        && SimPM.RS.sources[isrc].effect == RT_EFFECT_MFION && MP != 0
-        && SimPM.RS.sources[isrc].EvoFile == "NONE") {
-      err = MP->set_multifreq_source_properties(&SimPM.RS.sources[isrc], data);
+#ifdef PION_OMP
+  #pragma omp parallel private(err)
+  {
+#endif
+    for (int isrc = 0; isrc < SimPM.RS.Nsources; isrc++) {
+      if (SimPM.RS.sources[isrc].type == RT_SRC_SINGLE
+          && SimPM.RS.sources[isrc].effect == RT_EFFECT_MFION && MP != 0
+          && SimPM.RS.sources[isrc].EvoFile == "NONE") {
+        err =
+            MP->set_multifreq_source_properties(&SimPM.RS.sources[isrc], data);
+      }
     }
+#ifdef PION_OMP
   }
+#endif
   if (err) rep.error("Setting multifreq source properties", err);
 
   // cout <<"------------------------------------------------------------\n";
@@ -436,8 +496,12 @@ int setup_fixed_grid::setup_microphysics(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int setup_fixed_grid::setup_raytracing(
     class SimParams &SimPM,    ///< pointer to simulation parameters
@@ -818,8 +882,12 @@ int setup_fixed_grid::boundary_conditions(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int setup_fixed_grid::setup_boundary_structs(
     class SimParams &par,       ///< simulation parameters
@@ -1003,6 +1071,8 @@ int setup_fixed_grid::setup_boundary_structs(
 // ##################################################################
 // ##################################################################
 
+
+
 void setup_fixed_grid::setup_dataio_class(
     class SimParams &par,  ///< simulation parameters
     const int typeOfFile   ///< type of I/O: 1=text,2=fits,5=silo
@@ -1066,95 +1136,102 @@ int setup_fixed_grid::set_equations(
   if (par.coord_sys < 0)
     rep.error("set_equations: coordinate system not set.", par.coord_sys);
 
-  if (spatial_solver) {
-    delete spatial_solver;
-    spatial_solver = 0;
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    if (spatial_solver) {
+      delete spatial_solver;
+      spatial_solver = 0;
+    }
+
+    if (par.coord_sys == COORD_CRT) {
+      cout << "\tset_equations() Using Cartesian coord. system.\n";
+      switch (par.eqntype) {
+        case EQEUL:
+          cout << "\tset_equations() Using Euler Equations.\n";
+          spatial_solver = new class FV_solver_Hydro_Euler(
+              par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
+              par.ntracer);
+          if (!spatial_solver)
+            rep.error("Couldn't set up solver/equations class.", EQEUL);
+          break;
+        case EQMHD:
+          cout << "\tset_equations() Using Ideal MHD Equations.\n";
+          spatial_solver = new class FV_solver_mhd_ideal_adi(
+              par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
+              par.ntracer);
+          if (!spatial_solver)
+            rep.error("Couldn't set up solver/equations class.", EQMHD);
+          break;
+        case EQGLM:
+          cout << "\tset_equations() Using GLM MHD Equations.\n";
+          spatial_solver = new class FV_solver_mhd_mixedGLM_adi(
+              par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
+              par.ntracer);
+          if (!spatial_solver)
+            rep.error("Couldn't set up solver/equations class.", EQGLM);
+          break;
+        case EQFCD:
+          cout << "\tset_equations() Using Field-CD MHD Equations.\n";
+          rep.error("Field CD got lost in some code updates", EQFCD);
+          break;
+        default:
+          rep.error("Don't know the specified equations...", par.eqntype);
+          break;
+      }
+    }  // cartesian
+
+    else if (par.coord_sys == COORD_CYL) {
+      cout << "\tset_equations() Using Cylindrical coord. system.\n";
+      switch (par.eqntype) {
+        case EQEUL:
+          cout << "\tset_equations() Using Euler Equations.\n";
+          spatial_solver = new class cyl_FV_solver_Hydro_Euler(
+              par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
+              par.ntracer);
+          if (!spatial_solver)
+            rep.error("Couldn't set up solver/equations class.", EQEUL);
+          break;
+        case EQMHD:
+          cout << "\tset_equations() Using Ideal MHD Equations.\n";
+          spatial_solver = new class cyl_FV_solver_mhd_ideal_adi(
+              par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
+              par.ntracer);
+          if (!spatial_solver)
+            rep.error("Couldn't set up solver/equations class.", EQMHD);
+          break;
+        case EQGLM:
+          cout << "\tset_equations() Using GLM MHD Equations.\n";
+          spatial_solver = new class cyl_FV_solver_mhd_mixedGLM_adi(
+              par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
+              par.ntracer);
+          if (!spatial_solver)
+            rep.error("Couldn't set up solver/equations class.", EQGLM);
+          break;
+        default:
+          rep.error("not implemented yet for axisymmetry", par.eqntype);
+      }
+    }  // axisymmetric
+
+    else if (par.coord_sys == COORD_SPH) {
+      cout << "\tset_equations() Using Spherical coordinate system.\n";
+      switch (par.eqntype) {
+        case EQEUL:
+          cout << "\tset_equations() Using Euler Equations.\n";
+          spatial_solver = new class sph_FV_solver_Hydro_Euler(
+              par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
+              par.ntracer);
+          if (!spatial_solver)
+            rep.error("Couldn't set up solver/equations class.", EQEUL);
+          break;
+        default:
+          rep.error("not implemented yet for spherical", par.eqntype);
+      }
+    }  // spherically symmetric
+#ifdef PION_OMP
   }
-
-  if (par.coord_sys == COORD_CRT) {
-    cout << "\tset_equations() Using Cartesian coord. system.\n";
-    switch (par.eqntype) {
-      case EQEUL:
-        cout << "\tset_equations() Using Euler Equations.\n";
-        spatial_solver = new class FV_solver_Hydro_Euler(
-            par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
-            par.ntracer);
-        if (!spatial_solver)
-          rep.error("Couldn't set up solver/equations class.", EQEUL);
-        break;
-      case EQMHD:
-        cout << "\tset_equations() Using Ideal MHD Equations.\n";
-        spatial_solver = new class FV_solver_mhd_ideal_adi(
-            par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
-            par.ntracer);
-        if (!spatial_solver)
-          rep.error("Couldn't set up solver/equations class.", EQMHD);
-        break;
-      case EQGLM:
-        cout << "\tset_equations() Using GLM MHD Equations.\n";
-        spatial_solver = new class FV_solver_mhd_mixedGLM_adi(
-            par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
-            par.ntracer);
-        if (!spatial_solver)
-          rep.error("Couldn't set up solver/equations class.", EQGLM);
-        break;
-      case EQFCD:
-        cout << "\tset_equations() Using Field-CD MHD Equations.\n";
-        rep.error("Field CD got lost in some code updates", EQFCD);
-        break;
-      default:
-        rep.error("Don't know the specified equations...", par.eqntype);
-        break;
-    }
-  }  // cartesian
-
-  else if (par.coord_sys == COORD_CYL) {
-    cout << "\tset_equations() Using Cylindrical coord. system.\n";
-    switch (par.eqntype) {
-      case EQEUL:
-        cout << "\tset_equations() Using Euler Equations.\n";
-        spatial_solver = new class cyl_FV_solver_Hydro_Euler(
-            par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
-            par.ntracer);
-        if (!spatial_solver)
-          rep.error("Couldn't set up solver/equations class.", EQEUL);
-        break;
-      case EQMHD:
-        cout << "\tset_equations() Using Ideal MHD Equations.\n";
-        spatial_solver = new class cyl_FV_solver_mhd_ideal_adi(
-            par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
-            par.ntracer);
-        if (!spatial_solver)
-          rep.error("Couldn't set up solver/equations class.", EQMHD);
-        break;
-      case EQGLM:
-        cout << "\tset_equations() Using GLM MHD Equations.\n";
-        spatial_solver = new class cyl_FV_solver_mhd_mixedGLM_adi(
-            par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
-            par.ntracer);
-        if (!spatial_solver)
-          rep.error("Couldn't set up solver/equations class.", EQGLM);
-        break;
-      default:
-        rep.error("not implemented yet for axisymmetry", par.eqntype);
-    }
-  }  // axisymmetric
-
-  else if (par.coord_sys == COORD_SPH) {
-    cout << "\tset_equations() Using Spherical coordinate system.\n";
-    switch (par.eqntype) {
-      case EQEUL:
-        cout << "\tset_equations() Using Euler Equations.\n";
-        spatial_solver = new class sph_FV_solver_Hydro_Euler(
-            par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
-            par.ntracer);
-        if (!spatial_solver)
-          rep.error("Couldn't set up solver/equations class.", EQEUL);
-        break;
-      default:
-        rep.error("not implemented yet for spherical", par.eqntype);
-    }
-  }  // spherically symmetric
+#endif
 
   //
   // Check that we set up an equations class!

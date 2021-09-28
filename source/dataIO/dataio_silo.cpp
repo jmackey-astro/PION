@@ -83,6 +83,7 @@ dataio_silo::dataio_silo(
   cout << "setting up dataio_silo class.\n";
 #endif
   dataio_silo::eqn = 0;
+  dataio_silo::mp  = 0;
   dataio_silo::gp  = 0;
   silofile.erase();
   ndim                 = -1;
@@ -169,8 +170,12 @@ dataio_silo::~dataio_silo()
   db_ptr = mem.myfree(db_ptr);
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void dataio_silo::SetSolver(FV_solver_base *solver)
 {
@@ -180,8 +185,27 @@ void dataio_silo::SetSolver(FV_solver_base *solver)
   dataio_silo::eqn = solver;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
+
+void dataio_silo::SetMicrophysics(class microphysics_base *ptr)
+{
+#ifdef TESTING
+  cout << "dataio_silo::SetSolver() Setting solver pointer.\n";
+#endif
+  dataio_silo::mp = ptr;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int dataio_silo::WriteHeader(
     const string overwritefile,  ///< file to write to (full, exact filename).
@@ -192,8 +216,12 @@ int dataio_silo::WriteHeader(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int dataio_silo::OutputData(
     const string outfile,
@@ -855,7 +883,7 @@ int dataio_silo::setup_write_variables(
   //#ifdef SERIAL
   // if equations are set up, can get temperature/internal energy.
   if (dataio_silo::eqn != 0) {
-    if (MP)
+    if (mp)
       varnames.push_back("Temperature");
     else
       varnames.push_back("InternalEnergy");
@@ -1509,10 +1537,10 @@ int dataio_silo::get_scalar_data_array(
     //
     // internal energy (or temperature if we have microphysics)
     //
-    if (MP) {
+    if (mp) {
       if (silo_dtype == DB_FLOAT) {
         do {
-          farr[ct] = static_cast<float>(MP->Temperature(c->P, SimPM.gamma));
+          farr[ct] = static_cast<float>(mp->Temperature(c->P, SimPM.gamma));
           ct++;
         }
 #ifdef WRITE_GHOST_ZONES
@@ -1523,7 +1551,7 @@ int dataio_silo::get_scalar_data_array(
       }
       else {
         do {
-          darr[ct] = static_cast<double>(MP->Temperature(c->P, SimPM.gamma));
+          darr[ct] = static_cast<double>(mp->Temperature(c->P, SimPM.gamma));
           ct++;
         }
 #ifdef WRITE_GHOST_ZONES

@@ -31,32 +31,46 @@
 #include <sstream>
 #include <sys/time.h>
 #include <time.h>
+
+#ifdef PION_OMP
+#include <omp.h>
+#endif
+
 using namespace std;
 
 // ##################################################################
 // ##################################################################
+
+
 
 calc_timestep::calc_timestep()
 {
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 calc_timestep::~calc_timestep()
 {
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 int calc_timestep::calculate_timestep(
-    class SimParams &par,             ///< pointer to simulation parameters
-    class GridBaseClass *grid,        ///< pointer to grid.
-    class FV_solver_base *sp_solver,  ///< solver/equations class
-    const int l                       ///< level to advance (for NG grid)
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    const int l                 ///< level to advance (for NG grid)
 )
 {
 #ifndef NDEBUG
@@ -68,7 +82,7 @@ int calc_timestep::calculate_timestep(
   // timestep, and then the microphysics timestep.
   //
   double t_dyn = 0.0, t_mp = 0.0;
-  t_dyn = calc_dynamics_dt(par, grid, sp_solver);
+  t_dyn = calc_dynamics_dt(par, grid);
   t_mp  = calc_microphysics_dt(par, grid, l);
   // cout <<"l="<<l<<", \t t_dyn="<<t_dyn<<"and t_mp ="<<t_mp<<"\n";
 
@@ -87,7 +101,7 @@ int calc_timestep::calculate_timestep(
   // we need to calcuate the multidimensional energy fluxes
   // associated with it.  So we store Edot in c->dU[ERG], to be multiplied
   // by the actual dt later (since at this stage we don't know dt).  This
-  // later multiplication is done in sp_solver->preprocess_data()
+  // later multiplication is done in spatial_solver->preprocess_data()
   //
   double t_cond = calc_conduction_dt_and_Edot();
 #ifndef NDEBUG
@@ -115,17 +129,24 @@ int calc_timestep::calculate_timestep(
     td = min(td, t_dyn / pow(2.0, par.grid_nlevels - 1 - l));
 
   double cr = 0.0;
-  if (par.grid_nlevels == 1) {
-    cr = 0.25 / par.dx;
-    spatial_solver->Set_GLM_Speeds(td, par.dx, cr);
-  }
-  else {
-    cr = 0.25 / par.levels[par.grid_nlevels - 1].dx;
-    if (l == 0) {
-      spatial_solver->Set_GLM_Speeds(
-          td, par.levels[par.grid_nlevels - 1].dx, cr);
+#ifdef PION_OMP
+  #pragma omp parallel private(cr)
+  {
+#endif
+    if (par.grid_nlevels == 1) {
+      cr = 0.25 / par.dx;
+      spatial_solver->Set_GLM_Speeds(td, par.dx, cr);
     }
+    else {
+      cr = 0.25 / par.levels[par.grid_nlevels - 1].dx;
+      if (l == 0) {
+        spatial_solver->Set_GLM_Speeds(
+            td, par.levels[par.grid_nlevels - 1].dx, cr);
+      }
+    }
+#ifdef PION_OMP
   }
+#endif
 
   //
   // Check that the timestep doesn't increase too much between steps, and that
@@ -135,8 +156,15 @@ int calc_timestep::calculate_timestep(
   //
   timestep_checking_and_limiting(par, l);
 
-  // sets the timestep info in the solver class.
-  sp_solver->Setdt(par.dt);
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    // sets the timestep info in the solver class.
+    spatial_solver->Setdt(par.dt);
+#ifdef PION_OMP
+  }
+#endif
 
 #ifndef NDEBUG
   cout << "calc_timestep::calc_timestep() finished.\n";
@@ -144,14 +172,17 @@ int calc_timestep::calculate_timestep(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 #ifdef THERMAL_CONDUCTION
 double calc_timestep::calc_conduction_dt_and_Edot(
-    class SimParams &par,            ///< pointer to simulation parameters
-    class GridBaseClass *grid,       ///< pointer to grid.
-    class FV_solver_base *sp_solver  ///< solver/equations class
+    class SimParams &par,      ///< pointer to simulation parameters
+    class GridBaseClass *grid  ///< pointer to grid.
 )
 {
   //
@@ -162,7 +193,7 @@ double calc_timestep::calc_conduction_dt_and_Edot(
   // c->dU[ERG] since this is where it will be updated.
   //
   // cout <<"\tCCdt: setting Edot.\n";
-  sp_solver->set_thermal_conduction_Edot();
+  spatial_solver->set_thermal_conduction_Edot();
   // cout <<"\tCCdt: Done with div(Q).  Now getting timestep.\n";
 
   //
@@ -202,8 +233,12 @@ double calc_timestep::calc_conduction_dt_and_Edot(
 }  // calc_conduction_dt_and_Edot()
 #endif  // THERMAL CONDUCTION
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void calc_timestep::timestep_checking_and_limiting(
     class SimParams &par,  ///< pointer to simulation parameters
@@ -252,20 +287,22 @@ void calc_timestep::timestep_checking_and_limiting(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 double calc_timestep::calc_dynamics_dt(
     class SimParams &par,  ///< pointer to simulation parameters
-    class GridBaseClass *grid,
-    class FV_solver_base *sp_solver  ///< solver/equations class
-)
+    class GridBaseClass *grid)
 {
   double tempdt = 0.0;
   double dt     = 1.e100;  // Set it to very large no. initially.
   double dx     = grid->DX();
 
-  class cell *c = grid->FirstPt();
+  class cell *c = grid->FirstPt_All();
 #ifndef NDEBUG
   dp.c = c;
 #endif
@@ -275,28 +312,40 @@ double calc_timestep::calc_dynamics_dt(
   // The CellTimeStep() function returns a value which is
   // already multiplied by the CFL coefficient.
   //
-  do {
-#ifndef NDEBUG
-    dp.c = c;
+  // cout << "timestep!\n";
+  int index[3];
+  tempdt = 1.0e100;
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+    #pragma omp for collapse(2) private(c,tempdt,index) reduction(min:dt)
 #endif
-    if (c->timestep && !c->isbd) {
-      tempdt = sp_solver->CellTimeStep(
-          c,          ///< pointer to cell
-          par.gamma,  ///< gas EOS gamma.
-          dx          ///< Cell size dx.
-      );
-      if (tempdt <= 0.0) {
-        CI.print_cell(c);
-        cout << "celltimestep=" << tempdt << ", gamma=" << par.gamma
-             << ", dx=" << dx << "\n";
-        rep.error("CellTimeStep function returned failing value", c->id);
+    for (int ax3 = 0; ax3 < grid->NG_All(ZZ); ax3++) {
+      for (int ax2 = 0; ax2 < grid->NG_All(YY); ax2++) {
+        index[0] = 0;
+        index[1] = ax2;
+        index[2] = ax3;
+        c        = grid->get_cell_all(index[0], index[1], index[2]);
+        tempdt   = 1.0e100;
+        // get to first non-boundary cell:
+        while (c && !c->isgd)
+          c = grid->NextPt(c, XP);
+        if (!c) {
+          continue;  // end iteration if there are no non-boundary cells
+        }
+        // loop over all cells in this x-column.
+        do {
+          if (c->timestep && !c->isbd) {
+            tempdt =
+                min(tempdt, spatial_solver->CellTimeStep(c, par.gamma, dx));
+          }
+        } while ((c = grid->NextPt(c, XP)));
+        dt = min(dt, tempdt);
       }
-      //    commandline.console("timestep -> ");
-      dt = min(dt, tempdt);
-      // cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<mindt<<"\n";
     }
-    c = grid->NextPt(c);
-  } while (c != 0);
+#ifdef PION_OMP
+  }
+#endif
 
   // if on first step and a jet is inflowing, then set dt based on
   // the jet properties.
@@ -319,8 +368,12 @@ double calc_timestep::calc_dynamics_dt(
   return dt;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 double calc_timestep::calc_microphysics_dt(
     class SimParams &par,       ///< pointer to simulation parameters
@@ -380,17 +433,19 @@ double calc_timestep::calc_microphysics_dt(
   return dt;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 double calc_timestep::get_mp_timescales_no_radiation(
     class SimParams &par,  ///< pointer to simulation parameters
     class GridBaseClass *grid)
 {
 #ifndef NDEBUG
-  //
   // paranoid checking...
-  //
   if (par.EP.MP_timestep_limit == 0) {
     cout << "calc_timestep::get_mp_timescales_no_radiation() called, ";
     cout << "but no MP-dt limiting!\n";
@@ -398,56 +453,77 @@ double calc_timestep::get_mp_timescales_no_radiation(
   }
 #endif  // NDEBUG
   //
-  // So now we know we need to go through every cell and see what the limit
-  // is.
+  // Loop through every cell and see what the limit is.
   //
-  double tempdt = 0.0, dt = 1.0e99;
-  class cell *c = grid->FirstPt();
-  do {
-#ifndef NDEBUG
-    dp.c = c;
+  double tempdt = 0.0, dt = 1.0e99, t = 0.0;
+  class cell *c = grid->FirstPt_All();
+  int index[3];
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+    #pragma omp for collapse(2) private(c,tempdt,index,t) reduction(min:dt)
 #endif
-    //
-    // Check if cell is boundary data or not (can only be an internal
-    // boundary, such as a stellar wind, since we are looping over cells
-    // which are grid data)  If it is boundary data then we skip it.
-
-    //
-    if (c->isbd || !c->isleaf) {
+    for (int ax3 = 0; ax3 < grid->NG_All(ZZ); ax3++) {
+      for (int ax2 = 0; ax2 < grid->NG_All(YY); ax2++) {
+        index[0] = 0;
+        index[1] = ax2;
+        index[2] = ax3;
+        c        = grid->get_cell_all(index[0], index[1], index[2]);
+        tempdt   = 1.0e100;
+        // get to first non-boundary cell:
+        while (c && !c->isgd)
+          c = grid->NextPt(c, XP);
+        if (!c) {
+          continue;  // end iteration if there are no non-boundary cells
+        }
+        do {
 #ifndef NDEBUG
-      cout << "skipping cell " << c->id
-           << " in get_mp_timescales_no_radiation() c->isbd.\n";
+          dp.c = c;
 #endif
-    }
-    else {
-      //
-      // timescales(state-vec, gamma, t_cool?, t_rec?, t_photoion?)
-      //
-      switch (par.EP.MP_timestep_limit) {
-        case 1:  // cooling time only.
-          tempdt = MP->timescales(c->Ph, par.gamma, true, false, false);
-          break;
-        case 4:  // recomb only
-          tempdt = MP->timescales(c->Ph, par.gamma, false, true, false);
-          break;
-        case 2:  // cooling+recomb
-          tempdt = MP->timescales(c->Ph, par.gamma, true, true, false);
-          break;
-        case 3:  // cooling+recomb+ionisation (not working!)
-          tempdt = MP->timescales(c->Ph, par.gamma, true, true, true);
-          break;
-        default:
-          rep.error("Bad MP_timestep_limit", par.EP.MP_timestep_limit);
+          // Check if cell is boundary data or not (can only be an internal
+          // boundary, such as a stellar wind, since we are looping over cells
+          // which are grid data)  If it is boundary data then we skip it.
+          if (c->isbd || !c->isleaf) {
+#ifndef NDEBUG
+            cout << "skipping cell " << c->id
+                 << " in get_mp_timescales_no_radiation() c->isbd.\n";
+#endif
+          }
+          else {
+            //
+            // timescales(state-vec, gamma, t_cool?, t_rec?, t_photoion?)
+            //
+            switch (par.EP.MP_timestep_limit) {
+              case 1:  // cooling time only.
+                t = MP->timescales(c->Ph, par.gamma, true, false, false);
+                break;
+              case 4:  // recomb only
+                t = MP->timescales(c->Ph, par.gamma, false, true, false);
+                break;
+              case 2:  // cooling+recomb
+                t = MP->timescales(c->Ph, par.gamma, true, true, false);
+                break;
+              case 3:  // cooling+recomb+ionisation (not working!)
+                t = MP->timescales(c->Ph, par.gamma, true, true, true);
+                break;
+              default:
+                rep.error("Bad MP_timestep_limit", par.EP.MP_timestep_limit);
+            }
+            tempdt = min(tempdt, t);
+            // cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<dt<<"\n";
+          }  // if not boundary data.
+        } while ((c = grid->NextPt(c, XP)));
+        dt = min(dt, tempdt);
       }
-      dt = min(dt, tempdt);
-      // cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<dt<<"\n";
-    }  // if not boundary data.
-  } while ((c = grid->NextPt(c)) != 0);
+    }
+#ifdef PION_OMP
+  }
+#endif
 
 #ifndef RT_TEST_PROBS
   //
   // If doing photo-ionisation, can underestimate 1st timestep because gas is
-  // all neutral initially, but only for a few seconds!!!
+  // all neutral initially, but only for a few seconds!
   // (DON'T WANT TO SET THIS FOR NON-DYNAMICS TEST PROBLEMS)
   //
   if ((par.timestep < 3) && (par.EP.raytracing > 0)
@@ -488,8 +564,12 @@ double calc_timestep::get_mp_timescales_no_radiation(
   return dt;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 double calc_timestep::get_mp_timescales_with_radiation(
     class SimParams &par,  ///< pointer to simulation parameters
@@ -513,87 +593,107 @@ double calc_timestep::get_mp_timescales_with_radiation(
   // RT source properties are already in structs for the microphysics calls.
   // So now we need to go through every cell and see what the limit is.
   //
-  double tempdt = 0.0, dt = 1.0e99;
-  class cell *c = grid->FirstPt();
-  do {
-#ifndef NDEBUG
-    dp.c = c;
+  double tempdt = 0.0, dt = 1.0e99, t = 0.0;
+  class cell *c = grid->FirstPt_All();
+  int index[3];
+  // copies of the source data (one copy for each thread)
+  // seems to be memory issues when using class member data.
+  vector<struct rt_source_data> heating;
+  vector<struct rt_source_data> ionize;
+
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+    #pragma omp for collapse(2) private(c,tempdt,index,t,heating,ionize) reduction(min:dt)
 #endif
-    //
-    // Check if cell is boundary data (can only be an internal
-    // boundary, such as a stellar wind, since we are looping over
-    // cells which are grid data).  If it is boundary data then we
-    // skip it.
-    //
-    if (c->isbd || !c->isleaf) {
-#ifndef NDEBUG
-      cout << "skipping cell " << c->id
-           << " in get_mp_timescales_with_radiation() c->isbd.\n";
-#endif
-    }
-    else {
-      //
-      // Get column densities and Vshell in struct for each source.
-      //
-      for (int v = 0; v < FVI_nheat; v++) {
-        FVI_heating_srcs[v].Vshell =
-            CI.get_cell_Vshell(c, FVI_heating_srcs[v].id);
-        FVI_heating_srcs[v].dS = CI.get_cell_deltaS(c, FVI_heating_srcs[v].id);
-        CI.get_cell_col(c, FVI_heating_srcs[v].id, FVI_heating_srcs[v].DelCol);
-        CI.get_col(c, FVI_heating_srcs[v].id, FVI_heating_srcs[v].Column);
-        for (short unsigned int iC = 0; iC < FVI_heating_srcs[v].NTau; iC++)
-          FVI_heating_srcs[v].Column[iC] -= FVI_heating_srcs[v].DelCol[iC];
-      }
-      for (int v = 0; v < FVI_nion; v++) {
-        FVI_ionising_srcs[v].Vshell =
-            CI.get_cell_Vshell(c, FVI_ionising_srcs[v].id);
-        FVI_ionising_srcs[v].dS =
-            CI.get_cell_deltaS(c, FVI_ionising_srcs[v].id);
-        CI.get_cell_col(
-            c, FVI_ionising_srcs[v].id, FVI_ionising_srcs[v].DelCol);
-        CI.get_col(c, FVI_ionising_srcs[v].id, FVI_ionising_srcs[v].Column);
-        for (short unsigned int iC = 0; iC < FVI_ionising_srcs[v].NTau; iC++)
-          FVI_ionising_srcs[v].Column[iC] -= FVI_ionising_srcs[v].DelCol[iC];
-        if (FVI_ionising_srcs[v].Column[0] < 0.0) {
-#ifdef RT_TESTING
-          cout << "dx=" << grid->DX() << "  ";
-          CI.print_cell(c);
-          rep.error("time_int:calc_RT_microphysics_dU tau<0", 1);
-#endif
-          for (short unsigned int iC = 0; iC < FVI_ionising_srcs[v].NTau; iC++)
-            FVI_ionising_srcs[v].Column[iC] =
-                max(0.0, FVI_ionising_srcs[v].Column[iC]);
+    for (int ax3 = 0; ax3 < grid->NG_All(ZZ); ax3++) {
+      for (int ax2 = 0; ax2 < grid->NG_All(YY); ax2++) {
+        index[0] = 0;
+        index[1] = ax2;
+        index[2] = ax3;
+        c        = grid->get_cell_all(index[0], index[1], index[2]);
+        heating  = FVI_heating_srcs;
+        ionize   = FVI_ionising_srcs;
+        tempdt   = 1.0e100;
+        // get to first non-boundary cell:
+        while (c && !c->isgd)
+          c = grid->NextPt(c, XP);
+        if (!c) {
+          continue;  // end iteration if there are no non-boundary cells
         }
-      }
-      //
-      // We assume we want to limit by all relevant timescales.
-      //
-      tempdt = MP->timescales_RT(
-          c->Ph, FVI_nheat, FVI_heating_srcs, FVI_nion, FVI_ionising_srcs,
-          par.gamma);
+        do {
 #ifndef NDEBUG
-      if (tempdt < dt) {
-        cout << "(get_min_timestep) id=" << c->id << ":  dt=" << tempdt
-             << ", min-dt=" << dt;
-        cout << ".\t 1-x=" << 1.0 - c->Ph[par.ftr] << ", pg=" << c->Ph[PG]
-             << "\n";
-      }
+          dp.c = c;
 #endif
-      if (tempdt <= 0.0) {
-        cout << "get_mp_timescales_with_radiation() negative timestep... ";
-        cout << "c->id=" << c->id << "\tdt=" << tempdt << "\n";
-        rep.printVec("Ph", c->Ph, par.nvar);
-        rep.error("Negative timestep from microphysics with RT!", tempdt);
+          // Check if cell is boundary data (can only be an internal
+          // boundary, such as a stellar wind, since we are looping over
+          // cells which are grid data).  If it is boundary data then we
+          // skip it.
+          if (c->isbd || !c->isleaf) {
+#ifndef NDEBUG
+            cout << "skipping cell " << c->id
+                 << " in get_mp_timescales_with_radiation() c->isbd.\n";
+#endif
+          }
+          else {
+            //
+            // Get column densities and Vshell in struct for each source.
+            //
+            for (int v = 0; v < FVI_nheat; v++) {
+              heating[v].Vshell = CI.get_cell_Vshell(c, heating[v].id);
+              heating[v].dS     = CI.get_cell_deltaS(c, heating[v].id);
+              CI.get_cell_col(c, heating[v].id, heating[v].DelCol);
+              CI.get_col(c, heating[v].id, heating[v].Column);
+              for (short unsigned int iC = 0; iC < heating[v].NTau; iC++)
+                heating[v].Column[iC] -= heating[v].DelCol[iC];
+            }
+            for (int v = 0; v < FVI_nion; v++) {
+              ionize[v].Vshell = CI.get_cell_Vshell(c, ionize[v].id);
+              ionize[v].dS     = CI.get_cell_deltaS(c, ionize[v].id);
+              CI.get_cell_col(c, ionize[v].id, ionize[v].DelCol);
+              CI.get_col(c, ionize[v].id, ionize[v].Column);
+              for (short unsigned int iC = 0; iC < ionize[v].NTau; iC++)
+                ionize[v].Column[iC] -= ionize[v].DelCol[iC];
+              if (ionize[v].Column[0] < 0.0) {
+#ifdef RT_TESTING
+                cout << "dx=" << grid->DX() << "  ";
+                CI.print_cell(c);
+                rep.error("time_int:calc_RT_microphysics_dU tau<0", 1);
+#endif
+                for (short unsigned int iC = 0; iC < ionize[v].NTau; iC++)
+                  ionize[v].Column[iC] = max(0.0, ionize[v].Column[iC]);
+              }
+            }
+            //
+            // We assume we want to limit by all relevant timescales.
+            //
+            t = MP->timescales_RT(
+                c->Ph, FVI_nheat, heating, FVI_nion, ionize, par.gamma);
+#ifndef NDEBUG
+            if (t < dt) {
+              cout << "(get_min_timestep) id=" << c->id << ":  dt=" << tempdt
+                   << ", min-dt=" << dt;
+              cout << ".\t 1-x=" << 1.0 - c->Ph[par.ftr] << ", pg=" << c->Ph[PG]
+                   << "\n";
+            }
+#endif
+            if (t <= 0.0) {
+              cout
+                  << "get_mp_timescales_with_radiation() negative timestep... ";
+              cout << "c->id=" << c->id << "\tdt=" << t << "\n";
+              rep.printVec("Ph", c->Ph, par.nvar);
+              rep.error("Negative timestep from microphysics with RT!", t);
+            }
+            tempdt = min(tempdt, t);
+            // cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<dt<<"\n";
+          }  // if not boundary data.
+        } while ((c = grid->NextPt(c, XP)));
+        dt = min(dt, tempdt);
       }
-      // cout <<"c->id="<<c->id<<"\tdt="<<tempdt<<"  ";
-      // rep.printVec("Ph",c->Ph,par.nvar);
-      dt = min(dt, tempdt);
-    }  // if not boundary data.
-  } while ((c = grid->NextPt(c)) != 0);
+    }
+#ifdef PION_OMP
+  }
+#endif
 
   return dt;
 }
-
-// ##################################################################
-// ############   END OF TIMESTEP CALCULATION FUNCTIONS  ############
-// ##################################################################

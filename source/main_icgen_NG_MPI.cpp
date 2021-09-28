@@ -78,7 +78,7 @@ int main(int argc, char **argv)
   class ICsetup_base *ic            = 0;
   class ReadParams *rp              = 0;
   class setup_grid_NG_MPI *SimSetup = 0;
-  MP                                = 0;  // global microphysics class pointer.
+  class microphysics_base *MP       = 0;
 
   SimSetup = new setup_grid_NG_MPI();
 
@@ -130,6 +130,8 @@ int main(int argc, char **argv)
 
   cout << "ICGEN_NG_MPI: setting up microphysics module\n";
   SimSetup->setup_microphysics(SimPM);
+  MP = SimSetup->get_mp_ptr();
+  ic->set_mp_pointer(MP);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -183,7 +185,7 @@ int main(int argc, char **argv)
 #ifndef NDEBUG
     cout << "icgen_NG_MPI: assigning boundary data for level " << l << "\n";
 #endif
-    err = SimSetup->assign_boundary_data(SimPM, l, grid[l]);
+    err = SimSetup->assign_boundary_data(SimPM, l, grid[l], MP);
     COMM->barrier("level assign boundary data");
     rep.errorTest("icgen_NG_MPI::assign_boundary_data", 0, err);
   }

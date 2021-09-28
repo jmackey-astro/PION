@@ -18,7 +18,6 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-#include "tools/interpolate.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
 #ifndef NDEBUG
@@ -83,9 +82,9 @@ Hummer94_Hrecomb::Hummer94_Hrecomb() : kB(1.381e-16)
     hr_beta[i]  = coolb[i] / sqrt(hr_t[i]);
     hr_btot[i]  = CoolTot[i] / sqrt(hr_t[i]);
   }
-  interpolate.spline(hr_t, hr_alpha, hr_Nspl, 0.0, 0.0, hr_alpha_id);
-  interpolate.spline(hr_t, hr_beta, hr_Nspl, 0.0, 0.0, hr_beta_id);
-  interpolate.spline(hr_t, hr_btot, hr_Nspl, 0.0, 0.0, hr_btot_id);
+  spline(hr_t, hr_alpha, hr_Nspl, 0.0, 0.0, hr_alpha_id);
+  spline(hr_t, hr_beta, hr_Nspl, 0.0, 0.0, hr_beta_id);
+  spline(hr_t, hr_btot, hr_Nspl, 0.0, 0.0, hr_btot_id);
 
   MinTemp = hr_t[0];
   MaxTemp = hr_t[hr_Nspl - 1];
@@ -183,7 +182,7 @@ double Hummer94_Hrecomb::Hii_rad_recomb_rate(const double T)
     rate = hr_alpha[0] * pow(T / MinTemp, MinSlope_alpha);
   }
   else {
-    interpolate.splint(hr_t, hr_alpha, hr_alpha_id, hr_Nspl, T, &rate);
+    splint(hr_t, hr_alpha, hr_alpha_id, hr_Nspl, T, &rate);
   }
 
   return rate;
@@ -218,7 +217,7 @@ double Hummer94_Hrecomb::Hii_rad_recomb_cooling(const double T)
     rate = hr_beta[0] * pow(T / MinTemp, MinSlope_beta);
   }
   else {
-    interpolate.splint(hr_t, hr_beta, hr_beta_id, hr_Nspl, T, &rate);
+    splint(hr_t, hr_beta, hr_beta_id, hr_Nspl, T, &rate);
   }
 
   return rate * kB * T;
@@ -253,7 +252,7 @@ double Hummer94_Hrecomb::Hii_total_cooling(const double T)
     rate = hr_btot[0] * pow(T / MinTemp, MinSlope_btot);
   }
   else {
-    interpolate.splint(hr_t, hr_btot, hr_btot_id, hr_Nspl, T, &rate);
+    splint(hr_t, hr_btot, hr_btot_id, hr_Nspl, T, &rate);
   }
   // cout <<"TOTAL COOLING: T="<<T<<" rate="<<rate<<" kB="<<kB<<"
   // T="<<T<<"\n";

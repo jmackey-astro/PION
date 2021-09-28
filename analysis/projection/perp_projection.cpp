@@ -33,6 +33,7 @@ using namespace std;
 
 int generate_perpendicular_image(
     class SimParams &SimPM,    ///< simulation parameters
+    class microphysics_base *MP, ///< microphysics class
     class GridBaseClass *grid, ///< computational grid
     class Xray_emission &XR,   ///< pointer to class.
     int npix[],       ///< Number of pixels in each direction
@@ -63,7 +64,7 @@ int generate_perpendicular_image(
 #endif
   for (iz=0; iz<npix[0]; iz++) {
     //cout <<"#+#+#+#+#+# New column, iz="<<iz<<"\n";
-    err = calculate_column(SimPM,cz,XR,grid,iz,npix[1],NIMG,npix,grid->DX(),img_array);
+    err = calculate_column(SimPM,MP,cz,XR,grid,iz,npix[1],NIMG,npix,grid->DX(),img_array);
     rep.errorTest("calculate_column",0,err);
     cz=grid->NextPt(cz,ZPcyl);
   }
@@ -105,6 +106,7 @@ int generate_perpendicular_image(
 //
 int calculate_column(
     class SimParams &SimPM,    ///< simulation parameters
+    class microphysics_base *MP, ///< microphysics class
     class cell *cz,    ///< current cell at start of column.
     class Xray_emission &XR,   ///< Xray emission class.
     class GridBaseClass *grid, ///< pointer to grid.
@@ -214,7 +216,7 @@ int calculate_column(
   // emission and an absorption coefficient for some variables.
   //
   //cout <<"\t\t getting emission/absorption data.\n";
-  err += get_emission_absorption_data(SimPM, grid, cz, raw_data, n_images,
+  err += get_emission_absorption_data(SimPM, MP, grid, cz, raw_data, n_images,
                                       N_R, XR, ems_data, abs_data);
 
   //
@@ -281,6 +283,7 @@ int calculate_column(
 
 int get_emission_absorption_data(
     class SimParams &SimPM,    ///< simulation parameters
+    class microphysics_base *MP, ///< microphysics class
     class GridBaseClass *grid,  ///< pointer to grid.
     class cell *cz,           ///< cell at start of column.
     double const* const* data, ///< raw data to get variable from

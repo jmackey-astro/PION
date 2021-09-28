@@ -18,13 +18,14 @@ using namespace std;
 // ##################################################################
 
 int assign_update_bcs_NG::assign_boundary_data(
-    class SimParams &par,      ///< pointer to sim parameters
-    const int level,           ///< level in grid hierarchy
-    class GridBaseClass *grid  ///< pointer to grid.
+    class SimParams &par,        ///< pointer to sim parameters
+    const int level,             ///< level in grid hierarchy
+    class GridBaseClass *grid,   ///< pointer to grid.
+    class microphysics_base *mp  ///< pointer to microphysics
 )
 {
   // first call the Uniform Grid version.
-  int err = assign_update_bcs::assign_boundary_data(par, level, grid);
+  int err = assign_update_bcs::assign_boundary_data(par, level, grid, mp);
   rep.errorTest("assign_update_bcs::assign_boundary_data", err, 0);
 
   //
@@ -61,8 +62,12 @@ int assign_update_bcs_NG::assign_boundary_data(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int assign_update_bcs_NG::TimeUpdateInternalBCs(
     class SimParams &par,          ///< pointer to simulation parameters

@@ -76,6 +76,7 @@ eqns_base::eqns_base(const int n  ///< Number of Variables in State Vector
   for (int v = 0; v < eq_nvar; v++)
     eq_refvec[v] = 0.0;
 
+  mp = 0;
   return;
 }
 
@@ -158,16 +159,39 @@ void eqns_base::SetDirection(const enum axes d)
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
+
+void eqns_base::SetMicrophysics(class microphysics_base *ptr)
+{
+#ifdef TESTING
+  cout << "eqns_base::SetSolver() Setting microphysics pointer.\n";
+#endif
+  eqns_base::mp = ptr;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 enum axes eqns_base::GetDirection()
 {
   return eq_dir;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void eqns_base::rotate(
     pion_flt *vec,      ///< State vector

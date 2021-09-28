@@ -38,9 +38,10 @@ public:
   /// Assigns data to each boundary.
   ///
   virtual int assign_boundary_data(
-      class SimParams &,     ///< pointer to simulation parameters
-      const int,             ///< level in grid hierarchy
-      class GridBaseClass *  ///< pointer to grid.
+      class SimParams &,         ///< pointer to simulation parameters
+      const int,                 ///< level in grid hierarchy
+      class GridBaseClass *,     ///< pointer to grid.
+      class microphysics_base *  ///< pointer to microphysics
   );
 
   ///

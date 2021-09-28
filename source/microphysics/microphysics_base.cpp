@@ -7,10 +7,7 @@
 #include <iostream>
 using namespace std;
 
-///
-/// Global pointer to microphysics class.
-///
-class microphysics_base *MP = 0;
+
 
 // ##################################################################
 // ##################################################################

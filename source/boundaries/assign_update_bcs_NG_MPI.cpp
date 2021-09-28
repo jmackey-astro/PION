@@ -18,10 +18,13 @@ using namespace std;
 // ##################################################################
 // ##################################################################
 
+
+
 int assign_update_bcs_NG_MPI::assign_boundary_data(
-    class SimParams &par,      ///< simulation parameters
-    const int level,           ///< level in grid hierarchy
-    class GridBaseClass *grid  ///< pointer to grid.
+    class SimParams &par,        ///< simulation parameters
+    const int level,             ///< level in grid hierarchy
+    class GridBaseClass *grid,   ///< pointer to grid.
+    class microphysics_base *mp  ///< pointer to microphysics
 )
 {
   int err = 0;
@@ -134,7 +137,7 @@ int assign_update_bcs_NG_MPI::assign_boundary_data(
         cout << "LEVEL " << level << ": NG_MPI_Assign: assigning bc " << i;
         cout << " with type " << b->type << "\n";
 #endif
-        err += BC_assign_STWIND(par, grid, b);
+        err += BC_assign_STWIND(par, grid, b, mp);
         break;
       case FINE_TO_COARSE_SEND:
 #ifdef TEST_MPI_NG
@@ -184,8 +187,12 @@ int assign_update_bcs_NG_MPI::assign_boundary_data(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
     class SimParams &par,          ///< pointer to sim parameters

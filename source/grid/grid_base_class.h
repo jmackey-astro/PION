@@ -207,6 +207,9 @@ public:
 #ifdef NEWGRIDDATA
   ///< Query number of bytes per cell in griddata
   virtual size_t get_gdata_stride() const = 0;
+
+  ///< get pointer to cell associated with i,j,k (including boundary data)
+  virtual cell *get_cell_all(const int, const int, const int) = 0;
 #endif  // NEWGRIDDATA
 
 

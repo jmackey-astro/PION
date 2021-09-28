@@ -76,11 +76,13 @@ Format:
       git
       clang
       clang-format
+  stage: static analysis
   script:
     - ./tools/run_format.sh
       && git status
       && git diff-index --quiet HEAD
       || { echo "This commit contains unformatted files! Run tools/run_format.sh on the project to format them correctly."; false; }
+
 
 Serial:
   <<: *default_job
@@ -94,6 +96,7 @@ Serial:
     paths:
       - "${CMAKE_BUILD_DIR}"
 
+
 Parallel:
   <<: *default_job
   stage: build libraries
@@ -106,6 +109,7 @@ Parallel:
     name: parallel
     paths:
       - "${CMAKE_BUILD_DIR}"
+
 
 Uniform_serial:
   <<: *default_job
@@ -122,6 +126,7 @@ Uniform_serial:
   dependencies:
     - Serial
 
+
 Nested_serial:
   <<: *default_job
   stage: build executables
@@ -136,6 +141,7 @@ Nested_serial:
       - "${CMAKE_BUILD_DIR}"
   dependencies:
     - Serial
+
 
 Uniform_parallel:
   <<: *default_job
@@ -153,6 +159,7 @@ Uniform_parallel:
   dependencies:
     - Parallel
 
+
 Nested_parallel:
   <<: *default_job
   stage: build executables
@@ -168,7 +175,8 @@ Nested_parallel:
       - "${CMAKE_BUILD_DIR}"
   dependencies:
     - Parallel
-      
+
+
 Uniform_test:
   <<: *default_job
   stage: test 
@@ -186,6 +194,7 @@ Uniform_test:
     - make -C "${CMAKE_BUILD_DIR}" ug-test
   dependencies:
     - Uniform_parallel 
+
 
 Nested_test:
   <<: *default_job
@@ -205,6 +214,7 @@ Nested_test:
   dependencies:
     - Nested_parallel 
 
+
 Pbc_test:
   <<: *default_job
   stage: test 
@@ -223,6 +233,7 @@ Pbc_test:
   dependencies:
     - Uniform_parallel 
 
+
 3d_test:
   <<: *default_job
   stage: test 
@@ -240,6 +251,48 @@ Pbc_test:
     - make -C "${CMAKE_BUILD_DIR}" 3d-ug-test 
   dependencies:
     - Uniform_parallel 
+
+
+3d_pbc_test:
+  <<: *default_job
+  stage: test 
+  variables:
+    <<: *default_cmake_variables
+    CXX: mpicxx
+    PION_UNIFORM_GRID: "ON"
+    PION_PARALLEL: "ON"
+    PION_USE_SILO: "ON"
+    PION_BUILD_TESTS: "ON"
+    PION_TOOLS: "ON"
+  script:
+    - *configure
+    - *build
+    - make -C "${CMAKE_BUILD_DIR}" 3d-ug-pbc-test 
+  dependencies:
+    - Uniform_parallel 
+
+
+3d_ng_test:
+  <<: *default_job
+  stage: test 
+  variables:
+    <<: *default_cmake_variables
+    CXX: mpicxx
+    PION_NESTED_GRID: "ON"
+    PION_PARALLEL: "ON"
+    PION_USE_SILO: "ON"
+    PION_BUILD_TESTS: "ON"
+    PION_TOOLS: "ON"
+  script:
+    - *configure
+    - *build
+    - make -C "${CMAKE_BUILD_DIR}" 3d-ng-test 
+  dependencies:
+    - Nested_parallel 
+  only:
+    refs:
+      - devel
+
 
 3d_ng_pbc_test:
   <<: *default_job
@@ -261,6 +314,7 @@ Pbc_test:
   only:
     refs:
       - devel
+
 
 Documentation:
   <<: *default_job

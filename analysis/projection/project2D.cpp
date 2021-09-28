@@ -274,7 +274,8 @@ int main(int argc, char **argv)
   cout <<"\t\tg="<<grid<<"\tDX = "<<grid->DX()<<"\n";
   err += SimSetup->setup_microphysics(SimPM);
   if (err) rep.error("Setup of microphysics and raytracing",err);
-
+  class microphysics_base *MP = SimSetup->get_mp_ptr();
+  
   //
   // This code needs 2d data to project...
   //
@@ -416,10 +417,10 @@ int main(int argc, char **argv)
     cout <<"Angle w.r.t. symmetry axis="<<angle_int<<" degrees\n";
 
     if (angle_int==90) {
-      err += generate_perpendicular_image(SimPM,grid,XR,npix,num_pix,n_images,img_array);
+      err += generate_perpendicular_image(SimPM,MP,grid,XR,npix,num_pix,n_images,img_array);
     }
     else {
-      err += generate_angle_image(SimPM,grid,XR,angle,npix,num_pix,n_extra,n_images,img_array);
+      err += generate_angle_image(SimPM,MP,grid,XR,angle,npix,num_pix,n_extra,n_images,img_array);
     }
 
     tsf= clk.stop_timer("analysis");

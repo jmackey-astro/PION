@@ -194,11 +194,11 @@ int DataIOFits_pllel::SaveLevelData(
                        "TR0",     "TR1",     "TR2",   "TR3",   "TR4"};
     for (int i = 0; i < SimPM.nvar; i++)
       extname[i] = pvar[i];
-    if (DataIOFits::eqn != 0 && MP == 0) {
+    if (DataIOFits::eqn != 0 && mp == 0) {
       extname[nvar] = "Eint";
       nvar += 1;
     }
-    else if (MP != 0) {
+    else if (mp != 0) {
       extname[nvar] = "Temp";
       nvar += 1;
     }
@@ -210,19 +210,19 @@ int DataIOFits_pllel::SaveLevelData(
                        "TR2",     "TR3",     "TR4"};
     for (int i = 0; i < SimPM.nvar; i++)
       extname[i] = pvar[i];
-    if (DataIOFits::eqn != 0 && MP == 0) {
+    if (DataIOFits::eqn != 0 && mp == 0) {
       extname[nvar]     = "Eint";
       extname[nvar + 1] = "divB";
       extname[nvar + 2] = "Ptot";
       nvar += 3;
     }
-    else if (DataIOFits::eqn != 0 && MP != 0) {
+    else if (DataIOFits::eqn != 0 && mp != 0) {
       extname[nvar]     = "Temp";
       extname[nvar + 1] = "divB";
       extname[nvar + 2] = "Ptot";
       nvar += 3;
     }
-    else if (MP != 0) {
+    else if (mp != 0) {
       extname[nvar] = "Temp";
       nvar += 1;
     }
@@ -234,20 +234,20 @@ int DataIOFits_pllel::SaveLevelData(
                        "TR1",     "TR2",     "TR3",   "TR4"};
     for (int i = 0; i < SimPM.nvar; i++)
       extname[i] = pvar[i];
-    cout << "EQN=" << DataIOFits::eqn << ", MP=" << MP << "\n";
-    if (DataIOFits::eqn != 0 && MP == 0) {
+    cout << "EQN=" << DataIOFits::eqn << ", MP=" << mp << "\n";
+    if (DataIOFits::eqn != 0 && mp == 0) {
       extname[nvar]     = "Eint";
       extname[nvar + 1] = "divB";
       extname[nvar + 2] = "Ptot";
       nvar += 3;
     }
-    else if (DataIOFits::eqn != 0 && MP != 0) {
+    else if (DataIOFits::eqn != 0 && mp != 0) {
       extname[nvar]     = "Temp";
       extname[nvar + 1] = "divB";
       extname[nvar + 2] = "Ptot";
       nvar += 3;
     }
-    else if (MP != 0) {
+    else if (mp != 0) {
       extname[nvar] = "Temp";
       nvar += 1;
     }
