@@ -76,7 +76,6 @@ Format:
       git
       clang
       clang-format
-  stage: static analysis
   script:
     - ./tools/run_format.sh
       && git status
@@ -191,7 +190,7 @@ Uniform_test:
   script:
     - *configure
     - *build
-    - make -C "${CMAKE_BUILD_DIR}" ug-test
+    - make -C "${CMAKE_BUILD_DIR}" test-uniform 
   dependencies:
     - Uniform_parallel 
 
@@ -210,7 +209,7 @@ Nested_test:
   script:
     - *configure
     - *build
-    - make -C "${CMAKE_BUILD_DIR}" ng-test
+    - make -C "${CMAKE_BUILD_DIR}" test-nested 
   dependencies:
     - Nested_parallel 
 
@@ -229,7 +228,7 @@ Pbc_test:
   script:
     - *configure
     - *build
-    - make -C "${CMAKE_BUILD_DIR}" pbc-test
+    - make -C "${CMAKE_BUILD_DIR}" test-pbc 
   dependencies:
     - Uniform_parallel 
 
@@ -248,7 +247,7 @@ Pbc_test:
   script:
     - *configure
     - *build
-    - make -C "${CMAKE_BUILD_DIR}" 3d-ug-test 
+    - make -C "${CMAKE_BUILD_DIR}" test-3d-uniform 
   dependencies:
     - Uniform_parallel 
 
@@ -267,12 +266,14 @@ Pbc_test:
   script:
     - *configure
     - *build
-    - make -C "${CMAKE_BUILD_DIR}" 3d-ug-pbc-test 
+    - make -C "${CMAKE_BUILD_DIR}" test-3d-uniform-pbc
   dependencies:
     - Uniform_parallel 
+  only:
+    refs:
+      - devel
 
-
-3d_ng_test:
+3d_nested_test:
   <<: *default_job
   stage: test 
   variables:
@@ -286,7 +287,7 @@ Pbc_test:
   script:
     - *configure
     - *build
-    - make -C "${CMAKE_BUILD_DIR}" 3d-ng-test 
+    - make -C "${CMAKE_BUILD_DIR}" test-3d-nested
   dependencies:
     - Nested_parallel 
   only:
@@ -294,7 +295,7 @@ Pbc_test:
       - devel
 
 
-3d_ng_pbc_test:
+3d_nested_pbc_test:
   <<: *default_job
   stage: test 
   variables:
@@ -308,7 +309,7 @@ Pbc_test:
   script:
     - *configure
     - *build
-    - make -C "${CMAKE_BUILD_DIR}" 3d-ng-pbc-test 
+    - make -C "${CMAKE_BUILD_DIR}" test-3d-nested-pbc
   dependencies:
     - Nested_parallel 
   only:

@@ -201,6 +201,7 @@ if(PION_BUILD_DOCUMENTATION)
 endif(PION_BUILD_DOCUMENTATION)
 
 if(PION_BUILD_TESTS)
+    enable_testing()
     add_subdirectory(test)
     set(PION_TOOLS ON)
 endif(PION_BUILD_TESTS)

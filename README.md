@@ -107,22 +107,34 @@ Option | Effect
 
 ### Test
 
-Pion tests can be invoked using `make -C [build-dir] [test-name]`. Current tests
-include;
+The Pion test suite can be run using;
+
+''' bash
+make -C [build-dir] test
+'''
+
+Individual tests can be invoked using;
+''' bash
+make -C [build-dir] test-[test-name]
+'''
+
+The following tests are available;
 
 Option | Effect
 ------ | ------
-`ug-test`    | Run double Mach reflection on 2d uniform grid.
-`ng-test`    | Run MHD blastwave problem on a 2d nested grid.
-`pbc-test`   | Run Orszag-Tang vortex problem on 2d uniform grid with periodic boundary conditions.
-`3d-ug-test` | Run binary problem on 3d uniform grid.
-`3d-ng-test` | Run binary problem on 3d nested grid.
+`uniform`        | Run double Mach reflection on 2d uniform grid.
+`nested`         | Run MHD blastwave problem on a 2d nested grid.
+`pbc`            | Run Orszag-Tang vortex problem on 2d uniform grid with periodic boundary conditions.
+`3d-uniform`     | Run binary problem on 3d uniform grid.
+`3d-uniform-pbc` | Run binary problem on 3d uniform grid with periodic boundary conditions.
+`3d-nested`      | Run binary problem on 3d nested grid.
+`3d-nested-pbc`  | Run binary problem on 3d nested grid with periodic boundary conditions.
 
-For example, to run `ug-test` where the project has been built in directory
-`./build` (relative to project root directory) execute;
+For example, to run the `uniform` test, where the project has been built in directory
+`./build` (relative to project root directory), execute;
 
 ``` bash
-make -C build ug-test
+make -C build test-uniform 
 ```
 
 ### Documentation
