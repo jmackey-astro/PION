@@ -110,11 +110,11 @@ int main(int argc, char **argv)
     return (1);
   }
 
+  // Redirect stdout/stderr if required.
   string *args = 0;
   args         = new string[argc];
   for (int i = 0; i < argc; i++)
     args[i] = argv[i];
-  // Redirect stdout/stderr if required.
   for (int i = 0; i < argc; i++) {
     if (args[i].find("redirect=") != string::npos) {
       string outpath = (args[i].substr(9));
@@ -142,7 +142,8 @@ int main(int argc, char **argv)
 
 #ifdef PION_OMP
   // set number of OpenMP threads, if included
-  int nth = 100;  // set to large number initially
+  int nth        = 100;  // set to large number initially
+  bool found_omp = false;
   for (int i = 0; i < argc; i++) {
     if (args[i].find("omp-nthreads=") != string::npos) {
       nth = atoi((args[i].substr(13)).c_str());
@@ -151,12 +152,13 @@ int main(int argc, char **argv)
         nth = min(nth, omp_get_num_procs());
       }
       cout << "\toverride: setting OpenMP N-threads to " << nth << "\n";
+      found_omp = true;
     }
-    else
-      nth = 1;
   }
-  nth = min(nth, omp_get_num_procs());
-  omp_set_num_threads(nth);
+  if (found_omp)
+    omp_set_num_threads(nth);
+  else
+    omp_set_num_threads(1);
 #endif
 
   class DataIOBase *dataio    = 0;
@@ -170,7 +172,7 @@ int main(int argc, char **argv)
   if (argc > 2)
     icftype = argv[2];
   else
-    icftype = "fits";  // This is the default for now.
+    icftype = "silo";
 
   siminfo = 0;
   siminfo = new class get_sim_info();

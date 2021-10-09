@@ -137,7 +137,8 @@ int main(int argc, char **argv)
 
 #ifdef PION_OMP
   // set number of OpenMP threads, if included
-  int nth = 100;  // set to large number initially
+  int nth        = 100;  // set to large number initially
+  bool found_omp = false;
   for (int i = 0; i < argc; i++) {
     if (args[i].find("omp-nthreads=") != string::npos) {
       nth = atoi((args[i].substr(13)).c_str());
@@ -146,12 +147,13 @@ int main(int argc, char **argv)
         nth = min(nth, omp_get_num_procs());
       }
       cout << "\toverride: setting OpenMP N-threads to " << nth << "\n";
+      found_omp = true;
     }
-    else
-      nth = 1;
   }
-  nth = min(nth, omp_get_num_procs());
-  omp_set_num_threads(nth);
+  if (found_omp)
+    omp_set_num_threads(nth);
+  else
+    omp_set_num_threads(1);
 #endif
 
   cout << "-------------------------------------------------------\n";

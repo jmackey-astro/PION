@@ -32,7 +32,7 @@ if(PION_NESTED_GRID)
         add_executable(
             icgen-ng
 
-            main_icgen_NG_MPI.cpp
+            main_icgen_NG.cpp
             sim_params.cpp
             constants.cpp
         ) 
