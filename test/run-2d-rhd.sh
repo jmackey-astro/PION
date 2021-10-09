@@ -19,12 +19,14 @@ else
   nt=1
   mpi="mpirun --allow-run-as-root --oversubscribe -np 4"
 fi
+
+echo " **** DTE-TEST: arg=$1  nt=$nt  mpi=$mpi **** "
 ####################################
 
 script="${BASH_SOURCE[0]:-${(%):-%x}}"
 script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 
-${mpi} ../icgen-ug  ${script_dir}/problems/DTE2D/params_DTEHD_d2l1n0064.txt silo
+${mpi} ../icgen-ug  ${script_dir}/problems/DTE2D/params_DTEHD_d2l1n0064.txt silo omp-nthreads=${nt}
 ${mpi} ../pion-ug DTEHD_d2l1n0064_0000.00000000.silo outfile=dtehd_d2l1n0064 finishtime=1.5e13 opfreq_time=0.5e13 omp-nthreads=${nt}
 
 REF_FILE=dtehd_d2l1n0064_0000.00002653.silo

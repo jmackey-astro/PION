@@ -22,6 +22,8 @@ using namespace std;
 // ##################################################################
 // ##################################################################
 
+
+
 RT_MPI_bc::~RT_MPI_bc()
 {
 #ifdef RT_TESTING
@@ -103,8 +105,12 @@ RT_MPI_bc::~RT_MPI_bc()
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int RT_MPI_bc::Setup_RT_Boundaries(
     class SimParams &par,       ///< pointer to simulation parameters
@@ -172,8 +178,12 @@ int RT_MPI_bc::Setup_RT_Boundaries(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int RT_MPI_bc::Receive_RT_Boundaries(
     class SimParams &par,       ///< pointer to simulation parameters
@@ -405,8 +415,12 @@ int RT_MPI_bc::Receive_RT_Boundaries(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int RT_MPI_bc::Send_RT_Boundaries(
     class SimParams &par,       ///< pointer to simulation parameters
@@ -615,8 +629,12 @@ int RT_MPI_bc::Send_RT_Boundaries(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int RT_MPI_bc::setup_RT_infinite_src_BD(
     class SimParams &par,       ///< pointer to simulation parameters
@@ -776,8 +794,12 @@ int RT_MPI_bc::setup_RT_infinite_src_BD(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 enum direction RT_MPI_bc::RT_src_at_infty_direction(
     class SimParams &par,  ///< pointer to simulation parameters
@@ -802,8 +824,12 @@ enum direction RT_MPI_bc::RT_src_at_infty_direction(
   return srcdir;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
     class SimParams &par,       ///< pointer to simulation parameters
@@ -879,14 +905,6 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
   //
   // Choose processors I need to receive data from and send data to.
   //
-  int nx[par.ndim];
-  for (int i = 0; i < par.ndim; i++) {
-    nx[i] = static_cast<int>(
-        ONE_PLUS_EPS * grid->level_Range(static_cast<axes>(i))
-        / grid->Range(static_cast<axes>(i)));
-  }
-
-  //
   // First see if direction of source off grid has a neigbour
   // processor andif the opposite direction has a neighbour
   // processor.
@@ -920,7 +938,7 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
   // with the less than/greater than questions.  We will define the
   // source to be on the domain if it is within the domain or on the
   // domain boundary.  The raytracer moves the source to the nearest
-  // cell vertex (which should be consistent across processors!), so
+  // cell vertex (which should be consistent across processes), so
   // this should work fine.
   //
   // So we only send data to a neighbour if no part of it is in a
@@ -955,123 +973,31 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
 #endif
 
   //
-  // Now get id's and directions of receive processors.
+  // Get ranks and directions of MPI processes to receive from.
   //
   struct RT_boundary_list_element temp;
   temp.RT_bd = 0;
-  // x-dir
-  if (srcdir[XX] == XN && recv_proc_exists[XX] == true) {
-    temp.rank = ppar.get_myrank() - 1;
-    temp.dir  = dir_XN;
-    RT_recv_list.push_back(temp);
-  }
-  else if (srcdir[XX] == XP && recv_proc_exists[XX] == true) {
-    temp.rank = ppar.get_myrank() + 1;
-    temp.dir  = dir_XP;
-    RT_recv_list.push_back(temp);
-  }
-
-  // y-dir
-  if (par.ndim > 1) {
-    if (srcdir[YY] == YN && recv_proc_exists[YY] == true) {
-      temp.rank = ppar.get_myrank() - nx[XX];
-      temp.dir  = dir_YN;
+  for (int d = 0; d < par.ndim; d++) {
+    if (recv_proc_exists[d] == true) {
+      temp.rank = ppar.ngbprocs[srcdir[d]];
+      temp.dir  = srcdir[d];
       RT_recv_list.push_back(temp);
     }
-    else if (srcdir[YY] == YP && recv_proc_exists[YY] == true) {
-      temp.rank = ppar.get_myrank() + nx[XX];
-      temp.dir  = dir_YP;
-      RT_recv_list.push_back(temp);
-    }
-  }  // y-dir
-
-  // z-dir
-  if (par.ndim > 2 && recv_proc_exists[ZZ] == true && srcdir[ZZ] != NO) {
-    int rank;
-    int dir;
-    if (srcdir[ZZ] == ZN) {
-      rank = ppar.get_myrank() - nx[XX] * nx[YY];
-      dir  = dir_ZN;
-    }
-    else if (srcdir[ZZ] == ZP) {
-      rank = ppar.get_myrank() + nx[XX] * nx[YY];
-      dir  = dir_ZP;
-    }
-    else {
-      rank = 999;
-      dir  = 999;
-      rep.error("Bad Logic -- z-dir RT setup", srcdir[ZZ]);
-    }
-    temp.rank  = rank;
-    temp.dir   = dir;
-    temp.RT_bd = 0;
-    RT_recv_list.push_back(temp);
-  }  // z-dir
-  // Up to Seven processors to receive from, or as few as None.
-
-  //
-  // Choose processors I need to send data to.
-  //
-  // x-dir
-  int rank = ppar.get_myrank();
-  int dir  = 0;
-  if (send_proc_exists[XN]) {
-    temp.rank = rank - 1;
-    temp.dir  = dir_XN;
-    RT_send_list.push_back(temp);
-  }
-  if (send_proc_exists[XP]) {
-    temp.rank = rank + 1;
-    temp.dir  = dir_XP;
-    RT_send_list.push_back(temp);
   }
 
-  // y-dir
-  if (par.ndim > 1) {
-    rank = ppar.get_myrank();
-    dir  = 0;
-    if (send_proc_exists[YN]) {
-      rank -= nx[XX];
-      dir       = dir_YN;
-      temp.rank = rank;
-      temp.dir  = dir;
-      RT_send_list.push_back(temp);
-    }
-    rank = ppar.get_myrank();
-    dir  = 0;
-    if (send_proc_exists[YP]) {
-      rank += nx[XX];
-      dir       = dir_YP;
-      temp.rank = rank;
-      temp.dir  = dir;
+  //
+  // Choose processes I need to send data to.  Could be all directions if
+  // the source is within my subdomain
+  //
+  temp.RT_bd = 0;
+  for (int dd = 0; dd < 2 * par.ndim; dd++) {
+    if (send_proc_exists[dd]) {
+      temp.rank = ppar.ngbprocs[dd];
+      temp.dir  = static_cast<enum direction>(dd);
       RT_send_list.push_back(temp);
     }
   }
-  // z-dir
-  if (par.ndim > 2) {
-    rank = ppar.get_myrank();
-    dir  = 0;
-    if (send_proc_exists[ZN]) {
-      rank -= nx[XX] * nx[YY];
-      dir       = dir_ZN;
-      temp.rank = rank;
-      temp.dir  = dir;
-      RT_send_list.push_back(temp);
-    }
-    rank = ppar.get_myrank();
-    dir  = 0;
-    if (send_proc_exists[ZP]) {
-      rank += nx[XX] * nx[YY];
-      dir       = dir_ZP;
-      temp.rank = rank;
-      temp.dir  = dir;
-      RT_send_list.push_back(temp);
-    }
-  }  // z-dir
 
-  //
-  // Figure out how many RT boundaries I need and set them up.
-  //
 #ifdef RT_TESTING
   cout << "send list: " << RT_send_list.size() << " boundaries.\n";
   cout << "recv list: " << RT_recv_list.size() << " boundaries.\n";
@@ -1129,8 +1055,12 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int RT_MPI_bc::setup_RT_recv_boundary(
     class GridBaseClass *grid,          ///< pointer to grid.
@@ -1194,8 +1124,12 @@ int RT_MPI_bc::setup_RT_recv_boundary(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int RT_MPI_bc::RT_populate_recv_boundary(
     struct boundary_data *b,         ///< pointer to RT boundary data.
@@ -1227,8 +1161,12 @@ int RT_MPI_bc::RT_populate_recv_boundary(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int RT_MPI_bc::setup_RT_send_boundary(
     class GridBaseClass *grid,               ///< pointer to grid.
@@ -1282,8 +1220,7 @@ int RT_MPI_bc::setup_RT_send_boundary(
   return err;
 }
 
-// ##################################################################
-// ##################################################################
+
 
 // ##################################################################
 // ##################################################################

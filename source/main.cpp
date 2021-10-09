@@ -76,8 +76,7 @@ int main(int argc, char **argv)
 {
   int err = 0;
 #ifdef PARALLEL
-  err = COMM->init(&argc, &argv);
-  // cout <<"argc="<<argc<<"\n";
+  err        = COMM->init(&argc, &argv);
   int myrank = -1, nproc = -1;
   COMM->get_rank_nproc(&myrank, &nproc);
 #endif
@@ -148,6 +147,8 @@ int main(int argc, char **argv)
       }
       cout << "\toverride: setting OpenMP N-threads to " << nth << "\n";
     }
+    else
+      nth = 1;
   }
   nth = min(nth, omp_get_num_procs());
   omp_set_num_threads(nth);
@@ -216,7 +217,6 @@ int main(int argc, char **argv)
          << "\n";
     delete sim_control;
 #ifdef PARALLEL
-    COMM->finalise();
     cout << "rank: " << myrank << " nproc: " << nproc << "\n";
     delete COMM;
 #endif
@@ -231,7 +231,6 @@ int main(int argc, char **argv)
          << "\n";
     delete sim_control;
 #ifdef PARALLEL
-    COMM->finalise();
     cout << "rank: " << myrank << " nproc: " << nproc << "\n";
     delete COMM;
 #endif

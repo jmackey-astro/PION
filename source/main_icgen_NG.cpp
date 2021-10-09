@@ -59,6 +59,25 @@ int main(int argc, char **argv)
     }
   }
 
+#ifdef PION_OMP
+  // set number of OpenMP threads, if included
+  int nth = 100;  // set to large number initially
+  for (int i = 0; i < argc; i++) {
+    if (args[i].find("omp-nthreads=") != string::npos) {
+      nth = atoi((args[i].substr(13)).c_str());
+      if (nth > omp_get_num_procs()) {
+        cout << "\toverride: requested too many threads.\n";
+        nth = min(nth, omp_get_num_procs());
+      }
+      cout << "\toverride: setting OpenMP N-threads to " << nth << "\n";
+    }
+    else
+      nth = 1;
+  }
+  nth = min(nth, omp_get_num_procs());
+  omp_set_num_threads(nth);
+#endif
+
   class DataIOBase *dataio    = 0;
   class get_sim_info *siminfo = 0;
   class ICsetup_base *ic      = 0;

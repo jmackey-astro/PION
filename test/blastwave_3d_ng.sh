@@ -31,7 +31,7 @@ script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 
 ${mpi} ../icgen-ng \
   ${script_dir}/problems/blastwave_crt3d/params_BW_NGcrt3D_NR032.txt \
-  silo redirect=iclog
+  silo redirect=iclog omp-nthreads=${nt}
 
 ${mpi} ../pion-ng \
   BW_NGcrt3D_NR032_level00_0000.00000000.silo \

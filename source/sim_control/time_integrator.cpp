@@ -541,7 +541,7 @@ int time_integrator::calc_dynamics_dU(
   // First we pre-process the cells, if needed.  This is required for
   // multi-dimensional viscosity such as the H-Correction.
   //
-  err = spatial_solver->preprocess_data(step, SimPM, grid);
+  err = preprocess_data(step, SimPM, grid);
 
   //
   // Now calculate the directionally-unsplit time update for the
@@ -566,6 +566,246 @@ int time_integrator::calc_dynamics_dU(
 
 // ##################################################################
 // ##################################################################
+
+//
+// Multi-dimensional calculations to be performed on every cell before
+// the flux calculations.
+//
+int time_integrator::preprocess_data(
+    const int csp,             ///< spatial order of accuracy required.
+    class SimParams &SimPM,    ///< pointer to simulation parameters
+    class GridBaseClass *grid  ///< pointer to grid.
+)
+{
+  //  cout <<"\t\t\tpreprocess_data(): Starting: ndim = "<<SimPM.ndim<<"\n";
+  int err = 0;
+
+#ifdef THERMAL_CONDUCTION
+  //
+  // If we are on the first half-step (or first order integration) we don't
+  // need to calculate Edot, because it was already done in calc_dt().  But on
+  // the second half step we need to calculate it here.
+  //
+  if (csp != OA1) {
+    // cout <<"\tFV_solver_base::preprocess_data: setting Edot for 2nd
+    // step.\n";
+    err = set_thermal_conduction_Edot(SimPM);
+    if (err) {
+      rep.error(
+          "FV_solver_base::preprocess_data: set_thermal_conduction_Edot()",
+          err);
+    }
+  }
+  //
+  // We need to multiply dU[ERG] by dt to convert from Edot to Delta-E
+  // TODO: Wrap this in an if statement when I get the SimPM.EP.conduction
+  //       flag integrated into the code.
+  //
+  class cell *c = grid->FirstPt();
+  // cout <<"\tmultiplying conduction dU by dt.\n";
+  do {
+    c->dU[ERG] *= SimPM.dt;
+  } while ((c = grid->NextPt(c)) != 0);
+#endif  // THERMAL CONDUCTION
+
+  // For the H-correction we need a maximum speed in each direction
+  // for every cell.
+  if (SimPM.artviscosity == AV_HCORRECTION
+      || SimPM.artviscosity == AV_HCORR_FKJ98) {
+    err += calc_Hcorrection(csp, SimPM, grid);
+  }
+
+  // HLLD has a switch based on velocity divergence, where it can
+  // reduce to HLL near strong shocks.  So set divV here.
+  if (SimPM.solverType == FLUX_RS_HLLD) {
+    class cell *c = grid->FirstPt_All();
+    double gradp  = 0.0;
+    int indices[MAX_DIM];
+    indices[0] = VX;
+    indices[1] = VY;
+    indices[2] = VZ;
+
+    int index[3];
+#ifdef PION_OMP
+    #pragma omp parallel
+    {
+      #pragma omp for collapse(2) private(c,index)
+#endif
+      for (int ax3 = 0; ax3 < grid->NG_All(ZZ); ax3++) {
+        for (int ax2 = 0; ax2 < grid->NG_All(YY); ax2++) {
+          index[0] = 0;
+          index[1] = ax2;
+          index[2] = ax3;
+          c        = grid->get_cell_all(index[0], index[1], index[2]);
+          do {
+            CI.set_DivV(c, spatial_solver->Divergence(c, 1, indices, grid));
+            gradp = 0.0;
+            for (int i = 0; i < SimPM.ndim; i++)
+              gradp += spatial_solver->GradZone(grid, c, i, 1, PG);
+            CI.set_MagGradP(c, gradp);
+          } while ((c = grid->NextPt(c, XP)) != 0);
+        }  // ax2
+      }    // ax3
+#ifdef PION_OMP
+    }
+#endif
+  }
+
+  return err;
+}
+
+// ##################################################################
+// ##################################################################
+
+int time_integrator::calc_Hcorrection(
+    const int csp,
+    class SimParams &SimPM,  ///< pointer to simulation parameters
+    class GridBaseClass *grid)
+{
+#ifndef NDEBUG
+  cout << "\t\t\tcalc_Hcorrection() ndim = " << SimPM.ndim << "\n";
+#endif  // NDEBUG
+
+  // Allocate arrays for direction values.
+  int err = 0;
+  enum direction posdirs[MAX_DIM], negdirs[MAX_DIM];
+  enum axes axis[MAX_DIM];
+  posdirs[0] = XP;
+  posdirs[1] = YP;
+  posdirs[2] = ZP;
+  negdirs[0] = XN;
+  negdirs[1] = YN;
+  negdirs[2] = ZN;
+  axis[0]    = XX;
+  axis[1]    = YY;
+  axis[2]    = ZZ;
+
+  // Loop through each dimension.
+  for (int idim = 0; idim < SimPM.ndim; idim++) {
+#ifndef NDEBUG
+    cout << "\t\t\tidim=" << idim << "\n";
+#endif  // NDEBUG
+
+#ifdef PION_OMP
+    #pragma omp parallel
+    {
+      spatial_solver->SetDirection(axis[idim]);
+    }
+#else
+    spatial_solver->SetDirection(axis[idim]);
+#endif  // PION_OMP
+
+    class cell *cpt    = grid->FirstPt_All();
+    class cell *marker = cpt;
+
+#ifdef TEST_INT
+    cout << "Direction=" << axis[idim] << ", i=" << idim << "\n";
+    rep.printVec("cpt", cpt->pos, SimPM.ndim);
+#endif
+
+    //
+    // loop over the number of cells in the line/plane of starting
+    // cells.
+    //
+    enum axes x1 = axis[(idim + 1) % 3];
+    enum axes x2 = axis[(idim + 2) % 3];
+    enum axes x3 = axis[idim];
+
+    //
+    // loop over the two perpendicular axes, to trace out a plane of
+    // starting cells for calculating fluxes along columns along this
+    // axis.  The plane can be a single cell
+    // (in 1D) or a line (in 2D) or a plane (in 3D).
+    //
+    int index[3];
+#ifdef PION_OMP
+    #pragma omp parallel
+    {
+      #pragma omp for collapse(2) private(index,cpt)
+#endif
+      for (int ax2 = 0; ax2 < grid->NG_All(x2); ax2++) {
+        for (int ax1 = 0; ax1 < grid->NG_All(x1); ax1++) {
+          index[x1] = static_cast<int>(ax1);
+          index[x2] = static_cast<int>(ax2);
+          index[x3] = 0;
+          cpt       = grid->get_cell_all(index[0], index[1], index[2]);
+          // Slope and edge state temporary arrays
+          pion_flt *slope_cpt = 0, *slope_npt = 0, *temp = 0;
+          slope_cpt = mem.myalloc(slope_cpt, SimPM.nvar);
+          slope_npt = mem.myalloc(slope_npt, SimPM.nvar);
+          pion_flt edgeR[SimPM.nvar], edgeL[SimPM.nvar];
+
+          // Set three cell pointers (2nd order slopes have a 3-point
+          // stencil).
+          cell *npt  = grid->NextPt(cpt, posdirs[idim]);
+          cell *n2pt = grid->NextPt(npt, posdirs[idim]);
+          if (npt == 0 || n2pt == 0)
+            rep.error("Couldn't find three cells in column", 0);
+          // Need to get slopes and edge states if 2nd order (csp==OA2).
+          for (int v = 0; v < SimPM.nvar; v++)
+            slope_cpt[v] = 0.;
+
+          // --------------------------------------------------------
+          // Run through column, calculating slopes, edge-states, and
+          // eta[] values as we go.
+          // --------------------------------------------------------
+          do {
+            err += spatial_solver->SetEdgeState(
+                cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp, grid);
+            err += spatial_solver->SetSlope(
+                npt, axis[idim], SimPM.nvar, slope_npt, csp, grid);
+            err += spatial_solver->SetEdgeState(
+                npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR, csp, grid);
+            spatial_solver->set_Hcorrection(
+                cpt, axis[idim], edgeL, edgeR, SimPM.gamma);
+
+            cpt       = npt;
+            npt       = n2pt;
+            temp      = slope_cpt;
+            slope_cpt = slope_npt;
+            slope_npt = temp;
+          } while ((n2pt = grid->NextPt(n2pt, posdirs[idim])) != 0);
+
+          // last cell must be 1st order.
+          err += spatial_solver->SetEdgeState(
+              cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp, grid);
+          for (int v = 0; v < SimPM.nvar; v++)
+            slope_npt[v] = 0.;
+          err += spatial_solver->SetEdgeState(
+              npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR, csp, grid);
+          spatial_solver->set_Hcorrection(
+              cpt, axis[idim], edgeL, edgeR, SimPM.gamma);
+
+          // --------------------------------------------------------
+          // Finished H-correction calculation for the column.
+          // --------------------------------------------------------
+          slope_cpt = mem.myfree(slope_cpt);
+          slope_npt = mem.myfree(slope_npt);
+        }
+      }
+#ifdef PION_OMP
+    }
+#endif  // PION_OMP
+  }     // Loop over three directions.
+
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+    spatial_solver->SetDirection(axis[0]);  // Reset fluxes to x-dir.
+  }
+#else
+  spatial_solver->SetDirection(axis[0]);  // Reset fluxes to x-dir.
+#endif  // PION_OMP
+
+  return err;
+}  // calc_Hcorrection()
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int time_integrator::set_dynamics_dU(
     const double dt,           ///< timestep for this calculation

@@ -141,81 +141,84 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
   // We've now dealt with C2F boundaries that are within my domain,
   // so we have to also consider boundaries coincident with my
   // domain boundary, where level l+1 only intersects at the boundary
-  std::vector<std::vector<struct cgrid> > fgngb;
-  MCMD->get_level_lp1_ngb_info(fgngb);
-  if (fgngb.size() != static_cast<size_t>(2 * par.ndim)) {
-    rep.error("l+1 neigbouring grids vector not set up right", fgngb.size());
-  }
-  for (int d = 0; d < par.ndim; d++) {
-    // negative direction
-    int dir = 2 * d;
-    if (cg_ixmin[d] == fl_ixmax[d]) {
-      if (fgngb[dir].size() != 0) {
-        // there are neighbouring grids on l+1, so add all of them
-        // to the send list.
-        for (size_t f = 0; f < fgngb[dir].size(); f++) {
-          if (fgngb[dir][f].rank == MCMD->get_myrank()) {
-            // if child is on my process, do nothing because child
-            // grid can grab the data directly using serial C2F
-            // code.
+  // this only applies if nproc>1.
+  if (MCMD->get_nproc() > 1) {
+    std::vector<std::vector<struct cgrid> > fgngb;
+    MCMD->get_level_lp1_ngb_info(fgngb);
+    if (fgngb.size() != static_cast<size_t>(2 * par.ndim)) {
+      rep.error("l+1 neigbouring grids vector not set up right", fgngb.size());
+    }
+    for (int d = 0; d < par.ndim; d++) {
+      // negative direction
+      int dir = 2 * d;
+      if (cg_ixmin[d] == fl_ixmax[d]) {
+        if (fgngb[dir].size() != 0) {
+          // there are neighbouring grids on l+1, so add all of them
+          // to the send list.
+          for (size_t f = 0; f < fgngb[dir].size(); f++) {
+            if (fgngb[dir][f].rank == MCMD->get_myrank()) {
+              // if child is on my process, do nothing because child
+              // grid can grab the data directly using serial C2F
+              // code.
 #ifdef TEST_C2F
-            cout << "C2F_SEND: ngb " << f << ", dir=" << dir << ", ";
-            cout << "my rank (" << MCMD->get_myrank();
-            cout << ") == child-ngb rank (";
-            cout << fgngb[dir][f].rank << "), no need to set up ";
-            cout << "COARSE_TO_FINE_SEND\n";
+              cout << "C2F_SEND: ngb " << f << ", dir=" << dir << ", ";
+              cout << "my rank (" << MCMD->get_myrank();
+              cout << ") == child-ngb rank (";
+              cout << fgngb[dir][f].rank << "), no need to set up ";
+              cout << "COARSE_TO_FINE_SEND\n";
 #endif
-          }
-          else {
-            CI.get_ipos_vec(fgngb[dir][f].Xmin, fg_ixmin);
-            CI.get_ipos_vec(fgngb[dir][f].Xmax, fg_ixmax);
-            struct c2f *bdata = new struct c2f;
-            bdata->rank       = fgngb[dir][f].rank;
-            bdata->dir        = 2 * d + 1;  // outward normal of child is +ve
-            bdata->c.clear();
-            add_cells_to_C2F_send_list(
-                par, grid, bdata, fg_ixmin, fg_ixmax, l + 1, fl_ixmin,
-                fl_ixmax);
-            b->NGsendC2F.push_back(bdata);
+            }
+            else {
+              CI.get_ipos_vec(fgngb[dir][f].Xmin, fg_ixmin);
+              CI.get_ipos_vec(fgngb[dir][f].Xmax, fg_ixmax);
+              struct c2f *bdata = new struct c2f;
+              bdata->rank       = fgngb[dir][f].rank;
+              bdata->dir        = 2 * d + 1;  // outward normal of child is +ve
+              bdata->c.clear();
+              add_cells_to_C2F_send_list(
+                  par, grid, bdata, fg_ixmin, fg_ixmax, l + 1, fl_ixmin,
+                  fl_ixmax);
+              b->NGsendC2F.push_back(bdata);
+            }
           }
         }
       }
-    }
-    // positive direction
-    dir = 2 * d + 1;
-    if (cg_ixmax[d] == fl_ixmin[d]) {
-      if (fgngb[dir].size() != 0) {
-        // there are neighbouring grids on l+1, so add all of them
-        // to the send list.
-        for (size_t f = 0; f < fgngb[dir].size(); f++) {
-          if (fgngb[dir][f].rank == MCMD->get_myrank()) {
-            // if child is on my process, do nothing because child
-            // grid can grab the data directly using serial C2F
-            // code.
+      // positive direction
+      dir = 2 * d + 1;
+      if (cg_ixmax[d] == fl_ixmin[d]) {
+        if (fgngb[dir].size() != 0) {
+          // there are neighbouring grids on l+1, so add all of them
+          // to the send list.
+          for (size_t f = 0; f < fgngb[dir].size(); f++) {
+            if (fgngb[dir][f].rank == MCMD->get_myrank()) {
+              // if child is on my process, do nothing because child
+              // grid can grab the data directly using serial C2F
+              // code.
 #ifdef TEST_C2F
-            cout << "C2F_SEND: ngb " << f << ", dir=" << dir << ", ";
-            cout << "my rank (" << MCMD->get_myrank();
-            cout << ") == child-ngb rank (";
-            cout << fgngb[dir][f].rank << "), no need to set up ";
-            cout << "COARSE_TO_FINE_SEND\n";
+              cout << "C2F_SEND: ngb " << f << ", dir=" << dir << ", ";
+              cout << "my rank (" << MCMD->get_myrank();
+              cout << ") == child-ngb rank (";
+              cout << fgngb[dir][f].rank << "), no need to set up ";
+              cout << "COARSE_TO_FINE_SEND\n";
 #endif
-          }
-          else {
-            CI.get_ipos_vec(fgngb[dir][f].Xmin, fg_ixmin);
-            CI.get_ipos_vec(fgngb[dir][f].Xmax, fg_ixmax);
-            struct c2f *bdata = new struct c2f;
-            bdata->rank       = fgngb[dir][f].rank;
-            bdata->dir        = 2 * d;  // outward normal of child is -ve dir
-            bdata->c.clear();
-            add_cells_to_C2F_send_list(
-                par, grid, bdata, fg_ixmin, fg_ixmax, l + 1, fl_ixmin,
-                fl_ixmax);
-            b->NGsendC2F.push_back(bdata);
+            }
+            else {
+              CI.get_ipos_vec(fgngb[dir][f].Xmin, fg_ixmin);
+              CI.get_ipos_vec(fgngb[dir][f].Xmax, fg_ixmax);
+              struct c2f *bdata = new struct c2f;
+              bdata->rank       = fgngb[dir][f].rank;
+              bdata->dir        = 2 * d;  // outward normal of child is -ve dir
+              bdata->c.clear();
+              add_cells_to_C2F_send_list(
+                  par, grid, bdata, fg_ixmin, fg_ixmax, l + 1, fl_ixmin,
+                  fl_ixmax);
+              b->NGsendC2F.push_back(bdata);
+            }
           }
         }
-      }
-    }
-  }
+      }  // positive direction
+    }    // loop over dimensions
+  }      // if nproc>1
 
   return 0;
 }

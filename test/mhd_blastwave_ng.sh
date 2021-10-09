@@ -38,7 +38,7 @@ script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 
 ${mpi} ../icgen-ng \
   ${script_dir}/problems/MHD_Blastwave2D/params_MHD_blastwave2D_l2_B010_n128.txt \
-  silo redirect=iclog
+  silo redirect=iclog omp-nthreads=${nt}
 
 ${mpi} ../pion-ng \
   BW2d_StoneMHD_l2_B010_n128_level00_0000.00000000.silo solver=7 cfl=0.24 \

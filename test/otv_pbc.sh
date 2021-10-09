@@ -37,7 +37,7 @@ script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 
 ${mpi} ../icgen-ug \
  ${script_dir}/problems/OrszagTangVortex/param_OrszagTang_n128.txt silo \
- redirect=iclog
+ redirect=iclog omp-nthreads=${nt}
 ${mpi} ../pion-ug \
  OrszagTang_n128_b3.33m1.0_0000.00000000.silo outfile=OrszagTang_n128_new \
  redirect=pionlog-otv opfreq_time=1.0 omp-nthreads=${nt}

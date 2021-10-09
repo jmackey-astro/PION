@@ -202,29 +202,6 @@ public:
       const double   ///< Cell size dx.
       ) = 0;
 
-  ///
-  /// Pre-process the grid before calc_dU() in this function.
-  /// Multi-dimensional calculations to be performed on every cell
-  /// before the flux calculations. e.g. it calculates div(v) for
-  /// Lapidus viscosity and the Ndim 'eta' parameters for the
-  /// H-correction viscosity.
-  ///
-  virtual int preprocess_data(
-      const int,             ///< Spatial order of acc for this call.
-      class SimParams &,     ///< pointer to simulation parameters
-      class GridBaseClass *  ///< pointer to computational grid.
-  );
-
-  ///
-  /// Runs through the grid in all directions and calculates 'eta'
-  /// for each grid point in each direction.  These values get stored
-  /// in the cell data.
-  ///
-  int calc_Hcorrection(
-      const int,             ///< Spatial order of acc for this call.
-      class SimParams &,     ///< pointer to simulation parameters
-      class GridBaseClass *  ///< pointer to computational grid.
-  );
 
   ///
   /// This function is for integrations which need to

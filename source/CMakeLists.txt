@@ -25,7 +25,7 @@ if(PION_NESTED_GRID)
         add_executable(
             pion-ng
 
-            main_NG_MPI.cpp
+            main_NG.cpp
             sim_params.cpp
             constants.cpp
         ) 
