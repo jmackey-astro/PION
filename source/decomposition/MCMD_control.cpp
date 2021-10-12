@@ -530,6 +530,7 @@ void MCMDcontrol::determine_child_neighbours(
   for (auto c : cgrid_ngb) {
     c.clear();
   }
+  if (par.ndim == 1) return;
 
   /* ranks of neighbours in each direction */
   for (int i = 0; i < par.ndim; i++) {
@@ -600,9 +601,7 @@ void MCMDcontrol::set_NG_hierarchy(
   // nproc==1, for which there is only one child so it is trivial.
   if (l < par.grid_nlevels - 1) {
     determine_child_processes(par, l);
-    if (nproc != 1) {
-      determine_child_neighbours(par, l);
-    }
+    determine_child_neighbours(par, l);
   }
 }
 
