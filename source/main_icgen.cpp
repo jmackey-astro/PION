@@ -52,33 +52,45 @@
 #include "tools/timer.h"
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
-#endif  // NDEBUG
+#endif /* NDEBUG */
 
 #include "ics/get_sim_info.h"
 #include "ics/icgen.h"
 #include "ics/icgen_base.h"
 
 #include "dataIO/dataio_base.h"
-#ifdef FITS
-#include "dataIO/dataio_fits.h"
-#ifdef PARALLEL
-#include "dataIO/dataio_fits_MPI.h"
-#endif
-#endif  // if FITS
 #ifdef SILO
 #include "dataIO/dataio_silo.h"
 #ifdef PARALLEL
+#ifdef PION_NESTED
+#include "dataIO/dataio_silo_utility.h"
+#else
 #include "dataIO/dataio_silo_MPI.h"
-#endif
-#endif  // if SILO
+#endif /* PION_NESTED */
+#endif /* PARALLEL */
+#elif FITS
+#include "dataIO/dataio_fits.h"
+#ifdef PARALLEL
+#include "dataIO/dataio_fits_MPI.h"
+#endif /* PARALLEL */
+#endif /* SILO */
 
+#ifdef PION_NESTED
+#include "grid/setup_NG_grid.h"
+#ifdef PARALLEL
+#include "grid/setup_grid_NG_MPI.h"
+#endif /* PARALLEL */
+#else
 #include "grid/setup_fixed_grid.h"
+#ifdef PARALLEL
+#include "grid/setup_fixed_grid_MPI.h"
+#endif /* PARALLEL */
+#endif /* PION_NESTED */
+
+
 #include "grid/uniform_grid.h"
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_base.h"
-#ifdef PARALLEL
-#include "grid/setup_fixed_grid_MPI.h"
-#endif
 
 #include <sstream>
 using namespace std;
@@ -183,8 +195,18 @@ int main(int argc, char **argv)
   delete siminfo;
   siminfo = 0;
 
-  // have to do something with SimPM.levels[0] because this
-  // is used to set the local domain size in decomposeDomain
+#ifdef PION_NESTED
+#ifdef PARALLEL
+  class setup_grid_NG_MPI *SimSetup = new setup_grid_NG_MPI();
+#else
+  class setup_NG_grid *SimSetup = new setup_NG_grid();
+#endif /* PARALLEL */
+  SimSetup->setup_NG_grid_levels(SimPM);
+#else
+  /*
+   * have to do something with SimPM.levels[0] because this
+   * is used to set the local domain size in decomposeDomain
+   */
   SimPM.grid_nlevels     = 1;
   SimPM.levels[0].parent = 0;
   SimPM.levels[0].child  = 0;
@@ -197,37 +219,25 @@ int main(int argc, char **argv)
     SimPM.levels[0].Xmin[v] = SimPM.Xmin[v];
   for (int v = 0; v < MAX_DIM; v++)
     SimPM.levels[0].Xmax[v] = SimPM.Xmax[v];
-  SimPM.levels[0].dx         = SimPM.Range[XX] / SimPM.NG[XX];
-  SimPM.levels[0].simtime    = SimPM.simtime;
-  SimPM.levels[0].dt         = 0.0;
-  SimPM.levels[0].multiplier = 1;
-
-  class setup_fixed_grid *SimSetup = 0;
+  SimPM.levels[0].dx                     = SimPM.Range[XX] / SimPM.NG[XX];
+  SimPM.levels[0].simtime                = SimPM.simtime;
+  SimPM.levels[0].dt                     = 0.0;
+  SimPM.levels[0].multiplier             = 1;
 #ifdef PARALLEL
-  SimSetup = new setup_fixed_grid_pllel();
-#else
-  SimSetup = new setup_fixed_grid();
-#endif
-
-  //
-  // Set up the Xmin/Xmax/Range/dx of each level in the NG grid
-  //
-  // SimSetup->setup_NG_grid_levels(SimPM);
-
-  vector<class GridBaseClass *> grid;
-#ifdef PARALLEL
+  class setup_fixed_grid_pllel *SimSetup = new setup_fixed_grid_pllel();
   err = SimPM.levels[0].MCMD.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
   rep.errorTest("Couldn't Decompose Domain!", 0, err);
-  class MCMDcontrol *MCMD = &(SimPM.levels[0].MCMD);
+#else
+  class setup_fixed_grid *SimSetup = new setup_fixed_grid();
+#endif /* PARALLEL */
+#endif /* PION_NESTED */
+#ifdef PARALLEL
 #endif
 
   //
-  // Now we have read in parameters from the file, so set up a grid.
+  // Set up a grid(s).
   //
-  int l = 0;
-  grid.resize(1);
-  SimPM.grid_nlevels = 1;
-  // Now set up the grid structure.
+  vector<class GridBaseClass *> grid(SimPM.grid_nlevels);
   err      = SimSetup->setup_grid(grid, SimPM);
   SimPM.dx = grid[0]->DX();
   if (!grid[0]) rep.error("Grid setup failed", grid[0]);
@@ -244,7 +254,13 @@ int main(int argc, char **argv)
   setup_ics_type(ics, &ic);
   ic->set_SimPM(&SimPM);
 #ifdef PARALLEL
-  ic->set_MCMD_pointer(MCMD);
+  ic->set_MCMD_pointer(&SimPM.levels[0].MCMD);
+#endif
+
+#ifdef PION_NESTED
+  err = SimSetup->set_equations(SimPM);
+  rep.errorTest("(icgen::set_equations) err!=0 Fix me!", 0, err);
+  class FV_solver_base *solver = SimSetup->get_solver_ptr();
 #endif
 
   cout << "MAIN: setting up microphysics module\n";
@@ -255,22 +271,50 @@ int main(int argc, char **argv)
 
   // have to setup jet simulation before setting up boundary
   // conditions because jet boundary needs some grid data values.
+#ifndef PION_NESTED
   if (ics == "Jet" || ics == "JET" || ics == "jet") {
-    ic->setup_data(rp, grid[0]);
+#endif /* PION_NESTED */
+    for (int l = 0; l < SimPM.grid_nlevels; l++) {
+      err += ic->setup_data(rp, grid[l]);
+      if (err) rep.error("Initial conditions setup failed.", err);
+    }
+#ifndef PION_NESTED
   }
+#else
+  for (int l = 0; l < SimPM.grid_nlevels; l++) {
+    // Set Ph=P in every cell.
+    cell *c = grid[l]->FirstPt();
+    do {
+      for (int v = 0; v < SimPM.nvar; v++)
+        c->Ph[v] = c->P[v];
+    } while ((c = grid[l]->NextPt(c)) != 0);
+    //
+    // If I'm using the GLM method, make sure Psi variable is initialised.
+    //
+    if (SimPM.eqntype == EQGLM && SimPM.timestep == 0) {
+      for (int l = 0; l < SimPM.grid_nlevels; l++) {
+        c = grid[l]->FirstPt();
+        do {
+          c->P[SI] = c->Ph[SI] = 0.;  // grid->divB(c);
+        } while ((c = grid[l]->NextPt(c)) != 0);
+      }
+    }
+  }
+#endif /* PION_NESTED */
 
   //
   // Set up the boundary conditions and data
   //
   SimSetup->boundary_conditions(SimPM, grid);
   if (err) rep.error("icgen Couldn't set up boundaries.", err);
+
+#ifndef PION_NESTED
   err += SimSetup->setup_raytracing(SimPM, grid[0]);
   err += SimSetup->setup_evolving_RT_sources(SimPM);
   err +=
       SimSetup->update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
   if (err)
     rep.error("icgen: Failed to setup raytracer and/or microphysics", err);
-
   // ----------------------------------------------------------------
   // call "setup" to set up the data on the computational grid.
   err += ic->setup_data(rp, grid[0]);
@@ -280,7 +324,121 @@ int main(int argc, char **argv)
 #ifndef PARALLEL
   err = SimSetup->assign_boundary_data(SimPM, 0, grid[0], MP);
   rep.errorTest("icgen::assign_boundary_data", 0, err);
-#endif
+#endif /* PARALLEL */
+#else
+  err += SimSetup->setup_raytracing(SimPM, grid);
+  if (err) rep.error("icgen-ng: Failed to setup raytracer", err);
+
+  for (int l = 0; l < SimPM.grid_nlevels; l++) {
+    // cout <<"icgen_NG: assigning boundary data for level "<<l<<"\n";
+    err = SimSetup->assign_boundary_data(SimPM, l, grid[l], MP);
+#ifdef PARALLEL
+    COMM->barrier("level assign boundary data");
+#endif /* PARALLEL */
+    rep.errorTest("icgen-ng::assign_boundary_data", 0, err);
+  }
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+  for (int l = 0; l < SimPM.grid_nlevels; l++) {
+    // cout <<"updating external boundaries for level "<<l<<"\n";
+    err += SimSetup->TimeUpdateExternalBCs(
+        SimPM, l, grid[l], solver, SimPM.simtime, SimPM.tmOOA, SimPM.tmOOA);
+  }
+  rep.errorTest("icgen-ng: error from bounday update", 0, err);
+  // ----------------------------------------------------------------
+
+#ifdef PARALLEL
+  // ----------------------------------------------------------------
+#ifndef NDEBUG
+  cout << "icgen-ng: updating C2F boundaries\n";
+#endif /* NDEBUG */
+  for (int l = 0; l < SimPM.grid_nlevels; l++) {
+#ifndef NDEBUG
+    cout << "icgen-ng updating C2F boundaries for level " << l << "\n";
+#endif /* NDEBUG */
+    if (l < SimPM.grid_nlevels - 1) {
+      for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
+        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) {
+          err += SimSetup->BC_update_COARSE_TO_FINE_SEND(
+              SimPM, grid[l], solver, l, grid[l]->BC_bd[i], 2, 2);
+        }
+      }
+    }
+#ifndef NDEBUG
+    cout << "icgen-ng: updating C2F boundaries, sent, now recv\n";
+#endif /* NDEBUG */
+    if (l > 0) {
+      for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
+        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
+          err += SimSetup->BC_update_COARSE_TO_FINE_RECV(
+              SimPM, solver, l, grid[l]->BC_bd[i], SimPM.levels[l].step);
+        }
+      }
+    }
+#ifndef NDEBUG
+    cout << "icgen-ng: updating C2F boundaries: done with level\n";
+#endif /* NDEBUG */
+  }
+  cout << "icgen-ng: updating C2F boundaries done\n";
+  SimSetup->BC_COARSE_TO_FINE_SEND_clear_sends();
+  rep.errorTest("icgen-ng: error from boundary update", 0, err);
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+#ifndef NDEBUG
+  cout << "icgen-ng: updating external boundaries\n";
+#endif /* NDEBUG */
+  for (int l = 0; l < SimPM.grid_nlevels; l++) {
+    err += SimSetup->TimeUpdateExternalBCs(
+        SimPM, l, grid[l], solver, SimPM.simtime, SimPM.tmOOA, SimPM.tmOOA);
+  }
+  rep.errorTest("icgen-ng: error from boundary update", 0, err);
+  // ----------------------------------------------------------------
+#endif /* PARALLEL */
+
+  // ----------------------------------------------------------------
+  for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
+    // cout <<"updating internal boundaries for level "<<l<<"\n";
+    err += SimSetup->TimeUpdateInternalBCs(
+        SimPM, l, grid[l], solver, SimPM.simtime, SimPM.tmOOA, SimPM.tmOOA);
+  }
+  rep.errorTest("icgen-ng: error from bounday update", 0, err);
+  // ----------------------------------------------------------------
+
+#ifdef PARALLEL
+  // ----------------------------------------------------------------
+  // update fine-to-coarse level boundaries
+#ifndef NDEBUG
+  cout << "icgen-ng: updating F2C boundaries\n";
+#endif /* NDEBUG */
+  for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
+#ifndef NDEBUG
+    cout << "icgen-ng updating F2C boundaries for level " << l << "\n";
+    cout << l << "\n";
+#endif /* NDEBUG */
+    if (l > 0) {
+      for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
+        if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_SEND) {
+          err += SimSetup->BC_update_FINE_TO_COARSE_SEND(
+              SimPM, solver, l, grid[l]->BC_bd[i], 2, 2);
+        }
+      }
+    }
+    if (l < SimPM.grid_nlevels - 1) {
+      for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
+        if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_RECV) {
+          err += SimSetup->BC_update_FINE_TO_COARSE_RECV(
+              SimPM, solver, l, grid[l]->BC_bd[i], 2, 2);
+        }
+      }
+    }
+  }
+  SimSetup->BC_FINE_TO_COARSE_SEND_clear_sends();
+  rep.errorTest("icgen-ng: error from boundary update", 0, err);
+  // ----------------------------------------------------------------
+#endif /* PARALLEL */
+#endif /* PION_NESTED */
 
   // ----------------------------------------------------------------
   // if data initialised ok, maybe we need to equilibrate the
@@ -311,6 +469,7 @@ int main(int argc, char **argv)
   }
 
   dataio = 0;  // zero the class pointer.
+#ifndef PION_NESTED
 #ifndef PARALLEL
   if (icftype == "text") {
     cout << "WRITING ASCII TEXT FILE: ";
@@ -323,25 +482,29 @@ int main(int argc, char **argv)
     cout << "WRITING FITS FILE: ";
     cout << icfile << "\n";
 #ifdef PARALLEL
-    dataio = new DataIOFits_pllel(SimPM, MCMD);
+    dataio = new DataIOFits_pllel(SimPM, &SimPM.levels[0].MCMD);
 #else
     dataio = new DataIOFits(SimPM);
-#endif
+#endif /* PARALLEL */
   }
-#endif  // if fits.
+#endif /* FITS */
+#endif /* PION_NESTED */
 
 #ifdef SILO
   if (icftype == "silo") {
     cout << "WRITING SILO FILE: ";
-    //    icfile = icfile+".silo";
     cout << icfile << "\n";
 #ifdef PARALLEL
-    dataio = new dataio_silo_pllel(SimPM, "DOUBLE", MCMD);
+#ifdef PION_NESTED
+    dataio = new dataio_silo_utility(SimPM, "DOUBLE", &SimPM.levels[0].MCMD);
+#else
+    dataio = new dataio_silo_pllel(SimPM, "DOUBLE", &SimPM.levels[0].MCMD);
+#endif /* PION_NESTED */
 #else
     dataio = new dataio_silo(SimPM, "DOUBLE");
-#endif
+#endif /* PARALLEL */
   }
-#endif  // if SILO defined.
+#endif /* SILO */
   if (!dataio) rep.error("IO class initialisation: ", icftype);
   err = dataio->OutputData(icfile, grid, SimPM, 0);
   if (err) rep.error("File write error", err);
@@ -365,7 +528,8 @@ int main(int argc, char **argv)
     delete SimSetup;
     SimSetup = 0;
   }
-  delete grid[0];
+  for (auto g : grid)
+    delete g;
 
   //
   // Also delete any dynamic memory in the stellarwind_list in
@@ -381,14 +545,12 @@ int main(int argc, char **argv)
 
   delete[] args;
   args = 0;
-
 #ifdef PARALLEL
-  cout << "rank: " << MCMD->get_myrank();
-  cout << " nproc: " << MCMD->get_nproc() << "\n";
+  cout << "rank: " << SimPM.levels[0].MCMD.get_myrank();
+  cout << " nproc: " << SimPM.levels[0].MCMD.get_nproc() << "\n";
   delete COMM;
   COMM = 0;
 #endif
-
   return err;
 }
 

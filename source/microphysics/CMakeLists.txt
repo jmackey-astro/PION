@@ -22,11 +22,8 @@ add_library(
 	MPv9.cpp
 )
 
-target_link_libraries(
-    microphysics 
-    PUBLIC 
-    ${SUNDIALS_LIBRARY}
-)
+target_link_libraries(microphysics PUBLIC raytracing)
+target_link_libraries(microphysics PRIVATE tools ${SUNDIALS_LIBRARY})
 
 #if(PION_OMP)
 #    target_link_libraries(microphysics PUBLIC OpenMP::OpenMP_CXX)

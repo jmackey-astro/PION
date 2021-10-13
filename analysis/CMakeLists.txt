@@ -5,5 +5,3 @@ add_subdirectory(silo2fits)
 add_subdirectory(xray)
 add_subdirectory(projection)
 add_subdirectory(projection3D)
-
-

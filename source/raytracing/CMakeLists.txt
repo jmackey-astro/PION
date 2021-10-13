@@ -13,6 +13,4 @@ else()
     )
 endif(PION_PARALLEL)
 
-target_link_libraries(raytracing PRIVATE
-    nested_boundaries
-)
+target_link_libraries(raytracing PRIVATE global boundaries)

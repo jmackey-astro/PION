@@ -16,17 +16,7 @@ if(PION_TOOLS AND PION_PARALLEL AND PION_USE_SILO AND PION_USE_FITS)
   target_link_libraries(projection2D PUBLIC 
     global
     dataio
-    dataio_silo
     grid
-    nested_grid
-    decomposition
-    microphysics
-    coord_sys
-    equations
-    spatial_solvers
-    raytracing
-    boundaries
-    nested_boundaries
     xray_emission
   )
 

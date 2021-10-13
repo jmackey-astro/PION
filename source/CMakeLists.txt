@@ -5,71 +5,57 @@ add_subdirectory(comms)
 add_subdirectory(coord_sys)
 add_subdirectory(dataIO)
 add_subdirectory(equations)
+add_subdirectory(grid)
 add_subdirectory(ics)
 add_subdirectory(microphysics)
 add_subdirectory(raytracing)
-add_subdirectory(grid)
 add_subdirectory(Riemann_solvers)
 add_subdirectory(sim_control)
 add_subdirectory(spatial_solvers)
 add_subdirectory(tools)
+
 if (PION_PARALLEL)
     add_subdirectory(decomposition)
 endif(PION_PARALLEL)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
+add_library(
+  global
+
+  sim_params.cpp
+  constants.cpp
+) 
+
+target_link_libraries(global PUBLIC dataio tools)
+
+if(PION_PARALLEL)
+    target_link_libraries(global PUBLIC comms)
+endif(PION_PARALLEL)
 
 if(PION_NESTED_GRID)
-    if(PION_PARALLEL)
-        add_executable(
-            pion-ng
+    add_executable(pion-ng main.cpp) 
+    add_executable(icgen-ng main_icgen.cpp)
 
-            main_NG.cpp
-            sim_params.cpp
-            constants.cpp
-        ) 
-        add_executable(
-            icgen-ng
+    target_link_libraries(pion-ng PRIVATE global)
+    target_link_libraries(icgen-ng PRIVATE global)
 
-            main_icgen_NG.cpp
-            sim_params.cpp
-            constants.cpp
-        ) 
-        target_link_libraries(pion-ng PUBLIC decomposition)
-        target_link_libraries(icgen-ng PUBLIC decomposition)
-    else()
-        add_executable(
-            pion-ng
+    target_compile_features(pion-ng PRIVATE cxx_std_14)
+    target_compile_features(icgen-ng PRIVATE cxx_std_14)
 
-            main_NG.cpp
-            sim_params.cpp
-            constants.cpp
-        ) 
-        add_executable(
-            icgen-ng
-
-            main_icgen_NG.cpp
-            sim_params.cpp
-            constants.cpp
-        )
-    endif(PION_PARALLEL)
-
-    target_compile_features(pion-ng PUBLIC cxx_std_14)
-    target_compile_features(icgen-ng PUBLIC cxx_std_14)
+    target_compile_definitions(pion-ng PRIVATE PION_NESTED)
+    target_compile_definitions(icgen-ng PRIVATE PION_NESTED)
 
     # pion-ng internal dependencies
-    target_link_libraries(pion-ng PUBLIC 
+    target_link_libraries(pion-ng PRIVATE
         nested_sim_control
-        raytracing
-        nested_boundaries
+        nested_grid
     )
 
     # icgen-ng internal dependencies
-    target_link_libraries(icgen-ng PUBLIC 
+    target_link_libraries(icgen-ng PRIVATE
         ics
-        raytracing
-        nested_boundaries
+        nested_grid
     )
 
     #
@@ -86,55 +72,25 @@ if(PION_NESTED_GRID)
 endif(PION_NESTED_GRID)
 
 if(PION_UNIFORM_GRID)
-    if(PION_PARALLEL)
-        add_executable(
-            pion-ug
+    add_executable(pion-ug main.cpp)
+    add_executable(icgen-ug main_icgen.cpp) 
 
-            main.cpp
-            sim_params.cpp
-            constants.cpp
-        )
-        add_executable(
-            icgen-ug
+    target_link_libraries(pion-ug PRIVATE global)
+    target_link_libraries(icgen-ug PRIVATE global)
 
-            main_icgen.cpp
-            sim_params.cpp
-            constants.cpp
-        ) 
-        target_link_libraries(pion-ug PUBLIC decomposition)
-        target_link_libraries(icgen-ug PUBLIC decomposition)
-    else()
-        add_executable(
-            pion-ug
-
-            main.cpp
-            sim_params.cpp
-            constants.cpp
-        )
-        add_executable(
-            icgen-ug
-
-            main_icgen.cpp
-            sim_params.cpp
-            constants.cpp
-        ) 
-    endif(PION_PARALLEL)
-
-    target_compile_features(pion-ug PUBLIC cxx_std_14)
-    target_compile_features(icgen-ug PUBLIC cxx_std_14)
+    target_compile_features(pion-ug PRIVATE cxx_std_14)
+    target_compile_features(icgen-ug PRIVATE cxx_std_14)
 
     # pion-ug internal dependencies
-    target_link_libraries(pion-ug PUBLIC 
+    target_link_libraries(pion-ug PRIVATE 
         sim_control
-        raytracing
-        boundaries
+        grid 
     )
 
     # icgen-ug internal dependencies
-    target_link_libraries(icgen-ug PUBLIC 
+    target_link_libraries(icgen-ug PRIVATE 
         ics
-        raytracing
-        boundaries
+        grid
     )
 
     #
@@ -149,13 +105,6 @@ if(PION_UNIFORM_GRID)
         INCLUDES DESTINATION ${PION_INSTALL_INCLUDEDIR}
     )
 endif(PION_UNIFORM_GRID)
-
-add_library(
-  global
-
-  sim_params.cpp
-  constants.cpp
-)
 
 #if(PION_OMP)
 #    target_link_libraries(global PUBLIC OpenMP::OpenMP_CXX)

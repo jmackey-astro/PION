@@ -6,9 +6,4 @@ add_library(
     eqns_mhd_adiabatic.cpp
 )
 
-target_link_libraries(
-    equations
-    PUBLIC 
-    microphysics 
-)
-
+target_link_libraries(equations PUBLIC microphysics)

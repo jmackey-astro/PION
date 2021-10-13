@@ -11,3 +11,7 @@ add_library(
 	Roe_Hydro_PrimitiveVar_solver.cpp
 	Roe_MHD_ConservedVar_solver.cpp
 )
+
+target_link_libraries(riemann_solvers PUBLIC
+    equations
+)

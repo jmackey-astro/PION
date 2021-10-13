@@ -8,10 +8,9 @@ add_library(
 
 target_link_libraries(spatial_solvers PUBLIC 
     riemann_solvers
-    equations
     coord_sys
 )
 
 if(PION_OMP)
-    target_link_libraries(spatial_solvers PUBLIC OpenMP::OpenMP_CXX)
+    target_link_libraries(spatial_solvers PRIVATE OpenMP::OpenMP_CXX)
 endif(PION_OMP)

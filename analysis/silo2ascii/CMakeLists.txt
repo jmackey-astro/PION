@@ -13,17 +13,7 @@ if(PION_TOOLS AND PION_PARALLEL AND PION_USE_SILO)
   target_link_libraries(silo2text PUBLIC 
     global
     dataio
-    dataio_silo
-    grid
     nested_grid
-    decomposition
-    microphysics
-    coord_sys
-    equations
-    spatial_solvers
-    raytracing
-    boundaries
-    nested_boundaries
   )
 
   install( 

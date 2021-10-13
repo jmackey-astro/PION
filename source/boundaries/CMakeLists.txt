@@ -31,6 +31,7 @@ if(PION_PARALLEL)
         NG_MPI_coarse_to_fine_boundaries.cpp
         NG_MPI_fine_to_coarse_boundaries.cpp
     )
+    target_link_libraries(boundaries PUBLIC decomposition)
 else()
     add_library(
         boundaries
@@ -58,9 +59,6 @@ else()
     )
 endif(PION_PARALLEL)
 
-target_link_libraries(nested_boundaries PUBLIC
-    boundaries
-    nested_grid
-)
-
-target_link_libraries(boundaries PUBLIC grid)
+target_link_libraries(boundaries PUBLIC spatial_solvers)
+target_link_libraries(boundaries PRIVATE grid global)
+target_link_libraries(nested_boundaries PUBLIC boundaries)

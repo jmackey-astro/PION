@@ -1,5 +1,5 @@
 add_library(
-    dataio
+    dataio_base
 
     dataio_base.cpp
     dataio_text.cpp
@@ -11,7 +11,7 @@ add_library(
 if(PION_USE_SILO)
     if(PION_PARALLEL)
         add_library(
-            dataio_silo
+            dataio
 
             dataio_silo.cpp
             dataio_silo_MPI.cpp
@@ -19,20 +19,20 @@ if(PION_USE_SILO)
         )
     else()
         add_library(
-            dataio_silo
+            dataio
 
             dataio_silo.cpp
         )
     endif(PION_PARALLEL)
 
-    target_link_libraries(dataio_silo PUBLIC ${SILO_LIBRARY} microphysics)
-    target_link_libraries(dataio PUBLIC dataio_silo)
+    target_link_libraries(dataio PUBLIC ${SILO_LIBRARY})
+    target_link_libraries(dataio PUBLIC dataio_base)
 endif(PION_USE_SILO)
 
 if(PION_USE_FITS)
     if(PION_PARALLEL)
         add_library(
-            dataio_fits
+            dataio
 
             dataio_fits.cpp
             dataio_fits_MPI.cpp
@@ -40,27 +40,19 @@ if(PION_USE_FITS)
         )
     else()
         add_library(
-            dataio_fits
+            dataio
 
             dataio_fits.cpp
             utility_fits_class.cpp
         )
     endif(PION_PARALLEL)
 
-    target_link_libraries(dataio_fits PUBLIC
+    target_link_libraries(dataio PUBLIC
         ${FITS_LIBRARY}
         ${ZLIB_LIBRARY}
         ${CURL_LIBRARY}
         ${BZIP2_LIBRARY}
         Threads::Threads
-        microphysics
-	global
-	tools
     )
-    target_link_libraries(dataio PUBLIC dataio_fits)
+    target_link_libraries(dataio PUBLIC dataio_base)
 endif(PION_USE_FITS)
-
-target_link_libraries(dataio PUBLIC
-    global
-    tools
-    ) 

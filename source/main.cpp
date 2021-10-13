@@ -61,16 +61,24 @@ using namespace std;
 #include "defines/testing_flags.h"
 #include "grid/grid_base_class.h"
 #include "sim_constants.h"
-#include "sim_control/sim_control.h"
-#include "tools/reporting.h"
 
+#ifdef PION_NESTED
+#include "sim_control/sim_control_NG.h"
+#ifdef PARALLEL
+#include "sim_control/sim_control_NG_MPI.h"
+#endif /* PARALLEL */
+#else
+#include "sim_control/sim_control.h"
 #ifdef PARALLEL
 #include "sim_control/sim_control_MPI.h"
-#endif
+#endif /* PARALLEL */
+#endif /* PION_NESTED */
+
+#include "tools/reporting.h"
+
 #ifdef PION_OMP
 #include <omp.h>
 #endif
-
 
 int main(int argc, char **argv)
 {
@@ -84,18 +92,24 @@ int main(int argc, char **argv)
   //
   // Set up simulation controller class.
   //
-  class sim_control *sim_control = 0;
-
+#ifdef PION_NESTED
+  string grid_type = "NG";
 #ifndef PARALLEL
-  sim_control = new class sim_control();
+  class sim_control_NG *sim_control = new class sim_control_NG();
+#else
+  class sim_control_NG_MPI *sim_control = new class sim_control_NG_MPI();
+#endif /* PARALLEL */
+#else
+  string grid_type               = "UG";
+#ifndef PARALLEL
+  class sim_control *sim_control = new class sim_control();
+#else
+  class sim_control *sim_control = new class sim_control_pllel();
+#endif /* PARALLEL */
+#endif /* PION_NESTED */
+
   if (!sim_control)
     rep.error("(pion) Couldn't initialise sim_control", sim_control);
-#else
-  sim_control = new class sim_control_pllel();
-  if (!sim_control)
-    rep.error("(PION) Couldn't initialise sim_control_pllel", sim_control);
-#endif
-
   //
   // Check that command-line arguments are sufficient.
   //
@@ -104,8 +118,7 @@ int main(int argc, char **argv)
     rep.error("Bad arguments", argc);
   }
 
-  string *args = 0;
-  args         = new string[argc];
+  string *args = new string[argc];
   for (int i = 0; i < argc; i++)
     args[i] = argv[i];
 
@@ -125,12 +138,11 @@ int main(int argc, char **argv)
       cout << "Redirecting stdout to " << outpath << "info.txt"
            << "\n";
 #endif
-      // Redirects cout and cerr to text files in the directory specified.
       rep.redirect(outpath);
     }
   }
 #ifdef PARALLEL
-#ifndef TESTING
+#ifdef NDEBUG
   rep.kill_stdout_from_other_procs(0);
 #endif
 #endif
@@ -156,13 +168,21 @@ int main(int argc, char **argv)
     omp_set_num_threads(1);
 #endif
 
-  cout << "-------------------------------------------------------\n";
 #ifdef PARALLEL
-  cout << "---------   pion UG MPI v2.0  running   ---------------\n";
+  string parallelism = "MPI";
+#ifdef PION_OMP
+  parallelism += "/OpenMP";
+#endif /* PION_OMP */
+#elif PION_OMP
+  string parallelism = "OpenMP";
 #else
-  cout << "---------   pion UG SERIAL v2.0  running   ------------\n";
-#endif
-  cout << "-------------------------------------------------------\n\n";
+  string parallelism = "SERIAL";
+#endif /* PARALLEL */
+
+  cout << "-------------------------------------------------------\n"
+       << "---------   pion " << grid_type << " " << parallelism
+       << " v2.0  running   ---------------\n"
+       << "-------------------------------------------------------\n\n";
 
   // Set what type of file to open: 1=parameterfile, 2/5=restartfile.
   int ft;
@@ -255,7 +275,8 @@ int main(int argc, char **argv)
 
   delete sim_control;
   sim_control = 0;
-  delete grid[0];
+  for (auto g : grid)
+    delete g;
   delete[] args;
   args = 0;
 #ifdef PARALLEL
@@ -264,9 +285,10 @@ int main(int argc, char **argv)
   COMM = 0;
 #endif
 
-  cout << "-------------------------------------------------------\n";
-  cout << "---------   pion v.2.0  finished  ---------------------\n";
-  cout << "-------------------------------------------------------\n";
+  cout << "-------------------------------------------------------\n"
+       << "---------   pion " << grid_type << " " << parallelism
+       << " v2.0  finished ---------------\n"
+       << "-------------------------------------------------------\n\n";
 
   return 0;
 }

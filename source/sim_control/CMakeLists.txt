@@ -9,12 +9,12 @@ if(PION_PARALLEL)
         time_integrator.cpp
     )
     if(PION_NESTED_GRID)
-    add_library(
-        nested_sim_control
+        add_library(
+            nested_sim_control
 
-        sim_control_NG.cpp
-        sim_control_NG_MPI.cpp
-    )
+            sim_control_NG.cpp
+            sim_control_NG_MPI.cpp
+        )
     endif(PION_NESTED_GRID)
 else()
     add_library(
@@ -34,11 +34,12 @@ else()
     endif(PION_NESTED_GRID)
 endif(PION_PARALLEL)
 
+target_link_libraries(sim_control PRIVATE global)
+
+if(PION_OMP)
+    target_link_libraries(sim_control PRIVATE OpenMP::OpenMP_CXX)
+endif(PION_OMP)
+
 if(PION_NESTED_GRID)
     target_link_libraries(nested_sim_control PUBLIC sim_control)
 endif(PION_NESTED_GRID)
-
-
-if(PION_OMP)
-    target_link_libraries(sim_control PUBLIC OpenMP::OpenMP_CXX)
-endif(PION_OMP)

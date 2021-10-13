@@ -36,17 +36,10 @@ else()
 endif(PION_PARALLEL)
 
 
-target_link_libraries(grid PUBLIC 
-    dataio
-    microphysics
-    raytracing
-    spatial_solvers
-)
-
-target_link_libraries(nested_grid PUBLIC grid)
+target_link_libraries(grid PRIVATE boundaries global)
 
 if(PION_OMP)
     target_link_libraries(grid PUBLIC OpenMP::OpenMP_CXX)
-    target_link_libraries(nested_grid PUBLIC OpenMP::OpenMP_CXX)
 endif(PION_OMP)
 
+target_link_libraries(nested_grid PUBLIC grid nested_boundaries)
