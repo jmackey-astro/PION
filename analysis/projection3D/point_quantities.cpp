@@ -23,13 +23,13 @@
 #include "tools/reporting.h"
 
 #include "constants.h"
-#include "sim_params.h"
 #include "grid/cell_interface.h"
 #include "microphysics/microphysics_base.h"
+#include "sim_params.h"
 
-#include "point_quantities.h"
-#include "../xray/xray_emission.h"
 #include "../projection/projection_constants.h"
+#include "../xray/xray_emission.h"
+#include "point_quantities.h"
 using namespace std;
 
 
@@ -54,10 +54,9 @@ void point_quantities::SetMicrophysics(class microphysics_base *ptr)
 
 double point_quantities::get_point_density(const struct point_4cellavg *pt)
 {
-  double val=0.0;
-  for (int v=0;v<4;v++) {
-    if (pt->ngb[v])
-      val += pt->wt[v] *pt->ngb[v]->P[RO];
+  double val = 0.0;
+  for (int v = 0; v < 4; v++) {
+    if (pt->ngb[v]) val += pt->wt[v] * pt->ngb[v]->P[RO];
   }
   return val;
 }
@@ -69,16 +68,15 @@ double point_quantities::get_point_density(const struct point_4cellavg *pt)
 
 
 double point_quantities::get_point_electron_numberdensity(
-        const struct point_4cellavg *pt
-        )
+    const struct point_4cellavg *pt)
 {
-  double val=0.0;
+  double val = 0.0;
   //
   // Use the microphysics function to get electron number density.
   //
-  for (int v=0;v<4;v++) {
+  for (int v = 0; v < 4; v++) {
     if (pt->ngb[v]) {
-      val += pt->wt[v] *MP->get_n_elec(pt->ngb[v]->P);
+      val += pt->wt[v] * MP->get_n_elec(pt->ngb[v]->P);
     }
   }
   return val;
@@ -90,16 +88,15 @@ double point_quantities::get_point_electron_numberdensity(
 
 
 double point_quantities::get_point_ionizedH_numberdensity(
-        const struct point_4cellavg *pt
-        )
+    const struct point_4cellavg *pt)
 {
-  double val=0.0;
+  double val = 0.0;
   //
   // Use the microphysics function to get ionized H number density.
   //
-  for (int v=0;v<4;v++) {
+  for (int v = 0; v < 4; v++) {
     if (pt->ngb[v]) {
-      val += pt->wt[v] *MP->get_n_Hplus(pt->ngb[v]->P);
+      val += pt->wt[v] * MP->get_n_Hplus(pt->ngb[v]->P);
     }
   }
   return val;
@@ -111,21 +108,19 @@ double point_quantities::get_point_ionizedH_numberdensity(
 
 
 double point_quantities::get_point_neutralH_numberdensity(
-        const struct point_4cellavg *pt
-        )
+    const struct point_4cellavg *pt)
 {
-  double val=0.0;
+  double val = 0.0;
   //
   // Use the microphysics function to get neutral H number density.
   //
-  for (int v=0;v<4;v++) {
+  for (int v = 0; v < 4; v++) {
     if (pt->ngb[v]) {
-      val += pt->wt[v] *MP->get_n_Hneutral(pt->ngb[v]->P);
+      val += pt->wt[v] * MP->get_n_Hneutral(pt->ngb[v]->P);
     }
   }
   return val;
 }
-
 
 
 
@@ -135,23 +130,23 @@ double point_quantities::get_point_neutralH_numberdensity(
 
 
 double point_quantities::get_point_temperature(
-        const struct point_4cellavg *pt,
-        const double gamma   ///< EOS gamma
-        )
+    const struct point_4cellavg *pt,
+    const double gamma  ///< EOS gamma
+)
 {
   double val = 0.0;
-  int ct=0;
+  int ct     = 0;
   //
   // If microphysics is set up, then use MP->Temperature() to get the
   // temperature.  Otherwise assume a pure Hydrogen gas.
   // We want a mean temperature for nearly everything, so don't do
   // the weighting.
   if (MP) {
-    for (int v=0;v<4;v++) {
+    for (int v = 0; v < 4; v++) {
       if (pt->ngb[v]) {
-        val += pt->wt[v] *MP->Temperature(pt->ngb[v]->P,gamma);
-        //val += MP->Temperature(pt->ngb[v]->P,gamma);
-        //if (!isfinite(MP->Temperature(pt->ngb[v]->P,gamma)) ||
+        val += pt->wt[v] * MP->Temperature(pt->ngb[v]->P, gamma);
+        // val += MP->Temperature(pt->ngb[v]->P,gamma);
+        // if (!isfinite(MP->Temperature(pt->ngb[v]->P,gamma)) ||
         //    MP->Temperature(pt->ngb[v]->P,gamma)==0.0) {
         //  cout <<"Invalid Temperature in loop="<<val<<"  "<<gamma<<"  "<<endl;
         //  rep.printVec("pv", pt->ngb[v]->P, 5);
@@ -161,16 +156,15 @@ double point_quantities::get_point_temperature(
         ct++;
       }
     }
-    //if (ct>0) val /= static_cast<double>(ct);
+    // if (ct>0) val /= static_cast<double>(ct);
   }
   else {
-    rep.error("get_point_temperature(): no microphysics class",1);
+    rep.error("get_point_temperature(): no microphysics class", 1);
   }
-  //if (!isfinite(val))
-  //cout <<"Invalid Temperature="<<val<<endl;
+  // if (!isfinite(val))
+  // cout <<"Invalid Temperature="<<val<<endl;
   return val;
 }
-    
 
 
 
@@ -184,12 +178,16 @@ double point_quantities::get_point_temperature(
 #define MAXDENS 25000.0
 
 double point_quantities::get_point_StokesQ(
-      struct point_4cellavg *pt,
-      const int ,
-      const int bx, const int by, const int bz,
-      const int signx, const int , const int signz,
-      const double sintht, const double costht
-      )
+    struct point_4cellavg *pt,
+    const int,
+    const int bx,
+    const int by,
+    const int bz,
+    const int signx,
+    const int,
+    const int signz,
+    const double sintht,
+    const double costht)
 {
   //
   // Bilinear interpolation with pre-calculated weights and neighbouring
@@ -200,25 +198,28 @@ double point_quantities::get_point_StokesQ(
   // New Q calculated from Bx,By according to
   // Q = sum_i wt[i]*|f(n_H)*(Bx^2-By^2)/sqrt(Bx^2+By^2)|_i
   //
-  double val=0.0, bx2=0.0, by2=0.0, btot=0.0;
-  for (int v=0;v<4;v++) {
+  double val = 0.0, bx2 = 0.0, by2 = 0.0, btot = 0.0;
+  for (int v = 0; v < 4; v++) {
     if (pt->ngb[v]) {
       //
       // Get Bx along line of sight:
       //
-      bx2 = signx*pt->ngb[v]->P[bx]*costht -signz*pt->ngb[v]->P[bz]*sintht;
+      bx2 = signx * pt->ngb[v]->P[bx] * costht
+            - signz * pt->ngb[v]->P[bz] * sintht;
       bx2 *= bx2;
       //
       // By is easier, and so then is btot.
       //
-      by2 = pt->ngb[v]->P[by]*pt->ngb[v]->P[by];
-      btot = sqrt(bx2+by2);
-#if defined (SQRT_DENSITY)
-      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/pconst.m_p())*(bx2-by2)/btot;
-#elif defined (NO_DENSITY_WT)
-      val += pt->wt[v] *(bx2-by2)/btot;
-#elif defined (LINMAX_DENSITY)
-      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/pconst.m_p(),MAXDENS) *(bx2-by2)/btot;
+      by2  = pt->ngb[v]->P[by] * pt->ngb[v]->P[by];
+      btot = sqrt(bx2 + by2);
+#if defined(SQRT_DENSITY)
+      val += pt->wt[v] * sqrt(pt->ngb[v]->P[RO] / pconst.m_p()) * (bx2 - by2)
+             / btot;
+#elif defined(NO_DENSITY_WT)
+      val += pt->wt[v] * (bx2 - by2) / btot;
+#elif defined(LINMAX_DENSITY)
+      val += pt->wt[v] * std::min(pt->ngb[v]->P[RO] / pconst.m_p(), MAXDENS)
+             * (bx2 - by2) / btot;
 #else
 #error "try to define some sort of weighting for magnetic field!!!"
 #endif
@@ -239,12 +240,16 @@ double point_quantities::get_point_StokesQ(
 
 
 double point_quantities::get_point_StokesU(
-      struct point_4cellavg *pt,
-      const int ,
-      const int bx, const int by, const int bz,
-      const int signx, const int signy, const int signz,
-      const double sintht, const double costht
-      )
+    struct point_4cellavg *pt,
+    const int,
+    const int bx,
+    const int by,
+    const int bz,
+    const int signx,
+    const int signy,
+    const int signz,
+    const double sintht,
+    const double costht)
 {
   //
   // Bilinear interpolation with pre-calculated weights and neighbouring
@@ -255,29 +260,32 @@ double point_quantities::get_point_StokesU(
   // New Q calculated from Bx,By according to
   // Q = sum_i wt[i]*|f(n_H)*(2*Bx*By)/sqrt(Bx^2+By^2)|_i
   //
-  double val=0.0, btot=0.0, bxy=0.0;
-  for (int v=0;v<4;v++) {
+  double val = 0.0, btot = 0.0, bxy = 0.0;
+  for (int v = 0; v < 4; v++) {
     if (pt->ngb[v]) {
       //
       // Calculate Bx and add Bx^2 to btot
       //
-      bxy = signx*pt->ngb[v]->P[bx]*costht -signz*pt->ngb[v]->P[bz]*sintht;
-      btot = bxy*bxy;
+      bxy = signx * pt->ngb[v]->P[bx] * costht
+            - signz * pt->ngb[v]->P[bz] * sintht;
+      btot = bxy * bxy;
       //
       // Multipy Bx by By, add By^2 to btot
       //
-      bxy *= signy*pt->ngb[v]->P[by];
-      btot += pt->ngb[v]->P[by]*pt->ngb[v]->P[by];
+      bxy *= signy * pt->ngb[v]->P[by];
+      btot += pt->ngb[v]->P[by] * pt->ngb[v]->P[by];
       //
       // Btot = sqrt(Bx^2+By^2) now.  bxy=Bx*By.
       //
       btot = sqrt(btot);
-#if defined (SQRT_DENSITY)
-      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/pconst.m_p())*2.0*bxy/btot;
-#elif defined (NO_DENSITY_WT)
-      val += pt->wt[v] *2.0*bxy/btot;
-#elif defined (LINMAX_DENSITY)
-      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/pconst.m_p(),MAXDENS) *2.0*bxy/btot;
+#if defined(SQRT_DENSITY)
+      val +=
+          pt->wt[v] * sqrt(pt->ngb[v]->P[RO] / pconst.m_p()) * 2.0 * bxy / btot;
+#elif defined(NO_DENSITY_WT)
+      val += pt->wt[v] * 2.0 * bxy / btot;
+#elif defined(LINMAX_DENSITY)
+      val += pt->wt[v] * std::min(pt->ngb[v]->P[RO] / pconst.m_p(), MAXDENS)
+             * 2.0 * bxy / btot;
 #else
 #error "try to define some sort of weighting for magnetic field!!!"
 #endif
@@ -298,31 +306,38 @@ double point_quantities::get_point_StokesU(
 
 
 double point_quantities::get_point_BXabs(
-      struct point_4cellavg *pt,
-      const int,
-      const int bx, const int by, const int bz,
-      const int signx, const int , const int signz,
-      const double sintht, const double costht
-      )
+    struct point_4cellavg *pt,
+    const int,
+    const int bx,
+    const int by,
+    const int bz,
+    const int signx,
+    const int,
+    const int signz,
+    const double sintht,
+    const double costht)
 {
   //
   // Bilinear interpolation with pre-calculated weights and neighbouring
   // cells.
   //
-  double val=0.0, btot=0.0, bx2=0.0;
-  for (int v=0;v<4;v++) {
+  double val = 0.0, btot = 0.0, bx2 = 0.0;
+  for (int v = 0; v < 4; v++) {
     if (pt->ngb[v]) {
-      bx2 = signx*pt->ngb[v]->P[bx]*costht -signz*pt->ngb[v]->P[bz]*sintht;
+      bx2 = signx * pt->ngb[v]->P[bx] * costht
+            - signz * pt->ngb[v]->P[bz] * sintht;
       bx2 *= bx2;
-      btot = sqrt(pt->ngb[v]->P[bx]*pt->ngb[v]->P[bx] +
-		  pt->ngb[v]->P[by]*pt->ngb[v]->P[by] +
-		  pt->ngb[v]->P[bz]*pt->ngb[v]->P[bz]);
-#if defined (SQRT_DENSITY)
-      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/pconst.m_p()) *bx2/btot;
-#elif defined (NO_DENSITY_WT)
-      val += pt->wt[v] *bx2/btot;
-#elif defined (LINMAX_DENSITY)
-      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/pconst.m_p(),MAXDENS) *bx2/btot;
+      btot = sqrt(
+          pt->ngb[v]->P[bx] * pt->ngb[v]->P[bx]
+          + pt->ngb[v]->P[by] * pt->ngb[v]->P[by]
+          + pt->ngb[v]->P[bz] * pt->ngb[v]->P[bz]);
+#if defined(SQRT_DENSITY)
+      val += pt->wt[v] * sqrt(pt->ngb[v]->P[RO] / pconst.m_p()) * bx2 / btot;
+#elif defined(NO_DENSITY_WT)
+      val += pt->wt[v] * bx2 / btot;
+#elif defined(LINMAX_DENSITY)
+      val += pt->wt[v] * std::min(pt->ngb[v]->P[RO] / pconst.m_p(), MAXDENS)
+             * bx2 / btot;
 #else
 #error "try to define some sort of weighting for magnetic field!!!"
 #endif
@@ -339,30 +354,35 @@ double point_quantities::get_point_BXabs(
 
 
 double point_quantities::get_point_BYabs(
-      struct point_4cellavg *pt,
-      const int ,
-      const int bx, const int by, const int bz,
-      const int , const int , const int ,
-      const double , const double
-      )
+    struct point_4cellavg *pt,
+    const int,
+    const int bx,
+    const int by,
+    const int bz,
+    const int,
+    const int,
+    const int,
+    const double,
+    const double)
 {
   //
   // Bilinear interpolation with pre-calculated weights and neighbouring
   // cells.
   //
-  double val=0.0, btot=0.0, by2=0.0;
-  for (int v=0;v<4;v++) {
+  double val = 0.0, btot = 0.0, by2 = 0.0;
+  for (int v = 0; v < 4; v++) {
     if (pt->ngb[v]) {
-      by2 = pt->ngb[v]->P[by]*pt->ngb[v]->P[by];
-      btot = sqrt(pt->ngb[v]->P[bx]*pt->ngb[v]->P[bx] +
-		  by2 +
-		  pt->ngb[v]->P[bz]*pt->ngb[v]->P[bz]);
-#if defined (SQRT_DENSITY)
-      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/pconst.m_p()) *by2/btot;
-#elif defined (NO_DENSITY_WT)
-      val += pt->wt[v] *by2/btot;
-#elif defined (LINMAX_DENSITY)
-      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/pconst.m_p(),MAXDENS) *by2/btot;
+      by2  = pt->ngb[v]->P[by] * pt->ngb[v]->P[by];
+      btot = sqrt(
+          pt->ngb[v]->P[bx] * pt->ngb[v]->P[bx] + by2
+          + pt->ngb[v]->P[bz] * pt->ngb[v]->P[bz]);
+#if defined(SQRT_DENSITY)
+      val += pt->wt[v] * sqrt(pt->ngb[v]->P[RO] / pconst.m_p()) * by2 / btot;
+#elif defined(NO_DENSITY_WT)
+      val += pt->wt[v] * by2 / btot;
+#elif defined(LINMAX_DENSITY)
+      val += pt->wt[v] * std::min(pt->ngb[v]->P[RO] / pconst.m_p(), MAXDENS)
+             * by2 / btot;
 #else
 #error "try to define some sort of weighting for magnetic field!!!"
 #endif
@@ -378,14 +398,14 @@ double point_quantities::get_point_BYabs(
 
 
 double point_quantities::get_point_RotationMeasure(
-      struct point_4cellavg *pt, ///< pt
-      const int bx,    ///< bx index (image coords)
-      const int bz,    ///< bz index (image coords)
-      const int sx,    ///< sign(xx)
-      const int sz,    ///< sign(zz)
-      const double st, ///< sin(theta)
-      const double ct  ///< cos(theta)
-      )
+    struct point_4cellavg *pt,  ///< pt
+    const int bx,               ///< bx index (image coords)
+    const int bz,               ///< bz index (image coords)
+    const int sx,               ///< sign(xx)
+    const int sz,               ///< sign(zz)
+    const double st,            ///< sin(theta)
+    const double ct             ///< cos(theta)
+)
 {
   //
   // Bilinear interpolation with pre-calculated weights and
@@ -398,13 +418,13 @@ double point_quantities::get_point_RotationMeasure(
   // are Gauss/sqrt(4pi), so that I don't have to do any multiplying
   // or dividing by these factors in the code.
   //
-  double val=0.0;
-  for (int v=0;v<4;v++) {
+  double val = 0.0;
+  for (int v = 0; v < 4; v++) {
     // If point exists, add its contribution, with weight.
     if (pt->ngb[v]) {
-      val += pt->wt[v] *
-          (sx*pt->ngb[v]->P[bx]*st +sz*pt->ngb[v]->P[bz]*ct) *
-          MP->get_n_elec(pt->ngb[v]->P);
+      val += pt->wt[v]
+             * (sx * pt->ngb[v]->P[bx] * st + sz * pt->ngb[v]->P[bz] * ct)
+             * MP->get_n_elec(pt->ngb[v]->P);
     }
   }
   return val;
@@ -422,30 +442,30 @@ double point_quantities::get_point_RotationMeasure(
 // recombination radiation, with a fit to Ostebrock (1989)'s tables.
 //
 void point_quantities::get_point_Halpha_params(
-      const struct point_4cellavg *pt, ///< point in question.
-      const int ifrac, ///< index of Prim.Vector with Ion. fraction.
-      const double gamma,   ///< EOS gamma
-      double *alpha,   ///< absorption coefficient (photons/cm)
-      double *j        ///< emission coeff (phot/cm^3/s/ster)
-      )
+    const struct point_4cellavg *pt,  ///< point in question.
+    const int ifrac,     ///< index of Prim.Vector with Ion. fraction.
+    const double gamma,  ///< EOS gamma
+    double *alpha,       ///< absorption coefficient (photons/cm)
+    double *j            ///< emission coeff (phot/cm^3/s/ster)
+)
 {
   //
   // I need the H+ number density, neutral number density, and
   // temperature. ion density is calculated from (density minus
   // neutral_density).
-  // 
+  //
   double T, ni, nn, ne;
-  //T  = get_point_temperature(pt,gamma);
-  //nn = get_point_neutralH_numberdensity(pt);
-  //ni = get_point_ionizedH_numberdensity(pt);
-  //ne = get_point_electron_numberdensity(pt);
+  // T  = get_point_temperature(pt,gamma);
+  // nn = get_point_neutralH_numberdensity(pt);
+  // ni = get_point_ionizedH_numberdensity(pt);
+  // ne = get_point_electron_numberdensity(pt);
   *alpha = 0.0;
   *j     = 0.0;
 
-  for (int v=0;v<4;v++) {
+  for (int v = 0; v < 4; v++) {
     // If point exists, add its contribution, with weight.
     if (pt->ngb[v]) {
-      T = MP->Temperature(pt->ngb[v]->P,gamma);
+      T  = MP->Temperature(pt->ngb[v]->P, gamma);
       ne = MP->get_n_elec(pt->ngb[v]->P);
       ni = MP->get_n_Hplus(pt->ngb[v]->P);
       nn = MP->get_n_Hneutral(pt->ngb[v]->P);
@@ -453,7 +473,7 @@ void point_quantities::get_point_Halpha_params(
       // First absorption, from Henney et al. (2009) assuming the opacity
       // is from dust, so that neutrals and ions both count.
       //
-      *alpha += pt->wt[v] * (ni+nn) *5.0e-22; // cgs units hardcoded.
+      *alpha += pt->wt[v] * (ni + nn) * 5.0e-22;  // cgs units hardcoded.
       //*alpha = 0.0; // zero absorption (cuts out simulation edges).
       //
       // Emissivity in H-alpha is
@@ -463,8 +483,8 @@ void point_quantities::get_point_Halpha_params(
       //   j = 2.63e-33*n_e*n_p/pow(T,0.9) erg/cm3/s/sq.arcsec.
       // Assume n_e=n_p (i.e. ignore electrons from Helium).
       //
-      if (T>1.0) {
-        *j += pt->wt[v] * ni * ne * Halpha_emissivity(T); // from Xray class
+      if (T > 1.0) {
+        *j += pt->wt[v] * ni * ne * Halpha_emissivity(T);  // from Xray class
       }
     }
   }
@@ -480,34 +500,34 @@ void point_quantities::get_point_Halpha_params(
 
 ///
 /// Get the absorption and emission coefficients for [N II] 6584AA
-/// forbidden line emission, according to the formula in Dopita 
+/// forbidden line emission, according to the formula in Dopita
 /// (1973,A&A,29,387)
-/// 
+///
 void point_quantities::get_point_NII6584_params(
-      const struct point_4cellavg *pt, ///< point in question.
-      const int ifrac, ///< index of Prim.Vector with Ion. fraction.
-      const double gamma,   ///< EOS gamma
-      double *alpha,   ///< absorption coefficient (/cm)
-      double *j        ///< emission coeff (erg/cm^3/s/sq.arcsec)
-      )
+    const struct point_4cellavg *pt,  ///< point in question.
+    const int ifrac,     ///< index of Prim.Vector with Ion. fraction.
+    const double gamma,  ///< EOS gamma
+    double *alpha,       ///< absorption coefficient (/cm)
+    double *j            ///< emission coeff (erg/cm^3/s/sq.arcsec)
+)
 {
   //
   // I need the H+ number density, neutral number density, and
   // temperature. ion density is calculated from (density minus
   // neutral_density).
-  // 
+  //
   double T, ni, nn, ne;
-  //T  = get_point_temperature(pt,gamma);
-  //nn = get_point_neutralH_numberdensity(pt);
-  //ni = get_point_ionizedH_numberdensity(pt);
-  //ne = get_point_electron_numberdensity(pt);
+  // T  = get_point_temperature(pt,gamma);
+  // nn = get_point_neutralH_numberdensity(pt);
+  // ni = get_point_ionizedH_numberdensity(pt);
+  // ne = get_point_electron_numberdensity(pt);
   *alpha = 0.0;
   *j     = 0.0;
 
-  for (int v=0;v<4;v++) {
+  for (int v = 0; v < 4; v++) {
     // If point exists, add its contribution, with weight.
     if (pt->ngb[v]) {
-      T = MP->Temperature(pt->ngb[v]->P,gamma);
+      T  = MP->Temperature(pt->ngb[v]->P, gamma);
       ne = MP->get_n_elec(pt->ngb[v]->P);
       ni = MP->get_n_Hplus(pt->ngb[v]->P);
       nn = MP->get_n_Hneutral(pt->ngb[v]->P);
@@ -515,7 +535,7 @@ void point_quantities::get_point_NII6584_params(
       // First absorption, from Henney et al. (2009) assuming the opacity
       // is from dust, so that neutrals and ions both count.
       //
-      *alpha += pt->wt[v] * (ni+nn) *5.0e-22; // cgs units hardcoded.
+      *alpha += pt->wt[v] * (ni + nn) * 5.0e-22;  // cgs units hardcoded.
       //*alpha = 0.0; // zero absorption (cuts out simulation edges).
       //
       // Emissivity in [N II] 6584AA is
@@ -525,10 +545,10 @@ void point_quantities::get_point_NII6584_params(
       // Furthermore, we assume N has its solar ISM abundance of
       // A(N)=7.85 or f(N)=7.08e-5.
       //
-      if (T>1.0) {
-        //double n_N1p;
-        //double fNp = 7.08e-5; // ISM abundance of Nitrogen, by number.
-        //n_N1p = fNp * ni;
+      if (T > 1.0) {
+        // double n_N1p;
+        // double fNp = 7.08e-5; // ISM abundance of Nitrogen, by number.
+        // n_N1p = fNp * ni;
         *j += pt->wt[v] * 7.08e-5 * ni * ne * NII6584_emissivity(T);
       }
     }
@@ -543,8 +563,7 @@ void point_quantities::get_point_NII6584_params(
 
 
 double point_quantities::get_point_EmissionMeasure(
-      const struct point_4cellavg *pt
-      )
+    const struct point_4cellavg *pt)
 {
   //
   // Bilinear interpolation with pre-calculated weights and
@@ -553,12 +572,11 @@ double point_quantities::get_point_EmissionMeasure(
   // This gets multiplied at the end by the path length through each
   // element of the integral (hh) and divided by 1 pc.
   //
-  double val=0.0;
-  for (int v=0;v<4;v++) {
+  double val = 0.0;
+  for (int v = 0; v < 4; v++) {
     // If point exists, add its contribution, with weight.
     if (pt->ngb[v]) {
-      val += pt->wt[v] 
-              *pow(MP->get_n_elec(pt->ngb[v]->P),2.0);
+      val += pt->wt[v] * pow(MP->get_n_elec(pt->ngb[v]->P), 2.0);
     }
   }
   return val;
@@ -571,9 +589,9 @@ double point_quantities::get_point_EmissionMeasure(
 
 
 double point_quantities::get_point_Bremsstrahlung6GHz(
-      const struct point_4cellavg *pt,
-      const double gamma   ///< EOS gamma
-      )
+    const struct point_4cellavg *pt,
+    const double gamma  ///< EOS gamma
+)
 {
   //
   // Bilinear interpolation with pre-calculated weights and
@@ -582,14 +600,13 @@ double point_quantities::get_point_Bremsstrahlung6GHz(
   // This gets multiplied at the end by the path length through each
   // element of the integral (hh).
   //
-  double val=0.0;
-  for (int v=0;v<4;v++) {
+  double val = 0.0;
+  for (int v = 0; v < 4; v++) {
     // If point exists, add its contribution, with weight.
     if (pt->ngb[v]) {
-      val += pt->wt[v]
-              * MP->get_n_elec(pt->ngb[v]->P)
-              * MP->get_n_elec(pt->ngb[v]->P)
-              * Brems6GHz_emissivity(MP->Temperature(pt->ngb[v]->P,gamma));
+      val += pt->wt[v] * MP->get_n_elec(pt->ngb[v]->P)
+             * MP->get_n_elec(pt->ngb[v]->P)
+             * Brems6GHz_emissivity(MP->Temperature(pt->ngb[v]->P, gamma));
     }
   }
   return val;
@@ -604,28 +621,28 @@ double point_quantities::get_point_Bremsstrahlung6GHz(
 /// Get the emission coefficients for X-ray emissivity at E>0.1kev.
 ///
 void point_quantities::get_point_Xray_params(
-        const struct point_4cellavg *pt, ///< point in question.
-        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
-        const int index, ///< which X-ray emissivity to use (index in array).
-        const double gamma,   ///< EOS gamma
-        double *alpha,   ///< absorption coefficient (/cm)
-        double *j        ///< emission coefficient (erg/cm^3/s/sq.arcsec)
-        )
+    const struct point_4cellavg *pt,  ///< point in question.
+    const int ifrac,     ///< index of Prim.Vector with Ion. fraction.
+    const int index,     ///< which X-ray emissivity to use (index in array).
+    const double gamma,  ///< EOS gamma
+    double *alpha,       ///< absorption coefficient (/cm)
+    double *j            ///< emission coefficient (erg/cm^3/s/sq.arcsec)
+)
 {
   // Need the electron number density and temperature.
   double xr[8], T, ne, ni;
-  double per_angle = 1.0/(4.0*pconst.pi()*pconst.sqasec_per_sr());
-  *alpha = 0.0;
-  *j     = 0.0;
+  double per_angle = 1.0 / (4.0 * pconst.pi() * pconst.sqasec_per_sr());
+  *alpha           = 0.0;
+  *j               = 0.0;
 
-  for (int v=0;v<4;v++) {
+  for (int v = 0; v < 4; v++) {
     // If point exists, add its contribution, with weight.
     if (pt->ngb[v]) {
-      T = MP->Temperature(pt->ngb[v]->P,gamma);
+      T  = MP->Temperature(pt->ngb[v]->P, gamma);
       ne = MP->get_n_elec(pt->ngb[v]->P);
       ni = MP->get_n_Hplus(pt->ngb[v]->P);
-      if (T>1.0e3) {
-        get_xray_emissivity(T,xr); // volume emissivity per e- per H+
+      if (T > 1.0e3) {
+        get_xray_emissivity(T, xr);  // volume emissivity per e- per H+
         *j += pt->wt[v] * xr[index] * ne * ni * per_angle;
       }
     }
@@ -636,5 +653,3 @@ void point_quantities::get_point_Xray_params(
 
 // ##################################################################
 // ##################################################################
-
-

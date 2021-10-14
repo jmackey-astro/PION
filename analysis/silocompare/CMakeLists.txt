@@ -1,4 +1,3 @@
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 if(PION_TOOLS AND PION_PARALLEL AND PION_USE_SILO)
@@ -8,13 +7,19 @@ if(PION_TOOLS AND PION_PARALLEL AND PION_USE_SILO)
     silocompare.cpp
   )
 
-  target_compile_features(silocompare PUBLIC cxx_std_14)
+  target_compile_features(silocompare PRIVATE cxx_std_14)
 
-  target_link_libraries(silocompare PUBLIC 
+  target_link_libraries(silocompare PRIVATE
     global
     dataio
-    nested_grid
   )
+
+  if (PION_NESTED_GRID)
+      target_link_libraries(silocompare PRIVATE nested_grid)
+      target_compile_definitions(silocompare PRIVATE PION_NESTED)
+  else()
+      target_link_libraries(silocompare PRIVATE grid)
+  endif(PION_NESTED_GRID)
 
   install( 
     TARGETS silocompare

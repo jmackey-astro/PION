@@ -36,10 +36,7 @@ endif(PION_PARALLEL)
 
 target_link_libraries(sim_control PRIVATE global)
 
-if(PION_OMP)
-    target_link_libraries(sim_control PRIVATE OpenMP::OpenMP_CXX)
-endif(PION_OMP)
-
 if(PION_NESTED_GRID)
+    target_link_libraries(nested_sim_control PRIVATE global)
     target_link_libraries(nested_sim_control PUBLIC sim_control)
 endif(PION_NESTED_GRID)

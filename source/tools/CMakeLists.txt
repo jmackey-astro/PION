@@ -1,4 +1,4 @@
-add_library( tools
+add_library(tools
   
   command_line_interface.cpp
   interpolate.cpp
@@ -7,7 +7,7 @@ add_library( tools
   timer.cpp
 )
 
-#target_link_libraries(tools PUBLIC GSL::gsl)
+#target_link_libraries(tools PRIVATE GSL::gsl)
 target_link_libraries(tools PRIVATE Boost::boost)
 
 if (CMAKE_BUILD_TYPE MATCHES "Debug")

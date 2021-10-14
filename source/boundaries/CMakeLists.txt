@@ -19,19 +19,21 @@ if(PION_PARALLEL)
         RT_MPI_boundaries.cpp
         stellar_wind_boundaries.cpp
     )
-    add_library(
-        nested_boundaries
-
-        assign_update_bcs_NG.cpp
-        assign_update_bcs_NG_MPI.cpp
-        NG_BC89flux.cpp
-        NG_coarse_to_fine_boundaries.cpp
-        NG_fine_to_coarse_boundaries.cpp
-        NG_MPI_BC89flux.cpp
-        NG_MPI_coarse_to_fine_boundaries.cpp
-        NG_MPI_fine_to_coarse_boundaries.cpp
-    )
     target_link_libraries(boundaries PUBLIC decomposition)
+    if(PION_NESTED_GRID)
+        add_library(
+            nested_boundaries
+
+            assign_update_bcs_NG.cpp
+            assign_update_bcs_NG_MPI.cpp
+            NG_BC89flux.cpp
+            NG_coarse_to_fine_boundaries.cpp
+            NG_fine_to_coarse_boundaries.cpp
+            NG_MPI_BC89flux.cpp
+            NG_MPI_coarse_to_fine_boundaries.cpp
+            NG_MPI_fine_to_coarse_boundaries.cpp
+        )
+    endif(PION_NESTED_GRID)
 else()
     add_library(
         boundaries
@@ -49,16 +51,22 @@ else()
         reflecting_boundaries.cpp
         stellar_wind_boundaries.cpp
     )
-    add_library(
-        nested_boundaries
+    if(PION_NESTED_GRID)
+        add_library(
+            nested_boundaries
 
-        assign_update_bcs_NG.cpp
-        NG_BC89flux.cpp
-        NG_coarse_to_fine_boundaries.cpp
-        NG_fine_to_coarse_boundaries.cpp
-    )
+            assign_update_bcs_NG.cpp
+            NG_BC89flux.cpp
+            NG_coarse_to_fine_boundaries.cpp
+            NG_fine_to_coarse_boundaries.cpp
+        )
+    endif(PION_NESTED_GRID)
 endif(PION_PARALLEL)
 
 target_link_libraries(boundaries PUBLIC spatial_solvers)
 target_link_libraries(boundaries PRIVATE grid global)
-target_link_libraries(nested_boundaries PUBLIC boundaries)
+
+if(PION_NESTED_GRID)
+    target_link_libraries(nested_boundaries PRIVATE nested_grid global)
+    target_link_libraries(nested_boundaries PUBLIC boundaries)
+endif(PION_NESTED_GRID)

@@ -1,4 +1,3 @@
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 if(PION_TOOLS AND PION_PARALLEL AND PION_USE_FITS AND PION_USE_SILO)
@@ -8,13 +7,19 @@ if(PION_TOOLS AND PION_PARALLEL AND PION_USE_FITS AND PION_USE_SILO)
     silo2fits.cpp
   )
 
-  target_compile_features(silo2fits PUBLIC cxx_std_14)
+  target_compile_features(silo2fits PRIVATE cxx_std_14)
 
-  target_link_libraries(silo2fits PUBLIC 
+  target_link_libraries(silo2fits PRIVATE
     global
     dataio
-    nested_grid
   )
+
+  if(PION_NESTED_GRID)
+      target_link_libraries(silo2fits PRIVATE nested_grid)
+      target_compile_definitions(silocompare PRIVATE PION_NESTED)
+  else()
+      target_link_libraries(silo2fits PRIVATE grid)
+  endif(PION_NESTED_GRID)
 
   install( 
     TARGETS silo2fits
@@ -24,5 +29,4 @@ if(PION_TOOLS AND PION_PARALLEL AND PION_USE_FITS AND PION_USE_SILO)
     ARCHIVE DESTINATION ${PION_INSTALL_LIBDIR}
     INCLUDES DESTINATION ${PION_INSTALL_INCLUDEDIR}
   )
-
 endif(PION_TOOLS AND PION_PARALLEL AND PION_USE_FITS AND PION_USE_SILO)

@@ -12,6 +12,4 @@ add_library(
 	Roe_MHD_ConservedVar_solver.cpp
 )
 
-target_link_libraries(riemann_solvers PUBLIC
-    equations
-)
+target_link_libraries(riemann_solvers PUBLIC equations)

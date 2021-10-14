@@ -8,13 +8,18 @@ if(PION_TOOLS AND PION_PARALLEL AND PION_USE_SILO)
     silo2text.cpp
   )
 
-  target_compile_features(silo2text PUBLIC cxx_std_14)
+  target_compile_features(silo2text PRIVATE cxx_std_14)
 
-  target_link_libraries(silo2text PUBLIC 
+  target_link_libraries(silo2text PRIVATE
     global
     dataio
-    nested_grid
   )
+  if(PION_NESTED_GRID)
+      target_link_libraries(silo2text PRIVATE nested_grid)
+      target_compile_definitions(silocompare PRIVATE PION_NESTED)
+  else()
+      target_link_libraries(silo2text PRIVATE grid)
+  endif(PION_NESTED_GRID)
 
   install( 
     TARGETS silo2text

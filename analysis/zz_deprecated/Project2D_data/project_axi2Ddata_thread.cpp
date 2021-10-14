@@ -40,25 +40,25 @@
 /// - 2016.06.21 JM: adding multithreading support.
 ///
 
-#include <iostream>
-#include <sstream>
-#include <silo.h>
-#include <fitsio.h>
 #include <cmath>
+#include <fitsio.h>
+#include <iostream>
+#include <silo.h>
+#include <sstream>
 using namespace std;
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
-#include "tools/reporting.h"
-#include "tools/mem_manage.h"
-#include "tools/timer.h"
 #include "constants.h"
 #include "sim_params.h"
 #include "tools/interpolate.h"
+#include "tools/mem_manage.h"
+#include "tools/reporting.h"
+#include "tools/timer.h"
 
+#include "dataIO/dataio_fits.h"
 #include "dataIO/dataio_silo_utility.h"
 #include "grid/uniform_grid.h"
-#include "dataIO/dataio_fits.h"
 #include "image_io.h"
 
 #include "MCMD_control.h"
@@ -67,22 +67,22 @@ using namespace std;
 #include "microphysics/microphysics_base.h"
 #ifndef EXCLUDE_MPV1
 #include "microphysics/microphysics.h"
-#endif 
+#endif
 #ifndef EXCLUDE_HD_MODULE
 #include "microphysics/microphysics_lowZ.h"
-#endif 
+#endif
 #include "microphysics/mp_only_cooling.h"
 #ifndef EXCLUDE_MPV2
 #ifdef MP_V2_AIFA
 #include "microphysics/mp_v2_aifa.h"
 #endif
-#endif 
+#endif
 #ifndef EXCLUDE_MPV3
 #include "microphysics/mp_explicit_H.h"
 #endif
 #ifndef EXCLUDE_MPV4
 #include "microphysics/mp_implicit_H.h"
-#endif 
+#endif
 
 #include "microphysics/mpv5_molecular.h"
 #include "microphysics/mpv6_PureH.h"
@@ -98,12 +98,12 @@ using namespace std;
 #define OP_TEXT 0
 #define OP_FITS 1
 #define OP_SILO 2
-#define OP_VTK  3
+#define OP_VTK 3
 
 //
 // Variables to make projected values of
 //
-#define NIMG     10 ///< total number of images.
+#define NIMG 10     ///< total number of images.
 #define N_SCALAR 8  ///< number of scalar images.
 
 
@@ -113,36 +113,34 @@ using namespace std;
 
 
 
-
-
 #include "tools/threads_AJL/msvc_constants.h"
-#if defined(_DEBUG) &&  defined(_MSC_VER) &&  defined(MSVC_DEBUG_NEW_TRACE_ON)
-  #define CRTDBG_MAP_ALLOC
-  #include <stdlib.h> 
-  #include <crtdbg.h> 
-  #define new new(_NORMAL_BLOCK,__FILE__,__LINE__)
+#if defined(_DEBUG) && defined(_MSC_VER) && defined(MSVC_DEBUG_NEW_TRACE_ON)
+#define CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+#include <stdlib.h>
+#define new new (_NORMAL_BLOCK, __FILE__, __LINE__)
 #endif
-#include "tools/threads_AJL/reefa_constants.h"
 #include "tools/threads_AJL/logmessages.h"
+#include "tools/threads_AJL/reefa_constants.h"
 #include "tools/threads_AJL/threadpool/threadpool.h"
 //
 // Global threading variables.
 //
-threadpool_t     tp; // main threadpool
-int monsecs_gl=0;    // seconds since the start of the month
+threadpool_t tp;     // main threadpool
+int monsecs_gl = 0;  // seconds since the start of the month
 
 struct calc_col_args {
-  class cell *cz;    ///< current cell at start of column.
-  class Xray_emission *XR;   ///< Xray emission class.
-  class GridBaseClass *grid; ///< pointer to grid.
-  int iz;            ///< counter of number of columns completed.
-  int N_R;           ///< Number of cells in radial direction
-  int n_images;      ///< Number of images.
-  int *npix;         ///< Number of pixels 
-  double delr;       ///< Cell diameter
-  size_t iHp;        // H+ fraction is 1st tracer.
-  size_t iWf;        // Wind fraction is 2nd tracer.
-  double **img_array;  ///< image array.
+  class cell *cz;             ///< current cell at start of column.
+  class Xray_emission *XR;    ///< Xray emission class.
+  class GridBaseClass *grid;  ///< pointer to grid.
+  int iz;                     ///< counter of number of columns completed.
+  int N_R;                    ///< Number of cells in radial direction
+  int n_images;               ///< Number of images.
+  int *npix;                  ///< Number of pixels
+  double delr;                ///< Cell diameter
+  size_t iHp;                 // H+ fraction is 1st tracer.
+  size_t iWf;                 // Wind fraction is 2nd tracer.
+  double **img_array;         ///< image array.
 };
 
 //
@@ -153,127 +151,129 @@ void calculate_column(void *arg)
   struct calc_col_args *ta = reinterpret_cast<struct calc_col_args *>(arg);
 
   //
-  // Allocate memory for 
+  // Allocate memory for
   // columns of emission/absorption data for all output variables.
   //
-  int err=0;
-  double **ems_data=0;
-  double **abs_data=0;
-  double **raw_data=0;
-  ems_data = mem.myalloc(ems_data,ta->n_images);
-  for (int im=0; im<ta->n_images; im++) {
+  int err           = 0;
+  double **ems_data = 0;
+  double **abs_data = 0;
+  double **raw_data = 0;
+  ems_data          = mem.myalloc(ems_data, ta->n_images);
+  for (int im = 0; im < ta->n_images; im++) {
     ems_data[im] = mem.myalloc(ems_data[im], ta->N_R);
-    for (int v=0; v<ta->N_R; v++) ems_data[im][v] = 0.0;
+    for (int v = 0; v < ta->N_R; v++)
+      ems_data[im][v] = 0.0;
   }
-  abs_data = mem.myalloc(abs_data,ta->n_images);
-  for (int im=0; im<ta->n_images; im++) {
+  abs_data = mem.myalloc(abs_data, ta->n_images);
+  for (int im = 0; im < ta->n_images; im++) {
     abs_data[im] = mem.myalloc(abs_data[im], ta->N_R);
-    for (int v=0; v<ta->N_R; v++) abs_data[im][v] = 0.0;
+    for (int v = 0; v < ta->N_R; v++)
+      abs_data[im][v] = 0.0;
   }
 #define NVAR 7
-  raw_data = mem.myalloc(raw_data,NVAR);
-  for (int im=0; im<NVAR; im++) {
+  raw_data = mem.myalloc(raw_data, NVAR);
+  for (int im = 0; im < NVAR; im++) {
     raw_data[im] = mem.myalloc(raw_data[im], ta->N_R);
-    for (int v=0; v<ta->N_R; v++) raw_data[im][v] = 0.0;
+    for (int v = 0; v < ta->N_R; v++)
+      raw_data[im][v] = 0.0;
   }
 
   // Starting cell.
   cell *cy = ta->cz;
-      int iy=0;
-      double cpos[MAX_DIM];
+  int iy   = 0;
+  double cpos[MAX_DIM];
 
-      //cout <<"\t\t assigning data from column to arrays.\n";
-      do {
-        CI.get_dpos(cy,cpos);
-        raw_data[DATA_R][iy]   = cpos[Rcyl];
-        raw_data[DATA_D][iy]   = cy->P[RO];
-        raw_data[DATA_P][iy]   = cy->P[PG];
-        raw_data[DATA_V][iy]   = cy->P[VY];
-        //
-        // If there is no H+ tracer, assume all gas is ionized.
-        //
-        if (ta->iHp>0) {
-          raw_data[DATA_TR0][iy] = cy->P[ta->iHp];
-        }
-        else {
-          raw_data[DATA_TR0][iy] = 1.0;
-        }
-        //
-        // If there is no Wind colour tracer, assume there is no wind.
-        //
-        if (ta->iWf>0) {
-          raw_data[DATA_TR1][iy] = cy->P[ta->iWf];
-        }
-        else {
-          raw_data[DATA_TR1][iy] = 0.0;
-        }
-        //
-        // Get Temperature from microphysics.
-        //
-        raw_data[DATA_T][iy]   = MP->Temperature(cy->P,SimPM.gamma);
-        // increment iy
-        iy++;
-      } while ((cy = ta->grid->NextPt(cy,RPcyl))!=0 && cy->isgd);
-      if (iy!=ta->N_R)
-        rep.error("Bad logic for radial grid size",iy-ta->N_R);
+  // cout <<"\t\t assigning data from column to arrays.\n";
+  do {
+    CI.get_dpos(cy, cpos);
+    raw_data[DATA_R][iy] = cpos[Rcyl];
+    raw_data[DATA_D][iy] = cy->P[RO];
+    raw_data[DATA_P][iy] = cy->P[PG];
+    raw_data[DATA_V][iy] = cy->P[VY];
+    //
+    // If there is no H+ tracer, assume all gas is ionized.
+    //
+    if (ta->iHp > 0) {
+      raw_data[DATA_TR0][iy] = cy->P[ta->iHp];
+    }
+    else {
+      raw_data[DATA_TR0][iy] = 1.0;
+    }
+    //
+    // If there is no Wind colour tracer, assume there is no wind.
+    //
+    if (ta->iWf > 0) {
+      raw_data[DATA_TR1][iy] = cy->P[ta->iWf];
+    }
+    else {
+      raw_data[DATA_TR1][iy] = 0.0;
+    }
+    //
+    // Get Temperature from microphysics.
+    //
+    raw_data[DATA_T][iy] = MP->Temperature(cy->P, SimPM.gamma);
+    // increment iy
+    iy++;
+  } while ((cy = ta->grid->NextPt(cy, RPcyl)) != 0 && cy->isgd);
+  if (iy != ta->N_R) rep.error("Bad logic for radial grid size", iy - ta->N_R);
 
-      //
-      // Now for this radial column of data, we set the value for
-      // each output variable at the cell centre, including both an
-      // emission and an absorption coefficient for some variables.
-      //
-      //cout <<"\t\t getting emission/absorption data.\n";
-      err += get_emission_absorption_data(raw_data, ta->n_images, ta->N_R, (*(ta->XR)), ems_data, abs_data);
+  //
+  // Now for this radial column of data, we set the value for
+  // each output variable at the cell centre, including both an
+  // emission and an absorption coefficient for some variables.
+  //
+  // cout <<"\t\t getting emission/absorption data.\n";
+  err += get_emission_absorption_data(
+      raw_data, ta->n_images, ta->N_R, (*(ta->XR)), ems_data, abs_data);
 
-      //
-      // Now go back to start of column in R, and for each pixel,
-      // calculate the integral along a line of sight with impact
-      // parameter b=R_i, for each variable.
-      //
-      double b = 0;
+  //
+  // Now go back to start of column in R, and for each pixel,
+  // calculate the integral along a line of sight with impact
+  // parameter b=R_i, for each variable.
+  //
+  double b = 0;
 
-      for (int ivar=0; ivar<ta->n_images; ivar++) {
-        //cout <<"\t\t Calculating image im="<<ivar<<", name="<<im_name[ivar]<<"\n";
-        for (int ipix=0; ipix<ta->N_R; ipix++) {
-          b = raw_data[DATA_R][ipix];
-          if (ivar<N_SCALAR) {
-            ta->img_array[ivar][ta->npix[Zcyl]*ipix +ta->iz] = calc_projection(
-                  raw_data[DATA_R],
-                  ems_data[ivar], abs_data[ivar],
-                  ta->N_R, b, ta->delr);
-          }
-          else {
-#ifdef ABSORPTION
-            ta->img_array[ivar][ta->npix[Zcyl]*ipix +ta->iz] = calc_projectionRT(
-                  raw_data[DATA_R],
-                  ems_data[ivar], abs_data[ivar],
-                  ta->N_R, b, ta->delr);
-#else
-            ta->img_array[ivar][ta->npix[Zcyl]*ipix +ta->iz] = calc_projection(
-                  raw_data[DATA_R],
-                  ems_data[ivar], abs_data[ivar],
-                  ta->N_R, b, ta->delr);
-#endif
-          }
-        }
+  for (int ivar = 0; ivar < ta->n_images; ivar++) {
+    // cout <<"\t\t Calculating image im="<<ivar<<",
+    // name="<<im_name[ivar]<<"\n";
+    for (int ipix = 0; ipix < ta->N_R; ipix++) {
+      b = raw_data[DATA_R][ipix];
+      if (ivar < N_SCALAR) {
+        ta->img_array[ivar][ta->npix[Zcyl] * ipix + ta->iz] = calc_projection(
+            raw_data[DATA_R], ems_data[ivar], abs_data[ivar], ta->N_R, b,
+            ta->delr);
       }
-  
+      else {
+#ifdef ABSORPTION
+        ta->img_array[ivar][ta->npix[Zcyl] * ipix + ta->iz] = calc_projectionRT(
+            raw_data[DATA_R], ems_data[ivar], abs_data[ivar], ta->N_R, b,
+            ta->delr);
+#else
+        ta->img_array[ivar][ta->npix[Zcyl] * ipix + ta->iz] = calc_projection(
+            raw_data[DATA_R], ems_data[ivar], abs_data[ivar], ta->N_R, b,
+            ta->delr);
+#endif
+      }
+    }
+  }
+
   //
   // free memory.
   //
-  for (int v=0;v<ta->n_images;v++) {
+  for (int v = 0; v < ta->n_images; v++) {
     ems_data[v] = mem.myfree(ems_data[v]);
     abs_data[v] = mem.myfree(abs_data[v]);
   }
-  ems_data  = mem.myfree(ems_data);
-  abs_data  = mem.myfree(abs_data);
-  for (int v=0;v<NVAR;v++) {
+  ems_data = mem.myfree(ems_data);
+  abs_data = mem.myfree(abs_data);
+  for (int v = 0; v < NVAR; v++) {
     raw_data[v] = mem.myfree(raw_data[v]);
   }
-  raw_data  = mem.myfree(raw_data);
-  delete ta; ta=0;
+  raw_data = mem.myfree(raw_data);
+  delete ta;
+  ta = 0;
 
-  if (err) rep.error("Threaded calculate_column error",err);
+  if (err) rep.error("Threaded calculate_column error", err);
   return;
 }
 
@@ -295,55 +295,60 @@ int main(int argc, char **argv)
   // Also initialise the MCMD class with myrank and nproc.
   //
   class MCMDcontrol MCMD;
-  int myrank=-1, nproc=-1;
-  COMM->get_rank_nproc(&myrank,&nproc);
+  int myrank = -1, nproc = -1;
+  COMM->get_rank_nproc(&myrank, &nproc);
   MCMD.set_myrank(myrank);
   MCMD.set_nproc(nproc);
 
-  tp_init(&tp,NUM_THREADS_MAIN,"Main Threadpool");
+  tp_init(&tp, NUM_THREADS_MAIN, "Main Threadpool");
 
   //*******************************************************************
   //*******************************************************************
   //
   // Get input files and an output file.
   //
-  if (argc<6) {
+  if (argc < 6) {
     cout << "Use as follows:\n";
-    cout << "executable-filename: <executable-filename> <input-path> <input-silo-file-base>\n";
+    cout
+        << "executable-filename: <executable-filename> <input-path> <input-silo-file-base>\n";
     cout << "\t\t <output-file> <op-file-type>";
-    //cout << " <multi-opfiles>";
+    // cout << " <multi-opfiles>";
     cout << " <skip>\n";
     cout << "\t\t <ANY-EXTRA-STUFF> \n";
-    cout <<"******************************************\n";
-    cout <<"input path:   path to input files.\n";
-    cout <<"input file:   base filename of sequence of filesn.\n";
-    cout <<"output file:  filename for output file(s).\n";
-    cout <<"op-file-type: integer/string [0,text,TEXT], [1,fits,FITS], [3,vtk,VTK]\n";
-    //cout <<"muti-opfiles: integer. 1=one output file per step. (MUST CHOOSE 1))\n";
-    cout <<"skip:         will skip this number of input files each loop. ";
-    cout <<"(0 means it will calculate every file)\n";
-    rep.error("Bad number of args",argc);
+    cout << "******************************************\n";
+    cout << "input path:   path to input files.\n";
+    cout << "input file:   base filename of sequence of filesn.\n";
+    cout << "output file:  filename for output file(s).\n";
+    cout
+        << "op-file-type: integer/string [0,text,TEXT], [1,fits,FITS], [3,vtk,VTK]\n";
+    // cout <<"muti-opfiles: integer. 1=one output file per step. (MUST CHOOSE
+    // 1))\n";
+    cout << "skip:         will skip this number of input files each loop. ";
+    cout << "(0 means it will calculate every file)\n";
+    rep.error("Bad number of args", argc);
   }
 
   //
   // The code will get a list of files matching 'input_file' in the
   // directory 'input_path' and do the same operation on all files in
   // this list.
-  // 
+  //
   string input_path = argv[1];
   string input_file = argv[2];
 
   //
   // outfile should contain the path as well (relative or absolute)
   //
-  string outfile    = argv[3];
+  string outfile = argv[3];
 
   //
   // Redirect output to a text file if you want to:
   //
   //  ostringstream redir; redir.str(""); redir<<outfile<<"_msg_";
-  ostringstream redir; redir.str(""); redir<<outfile<<"_msg_"<<myrank<<"_";
-  //rep.redirect(redir.str());
+  ostringstream redir;
+  redir.str("");
+  redir << outfile << "_msg_" << myrank << "_";
+  // rep.redirect(redir.str());
 
 
   //
@@ -351,45 +356,47 @@ int main(int argc, char **argv)
   // doing, here we are outputting one image per input file, so we should
   // choose multiple text or fits files.
   //
-  string optype=argv[4];
+  string optype = argv[4];
   //
   // Set output file; if multiple files, append _xxx to the name.
-  // Initialise file handle to empty string.  Will use it later to label output file.
+  // Initialise file handle to empty string.  Will use it later to label output
+  // file.
   //
   int op_filetype;
-  if      (optype=="0" || optype=="text" || optype=="TEXT") {
+  if (optype == "0" || optype == "text" || optype == "TEXT") {
     op_filetype = OP_TEXT;
-    cout <<"\t\toutputting data to text file.\n";
+    cout << "\t\toutputting data to text file.\n";
   }
-  else if (optype=="1" || optype=="fits" || optype=="FITS") {
+  else if (optype == "1" || optype == "fits" || optype == "FITS") {
     op_filetype = OP_FITS;
-    cout <<"\t\toutputting data to fits files.\n";
+    cout << "\t\toutputting data to fits files.\n";
   }
-  else if (optype=="2" || optype=="silo" || optype=="SILO") {
+  else if (optype == "2" || optype == "silo" || optype == "SILO") {
     op_filetype = OP_SILO;
-    cout <<"\t\toutputting data to silo files.\n";
-    rep.error("don't know how to output silo files yet... fix me please!","sorry");
+    cout << "\t\toutputting data to silo files.\n";
+    rep.error(
+        "don't know how to output silo files yet... fix me please!", "sorry");
   }
-  else if (optype=="3" || optype=="vtk" || optype=="VTK") {
+  else if (optype == "3" || optype == "vtk" || optype == "VTK") {
     op_filetype = OP_VTK;
-    cout <<"\t\toutputting data to vtk files.\n";
+    cout << "\t\toutputting data to vtk files.\n";
   }
-  else 
-    rep.error("What sort of output is this?",optype);
+  else
+    rep.error("What sort of output is this?", optype);
 
   //
   // If we write a single output file for all steps or not.
   //
-  int multi_opfiles = 1.0; //atoi(argv[5]);
-  //switch (multi_opfiles) {
-  //case 0:
+  int multi_opfiles = 1.0;  // atoi(argv[5]);
+  // switch (multi_opfiles) {
+  // case 0:
   //  cerr <<"\t\tOutputting all timesteps in a single file.\n";
   //  rep.error("Can't do this!!!",multi_opfiles);
   //  break;
-  //case 1:
+  // case 1:
   //  cout <<"\t\tOutputting timesteps in different files.\n";
   //  break;
-  //default:
+  // default:
   //  rep.error("Bad multi-files value",multi_opfiles);
   //}
 
@@ -402,36 +409,36 @@ int main(int argc, char **argv)
   //*******************************************************************
   // Get input files, read header, setup grid
   //*******************************************************************
-  cout <<"-------------------------------------------------------\n";
-  cout <<"--------------- Getting List of Files to read ---------\n";
-  
+  cout << "-------------------------------------------------------\n";
+  cout << "--------------- Getting List of Files to read ---------\n";
+
   //
   // set up dataio_utility class
   //
-  class dataio_silo_utility dataio ("DOUBLE", &MCMD);
+  class dataio_silo_utility dataio("DOUBLE", &MCMD);
 
   //
   // Get list of files to read:
   //
   list<string> files;
-  err += dataio.get_files_in_dir(input_path, input_file,  &files);
-  if (err) rep.error("failed to get list of files",err);
-  for (list<string>::iterator s=files.begin(); s!=files.end(); s++) {
+  err += dataio.get_files_in_dir(input_path, input_file, &files);
+  if (err) rep.error("failed to get list of files", err);
+  for (list<string>::iterator s = files.begin(); s != files.end(); s++) {
     // If file is not a .silo file, then remove it from the list.
-    if ((*s).find(".silo")==string::npos) {
-      cout <<"removing file "<<*s<<" from list.\n";
+    if ((*s).find(".silo") == string::npos) {
+      cout << "removing file " << *s << " from list.\n";
       files.erase(s);
     }
     else {
-      cout <<"files: "<<*s<<endl;
+      cout << "files: " << *s << endl;
     }
   }
   int nfiles = static_cast<int>(files.size());
-  if (nfiles<1) rep.error("Need at least one file, but got none",nfiles);
+  if (nfiles < 1) rep.error("Need at least one file, but got none", nfiles);
 
-  cout <<"--------------- Got list of Files ---------------------\n";
-  cout <<"-------------------------------------------------------\n";
-  cout <<"--------------- Setting up Grid -----------------------\n";
+  cout << "--------------- Got list of Files ---------------------\n";
+  cout << "-------------------------------------------------------\n";
+  cout << "--------------- Setting up Grid -----------------------\n";
 
   //
   // Set low-memory cells
@@ -441,16 +448,17 @@ int main(int argc, char **argv)
   //
   // Set up an iterator to run through all the files.
   //
-  list<string>::iterator ff=files.begin();
+  list<string>::iterator ff = files.begin();
 
   //
   // Open first file, read header, and setup grid
   //
-  ostringstream temp; temp <<input_path<<"/"<<*ff;
+  ostringstream temp;
+  temp << input_path << "/" << *ff;
   string first_file = temp.str();
   temp.str("");
   err = dataio.ReadHeader(first_file);
-  if (err) rep.error("Didn't read header",err);
+  if (err) rep.error("Didn't read header", err);
 
   //
   // First decompose the domain, so I know the dimensions of the local
@@ -458,44 +466,44 @@ int main(int argc, char **argv)
   // be the full domain.
   //
   MCMD.decomposeDomain();
-  if (err) rep.error("main: failed to decompose domain!",err);
+  if (err) rep.error("main: failed to decompose domain!", err);
 
 
   //
   // get a setup_grid class, and use it to set up the grid.
   //
-  class setup_fixed_grid *SimSetup =0;
-  SimSetup = new setup_fixed_grid_pllel();
-  class GridBaseClass *grid = 0;
+  class setup_fixed_grid *SimSetup = 0;
+  SimSetup                         = new setup_fixed_grid_pllel();
+  class GridBaseClass *grid        = 0;
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
-  SimSetup->setup_grid(&grid,&MCMD);
-  if (!grid) rep.error("Grid setup failed",grid);
-  cout <<"\t\tg="<<grid<<"\tDX = "<<grid->DX()<<"\n";
+  SimSetup->setup_grid(&grid, &MCMD);
+  if (!grid) rep.error("Grid setup failed", grid);
+  cout << "\t\tg=" << grid << "\tDX = " << grid->DX() << "\n";
   double delr = grid->DX();
 
   //
   // This code needs 2d data to project...
   //
-  if (SimPM.ndim!=2 || SimPM.coord_sys != COORD_CYL) {
-    rep.error("projection needs 2D axisymmetric data",SimPM.ndim);
+  if (SimPM.ndim != 2 || SimPM.coord_sys != COORD_CYL) {
+    rep.error("projection needs 2D axisymmetric data", SimPM.ndim);
   }
 
   //
   // Now setup microphysics and raytracing classes
   //
   err += SimSetup->setup_microphysics();
-  //err += setup_raytracing();
-  if (err) rep.error("Setup of microphysics and raytracing",err);
+  // err += setup_raytracing();
+  if (err) rep.error("Setup of microphysics and raytracing", err);
 
   //
   // Setup X-ray emission tables.
   //
   class Xray_emission XR;
 
-  cout <<"--------------- Finished Setting up Grid --------------\n";
-  cout <<"-------------------------------------------------------\n";
+  cout << "--------------- Finished Setting up Grid --------------\n";
+  cout << "-------------------------------------------------------\n";
 
   //
   // Output file: if multiple files, we will append _xxx to the name.
@@ -518,16 +526,15 @@ int main(int argc, char **argv)
   //
   // Images: we will write projected density, neutral density,
   // ionised density, emission measure, ...
-  // 
-  double **img_array=0;
-  int n_images=NIMG;
-  size_t num_pix = SimPM.Ncell; // Don't do reflected image yet.
-  int N_R = SimPM.NG[Rcyl];
-  int npix[2] = {SimPM.NG[Zcyl],N_R};
-  img_array = mem.myalloc(img_array,n_images);
-  for (int v=0;v<n_images;v++) {
-    img_array[v] = mem.myalloc(img_array[v],
-            static_cast<long int>(num_pix));
+  //
+  double **img_array = 0;
+  int n_images       = NIMG;
+  size_t num_pix     = SimPM.Ncell;  // Don't do reflected image yet.
+  int N_R            = SimPM.NG[Rcyl];
+  int npix[2]        = {SimPM.NG[Zcyl], N_R};
+  img_array          = mem.myalloc(img_array, n_images);
+  for (int v = 0; v < n_images; v++) {
+    img_array[v] = mem.myalloc(img_array[v], static_cast<long int>(num_pix));
   }
 
 
@@ -536,20 +543,42 @@ int main(int argc, char **argv)
   // array of image names for output files.
   //
   string im_name[NIMG];
-  for (size_t im=0; im<NIMG; im++) {
+  for (size_t im = 0; im < NIMG; im++) {
     switch (im) {
-      case PROJ_D:   im_name[im] = "AA_SurfaceMass"; break;
-      case PROJ_NtD: im_name[im] = "AA_ProjNeutralDens"; break;
-      case PROJ_InD: im_name[im] = "AA_ProjIonisedDens"; break;
-      case PROJ_EM:  im_name[im] = "AA_EmissionMeasure"; break;
-      case PROJ_X01: im_name[im] = "AA_XRAY_g0p1keV"; break;
-      case PROJ_X05: im_name[im] = "AA_XRAY_g0p5keV"; break;
-      case PROJ_X10: im_name[im] = "AA_XRAY_g1p0keV"; break;
-      //case PROJ_X20: im_name[im] = "XRAY_g2p0keV"; break;
-      case PROJ_X50: im_name[im] = "AA_XRAY_g5p0keV"; break;
-      case PROJ_HA:  im_name[im] = "AA_Halpha"; break;
-      case PROJ_IML: im_name[im] = "AA_NII_ll6584"; break;
-      default: rep.error("Bad image count",im); break;
+      case PROJ_D:
+        im_name[im] = "AA_SurfaceMass";
+        break;
+      case PROJ_NtD:
+        im_name[im] = "AA_ProjNeutralDens";
+        break;
+      case PROJ_InD:
+        im_name[im] = "AA_ProjIonisedDens";
+        break;
+      case PROJ_EM:
+        im_name[im] = "AA_EmissionMeasure";
+        break;
+      case PROJ_X01:
+        im_name[im] = "AA_XRAY_g0p1keV";
+        break;
+      case PROJ_X05:
+        im_name[im] = "AA_XRAY_g0p5keV";
+        break;
+      case PROJ_X10:
+        im_name[im] = "AA_XRAY_g1p0keV";
+        break;
+      // case PROJ_X20: im_name[im] = "XRAY_g2p0keV"; break;
+      case PROJ_X50:
+        im_name[im] = "AA_XRAY_g5p0keV";
+        break;
+      case PROJ_HA:
+        im_name[im] = "AA_Halpha";
+        break;
+      case PROJ_IML:
+        im_name[im] = "AA_NII_ll6584";
+        break;
+      default:
+        rep.error("Bad image count", im);
+        break;
     }
   }
   //*****************************************************************
@@ -557,23 +586,24 @@ int main(int argc, char **argv)
 
 
 
-
   //*******************************************************************
   // loop over all files:
   //*******************************************************************
 
-  cout <<"-------------------------------------------------------\n";
-  cout <<"--------------- Starting Loop over all input files ----\n";
-  cout <<"-------------------------------------------------------\n";
-  unsigned int ifile=0;
-  clk.start_timer("total"); double ttsf=0.0;
+  cout << "-------------------------------------------------------\n";
+  cout << "--------------- Starting Loop over all input files ----\n";
+  cout << "-------------------------------------------------------\n";
+  unsigned int ifile = 0;
+  clk.start_timer("total");
+  double ttsf = 0.0;
 
-  for (ifile=0; ifile<static_cast<unsigned int>(nfiles); ifile+=1+skip) {
-    cout <<"--------- Starting Next Loop: ifile="<<ifile<<"------\n";
-    cout <<"========= reading file: "<<*ff<<"\n";
+  for (ifile = 0; ifile < static_cast<unsigned int>(nfiles);
+       ifile += 1 + skip) {
+    cout << "--------- Starting Next Loop: ifile=" << ifile << "------\n";
+    cout << "========= reading file: " << *ff << "\n";
     cout.flush();
-    //cout <<"-------------------------------------------------------\n";
-    //cout <<"--------------- Reading Simulation data to grid -------\n";
+    // cout <<"-------------------------------------------------------\n";
+    // cout <<"--------------- Reading Simulation data to grid -------\n";
 
     //
     // *******************
@@ -583,15 +613,16 @@ int main(int argc, char **argv)
     // Get filename with path (ff is a list of string filenames)
     //
     temp.str("");
-    temp <<input_path<<"/"<<*ff;
+    temp << input_path << "/" << *ff;
     string infile = temp.str();
     temp.str("");
-    for (size_t q=0;q<=skip;q++) ff++;
+    for (size_t q = 0; q <= skip; q++)
+      ff++;
 
     //
     // skip first file in list.
     //
-    //if (ifile==0) {
+    // if (ifile==0) {
     //  continue;
     //}
 
@@ -599,25 +630,26 @@ int main(int argc, char **argv)
     // Read header to get timestep info.
     //
     err = dataio.ReadHeader(infile);
-    if (err) rep.error("Didn't read header",err);
+    if (err) rep.error("Didn't read header", err);
 
     //
     // Read data (this reader can read serial or parallel data.
     //
-    err = dataio.parallel_read_any_data(infile, ///< file to read from
-					grid    ///< pointer to data.
-					);
-    rep.errorTest("(main) Failed to read data",0,err);
+    err = dataio.parallel_read_any_data(
+        infile,  ///< file to read from
+        grid     ///< pointer to data.
+    );
+    rep.errorTest("(main) Failed to read data", 0, err);
 
 
 
-
-    //cout <<"--------------- Finished Reading Data  ----------------\n";
-    //cout <<"-------------------------------------------------------\n";
-    //cout <<"--------------- Starting Data Analysis ----------------\n";
-    clk.start_timer("analysis"); double tsf=0.0;
-    cout <<"Beginning analysis: NUMTHREADS="<<NUM_THREADS_MAIN<<"... ";
-    //cout.flush();
+    // cout <<"--------------- Finished Reading Data  ----------------\n";
+    // cout <<"-------------------------------------------------------\n";
+    // cout <<"--------------- Starting Data Analysis ----------------\n";
+    clk.start_timer("analysis");
+    double tsf = 0.0;
+    cout << "Beginning analysis: NUMTHREADS=" << NUM_THREADS_MAIN << "... ";
+    // cout.flush();
     //
     //********************
     //* Analyse the Data *
@@ -626,20 +658,20 @@ int main(int argc, char **argv)
     //
     // zero the image arrays.
     //
-    for (size_t im=0; im< static_cast<size_t>(n_images); im++)
-      for (size_t ip=0; ip<num_pix; ip++)
+    for (size_t im = 0; im < static_cast<size_t>(n_images); im++)
+      for (size_t ip = 0; ip < num_pix; ip++)
         img_array[im][ip] = 0.0;
 
-    size_t iHp = 0; // H+ fraction is 1st tracer variable (if exists).
-    size_t iWf = 0; // Wind fraction is 2nd tracer variable.
+    size_t iHp = 0;  // H+ fraction is 1st tracer variable (if exists).
+    size_t iWf = 0;  // Wind fraction is 2nd tracer variable.
     //
     // Figure out which tracer variable is H+,wind, (only if there is
     // a microphysics class):
     //
     if (MP) {
       int tr = MP->Tr("H1+___");
-      if ( tr==DONT_CALL_ME || tr<0  || !isfinite(tr) ) {
-        cout <<"No H+ tracer variable, assuming all gas is ionized\n";
+      if (tr == DONT_CALL_ME || tr < 0 || !isfinite(tr)) {
+        cout << "No H+ tracer variable, assuming all gas is ionized\n";
         iHp = 0;
       }
       else {
@@ -648,11 +680,11 @@ int main(int argc, char **argv)
       //
       // Now for wind fraction (colour tracer):
       //
-      if (SimPM.ntracer>0 && iHp==0) {
+      if (SimPM.ntracer > 0 && iHp == 0) {
         iWf = SimPM.ftr;
       }
-      else if (SimPM.ntracer>1 && iHp>0) {
-        iWf = SimPM.ftr+1;
+      else if (SimPM.ntracer > 1 && iHp > 0) {
+        iWf = SimPM.ftr + 1;
       }
       else {
         iWf = 0;
@@ -665,10 +697,10 @@ int main(int argc, char **argv)
     // Outer loop runs over z.
     //
     cell *cz = grid->FirstPt();
-    int iz=0;
+    int iz   = 0;
 
     do {
-      //cout <<"#+#+#+#+#+# New column, iz="<<iz<<"\n";
+      // cout <<"#+#+#+#+#+# New column, iz="<<iz<<"\n";
       //
       // First set the values of arrays in R for var,var_slope,R_cov.
       //
@@ -679,23 +711,23 @@ int main(int argc, char **argv)
       //
 
       struct calc_col_args *ta = new struct calc_col_args;
-      ta->cz = cz;
-      ta->iz = iz;
-      ta->N_R = N_R;
-      ta->n_images = n_images;
-      ta->npix = npix;
-      ta->delr = delr;
-      ta->iHp = iHp;
-      ta->iWf = iWf;
-      ta->grid = grid;
-      ta->XR = &XR;
-      ta->img_array = img_array;
+      ta->cz                   = cz;
+      ta->iz                   = iz;
+      ta->N_R                  = N_R;
+      ta->n_images             = n_images;
+      ta->npix                 = npix;
+      ta->delr                 = delr;
+      ta->iHp                  = iHp;
+      ta->iWf                  = iWf;
+      ta->grid                 = grid;
+      ta->XR                   = &XR;
+      ta->img_array            = img_array;
 #ifdef TESTING
-      //cout <<" - -- - adding pixel "<<iz<<" to work-list.\n";
-      //cout.flush();
+      // cout <<" - -- - adding pixel "<<iz<<" to work-list.\n";
+      // cout.flush();
 #endif
-      tp_addWork(&tp,calculate_column,reinterpret_cast<void *>(ta),"main()");
-      
+      tp_addWork(&tp, calculate_column, reinterpret_cast<void *>(ta), "main()");
+
       //
       // Parallelise above here, so each column of data is integrated
       // by one thread.
@@ -704,20 +736,19 @@ int main(int argc, char **argv)
       // increment iz and move to next radial column.
       //
       iz++;
-    } while ((cz=grid->NextPt(cz,ZPcyl))!=0 && cz->isgd);
+    } while ((cz = grid->NextPt(cz, ZPcyl)) != 0 && cz->isgd);
 
 #ifdef TESTING
-    cout <<" - -- - waiting for "<<iz<<" threads to finish.\n";
+    cout << " - -- - waiting for " << iz << " threads to finish.\n";
     cout.flush();
 #endif
-    //DbgMsg(" main(): waiting for %i threads...",num_pixels);
-    tp_waitOnFinished(&tp,iz);
-    //DbgMsg(" main(): all threads finished.");
+    // DbgMsg(" main(): waiting for %i threads...",num_pixels);
+    tp_waitOnFinished(&tp, iz);
+    // DbgMsg(" main(): all threads finished.");
 #ifdef TESTING
-    cout <<" - -- - All threads are finished.\n";
+    cout << " - -- - All threads are finished.\n";
     cout.flush();
 #endif
-
 
 
 
@@ -727,76 +758,77 @@ int main(int argc, char **argv)
     // we can compare to Townsley et al. papers.
     // Otherwise it is erg/cm^2/s/sq.arcsec.
     //
-    //for (size_t ipix=0; ipix<num_pix; ipix++) {
+    // for (size_t ipix=0; ipix<num_pix; ipix++) {
     //  img_array[PROJ_X01][ipix] *= 5.09e48;
     //  img_array[PROJ_X05][ipix] *= 5.09e48;
     //  img_array[PROJ_X10][ipix] *= 5.09e48;
     //  img_array[PROJ_X50][ipix] *= 5.09e48;
     //}
 
-    tsf= clk.stop_timer("analysis");
-    cout <<"\tFinished loop "<<ifile<<": loop time = "<<tsf;
-    ttsf=clk.time_so_far("total");
-    cout <<",\t total runtime="<<ttsf<<"\n";
-    //cout <<"--------------- Finished Analysing this step ----------\n";
-    //cout <<"-------------------------------------------------------\n";
-    //cout <<"--------------- Writing image and getting next Im-file \n";
+    tsf = clk.stop_timer("analysis");
+    cout << "\tFinished loop " << ifile << ": loop time = " << tsf;
+    ttsf = clk.time_so_far("total");
+    cout << ",\t total runtime=" << ttsf << "\n";
+    // cout <<"--------------- Finished Analysing this step ----------\n";
+    // cout <<"-------------------------------------------------------\n";
+    // cout <<"--------------- Writing image and getting next Im-file \n";
 
     //
     // **********************
     // * Write Data to file *
     // **********************
     //
-    this_outfile = imio.get_output_filename(outfile, multi_opfiles, op_filetype, SimPM.timestep);
+    this_outfile = imio.get_output_filename(
+        outfile, multi_opfiles, op_filetype, SimPM.timestep);
     err = imio.open_image_file(this_outfile, op_filetype, &filehandle);
-    if (err) rep.error("failed to open output file",err);
+    if (err) rep.error("failed to open output file", err);
     //
     // Write N images, here it is one for each variable.
     //
-    //string im_name;
-    //double *im=0;
+    // string im_name;
+    // double *im=0;
     double Xmin[MAX_DIM];
-    for (int v=0;v<SimPM.ndim;v++)
+    for (int v = 0; v < SimPM.ndim; v++)
       Xmin[v] = grid->SIM_Xmin(static_cast<axes>(v));
-    double im_dx[2] = {grid->DX(), grid->DX()};    
-    for (int outputs=0;outputs<n_images;outputs++) {
-      err = imio.write_image_to_file(filehandle, op_filetype,
-                                    img_array[outputs], num_pix,
-                                    2, npix, im_name[outputs],
-                                    Xmin, im_dx, 
-                                    SimPM.simtime, SimPM.timestep
-                                    );
-      if (err) rep.error("Failed to write image to file",err);
+    double im_dx[2] = {grid->DX(), grid->DX()};
+    for (int outputs = 0; outputs < n_images; outputs++) {
+      err = imio.write_image_to_file(
+          filehandle, op_filetype, img_array[outputs], num_pix, 2, npix,
+          im_name[outputs], Xmin, im_dx, SimPM.simtime, SimPM.timestep);
+      if (err) rep.error("Failed to write image to file", err);
     }
     err = imio.close_image_file(filehandle);
-    if (err) rep.error("failed to close output file",err);
+    if (err) rep.error("failed to close output file", err);
 
 
-  } // Loop over all files.    
+  }  // Loop over all files.
 
 
-  cout <<"-------------------------------------------------------\n";
-  cout <<"-------------- Finished Analysing all Files -----------\n";
-  cout <<"-------------------------------------------------------\n";
-  cout <<"--------------- Clearing up and Exiting ---------------\n";
+  cout << "-------------------------------------------------------\n";
+  cout << "-------------- Finished Analysing all Files -----------\n";
+  cout << "-------------------------------------------------------\n";
+  cout << "--------------- Clearing up and Exiting ---------------\n";
 
   //
   // free memory for images.
   //
-  for (int v=0;v<n_images;v++) {
+  for (int v = 0; v < n_images; v++) {
     img_array[v] = mem.myfree(img_array[v]);
   }
   img_array = mem.myfree(img_array);
 
 
-  if(grid!=0) {
+  if (grid != 0) {
     cout << "\t Deleting Grid Data..." << endl;
-    delete grid; grid=0;
+    delete grid;
+    grid = 0;
   }
 
-  delete MP; MP=0;
+  delete MP;
+  MP = 0;
 
-  delete COMM; COMM=0;
+  delete COMM;
+  COMM = 0;
 
   return 0;
 }
@@ -805,5 +837,3 @@ int main(int argc, char **argv)
 // **************** END MAIN MAIN MAIN MAIN ********************
 // *************************************************************
 // -------------------------------------------------------------
-
-

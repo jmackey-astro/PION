@@ -1,4 +1,3 @@
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 if(PION_TOOLS AND PION_PARALLEL AND PION_USE_SILO AND PION_USE_FITS)
@@ -11,14 +10,19 @@ if(PION_TOOLS AND PION_PARALLEL AND PION_USE_SILO AND PION_USE_FITS)
     project2D.cpp
   )
 
-  target_compile_features(projection2D PUBLIC cxx_std_14)
+  target_compile_features(projection2D PRIVATE cxx_std_14)
 
-  target_link_libraries(projection2D PUBLIC 
+  target_link_libraries(projection2D PRIVATE
     global
     dataio
-    grid
     xray_emission
   )
+  if(PION_NESTED_GRID)
+      target_link_libraries(projection2D PRIVATE nested_grid)
+      target_compile_definitions(silocompare PRIVATE PION_NESTED)
+  else()
+      target_link_libraries(projection2D PRIVATE grid)
+  endif()
 
   install( 
     TARGETS projection2D
@@ -34,7 +38,6 @@ if(PION_TOOLS AND PION_PARALLEL AND PION_USE_SILO AND PION_USE_FITS)
 
     image_io.cpp
   )
-  target_link_libraries(image_io PUBLIC dataio_fits)
-
+  target_link_libraries(image_io PRIVATE dataio)
 
 endif(PION_TOOLS AND PION_PARALLEL AND PION_USE_SILO AND PION_USE_FITS)

@@ -34,24 +34,25 @@ using namespace std;
 
 
 int get_emission_absorption_data(
-      double const* const* data, ///< raw data to get variable from
-      const int n_img,    ///< number of images to write
-      const size_t Nr, ///< Number of radial data elements
-      class Xray_emission &XR,  ///< pointer to X-ray emission class.
-      double **ems,    ///< array for emission[img][rad] data.
-      double **abs     ///< array for absorption[img][rad] data.
-      )
+    double const *const *data,  ///< raw data to get variable from
+    const int n_img,            ///< number of images to write
+    const size_t Nr,            ///< Number of radial data elements
+    class Xray_emission &XR,    ///< pointer to X-ray emission class.
+    double **ems,               ///< array for emission[img][rad] data.
+    double **abs                ///< array for absorption[img][rad] data.
+)
 {
-  double xr[5]; xr[0]=0.0,xr[1]=0.0,xr[2]=0.0,xr[3]=0.0,xr[4]=0.0;
+  double xr[5];
+  xr[0] = 0.0, xr[1] = 0.0, xr[2] = 0.0, xr[3] = 0.0, xr[4] = 0.0;
   //
   // 1/Mean mass per H atom:  n(H) = immph*rho
   //
-  double immpH = SimPM.EP.H_MassFrac/pconst.m_p();
-  //cout <<"immpH="<<immpH<<", mmpH="<<1.0/immpH<<"\n";
+  double immpH = SimPM.EP.H_MassFrac / pconst.m_p();
+  // cout <<"immpH="<<immpH<<", mmpH="<<1.0/immpH<<"\n";
   //
   // square arcsec in radians:
   //
-  double sq_arcsec = 1.0/(4.0*M_PI*206265*206265);
+  double sq_arcsec = 1.0 / (4.0 * M_PI * 206265 * 206265);
   //
   // variable for pre-factor
   //
@@ -60,7 +61,7 @@ int get_emission_absorption_data(
   //
   // Loop over all image variables.
   //
-  for (int im=0; im<n_img; im++) {
+  for (int im = 0; im < n_img; im++) {
 
     //
     // Put data for variable ivar into ems[im][] array, and variable's
@@ -73,66 +74,69 @@ int get_emission_absorption_data(
       // Projected density is easy.
       //
       case PROJ_D:
-      for (size_t i=0; i<Nr; i++) {
-        ems[im][i] = data[DATA_D][i];
-        if (i==Nr-1) {
-          abs[im][i] = abs[im][i-1];
+        for (size_t i = 0; i < Nr; i++) {
+          ems[im][i] = data[DATA_D][i];
+          if (i == Nr - 1) {
+            abs[im][i] = abs[im][i - 1];
+          }
+          else {
+            abs[im][i] = (data[DATA_D][i + 1] - data[DATA_D][i])
+                         / (data[DATA_R][i + 1] - data[DATA_R][i]);
+          }
         }
-        else {
-          abs[im][i] = (data[DATA_D][i+1]-data[DATA_D][i])/
-                    (data[DATA_R][i+1]-data[DATA_R][i]);
-        }
-      }
-      break;
+        break;
 
       //
       // Projected Neutral density: here do two loops, one to set the
       // variable and one to get the slope (b/c the var is non-linear).
       //
       case PROJ_NtD:
-      for (size_t i=0; i<Nr; i++) {
-        ems[im][i] = data[DATA_D][i]*(1.0-data[DATA_TR0][i]);
-      }
-      for (size_t i=0; i<Nr-1; i++) {
-        abs[im][i] = (ems[im][i+1]-ems[im][i])/(data[DATA_R][i+1]-data[DATA_R][i]);
-      }
-      abs[im][Nr-1] = abs[im][Nr-2];  // backward diff is same as forward@(i-1)
-      break;
+        for (size_t i = 0; i < Nr; i++) {
+          ems[im][i] = data[DATA_D][i] * (1.0 - data[DATA_TR0][i]);
+        }
+        for (size_t i = 0; i < Nr - 1; i++) {
+          abs[im][i] = (ems[im][i + 1] - ems[im][i])
+                       / (data[DATA_R][i + 1] - data[DATA_R][i]);
+        }
+        abs[im][Nr - 1] =
+            abs[im][Nr - 2];  // backward diff is same as forward@(i-1)
+        break;
 
       //
       // Projected ionised density: here do two loops, one to set the
       // variable and one to get the slope (b/c the var is non-linear).
       //
       case PROJ_InD:
-      for (size_t i=0; i<Nr; i++) {
-        ems[im][i] = data[DATA_D][i]*data[DATA_TR0][i];
-      }
-      for (size_t i=0; i<Nr-1; i++) {
-        abs[im][i] = (ems[im][i+1]-ems[im][i])/(data[DATA_R][i+1]-data[DATA_R][i]);
-      }
-      abs[im][Nr-1] = abs[im][Nr-2];  // backward diff is same as forward@(i-1)
-      break;
+        for (size_t i = 0; i < Nr; i++) {
+          ems[im][i] = data[DATA_D][i] * data[DATA_TR0][i];
+        }
+        for (size_t i = 0; i < Nr - 1; i++) {
+          abs[im][i] = (ems[im][i + 1] - ems[im][i])
+                       / (data[DATA_R][i + 1] - data[DATA_R][i]);
+        }
+        abs[im][Nr - 1] =
+            abs[im][Nr - 2];  // backward diff is same as forward@(i-1)
+        break;
 
       //
       // Projected emission measure: here do two loops, one to set the
       // variable and one to get the slope (b/c the var is non-linear).
-      // Here we hardcode conversion units.   We assume n_e= 1.1n_p, 
+      // Here we hardcode conversion units.   We assume n_e= 1.1n_p,
       // appropriate if He ionization follows H.
-      // 
+      //
       case PROJ_EM:
-      prefactor = immpH*immpH*1.21;
-      for (size_t i=0; i<Nr; i++) {
-        ems[im][i] = prefactor*
-                      data[DATA_D][i]*data[DATA_TR0][i]*
-                      data[DATA_D][i]*data[DATA_TR0][i];
-
-      }
-      for (size_t i=0; i<Nr-1; i++) {
-        abs[im][i] = (ems[im][i+1]-ems[im][i])/
-                     (data[DATA_R][i+1]-data[DATA_R][i]);
-      }
-      abs[im][Nr-1] = abs[im][Nr-2];  // backward diff is same as forward@(i-1)
-      break;
+        prefactor = immpH * immpH * 1.21;
+        for (size_t i = 0; i < Nr; i++) {
+          ems[im][i] = prefactor * data[DATA_D][i] * data[DATA_TR0][i]
+                       * data[DATA_D][i] * data[DATA_TR0][i];
+        }
+        for (size_t i = 0; i < Nr - 1; i++) {
+          abs[im][i] = (ems[im][i + 1] - ems[im][i])
+                       / (data[DATA_R][i + 1] - data[DATA_R][i]);
+        }
+        abs[im][Nr - 1] =
+            abs[im][Nr - 2];  // backward diff is same as forward@(i-1)
+        break;
 
       //
       // X-ray emission: ignore absorption, just calculate emmisivity
@@ -142,22 +146,21 @@ int get_emission_absorption_data(
       // so that we have intensity in erg/cm3/s/sq.arcsec
       //
       case PROJ_X01:
-      prefactor = 1.1*immpH*immpH*sq_arcsec;
-      //cout <<"X01 prefactor="<<prefactor<<"\n";
-      for (size_t i=0; i<Nr; i++) {
-        XR.get_xray_emissivity(data[DATA_T][i],xr);
-        ems[im][i] = prefactor*xr[0]*
-                     data[DATA_D][i]*data[DATA_TR0][i]*
-                     data[DATA_D][i]*data[DATA_TR0][i];
+        prefactor = 1.1 * immpH * immpH * sq_arcsec;
+        // cout <<"X01 prefactor="<<prefactor<<"\n";
+        for (size_t i = 0; i < Nr; i++) {
+          XR.get_xray_emissivity(data[DATA_T][i], xr);
+          ems[im][i] = prefactor * xr[0] * data[DATA_D][i] * data[DATA_TR0][i]
+                       * data[DATA_D][i] * data[DATA_TR0][i];
+        }
+        for (size_t i = 0; i < Nr - 1; i++) {
+          abs[im][i] = (ems[im][i + 1] - ems[im][i])
+                       / (data[DATA_R][i + 1] - data[DATA_R][i]);
+        }
+        abs[im][Nr - 1] =
+            abs[im][Nr - 2];  // backward diff is same as forward@(i-1)
+        break;
 
-      }
-      for (size_t i=0; i<Nr-1; i++) {
-        abs[im][i] = (ems[im][i+1]-ems[im][i])/
-                     (data[DATA_R][i+1]-data[DATA_R][i]);
-      }
-      abs[im][Nr-1] = abs[im][Nr-2];  // backward diff is same as forward@(i-1)
-      break;
-      
       //
       // X-ray emission: ignore absorption, just calculate emmisivity
       // from the table, for E>0.5 keV.
@@ -166,21 +169,20 @@ int get_emission_absorption_data(
       // so that we have intensity in erg/cm3/s/sq.arcsec
       //
       case PROJ_X05:
-      prefactor = 1.1*immpH*immpH*sq_arcsec;
-      for (size_t i=0; i<Nr; i++) {
-        XR.get_xray_emissivity(data[DATA_T][i],xr);
-        ems[im][i] = prefactor*xr[1]*
-                     data[DATA_D][i]*data[DATA_TR0][i]*
-                     data[DATA_D][i]*data[DATA_TR0][i];
+        prefactor = 1.1 * immpH * immpH * sq_arcsec;
+        for (size_t i = 0; i < Nr; i++) {
+          XR.get_xray_emissivity(data[DATA_T][i], xr);
+          ems[im][i] = prefactor * xr[1] * data[DATA_D][i] * data[DATA_TR0][i]
+                       * data[DATA_D][i] * data[DATA_TR0][i];
+        }
+        for (size_t i = 0; i < Nr - 1; i++) {
+          abs[im][i] = (ems[im][i + 1] - ems[im][i])
+                       / (data[DATA_R][i + 1] - data[DATA_R][i]);
+        }
+        abs[im][Nr - 1] =
+            abs[im][Nr - 2];  // backward diff is same as forward@(i-1)
+        break;
 
-      }
-      for (size_t i=0; i<Nr-1; i++) {
-        abs[im][i] = (ems[im][i+1]-ems[im][i])/
-                     (data[DATA_R][i+1]-data[DATA_R][i]);
-      }
-      abs[im][Nr-1] = abs[im][Nr-2];  // backward diff is same as forward@(i-1)
-      break;
-      
       //
       // X-ray emission: ignore absorption, just calculate emmisivity
       // from the table, for E>1.0 keV.
@@ -189,21 +191,20 @@ int get_emission_absorption_data(
       // so that we have intensity in erg/cm3/s/sq.arcsec
       //
       case PROJ_X10:
-      prefactor = 1.1*immpH*immpH*sq_arcsec;
-      for (size_t i=0; i<Nr; i++) {
-        XR.get_xray_emissivity(data[DATA_T][i],xr);
-        ems[im][i] = prefactor*xr[2]*
-                     data[DATA_D][i]*data[DATA_TR0][i]*
-                     data[DATA_D][i]*data[DATA_TR0][i];
+        prefactor = 1.1 * immpH * immpH * sq_arcsec;
+        for (size_t i = 0; i < Nr; i++) {
+          XR.get_xray_emissivity(data[DATA_T][i], xr);
+          ems[im][i] = prefactor * xr[2] * data[DATA_D][i] * data[DATA_TR0][i]
+                       * data[DATA_D][i] * data[DATA_TR0][i];
+        }
+        for (size_t i = 0; i < Nr - 1; i++) {
+          abs[im][i] = (ems[im][i + 1] - ems[im][i])
+                       / (data[DATA_R][i + 1] - data[DATA_R][i]);
+        }
+        abs[im][Nr - 1] =
+            abs[im][Nr - 2];  // backward diff is same as forward@(i-1)
+        break;
 
-      }
-      for (size_t i=0; i<Nr-1; i++) {
-        abs[im][i] = (ems[im][i+1]-ems[im][i])/
-                     (data[DATA_R][i+1]-data[DATA_R][i]);
-      }
-      abs[im][Nr-1] = abs[im][Nr-2];  // backward diff is same as forward@(i-1)
-      break;
-      
       //
       // X-ray emission: ignore absorption, just calculate emmisivity
       // from the table, for E>5.0 keV.
@@ -212,61 +213,60 @@ int get_emission_absorption_data(
       // so that we have intensity in erg/cm3/s/sq.arcsec
       //
       case PROJ_X50:
-      prefactor = 1.1*immpH*immpH*sq_arcsec;
-      for (size_t i=0; i<Nr; i++) {
-        XR.get_xray_emissivity(data[DATA_T][i],xr);
-        ems[im][i] = prefactor*xr[3]*
-                     data[DATA_D][i]*data[DATA_TR0][i]*
-                     data[DATA_D][i]*data[DATA_TR0][i];
+        prefactor = 1.1 * immpH * immpH * sq_arcsec;
+        for (size_t i = 0; i < Nr; i++) {
+          XR.get_xray_emissivity(data[DATA_T][i], xr);
+          ems[im][i] = prefactor * xr[3] * data[DATA_D][i] * data[DATA_TR0][i]
+                       * data[DATA_D][i] * data[DATA_TR0][i];
+        }
+        for (size_t i = 0; i < Nr - 1; i++) {
+          abs[im][i] = (ems[im][i + 1] - ems[im][i])
+                       / (data[DATA_R][i + 1] - data[DATA_R][i]);
+        }
+        abs[im][Nr - 1] =
+            abs[im][Nr - 2];  // backward diff is same as forward@(i-1)
+        break;
 
-      }
-      for (size_t i=0; i<Nr-1; i++) {
-        abs[im][i] = (ems[im][i+1]-ems[im][i])/
-                     (data[DATA_R][i+1]-data[DATA_R][i]);
-      }
-      abs[im][Nr-1] = abs[im][Nr-2];  // backward diff is same as forward@(i-1)
-      break;
-      
 
       //
       // H-alpha emission:  here ems[im][] is the emissivity, and
       // abs[im][] the absorption coefficient.
-      // Here we hardcode conversion units.  We assume n_e= 1.1n_p, 
+      // Here we hardcode conversion units.  We assume n_e= 1.1n_p,
       // appropriate if He ionization follows H.
       // We further assume X_H=0.715 (H mass fraction), similar to the
       // Asplund et al. (2009) value of 0.7154.
       //
-      // Emissivity from Osterbrock j(Ha)=2.63e-33*n_e*n_p/T^0.9 in 
+      // Emissivity from Osterbrock j(Ha)=2.63e-33*n_e*n_p/T^0.9 in
       // units of erg/cm3/s/sq.arcsec (adapted from table), and use
       //  n_e*n_p = rho^2 y^2 1.1(X_H/m_p)^2
       //
       // 5.28e14
       //
-      // Absorption from Henney et al. 2009, where they assume 
+      // Absorption from Henney et al. 2009, where they assume
       //  alpha = 5.0e-22 nH per cm (absorption by dust). ~213.7
       //
       case PROJ_HA:
-      prefactor = immpH*immpH*1.1*2.63e-33;
-      //cout <<"Halpha prefactor="<<prefactor<<", expecting ~5.28e14";
-      //cout <<".  Abs="<<immpH*5.0e-22<<", expecting 213.7\n";
-      for (size_t i=0; i<Nr; i++) {
-        ems[im][i] = prefactor*data[DATA_D][i]*data[DATA_TR0][i]*
-                          data[DATA_D][i]*data[DATA_TR0][i]*
-                          pow(data[DATA_T][i], -0.9);
-                          //exp(-0.9*log(data[DATA_T][i]));
-      //if (!isfinite(ems[im][i])) cout <<"ems="<< ems[im][i]<<"\n";
+        prefactor = immpH * immpH * 1.1 * 2.63e-33;
+        // cout <<"Halpha prefactor="<<prefactor<<", expecting ~5.28e14";
+        // cout <<".  Abs="<<immpH*5.0e-22<<", expecting 213.7\n";
+        for (size_t i = 0; i < Nr; i++) {
+          ems[im][i] = prefactor * data[DATA_D][i] * data[DATA_TR0][i]
+                       * data[DATA_D][i] * data[DATA_TR0][i]
+                       * pow(data[DATA_T][i], -0.9);
+          // exp(-0.9*log(data[DATA_T][i]));
+          // if (!isfinite(ems[im][i])) cout <<"ems="<< ems[im][i]<<"\n";
 #ifdef ABSORPTION
-        abs[im][i] = immpH*5.0e-22 *data[DATA_D][i];
+          abs[im][i] = immpH * 5.0e-22 * data[DATA_D][i];
 #else
-        abs[im][i] = 0.0;
+          abs[im][i] = 0.0;
 #endif
-      }
-      break;
-      
+        }
+        break;
+
       //
       // Ionised Metal-lines:  here ems[im][] is the emissivity, and
       // abs[im][] the absorption coefficient.
-      // Here we hardcode conversion units.  We assume n_e= n_p, 
+      // Here we hardcode conversion units.  We assume n_e= n_p,
       // appropriate if He remains neutral.
       //
       // Emissivity from Dopita (1973)
@@ -283,44 +283,43 @@ int get_emission_absorption_data(
       // the second tracer to discriminate wind from ISM material.
       // Otherwise, use f(N)=7.08e-5 everywhere.
       //
-      // Absorption from Henney et al. 2009, where they assume 
+      // Absorption from Henney et al. 2009, where they assume
       //  alpha = 5.0e-22 nH per cm (absorption by dust). ~213.4
       //
       case PROJ_IML:
-      prefactor = immpH*immpH*1.1*6.82e-18*sq_arcsec;
-      //cout <<"[NII] prefactor="<<prefactor<<", expecting ~2.56e18";
-      //cout <<".  Abs="<<immpH*5.0e-22<<", expecting 213.4\n";
-      for (size_t i=0; i<Nr; i++) {
-        ems[im][i] = prefactor *data[DATA_D][i]*data[DATA_TR0][i]*
-                          data[DATA_D][i]*data[DATA_TR0][i]*
-                          exp(-2.1855e4/data[DATA_T][i])/
-                          sqrt(data[DATA_T][i])
-                          *exp(-(data[DATA_T][i]*data[DATA_T][i])/1.0e10);
+        prefactor = immpH * immpH * 1.1 * 6.82e-18 * sq_arcsec;
+        // cout <<"[NII] prefactor="<<prefactor<<", expecting ~2.56e18";
+        // cout <<".  Abs="<<immpH*5.0e-22<<", expecting 213.4\n";
+        for (size_t i = 0; i < Nr; i++) {
+          ems[im][i] = prefactor * data[DATA_D][i] * data[DATA_TR0][i]
+                       * data[DATA_D][i] * data[DATA_TR0][i]
+                       * exp(-2.1855e4 / data[DATA_T][i])
+                       / sqrt(data[DATA_T][i])
+                       * exp(-(data[DATA_T][i] * data[DATA_T][i]) / 1.0e10);
 #ifdef NII
-        ems[im][i] *= (1.0-data[DATA_TR1][i])*7.08e-5
-                      +data[DATA_TR1][i]*2.0e-4;
+          ems[im][i] *=
+              (1.0 - data[DATA_TR1][i]) * 7.08e-5 + data[DATA_TR1][i] * 2.0e-4;
 #else
-        ems[im][i] *= 7.08e-5;
-#endif // NII
+          ems[im][i] *= 7.08e-5;
+#endif  // NII
 
 #ifdef ABSORPTION
-        abs[im][i] = immpH*5.0e-22 *data[DATA_D][i];
+          abs[im][i] = immpH * 5.0e-22 * data[DATA_D][i];
 #else
-        abs[im][i] = 0.0;
+          abs[im][i] = 0.0;
 #endif
-      }
-      break;
+        }
+        break;
 
       default:
-      cerr <<"get_var_and_slope(): Don't know what to do for var ";
-      cerr <<im<<"\n";
-      return im;
-      break;
+        cerr << "get_var_and_slope(): Don't know what to do for var ";
+        cerr << im << "\n";
+        return im;
+        break;
     }
   }
   return 0;
 }
-
 
 
 
@@ -330,20 +329,20 @@ int get_emission_absorption_data(
 
 
 double calc_projection(
-      const double *r, ///< radius array
-      const double *v, ///< array of values at each radius
-      const double *s, ///< array of slopes at each radius
-      const size_t Nr, ///< Size of arrays.
-      double b,        ///< impact parameter of ray.
-      const double dr  ///< spacing of points in radius
-      )
+    const double *r,  ///< radius array
+    const double *v,  ///< array of values at each radius
+    const double *s,  ///< array of slopes at each radius
+    const size_t Nr,  ///< Size of arrays.
+    double b,         ///< impact parameter of ray.
+    const double dr   ///< spacing of points in radius
+)
 {
   //
   // N.B. if b > Nr*dr then return zero!
   //
-  double grid_max = r[Nr-1]+0.5*dr;
+  double grid_max = r[Nr - 1] + 0.5 * dr;
   if (b > grid_max) {
-    cout <<"calc_projection: Bad B value, b="<<b<<"\n";
+    cout << "calc_projection: Bad B value, b=" << b << "\n";
     return 0.0;
   }
 
@@ -352,59 +351,62 @@ double calc_projection(
   // the empty gap at the centre by setting b = r[0]
   //
   if (b < r[0]) {
-    //cout <<"b="<<b<<" is <r[0], so resetting b=r[0]+eps.\n";
-    b = r[0]*1.00000001;
+    // cout <<"b="<<b<<" is <r[0], so resetting b=r[0]+eps.\n";
+    b = r[0] * 1.00000001;
   }
 
   //
   // start at b, integrate outwards to rmax, and then multiply by 2.
   //
   size_t ir = 0;
-  while ( (r[ir]+dr) < b) ir++;
+  while ((r[ir] + dr) < b)
+    ir++;
 
   double result = 0.0;
-  double Rmin=0.0, Rmax=0.0, Rmin2=0.0, Rmax2=0.0;
-  double maxd=0.0, mind=0.0;
-  double slope=0.0, offset=0.0, xdx=0.0, x2dx=0.0;
+  double Rmin = 0.0, Rmax = 0.0, Rmin2 = 0.0, Rmax2 = 0.0;
+  double maxd = 0.0, mind = 0.0;
+  double slope = 0.0, offset = 0.0, xdx = 0.0, x2dx = 0.0;
 
   do {
     //
     // Min/Max for this line segment.
     //
-    Rmin = std::max(b    , r[ir]);
-    Rmax = std::min(grid_max, r[ir]+dr);
-    Rmax2 = Rmax*Rmax;
-    Rmin2 = Rmin*Rmin;
-    maxd  = sqrt(Rmax2 - b*b);
-    mind  = sqrt(Rmin2 - b*b);
+    Rmin  = std::max(b, r[ir]);
+    Rmax  = std::min(grid_max, r[ir] + dr);
+    Rmax2 = Rmax * Rmax;
+    Rmin2 = Rmin * Rmin;
+    maxd  = sqrt(Rmax2 - b * b);
+    mind  = sqrt(Rmin2 - b * b);
 
     //
     // var(r) = slope*r+offset, where a=|dvar/dr|_i, b=var_i-|dvar/dr|_i*r_i
     //
-    slope = s[ir];
-    offset = v[ir] -s[ir]*Rmin;
-    //cout <<"\ta="<<a<<", b="<<b;
+    slope  = s[ir];
+    offset = v[ir] - s[ir] * Rmin;
+    // cout <<"\ta="<<a<<", b="<<b;
 
     //
     // xdx is the integral xdx/sqrt(x^2-y^2).
     // x2dx is the integral x^2dx/sqrt(x^2-y^2).
     //
-    xdx = maxd - mind;
-    x2dx = 0.5*(Rmax*maxd - Rmin*mind +b*b*log((Rmax+maxd)/(Rmin+mind)));
-    //cout <<"\txdx="<<xdx<<", x2dx="<<x2dx;
+    xdx  = maxd - mind;
+    x2dx = 0.5
+           * (Rmax * maxd - Rmin * mind
+              + b * b * log((Rmax + maxd) / (Rmin + mind)));
+    // cout <<"\txdx="<<xdx<<", x2dx="<<x2dx;
 
     //
     // now this line segment's integral is a*x2dx + xdx*b
     //
-    xdx = slope*x2dx + offset*xdx;
-    //cout <<"\tint="<<xdx<<"\n";
-    
+    xdx = slope * x2dx + offset * xdx;
+    // cout <<"\tint="<<xdx<<"\n";
+
     //
     // Add to result, and increment counter
     //
     result += xdx;
     ir++;
-  } while (ir<Nr);
+  } while (ir < Nr);
 
   //
   // double result for the outward ray (by symmetry).
@@ -422,20 +424,20 @@ double calc_projection(
 
 
 double calc_projectionRT(
-      const double *r, ///< radius array
-      const double *ve, ///< array of emission values at each radius.
-      const double *va, ///< array of absorption values at each radius.
-      const size_t Nr, ///< Size of arrays.
-      double b,        ///< impact parameter of ray.
-      const double dr  ///< spacing of points in radius
-      )
+    const double *r,   ///< radius array
+    const double *ve,  ///< array of emission values at each radius.
+    const double *va,  ///< array of absorption values at each radius.
+    const size_t Nr,   ///< Size of arrays.
+    double b,          ///< impact parameter of ray.
+    const double dr    ///< spacing of points in radius
+)
 {
   //
   // N.B. if b > Nr*dr then return zero!
   //
-  double grid_max = r[Nr-1]+0.5*dr;
+  double grid_max = r[Nr - 1] + 0.5 * dr;
   if (b > grid_max) {
-    cout <<"calc_projectionRT: Bad B value, b="<<b<<"\n";
+    cout << "calc_projectionRT: Bad B value, b=" << b << "\n";
     return 0.0;
   }
 
@@ -444,7 +446,7 @@ double calc_projectionRT(
   // the empty gap at the centre by setting b = r[0]
   //
   if (b < r[0]) {
-    //cout <<"b="<<b<<" is <r[0], so resetting b=r[0].\n";
+    // cout <<"b="<<b<<" is <r[0], so resetting b=r[0].\n";
     b = r[0];
   }
 
@@ -456,43 +458,44 @@ double calc_projectionRT(
   // delta-ell (real path length) instead of delta-r (integrating
   // variable).  Rybicki & Lightman (1978), eq.1.30
   //
-  long int ir = Nr-1;
+  long int ir = Nr - 1;
 
   double result = 0.0;
-  double Rmin=0.0, Rmax=0.0;
-  //double maxd=0.0, mind=0.0;
-  //double dIds=0.0;
-  double dl=0.0, this_r=0.0;
+  double Rmin = 0.0, Rmax = 0.0;
+  // double maxd=0.0, mind=0.0;
+  // double dIds=0.0;
+  double dl = 0.0, this_r = 0.0;
 
-  while (r[ir]*ONE_PLUS_EPS>b) {
+  while (r[ir] * ONE_PLUS_EPS > b) {
     //
     // Min/Max for this line segment.
     //
-    //cout <<"IN  b="<<b<<", r["<<ir<<"] = "<<r[ir]<<"\n";
+    // cout <<"IN  b="<<b<<", r["<<ir<<"] = "<<r[ir]<<"\n";
 
-    Rmin = std::max(b    , r[ir]);
-    Rmax = std::min(grid_max, r[ir]+dr);
-    this_r = 0.5*(Rmin+Rmax);
+    Rmin   = std::max(b, r[ir]);
+    Rmax   = std::min(grid_max, r[ir] + dr);
+    this_r = 0.5 * (Rmin + Rmax);
     //
     // at the innermost interval, we evaluate dl exactly (using
     // Pythagoras), but otherwise use the approximate expression.
     //
-    if (pconst.equalD(Rmin,b)) {
+    if (pconst.equalD(Rmin, b)) {
       // dr*sqrt(1+2b/dr)
-      dl = (Rmax-Rmin)*sqrt(1.0+2.0*b/(Rmax-Rmin));
+      dl = (Rmax - Rmin) * sqrt(1.0 + 2.0 * b / (Rmax - Rmin));
     }
     else {
       // r*dr/sqrt(r^2-b^2)
-      dl = this_r*(Rmax-Rmin)/sqrt(this_r*this_r-b*b);
+      dl = this_r * (Rmax - Rmin) / sqrt(this_r * this_r - b * b);
     }
     //
     // Then integrate along the line segment, and increment counter
     // source function is (ve[ir]/va[ir])
     //
-    result = (ve[ir]/va[ir]) +exp(-va[ir]*dl)*(result- (ve[ir]/va[ir]));
+    result =
+        (ve[ir] / va[ir]) + exp(-va[ir] * dl) * (result - (ve[ir] / va[ir]));
     ir--;
-    if (ir<0) {
-      //cout <<"ir="<<ir<<"\n";
+    if (ir < 0) {
+      // cout <<"ir="<<ir<<"\n";
       break;
     }
   }
@@ -502,32 +505,33 @@ double calc_projectionRT(
   // inward loop, so increment before we begin.
   //
   ir++;
-  while (ir<static_cast<long int>(Nr)) {
-    //cout <<"OUT b="<<b<<", r["<<ir<<"] = "<<r[ir];
+  while (ir < static_cast<long int>(Nr)) {
+    // cout <<"OUT b="<<b<<", r["<<ir<<"] = "<<r[ir];
 
     //
     // Min/Max for this line segment.
     //
-    Rmin = std::max(b    , r[ir]);
-    Rmax = std::min(grid_max, r[ir]+dr);
-    this_r = 0.5*(Rmin+Rmax);
+    Rmin   = std::max(b, r[ir]);
+    Rmax   = std::min(grid_max, r[ir] + dr);
+    this_r = 0.5 * (Rmin + Rmax);
     //
     // at the innermost interval, we evaluate dl exactly (using
     // Pythagoras), but otherwise use the approximate expression.
     //
-    if (pconst.equalD(Rmin,b)) {
+    if (pconst.equalD(Rmin, b)) {
       // dr*sqrt(1+2b/dr)
-      dl = (Rmax-Rmin)*sqrt(1.0+2.0*b/(Rmax-Rmin));
+      dl = (Rmax - Rmin) * sqrt(1.0 + 2.0 * b / (Rmax - Rmin));
     }
     else {
       // r*dr/sqrt(r^2-b^2)
-      dl = this_r*(Rmax-Rmin)/sqrt(this_r*this_r-b*b);
+      dl = this_r * (Rmax - Rmin) / sqrt(this_r * this_r - b * b);
     }
 
     //
     // Then integrate along the line segment, and increment counter
     //
-    result = (ve[ir]/va[ir]) +exp(-va[ir]*dl)*(result- (ve[ir]/va[ir]));
+    result =
+        (ve[ir] / va[ir]) + exp(-va[ir] * dl) * (result - (ve[ir] / va[ir]));
 
 
     ir++;
@@ -539,7 +543,3 @@ double calc_projectionRT(
 
 // ##################################################################
 // ##################################################################
-
-
-
-

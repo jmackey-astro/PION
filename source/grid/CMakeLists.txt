@@ -11,12 +11,14 @@ if(PION_PARALLEL)
         uniform_grid.cpp
         uniform_grid_pllel.cpp
     )
-    add_library(
-        nested_grid
+    if(PION_NESTED_GRID)
+        add_library(
+            nested_grid
 
-        setup_NG_grid.cpp
-        setup_grid_NG_MPI.cpp
-    )
+            setup_NG_grid.cpp
+            setup_grid_NG_MPI.cpp
+        )
+    endif(PION_NESTED_GRID)
 else()
     add_library(
         grid
@@ -28,18 +30,19 @@ else()
         stellar_wind_latdep.cpp
         uniform_grid.cpp
     )
-    add_library(
-        nested_grid
+    if(PION_NESTED_GRID)
+        add_library(
+            nested_grid
 
-        setup_NG_grid.cpp
-    )
+            setup_NG_grid.cpp
+        )
+    endif(PION_NESTED_GRID)
 endif(PION_PARALLEL)
 
+target_link_libraries(grid PUBLIC boundaries)
+target_link_libraries(grid PRIVATE global)
 
-target_link_libraries(grid PRIVATE boundaries global)
-
-if(PION_OMP)
-    target_link_libraries(grid PUBLIC OpenMP::OpenMP_CXX)
-endif(PION_OMP)
-
-target_link_libraries(nested_grid PUBLIC grid nested_boundaries)
+if(PION_NESTED_GRID)
+    target_link_libraries(nested_grid PUBLIC grid nested_boundaries)
+    target_link_libraries(nested_grid PRIVATE global)
+endif(PION_NESTED_GRID)

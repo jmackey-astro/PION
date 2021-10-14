@@ -10,7 +10,3 @@ target_link_libraries(spatial_solvers PUBLIC
     riemann_solvers
     coord_sys
 )
-
-if(PION_OMP)
-    target_link_libraries(spatial_solvers PRIVATE OpenMP::OpenMP_CXX)
-endif(PION_OMP)

@@ -1,5 +1,3 @@
-/// \file icgen.cpp
-/// \brief Program to generate Initial Conditions for a uniform grid
 /// \author Jonathan Mackey
 ///
 /// Modifications:
@@ -76,14 +74,16 @@
 #endif /* SILO */
 
 #ifdef PION_NESTED
-#include "grid/setup_NG_grid.h"
 #ifdef PARALLEL
 #include "grid/setup_grid_NG_MPI.h"
+#else
+#include "grid/setup_NG_grid.h"
 #endif /* PARALLEL */
 #else
-#include "grid/setup_fixed_grid.h"
 #ifdef PARALLEL
 #include "grid/setup_fixed_grid_MPI.h"
+#else
+#include "grid/setup_fixed_grid.h"
 #endif /* PARALLEL */
 #endif /* PION_NESTED */
 
@@ -102,19 +102,17 @@ int main(int argc, char **argv)
 {
   int err = 0;
 
+  class SimParams SimPM;
 #ifdef PARALLEL
   err = COMM->init(&argc, &argv);
   if (err) rep.error("comms init error", err);
   int r = -1, np = -1;
   COMM->get_rank_nproc(&r, &np);
-  class SimParams SimPM;
   SimPM.levels.clear();
   SimPM.levels.resize(1);
   SimPM.levels[0].MCMD.set_myrank(r);
   SimPM.levels[0].MCMD.set_nproc(np);
-#else
-  class SimParams SimPM;
-#endif
+#endif /* PARALLEL */
 
   if (argc < 2) {
     cerr << "Error, please give a filename to read IC parameters from.\n";
@@ -171,7 +169,7 @@ int main(int argc, char **argv)
     omp_set_num_threads(nth);
   else
     omp_set_num_threads(1);
-#endif
+#endif /* PION_OMP */
 
   class DataIOBase *dataio    = 0;
   class get_sim_info *siminfo = 0;
@@ -207,10 +205,10 @@ int main(int argc, char **argv)
    * have to do something with SimPM.levels[0] because this
    * is used to set the local domain size in decomposeDomain
    */
-  SimPM.grid_nlevels     = 1;
+  SimPM.grid_nlevels = 1;
   SimPM.levels[0].parent = 0;
-  SimPM.levels[0].child  = 0;
-  SimPM.levels[0].Ncell  = SimPM.Ncell;
+  SimPM.levels[0].child = 0;
+  SimPM.levels[0].Ncell = SimPM.Ncell;
   for (int v = 0; v < MAX_DIM; v++)
     SimPM.levels[0].NG[v] = SimPM.NG[v];
   for (int v = 0; v < MAX_DIM; v++)
@@ -219,10 +217,10 @@ int main(int argc, char **argv)
     SimPM.levels[0].Xmin[v] = SimPM.Xmin[v];
   for (int v = 0; v < MAX_DIM; v++)
     SimPM.levels[0].Xmax[v] = SimPM.Xmax[v];
-  SimPM.levels[0].dx                     = SimPM.Range[XX] / SimPM.NG[XX];
-  SimPM.levels[0].simtime                = SimPM.simtime;
-  SimPM.levels[0].dt                     = 0.0;
-  SimPM.levels[0].multiplier             = 1;
+  SimPM.levels[0].dx = SimPM.Range[XX] / SimPM.NG[XX];
+  SimPM.levels[0].simtime = SimPM.simtime;
+  SimPM.levels[0].dt = 0.0;
+  SimPM.levels[0].multiplier = 1;
 #ifdef PARALLEL
   class setup_fixed_grid_pllel *SimSetup = new setup_fixed_grid_pllel();
   err = SimPM.levels[0].MCMD.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
@@ -231,8 +229,6 @@ int main(int argc, char **argv)
   class setup_fixed_grid *SimSetup = new setup_fixed_grid();
 #endif /* PARALLEL */
 #endif /* PION_NESTED */
-#ifdef PARALLEL
-#endif
 
   //
   // Set up a grid(s).
@@ -469,7 +465,21 @@ int main(int argc, char **argv)
   }
 
   dataio = 0;  // zero the class pointer.
-#ifndef PION_NESTED
+#ifdef SILO
+  if (icftype == "silo") {
+    cout << "WRITING SILO FILE: ";
+    cout << icfile << "\n";
+#ifdef PARALLEL
+#ifdef PION_NESTED
+    dataio = new dataio_silo_utility(SimPM, "DOUBLE", &SimPM.levels[0].MCMD);
+#else
+    dataio = new dataio_silo_pllel(SimPM, "DOUBLE", &SimPM.levels[0].MCMD);
+#endif /* PION_NESTED */
+#else
+    dataio = new dataio_silo(SimPM, "DOUBLE");
+#endif /* PARALLEL */
+  }
+#elif !defined(PION_NESTED) /* elifndef would be nice */
 #ifndef PARALLEL
   if (icftype == "text") {
     cout << "WRITING ASCII TEXT FILE: ";
@@ -490,21 +500,6 @@ int main(int argc, char **argv)
 #endif /* FITS */
 #endif /* PION_NESTED */
 
-#ifdef SILO
-  if (icftype == "silo") {
-    cout << "WRITING SILO FILE: ";
-    cout << icfile << "\n";
-#ifdef PARALLEL
-#ifdef PION_NESTED
-    dataio = new dataio_silo_utility(SimPM, "DOUBLE", &SimPM.levels[0].MCMD);
-#else
-    dataio = new dataio_silo_pllel(SimPM, "DOUBLE", &SimPM.levels[0].MCMD);
-#endif /* PION_NESTED */
-#else
-    dataio = new dataio_silo(SimPM, "DOUBLE");
-#endif /* PARALLEL */
-  }
-#endif /* SILO */
   if (!dataio) rep.error("IO class initialisation: ", icftype);
   err = dataio->OutputData(icfile, grid, SimPM, 0);
   if (err) rep.error("File write error", err);

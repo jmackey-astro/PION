@@ -27,10 +27,14 @@ add_library(
   constants.cpp
 ) 
 
-target_link_libraries(global PUBLIC dataio tools)
+target_link_libraries(global INTERFACE dataio tools)
+
+if(PION_OMP)
+    target_link_libraries(global INTERFACE OpenMP::OpenMP_CXX)
+endif(PION_OMP)
 
 if(PION_PARALLEL)
-    target_link_libraries(global PUBLIC comms)
+    target_link_libraries(global INTERFACE comms)
 endif(PION_PARALLEL)
 
 if(PION_NESTED_GRID)
@@ -105,8 +109,3 @@ if(PION_UNIFORM_GRID)
         INCLUDES DESTINATION ${PION_INSTALL_INCLUDEDIR}
     )
 endif(PION_UNIFORM_GRID)
-
-#if(PION_OMP)
-#    target_link_libraries(global PUBLIC OpenMP::OpenMP_CXX)
-#endif(PION_OMP)
-

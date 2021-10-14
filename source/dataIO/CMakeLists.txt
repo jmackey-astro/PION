@@ -1,5 +1,5 @@
 add_library(
-    dataio_base
+    dataio
 
     dataio_base.cpp
     dataio_text.cpp
@@ -11,7 +11,7 @@ add_library(
 if(PION_USE_SILO)
     if(PION_PARALLEL)
         add_library(
-            dataio
+            dataio_silo
 
             dataio_silo.cpp
             dataio_silo_MPI.cpp
@@ -19,20 +19,20 @@ if(PION_USE_SILO)
         )
     else()
         add_library(
-            dataio
+            dataio_silo
 
             dataio_silo.cpp
         )
     endif(PION_PARALLEL)
 
-    target_link_libraries(dataio PUBLIC ${SILO_LIBRARY})
-    target_link_libraries(dataio PUBLIC dataio_base)
+    target_link_libraries(dataio PRIVATE ${SILO_LIBRARY})
+    target_link_libraries(dataio PUBLIC dataio_silo)
 endif(PION_USE_SILO)
 
 if(PION_USE_FITS)
     if(PION_PARALLEL)
         add_library(
-            dataio
+            dataio_fits
 
             dataio_fits.cpp
             dataio_fits_MPI.cpp
@@ -40,19 +40,19 @@ if(PION_USE_FITS)
         )
     else()
         add_library(
-            dataio
+            dataio_fits
 
             dataio_fits.cpp
             utility_fits_class.cpp
         )
     endif(PION_PARALLEL)
 
-    target_link_libraries(dataio PUBLIC
+    target_link_libraries(dataio_fits PRIVATE
         ${FITS_LIBRARY}
         ${ZLIB_LIBRARY}
         ${CURL_LIBRARY}
         ${BZIP2_LIBRARY}
         Threads::Threads
     )
-    target_link_libraries(dataio PUBLIC dataio_base)
+    target_link_libraries(dataio PUBLIC dataio_fits)
 endif(PION_USE_FITS)

@@ -7,7 +7,7 @@ nprocs=1
 set -o errexit
 
 # All the directories containing source files
-source_dirs="source"
+source_dirs="analysis source"
 
 # Get the build directory and optional source directories from the command line
 if [[ $# -ge 1 ]]
