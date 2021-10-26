@@ -36,7 +36,8 @@ script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 
 EPOCH_FILE=${script_dir}/data/3DTest_ng_new_level00_0000.00008320.silo
 ${mpi} ../pion-ng \
- ${EPOCH_FILE} outfile=3DTest_ng_new redirect=pionlog omp-nthreads=${nt}
+ ${EPOCH_FILE} outfile=3DTest_ng_new redirect=pionlog omp-nthreads=${nt} \ 
+ || exit 1
 
 REF_FILE=3DTest_ng_new_level00_0000.00009024.silo
 NEW_FILE=`ls 3DTest_ng_new_level00_0000.00009024.silo | tail -n1`
@@ -45,7 +46,6 @@ NEW_FILE=`ls 3DTest_ng_new_level00_0000.00009024.silo | tail -n1`
 if grep -q "RESULTS ARE THE SAME" tmp.txt; then
   echo -e "${GREEN}*** WIND-BINARY TEST (NG RUN) HAS BEEN PASSED ***"
   tail -n10 tmp.txt
-  rm tmp.txt *.silo 
   echo -e "*** WIND-BINARY TEST (NG RUN) HAS BEEN PASSED ***${NC}"
   exit 0
 else

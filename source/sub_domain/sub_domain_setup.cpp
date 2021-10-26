@@ -1,4 +1,4 @@
-/// \file MCMD_control.cpp
+/// \file sub_domain.cpp
 ///
 /// \brief Defines class for controlling Multi-Core-Multi-Domain
 ///        simulations.
@@ -10,11 +10,12 @@
 /// - 2016.02.02 JM: Added option to decompose only along one axis.
 /// - 2018.01.24 JM: worked on making SimPM non-global
 
-#include "MCMD_control.h"
 #include <algorithm>
 #include <tools/command_line_interface.h>
 #include <tools/mem_manage.h>
 #include <tools/reporting.h>
+
+#include "sub_domain.h"
 
 using namespace std;
 
@@ -22,57 +23,78 @@ using namespace std;
 //-------------- MPI PARAMETERS ------------------
 //------------------------------------------------
 
+
+unsigned int Sub_domain::m_count;
+
 // ##################################################################
 // ##################################################################
 
 
-MCMDcontrol::MCMDcontrol()
+Sub_domain::Sub_domain()
 {
-  nproc      = -1;
-  myrank     = -1;
-  LocalNcell = -1;
-  periodic   = vector<int>(MAX_DIM, 0);
+  Ncell = pgrid.rank = -1;
+  periodic           = vector<int>(MAX_DIM, 0);
   for (int i = 0; i < MAX_DIM; i++) {
-    LocalNG[i] = offsets[i] = ix[i] = -1;
-    nx[i]                           = 0;
-    LocalXmin[i] = LocalXmax[i] = LocalRange[i] = -1.e99;
+    directional_Ncells[i] = offsets[i] = coordinates[i] = -1;
+    num_subdomains[i]                                   = 0;
+    Xmin[i] = Xmax[i] = range[i] = -1.e99;
   }
-  pgrid.rank = -1;
 
   ReadSingleFile =
       true;  ///< If the ICs are in a single file, set this to true.
   WriteSingleFile = false;  ///< If all processes to write to one file, set this
   WriteFullImage =
       false;  ///< If multiple fits files, each is the full domain size.
+
+  /* multiple Sub_domains may be initialised by each process, we need to ensure
+   * only one of these takes responsibility for initialising and finialising MPI
+   */
+  if (m_count == 0) {
+    MPI_Init(nullptr, nullptr);
+  }
+
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+
+  ++m_count;
 }
 
 // ##################################################################
 // ##################################################################
 
 
-MCMDcontrol::~MCMDcontrol()
+Sub_domain::~Sub_domain()
 {
-  /* TODO: can't free because COMM object is deleted before this one */
-  // if (cart_comm) {
-  //    MPI_Comm_free(&cart_comm);
-  //}
+  if (cart_comm) {
+    MPI_Comm_free(&cart_comm);
+  }
+  if (m_count == 1) {
+    MPI_Finalize();
+  }
+
+  --m_count;
+
+#ifndef NDEBUG
+  cout << "Sub_domain Destructor: done" << endl;
+#endif
 }
 
 // ##################################################################
 // ##################################################################
 
 
-void MCMDcontrol::calculate_process_topology(vector<float> &&ratios)
+void Sub_domain::calculate_process_topology(vector<float> &&ratios)
 {
-  /* account for hardcoded decomposition (i.e, nx[i] already non-zero) */
+  /* account for hardcoded decomposition (i.e, num_subdomains[i] already
+   * non-zero) */
   int free_processes = nproc;
   for (int i = 0; i < m_ndim; i++) {
-    if (nx[i] > 0) {
-      free_processes /= nx[i];
+    if (num_subdomains[i] > 0) {
+      free_processes /= num_subdomains[i];
       ratios[i] = 0;
     }
     else {
-      nx[i] = 1;
+      num_subdomains[i] = 1;
     }
   }
 
@@ -80,75 +102,58 @@ void MCMDcontrol::calculate_process_topology(vector<float> &&ratios)
     const int max_index =
         max_element(ratios.begin(), ratios.end()) - ratios.begin();
     ratios[max_index] /= 2;
-    nx[max_index] *= 2;
+    num_subdomains[max_index] *= 2;
   }
 }
 
 // ##################################################################
 // ##################################################################
 
-void MCMDcontrol::print_grid(
-    std::vector<int> &coords, int current_dimension) const
-{
-  for (coords[current_dimension] = 0;
-       coords[current_dimension] < nx[current_dimension];
-       coords[current_dimension]++) {
-    if (current_dimension == m_ndim - 1) {
-      int proc;
-      MPI_Cart_rank(cart_comm, &coords[0], &proc);
-      cout << proc << " ";
-    }
-    else {
-      print_grid(coords, current_dimension + 1);
-    }
-  }
-  cout << "\n";
-}
 
-// ##################################################################
-// ##################################################################
-
-
-int MCMDcontrol::decomposeDomain(
+int Sub_domain::decomposeDomain(
     const int &ndim,          ///< number of dimensions
     const class level &level  ///< parameters for NG grid level
 )
 {
 #ifndef NDEBUG
-  cout << "---MCMDcontrol::decomposeDomain() decomposing domain. ";
-  cout << " Nproc=" << nproc << ", myrank=" << myrank << "\n";
+  cout << "---Sub_domain::decomposeDomain() decomposing domain. ";
+  cout << " Nproc=" << nproc << ", myrank=" << myrank << endl;
 #endif
 
   m_ndim = ndim;
 
   /*
-   * the following sets nx to application topology aware values
-   * dimensions of nx not set to 0 are restricted to the previously held value
+   * the following sets num_subdomains to application topology aware values
+   * dimensions of num_subdomains not set to 0 are restricted to the previously
+   * held value
    */
   vector<float> ratios(begin(level.Range), begin(level.Range) + m_ndim);
   calculate_process_topology(move(ratios));
 
   /* TODO: reordering of ranks is temporarily disabled so old communicator works
    */
-  MPI_Cart_create(MPI_COMM_WORLD, m_ndim, nx, &periodic[0], 0, &cart_comm);
+  MPI_Cart_create(
+      MPI_COMM_WORLD, m_ndim, num_subdomains, &periodic[0], 0, &cart_comm);
 
   /* find my rank in the Cartesian communicator */
   MPI_Comm_rank(cart_comm, &myrank);
 
-  MPI_Cart_coords(cart_comm, myrank, m_ndim, ix);
+  MPI_Cart_coords(cart_comm, myrank, m_ndim, coordinates);
 
-  LocalNcell = 1;
-  ngbprocs   = vector<int>(2 * m_ndim);
+  Ncell           = 1;
+  neighbour_ranks = vector<int>(2 * m_ndim);
+
   for (int i = 0; i < m_ndim; i++) {
-    LocalRange[i] = level.Range[i] / nx[i];
-    LocalXmin[i]  = level.Xmin[i] + ix[i] * LocalRange[i];
-    LocalXmax[i]  = level.Xmin[i] + (ix[i] + 1) * LocalRange[i];
-    LocalNG[i]    = level.NG[i] / nx[i];
-    offsets[i]    = LocalNG[i] * ix[i];
-    LocalNcell *= LocalNG[i];
+    range[i]              = level.Range[i] / num_subdomains[i];
+    Xmin[i]               = level.Xmin[i] + coordinates[i] * range[i];
+    Xmax[i]               = level.Xmin[i] + (coordinates[i] + 1) * range[i];
+    directional_Ncells[i] = level.NG[i] / num_subdomains[i];
+    offsets[i]            = directional_Ncells[i] * coordinates[i];
+    Ncell *= directional_Ncells[i];
 
     /* determine neighbours in ith dimension */
-    MPI_Cart_shift(cart_comm, i, 1, &ngbprocs[2 * i], &ngbprocs[2 * i + 1]);
+    MPI_Cart_shift(
+        cart_comm, i, 1, &neighbour_ranks[2 * i], &neighbour_ranks[2 * i + 1]);
   }
 
 #ifndef NDEBUG
@@ -157,7 +162,7 @@ int MCMDcontrol::decomposeDomain(
     cout << "Dim\t Range\t Xmin\t Xmax\t Grid size\n";
     for (int i = 0; i < m_ndim; i++) {
       cout << i << "\t " << level.Range[i] << "\t " << level.Xmin[i] << "\t "
-           << level.Xmax[i] << "\t " << nx[i] << "\n";
+           << level.Xmax[i] << "\t " << num_subdomains[i] << "\n";
     }
     std::vector<int> coords(m_ndim, 0);
     cout << "Process topology:\n";
@@ -165,14 +170,14 @@ int MCMDcontrol::decomposeDomain(
   }
 
   cout << "Proc " << myrank << ":\n";
-  cout << "Ncell = " << LocalNcell << "\n";
+  cout << "Ncell = " << Ncell << "\n";
   cout << "Dim\t Range\t Xmin\t Xmax\t -ngbr\t +ngbr\t coords\n";
   for (int i = 0; i < m_ndim; i++) {
-    cout << i << "\t " << LocalRange[i] << "\t " << LocalXmin[i] << "\t "
-         << LocalXmax[i] << "\t " << ngbprocs[2 * i] << "\t "
-         << ngbprocs[2 * i + 1] << "\t " << ix[i] << "\n";
+    cout << i << "\t " << range[i] << "\t " << Xmin[i] << "\t " << Xmax[i]
+         << "\t " << neighbour_ranks[2 * i] << "\t "
+         << neighbour_ranks[2 * i + 1] << "\t " << coordinates[i] << "\n";
   }
-  cout << "---MCMDcontrol::decomposeDomain() Domain decomposition done.\n"
+  cout << "---Sub_domain::decomposeDomain() Domain decomposition done.\n"
        << endl;
 #endif
   return 0;
@@ -182,7 +187,7 @@ int MCMDcontrol::decomposeDomain(
 // ##################################################################
 
 
-int MCMDcontrol::decomposeDomain(
+int Sub_domain::decomposeDomain(
     const enum axes daxis,  ///< Axis to decompose domain along.
     const int &ndim,        ///< pointer to simulation parameters
     const class level
@@ -191,10 +196,10 @@ int MCMDcontrol::decomposeDomain(
 {
   for (int i = 0; i < ndim; i++) {
     /* don't decompose domain by default */
-    nx[i] = 1;
+    num_subdomains[i] = 1;
   }
   /* do decompose in daxis dimension */
-  nx[daxis] = 0;
+  num_subdomains[daxis] = 0;
 
   return decomposeDomain(ndim, level);
 }
@@ -203,7 +208,7 @@ int MCMDcontrol::decomposeDomain(
 // ##################################################################
 
 
-int MCMDcontrol::decomposeDomain(
+int Sub_domain::decomposeDomain(
     const int &ndim,           ///< number of dimensions
     const class level &level,  ///< parameters for NG grid level
     vector<int> &&pbc          ///< boolean array of whether each face has pbc
@@ -220,7 +225,7 @@ int MCMDcontrol::decomposeDomain(
 // ##################################################################
 
 
-int MCMDcontrol::decomposeDomain(
+int Sub_domain::decomposeDomain(
     const enum axes daxis,  ///< Axis to decompose domain along.
     const int &ndim,        ///< pointer to simulation parameters
     const class level
@@ -239,7 +244,7 @@ int MCMDcontrol::decomposeDomain(
 // ##################################################################
 
 
-void MCMDcontrol::create_abutting_domains_list(
+void Sub_domain::create_abutting_domains_list(
     int current_dimension,  ///< current dimension to traverse
     int cursor[],           ///< position to traverse relative to
     bool explore)
@@ -256,7 +261,7 @@ void MCMDcontrol::create_abutting_domains_list(
       abutting_domains.push_back(neighbour_rank);
     }
     /* have neighbours in the positive direction */
-    if ((cursor[current_dimension] += 2) < nx[current_dimension]) {
+    if ((cursor[current_dimension] += 2) < num_subdomains[current_dimension]) {
       int neighbour_rank;
       MPI_Cart_rank(cart_comm, cursor, &neighbour_rank);
       abutting_domains.push_back(neighbour_rank);
@@ -270,7 +275,7 @@ void MCMDcontrol::create_abutting_domains_list(
       create_abutting_domains_list(current_dimension - 1, cursor, true);
     }
     /* have neighbours in the positive direction */
-    if ((cursor[current_dimension] += 2) < nx[current_dimension]) {
+    if ((cursor[current_dimension] += 2) < num_subdomains[current_dimension]) {
       create_abutting_domains_list(current_dimension - 1, cursor, false);
       create_abutting_domains_list(current_dimension - 1, cursor, true);
     }
@@ -282,11 +287,11 @@ void MCMDcontrol::create_abutting_domains_list(
 // ##################################################################
 
 
-void MCMDcontrol::create_abutting_domains_list()
+void Sub_domain::create_abutting_domains_list()
 {
   int cursor[m_ndim];
   for (int i = 0; i < m_ndim; i++) {
-    cursor[i] = ix[i];
+    cursor[i] = coordinates[i];
   }
   if (abutting_domains.empty()) {
     create_abutting_domains_list(m_ndim - 1, cursor, false);
@@ -298,48 +303,12 @@ void MCMDcontrol::create_abutting_domains_list()
 // ##################################################################
 
 
-void MCMDcontrol::get_domain_coordinates(const int r, int *arr) const
-{
-  MPI_Cart_coords(cart_comm, r, m_ndim, arr);
-}
-
-// ##################################################################
-// ##################################################################
-
-
-int MCMDcontrol::get_rank_from_grid_location(
-    const class SimParams &par,  ///< simulation parameters
-    const vector<double> &loc,   ///< location sought
-    const int l                  ///< grid level
-    ) const
-{
-  int grid_coordinates[par.ndim];
-  for (int i = 0; i < par.ndim; i++) {
-    grid_coordinates[i] = static_cast<int>(floor(
-        nx[i] * (loc[i] - par.levels[l].Xmin[i]) / par.levels[l].Range[i]));
-  }
-  /* check validity (0 <= x <= nx[] - 1) */
-  for (int i = 0; i < par.ndim; i++) {
-    if ((grid_coordinates[i] * (grid_coordinates[i] + 1 - nx[i]) > 0)) {
-      return -1;
-    }
-  }
-  /* MPI command to get rank from index in Cartesian grid */
-  int proc;
-  MPI_Cart_rank(cart_comm, grid_coordinates, &proc);
-  return proc;
-}
-
-// ##################################################################
-// ##################################################################
-
-
-void MCMDcontrol::determine_parent_processes(
+void Sub_domain::determine_parent_processes(
     const class SimParams &par, const int level)
 {
   vector<double> centre(par.ndim);
   for (int i = 0; i < par.ndim; i++)
-    centre[i] = 0.5 * (LocalXmin[i] + LocalXmax[i]);
+    centre[i] = 0.5 * (Xmin[i] + Xmax[i]);
 
   /* pgrid contains information about the parent process' domain */
   pgrid.rank = get_rank_from_grid_location(par, centre, level - 1);
@@ -350,9 +319,9 @@ void MCMDcontrol::determine_parent_processes(
   get_domain_coordinates(pgrid.rank, domain_coordinates);
   for (int i = 0; i < par.ndim; i++) {
     /* parent level has range 2x my range in each direction */
-    pgrid.Xmin[i] = par.levels[level - 1].Xmin[i]
-                    + domain_coordinates[i] * 2.0 * LocalRange[i];
-    pgrid.Xmax[i] = pgrid.Xmin[i] + 2.0 * LocalRange[i];
+    pgrid.Xmin[i] =
+        par.levels[level - 1].Xmin[i] + domain_coordinates[i] * 2.0 * range[i];
+    pgrid.Xmax[i] = pgrid.Xmin[i] + 2.0 * range[i];
 
     /* parent's neighbours in this dimension */
     /* negative x-dir */
@@ -361,25 +330,22 @@ void MCMDcontrol::determine_parent_processes(
     else {
       MPI_Cart_rank(cart_comm, domain_coordinates, &(pgrid_ngb[2 * i].rank));
       for (int j = 0; j < par.ndim; j++) {
-        pgrid_ngb[2 * i].Xmin[j] =
-            par.levels[level - 1].Xmin[j]
-            + domain_coordinates[j] * 2.0 * LocalRange[j];
-        pgrid_ngb[2 * i].Xmax[j] =
-            pgrid_ngb[2 * i].Xmin[j] + 2.0 * LocalRange[j];
+        pgrid_ngb[2 * i].Xmin[j] = par.levels[level - 1].Xmin[j]
+                                   + domain_coordinates[j] * 2.0 * range[j];
+        pgrid_ngb[2 * i].Xmax[j] = pgrid_ngb[2 * i].Xmin[j] + 2.0 * range[j];
       }
     }
     /* positive x-dir */
-    if ((domain_coordinates[i] += 2) == nx[i])
+    if ((domain_coordinates[i] += 2) == num_subdomains[i])
       pgrid_ngb[2 * i + 1].rank = -999;
     else {
       MPI_Cart_rank(
           cart_comm, domain_coordinates, &(pgrid_ngb[2 * i + 1].rank));
       for (int j = 0; j < par.ndim; j++) {
-        pgrid_ngb[2 * i + 1].Xmin[j] =
-            par.levels[level - 1].Xmin[j]
-            + domain_coordinates[j] * 2.0 * LocalRange[j];
+        pgrid_ngb[2 * i + 1].Xmin[j] = par.levels[level - 1].Xmin[j]
+                                       + domain_coordinates[j] * 2.0 * range[j];
         pgrid_ngb[2 * i + 1].Xmax[j] =
-            pgrid_ngb[2 * i + 1].Xmin[j] + 2.0 * LocalRange[j];
+            pgrid_ngb[2 * i + 1].Xmin[j] + 2.0 * range[j];
       }
     }
     domain_coordinates[i] -= 1;
@@ -406,7 +372,7 @@ void MCMDcontrol::determine_parent_processes(
 // ##################################################################
 
 
-void MCMDcontrol::determine_child_ranks(
+void Sub_domain::determine_child_ranks(
     const class SimParams &par,
     const int level,
     vector<int> &children,
@@ -416,7 +382,7 @@ void MCMDcontrol::determine_child_ranks(
   /* split domain in 4 in each dimension */
   for (int i = 0; i < 4; i++) {
     centre[current_dimension] =
-        LocalXmin[current_dimension] + 0.25 * i * LocalRange[current_dimension];
+        Xmin[current_dimension] + 0.25 * i * range[current_dimension];
     if (current_dimension == m_ndim - 1) {
       int child_rank = get_rank_from_grid_location(par, centre, level + 1);
       if (child_rank > -1) children.push_back(child_rank);
@@ -432,7 +398,7 @@ void MCMDcontrol::determine_child_ranks(
 // ##################################################################
 
 
-void MCMDcontrol::determine_child_processes(
+void Sub_domain::determine_child_processes(
     const class SimParams &par, const int level)
 {
   child_procs.clear();
@@ -464,8 +430,8 @@ void MCMDcontrol::determine_child_processes(
       get_domain_coordinates(child.rank, domain_coordinates);
       for (int i = 0; i < par.ndim; i++) {
         child.Xmin[i] = par.levels[level + 1].Xmin[i]
-                        + domain_coordinates[i] * 0.5 * LocalRange[i];
-        child.Xmax[i] = child.Xmin[i] + 0.5 * LocalRange[i];
+                        + domain_coordinates[i] * 0.5 * range[i];
+        child.Xmax[i] = child.Xmin[i] + 0.5 * range[i];
       }
       child_procs.push_back(child);
     }
@@ -485,7 +451,7 @@ void MCMDcontrol::determine_child_processes(
 // ##################################################################
 
 
-void MCMDcontrol::determine_child_neighbour_ranks(
+void Sub_domain::determine_child_neighbour_ranks(
     const class SimParams &par,
     const int level,
     vector<double> &centre,
@@ -496,7 +462,7 @@ void MCMDcontrol::determine_child_neighbour_ranks(
   const int next_dimension = (current_dimension + 1) % par.ndim;
   for (int i = 0; i < 4; i++) {
     centre[current_dimension] =
-        LocalXmin[current_dimension] + 0.25 * i * LocalRange[current_dimension];
+        Xmin[current_dimension] + 0.25 * i * range[current_dimension];
     if (next_dimension != neighbour_dimension) {
       determine_child_neighbour_ranks(
           par, level, centre, neighbours, next_dimension, neighbour_dimension);
@@ -504,15 +470,17 @@ void MCMDcontrol::determine_child_neighbour_ranks(
     else {
       /* negative direction */
       centre[neighbour_dimension] =
-          LocalXmin[neighbour_dimension]
-          - LocalRange[neighbour_dimension] / LocalNG[neighbour_dimension];
+          Xmin[neighbour_dimension]
+          - range[neighbour_dimension]
+                / directional_Ncells[neighbour_dimension];
       int child_rank = get_rank_from_grid_location(par, centre, level + 1);
       if (child_rank > -1) neighbours[0].push_back(child_rank);
 
       /* positive direction */
       centre[neighbour_dimension] =
-          LocalXmax[neighbour_dimension]
-          + LocalRange[neighbour_dimension] / LocalNG[neighbour_dimension];
+          Xmax[neighbour_dimension]
+          + range[neighbour_dimension]
+                / directional_Ncells[neighbour_dimension];
       child_rank = get_rank_from_grid_location(par, centre, level + 1);
       if (child_rank > -1) neighbours[1].push_back(child_rank);
     }
@@ -523,7 +491,7 @@ void MCMDcontrol::determine_child_neighbour_ranks(
 // ##################################################################
 
 
-void MCMDcontrol::determine_child_neighbours(
+void Sub_domain::determine_child_neighbours(
     const class SimParams &par, const int level)
 {
   cgrid_ngb.resize(2 * par.ndim);
@@ -535,26 +503,26 @@ void MCMDcontrol::determine_child_neighbours(
   /* ranks of neighbours in each direction */
   for (int i = 0; i < par.ndim; i++) {
     vector<double> centre(par.ndim);
-    vector<vector<int> > neighbour_ranks(2);
+    vector<vector<int> > neighbours(2);
     determine_child_neighbour_ranks(
-        par, level, centre, neighbour_ranks, (i + 1) % par.ndim, i);
+        par, level, centre, neighbours, (i + 1) % par.ndim, i);
 
     for (int j = 0; j < 2; j++) {
-      if (!neighbour_ranks[j].empty()) {
-        sort(neighbour_ranks[j].begin(), neighbour_ranks[j].end());
-        neighbour_ranks[j].erase(
-            unique(neighbour_ranks[j].begin(), neighbour_ranks[j].end()),
-            neighbour_ranks[j].end());
+      if (!neighbours[j].empty()) {
+        sort(neighbours[j].begin(), neighbours[j].end());
+        neighbours[j].erase(
+            unique(neighbours[j].begin(), neighbours[j].end()),
+            neighbours[j].end());
 
-        for (auto c : neighbour_ranks[j]) {
+        for (auto c : neighbours[j]) {
           struct cgrid child;
           child.rank = c;
           int domain_coordinates[par.ndim];
           get_domain_coordinates(child.rank, domain_coordinates);
           for (int i = 0; i < par.ndim; i++) {
             child.Xmin[i] = par.levels[level + 1].Xmin[i]
-                            + domain_coordinates[i] * 0.5 * LocalRange[i];
-            child.Xmax[i] = child.Xmin[i] + 0.5 * LocalRange[i];
+                            + domain_coordinates[i] * 0.5 * range[i];
+            child.Xmax[i] = child.Xmin[i] + 0.5 * range[i];
           }
           cgrid_ngb[2 * i + j].push_back(child);
         }
@@ -579,13 +547,13 @@ void MCMDcontrol::determine_child_neighbours(
 // ##################################################################
 
 
-void MCMDcontrol::set_NG_hierarchy(
+void Sub_domain::set_NG_hierarchy(
     class SimParams &par,  ///< simulation parameters
     const int l            ///< level to work on
 )
 {
 #ifndef NDEBUG
-  cout << "Setting up NG hierarchy (MCMDcontrol) on level " << l << endl;
+  cout << "Setting up NG hierarchy (Sub_domain) on level " << l << endl;
   ;
 #endif
   // set rank of parent for each grid except root level 0
@@ -605,183 +573,6 @@ void MCMDcontrol::set_NG_hierarchy(
   }
 }
 
-
-// ##################################################################
-// ##################################################################
-
-
-void MCMDcontrol::get_nx_subdomains(int *tmp) const
-{
-  for (int i = 0; i < MAX_DIM; i++)
-    tmp[i] = nx[i];
-  return;
-}
-
-
-// ##################################################################
-// ##################################################################
-
-
-void MCMDcontrol::get_parent_grid_info(struct cgrid *cg) const
-{
-  cg->rank = pgrid.rank;
-  for (int i = 0; i < MAX_DIM; i++)
-    cg->Xmin[i] = pgrid.Xmin[i];
-  for (int i = 0; i < MAX_DIM; i++)
-    cg->Xmax[i] = pgrid.Xmax[i];
-}
-
-// ##################################################################
-// ##################################################################
-
-
-void MCMDcontrol::get_parent_ngb_grid_info(vector<struct cgrid> &pgngb) const
-{
-  pgngb.resize(pgrid_ngb.size());
-  for (size_t iter = 0; iter < pgrid_ngb.size(); iter++) {
-    pgngb[iter].rank = pgrid_ngb[iter].rank;
-    for (int i = 0; i < MAX_DIM; i++)
-      pgngb[iter].Xmin[i] = pgrid_ngb[iter].Xmin[i];
-    for (int i = 0; i < MAX_DIM; i++)
-      pgngb[iter].Xmax[i] = pgrid_ngb[iter].Xmax[i];
-  }
-}
-
-// ##################################################################
-// ##################################################################
-
-
-void MCMDcontrol::get_child_grid_info(vector<struct cgrid> &cg) const
-{
-  cg.resize(child_procs.size());
-  for (size_t iter = 0; iter < child_procs.size(); iter++) {
-    cg[iter].rank = child_procs[iter].rank;
-    for (int i = 0; i < MAX_DIM; i++)
-      cg[iter].Xmin[i] = child_procs[iter].Xmin[i];
-    for (int i = 0; i < MAX_DIM; i++)
-      cg[iter].Xmax[i] = child_procs[iter].Xmax[i];
-  }
-}
-
-// ##################################################################
-// ##################################################################
-
-
-void MCMDcontrol::get_level_lp1_ngb_info(
-    vector<vector<struct cgrid> > &cgngb) const
-{
-  cgngb.resize(cgrid_ngb.size());
-  for (size_t p = 0; p < cgrid_ngb.size(); p++) {
-    cgngb[p].resize(cgrid_ngb[p].size());
-    for (size_t q = 0; q < cgrid_ngb[p].size(); q++) {
-      cgngb[p][q].rank = cgrid_ngb[p][q].rank;
-      for (int i = 0; i < MAX_DIM; i++)
-        cgngb[p][q].Xmin[i] = cgrid_ngb[p][q].Xmin[i];
-      for (int i = 0; i < MAX_DIM; i++)
-        cgngb[p][q].Xmax[i] = cgrid_ngb[p][q].Xmax[i];
-    }
-  }
-}
-
-// ##################################################################
-// ##################################################################
-
-
-void MCMDcontrol::gather_ncells(int *recv_buffer, const int &root) const
-{
-  MPI_Gather(&LocalNcell, 1, MPI_INT, recv_buffer, 1, MPI_INT, root, cart_comm);
-}
-
-// ##################################################################
-// ##################################################################
-
-
-void MCMDcontrol::allgather_ncells(vector<int> &ncells_list) const
-{
-  ncells_list.resize(nproc);
-  MPI_Allgather(
-      &LocalNcell, 1, MPI_INT, &ncells_list[0], 1, MPI_INT, cart_comm);
-}
-
-// ##################################################################
-// ##################################################################
-
-
-void MCMDcontrol::gather_extents(double *recv_buffer, const int &root) const
-{
-  double extents[2 * m_ndim];
-  for (int i = 0; i < m_ndim; i++) {
-    extents[i]          = LocalXmin[i];
-    extents[m_ndim + i] = LocalXmax[i];
-  }
-  MPI_Gather(
-      &extents, 2 * m_ndim, MPI_DOUBLE, recv_buffer, 2 * m_ndim, MPI_DOUBLE,
-      root, cart_comm);
-}
-
-// ##################################################################
-// ##################################################################
-
-
-void MCMDcontrol::gather_offsets(
-    vector<int> &offsets_list, const int &root) const
-{
-  offsets_list.resize(nproc * m_ndim);
-  MPI_Gather(
-      &offsets[0], m_ndim, MPI_INT, &offsets_list[0], m_ndim, MPI_INT, root,
-      cart_comm);
-}
-
-// ##################################################################
-// ##################################################################
-
-
-void MCMDcontrol::gather_localNG(
-    vector<int> &localNG_list, const int &root) const
-{
-  localNG_list.resize(nproc * m_ndim);
-  MPI_Gather(
-      &LocalNG[0], m_ndim, MPI_INT, &localNG_list[0], m_ndim, MPI_INT, root,
-      cart_comm);
-}
-
-// ##################################################################
-// ##################################################################
-
-
-void MCMDcontrol::gather_abutting_domains(
-    vector<int> &abutting_domains_list,
-    int *rank_displacements_in_abutting_domains_list,
-    int *num_abutting_domains_by_rank,
-    const int &root)
-{
-  create_abutting_domains_list();
-  int num_abutting_domains = abutting_domains.size();
-  MPI_Gather(
-      &num_abutting_domains, 1, MPI_INT, &num_abutting_domains_by_rank[0], 1,
-      MPI_INT, root, cart_comm);
-
-  /*
-   * calculate running sum of abutting domains by rank and displacements for
-   * storing local abutting domains lists in a global list
-   */
-  if (myrank == 0) {
-    rank_displacements_in_abutting_domains_list[0] = 0;
-    int i;
-    for (i = 0; i < nproc - 1; i++) {
-      rank_displacements_in_abutting_domains_list[i + 1] =
-          rank_displacements_in_abutting_domains_list[i]
-          + num_abutting_domains_by_rank[i];
-    }
-    abutting_domains_list.resize(
-        rank_displacements_in_abutting_domains_list[i]
-        + num_abutting_domains_by_rank[i]);
-  }
-  MPI_Gatherv(
-      &abutting_domains[0], abutting_domains.size(), MPI_INT,
-      &abutting_domains_list[0], &num_abutting_domains_by_rank[0],
-      rank_displacements_in_abutting_domains_list, MPI_INT, root, cart_comm);
-}
 
 //------------------------------------------------
 //-------------- MPI PARAMETERS ------------------

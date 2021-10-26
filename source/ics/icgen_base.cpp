@@ -233,7 +233,7 @@ int ICsetup_base::AddNoise2Data(
 {
   int seed = 975;
 #ifdef PARALLEL
-  seed += MCMD->get_myrank();
+  seed += sub_domain->get_myrank();
   bool true_edge = false;
 #endif
   srand(seed);
@@ -252,7 +252,7 @@ int ICsetup_base::AddNoise2Data(
         }
       } while ((cpt = grid->NextPt(cpt)) != 0);
 #ifdef PARALLEL
-      avg = COMM->global_operation_double("SUM", avg);
+      avg = sub_domain->global_operation_double("SUM", avg);
 #endif
       cout << "avg = " << avg << "\t ct= " << ct;
       avg /= static_cast<double>(SimPM.Ncell);
@@ -283,33 +283,33 @@ int ICsetup_base::AddNoise2Data(
           if (cpt->isedge % 3 == 1) {  // XN boundary
             // cout <<"got XN true boundary: cpt="<<cpt->id<<",
             // isedge="<<cpt->isedge<<" ";
-            if (MCMD->ngbprocs[XN] < 0) true_edge = true;
-            // cout <<" ngb="<<MCMD->ngbprocs[XN]<<",
+            if (sub_domain->get_neighbour_rank(XN) < 0) true_edge = true;
+            // cout <<" ngb="<<sub_domain->get_neighbour_rank(XN)<<",
             // true_edge="<<true_edge<<"\n";
           }
           else if (cpt->isedge % 3 == 2) {  // XP boundary
-            if (MCMD->ngbprocs[XP] < 0) true_edge = true;
+            if (sub_domain->get_neighbour_rank(XP) < 0) true_edge = true;
           }
           // y-dir
           if (SimPM.ndim > 1) {
             if ((cpt->isedge % 9) / 3 == 1) {  // YN boundary
               // cout <<"got YN true boundary: cpt="<<cpt->id<<",
               // isedge="<<cpt->isedge<<" ";
-              if (MCMD->ngbprocs[YN] < 0) true_edge = true;
-              // cout <<" ngb="<<MCMD->ngbprocs[YN]<<",
+              if (sub_domain->get_neighbour_rank(YN) < 0) true_edge = true;
+              // cout <<" ngb="<<sub_domain->get_neighbour_rank(YN)<<",
               // true_edge="<<true_edge<<"\n";
             }
             else if ((cpt->isedge % 9) / 3 == 2) {  // YP boundary
-              if (MCMD->ngbprocs[YP] < 0) true_edge = true;
+              if (sub_domain->get_neighbour_rank(YP) < 0) true_edge = true;
             }
           }
           // z-dir
           if (SimPM.ndim > 2) {
             if (cpt->isedge / 9 == 1) {  // ZN boundary
-              if (MCMD->ngbprocs[ZN] < 0) true_edge = true;
+              if (sub_domain->get_neighbour_rank(ZN) < 0) true_edge = true;
             }
             else if (cpt->isedge / 9 == 2) {  // ZP boundary
-              if (MCMD->ngbprocs[ZP] < 0) true_edge = true;
+              if (sub_domain->get_neighbour_rank(ZP) < 0) true_edge = true;
             }
           }
           // cout <<"true_edge="<<true_edge<<"\n";
@@ -351,33 +351,33 @@ int ICsetup_base::AddNoise2Data(
           if (cpt->isedge % 3 == 1) {  // XN boundary
             // cout <<"got XN true boundary: cpt="<<cpt->id<<",
             // isedge="<<cpt->isedge<<" ";
-            if (MCMD->ngbprocs[XN] < 0) true_edge = true;
-            // cout <<" ngb="<<MCMD->ngbprocs[XN]<<",
+            if (sub_domain->get_neighbour_rank(XN) < 0) true_edge = true;
+            // cout <<" ngb="<<sub_domain->get_neighbour_rank(XN)<<",
             // true_edge="<<true_edge<<"\n";
           }
           else if (cpt->isedge % 3 == 2) {  // XP boundary
-            if (MCMD->ngbprocs[XP] < 0) true_edge = true;
+            if (sub_domain->get_neighbour_rank(XP) < 0) true_edge = true;
           }
           // y-dir
           if (SimPM.ndim > 1) {
             if ((cpt->isedge % 9) / 3 == 1) {  // YN boundary
               // cout <<"got YN true boundary: cpt="<<cpt->id<<",
               // isedge="<<cpt->isedge<<" ";
-              if (MCMD->ngbprocs[YN] < 0) true_edge = true;
-              // cout <<" ngb="<<MCMD->ngbprocs[YN]<<",
+              if (sub_domain->get_neighbour_rank(YN) < 0) true_edge = true;
+              // cout <<" ngb="<<sub_domain->get_neighbour_rank(YN)<<",
               // true_edge="<<true_edge<<"\n";
             }
             else if ((cpt->isedge % 9) / 3 == 2) {  // YP boundary
-              if (MCMD->ngbprocs[YP] < 0) true_edge = true;
+              if (sub_domain->get_neighbour_rank(YP) < 0) true_edge = true;
             }
           }
           // z-dir
           if (SimPM.ndim > 2) {
             if (cpt->isedge / 9 == 1) {  // ZN boundary
-              if (MCMD->ngbprocs[ZN] < 0) true_edge = true;
+              if (sub_domain->get_neighbour_rank(ZN) < 0) true_edge = true;
             }
             else if (cpt->isedge / 9 == 2) {  // ZP boundary
-              if (MCMD->ngbprocs[ZP] < 0) true_edge = true;
+              if (sub_domain->get_neighbour_rank(ZP) < 0) true_edge = true;
             }
           }
           // cout <<"true_edge="<<true_edge<<"\n";
@@ -463,33 +463,33 @@ int ICsetup_base::AddNoise2Data(
           if (cpt->isedge % 3 == 1) {  // XN boundary
             // cout <<"got XN true boundary: cpt="<<cpt->id<<",
             // isedge="<<cpt->isedge<<" ";
-            if (MCMD->ngbprocs[XN] < 0) true_edge = true;
-            // cout <<" ngb="<<MCMD->ngbprocs[XN]<<",
+            if (sub_domain->get_neighbour_rank(XN) < 0) true_edge = true;
+            // cout <<" ngb="<<sub_domain->get_neighbour_rank(XN)<<",
             // true_edge="<<true_edge<<"\n";
           }
           else if (cpt->isedge % 3 == 2) {  // XP boundary
-            if (MCMD->ngbprocs[XP] < 0) true_edge = true;
+            if (sub_domain->get_neighbour_rank(XP) < 0) true_edge = true;
           }
           // y-dir
           if (SimPM.ndim > 1) {
             if ((cpt->isedge % 9) / 3 == 1) {  // YN boundary
               // cout <<"got YN true boundary: cpt="<<cpt->id<<",
               // isedge="<<cpt->isedge<<" ";
-              if (MCMD->ngbprocs[YN] < 0) true_edge = true;
-              // cout <<" ngb="<<MCMD->ngbprocs[YN]<<",
+              if (sub_domain->get_neighbour_rank(YN) < 0) true_edge = true;
+              // cout <<" ngb="<<sub_domain->get_neighbour_rank(YN)<<",
               // true_edge="<<true_edge<<"\n";
             }
             else if ((cpt->isedge % 9) / 3 == 2) {  // YP boundary
-              if (MCMD->ngbprocs[YP] < 0) true_edge = true;
+              if (sub_domain->get_neighbour_rank(YP) < 0) true_edge = true;
             }
           }
           // z-dir
           if (SimPM.ndim > 2) {
             if (cpt->isedge / 9 == 1) {  // ZN boundary
-              if (MCMD->ngbprocs[ZN] < 0) true_edge = true;
+              if (sub_domain->get_neighbour_rank(ZN) < 0) true_edge = true;
             }
             else if (cpt->isedge / 9 == 2) {  // ZP boundary
-              if (MCMD->ngbprocs[ZP] < 0) true_edge = true;
+              if (sub_domain->get_neighbour_rank(ZP) < 0) true_edge = true;
             }
           }
           // cout <<"true_edge="<<true_edge<<"\n";

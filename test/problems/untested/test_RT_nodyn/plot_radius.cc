@@ -93,15 +93,6 @@ void get_file_name(const string, ///< file base
 
 int main(int argc, char **argv)
 {
-#ifdef PLTEST
-  //
-  // First initialise the comms class, since we need to define
-  // PARALLEL to read a parallel file.  This is not ideal, but too
-  // bad...
-  //
-  int err = COMM->init(&argc, &argv);
-#endif
-
   //
   // Get input files and output files from cmd-line args.
   //

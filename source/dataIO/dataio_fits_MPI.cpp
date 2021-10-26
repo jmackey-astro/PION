@@ -50,7 +50,7 @@ using namespace std;
 
 DataIOFits_pllel::DataIOFits_pllel(
     class SimParams &SimPM,  ///< pointer to simulation parameters
-    class MCMDcontrol *p) :
+    class Sub_domain *p) :
     DataIOFits(SimPM)
 {
   cout << "Setting up DataIOFits_pllel class.\n";
@@ -86,7 +86,7 @@ std::string DataIOFits_pllel::choose_filename(
   // Add _RANK to filename if running in parallel and writing multiple
   // files.
   //
-  if (!mpiPM->WriteSingleFile) {
+  if (!mpiPM->get_WriteSingleFile()) {
     temp << "_";
     temp.width(4);
     temp.fill('0');
@@ -120,7 +120,7 @@ int DataIOFits_pllel::OutputData(
     cout << "SAVING DATA FOR LEVEL " << l << " IN FITS FORMAT\n";
     if (!cg[l]) rep.error("dataio_silo::OutputData() null pointer!", cg[l]);
     DataIOFits_pllel::gp = cg[l];
-    mpiPM                = &(SimPM.levels[l].MCMD);
+    mpiPM                = &(SimPM.levels[l].sub_domain);
 
     // write a different file for each level in the NG grid.
     string fbase;
@@ -154,7 +154,7 @@ int DataIOFits_pllel::SaveLevelData(
 )
 {
   string fname = "DataIOFits_pllel::SaveLevelData";
-  mpiPM        = &(SimPM.levels[l].MCMD);
+  mpiPM        = &(SimPM.levels[l].sub_domain);
 
   if (!cg)
     rep.error("DataIOFits_pllel::OutputData() null pointer to grid!", cg);
@@ -288,7 +288,7 @@ int DataIOFits_pllel::SaveLevelData(
 
   // -------------------------------------------------------
   // -------------------------------------------------------
-  if (!mpiPM->WriteSingleFile) {
+  if (!mpiPM->get_WriteSingleFile()) {
     // This is the default -- each process writes its own file
     cout << "DataIOFits_pllel::OutputData() writing multiple files.\n";
     temp.str("");
@@ -371,24 +371,25 @@ int DataIOFits_pllel::SaveLevelData(
     //
     double *data = 0;
     for (int i = 0; i < nvar; i++) {
-      if (mpiPM->WriteFullImage) {  // write full image, with only local
-                                    // part being non-zero.
+      if (mpiPM->get_WriteFullImage()) {  // write full image, with only local
+                                          // part being non-zero.
         err += create_fits_image(ff, extname[i], SimPM.ndim, SimPM.NG);
         err += put_variable_into_data_array(
-            SimPM, extname[i], mpiPM->LocalNcell, &data);
+            SimPM, extname[i], mpiPM->get_Ncell(), &data);
         err += write_fits_image(
-            ff, extname[i], mpiPM->LocalXmin, SimPM.levels[l].Xmin,
-            SimPM.levels[l].dx, SimPM.ndim, mpiPM->LocalNG, mpiPM->LocalNcell,
-            data);
+            ff, extname[i], mpiPM->get_Xmin(), SimPM.levels[l].Xmin,
+            SimPM.levels[l].dx, SimPM.ndim, mpiPM->get_directional_Ncells(),
+            mpiPM->get_Ncell(), data);
       }
       else {  // Write only part of image that is on local grid.
-        err += create_fits_image(ff, extname[i], SimPM.ndim, mpiPM->LocalNG);
+        err += create_fits_image(
+            ff, extname[i], SimPM.ndim, mpiPM->get_directional_Ncells());
         err += put_variable_into_data_array(
-            SimPM, extname[i], mpiPM->LocalNcell, &data);
+            SimPM, extname[i], mpiPM->get_Ncell(), &data);
         err += write_fits_image(
-            ff, extname[i], mpiPM->LocalXmin, mpiPM->LocalXmin,
-            SimPM.levels[l].dx, SimPM.ndim, mpiPM->LocalNG, mpiPM->LocalNcell,
-            data);
+            ff, extname[i], mpiPM->get_Xmin(), mpiPM->get_Xmin(),
+            SimPM.levels[l].dx, SimPM.ndim, mpiPM->get_directional_Ncells(),
+            mpiPM->get_Ncell(), data);
       }
     }
     if (err)
@@ -402,7 +403,7 @@ int DataIOFits_pllel::SaveLevelData(
          << ": file created, written, and unlocked. err=" << err << "\n";
   }
 
-  else if (mpiPM->WriteSingleFile) {
+  else if (mpiPM->get_WriteSingleFile()) {
     cout << "WARNING! THIS IS NOT SYNCHRONOUS!  WILL FAIL RANDOMLY AND CAUSE "
             "CRASH.\n";
     if (file_exists(outfile)) {
@@ -453,11 +454,11 @@ int DataIOFits_pllel::SaveLevelData(
         err += create_fits_image(ff, extname[i], SimPM.ndim, SimPM.NG);
         double *data = 0;
         err += put_variable_into_data_array(
-            SimPM, extname[i], mpiPM->LocalNcell, &data);
+            SimPM, extname[i], mpiPM->get_Ncell(), &data);
         err += write_fits_image(
-            ff, extname[i], mpiPM->LocalXmin, SimPM.levels[l].Xmin,
-            SimPM.levels[l].dx, SimPM.ndim, mpiPM->LocalNG, mpiPM->LocalNcell,
-            data);
+            ff, extname[i], mpiPM->get_Xmin(), SimPM.levels[l].Xmin,
+            SimPM.levels[l].dx, SimPM.ndim, mpiPM->get_directional_Ncells(),
+            mpiPM->get_Ncell(), data);
         data = mem.myfree(data);
       }
       if (err)
@@ -499,11 +500,11 @@ int DataIOFits_pllel::SaveLevelData(
       // write my portion of image.
       double *data = 0;
       err += put_variable_into_data_array(
-          SimPM, extname[i], mpiPM->LocalNcell, &data);
+          SimPM, extname[i], mpiPM->get_Ncell(), &data);
       err += write_fits_image(
-          ff, extname[i], mpiPM->LocalXmin, SimPM.levels[l].Xmin,
-          SimPM.levels[l].dx, SimPM.ndim, mpiPM->LocalNG, mpiPM->LocalNcell,
-          data);
+          ff, extname[i], mpiPM->get_Xmin(), SimPM.levels[l].Xmin,
+          SimPM.levels[l].dx, SimPM.ndim, mpiPM->get_directional_Ncells(),
+          mpiPM->get_Ncell(), data);
       data = mem.myfree(data);
     }
     if (err)
@@ -526,7 +527,7 @@ int DataIOFits_pllel::SaveLevelData(
   else
     rep.error(
         "Logic Error in DataIOFits_pllel::OutputData()",
-        mpiPM->WriteSingleFile);
+        mpiPM->get_WriteSingleFile());
 
   extname = mem.myfree(extname);
 
@@ -594,7 +595,7 @@ int DataIOFits_pllel::ReadData(
     cout << "READING DATA FOR LEVEL " << l << " IN FITS FORMAT\n";
     if (!cg[l]) rep.error("dataio_silo::ReadData() null pointer!", cg[l]);
     DataIOFits_pllel::gp = cg[l];
-    mpiPM                = &(SimPM.levels[l].MCMD);
+    mpiPM                = &(SimPM.levels[l].sub_domain);
 
     // read a different file for each level in the NG grid.
     // If more than one level of grid, look for level in filename:
@@ -701,22 +702,22 @@ int DataIOFits_pllel::ReadData(
         // ---
         // --- is a single file or split already between processors. ---
         // -----------------------------------------------------------------
-        if (!mpiPM->ReadSingleFile) {
+        if (!mpiPM->get_ReadSingleFile()) {
           // This is where each process reads from its own file.
           cout << "DataIOFits_pllel::ReadData() Reading from multiple files.\n";
           cout << "Proc " << mpiPM->get_myrank() << ":\t reading from file "
                << infile << "\n";
-          cout << ", localNG=";
-          rep.printVec(" ", mpiPM->LocalNG, 2);
+          cout << ", directional_Ncells=";
+          rep.printVec(" ", mpiPM->get_directional_Ncells(), 2);
           err += check_fits_image_dimensions(
-              ff, var[i], SimPM.ndim, mpiPM->LocalNG);
+              ff, var[i], SimPM.ndim, mpiPM->get_directional_Ncells());
           if (err) rep.error("image wrong size.", err);
           err += read_fits_image(
-              SimPM, ff, var[i], mpiPM->LocalXmin, mpiPM->LocalXmin,
-              mpiPM->LocalNG, mpiPM->LocalNcell);
+              SimPM, ff, var[i], mpiPM->get_Xmin(), mpiPM->get_Xmin(),
+              mpiPM->get_directional_Ncells(), mpiPM->get_Ncell());
           if (err) rep.error("error reading image.", err);
         }
-        else if (mpiPM->ReadSingleFile) {
+        else if (mpiPM->get_ReadSingleFile()) {
           // All processes read from a single ic/restart file.
           cout << "DataIOFits_pllel::ReadData() Reading from single file.\n";
           cout << "Proc " << mpiPM->get_myrank() << ":\t reading from file "
@@ -724,14 +725,14 @@ int DataIOFits_pllel::ReadData(
           err += check_fits_image_dimensions(ff, var[i], SimPM.ndim, SimPM.NG);
           if (err) rep.error("image wrong size.", err);
           err += read_fits_image(
-              SimPM, ff, var[i], mpiPM->LocalXmin, SimPM.Xmin, mpiPM->LocalNG,
-              mpiPM->LocalNcell);
+              SimPM, ff, var[i], mpiPM->get_Xmin(), SimPM.Xmin,
+              mpiPM->get_directional_Ncells(), mpiPM->get_Ncell());
           if (err) rep.error("error reading image.", err);
         }
         else
           rep.error(
               "DataIOFits_pllel::ReadData() logic error",
-              mpiPM->WriteSingleFile);
+              mpiPM->get_WriteSingleFile());
         //------------------------------------------------------------------
       }  // got real hdu and read data.
 

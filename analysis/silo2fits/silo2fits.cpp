@@ -42,9 +42,9 @@
 #include "tools/reporting.h"
 #include "tools/timer.h"
 
-#include "decomposition/MCMD_control.h"
 #include "grid/setup_fixed_grid_MPI.h"
 #include "grid/uniform_grid.h"
+#include "sub_domain/sub_domain.h"
 #ifdef PION_NESTED
 #include "grid/setup_grid_NG_MPI.h"
 #endif /* PION_NESTED */
@@ -84,22 +84,17 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
+  int err = 0;
   //
-  // First initialise the comms class
-  //
-  int err = COMM->init(&argc, &argv);
-  //
-  // Also initialise the MCMD class with myrank and nproc.
+  // Also initialise the sub_domain class with myrank and nproc.
   // Get nproc from command-line (number of fits files for each
   // snapshot)
   //
-  int myrank = -1, nproc = -1;
-  COMM->get_rank_nproc(&myrank, &nproc);
   class SimParams SimPM;
-  SimPM.levels.clear();
-  SimPM.levels.resize(1);
-  SimPM.levels[0].MCMD.set_myrank(myrank);
-  SimPM.levels[0].MCMD.set_nproc(nproc);
+
+  int myrank = SimPM.levels[0].sub_domain.get_myrank();
+  int nproc  = SimPM.levels[0].sub_domain.get_nproc();
+
   if (nproc > 1) rep.error("This is serial code", nproc);
 
   //
@@ -162,7 +157,8 @@ int main(int argc, char **argv)
   //
   // set up dataio_utility class and fits-writer class.
   //
-  class dataio_silo_utility dataio(SimPM, "DOUBLE", &(SimPM.levels[0].MCMD));
+  class dataio_silo_utility dataio(
+      SimPM, "DOUBLE", &(SimPM.levels[0].sub_domain));
 
   //
   // Get list of files to read:
@@ -255,6 +251,7 @@ int main(int argc, char **argv)
   // get a setup_grid class, and use it to set up the grid!
   //
 #ifdef PION_NESTED
+  SimPM.levels.resize(SimPM.grid_nlevels);
   class setup_grid_NG_MPI *SimSetup = new setup_grid_NG_MPI();
   SimSetup->setup_NG_grid_levels(SimPM);
 #else
@@ -283,7 +280,7 @@ int main(int argc, char **argv)
   cout << "-------------------------------------------------------\n";
 
   size_t ifile = 0;
-  class DataIOFits_pllel writer(SimPM, &(SimPM.levels[0].MCMD));
+  class DataIOFits_pllel writer(SimPM, &(SimPM.levels[0].sub_domain));
 
   cout << "-------------------------------------------------------\n";
   cout << "--------------- Starting Loop over all input files ----\n";
@@ -353,9 +350,6 @@ int main(int argc, char **argv)
     delete MP;
     MP = 0;
   }
-
-  delete COMM;
-  COMM = 0;
 
   return 0;
 }

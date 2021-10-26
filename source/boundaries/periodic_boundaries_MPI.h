@@ -12,16 +12,18 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
-#include "boundaries/MCMD_boundaries.h"
 #include "boundaries/boundaries.h"
 #include "boundaries/periodic_boundaries.h"
+#include "boundaries/sub_domain_boundaries.h"
 #include "grid/grid_base_class.h"
 #include "sim_params.h"
 
 ///
 /// Implements periodic boundaries for a uniform grid.
 ///
-class periodic_pllel_bc : virtual public periodic_bc, virtual public MCMD_bc {
+class periodic_pllel_bc :
+    virtual public periodic_bc,
+    virtual public sub_domain_bc {
 protected:
   ///
   /// Assigns data to a periodic boundary, getting data from another

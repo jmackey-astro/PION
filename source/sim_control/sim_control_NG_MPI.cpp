@@ -24,9 +24,9 @@
 
 #include "constants.h"
 
-#include "decomposition/MCMD_control.h"
 #include "raytracing/raytracer_SC.h"
 #include "sim_control/sim_control_NG_MPI.h"
+#include "sub_domain/sub_domain.h"
 
 #include <fstream>
 #include <iostream>
@@ -73,10 +73,10 @@ int sim_control_NG_MPI::Init(
   int err = 0;
 
   //
-  // Setup the MCMDcontrol class with rank and nproc.
+  // Setup the Sub_domain class with rank and nproc.
   //
-  int myrank = -1, nproc = -1;
-  COMM->get_rank_nproc(&myrank, &nproc);
+  int myrank = SimPM.levels[0].sub_domain.get_myrank();
+  int nproc  = SimPM.levels[0].sub_domain.get_nproc();
 
   // ----------------------------------------------------------------
   SimPM.typeofip = typeOfFile;
@@ -164,7 +164,7 @@ int sim_control_NG_MPI::Init(
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     err = assign_boundary_data(SimPM, l, grid[l], MP);
     rep.errorTest("NG_MPI INIT::assign_boundary_data", 0, err);
-    COMM->barrier("level assign boundary data");
+    SimPM.levels[0].sub_domain.barrier("level assign boundary data");
   }
   // ----------------------------------------------------------------
 
@@ -211,7 +211,7 @@ int sim_control_NG_MPI::Init(
       }
     }
   }
-  BC_COARSE_TO_FINE_SEND_clear_sends();
+  BC_COARSE_TO_FINE_SEND_clear_sends(SimPM.levels[0].sub_domain);
   rep.errorTest("NG_MPI INIT: error from bounday update", 0, err);
   // ----------------------------------------------------------------
 
@@ -266,7 +266,7 @@ int sim_control_NG_MPI::Init(
       }
     }
   }
-  BC_FINE_TO_COARSE_SEND_clear_sends();
+  BC_FINE_TO_COARSE_SEND_clear_sends(SimPM.levels[0].sub_domain);
   rep.errorTest("NG_MPI INIT: error from bounday update", 0, err);
   // ----------------------------------------------------------------
 
@@ -420,7 +420,7 @@ int sim_control_NG_MPI::Time_Int(
 #ifdef TEST_INT
   cout << "NG_MPI updated F2C boundaries for all levels.\n";
 #endif
-  BC_FINE_TO_COARSE_SEND_clear_sends();
+  BC_FINE_TO_COARSE_SEND_clear_sends(SimPM.levels[0].sub_domain);
 #ifdef TEST_INT
   cout << "NG_MPI F2C cleared all sends.\n";
 #endif
@@ -461,7 +461,7 @@ int sim_control_NG_MPI::Time_Int(
       }
     }
   }
-  BC_COARSE_TO_FINE_SEND_clear_sends();
+  BC_COARSE_TO_FINE_SEND_clear_sends(SimPM.levels[0].sub_domain);
   rep.errorTest("NG_MPI time-int: error from bounday update", 0, err);
   // ----------------------------------------------------------------
 
@@ -487,7 +487,7 @@ int sim_control_NG_MPI::Time_Int(
       rep.errorTest("TIME_INT::calc_timestep()", 0, err);
 
       mindt = std::min(mindt, SimPM.dt / scale);
-      mindt = COMM->global_operation_double("MIN", mindt);
+      mindt = SimPM.levels[0].sub_domain.global_operation_double("MIN", mindt);
 #ifdef TEST_INT
       cout << "level " << l << " got dt=" << SimPM.dt << " and ";
       cout << SimPM.dt / scale << "... mindt=" << mindt << "\n";
@@ -529,12 +529,12 @@ int sim_control_NG_MPI::Time_Int(
     //
     advance_time(0, grid[0]);
     SimPM.simtime = SimPM.levels[0].simtime;
-    COMM->barrier("step");
+    SimPM.levels[0].sub_domain.barrier("step");
 #ifndef NDEBUG
     cout << "MPI time_int: finished timestep\n";
 #endif
 
-    if (SimPM.levels[0].MCMD.get_myrank() == 0) {
+    if (SimPM.levels[0].sub_domain.get_myrank() == 0) {
       cout << "New time: " << SimPM.simtime;
       cout << "\tdt: " << SimPM.levels[SimPM.grid_nlevels - 1].dt;
       cout << "\t steps: " << SimPM.timestep;
@@ -557,8 +557,9 @@ int sim_control_NG_MPI::Time_Int(
     //
     // check if we are at time limit yet.
     //
-    tsf         = clk.time_so_far("time_int");
-    double maxt = COMM->global_operation_double("MAX", tsf);
+    tsf = clk.time_so_far("time_int");
+    double maxt =
+        SimPM.levels[0].sub_domain.global_operation_double("MAX", tsf);
     if (maxt > get_max_walltime()) {
       SimPM.maxtime = true;
       cout << "RUNTIME>" << get_max_walltime() << " SECS.\n";
@@ -659,7 +660,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
 #ifdef TEST_INT
     cout << "advance_step_OA1: l=" << l << " C2F CLEAR SEND\n";
 #endif
-    BC_COARSE_TO_FINE_SEND_clear_sends();
+    BC_COARSE_TO_FINE_SEND_clear_sends(SimPM.levels[0].sub_domain);
 #ifdef C2F_FULLSTEP
   }
 #endif
@@ -779,7 +780,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   err += grid_update_state_vector(SimPM.levels[l].dt, OA1, OA1, grid);
   rep.errorTest("scn::advance_step_OA1: state-vec update", 0, err);
 #ifndef SKIP_BC89_FLUX
-  clear_sends_BC89_fluxes();
+  clear_sends_BC89_fluxes(SimPM.levels[0].sub_domain);
 #endif
   // --------------------------------------------------------
 
@@ -814,7 +815,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
     err += BC_update_FINE_TO_COARSE_RECV(
         SimPM, spatial_solver, l, grid->BC_bd[f2cr], OA1, OA1);
 
-    BC_FINE_TO_COARSE_SEND_clear_sends();
+    BC_FINE_TO_COARSE_SEND_clear_sends(SimPM.levels[0].sub_domain);
   }
   // --------------------------------------------------------
 
@@ -927,7 +928,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
 #ifdef TEST_INT
     cout << "advance_step_OA2: l=" << l << " C2F CLEAR SEND" << endl;
 #endif
-    BC_COARSE_TO_FINE_SEND_clear_sends();
+    BC_COARSE_TO_FINE_SEND_clear_sends(SimPM.levels[0].sub_domain);
 #ifdef C2F_FULLSTEP
   }
 #endif
@@ -1017,7 +1018,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
     err += BC_update_FINE_TO_COARSE_RECV(
         SimPM, spatial_solver, l, grid->BC_bd[f2cr], OA1, OA2);
 
-    BC_FINE_TO_COARSE_SEND_clear_sends();
+    BC_FINE_TO_COARSE_SEND_clear_sends(SimPM.levels[0].sub_domain);
   }
 
   err += TimeUpdateExternalBCs(
@@ -1109,7 +1110,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   err += grid_update_state_vector(SimPM.levels[l].dt, OA2, OA2, grid);
   rep.errorTest("scn::advance_step_OA2: state-vec update", 0, err);
 #ifndef SKIP_BC89_FLUX
-  clear_sends_BC89_fluxes();
+  clear_sends_BC89_fluxes(SimPM.levels[0].sub_domain);
 #endif
 #ifdef TEST_INT
   cout << "advance_step_OA2: l=" << l << " updated, sends cleared" << endl;
@@ -1144,7 +1145,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
     err += BC_update_FINE_TO_COARSE_RECV(
         SimPM, spatial_solver, l, grid->BC_bd[f2cr], OA2, OA2);
     //  - Clear F2C sends
-    BC_FINE_TO_COARSE_SEND_clear_sends();
+    BC_FINE_TO_COARSE_SEND_clear_sends(SimPM.levels[0].sub_domain);
 #ifdef TEST_INT
     cout << "advance_step_OA2: l=" << l << " F2C recv done" << endl;
 #endif
@@ -1247,11 +1248,12 @@ int sim_control_NG_MPI::initial_conserved_quantities(
   // cout << initMMZ <<", ";
   // cout << initMASS <<"]\n";
 
-  initERG  = COMM->global_operation_double("SUM", initERG);
-  initMMX  = COMM->global_operation_double("SUM", initMMX);
-  initMMY  = COMM->global_operation_double("SUM", initMMY);
-  initMMZ  = COMM->global_operation_double("SUM", initMMZ);
-  initMASS = COMM->global_operation_double("SUM", initMASS);
+  initERG = SimPM.levels[0].sub_domain.global_operation_double("SUM", initERG);
+  initMMX = SimPM.levels[0].sub_domain.global_operation_double("SUM", initMMX);
+  initMMY = SimPM.levels[0].sub_domain.global_operation_double("SUM", initMMY);
+  initMMZ = SimPM.levels[0].sub_domain.global_operation_double("SUM", initMMZ);
+  initMASS =
+      SimPM.levels[0].sub_domain.global_operation_double("SUM", initMASS);
 
   cout << "(conserved quantities) [" << initERG << ", ";
   cout << initMMX << ", ";
@@ -1302,12 +1304,12 @@ int sim_control_NG_MPI::check_energy_cons(vector<class GridBaseClass *> &grid)
   // cout << nowMMZ <<", ";
   // cout << nowMASS <<"]\n";
 
-  nowERG  = COMM->global_operation_double("SUM", nowERG);
-  nowMMX  = COMM->global_operation_double("SUM", nowMMX);
-  nowMMY  = COMM->global_operation_double("SUM", nowMMY);
-  nowMMZ  = COMM->global_operation_double("SUM", nowMMZ);
-  nowMASS = COMM->global_operation_double("SUM", nowMASS);
-  totmom  = COMM->global_operation_double("SUM", totmom);
+  nowERG  = SimPM.levels[0].sub_domain.global_operation_double("SUM", nowERG);
+  nowMMX  = SimPM.levels[0].sub_domain.global_operation_double("SUM", nowMMX);
+  nowMMY  = SimPM.levels[0].sub_domain.global_operation_double("SUM", nowMMY);
+  nowMMZ  = SimPM.levels[0].sub_domain.global_operation_double("SUM", nowMMZ);
+  nowMASS = SimPM.levels[0].sub_domain.global_operation_double("SUM", nowMASS);
+  totmom  = SimPM.levels[0].sub_domain.global_operation_double("SUM", totmom);
   // cout <<" totmom="<<totmom<<" initMMX="<<initMMX;
   // cout <<", nowMMX="<<nowMMX<<"\n";
 

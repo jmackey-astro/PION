@@ -20,8 +20,8 @@
 
 #include "dataIO/dataio_base.h"
 #include "dataIO/dataio_fits.h"
-#include "decomposition/MCMD_control.h"
 #include "fitsio.h"
+#include "sub_domain/sub_domain.h"
 
 ///
 /// Class for reading and writing uniform grid data to fits images.
@@ -35,8 +35,8 @@ public:
   /// Constructor.
   ///
   DataIOFits_pllel(
-      class SimParams &,   ///< pointer to simulation parameters
-      class MCMDcontrol *  ///< address of MCMD controller class.
+      class SimParams &,  ///< pointer to simulation parameters
+      class Sub_domain *  ///< address of sub_domain controller class.
   );
 
   /// Destructor (doensn't have much to do).
@@ -92,7 +92,7 @@ public:
   );
 
 protected:
-  class MCMDcontrol *mpiPM;
+  class Sub_domain *mpiPM;
 };
 
 #endif  // if FITS

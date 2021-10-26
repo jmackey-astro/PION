@@ -126,11 +126,6 @@ int setup_microphysics();
 
 int main(int argc, char **argv)
 {
-  //
-  // First initialise the comms class
-  //
-  int err = COMM->init(&argc, &argv);
-
   if (mpiPM.nproc>1)
     rep.error("This is serial code so far",mpiPM.nproc);
 
@@ -416,9 +411,6 @@ int main(int argc, char **argv)
   }
   if (MP)     {delete MP; MP=0;}
   if (RT)     {delete RT; RT=0;}
-
-  COMM->finalise();
-  delete COMM; COMM=0;
 
   return 0;
 }

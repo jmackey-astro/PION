@@ -1,11 +1,11 @@
-/// \file MCMD_boundaries.cpp
+/// \file sub_domain_boundaries.cpp
 /// \brief Class definitions for periodic boundaries
 /// \author Jonathan Mackey
 ///
 /// Modifications :\n
 /// - 2018.08.08 JM: moved code.
 
-#include "boundaries/MCMD_boundaries.h"
+#include "boundaries/sub_domain_boundaries.h"
 using namespace std;
 
 //#define TEST_COMMS
@@ -13,7 +13,7 @@ using namespace std;
 // ##################################################################
 // ##################################################################
 
-int MCMD_bc::BC_assign_BCMPI(
+int sub_domain_bc::BC_assign_BCMPI(
     class SimParams &par,       ///< pointer to simulation parameters
     const int level,            ///< level in grid hierarchy
     class GridBaseClass *grid,  ///< pointer to grid.
@@ -45,7 +45,7 @@ int MCMD_bc::BC_assign_BCMPI(
 // ##################################################################
 // ##################################################################
 
-int MCMD_bc::BC_select_data2send(
+int sub_domain_bc::BC_select_data2send(
     class SimParams &par,       ///< pointer to simulation parameters
     class GridBaseClass *grid,  ///< pointer to grid.
     list<cell *> *l,
@@ -90,7 +90,7 @@ int MCMD_bc::BC_select_data2send(
   else if (comm_tag == BC_MPItag)
     Nc = min(4, par.Nbc);
   else
-    rep.error("bad tag in MCMD_bc::BC_select_data2send", comm_tag);
+    rep.error("bad tag in sub_domain_bc::BC_select_data2send", comm_tag);
 
   do {
     temp = *c;
@@ -114,7 +114,7 @@ int MCMD_bc::BC_select_data2send(
 // ##################################################################
 // ##################################################################
 
-int MCMD_bc::BC_update_BCMPI(
+int sub_domain_bc::BC_update_BCMPI(
     class SimParams &par,       ///< simulation parameters
     const int level,            ///< level in grid hierarchy
     class GridBaseClass *grid,  ///< pointer to grid.
@@ -125,7 +125,7 @@ int MCMD_bc::BC_update_BCMPI(
 {
 #ifdef TEST_COMMS
   cout << "*******************************************\n";
-  cout << par.levels[level].MCMD.get_myrank() << ": ";
+  cout << par.levels[level].sub_domain.get_myrank() << ": ";
   cout << "BC_update_BCMPI: sending data in dir: " << b->dir;
   cout << ": sending " << b->send_data.size();
   cout << " cells.  Boundary data contains " << b->data.size();
@@ -136,16 +136,16 @@ int MCMD_bc::BC_update_BCMPI(
   //
   // send the data.
   //
-  int err                 = 0;
-  class MCMDcontrol *ppar = &(par.levels[level].MCMD);
+  int err                = 0;
+  class Sub_domain *ppar = &(par.levels[level].sub_domain);
   string send_id;
 #ifdef TEST_COMMS
   cout << "BC_update_BCMPI: sending data...\n";
 #endif
-  err += COMM->send_cell_data(
-      ppar->ngbprocs[b->dir],  // to_rank
-      &(b->send_data),         // cells list.
-      b->send_data.size(),     // number of cells.
+  err += ppar->send_cell_data(
+      ppar->get_neighbour_rank(b->dir),  // to_rank
+      &(b->send_data),                   // cells list.
+      b->send_data.size(),               // number of cells.
       par.ndim, par.nvar,
       send_id,  // identifier for send.
       comm_tag);
@@ -171,7 +171,7 @@ int MCMD_bc::BC_update_BCMPI(
   string recv_id;
   int recv_tag  = -1;
   int from_rank = -1;
-  err           = COMM->look_for_data_to_receive(
+  err           = ppar->look_for_data_to_receive(
       &from_rank,    ///< rank of sender
       recv_id,       ///< identifier for receive.
       &recv_tag,     ///< comm_tag associated with data.
@@ -187,13 +187,14 @@ int MCMD_bc::BC_update_BCMPI(
 #ifdef TEST_COMMS
   cout << ppar->get_myrank() << "\tBC_update_BCMPI: Receiving Data type ";
   cout << recv_tag << " from rank: " << from_rank << " from direction ";
-  cout << b->dir << ", expecting rank " << ppar->ngbprocs[b->dir] << "\n";
+  cout << b->dir << ", expecting rank " << ppar->get_neighbour_rank(b->dir)
+       << "\n";
 #endif
 
   //
   // Receive the data:
   //
-  err = COMM->receive_cell_data(
+  err = ppar->receive_cell_data(
       from_rank,       ///< rank of process we are receiving from.
       &(b->data),      ///< list of cells to get data for.
       b->data.size(),  ///< number of cells in list (extra checking!)
@@ -202,7 +203,7 @@ int MCMD_bc::BC_update_BCMPI(
                  ///< (PER,MPI,etc.)
       recv_id    ///< identifier for receive, for any book-keeping.
   );
-  if (err) rep.error("COMM->receive_cell_data() returned error", err);
+  if (err) rep.error("ppar->receive_cell_data() returned error", err);
 
   //
   // If on a full timestep update, set P=Ph for received boundary.
@@ -223,7 +224,7 @@ int MCMD_bc::BC_update_BCMPI(
   // Wait until send is finished, and then return.
   //
   //  cout <<"BC_update_BCMPI: waiting for finish "<<b->dir<<"\n";
-  err = COMM->wait_for_send_to_finish(send_id);
+  err = ppar->wait_for_send_to_finish(send_id);
   if (err) rep.error("Waiting for send to complete!", err);
   // cout <<"BC_update_BCMPI: send and receive finished.\n";
   // cout <<"BC_update_BCMPI: Sent BC "<<b->dir<<", received BC "<<dir<<"\n";

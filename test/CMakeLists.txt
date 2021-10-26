@@ -39,6 +39,7 @@ if (PION_PARALLEL)
             SCRIPT run-2d-rhd.sh
             EXCLUDE
         )
+    if (PION_OMP)
         custom_add_test(
             NAME dte-omp
             SCRIPT run-2d-rhd.sh
@@ -50,6 +51,7 @@ if (PION_PARALLEL)
             SCRIPT run-2d-rhd.sh
             ARGUMENTS 2
         )
+    endif (PION_OMP)
         custom_add_test(
             NAME binary-3d-ug
             SCRIPT binary_3d_ug.sh
@@ -60,7 +62,7 @@ if (PION_PARALLEL)
             SCRIPT binary_3d_adi_ug.sh
             EXCLUDE
         )
-    endif(PION_UNIFORM_GRID)
+    endif (PION_UNIFORM_GRID)
     if (PION_NESTED_GRID)
         custom_add_test(
             NAME nested

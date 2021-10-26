@@ -48,7 +48,7 @@ public:
   ///
   /// Delete the temporary arrays used to send data to another
   /// MPI process
-  void BC_COARSE_TO_FINE_SEND_clear_sends();
+  void BC_COARSE_TO_FINE_SEND_clear_sends(class Sub_domain &);
 
 protected:
   /// Assigns cells to lists for sending to external boundaries of

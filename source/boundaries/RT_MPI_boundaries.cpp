@@ -114,7 +114,7 @@ RT_MPI_bc::~RT_MPI_bc()
 
 int RT_MPI_bc::Setup_RT_Boundaries(
     class SimParams &par,       ///< pointer to simulation parameters
-    class MCMDcontrol &ppar,    ///< domain decomposition info
+    class Sub_domain &ppar,     ///< domain decomposition info
     class GridBaseClass *grid,  ///< pointer to grid.
     const int src_id,
     struct rad_src_info &RS)
@@ -187,7 +187,7 @@ int RT_MPI_bc::Setup_RT_Boundaries(
 
 int RT_MPI_bc::Receive_RT_Boundaries(
     class SimParams &par,       ///< pointer to simulation parameters
-    class MCMDcontrol &ppar,    ///< domain decomposition info
+    class Sub_domain &ppar,     ///< domain decomposition info
     class GridBaseClass *grid,  ///< pointer to grid.
     const int src_id,           ///< source id
     struct rad_src_info &RS)
@@ -270,7 +270,7 @@ int RT_MPI_bc::Receive_RT_Boundaries(
       // Find a message that has been sent to us.
       //
       from_rank = -1;
-      err       = COMM->look_for_data_to_receive(
+      err       = par.levels[0].sub_domain.look_for_data_to_receive(
           &from_rank, id, &comm_tag, BC_RTtag, COMM_DOUBLEDATA);
       if (err) rep.error("Receive_RT_Boundaries() look4data", err);
       if (comm_tag != BC_RTtag) {
@@ -323,7 +323,7 @@ int RT_MPI_bc::Receive_RT_Boundaries(
       //
       // Receive data into buffer.
       //
-      err = COMM->receive_double_data(
+      err = par.levels[0].sub_domain.receive_double_data(
           from_rank,  ///< rank of process we are receiving from.
           comm_tag,   ///< comm_tag: what sort of comm we are looking for
                       ///< (PER,MPI,etc.)
@@ -424,7 +424,7 @@ int RT_MPI_bc::Receive_RT_Boundaries(
 
 int RT_MPI_bc::Send_RT_Boundaries(
     class SimParams &par,       ///< pointer to simulation parameters
-    class MCMDcontrol &ppar,    ///< domain decomposition info
+    class Sub_domain &ppar,     ///< domain decomposition info
     class GridBaseClass *grid,  ///< pointer to grid.
     const int src_id,           ///< source id
     struct rad_src_info &RS)
@@ -467,8 +467,8 @@ int RT_MPI_bc::Send_RT_Boundaries(
 
   //
   // See how many boundaries to send:
-  // If none, just skip on to the COMM->barrier() call at the end.
-  // If we have some, do the sends.
+  // If none, just skip on to the par.levels[0].sub_domain.barrier() call at the
+  // end. If we have some, do the sends.
   //
   int n_send = i_src->RT_send_list.size();
   if (n_send == 0) {
@@ -582,7 +582,7 @@ int RT_MPI_bc::Send_RT_Boundaries(
       cout << i_src->RT_send_list[i].rank;
       cout << " in direction " << i_src->RT_send_list[i].dir << "\n";
 #endif
-      err += COMM->send_double_data(
+      err += par.levels[0].sub_domain.send_double_data(
           i_src->RT_send_list[i].rank,  ///< rank to send to.
           nc,       ///< size of buffer, in number of doubles.
           data,     ///< pointer to double array.
@@ -607,7 +607,7 @@ int RT_MPI_bc::Send_RT_Boundaries(
     cout << ": Waiting for sends to complete.\n";
 #endif
     for (int i = 0; i < n_send; i++) {
-      err += COMM->wait_for_send_to_finish(id[i]);
+      err += par.levels[0].sub_domain.wait_for_send_to_finish(id[i]);
     }
 
     //
@@ -625,7 +625,7 @@ int RT_MPI_bc::Send_RT_Boundaries(
   cout << "\tSend_RT_Boundaries() src=" << src_id;
   cout << ": Waiting for all procs to finish.\n";
 #endif
-  COMM->barrier("Send_RT_Boundaries_finished");
+  par.levels[0].sub_domain.barrier("Send_RT_Boundaries_finished");
   return err;
 }
 
@@ -638,7 +638,7 @@ int RT_MPI_bc::Send_RT_Boundaries(
 
 int RT_MPI_bc::setup_RT_infinite_src_BD(
     class SimParams &par,       ///< pointer to simulation parameters
-    class MCMDcontrol &ppar,    ///< domain decomposition info
+    class Sub_domain &ppar,     ///< domain decomposition info
     class GridBaseClass *grid,  ///< pointer to grid.
     const int src_id,
     struct rad_src_info &RS,
@@ -686,8 +686,8 @@ int RT_MPI_bc::setup_RT_infinite_src_BD(
   // Can have only one send and one recv source, so the lists should
   // get exactly one element.
   //
-  int recv_proc = ppar.ngbprocs[recv_dir];
-  int send_proc = ppar.ngbprocs[send_dir];
+  int recv_proc = ppar.get_neighbour_rank(recv_dir);
+  int send_proc = ppar.get_neighbour_rank(send_dir);
 
   //
   // Set up the lone recv boundary list element.  Note we leave an
@@ -833,7 +833,7 @@ enum direction RT_MPI_bc::RT_src_at_infty_direction(
 
 int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
     class SimParams &par,       ///< pointer to simulation parameters
-    class MCMDcontrol &ppar,    ///< domain decomposition info
+    class Sub_domain &ppar,     ///< domain decomposition info
     class GridBaseClass *grid,  ///< pointer to grid.
     const int src_id,
     struct rad_src_info &RS,
@@ -979,7 +979,7 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
   temp.RT_bd = 0;
   for (int d = 0; d < par.ndim; d++) {
     if (recv_proc_exists[d] == true) {
-      temp.rank = ppar.ngbprocs[srcdir[d]];
+      temp.rank = ppar.get_neighbour_rank(srcdir[d]);
       temp.dir  = srcdir[d];
       RT_recv_list.push_back(temp);
     }
@@ -992,7 +992,7 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
   temp.RT_bd = 0;
   for (int dd = 0; dd < 2 * par.ndim; dd++) {
     if (send_proc_exists[dd]) {
-      temp.rank = ppar.ngbprocs[dd];
+      temp.rank = ppar.get_neighbour_rank(dd);
       temp.dir  = static_cast<enum direction>(dd);
       RT_send_list.push_back(temp);
     }

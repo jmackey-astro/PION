@@ -121,11 +121,6 @@ int setup_microphysics();
 
 int main(int argc, char **argv)
 {
-  //
-  // First initialise the comms class
-  //
-  int err = COMM->init(&argc, &argv);
-
   if (mpiPM.nproc>1)
     rep.error("This is serial code so far",mpiPM.nproc);
 
@@ -520,10 +515,10 @@ int main(int argc, char **argv)
     // Comms to get max/min/mean over all cores (broken for now
     // because i've already calculated median/mean above!)
     //
-    //IFmax = COMM->global_operation_double("MAX", IFmax);
-    //IFmin = COMM->global_operation_double("MIN", IFmin);
-    //SHmax = COMM->global_operation_double("MAX", SHmax);
-    //SHmin = COMM->global_operation_double("MIN", SHmin);
+    //IFmax = mpiPM->global_operation_double("MAX", IFmax);
+    //IFmin = mpiPM->global_operation_double("MIN", IFmin);
+    //SHmax = mpiPM->global_operation_double("MAX", SHmax);
+    //SHmin = mpiPM->global_operation_double("MIN", SHmin);
 
     //
     // If we are in 1D, we just want the radius where the ion
@@ -609,9 +604,6 @@ int main(int argc, char **argv)
   }
   if (MP)     {delete MP; MP=0;}
   if (RT)     {delete RT; RT=0;}
-
-  COMM->finalise();
-  delete COMM; COMM=0;
 
   return 0;
 }

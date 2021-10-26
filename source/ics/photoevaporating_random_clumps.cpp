@@ -3,7 +3,7 @@
 /// File for setting up photo-evaporation of many random clumps.
 ///
 /// - 2015.01.15 JM: Added new include statements for new PION version.
-/// - 2015.02.03 JM: changed to use IC_base class MCMD pointer.
+/// - 2015.02.03 JM: changed to use IC_base class sub_domain pointer.
 
 #include "constants.h"
 #include "defines/functionality_flags.h"
@@ -353,7 +353,7 @@ int IC_photevap_random_clumps::setup_perc_fixedmass()
     m1 += cpt->P[RO] * vol;
   } while ((cpt = gg->NextPt(cpt)) != 0);
 #ifdef PARALLEL
-  double m2 = COMM->global_operation_double("SUM", m1);
+  double m2 = sub_domain->global_operation_double("SUM", m1);
   m1        = m2;
 #endif  // PARALLEL
 
@@ -381,7 +381,7 @@ int IC_photevap_random_clumps::setup_perc_fixedmass()
     mass += cpt->P[RO] * vol;
   } while ((cpt = gg->NextPt(cpt)) != 0);
 #ifdef PARALLEL
-  double mtot = COMM->global_operation_double("SUM", mass);
+  double mtot = sub_domain->global_operation_double("SUM", mass);
   mass        = mtot;
 #endif  // PARALLEL
   cout << "***** TOTAL MASS:" << mass << " CLUMP   MASS IS "
@@ -770,14 +770,12 @@ int IC_photevap_random_clumps::clumps_random_setup()
 int IC_photevap_random_clumps::clumps_random_setup_pllel_fixedmass()
 {
   int err = 0;
-  if (MCMD->get_myrank() == 0) {
+  if (sub_domain->get_myrank() == 0) {
     err += IC_photevap_random_clumps::clumps_random_setup_fixedmass();
-    err += COMM->broadcast_data(0, "INT", 1, &Nclumps);
-    // err += MPI_Bcast(&Nclumps, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    err += sub_domain->broadcast_data(0, "INT", 1, &Nclumps);
   }
   else {
-    err += COMM->broadcast_data(0, "INT", 1, &Nclumps);
-    // err += MPI_Bcast(&Nclumps, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    err += sub_domain->broadcast_data(0, "INT", 1, &Nclumps);
     // set up clumps
     if (cl) rep.error("I'm not root, but cl already initialised!", cl);
     cl = new struct clump[Nclumps];
@@ -795,57 +793,52 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel_fixedmass()
   //
   double d[Nclumps];
   // overdensity
-  if (MCMD->get_myrank() == 0)
+  if (sub_domain->get_myrank() == 0)
     for (int i = 0; i < Nclumps; i++)
       d[i] = cl[i].overdensity;
-  err += COMM->broadcast_data(0, "DOUBLE", Nclumps, d);
-  // err += MPI_Bcast(d, Nclumps, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-  if (MCMD->get_myrank() != 0)
+  err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+  if (sub_domain->get_myrank() != 0)
     for (int i = 0; i < Nclumps; i++)
       cl[i].overdensity = d[i];
 
   // mass
-  if (MCMD->get_myrank() == 0)
+  if (sub_domain->get_myrank() == 0)
     for (int i = 0; i < Nclumps; i++)
       d[i] = cl[i].mass;
-  err += COMM->broadcast_data(0, "DOUBLE", Nclumps, d);
-  // err += MPI_Bcast(d, Nclumps, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-  if (MCMD->get_myrank() != 0)
+  err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+  if (sub_domain->get_myrank() != 0)
     for (int i = 0; i < Nclumps; i++)
       cl[i].mass = d[i];
 
   // centre
   for (int nd = 0; nd < MAX_DIM; nd++) {
-    if (MCMD->get_myrank() == 0)
+    if (sub_domain->get_myrank() == 0)
       for (int i = 0; i < Nclumps; i++)
         d[i] = cl[i].centre[nd];
-    err += COMM->broadcast_data(0, "DOUBLE", Nclumps, d);
-    // err += MPI_Bcast(d, Nclumps, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    if (MCMD->get_myrank() != 0)
+    err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+    if (sub_domain->get_myrank() != 0)
       for (int i = 0; i < Nclumps; i++)
         cl[i].centre[nd] = d[i];
   }
 
   // size
   for (int nd = 0; nd < MAX_DIM; nd++) {
-    if (MCMD->get_myrank() == 0)
+    if (sub_domain->get_myrank() == 0)
       for (int i = 0; i < Nclumps; i++)
         d[i] = cl[i].size[nd];
-    err += COMM->broadcast_data(0, "DOUBLE", Nclumps, d);
-    // err += MPI_Bcast(d, Nclumps, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    if (MCMD->get_myrank() != 0)
+    err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+    if (sub_domain->get_myrank() != 0)
       for (int i = 0; i < Nclumps; i++)
         cl[i].size[nd] = d[i];
   }
 
   // angle
   for (int nd = 0; nd < MAX_DIM; nd++) {
-    if (MCMD->get_myrank() == 0)
+    if (sub_domain->get_myrank() == 0)
       for (int i = 0; i < Nclumps; i++)
         d[i] = cl[i].ang[nd];
-    err += COMM->broadcast_data(0, "DOUBLE", Nclumps, d);
-    // err += MPI_Bcast(d, Nclumps, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    if (MCMD->get_myrank() != 0)
+    err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+    if (sub_domain->get_myrank() != 0)
       for (int i = 0; i < Nclumps; i++)
         cl[i].ang[nd] = d[i];
   }
@@ -853,12 +846,11 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel_fixedmass()
   // rotation matrix
   for (int x = 0; x < MAX_DIM; x++) {
     for (int y = 0; y < MAX_DIM; y++) {
-      if (MCMD->get_myrank() == 0)
+      if (sub_domain->get_myrank() == 0)
         for (int i = 0; i < Nclumps; i++)
           d[i] = cl[i].rm[x][y];
-      err += COMM->broadcast_data(0, "DOUBLE", Nclumps, d);
-      // err += MPI_Bcast(d, Nclumps, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-      if (MCMD->get_myrank() != 0)
+      err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+      if (sub_domain->get_myrank() != 0)
         for (int i = 0; i < Nclumps; i++)
           cl[i].rm[x][y] = d[i];
     }
@@ -873,7 +865,7 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel_fixedmass()
 int IC_photevap_random_clumps::clumps_random_setup_pllel()
 {
   int err = 0;
-  if (MCMD->get_myrank() == 0) {
+  if (sub_domain->get_myrank() == 0) {
     err += IC_photevap_random_clumps::clumps_random_setup();
   }
   else {
@@ -892,47 +884,43 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel()
   // MPI_Comm comm )
   double d[Nclumps];
   // overdensity
-  if (MCMD->get_myrank() == 0)
+  if (sub_domain->get_myrank() == 0)
     for (int i = 0; i < Nclumps; i++)
       d[i] = cl[i].overdensity;
-  err += COMM->broadcast_data(0, "DOUBLE", Nclumps, d);
-  // err += MPI_Bcast(d, Nclumps, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-  if (MCMD->get_myrank() != 0)
+  err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+  if (sub_domain->get_myrank() != 0)
     for (int i = 0; i < Nclumps; i++)
       cl[i].overdensity = d[i];
 
   // centre
   for (int nd = 0; nd < MAX_DIM; nd++) {
-    if (MCMD->get_myrank() == 0)
+    if (sub_domain->get_myrank() == 0)
       for (int i = 0; i < Nclumps; i++)
         d[i] = cl[i].centre[nd];
-    err += COMM->broadcast_data(0, "DOUBLE", Nclumps, d);
-    // err += MPI_Bcast(d, Nclumps, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    if (MCMD->get_myrank() != 0)
+    err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+    if (sub_domain->get_myrank() != 0)
       for (int i = 0; i < Nclumps; i++)
         cl[i].centre[nd] = d[i];
   }
 
   // size
   for (int nd = 0; nd < MAX_DIM; nd++) {
-    if (MCMD->get_myrank() == 0)
+    if (sub_domain->get_myrank() == 0)
       for (int i = 0; i < Nclumps; i++)
         d[i] = cl[i].size[nd];
-    err += COMM->broadcast_data(0, "DOUBLE", Nclumps, d);
-    // err += MPI_Bcast(d, Nclumps, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    if (MCMD->get_myrank() != 0)
+    err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+    if (sub_domain->get_myrank() != 0)
       for (int i = 0; i < Nclumps; i++)
         cl[i].size[nd] = d[i];
   }
 
   // angle
   for (int nd = 0; nd < MAX_DIM; nd++) {
-    if (MCMD->get_myrank() == 0)
+    if (sub_domain->get_myrank() == 0)
       for (int i = 0; i < Nclumps; i++)
         d[i] = cl[i].ang[nd];
-    err += COMM->broadcast_data(0, "DOUBLE", Nclumps, d);
-    // err += MPI_Bcast(d, Nclumps, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    if (MCMD->get_myrank() != 0)
+    err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+    if (sub_domain->get_myrank() != 0)
       for (int i = 0; i < Nclumps; i++)
         cl[i].ang[nd] = d[i];
   }
@@ -940,12 +928,11 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel()
   // rotation matrix
   for (int x = 0; x < MAX_DIM; x++) {
     for (int y = 0; y < MAX_DIM; y++) {
-      if (MCMD->get_myrank() == 0)
+      if (sub_domain->get_myrank() == 0)
         for (int i = 0; i < Nclumps; i++)
           d[i] = cl[i].rm[x][y];
-      err += COMM->broadcast_data(0, "DOUBLE", Nclumps, d);
-      // err += MPI_Bcast(d, Nclumps, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-      if (MCMD->get_myrank() != 0)
+      err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+      if (sub_domain->get_myrank() != 0)
         for (int i = 0; i < Nclumps; i++)
           cl[i].rm[x][y] = d[i];
     }

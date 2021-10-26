@@ -42,10 +42,10 @@ int NG_MPI_BC89flux::setup_flux_recv(
   int ixmin[MAX_DIM], ixmax[MAX_DIM], ncell[MAX_DIM];  // interface region
   int f_lxmin[MAX_DIM], f_lxmax[MAX_DIM];              // finer grid
   int d_xmin[MAX_DIM], d_xmax[MAX_DIM];                // full domain
-  struct flux_interface *fi = 0;
-  class MCMDcontrol *MCMD   = &(par.levels[l].MCMD);
+  struct flux_interface *fi    = 0;
+  class Sub_domain *sub_domain = &(par.levels[l].sub_domain);
   vector<struct cgrid> cg;
-  MCMD->get_child_grid_info(cg);
+  sub_domain->get_child_grid_info(cg);
   int nchild = cg.size();
 
   // coarse grid quantities
@@ -54,7 +54,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
 
   // if only one MPI process, then no send/recv necessary and we
   // call the serial version:
-  if (par.levels[0].MCMD.get_nproc() == 1) {
+  if (par.levels[0].sub_domain.get_nproc() == 1) {
 #ifdef TEST_BC89FLUX
     cout << "setup_flux_recv(): nproc=1, calling serial version.\n";
 #endif
@@ -217,13 +217,13 @@ int NG_MPI_BC89flux::setup_flux_recv(
 #endif
     // There are no children, but my grid might have a boundary in
     // common with the l+1 level's outer boundary.  There is at most
-    // one of these.  Use MCMD functions to test this.
+    // one of these.  Use sub_domain functions to test this.
     int edge = -1, axis = -1, perp[2];
     size_t nsub = 0;
     size_t nel  = 0;
     std::vector<std::vector<struct cgrid> > cgngb;
 
-    MCMD->get_level_lp1_ngb_info(cgngb);
+    sub_domain->get_level_lp1_ngb_info(cgngb);
     if (cgngb.size() != static_cast<size_t>(2 * par.ndim)) {
       rep.error("l+1 neigbouring grids vector not set up right", cgngb.size());
     }
@@ -380,7 +380,7 @@ int NG_MPI_BC89flux::setup_flux_send(
   int ns = flux_update_send[l].size();
   if (ns != 2 * par.ndim) rep.error("bad flux send size", ns);
 
-  if (par.levels[l].MCMD.get_nproc() == 1) {
+  if (par.levels[l].sub_domain.get_nproc() == 1) {
     for (int d = 0; d < ns; d++) {
       flux_update_send[l][d].rank.push_back(0);
       flux_update_send[l][d].dir = d;
@@ -390,13 +390,13 @@ int NG_MPI_BC89flux::setup_flux_send(
     // Usually send to parent, sometimes send to neighbour of parent
     // if boundary between parent and neighbour sits on the edge of
     // my level.
-    class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
+    class Sub_domain *sub_domain = &(par.levels[l].sub_domain);
 
     // get data on parent grid, and neighbours of parent grid.
     struct cgrid pg;
     std::vector<struct cgrid> pgngb;
-    MCMD->get_parent_grid_info(&pg);
-    MCMD->get_parent_ngb_grid_info(pgngb);
+    sub_domain->get_parent_grid_info(&pg);
+    sub_domain->get_parent_ngb_grid_info(pgngb);
     int pg_ixmin[MAX_DIM], pg_ixmax[MAX_DIM];
     CI.get_ipos_vec(pg.Xmin, pg_ixmin);
     CI.get_ipos_vec(pg.Xmax, pg_ixmax);
@@ -469,14 +469,14 @@ int NG_MPI_BC89flux::setup_flux_send(
 // ##################################################################
 // ##################################################################
 
-void NG_MPI_BC89flux::clear_sends_BC89_fluxes()
+void NG_MPI_BC89flux::clear_sends_BC89_fluxes(class Sub_domain &sub_domain)
 {
   for (unsigned int ib = 0; ib < BC89_flux_send_list.size(); ib++) {
 #ifdef TEST_BC89FLUX
     cout << "clear_sends_BC89_fluxes: waiting for send " << ib;
     cout << " of " << BC89_flux_send_list.size() << endl;
 #endif
-    COMM->wait_for_send_to_finish(BC89_flux_send_list[ib]);
+    sub_domain.wait_for_send_to_finish(BC89_flux_send_list[ib]);
   }
   BC89_flux_send_list.clear();
   return;
@@ -508,8 +508,8 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
   int err = 0;
 
   // else we have to send data to at least one other MPI process:
-  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
-  int n_send              = flux_update_send[l].size();
+  class Sub_domain *sub_domain = &(par.levels[l].sub_domain);
+  int n_send                   = flux_update_send[l].size();
   for (int isend = 0; isend < n_send; isend++) {
     // loop over boundaries (some send to more than one process)
     struct flux_update *fup = &(flux_update_send[l][isend]);
@@ -549,7 +549,7 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
       cout << "l=" << l << ": isend=" << isend << ", send " << ii << " of ";
       cout << fup->rank.size() << " to rank " << fup->rank[ii] << endl;
 #endif
-      if (fup->rank[ii] == MCMD->get_myrank()) {
+      if (fup->rank[ii] == sub_domain->get_myrank()) {
 #ifdef TEST_BC89FLUX
         cout << "l=" << l << ": ignoring BC89 for isend=" << isend
              << " (to myrank)." << endl;
@@ -560,10 +560,11 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
       int comm_tag = BC_MPI_FLUX_tag + 100 * isend + l;
 #ifdef TEST_BC89FLUX
       cout << "l=" << l << ": BC89 FLUX: Sending " << n_data;
-      cout << " doubles from proc " << MCMD->get_myrank();
+      cout << " doubles from proc " << sub_domain->get_myrank();
       cout << " to parent proc " << fup->rank[ii] << endl;
 #endif
-      err += COMM->send_double_data(fup->rank[ii], n_data, data, id, comm_tag);
+      err += sub_domain->send_double_data(
+          fup->rank[ii], n_data, data, id, comm_tag);
       if (err) rep.error("FLUX_F2C send_data failed.", err);
 #ifdef TEST_BC89FLUX
       cout << "l=" << l << ": BC89 FLUX: returned with id=" << id;
@@ -607,10 +608,10 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
   double ftmp[par.nvar], utmp[par.nvar];
   for (int v = 0; v < par.nvar; v++)
     ftmp[v] = 0.0;
-  class GridBaseClass *grid = par.levels[l].grid;
-  class MCMDcontrol *MCMD   = &(par.levels[l].MCMD);
-  int n_bd                  = flux_update_recv[l].size();
-  double dt                 = par.levels[l].dt;
+  class GridBaseClass *grid    = par.levels[l].grid;
+  class Sub_domain *sub_domain = &(par.levels[l].sub_domain);
+  int n_bd                     = flux_update_recv[l].size();
+  double dt                    = par.levels[l].dt;
 
   for (int irecv = 0; irecv < n_bd; irecv++) {
     struct flux_update *fup = &(flux_update_recv[l][irecv]);
@@ -621,7 +622,7 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
 #endif
       continue;
     }
-    else if (fup->rank[0] == MCMD->get_myrank()) {
+    else if (fup->rank[0] == sub_domain->get_myrank()) {
 #ifdef TEST_BC89FLUX
       cout << "l=" << l << ": calling serial BC89 for irecv=" << irecv;
       cout << " (same rank). dir=" << fup->dir << endl;
@@ -667,7 +668,7 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
 #ifdef TEST_BC89FLUX
     cout << "looking for data with tag: " << comm_tag << endl;
 #endif
-    err = COMM->look_for_data_to_receive(
+    err = sub_domain->look_for_data_to_receive(
         &from_rank,  // rank of sender (output)
         recv_id,     // identifier for receive (output).
         &recv_tag,   // comm_tag associated with data (output)
@@ -684,7 +685,8 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
     // Receive data into buffer.  Data stored for each fine cell:
     // flux[nv]
     //
-    err = COMM->receive_double_data(from_rank, recv_tag, recv_id, n_data, buf);
+    err = sub_domain->receive_double_data(
+        from_rank, recv_tag, recv_id, n_data, buf);
     if (err) rep.error("(flux BC89) getdata failed", err);
 
     size_t iel = 0;

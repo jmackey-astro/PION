@@ -11,16 +11,16 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
-#include "MCMD_boundaries.h"
 #include "boundaries/assign_update_bcs.h"
 #include "boundaries/boundaries.h"
-#include "decomposition/MCMD_control.h"
 #include "periodic_boundaries_MPI.h"
+#include "sub_domain/sub_domain.h"
+#include "sub_domain_boundaries.h"
 
 class assign_update_bcs_MPI :
     virtual public assign_update_bcs,
     virtual public periodic_pllel_bc,
-    virtual public MCMD_bc {
+    virtual public sub_domain_bc {
 public:
   ///
   /// Assigns data to each boundary.

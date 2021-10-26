@@ -1,6 +1,6 @@
 /// \file assign_update_bcs_NG_MPI.cpp
 /// \brief Defines a class that inherits boundary types related to
-///   static mesh-refinement (NG) and MCMD domain decomposition and
+///   static mesh-refinement (NG) and sub_domain domain decomposition and
 ///   implements assignment and update functions.
 /// \author Jonathan Mackey
 ///
@@ -216,9 +216,9 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
   // block of MPI processes.
   int nb = grid->BC_bd.size();
   int map[nb];
-  int rank = par.levels[level].MCMD.get_myrank();
+  int rank = par.levels[level].sub_domain.get_myrank();
   int ix[MAX_DIM];
-  par.levels[level].MCMD.get_domain_coordinates(rank, ix);
+  par.levels[level].sub_domain.get_domain_coordinates(rank, ix);
   for (int j = 0; j < par.ndim; j++) {
     if (ix[j] % 2 == 0) {
       map[2 * j]     = 2 * j;
@@ -344,7 +344,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
         rep.error("Unhandled BC: NG-MPI update external", b->itype);
         break;
     }
-    COMM->barrier("external bcs");
+    par.levels[0].sub_domain.barrier("external bcs");
   }
 #ifdef TEST_MPI_NG
   cout << "LEVEL " << level << ": updated NG-MPI-grid external BCs\n";

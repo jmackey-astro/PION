@@ -123,10 +123,10 @@ UniformGrid::UniformGrid(
     int nd,
     int nv,
     int eqt,
-    int Nbc,       ///< Number of boundary cells to use.
-    double *g_xn,  // this grid xmin
-    double *g_xp,  // this grid xmax
-    int *g_nc,
+    int Nbc,             ///< Number of boundary cells to use.
+    const double *g_xn,  // this grid xmin
+    const double *g_xp,  // this grid xmax
+    const int *g_nc,
     double *lev_xn,  // level xmin
     double *lev_xp,  // level xmax
     double *sim_xn,  // sim xmin
@@ -195,6 +195,7 @@ UniformGrid::UniformGrid(
   //
   G_ncell     = 1;
   G_ncell_all = 1;
+
   // initialise to 1 for routines that loop over unused dimensions.
   for (int i = 0; i < MAX_DIM; i++) {
     G_ng_all[i] = 1;
@@ -396,20 +397,27 @@ UniformGrid::~UniformGrid()
   // Delete the grid data.
   //
 #ifdef NEWGRIDDATA
+
   // deallocate grid data
   *griddata = mem.myfree(*griddata);
   griddata  = mem.myfree(griddata);
+
   for (size_t i = 0; i < G_ncell_all; i++) {
     (*gridcells)[i].ngb      = mem.myfree((*gridcells)[i].ngb);
     (*gridcells)[i].pos      = mem.myfree((*gridcells)[i].pos);
     (*gridcells)[i].isbd_ref = mem.myfree((*gridcells)[i].isbd_ref);
-    for (int id = 0; id < G_ndim; id++) {
-      if ((*gridcells)[i].F[id])
-        (*gridcells)[i].F[id] = mem.myfree((*gridcells)[i].F[id]);
+    if (!(*gridcells)[i].F.empty()) {
+      for (int id = 0; id < G_ndim; id++) {
+        if ((*gridcells)[i].F[id]) {
+          (*gridcells)[i].F[id] = mem.myfree((*gridcells)[i].F[id]);
+        }
+      }
     }
   }
   gridcells = mem.myfree(gridcells);
+
 #else
+
   cell *cpt = FirstPt_All();
   cell *npt = NextPt_All(cpt);
   do {
@@ -419,8 +427,8 @@ UniformGrid::~UniformGrid()
   } while ((npt = NextPt_All(cpt)) != 0);
   // cout <<"deleting cell id: "<<cpt->id<<"\n";
   CI.delete_cell(cpt);
-#endif  // NEWGRIDDATA
 
+#endif  // NEWGRIDDATA
 
   G_ng     = mem.myfree(G_ng);
   G_xmin   = mem.myfree(G_xmin);
@@ -440,7 +448,8 @@ UniformGrid::~UniformGrid()
   BC_deleteBoundaryData();
 
 #ifndef NDEBUG
-  cout << "UniformGrid Destructor:\tdone.\n";
+  cout << "UniformGrid Destructor:\tdone." << endl;
+  ;
 #endif
 }  // Destructor
 
@@ -1645,17 +1654,17 @@ bool UniformGrid::point_on_grid(const double *pos  ///< position
 
 
 uniform_grid_cyl::uniform_grid_cyl(
-    int nd,          ///< ndim, length of position vector.
-    int nv,          ///< nvar, length of state vectors.
-    int eqt,         ///< eqntype, which equations we are using (needed by BCs).
-    int Nbc,         ///< Number of boundary cells to use.
-    double *g_xn,    ///< array of minimum values of x,y,z for this grid.
-    double *g_xp,    ///< array of maximum values of x,y,z for this grid.
-    int *g_nc,       ///< array of number of cells in x,y,z directions.
-    double *lev_xn,  // level xmin
-    double *lev_xp,  // level xmax
-    double *sim_xn,  ///< array of min. x/y/z for full simulation.
-    double *sim_xp   ///< array of max. x/y/z for full simulation.
+    int nd,   ///< ndim, length of position vector.
+    int nv,   ///< nvar, length of state vectors.
+    int eqt,  ///< eqntype, which equations we are using (needed by BCs).
+    int Nbc,  ///< Number of boundary cells to use.
+    const double *g_xn,  ///< array of minimum values of x,y,z for this grid.
+    const double *g_xp,  ///< array of maximum values of x,y,z for this grid.
+    const int *g_nc,     ///< array of number of cells in x,y,z directions.
+    double *lev_xn,      // level xmin
+    double *lev_xp,      // level xmax
+    double *sim_xn,      ///< array of min. x/y/z for full simulation.
+    double *sim_xp       ///< array of max. x/y/z for full simulation.
     ) :
     VectorOps_Cart(nd),
     UniformGrid(
@@ -1952,17 +1961,17 @@ double uniform_grid_cyl::idifference_cell2cell(
 
 
 uniform_grid_sph::uniform_grid_sph(
-    int nd,          ///< ndim, length of position vector.
-    int nv,          ///< nvar, length of state vectors.
-    int eqt,         ///< eqntype, which equations we are using (needed by BCs).
-    int Nbc,         ///< Number of boundary cells to use.
-    double *g_xn,    ///< array of minimum values of x,y,z for this grid.
-    double *g_xp,    ///< array of maximum values of x,y,z for this grid.
-    int *g_nc,       ///< array of number of cells in x,y,z directions.
-    double *lev_xn,  // level xmin
-    double *lev_xp,  // level xmax
-    double *sim_xn,  ///< array of min. x/y/z for full simulation.
-    double *sim_xp   ///< array of max. x/y/z for full simulation.
+    int nd,   ///< ndim, length of position vector.
+    int nv,   ///< nvar, length of state vectors.
+    int eqt,  ///< eqntype, which equations we are using (needed by BCs).
+    int Nbc,  ///< Number of boundary cells to use.
+    const double *g_xn,  ///< array of minimum values of x,y,z for this grid.
+    const double *g_xp,  ///< array of maximum values of x,y,z for this grid.
+    const int *g_nc,     ///< array of number of cells in x,y,z directions.
+    double *lev_xn,      // level xmin
+    double *lev_xp,      // level xmax
+    double *sim_xn,      ///< array of min. x/y/z for full simulation.
+    double *sim_xp       ///< array of max. x/y/z for full simulation.
     ) :
     VectorOps_Cart(nd),
     UniformGrid(

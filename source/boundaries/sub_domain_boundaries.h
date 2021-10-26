@@ -5,21 +5,21 @@
 /// Modifications :\n
 /// - 2018.08.08 JM: moved code.
 
-#ifndef MCMD_BOUNDARIES_H
-#define MCMD_BOUNDARIES_H
+#ifndef sub_domain_BOUNDARIES_H
+#define sub_domain_BOUNDARIES_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
 #include "boundaries/boundaries.h"
-#include "decomposition/MCMD_control.h"
 #include "grid/grid_base_class.h"
 #include "sim_params.h"
+#include "sub_domain/sub_domain.h"
 
 ///
 /// Implements periodic boundaries for a uniform grid.
 ///
-class MCMD_bc {
+class sub_domain_bc {
 protected:
   ///
   /// Get boundary data from other processor.
@@ -63,4 +63,4 @@ protected:
   );
 };
 
-#endif  // MCMD_BOUNDARIES_H
+#endif  // sub_domain_BOUNDARIES_H

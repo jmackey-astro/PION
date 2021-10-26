@@ -25,9 +25,9 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
 
   class GridBaseClass *grid = par.levels[l].grid;
   // see how many child grids I have
-  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
+  class Sub_domain *sub_domain = &(par.levels[l].sub_domain);
   vector<struct cgrid> fg;
-  MCMD->get_child_grid_info(fg);
+  sub_domain->get_child_grid_info(fg);
   int nchild = fg.size();
 
 #ifdef TEST_C2F
@@ -63,12 +63,12 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
   // loop over child grids
   for (int i = 0; i < nchild; i++) {
 
-    if (MCMD->get_myrank() == fg[i].rank) {
+    if (sub_domain->get_myrank() == fg[i].rank) {
       // if child is on my process, do nothing because child grid
       // can grab the data directly using serial C2F code.
 #ifdef TEST_C2F
       cout << "C2F_SEND: child " << i << ", ";
-      cout << "my rank (" << MCMD->get_myrank() << ") == child rank (";
+      cout << "my rank (" << sub_domain->get_myrank() << ") == child rank (";
       cout << fg[i].rank << "), no need to set up ";
       cout << "COARSE_TO_FINE_SEND\n";
 #endif
@@ -80,7 +80,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
       // domain are included.
 #ifdef TEST_C2F
       cout << "C2F_SEND: child " << i << ", ";
-      cout << "my rank != child rank (" << MCMD->get_myrank();
+      cout << "my rank != child rank (" << sub_domain->get_myrank();
       cout << ", " << fg[i].rank << ") running parallel ";
       cout << "COARSE_TO_FINE_SEND\n";
 #endif
@@ -96,7 +96,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
             && (fg_ixmin[d] != cg_ixmin[d])) {
 #ifdef TEST_C2F
           cout << "C2F_SEND: child " << i << ", dim " << d << " NEG DIR\n";
-          rep.printVec("localxmin", MCMD->LocalXmin, 3);
+          rep.printVec("localxmin", sub_domain->get_Xmin(), 3);
           rep.printVec("Childxmin", fg[i].Xmin, 3);
 #endif
           struct c2f *bdata = new struct c2f;
@@ -142,9 +142,9 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
   // so we have to also consider boundaries coincident with my
   // domain boundary, where level l+1 only intersects at the boundary
   // this only applies if nproc>1.
-  if (MCMD->get_nproc() > 1) {
+  if (sub_domain->get_nproc() > 1) {
     std::vector<std::vector<struct cgrid> > fgngb;
-    MCMD->get_level_lp1_ngb_info(fgngb);
+    sub_domain->get_level_lp1_ngb_info(fgngb);
     if (fgngb.size() != static_cast<size_t>(2 * par.ndim)) {
       rep.error("l+1 neigbouring grids vector not set up right", fgngb.size());
     }
@@ -156,13 +156,13 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
           // there are neighbouring grids on l+1, so add all of them
           // to the send list.
           for (size_t f = 0; f < fgngb[dir].size(); f++) {
-            if (fgngb[dir][f].rank == MCMD->get_myrank()) {
+            if (fgngb[dir][f].rank == sub_domain->get_myrank()) {
               // if child is on my process, do nothing because child
               // grid can grab the data directly using serial C2F
               // code.
 #ifdef TEST_C2F
               cout << "C2F_SEND: ngb " << f << ", dir=" << dir << ", ";
-              cout << "my rank (" << MCMD->get_myrank();
+              cout << "my rank (" << sub_domain->get_myrank();
               cout << ") == child-ngb rank (";
               cout << fgngb[dir][f].rank << "), no need to set up ";
               cout << "COARSE_TO_FINE_SEND\n";
@@ -190,13 +190,13 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
           // there are neighbouring grids on l+1, so add all of them
           // to the send list.
           for (size_t f = 0; f < fgngb[dir].size(); f++) {
-            if (fgngb[dir][f].rank == MCMD->get_myrank()) {
+            if (fgngb[dir][f].rank == sub_domain->get_myrank()) {
               // if child is on my process, do nothing because child
               // grid can grab the data directly using serial C2F
               // code.
 #ifdef TEST_C2F
               cout << "C2F_SEND: ngb " << f << ", dir=" << dir << ", ";
-              cout << "my rank (" << MCMD->get_myrank();
+              cout << "my rank (" << sub_domain->get_myrank();
               cout << ") == child-ngb rank (";
               cout << fgngb[dir][f].rank << "), no need to set up ";
               cout << "COARSE_TO_FINE_SEND\n";
@@ -248,7 +248,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
   cout << endl;
 #endif
 #ifdef TEST_C2F
-  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
+  class Sub_domain *sub_domain = &(par.levels[l].sub_domain);
 #endif
   int err = 0;
 
@@ -298,7 +298,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     size_t n_cell = b->NGsendC2F[ib]->c.size();
 
 #ifdef TEST_C2F
-    cout << "C2F SEND: " << MCMD->get_myrank() << ", sending ";
+    cout << "C2F SEND: " << sub_domain->get_myrank() << ", sending ";
     cout << n_cell << " elements to process: ";
     cout << b->NGsendC2F[ib]->rank << "\n";
     cout.flush();
@@ -352,7 +352,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     // Send data using a non-blocking MPI send
     //
     // ostringstream tmp;
-    // tmp <<"C2F_"<<MCMD->get_myrank()<<"_to_"<<b->NGsendC2F[ib]->rank;
+    // tmp <<"C2F_"<<sub_domain->get_myrank()<<"_to_"<<b->NGsendC2F[ib]->rank;
     string id;  // = tmp.str();
     // Need to add direction to comm-tag because we might be sending
     // more than one boundary to the same process.  Also add level,
@@ -363,11 +363,11 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     int comm_tag = BC_MPI_NGC2F_tag + 100 * b->NGsendC2F[ib]->dir + l + 1;
 #ifdef TEST_C2F
     cout << "BC_update_COARSE_TO_FINE_SEND: l=" << l << ", Sending " << n_el;
-    cout << " doubles from proc " << MCMD->get_myrank();
+    cout << " doubles from proc " << sub_domain->get_myrank();
     cout << " to child proc " << b->NGsendC2F[ib]->rank << endl;
 #endif
-    err +=
-        COMM->send_double_data(b->NGsendC2F[ib]->rank, n_el, buf, id, comm_tag);
+    err += par.levels[0].sub_domain.send_double_data(
+        b->NGsendC2F[ib]->rank, n_el, buf, id, comm_tag);
     if (err) rep.error("Send_C2F send_data failed.", err);
 #ifdef TEST_C2F
     cout << "BC_update_COARSE_TO_FINE_SEND: returned with id=" << id;
@@ -383,7 +383,8 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
 // ##################################################################
 // ##################################################################
 
-void NG_MPI_coarse_to_fine_bc::BC_COARSE_TO_FINE_SEND_clear_sends()
+void NG_MPI_coarse_to_fine_bc::BC_COARSE_TO_FINE_SEND_clear_sends(
+    class Sub_domain &sub_domain)
 {
   for (unsigned int ib = 0; ib < NG_C2F_send_list.size(); ib++) {
 #ifdef TEST_C2F
@@ -392,7 +393,7 @@ void NG_MPI_coarse_to_fine_bc::BC_COARSE_TO_FINE_SEND_clear_sends()
     cout << NG_C2F_send_list[ib] << "...";
     cout.flush();
 #endif
-    COMM->wait_for_send_to_finish(NG_C2F_send_list[ib]);
+    sub_domain.wait_for_send_to_finish(NG_C2F_send_list[ib]);
 #ifdef TEST_C2F
     cout << " ... done!\n";
     cout.flush();
@@ -416,8 +417,8 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
   // the serial version) or on a different MPI process (and set up
   // some data structures to receive the coarse-grid data for
   // interpolation).
-  class MCMDcontrol *MCMD   = &(par.levels[l].MCMD);
-  class GridBaseClass *grid = par.levels[l].grid;
+  class Sub_domain *sub_domain = &(par.levels[l].sub_domain);
+  class GridBaseClass *grid    = par.levels[l].grid;
 
   int cl_ixmin[MAX_DIM], cl_ixmax[MAX_DIM];
   int fl_ixmin[MAX_DIM], fl_ixmax[MAX_DIM];
@@ -436,8 +437,8 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
   // get data on parent grid, and neighbours of parent grid.
   struct cgrid pg;
   std::vector<struct cgrid> pgngb;
-  MCMD->get_parent_grid_info(&pg);
-  MCMD->get_parent_ngb_grid_info(pgngb);
+  sub_domain->get_parent_grid_info(&pg);
+  sub_domain->get_parent_ngb_grid_info(pgngb);
   CI.get_ipos_vec(pg.Xmin, cg_ixmin);
   CI.get_ipos_vec(pg.Xmax, cg_ixmax);
 
@@ -479,7 +480,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
     b->NGrecvC2F_parent = pg.rank;
   }
 
-  if (MCMD->get_myrank() == b->NGrecvC2F_parent) {
+  if (sub_domain->get_myrank() == b->NGrecvC2F_parent) {
 #ifdef TEST_C2F
     cout << "my rank == parent rank, setting up serial ";
     cout << "COARSE_TO_FINE_RECV\n";
@@ -492,7 +493,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
 #ifdef TEST_C2F
     cout << "my rank != parent rank, so will need MPI for ";
     cout << "COARSE_TO_FINE_RECV";
-    cout << "me=" << MCMD->get_myrank();
+    cout << "me=" << sub_domain->get_myrank();
     cout << ", parent=" << b->NGrecvC2F_parent << "\n";
 #endif
 
@@ -617,11 +618,11 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
   cout << "C2F_MPI: receiving boundary data to level ";
   cout << l << ", updating boundary dir = " << b->dir << endl;
 #endif
-  int err                   = 0;
-  class MCMDcontrol *MCMD   = &(par.levels[l].MCMD);
-  class GridBaseClass *grid = par.levels[l].grid;
+  int err                      = 0;
+  class Sub_domain *sub_domain = &(par.levels[l].sub_domain);
+  class GridBaseClass *grid    = par.levels[l].grid;
 
-  if (MCMD->get_myrank() == b->NGrecvC2F_parent) {
+  if (sub_domain->get_myrank() == b->NGrecvC2F_parent) {
 #ifdef TEST_C2F
     cout << "my rank == parent rank, calling serial ";
     cout << "COARSE_TO_FINE" << endl;
@@ -632,7 +633,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
 #ifdef TEST_C2F
     cout << "my rank != parent rank, so updating ";
     cout << "COARSE_TO_FINE_RECV: ";
-    cout << "me=" << MCMD->get_myrank();
+    cout << "me=" << sub_domain->get_myrank();
     cout << ", parent=" << b->NGrecvC2F_parent << endl;
 #endif
 
@@ -647,7 +648,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
       cout << comm_tag << endl;
     }
 #endif
-    err = COMM->look_for_data_to_receive(
+    err = par.levels[0].sub_domain.look_for_data_to_receive(
         &from_rank, recv_id, &recv_tag, comm_tag, COMM_DOUBLEDATA);
     if (err) rep.error("look for double data failed", err);
 #ifdef TEST_C2F
@@ -681,7 +682,8 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     // Receive data into buffer.  Data stored for each coarse cell:
     // Ph[nv],cellvol,cellpos[nd],slopeX[nv],slopeY[nv],slopeZ[nv]
     //
-    err = COMM->receive_double_data(from_rank, recv_tag, recv_id, n_el, buf);
+    err = par.levels[0].sub_domain.receive_double_data(
+        from_rank, recv_tag, recv_id, n_el, buf);
     if (err) rep.error("(BC_update_C2F_RECV) getdata failed", err);
 
     //

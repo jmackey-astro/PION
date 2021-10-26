@@ -89,7 +89,7 @@ public:
 
   /// clear the non-blocking MPI sends when they have been
   /// received.
-  void clear_sends_BC89_fluxes();
+  void clear_sends_BC89_fluxes(class Sub_domain &);
 
 protected:
   /// List of IDs for MPI sends related to the BC89 Flux

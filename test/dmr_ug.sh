@@ -36,10 +36,10 @@ script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 
 ${mpi} ../icgen-ug \
   ${script_dir}/problems/double_Mach_reflection/params_DMR_n160.txt silo \
-  redirect=iclog omp-nthreads=${nt}
+  redirect=iclog omp-nthreads=${nt} || exit 1
 
 ${mpi} ../pion-ug DMRm10t60_n160_0000.00000000.silo outfile=DMR_new_n160 \
-  redirect=pionlog-dmr omp-nthreads=${nt}
+  redirect=pionlog-dmr omp-nthreads=${nt} || exit 1
 
 REF_FILE=DMRm10t60_n160_0000.00000365.silo
 NEW_FILE=`ls DMR_new_n160_0000.*.silo | tail -n1`
@@ -48,7 +48,6 @@ NEW_FILE=`ls DMR_new_n160_0000.*.silo | tail -n1`
 if grep -q "RESULTS ARE THE SAME" tmp.txt; then
   echo -e "${GREEN}*** TEST HAS BEEN PASSED ***"
   tail -n10 tmp.txt
-  rm *.silo
   echo -e "*** TEST HAS BEEN PASSED ***${NC}"
   exit 0
 else

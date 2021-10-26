@@ -31,8 +31,8 @@ using namespace std;
 #include "grid/uniform_grid.h"
 #include "image_io.h"
 
-#include "decomposition/MCMD_control.h"
 #include "grid/setup_fixed_grid_MPI.h"
+#include "sub_domain/sub_domain.h"
 
 #include "microphysics/MPv3.h"
 #include "microphysics/MPv5.h"
@@ -85,23 +85,16 @@ void setup_image_array(
 
 int main(int argc, char **argv)
 {
+  int err = 0;
   //
-  // First initialise the comms class, since we need to define
-  // PARALLEL to read a parallel file.
+  // Also initialise the sub_domain class with myrank and nproc.
   //
-  int err = COMM->init(&argc, &argv);
-  //
-  // Also initialise the MCMD class with myrank and nproc.
-  //
-  int myrank = -1, nproc = -1;
-  COMM->get_rank_nproc(&myrank, &nproc);
   class SimParams SimPM;
-  SimPM.levels.clear();
-  SimPM.levels.resize(1);
-  SimPM.levels[0].MCMD.set_myrank(myrank);
-  SimPM.levels[0].MCMD.set_nproc(nproc);
 
-  class MCMDcontrol *MCMD = &(SimPM.levels[0].MCMD);
+  class Sub_domain *sub_domain = &(SimPM.levels[0].sub_domain);
+
+  int myrank = sub_domain->get_myrank();
+  int nproc  = sub_domain->get_nproc();
 
 #ifdef PROJ_OMP
   omp_set_dynamic(0);
@@ -206,7 +199,7 @@ int main(int argc, char **argv)
   //
   // set up dataio_utility class
   //
-  class dataio_silo_utility dataio(SimPM, "DOUBLE", MCMD);
+  class dataio_silo_utility dataio(SimPM, "DOUBLE", sub_domain);
 
   //
   // Get list of files to read:
@@ -267,7 +260,7 @@ int main(int argc, char **argv)
   SimPM.levels[0].simtime    = SimPM.simtime;
   SimPM.levels[0].dt         = 0.0;
   SimPM.levels[0].multiplier = 1;
-  err = MCMD->decomposeDomain(SimPM.ndim, SimPM.levels[0]);
+  err = sub_domain->decomposeDomain(SimPM.ndim, SimPM.levels[0]);
   if (err) rep.error("main: failed to decompose domain!", err);
 
   //
@@ -536,8 +529,6 @@ int main(int argc, char **argv)
 
   delete MP;
   MP = 0;
-  delete COMM;
-  COMM = 0;
 
   return 0;
 }

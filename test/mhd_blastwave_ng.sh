@@ -38,11 +38,12 @@ script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 
 ${mpi} ../icgen-ng \
   ${script_dir}/problems/MHD_Blastwave2D/params_MHD_blastwave2D_l2_B010_n128.txt \
-  silo redirect=iclog omp-nthreads=${nt}
+  silo redirect=iclog omp-nthreads=${nt} || exit 1
 
 ${mpi} ../pion-ng \
   BW2d_StoneMHD_l2_B010_n128_level00_0000.00000000.silo solver=7 cfl=0.24 \
-  opfreq_time=0.1 outfile=NG_B010_n128 redirect=pionlog-bw2d-mhd omp-nthreads=${nt}
+  opfreq_time=0.1 outfile=NG_B010_n128 redirect=pionlog-bw2d-mhd \
+  omp-nthreads=${nt} || exit 1
 
 REF_FILE=NG_B010_n128_level00_0000.00000824.silo
 NEW_FILE=`ls NG_B010_n128_level00_0000.*.silo | tail -n1`
@@ -51,7 +52,6 @@ NEW_FILE=`ls NG_B010_n128_level00_0000.*.silo | tail -n1`
 if grep -q "RESULTS ARE THE SAME" tmp.txt; then
   echo -e "${GREEN}*** TEST HAS BEEN PASSED ***"
   tail -n10 tmp.txt
-  rm *.silo
   echo -e "*** TEST HAS BEEN PASSED ***${NC}"
   exit 0
 else

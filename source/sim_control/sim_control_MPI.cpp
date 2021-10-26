@@ -67,9 +67,9 @@
 #include "tools/reporting.h"
 #include "tools/timer.h"
 
-#include "decomposition/MCMD_control.h"
 #include "raytracing/raytracer_SC.h"
 #include "sim_control/sim_control_MPI.h"
+#include "sub_domain/sub_domain.h"
 
 #ifdef SILO
 #include "dataIO/dataio_silo.h"
@@ -125,15 +125,8 @@ int sim_control_pllel::Init(
 #endif
   int err = 0;
 
-  //
-  // Setup the MCMDcontrol class with rank and nproc.
-  //
-  int myrank = -1, nproc = -1;
-  COMM->get_rank_nproc(&myrank, &nproc);
-  SimPM.levels.clear();
-  SimPM.levels.resize(1);
-  SimPM.levels[0].MCMD.set_myrank(myrank);
-  SimPM.levels[0].MCMD.set_nproc(nproc);
+  int myrank = SimPM.levels[0].sub_domain.get_myrank();
+  int nproc  = SimPM.levels[0].sub_domain.get_nproc();
 
   //
   // Setup dataI/O class and check if we read from a single file or
@@ -147,16 +140,16 @@ int sim_control_pllel::Init(
     // FITS
     string::size_type pos = infile.find("_0000.");
     if (pos == string::npos) {
-      SimPM.levels[0].MCMD.ReadSingleFile = true;
+      SimPM.levels[0].sub_domain.set_ReadSingleFile(true);
     }
     else {
-      SimPM.levels[0].MCMD.ReadSingleFile = false;
+      SimPM.levels[0].sub_domain.set_ReadSingleFile(false);
       ostringstream t;
       t.str("");
       t << "_";
       t.width(4);
       t.fill('0');
-      t << SimPM.levels[0].MCMD.get_myrank() << ".";
+      t << SimPM.levels[0].sub_domain.get_myrank() << ".";
       string t2 = t.str();
       infile.replace(pos, 6, t2);
     }
@@ -165,10 +158,10 @@ int sim_control_pllel::Init(
     // SILO
     string::size_type pos = infile.find("_0000.");
     if (pos == string::npos) {
-      SimPM.levels[0].MCMD.ReadSingleFile = true;
+      SimPM.levels[0].sub_domain.set_ReadSingleFile(true);
     }
     else {
-      SimPM.levels[0].MCMD.ReadSingleFile = false;
+      SimPM.levels[0].sub_domain.set_ReadSingleFile(false);
     }
   }
   else
@@ -202,7 +195,7 @@ int sim_control_pllel::Init(
   SimPM.levels[0].multiplier = 1;
 
   std::vector<int> pbc = SimPM.get_pbc_bools();
-  err                  = SimPM.levels[0].MCMD.decomposeDomain(
+  err                  = SimPM.levels[0].sub_domain.decomposeDomain(
       SimPM.ndim, SimPM.levels[0], std::move(pbc));
   rep.errorTest("PLLEL Init():Couldn't Decompose Domain!", 0, err);
 
@@ -408,7 +401,7 @@ int sim_control_pllel::Time_Int(
     log_freq = 1;
 #endif
 
-    if ((SimPM.levels[0].MCMD.get_myrank() == 0)
+    if ((SimPM.levels[0].sub_domain.get_myrank() == 0)
         && (SimPM.timestep % log_freq) == 0) {
       cout << "New time: " << SimPM.simtime;
       cout << "\t dt=" << SimPM.dt;
@@ -424,8 +417,9 @@ int sim_control_pllel::Time_Int(
     //
     // check if we are at time limit yet.
     //
-    tsf         = clk.time_so_far("time_int");
-    double maxt = COMM->global_operation_double("MAX", tsf);
+    tsf = clk.time_so_far("time_int");
+    double maxt =
+        SimPM.levels[0].sub_domain.global_operation_double("MAX", tsf);
     if (maxt > get_max_walltime()) {
       SimPM.maxtime = true;
       cout << "RUNTIME>" << get_max_walltime() << " SECS.\n";
@@ -503,8 +497,8 @@ int sim_control_pllel::calculate_timestep(
   //
   // Get global min over all grids on this level.
   //
-  t_dyn = COMM->global_operation_double("MIN", t_dyn);
-  t_mp  = COMM->global_operation_double("MIN", t_mp);
+  t_dyn = SimPM.levels[0].sub_domain.global_operation_double("MIN", t_dyn);
+  t_mp  = SimPM.levels[0].sub_domain.global_operation_double("MIN", t_mp);
 
 #ifndef NDEBUG
   cout << " , global t_dyn= " << t_dyn << endl;
@@ -525,7 +519,7 @@ int sim_control_pllel::calculate_timestep(
   // later multiplication is done in eqn->preprocess_data()
   //
   double t_cond = calc_conduction_dt_and_Edot();
-  t_cond        = COMM->global_operation_double("MIN", t_cond);
+  t_cond = SimPM.levels[0].sub_domain.global_operation_double("MIN", t_cond);
   if (t_cond < par.dt) {
     cout << "PARALLEL CONDUCTION IS LIMITING TIMESTEP: t_c=";
     cout << t_cond << ", t_m=" << t_mp;
@@ -591,7 +585,7 @@ int sim_control_pllel::calculate_timestep(
   // Check that if my process has modified dt to get to either
   // an output time or finishtime, then all procs have done this too!
   t_dyn = par.dt;
-  t_mp  = COMM->global_operation_double("MIN", t_dyn);
+  t_mp  = SimPM.levels[0].sub_domain.global_operation_double("MIN", t_dyn);
   if (!pconst.equalD(t_dyn, t_mp))
     rep.error("synchonisation trouble in timesteps!", t_dyn - t_mp);
 #endif  // NDEBUG

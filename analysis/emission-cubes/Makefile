@@ -4,7 +4,7 @@
 #   Updated Vpath to point to the tagged release used for MHD code.
 # 2013.02.05 JM: updated to work with pion.
 # 2013.10.15 JM: Updated to use microphysics to get temperature/n(H).
-# 2015.07.03 JM: updated for pion_dev: uses MCMD, SimSetup, constants.h
+# 2015.07.03 JM: updated for pion_dev: uses sub_domain, SimSetup, constants.h
 #
 
 SHELL = /bin/sh
@@ -291,7 +291,7 @@ OBJ_IO = parameter_defs.o file_status.o readparams.o \
   dataio_silo_MPI.o dataio_silo_utility.o
 
 OBJ_GRID = cell_interface.o uniform_grid.o setup_fixed_grid.o \
-  stellar_wind_BC.o stellar_wind_angle.o MCMD_control.o \
+  stellar_wind_BC.o stellar_wind_angle.o sub_domain.o \
   raytracer_SC.o setup_fixed_grid_MPI.o \
   uniform_grid_pllel.o raytracer_SC_pllel.o \
   setup_grid_NG_MPI.o setup_NG_grid.o
@@ -304,7 +304,7 @@ OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
   axisymmetric_boundaries.o \
   fixed_boundaries.o jet_boundaries.o \
   jetreflect_boundaries.o double_Mach_ref_boundaries.o \
-  stellar_wind_boundaries.o MCMD_boundaries.o \
+  stellar_wind_boundaries.o sub_domain_boundaries.o \
   periodic_boundaries_MPI.o assign_update_bcs_MPI.o \
   RT_MPI_boundaries.o
 
@@ -346,8 +346,8 @@ interpolate.o: tools/interpolate.cpp tools/interpolate.h ${GLOBAL}
 constants.o: constants.cpp ${GLOBAL}
 sim_params.o: sim_params.cpp ${GLOBAL}
 
-main_NG_MPI.o: main_NG_MPI.cpp sim_control.h ${GLOBAL} comms.h
-mainMPI.o: mainMPI.cpp sim_control.h ${GLOBAL} comms.h
+main_NG_MPI.o: main_NG_MPI.cpp sim_control.h ${GLOBAL} sub_domain_comms.h
+mainMPI.o: mainMPI.cpp sim_control.h ${GLOBAL} sub_domain_comms.h
 
 
 icgen_NG_MPI.o: icgen_NG_MPI.cpp icgen.h get_sim_info.h \
@@ -371,7 +371,7 @@ VectorOps.o:           VectorOps.cpp VectorOps.h ${GLOBAL} uniform_grid.h grid_b
 VectorOps_spherical.o: VectorOps_spherical.cpp VectorOps_spherical.h VectorOps.h \
 		       ${GLOBAL} uniform_grid.h grid_base_class.h
 
-MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
+sub_domain.o: sub_domain.cpp sub_domain.h ${GLOBAL}
 
 setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
     grid_base_class.h uniform_grid.h assign_update_bcs.h
@@ -385,7 +385,7 @@ raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h ${GLOBAL} \
     uniform_grid.h raytracer_base.h
 
 raytracer_SC_pllel.o : raytracer_SC_pllel.cpp raytracer_SC.h \
-    ${GLOBAL} uniform_grid.h comms.h raytracer_base.h
+    ${GLOBAL} uniform_grid.h sub_domain_comms.h raytracer_base.h
 
 setup_fixed_grid_MPI.o: setup_fixed_grid_MPI.cpp setup_fixed_grid_MPI.h \
   setup_fixed_grid.h ${GLOBAL} uniform_grid_pllel.h \
@@ -406,12 +406,12 @@ setup_grid_NG_MPI.o: setup_grid_NG_MPI.cpp setup_grid_NG_MPI.h \
   NG_MPI_fine_to_coarse_boundaries.h \
   NG_MPI_coarse_to_fine_boundaries.h \
   NG_fine_to_coarse_boundaries.h periodic_boundaries_MPI.h \
-  MCMD_boundaries.h boundaries.h \
-  grid_base_class.h solver_eqn_base.h MCMD_control.h
+  sub_domain_boundaries.h boundaries.h \
+  grid_base_class.h solver_eqn_base.h sub_domain.h
 
 uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid_pllel.h \
     uniform_grid.h ${GLOBAL} \
-    comms.h stellar_wind_angle.h stellar_wind_BC.h \
+    sub_domain_comms.h stellar_wind_angle.h stellar_wind_BC.h \
     VectorOps.h VectorOps_spherical.h
 
 #####################
@@ -494,8 +494,8 @@ NG_MPI_fine_to_coarse_boundaries.o: \
 
 assign_update_bcs_MPI.o: assign_update_bcs_MPI.cpp \
   assign_update_bcs_MPI.h periodic_boundaries_MPI.h \
-  MCMD_boundaries.h boundaries.h ${GLOBAL} \
-  grid_base_class.h solver_eqn_base.h MCMD_control.h 
+  sub_domain_boundaries.h boundaries.h ${GLOBAL} \
+  grid_base_class.h solver_eqn_base.h sub_domain.h 
 
 assign_update_bcs_NG_MPI.o: assign_update_bcs_NG_MPI.cpp \
   assign_update_bcs_NG_MPI.h assign_update_bcs_MPI.h \
@@ -503,20 +503,20 @@ assign_update_bcs_NG_MPI.o: assign_update_bcs_NG_MPI.cpp \
   NG_MPI_fine_to_coarse_boundaries.h \
   NG_MPI_coarse_to_fine_boundaries.h \
   NG_fine_to_coarse_boundaries.h periodic_boundaries_MPI.h \
-  MCMD_boundaries.h boundaries.h ${GLOBAL} \
-  grid_base_class.h solver_eqn_base.h MCMD_control.h 
+  sub_domain_boundaries.h boundaries.h ${GLOBAL} \
+  grid_base_class.h solver_eqn_base.h sub_domain.h 
 
 periodic_boundaries_MPI.o: periodic_boundaries_MPI.cpp \
   periodic_boundaries_MPI.h boundaries.h ${GLOBAL} \
-  grid_base_class.h MCMD_control.h MCMD_boundaries.h
+  grid_base_class.h sub_domain.h sub_domain_boundaries.h
 
-MCMD_boundaries.o: MCMD_boundaries.cpp \
-  MCMD_boundaries.h boundaries.h ${GLOBAL} \
-  grid_base_class.h MCMD_control.h
+sub_domain_boundaries.o: sub_domain_boundaries.cpp \
+  sub_domain_boundaries.h boundaries.h ${GLOBAL} \
+  grid_base_class.h sub_domain.h
 
 RT_MPI_boundaries.o: RT_MPI_boundaries.cpp RT_MPI_boundaries.h \
   boundaries.h ${GLOBAL} \
-  grid_base_class.h MCMD_control.h
+  grid_base_class.h sub_domain.h
   
 #####################
 # CONTROL CLASSES   #
@@ -554,14 +554,14 @@ sim_control_NG.o : sim_control_NG.cpp sim_control_NG.h \
   NG_fine_to_coarse_boundaries.h 
 
 sim_control_MPI.o: sim_control_MPI.cpp sim_control_MPI.h \
-  sim_control.h MCMD_control.h ${GLOBAL} comms.h \
+  sim_control.h sub_domain.h ${GLOBAL} sub_domain_comms.h \
   periodic_boundaries_MPI.h assign_update_bcs_MPI.h \
   RT_MPI_boundaries.h setup_fixed_grid.h setup_fixed_grid_MPI.h \
   VectorOps.h
 
 sim_control_NG_MPI.o: sim_control_NG_MPI.cpp sim_control_NG_MPI.h \
   sim_control_MPI.h sim_control_NG.h \
-  sim_control.h MCMD_control.h ${GLOBAL} comms.h \
+  sim_control.h sub_domain.h ${GLOBAL} sub_domain_comms.h \
   periodic_boundaries_MPI.h assign_update_bcs_MPI.h \
   RT_MPI_boundaries.h setup_fixed_grid.h setup_fixed_grid_MPI.h \
   VectorOps.h  assign_update_bcs.h assign_update_bcs_NG.h \
@@ -732,12 +732,12 @@ readparams.o: readparams.cpp readparams.h ${GLOBAL}
 
 dataio_silo_MPI.o: dataio_silo_MPI.cpp dataio_silo.h dataio_base.h \
     parameter_defs.h  grid_base_class.h solver_eqn_base.h \
-    ${GLOBAL} comms.h file_status.h uniform_grid_pllel.h
+    ${GLOBAL} sub_domain_comms.h file_status.h uniform_grid_pllel.h
 
 dataio_silo_utility.o: dataio_silo_utility.cpp dataio_silo_utility.h \
     dataio_silo.h dataio_base.h solver_eqn_base.h \
     parameter_defs.h  grid_base_class.h \
-    ${GLOBAL} comms.h file_status.h uniform_grid_pllel.h
+    ${GLOBAL} sub_domain_comms.h file_status.h uniform_grid_pllel.h
 
 utility_fits_class.o: utility_fits_class.cpp dataio_fits.h dataio_base.h \
     parameter_defs.h  grid_base_class.h \
@@ -747,9 +747,9 @@ utility_fits_class.o: utility_fits_class.cpp dataio_fits.h dataio_base.h \
 #######################
 ## MPI/files comms classes
 ########################
-comm_mpi.o: comm_mpi.cpp comm_mpi.h comms.h ${GLOBAL}
+comm_mpi.o: comm_mpi.cpp comm_mpi.h sub_domain_comms.h ${GLOBAL}
 
-comm_files.o: comm_files.cpp comm_files.h comms.h ${GLOBAL}
+comm_files.o: comm_files.cpp comm_files.h sub_domain_comms.h ${GLOBAL}
 
 ###############################
 # Stuff Specific to this code #

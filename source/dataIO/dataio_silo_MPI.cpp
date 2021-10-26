@@ -73,14 +73,14 @@
 dataio_silo_pllel::dataio_silo_pllel(
     class SimParams &SimPM,  ///< pointer to simulation parameters
     std::string dtype,       ///< FLOAT or DOUBLE for files.
-    class MCMDcontrol *p) :
-    dataio_silo(SimPM, dtype)
+    class Sub_domain *p) :
+    dataio_silo(SimPM, dtype),
+    mpiPM(p)
 {
 #ifndef NDEBUG
   cout << "Setting up parallel Silo I/O class.\n";
 #endif
-  numfiles                 = -1;
-  dataio_silo_pllel::mpiPM = p;
+  numfiles = -1;
   return;
 }
 
@@ -120,10 +120,10 @@ int dataio_silo_pllel::ReadHeader(
   int group_rank = 0, myrank_group = 0;
   string file_id = "read_header";
   int num_files  = 1;
-  err            = COMM->silo_pllel_init(
+  err            = mpiPM->silo_pllel_init(
       num_files, "READ", file_id, &group_rank, &myrank_group);
   if (err) {
-    rep.error("COMM->silo_pllel_init() returned err", err);
+    rep.error("mpiPM->silo_pllel_init() returned err", err);
   }
 
   //
@@ -131,9 +131,9 @@ int dataio_silo_pllel::ReadHeader(
   //
   *db_ptr      = 0;
   string mydir = "/header";
-  err = COMM->silo_pllel_wait_for_file(file_id, silofile, mydir, db_ptr);
+  err = mpiPM->silo_pllel_wait_for_file(file_id, silofile, mydir, db_ptr);
   if (err || !(*db_ptr)) {
-    rep.error("COMM->silo_pllel_wait_for_file() returned err", err);
+    rep.error("mpiPM->silo_pllel_wait_for_file() returned err", err);
   }
 
   //
@@ -161,8 +161,11 @@ int dataio_silo_pllel::ReadHeader(
   //
   // Finished Local work; hand off baton and wait!
   //
-  err = COMM->silo_pllel_finish_with_file(file_id, db_ptr);
-  if (err) rep.error("COMM->silo_pllel_finish_with_file() returned err", err);
+  err = mpiPM->silo_pllel_finish_with_file(file_id, db_ptr);
+  if (err) rep.error("mpiPM->silo_pllel_finish_with_file() returned err", err);
+
+  SimPM.levels.resize(SimPM.grid_nlevels);
+  mpiPM = &SimPM.levels[0].sub_domain;
 
 #ifndef NDEBUG
   cout << "Rank: " << mpiPM->get_myrank();
@@ -208,9 +211,9 @@ int dataio_silo_pllel::ReadData(
   //
   int group_rank = 0, myrank_ingroup = 0;
   string file_id = "read_data";
-  err            = COMM->silo_pllel_init(
+  err            = mpiPM->silo_pllel_init(
       numfiles, "READ", file_id, &group_rank, &myrank_ingroup);
-  if (err) rep.error("COMM->silo_pllel_init() returned err", err);
+  if (err) rep.error("mpiPM->silo_pllel_init() returned err", err);
 
   // Choose correct filename based on numfiles.
   // Also choose correct directory name, assuming that nproc is the same as
@@ -253,9 +256,9 @@ int dataio_silo_pllel::ReadData(
   // temp.str("");
 
   *db_ptr = 0;
-  err     = COMM->silo_pllel_wait_for_file(file_id, silofile, mydir, db_ptr);
+  err     = mpiPM->silo_pllel_wait_for_file(file_id, silofile, mydir, db_ptr);
   if (err || !(*db_ptr))
-    rep.error("COMM->silo_pllel_wait_for_file() returned err", err);
+    rep.error("mpiPM->silo_pllel_wait_for_file() returned err", err);
 
   if (silo_filetype == DB_HDF5) {
     // char *compress = DBGetCompression();
@@ -286,10 +289,10 @@ int dataio_silo_pllel::ReadData(
   //
   int nn = 1;
   for (int i = 0; i < ndim; i++)
-    nn *= mpiPM->LocalNG[i] + 1;
+    nn *= mpiPM->get_directional_Ncells()[i] + 1;
   if ((n = qm->nnodes) != nn) {
-    cerr << "nnodes=" << n << " and ncell=" << mpiPM->LocalNcell << "\n";
-    rep.error("bad number of nodes", n - mpiPM->LocalNcell);
+    cerr << "nnodes=" << n << " and ncell=" << mpiPM->get_Ncell() << "\n";
+    rep.error("bad number of nodes", n - mpiPM->get_Ncell());
   }
   //
   // ---------- check grid nodes are where we expect ----------
@@ -379,7 +382,8 @@ int dataio_silo_pllel::ReadData(
   if (err) rep.error("failed to set readvars in ReadData", err);
   for (std::vector<string>::iterator i = readvars.begin(); i != readvars.end();
        ++i) {
-    err = read_variable2grid(SimPM, *db_ptr, meshname, (*i), mpiPM->LocalNcell);
+    err =
+        read_variable2grid(SimPM, *db_ptr, meshname, (*i), mpiPM->get_Ncell());
     if (err)
       rep.error("dataio_silo_pllel::ReadData() error reading variable", (*i));
   }
@@ -393,9 +397,9 @@ int dataio_silo_pllel::ReadData(
   //
   // Finished Local work; hand off baton and wait!
   //
-  err = COMM->silo_pllel_finish_with_file(file_id, db_ptr);
-  if (err) rep.error("COMM->silo_pllel_finish_with_file() returned err", err);
-  COMM->barrier("dataio_silo_pllel__ReadData");
+  err = mpiPM->silo_pllel_finish_with_file(file_id, db_ptr);
+  if (err) rep.error("mpiPM->silo_pllel_finish_with_file() returned err", err);
+  mpiPM->barrier("dataio_silo_pllel__ReadData");
 
 #ifndef NDEBUG
   cout << "----Rank: " << mpiPM->get_myrank();
@@ -421,7 +425,7 @@ int dataio_silo_pllel::OutputData(
 
     if (!cg[l]) rep.error("dataio_silo::OutputData() null pointer!", cg[l]);
     dataio_silo::gp = cg[l];
-    mpiPM           = &(SimPM.levels[l].MCMD);
+    mpiPM           = &(SimPM.levels[l].sub_domain);
 
     // write a different file for each level in the NG grid.
     string fbase;
@@ -463,7 +467,7 @@ int dataio_silo_pllel::SaveLevelData(
     // cout <<"saving level "<<level<<"\n";
   }
 
-#ifdef TEST_SILO_IO
+#ifndef NDEBUG
   cout << "\n----dataio_silo_pllel::SaveLevelData() Writing data to ";
   cout << "filebase: " << outfilebase << "\n";
 #endif
@@ -472,7 +476,7 @@ int dataio_silo_pllel::SaveLevelData(
   if (silo_filetype == DB_HDF5) {
     DBSetCompression("METHOD=GZIP LEVEL=1");
     DBSetFriendlyHDF5Names(1);
-#ifdef TEST_SILO_IO
+#ifndef NDEBUG
     cout << " *** setting compression.\n";
 #endif
   }
@@ -492,17 +496,17 @@ int dataio_silo_pllel::SaveLevelData(
   else
     numfiles = mpiPM->get_nproc();
 
-#ifdef TEST_SILO_IO
+#ifndef NDEBUG
   cout << "----dataio_silo_pllel::SaveLevelData() running pmpio_init\n";
 #endif
 
   int group_rank = 0, myrank_ingroup = 0;
   string file_id = "write_data";
-  err            = COMM->silo_pllel_init(
+  err            = mpiPM->silo_pllel_init(
       numfiles, "WRITE", file_id, &group_rank, &myrank_ingroup);
-  if (err) rep.error("COMM->silo_pllel_init() returned err", err);
+  if (err) rep.error("mpiPM->silo_pllel_init() returned err", err);
 
-#ifdef TEST_SILO_IO
+#ifndef NDEBUG
   cout << "myrank: " << mpiPM->get_myrank() << "\tnumfiles: ";
   cout << numfiles << "\tmy_group: ";
   cout << group_rank << "\tmy_index_in_group: " << myrank_ingroup << "\n";
@@ -511,12 +515,12 @@ int dataio_silo_pllel::SaveLevelData(
   //
   // Choose output filename:
   //
-#ifdef TEST_SILO_IO
+#ifndef NDEBUG
   cout << "setting strings... outfilebase=" << outfilebase << "\n";
 #endif  // NDEBUG
 
   choose_pllel_filename(outfilebase, group_rank, file_counter, silofile);
-#ifdef TEST_SILO_IO
+#ifndef NDEBUG
   cout << "string for outfile set...\n";
 #endif  // NDEBUG
 
@@ -539,23 +543,23 @@ int dataio_silo_pllel::SaveLevelData(
 
   err = 0;
   // set grid properties for quadmesh
-#ifdef TEST_SILO_IO
+#ifndef NDEBUG
   cout << "----dataio_silo_pllel::SaveLevelData() grid properties\n";
 #endif
   err = setup_grid_properties(gp, SimPM);
   if (err) rep.error("dataio_silo_pllel::SaveLevelData() grid_props", err);
-#ifdef TEST_SILO_IO
+#ifndef NDEBUG
   cout << "----dataio_silo_pllel::SaveLevelData() grid props done\n";
 #endif
 
   if (!have_setup_writevars) {
     // set what data to write to the mesh.
-#ifdef TEST_SILO_IO
+#ifndef NDEBUG
     cout << "----dataio_silo_pllel::SaveLevelData() write variables\n";
 #endif
     err = setup_write_variables(SimPM);
     if (err) rep.error("dataio_silo_pllel::SaveLevelData() write-vars", err);
-#ifdef TEST_SILO_IO
+#ifndef NDEBUG
     cout << "----dataio_silo_pllel::SaveLevelData() write vars done\n";
 #endif
   }
@@ -569,13 +573,13 @@ int dataio_silo_pllel::SaveLevelData(
   double extents[ext_size * nmesh];
   int zonecounts[nmesh];
 
-  SimPM.levels[level].MCMD.gather_ncells(zonecounts, 0);
-  SimPM.levels[level].MCMD.gather_extents(extents, 0);
+  SimPM.levels[level].sub_domain.gather_ncells(zonecounts, 0);
+  SimPM.levels[level].sub_domain.gather_extents(extents, 0);
 
   //
   // Wait for my turn to write to the file.
   //
-#ifdef TEST_SILO_IO
+#ifndef NDEBUG
   cout << "----dataio_silo_pllel::SaveLevelData() waiting for baton\n";
 #endif
   /*
@@ -588,9 +592,9 @@ int dataio_silo_pllel::SaveLevelData(
   }
 
   *db_ptr = 0;
-  err     = COMM->silo_pllel_wait_for_file(file_id, silofile, mydir, db_ptr);
+  err     = mpiPM->silo_pllel_wait_for_file(file_id, silofile, mydir, db_ptr);
   if (err || !(*db_ptr))
-    rep.error("COMM->silo_pllel_wait_for_file() returned err", err);
+    rep.error("mpiPM->silo_pllel_wait_for_file() returned err", err);
 
     //
     // Have got the baton, now, so the file is mine to write to.
@@ -598,54 +602,55 @@ int dataio_silo_pllel::SaveLevelData(
     //
     // Generate Mesh in file.
     //
-#ifdef TEST_SILO_IO
-  cout << "----dataio_silo_pllel::SaveLevelData() generating quadmesh\n";
+#ifndef NDEBUG
+  cout << "----dataio_silo_pllel::SaveLevelData() generating quadmesh" << endl;
 #endif
   string meshname;
   mesh_name(mpiPM->get_myrank(), meshname);
   err = generate_quadmesh(*db_ptr, meshname, SimPM);
   if (err) rep.error("dataio_silo_pllel::SaveLevelData() quadmesh", err);
-#ifdef TEST_SILO_IO
-  cout << "----dataio_silo_pllel::SaveLevelData() quadmesh generated\n";
+#ifndef NDEBUG
+  cout << "----dataio_silo_pllel::SaveLevelData() quadmesh generated" << endl;
 #endif
 
   //
   // now write each variable in turn to the mesh
   //
-#ifdef TEST_SILO_IO
-  cout << "----dataio_silo_pllel::SaveLevelData() create data arrays\n";
+#ifndef NDEBUG
+  cout << "----dataio_silo_pllel::SaveLevelData() create data arrays" << endl;
 #endif
 
   create_data_arrays(SimPM);
 
-#ifdef TEST_SILO_IO
-  cout << "----dataio_silo_pllel::SaveLevelData() arrays created\n";
+#ifndef NDEBUG
+  cout << "----dataio_silo_pllel::SaveLevelData() arrays created" << endl;
 #endif
 
   for (std::vector<string>::iterator i = varnames.begin(); i != varnames.end();
        ++i) {
-#ifdef TEST_SILO_IO
-    cout << "\twriting variable " << (*i) << " to file " << silofile << "\n";
+#ifndef NDEBUG
+    cout << "\twriting variable " << (*i) << " to file " << silofile << ""
+         << endl;
 #endif
 
     err = write_variable2mesh(SimPM, *db_ptr, meshname, (*i));
 
-#ifdef TEST_SILO_IO
-    cout << "\t\tvariable " << (*i) << " written.\n";
+#ifndef NDEBUG
+    cout << "\t\tvariable " << (*i) << " written." << endl;
 #endif
 
     if (err)
       rep.error("dataio_silo_pllel::SaveLevelData() writing variable", (*i));
   }
 
-#ifdef TEST_SILO_IO
-  cout << "----dataio_silo_pllel::SaveLevelData() deleting arrays\n";
+#ifndef NDEBUG
+  cout << "----dataio_silo_pllel::SaveLevelData() deleting arrays" << endl;
 #endif
 
   delete_data_arrays();
 
-#ifdef TEST_SILO_IO
-  cout << "----dataio_silo_pllel::SaveLevelData() arrays deleted\n";
+#ifndef NDEBUG
+  cout << "----dataio_silo_pllel::SaveLevelData() arrays deleted" << endl;
 #endif
 
   // ONLY DO THIS IF I AM ROOT PROCESSOR *IN EACH GROUP*
@@ -734,7 +739,7 @@ int dataio_silo_pllel::SaveLevelData(
     // Assign groups and rank_in_groups to each process:
     //
     for (int i = 0; i < nmesh; i++) {
-      COMM->silo_pllel_get_ranks(file_id, i, &(groups[i]), &(ranks[i]));
+      mpiPM->silo_pllel_get_ranks(file_id, i, &(groups[i]), &(ranks[i]));
     }
 
     int csys = -1;
@@ -799,6 +804,9 @@ int dataio_silo_pllel::SaveLevelData(
     err = DBPutMultimesh(
         *db_ptr, mm_name.c_str(), nmesh, mm_names, meshtypes, mm_opts);
     if (err) rep.error("dataio_silo_pllel::SaveLevelData()multimesh", err);
+#ifndef NDEBUG
+    cout << "----dataio_silo_pllel::SaveLevelData() quadmesh written" << endl;
+#endif
     DBClearOptlist(mm_opts);
 
     // now write the multivars
@@ -887,9 +895,9 @@ int dataio_silo_pllel::SaveLevelData(
   //
   // Finished Local work; hand off baton and wait!
   //
-  err = COMM->silo_pllel_finish_with_file(file_id, db_ptr);
-  if (err) rep.error("COMM->silo_pllel_finish_with_file() returned err", err);
-  COMM->barrier("dataio_silo_pllel__SaveLevelData");
+  err = mpiPM->silo_pllel_finish_with_file(file_id, db_ptr);
+  if (err) rep.error("mpiPM->silo_pllel_finish_with_file() returned err", err);
+  mpiPM->barrier("dataio_silo_pllel__SaveLevelData");
 
   //   cout <<"Got past barrier... finished outputting silo data.\n\n";
 
@@ -897,7 +905,7 @@ int dataio_silo_pllel::SaveLevelData(
   cout << "----dataio_silo_pllel::SaveLevelData() Finished writing data to "
           "file: "
        << silofile << "\n"
-       << "\n";
+       << endl;
 #endif
   return err;
 }
@@ -954,17 +962,23 @@ int dataio_silo_pllel::setup_grid_properties(
     // calls.  Same for nodex, nodey, nodez.
     //
     // setup arrays with locations of nodes in coordinate directions.
-    // This differs from the serial code in that we use LocalNG, not
+    // This differs from the serial code in that we use directional_Ncells, not
     // the global number of points NG.
     //
 #ifdef WRITE_GHOST_ZONES
-  int nx = mpiPM->LocalNG[XX] + 2 * SimPM.Nbc + 1;  // N cells, have N+1 nodes.
-  int ny = mpiPM->LocalNG[YY] + 2 * SimPM.Nbc + 1;  // N cells, have N+1 nodes.
-  int nz = mpiPM->LocalNG[ZZ] + 2 * SimPM.Nbc + 1;  // N cells, have N+1 nodes.
+  int nx = mpiPM->get_directional_Ncells(XX) + 2 * SimPM.Nbc
+           + 1;  // N cells, have N+1 nodes.
+  int ny = mpiPM->get_directional_Ncells(YY) + 2 * SimPM.Nbc
+           + 1;  // N cells, have N+1 nodes.
+  int nz = mpiPM->get_directional_Ncells(ZZ) + 2 * SimPM.Nbc
+           + 1;  // N cells, have N+1 nodes.
 #else
-  int nx = mpiPM->LocalNG[XX] + 1;  // for N cells, have N+1 nodes.
-  int ny = mpiPM->LocalNG[YY] + 1;  // for N cells, have N+1 nodes.
-  int nz = mpiPM->LocalNG[ZZ] + 1;  // for N cells, have N+1 nodes.
+  int nx =
+      mpiPM->get_directional_Ncells(XX) + 1;  // for N cells, have N+1 nodes.
+  int ny =
+      mpiPM->get_directional_Ncells(YY) + 1;  // for N cells, have N+1 nodes.
+  int nz =
+      mpiPM->get_directional_Ncells(ZZ) + 1;  // for N cells, have N+1 nodes.
 #endif
 
   if (silo_dtype == DB_FLOAT) {
@@ -991,20 +1005,20 @@ int dataio_silo_pllel::setup_grid_properties(
     // Assign data for nodex, nodey, nodez for this grid
     //
     for (int i = 0; i < nx; i++)
-      posx[i] = static_cast<float>(mpiPM->LocalXmin[XX] + i * dx);
+      posx[i] = static_cast<float>(mpiPM->get_Xmin(XX) + i * dx);
     nodex           = reinterpret_cast<void *>(posx);
     node_coords[XX] = nodex;
 
     if (ndim > 1) {
       for (int i = 0; i < ny; i++)
-        posy[i] = static_cast<float>(mpiPM->LocalXmin[YY] + i * dx);
+        posy[i] = static_cast<float>(mpiPM->get_Xmin(YY) + i * dx);
       nodey           = reinterpret_cast<void *>(posy);
       node_coords[YY] = nodey;
     }
     if (ndim > 2) {
       posz = mem.myalloc(posz, nz);
       for (int i = 0; i < nz; i++)
-        posz[i] = static_cast<float>(mpiPM->LocalXmin[ZZ] + i * dx);
+        posz[i] = static_cast<float>(mpiPM->get_Xmin(ZZ) + i * dx);
       nodez           = reinterpret_cast<void *>(posz);
       node_coords[ZZ] = nodez;
     }
@@ -1034,14 +1048,14 @@ int dataio_silo_pllel::setup_grid_properties(
     // Assign data for nodex, nodey, nodez for this grid
     //
     for (int i = 0; i < nx; i++) {
-      posx[i] = static_cast<double>(mpiPM->LocalXmin[XX] + i * dx);
+      posx[i] = static_cast<double>(mpiPM->get_Xmin(XX) + i * dx);
     }
     nodex           = reinterpret_cast<void *>(posx);
     node_coords[XX] = nodex;
 
     if (ndim > 1) {
       for (int i = 0; i < ny; i++) {
-        posy[i] = static_cast<double>(mpiPM->LocalXmin[YY] + i * dx);
+        posy[i] = static_cast<double>(mpiPM->get_Xmin(YY) + i * dx);
       }
       nodey           = reinterpret_cast<void *>(posy);
       node_coords[YY] = nodey;
@@ -1049,7 +1063,7 @@ int dataio_silo_pllel::setup_grid_properties(
     if (ndim > 2) {
       posz = mem.myalloc(posz, nz);
       for (int i = 0; i < nz; i++) {
-        posz[i] = static_cast<double>(mpiPM->LocalXmin[ZZ] + i * dx);
+        posz[i] = static_cast<double>(mpiPM->get_Xmin(ZZ) + i * dx);
       }
       nodez           = reinterpret_cast<void *>(posz);
       node_coords[ZZ] = nodez;
@@ -1100,10 +1114,10 @@ void dataio_silo_pllel::create_data_arrays(
   // first check if we have the data arrays set up yet.
   // We need at least one array for a scalar, and two more for a
   // vector.
-  // This differs from serial code in that we use LocalNcell instead
+  // This differs from serial code in that we use Ncell instead
   // of the global Ncell to allocate memory.
   //
-  // cout <<"local Ncell="<<mpiPM->LocalNcell;
+  // cout <<"local Ncell="<<mpiPM->get_Ncell();
   // cout <<" and global Ncell is "<<SimPM.Ncell<<"\n";
   //
   // data0 is a void pointer, so we need to do different things for
@@ -1112,12 +1126,12 @@ void dataio_silo_pllel::create_data_arrays(
   if (!data0) {
     if (silo_dtype == DB_FLOAT) {
       float *d = 0;
-      d        = mem.myalloc(d, mpiPM->LocalNcell);
+      d        = mem.myalloc(d, mpiPM->get_Ncell());
       data0    = reinterpret_cast<void *>(d);
     }
     else {
       double *d = 0;
-      d         = mem.myalloc(d, mpiPM->LocalNcell);
+      d         = mem.myalloc(d, mpiPM->get_Ncell());
       data0     = reinterpret_cast<void *>(d);
     }
   }
@@ -1125,7 +1139,7 @@ void dataio_silo_pllel::create_data_arrays(
   // set up array for mask variable for nested grid.
   if (!mask) {
     int *m = 0;
-    m      = mem.myalloc(m, mpiPM->LocalNcell);
+    m      = mem.myalloc(m, mpiPM->get_Ncell());
     mask   = reinterpret_cast<void *>(m);
   }
 
@@ -1144,24 +1158,24 @@ void dataio_silo_pllel::create_data_arrays(
   if ((vec_length > 1) && (!data1)) {
     if (silo_dtype == DB_FLOAT) {
       float *d = 0;
-      d        = mem.myalloc(d, mpiPM->LocalNcell);
+      d        = mem.myalloc(d, mpiPM->get_Ncell());
       data1    = reinterpret_cast<void *>(d);
     }
     else {
       double *d = 0;
-      d         = mem.myalloc(d, mpiPM->LocalNcell);
+      d         = mem.myalloc(d, mpiPM->get_Ncell());
       data1     = reinterpret_cast<void *>(d);
     }
   }
   if ((vec_length > 2) && (!data2)) {
     if (silo_dtype == DB_FLOAT) {
       float *d = 0;
-      d        = mem.myalloc(d, mpiPM->LocalNcell);
+      d        = mem.myalloc(d, mpiPM->get_Ncell());
       data2    = reinterpret_cast<void *>(d);
     }
     else {
       double *d = 0;
-      d         = mem.myalloc(d, mpiPM->LocalNcell);
+      d         = mem.myalloc(d, mpiPM->get_Ncell());
       data2     = reinterpret_cast<void *>(d);
     }
   }
@@ -1231,9 +1245,9 @@ int dataio_silo_pllel::write_multimeshadj(
 
   int Stot = ngb_list.size();
 
-  std::vector<int> offsets_list, localNG_list, ix_list;
+  std::vector<int> offsets_list, directional_Ncells_list, ix_list;
   mpiPM->gather_offsets(offsets_list, 0);
-  mpiPM->gather_localNG(localNG_list, 0);
+  mpiPM->gather_directional_Ncells(directional_Ncells_list, 0);
 
   /* non-root ranks were only here to share data with root rank */
   if (mpiPM->get_myrank() > 0) {
@@ -1272,11 +1286,11 @@ int dataio_silo_pllel::write_multimeshadj(
   //
   // loop over meshes and populate the neighbour lists.
   //
-  int *offsets, *LocalNG;
+  int *offsets, *directional_Ncells;
   for (int v = 0; v < nmesh; v++) {
-    offsets       = &offsets_list[v * mpiPM->get_ndim()];
-    LocalNG       = &localNG_list[v * mpiPM->get_ndim()];
-    long int off1 = Sk[v];
+    offsets            = &offsets_list[v * mpiPM->get_ndim()];
+    directional_Ncells = &directional_Ncells_list[v * mpiPM->get_ndim()];
+    long int off1      = Sk[v];
 
     //
     // Assign reverse neighbour's id for each of myrank's neighbours.
@@ -1317,14 +1331,14 @@ int dataio_silo_pllel::write_multimeshadj(
       // Local nodelist is the same for all of v's nodelists.
       //
       nodelist[off1][0] = offsets[XX] + 0;
-      nodelist[off1][1] = offsets[XX] + LocalNG[XX];
+      nodelist[off1][1] = offsets[XX] + directional_Ncells[XX];
       if (ndim > 1) {
         nodelist[off1][2] = offsets[YY] + 0;
-        nodelist[off1][3] = offsets[YY] + LocalNG[YY];
+        nodelist[off1][3] = offsets[YY] + directional_Ncells[YY];
       }
       if (ndim > 2) {
         nodelist[off1][4] = offsets[ZZ] + 0;
-        nodelist[off1][5] = offsets[ZZ] + LocalNG[ZZ];
+        nodelist[off1][5] = offsets[ZZ] + directional_Ncells[ZZ];
       }
 
       //
@@ -1336,7 +1350,7 @@ int dataio_silo_pllel::write_multimeshadj(
         my_ix[ii] = ngb_ix[ii] = nx[ii] = -1;
       mpiPM->get_domain_coordinates(v, my_ix);
       mpiPM->get_domain_coordinates(ngb[off1], ngb_ix);
-      mpiPM->get_nx_subdomains(nx);
+      mpiPM->get_num_subdomains(nx);
 
       //
       // X-dir first.
@@ -1346,12 +1360,12 @@ int dataio_silo_pllel::write_multimeshadj(
         nodelist[off1][7] = offsets[XX];
       }
       else if ((my_ix[XX] - ngb_ix[XX]) == -1) {
-        nodelist[off1][6] = offsets[XX] + LocalNG[XX];
-        nodelist[off1][7] = offsets[XX] + LocalNG[XX];
+        nodelist[off1][6] = offsets[XX] + directional_Ncells[XX];
+        nodelist[off1][7] = offsets[XX] + directional_Ncells[XX];
       }
       else if (my_ix[XX] == ngb_ix[XX]) {
         nodelist[off1][6] = offsets[XX];
-        nodelist[off1][7] = offsets[XX] + LocalNG[XX];
+        nodelist[off1][7] = offsets[XX] + directional_Ncells[XX];
       }
       else {
         cout << "i= " << i << " v=" << v << "  ix " << my_ix[XX] << "  "
@@ -1372,12 +1386,12 @@ int dataio_silo_pllel::write_multimeshadj(
         }
         else if ((my_ix[YY] - ngb_ix[YY]) == -1) {  // neighbour above
                                                     // us
-          nodelist[off1][8] = offsets[YY] + LocalNG[YY];
-          nodelist[off1][9] = offsets[YY] + LocalNG[YY];
+          nodelist[off1][8] = offsets[YY] + directional_Ncells[YY];
+          nodelist[off1][9] = offsets[YY] + directional_Ncells[YY];
         }
         else if (my_ix[YY] == ngb_ix[YY]) {  // neighbour level with us.
           nodelist[off1][8] = offsets[YY];
-          nodelist[off1][9] = offsets[YY] + LocalNG[YY];
+          nodelist[off1][9] = offsets[YY] + directional_Ncells[YY];
         }
         else
           rep.error("domains don't touch! (Y-dir)", my_ix[YY] - ngb_ix[YY]);
@@ -1393,12 +1407,12 @@ int dataio_silo_pllel::write_multimeshadj(
         }
         else if ((my_ix[ZZ] - ngb_ix[ZZ]) == -1) {  // neighbour above
                                                     // us
-          nodelist[off1][10] = offsets[ZZ] + LocalNG[ZZ];
-          nodelist[off1][11] = offsets[ZZ] + LocalNG[ZZ];
+          nodelist[off1][10] = offsets[ZZ] + directional_Ncells[ZZ];
+          nodelist[off1][11] = offsets[ZZ] + directional_Ncells[ZZ];
         }
         else if (my_ix[ZZ] == ngb_ix[ZZ]) {  // neighbour level with us.
           nodelist[off1][10] = offsets[ZZ];
-          nodelist[off1][11] = offsets[ZZ] + LocalNG[ZZ];
+          nodelist[off1][11] = offsets[ZZ] + directional_Ncells[ZZ];
         }
         else
           rep.error("domains don't touch! (Z-dir)", my_ix[ZZ] - ngb_ix[ZZ]);

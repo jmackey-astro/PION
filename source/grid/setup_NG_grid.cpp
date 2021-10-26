@@ -97,8 +97,6 @@ void setup_NG_grid::setup_NG_grid_levels(
   //
   // populate "levels" struct in SimPM based on NG grid parameters.
   //
-  SimPM.levels.clear();
-  SimPM.levels.resize(SimPM.grid_nlevels);
 
   for (int i = 0; i < SimPM.grid_nlevels; i++) {
     SimPM.levels[i].parent = 0;

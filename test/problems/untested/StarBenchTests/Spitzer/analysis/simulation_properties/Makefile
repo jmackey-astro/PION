@@ -159,14 +159,14 @@ dataio_silo.o:  dataIO/dataio_silo.cc dataIO/dataio_silo.h \
 dataio_fits.o:  dataIO/dataio_fits.cc dataIO/dataio_fits.h \
     dataIO/dataio.h ${GLOBAL} spatial_solvers/solver_eqn_base.h \
     spatial_solvers/solver_eqn_hydro_adi.h \
-    spatial_solvers/solver_eqn_hydro_iso.h comms/comms.h
+    spatial_solvers/solver_eqn_hydro_iso.h comms/sub_domain_comms.h
 readparams.o:   dataIO/readparams.cc dataIO/readparams.h ${GLOBAL}
 utility_fits_class.o: dataIO/utility_fits_class.cc \
     dataIO/dataio_fits.h dataIO/dataio.h ${GLOBAL}
 dataio_silo_utility.o: dataIO/dataio_silo_utility.cpp dataIO/dataio_silo_utility.h \
     dataIO/dataio_silo.h dataIO/dataio.h ${GLOBAL}
 dataio_silo_MPI.o: dataIO/dataio_silo_MPI.cc dataIO/dataio_silo.h \
-    dataIO/dataio.h ${GLOBAL} comms/comms.h dataIO/file_status.h
+    dataIO/dataio.h ${GLOBAL} comms/sub_domain_comms.h dataIO/file_status.h
 VectorOps.o:  coord_sys/VectorOps.cc coord_sys/VectorOps.h \
     ${GLOBAL} grid/uniform_grid.h
 VectorOps_spherical.o: coord_sys/VectorOps_spherical.cc \
@@ -175,7 +175,7 @@ VectorOps_spherical.o: coord_sys/VectorOps_spherical.cc \
 uniform_grid.o: 	grid/uniform_grid.cc grid/uniform_grid.h \
     ${GLOBAL} grid/stellar_wind_BC.h
 uniform_grid_pllel.o: grid/uniform_grid_pllel.cc grid/uniform_grid.h \
-    ${GLOBAL} comms/comms.h
+    ${GLOBAL} comms/sub_domain_comms.h
 stellar_wind_BC.o: grid/stellar_wind_BC.cc grid/stellar_wind_BC.h \
     ${GLOBAL}
 
@@ -260,9 +260,9 @@ mpv8_StarBench_heatcool.o: microphysics/mpv8_StarBench_heatcool.cpp \
 #######################
 ## MPI/files comms classes
 ########################
-comm_mpi.o: comms/comm_mpi.cc comms/comm_mpi.h comms/comms.h \
+comm_mpi.o: comms/comm_mpi.cc comms/comm_mpi.h comms/sub_domain_comms.h \
   ${GLOBAL}
-comm_files.o: comms/comm_files.cc comms/comm_files.h comms/comms.h \
+comm_files.o: comms/comm_files.cc comms/comm_files.h comms/sub_domain_comms.h \
   ${GLOBAL}
 
 

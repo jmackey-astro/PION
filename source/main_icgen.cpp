@@ -36,7 +36,7 @@
 /// - 2013.08.23 JM: Added new mpv9_HHe module code.
 /// - 2014.07.11 JM: Added isothermal noise perturbation option.
 /// - 2015.01.(15-26) JM: Added new include statements for new PION version.
-/// - 2015.02.03 JM: changed to use IC_base class MCMD pointer.
+/// - 2015.02.03 JM: changed to use IC_base class sub_domain pointer.
 /// - 2016.05.02 JM: Changed order of code so that MP is initialised
 ///    before the "setup" function is called.
 /// - 2017.08.03 JM: Don't write IC_filename.silo, just name it like
@@ -52,7 +52,6 @@
 #include "tools/command_line_interface.h"
 #endif /* NDEBUG */
 
-#include "ics/get_sim_info.h"
 #include "ics/icgen.h"
 #include "ics/icgen_base.h"
 
@@ -102,23 +101,26 @@ int main(int argc, char **argv)
 {
   int err = 0;
 
-  class SimParams SimPM;
-#ifdef PARALLEL
-  err = COMM->init(&argc, &argv);
-  if (err) rep.error("comms init error", err);
-  int r = -1, np = -1;
-  COMM->get_rank_nproc(&r, &np);
-  SimPM.levels.clear();
-  SimPM.levels.resize(1);
-  SimPM.levels[0].MCMD.set_myrank(r);
-  SimPM.levels[0].MCMD.set_nproc(np);
-#endif /* PARALLEL */
-
   if (argc < 2) {
     cerr << "Error, please give a filename to read IC parameters from.\n";
     cerr << "Usage <icgen> <paramfile> [ic-filetype]\n";
     return (1);
   }
+
+  string pfile = argv[1];
+  string icftype;
+  if (argc > 2)
+    icftype = argv[2];
+  else
+    icftype = "silo";
+
+  class SimParams SimPM(pfile);
+#ifdef PARALLEL
+  int r  = SimPM.levels[0].sub_domain.get_myrank();
+  int np = SimPM.levels[0].sub_domain.get_nproc();
+
+  rep.set_rank(r);
+#endif /* PARALLEL */
 
   // Redirect stdout/stderr if required.
   string *args = 0;
@@ -130,9 +132,9 @@ int main(int argc, char **argv)
       string outpath = (args[i].substr(9));
 #ifdef PARALLEL
       ostringstream path;
-      path << outpath << "_" << SimPM.levels[0].MCMD.get_myrank() << "_";
+      path << outpath << "_" << r << "_";
       outpath = path.str();
-      if (SimPM.levels[0].MCMD.get_myrank() == 0) {
+      if (r == 0) {
         cout << "Redirecting stdout to " << outpath << "info.txt"
              << "\n";
       }
@@ -145,10 +147,10 @@ int main(int argc, char **argv)
     }
   }
 #ifdef PARALLEL
-#ifndef TESTING
+#ifdef NDEBUG
   rep.kill_stdout_from_other_procs(0);
-#endif
-#endif
+#endif /* NDEBUG */
+#endif /* PARALLEL */
 
 #ifdef PION_OMP
   // set number of OpenMP threads, if included
@@ -172,26 +174,9 @@ int main(int argc, char **argv)
 #endif /* PION_OMP */
 
   class DataIOBase *dataio    = 0;
-  class get_sim_info *siminfo = 0;
   class ICsetup_base *ic      = 0;
   class ReadParams *rp        = 0;
   class microphysics_base *MP = 0;
-
-  string pfile = argv[1];
-  string icftype;
-  if (argc > 2)
-    icftype = argv[2];
-  else
-    icftype = "silo";
-
-  siminfo = 0;
-  siminfo = new class get_sim_info();
-  if (!siminfo) rep.error("Sim Info class init error", siminfo);
-  err = 0;
-  err += siminfo->read_gridparams(pfile, SimPM);
-  if (err) rep.error("Read Grid Params Error", err);
-  delete siminfo;
-  siminfo = 0;
 
 #ifdef PION_NESTED
 #ifdef PARALLEL
@@ -223,7 +208,7 @@ int main(int argc, char **argv)
   SimPM.levels[0].multiplier = 1;
 #ifdef PARALLEL
   class setup_fixed_grid_pllel *SimSetup = new setup_fixed_grid_pllel();
-  err = SimPM.levels[0].MCMD.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
+  err = SimPM.levels[0].sub_domain.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
   rep.errorTest("Couldn't Decompose Domain!", 0, err);
 #else
   class setup_fixed_grid *SimSetup = new setup_fixed_grid();
@@ -250,7 +235,7 @@ int main(int argc, char **argv)
   setup_ics_type(ics, &ic);
   ic->set_SimPM(&SimPM);
 #ifdef PARALLEL
-  ic->set_MCMD_pointer(&SimPM.levels[0].MCMD);
+  ic->set_sub_domain_pointer(&SimPM.levels[0].sub_domain);
 #endif
 
 #ifdef PION_NESTED
@@ -329,7 +314,7 @@ int main(int argc, char **argv)
     // cout <<"icgen_NG: assigning boundary data for level "<<l<<"\n";
     err = SimSetup->assign_boundary_data(SimPM, l, grid[l], MP);
 #ifdef PARALLEL
-    COMM->barrier("level assign boundary data");
+    SimPM.levels[0].sub_domain.barrier("level assign boundary data");
 #endif /* PARALLEL */
     rep.errorTest("icgen-ng::assign_boundary_data", 0, err);
   }
@@ -377,7 +362,7 @@ int main(int argc, char **argv)
 #endif /* NDEBUG */
   }
   cout << "icgen-ng: updating C2F boundaries done\n";
-  SimSetup->BC_COARSE_TO_FINE_SEND_clear_sends();
+  SimSetup->BC_COARSE_TO_FINE_SEND_clear_sends(SimPM.levels[0].sub_domain);
   rep.errorTest("icgen-ng: error from boundary update", 0, err);
   // ----------------------------------------------------------------
 
@@ -430,7 +415,7 @@ int main(int argc, char **argv)
       }
     }
   }
-  SimSetup->BC_FINE_TO_COARSE_SEND_clear_sends();
+  SimSetup->BC_FINE_TO_COARSE_SEND_clear_sends(SimPM.levels[0].sub_domain);
   rep.errorTest("icgen-ng: error from boundary update", 0, err);
   // ----------------------------------------------------------------
 #endif /* PARALLEL */
@@ -471,9 +456,11 @@ int main(int argc, char **argv)
     cout << icfile << "\n";
 #ifdef PARALLEL
 #ifdef PION_NESTED
-    dataio = new dataio_silo_utility(SimPM, "DOUBLE", &SimPM.levels[0].MCMD);
+    dataio =
+        new dataio_silo_utility(SimPM, "DOUBLE", &SimPM.levels[0].sub_domain);
 #else
-    dataio = new dataio_silo_pllel(SimPM, "DOUBLE", &SimPM.levels[0].MCMD);
+    dataio =
+        new dataio_silo_pllel(SimPM, "DOUBLE", &SimPM.levels[0].sub_domain);
 #endif /* PION_NESTED */
 #else
     dataio = new dataio_silo(SimPM, "DOUBLE");
@@ -492,7 +479,7 @@ int main(int argc, char **argv)
     cout << "WRITING FITS FILE: ";
     cout << icfile << "\n";
 #ifdef PARALLEL
-    dataio = new DataIOFits_pllel(SimPM, &SimPM.levels[0].MCMD);
+    dataio = new DataIOFits_pllel(SimPM, &SimPM.levels[0].sub_domain);
 #else
     dataio = new DataIOFits(SimPM);
 #endif /* PARALLEL */
@@ -540,12 +527,6 @@ int main(int argc, char **argv)
 
   delete[] args;
   args = 0;
-#ifdef PARALLEL
-  cout << "rank: " << SimPM.levels[0].MCMD.get_myrank();
-  cout << " nproc: " << SimPM.levels[0].MCMD.get_nproc() << "\n";
-  delete COMM;
-  COMM = 0;
-#endif
   return err;
 }
 

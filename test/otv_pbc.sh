@@ -37,10 +37,10 @@ script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 
 ${mpi} ../icgen-ug \
  ${script_dir}/problems/OrszagTangVortex/param_OrszagTang_n128.txt silo \
- redirect=iclog omp-nthreads=${nt}
+ redirect=iclog omp-nthreads=${nt} || exit 1
 ${mpi} ../pion-ug \
  OrszagTang_n128_b3.33m1.0_0000.00000000.silo outfile=OrszagTang_n128_new \
- redirect=pionlog-otv opfreq_time=1.0 omp-nthreads=${nt}
+ redirect=pionlog-otv opfreq_time=1.0 omp-nthreads=${nt} || exit 1
 
 REF_FILE=OrszagTang_n128_b3.33m1.0_0000.00001138.silo
 NEW_FILE=`ls OrszagTang_n128_new_0000.*.silo | tail -n1`
@@ -50,7 +50,6 @@ if grep -q "RESULTS ARE THE SAME" tmp.txt; then
   echo -e "${GREEN}*** OTV TEST HAS BEEN PASSED ***"
   tail -n10 tmp.txt
   echo -e "*** OTV TEST HAS BEEN PASSED ***${NC}"
-  rm *.silo
   exit 0
 else
   echo -e "${RED}*** OTV TEST HAS BEEN FAILED ***"

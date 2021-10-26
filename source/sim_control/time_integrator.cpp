@@ -1150,11 +1150,11 @@ int time_integrator::dynamics_dU_column(
 
 #ifdef TEST_CONSERVATION
 #ifdef PARALLEL
-  dM  = COMM->global_operation_double("SUM", dM);
-  dE  = COMM->global_operation_double("SUM", dE);
-  dMX = COMM->global_operation_double("SUM", dMX);
-  dMY = COMM->global_operation_double("SUM", dMY);
-  dMZ = COMM->global_operation_double("SUM", dMZ);
+  dM  = SimPM.levels[0].sub_domain.global_operation_double("SUM", dM);
+  dE  = SimPM.levels[0].sub_domain.global_operation_double("SUM", dE);
+  dMX = SimPM.levels[0].sub_domain.global_operation_double("SUM", dMX);
+  dMY = SimPM.levels[0].sub_domain.global_operation_double("SUM", dMY);
+  dMZ = SimPM.levels[0].sub_domain.global_operation_double("SUM", dMZ);
   // cout <<"d="<<dM<<", "<<dE<<", "<<dMX<<", "<<dMY<<"\n";
 #endif
   initMASS += dM;

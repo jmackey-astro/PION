@@ -16,7 +16,7 @@
 /// - 2013.01.10 JM: Added new StarBench workshop test probs class.
 /// - 2013.03.23 JM: Added another StarBench test.
 /// - 2013.03.24 JM: Added another StarBench test.
-/// - 2015.02.03 JM: changed to use IC_base class MCMD pointer.
+/// - 2015.02.03 JM: changed to use IC_base class sub_domain pointer.
 /// - 2016.05.02 JM: A planar ionisation-front Test
 
 #ifndef ICGEN_H
@@ -31,7 +31,7 @@
 
 #include "dataIO/readparams.h"
 #ifdef PARALLEL
-#include "decomposition/MCMD_control.h"
+#include "sub_domain/sub_domain.h"
 #endif  // PARALLEL
 
 // ##################################################################

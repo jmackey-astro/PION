@@ -60,9 +60,9 @@ using namespace std;
 #include "grid/uniform_grid.h"
 #include "image_io.h"
 
-#include "decomposition/MCMD_control.h"
 #include "grid/setup_fixed_grid_MPI.h"
 #include "grid/setup_grid_NG_MPI.h"
+#include "sub_domain/sub_domain.h"
 
 #include "microphysics/MPv3.h"
 #include "microphysics/MPv5.h"
@@ -90,21 +90,14 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
+  int err = 0;
   //
-  // First initialise the comms class, since we need to define
-  // PARALLEL to read a parallel file.
+  // Also initialise the sub_domain class with myrank and nproc.
   //
-  int err = COMM->init(&argc, &argv);
-  //
-  // Also initialise the MCMD class with myrank and nproc.
-  //
-  int myrank = -1, nproc = -1;
-  COMM->get_rank_nproc(&myrank, &nproc);
   class SimParams SimPM;
-  SimPM.levels.clear();
-  SimPM.levels.resize(1);
-  SimPM.levels[0].MCMD.set_myrank(myrank);
-  SimPM.levels[0].MCMD.set_nproc(nproc);
+
+  int myrank = SimPM.levels[0].sub_domain.get_myrank();
+  int nproc  = SimPM.levels[0].sub_domain.get_nproc();
 
   //*******************************************************************
   //*******************************************************************
@@ -207,7 +200,8 @@ int main(int argc, char **argv)
   //
   // set up dataio_utility class
   //
-  class dataio_silo_utility dataio(SimPM, "DOUBLE", &(SimPM.levels[0].MCMD));
+  class dataio_silo_utility dataio(
+      SimPM, "DOUBLE", &(SimPM.levels[0].sub_domain));
 
   //
   // Get list of files to read:
@@ -253,6 +247,7 @@ int main(int argc, char **argv)
   if (err) rep.error("Didn't read header", err);
 
   if (lev >= SimPM.grid_nlevels) rep.error("Level doesn't exist", lev);
+  SimPM.levels.resize(SimPM.grid_nlevels);
   class setup_grid_NG_MPI *SimSetup = 0;
   SimSetup                          = new setup_grid_NG_MPI();
   SimSetup->setup_NG_grid_levels(SimPM);
@@ -281,7 +276,7 @@ int main(int argc, char **argv)
   for (int v = 0; v < MAX_DIM; v++)
     SimPM.Xmax[v] = SimPM.levels[lev].Xmax[v];
   SimPM.dx = SimPM.Range[XX] / SimPM.NG[XX];
-  SimPM.levels[0].MCMD.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
+  SimPM.levels[0].sub_domain.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
 
   //
   // Now we have read in parameters from the file, so set up a grid.
@@ -487,7 +482,7 @@ int main(int argc, char **argv)
     for (int v = 0; v < MAX_DIM; v++)
       SimPM.Xmax[v] = SimPM.levels[lev].Xmax[v];
     SimPM.dx = SimPM.Range[XX] / SimPM.NG[XX];
-    SimPM.levels[0].MCMD.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
+    SimPM.levels[0].sub_domain.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
 
     //
     // Read data (this reader can read serial or parallel data.
@@ -726,9 +721,6 @@ int main(int argc, char **argv)
 
   // free_xray_tables(&LT,&L1,&L2,&L3,&L4);
   // free_xray_tables();
-
-  delete COMM;
-  COMM = 0;
 
   return 0;
 }

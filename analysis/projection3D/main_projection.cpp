@@ -46,7 +46,7 @@
 ///    emission calculation.  Added VTK output option.
 /// - 2015.07.03 JM: Got rid of NEW_STOKES_CALC (because old code was
 ///    broken, so I just deleted the old code).
-/// - 2015.07.03 JM: updated for pion_dev: uses MCMD, SimSetup,
+/// - 2015.07.03 JM: updated for pion_dev: uses sub_domain, SimSetup,
 ///    constants.h
 /// - 2015.07.13 JM: debugged and fixed a few things.
 /// - 2015.08.19 JM: Changed subtraction of mean to take the mean
@@ -90,7 +90,7 @@ using namespace std;
 
 #include "sim_projection.h"
 
-#include "decomposition/MCMD_control.h"
+#include "sub_domain/sub_domain.h"
 #ifdef PION_NESTED
 #include "grid/setup_grid_NG_MPI.h"
 #else
@@ -119,7 +119,7 @@ void reset_radiation_sources(class SimParams &SimPM);
 // MODIFYING MIN/MAX SO THAT I ONLY READ IN A SUBDOMAIN OF THE FULL GRID
 //
 #ifdef RESET_DOMAIN
-void reset_domain(class MCMDcontrol *MCMD)
+void reset_domain(class Sub_domain *sub_domain)
 {
   rep.printVec("Old Xmin", SimPM.Xmin, SimPM.ndim);
   rep.printVec("Old Xmax", SimPM.Xmax, SimPM.ndim);
@@ -136,7 +136,7 @@ void reset_domain(class MCMDcontrol *MCMD)
   rep.printVec("New Xmin", SimPM.Xmin, SimPM.ndim);
   rep.printVec("New Xmax", SimPM.Xmax, SimPM.ndim);
   SimPM.grid_nlevels = 1;
-  MCMD->decomposeDomain(SimPM.ndim, SimPM.levels[0]);
+  sub_domain->decomposeDomain(SimPM.ndim, SimPM.levels[0]);
   return;
 }
 #endif
@@ -148,23 +148,16 @@ void reset_domain(class MCMDcontrol *MCMD)
 
 int main(int argc, char **argv)
 {
+  int err = 0;
   //
-  // First initialise MPI, even though this is a single processor
-  // piece of code.
+  // Initialise the sub_domain class with myrank and nproc.
   //
-  int err = COMM->init(&argc, &argv);
-  //
-  // Also initialise the MCMD class with myrank and nproc.
-  //
-  int myrank = -1, nproc = -1;
-  COMM->get_rank_nproc(&myrank, &nproc);
-  cout << "Projection3D: myrank=" << myrank << ", nproc=" << nproc << "\n";
   class SimParams SimPM;
-  SimPM.levels.clear();
-  SimPM.levels.resize(1);
-  SimPM.levels[0].MCMD.set_myrank(myrank);
-  SimPM.levels[0].MCMD.set_nproc(nproc);
 
+  int myrank = SimPM.levels[0].sub_domain.get_myrank();
+  int nproc  = SimPM.levels[0].sub_domain.get_nproc();
+
+  cout << "Projection3D: myrank=" << myrank << ", nproc=" << nproc << "\n";
 
   //*******************************************************************
   //*******************************************************************
@@ -375,7 +368,8 @@ int main(int argc, char **argv)
   //
   // set up dataio_utility class
   //
-  class dataio_silo_utility dataio(SimPM, "DOUBLE", &(SimPM.levels[0].MCMD));
+  class dataio_silo_utility dataio(
+      SimPM, "DOUBLE", &(SimPM.levels[0].sub_domain));
 
   //
   // Get list of files to read:
@@ -433,7 +427,7 @@ int main(int argc, char **argv)
     // MODIFYING XMIN/XMAX SO THAT I ONLY READ IN A SUBDOMAIN OF THE FULL GRID
     //
 #ifdef RESET_DOMAIN
-  reset_domain(&(SimPM.levels[0].MCMD));
+  reset_domain(&(SimPM.levels[0].sub_domain));
 #endif
   //
   // ------------------------------------------------------------------------
@@ -447,6 +441,7 @@ int main(int argc, char **argv)
   // this axis.
   //
 #ifdef PION_NESTED
+  SimPM.levels.resize(SimPM.grid_nlevels);
   class setup_grid_NG_MPI *SimSetup = new setup_grid_NG_MPI();
   SimSetup->setup_NG_grid_levels(SimPM);
 #else
@@ -458,10 +453,11 @@ int main(int argc, char **argv)
   enum axes perpaxis = static_cast<axes>(static_cast<int>(perpdir) / 2);
   cout << "*** perpendicular axis = " << perpaxis << "\n";
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-    SimPM.levels[l].MCMD.decomposeDomain(perpaxis, SimPM.ndim, SimPM.levels[l]);
+    SimPM.levels[l].sub_domain.decomposeDomain(
+        perpaxis, SimPM.ndim, SimPM.levels[l]);
   }
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-    SimPM.levels[l].MCMD.set_NG_hierarchy(SimPM, l);
+    SimPM.levels[l].sub_domain.set_NG_hierarchy(SimPM, l);
   }
   if (err) rep.error("main: failed to decompose domain!", err);
   // setup grids
@@ -741,7 +737,7 @@ int main(int argc, char **argv)
     // also reset the domain to 1/2 the size in Y and Z (if needed).
     err = dataio.ReadHeader(infile, SimPM);
 #ifdef RESET_DOMAIN
-    reset_domain(&(SimPM.levels[0].MCMD));
+    reset_domain(&(SimPM.levels[0].sub_domain));
 #endif
     if (err) rep.error("Didn't read header", err);
 
@@ -874,7 +870,7 @@ int main(int argc, char **argv)
             int recv_tag  = -1;
             int from_rank = -1;
             int comm_tag  = irank;
-            err           = COMM->look_for_data_to_receive(
+            err           = SimPM.levels[0].sub_domain.look_for_data_to_receive(
                 &from_rank,  ///< rank of sender
                 recv_id,     ///< identifier for receive.
                 &recv_tag,   ///< comm_tag associated with data.
@@ -888,7 +884,7 @@ int main(int argc, char **argv)
             //
             // cout <<"receiving from "<<from_rank<<"  ";
             // cout <<recv_id<<"  "<<recv_tag<<"\n";
-            err = COMM->receive_double_data(
+            err = SimPM.levels[0].sub_domain.receive_double_data(
                 from_rank, recv_tag, recv_id, ct, &(im[ct * from_rank]));
             if (err) {
               cout << from_rank << "\t" << recv_tag << "\t" << recv_id;
@@ -911,7 +907,7 @@ int main(int argc, char **argv)
           string id;
           // cout <<"sending "<<nels<<" to rank 0.\n";
           // cout.flush();
-          err = COMM->send_double_data(
+          err = SimPM.levels[0].sub_domain.send_double_data(
               0,        ///< rank to send to.
               nels,     ///< size of buffer, in number of doubles.
               im,       ///< pointer to double array.
@@ -920,12 +916,12 @@ int main(int argc, char **argv)
           );
           if (err) rep.error("Send image failed.", err);
 
-          err = COMM->wait_for_send_to_finish(id);
+          err = SimPM.levels[0].sub_domain.wait_for_send_to_finish(id);
           if (err) rep.error("wait for send to finish failed", err);
         }  // if myrank !=0
         // ------------------------------------------------------------
         // ------------------------------------------------------------
-        COMM->barrier("outputs");
+        SimPM.levels[0].sub_domain.barrier("outputs");
 
       }  // loop over output images
 
@@ -1430,9 +1426,6 @@ int main(int argc, char **argv)
     delete MP;
     MP = 0;
   }
-
-  delete COMM;
-  COMM = 0;
 
   return 0;
 }

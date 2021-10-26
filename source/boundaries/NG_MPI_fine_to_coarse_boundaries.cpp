@@ -30,8 +30,8 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
   cout << "***F2C F2C F2C*** Adding F2C SEND for l=" << l << "\n";
 #endif
   // Check if parent grid is on my MPI process
-  int pproc               = par.levels[l].MCMD.get_parent_proc();
-  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
+  int pproc                    = par.levels[l].sub_domain.get_parent_proc();
+  class Sub_domain *sub_domain = &(par.levels[l].sub_domain);
 
   //
   // If we are doing raytracing, then also send the column densities
@@ -53,7 +53,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
   // If so, do nothing because the parent grid will call the
   // serial NG setup function, which just grabs the data from
   // this grid.
-  if (MCMD->get_myrank() == pproc) {
+  if (sub_domain->get_myrank() == pproc) {
 #ifdef TEST_MPI_NG_F2C
     cout << "my rank == parent rank, not setting up ";
     cout << "FINE_TO_COARSE_SEND\n";
@@ -99,14 +99,14 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
 {
 
   // Check if parent grid is on my MPI process
-  int pproc               = par.levels[l].MCMD.get_parent_proc();
-  int err                 = 0;
-  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
+  int pproc                    = par.levels[l].sub_domain.get_parent_proc();
+  int err                      = 0;
+  class Sub_domain *sub_domain = &(par.levels[l].sub_domain);
 
   // If so, do nothing because the parent grid will call the
   // serial NG setup function, which just grabs the data from
   // this grid.
-  if (MCMD->get_myrank() == pproc) {
+  if (sub_domain->get_myrank() == pproc) {
 #ifdef TEST_MPI_NG_F2C
     cout << "my rank == parent rank, no need to send anything ";
     cout << "FINE_TO_COARSE_SEND\n";
@@ -154,13 +154,13 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   //
   string id;
   int comm_tag = BC_MPI_NGF2C_tag + l;
-  // id <<"F2C_"<<MCMD->get_myrank()<<"_to_"<<pproc;
+  // id <<"F2C_"<<sub_domain->get_myrank()<<"_to_"<<pproc;
 #ifdef TEST_MPI_NG_F2C
   cout << "BC_update_FINE_TO_COARSE_SEND: Sending " << ct;
-  cout << " doubles from proc " << MCMD->get_myrank();
+  cout << " doubles from proc " << sub_domain->get_myrank();
   cout << " to parent proc " << pproc << "\n";
 #endif
-  err += COMM->send_double_data(pproc, ct, data, id, comm_tag);
+  err += sub_domain->send_double_data(pproc, ct, data, id, comm_tag);
   if (err) rep.error("Send_F2C send_data failed.", err);
 #ifdef TEST_MPI_NG_F2C
   cout << "BC_update_FINE_TO_COARSE_SEND: returned with id=" << id;
@@ -181,7 +181,8 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
 // ##################################################################
 // ##################################################################
 
-void NG_MPI_fine_to_coarse_bc::BC_FINE_TO_COARSE_SEND_clear_sends()
+void NG_MPI_fine_to_coarse_bc::BC_FINE_TO_COARSE_SEND_clear_sends(
+    class Sub_domain &sub_domain)
 {
   for (unsigned int i = 0; i < NG_F2C_send_list.size(); i++) {
 #ifdef TEST_MPI_NG_F2C
@@ -191,7 +192,7 @@ void NG_MPI_fine_to_coarse_bc::BC_FINE_TO_COARSE_SEND_clear_sends()
     cout.flush();
 #endif
     // cout <<"waiting for send : "<<NG_F2C_send_list[i]<<"\n";
-    COMM->wait_for_send_to_finish(NG_F2C_send_list[i]);
+    sub_domain.wait_for_send_to_finish(NG_F2C_send_list[i]);
 #ifdef TEST_MPI_NG_F2C
     cout << " ... done!\n";
     cout.flush();
@@ -218,10 +219,10 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
 #endif
 
   // Check if child grids exist or are on my MPI process
-  int err                 = 0;
-  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
+  int err                      = 0;
+  class Sub_domain *sub_domain = &(par.levels[l].sub_domain);
   vector<struct cgrid> cg;
-  MCMD->get_child_grid_info(cg);
+  sub_domain->get_child_grid_info(cg);
   int nchild = cg.size();
 #ifdef TEST_MPI_NG_F2C
   cout << "level = " << l << ", nchild=" << nchild << "\n";
@@ -272,7 +273,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
     cout << "Ncell/2^ndim=" << grid->Ncell() / pow(2, par.ndim) << "\n";
 #endif
 
-    if (MCMD->get_myrank() == b->NGrecvF2C_ranks[i]) {
+    if (sub_domain->get_myrank() == b->NGrecvF2C_ranks[i]) {
       // If child is on my grid call serial version that grabs data
       // directly from the child grid, and puts them onto the local
       // grid.
@@ -315,10 +316,10 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
     const int maxstep)
 {
   // Check if child grids exist or are on my MPI process
-  int err                 = 0;
-  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
+  int err                      = 0;
+  class Sub_domain *sub_domain = &(par.levels[l].sub_domain);
   vector<struct cgrid> cg;
-  MCMD->get_child_grid_info(cg);
+  sub_domain->get_child_grid_info(cg);
   int nchild = b->NGrecvF2C.size();
   if (static_cast<int>(cg.size()) != nchild)
     rep.error("BC_update_FINE_TO_COARSE_RECV: bad size", nchild - cg.size());
@@ -331,7 +332,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
     cout << "F2C_RECV: child " << i << ", receiving...\n";
 #endif
 
-    if (MCMD->get_myrank() == cg[i].rank) {
+    if (sub_domain->get_myrank() == cg[i].rank) {
       // If child is on my grid call serial version and grab data
       // directly from the child grid.
 #ifdef TEST_MPI_NG_F2C
@@ -358,7 +359,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       int recv_tag  = -1;
       int from_rank = cg[i].rank;
       int comm_tag  = BC_MPI_NGF2C_tag + l + 1;
-      err           = COMM->look_for_data_to_receive(
+      err           = sub_domain->look_for_data_to_receive(
           &from_rank,  // rank of sender (output)
           recv_id,     // identifier for receive (output).
           &recv_tag,   // comm_tag associated with data (output)
@@ -402,7 +403,8 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       //
       // Receive data into buffer.
       //
-      err = COMM->receive_double_data(from_rank, recv_tag, recv_id, ct, buf);
+      err = sub_domain->receive_double_data(
+          from_rank, recv_tag, recv_id, ct, buf);
       if (err) rep.error("(BC_update_F2C_RECV) getdata failed", err);
 
       // Go through list of cells in child i, and put the received

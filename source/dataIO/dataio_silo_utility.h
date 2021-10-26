@@ -28,7 +28,7 @@ using namespace std;
 #include "dataIO/dataio_silo.h"
 #include "dataIO/dataio_silo_MPI.h"
 #include "dataIO/file_status.h"
-#include "decomposition/MCMD_control.h"
+#include "sub_domain/sub_domain.h"
 
 #ifndef SILO
 #error "Define SILO so this code will work!"
@@ -43,7 +43,7 @@ public:
   dataio_silo_utility(
       class SimParams &,  ///< pointer to simulation parameters
       std::string,        ///< FLOAT or DOUBLE for files.
-      class MCMDcontrol *);
+      class Sub_domain *);
 
   ~dataio_silo_utility() {}
 
@@ -82,7 +82,7 @@ protected:
       const int,              ///< number of files
       const int,              ///< number of groups
       class SimParams &,      ///< pointer to simulation parameters
-      class MCMDcontrol *     ///< pointer to class with nproc.
+      class Sub_domain *      ///< pointer to class with nproc.
   );
 
   ///
@@ -96,7 +96,7 @@ protected:
       const string,           ///< variable name to read.
       const long int,         ///< number of cells expected.
       class SimParams &,      ///< pointer to simulation parameters
-      class MCMDcontrol *     ///< pointer to class with nproc.
+      class Sub_domain *      ///< pointer to class with nproc.
   );
 
   ///
@@ -114,9 +114,9 @@ protected:
   /// Returns true if it is.
   ///
   bool SRAD_point_on_my_domain(
-      const cell *,        ///< pointer to cell
-      class SimParams &,   ///< pointer to simulation parameters
-      class MCMDcontrol *  ///< pointer to class with nproc.
+      const cell *,       ///< pointer to cell
+      class SimParams &,  ///< pointer to simulation parameters
+      class Sub_domain *  ///< pointer to class with nproc.
   );
 
   ///

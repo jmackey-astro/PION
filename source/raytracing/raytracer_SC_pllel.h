@@ -6,9 +6,9 @@
 #include "defines/testing_flags.h"
 
 #include "boundaries/RT_MPI_boundaries.h"
-#include "decomposition/MCMD_control.h"
 #include "grid/grid_base_class.h"
 #include "sim_params.h"
+#include "sub_domain/sub_domain.h"
 
 #include "raytracing/raytracer_SC.h"
 #include "raytracing/raytracer_base.h"
@@ -26,7 +26,7 @@ public:
       class GridBaseClass *,      ///< Pointer to grid
       class microphysics_base *,  ///< icroPhysics Class.
       class SimParams *,          ///< simulation parameters
-      class MCMDcontrol *,        ///< domain decomposition info
+      class Sub_domain *,         ///< domain decomposition info
       int,                        ///< grid dimensionality
       int,                        ///< coordinate system
       int,                        ///< number of variables in state vector
@@ -60,8 +60,8 @@ public:
   );
 
 protected:
-  class SimParams *par;     ///< pointer to simulation parameters
-  class MCMDcontrol *MCMD;  ///< pointer to domain decomposition
+  class SimParams *par;          ///< pointer to simulation parameters
+  class Sub_domain *sub_domain;  ///< pointer to domain decomposition
 };
 #endif  // PARALLEL
 

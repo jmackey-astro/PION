@@ -38,9 +38,9 @@ using namespace std;
 #include "dataIO/dataio_base.h"
 #include "dataIO/dataio_silo.h"
 #include "dataIO/dataio_silo_utility.h"
-#include "decomposition/MCMD_control.h"
 #include "grid/uniform_grid.h"
 #include "sim_params.h"
+#include "sub_domain/sub_domain.h"
 
 #ifdef PION_NESTED
 #include "grid/setup_grid_NG_MPI.h"
@@ -55,22 +55,14 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-
+  int err = 0;
   //
-  // First initialise MPI, even though this is a single processor
-  // piece of code.
+  // Initialise the sub_domain class with myrank and nproc.
   //
-  int err = COMM->init(&argc, &argv);
-  //
-  // Also initialise the MCMD class with myrank and nproc.
-  //
-  int r = -1, np = -1;
-  COMM->get_rank_nproc(&r, &np);
   class SimParams SimPM;
-  SimPM.levels.clear();
-  SimPM.levels.resize(1);
-  SimPM.levels[0].MCMD.set_myrank(r);
-  SimPM.levels[0].MCMD.set_nproc(np);
+
+  int r  = SimPM.levels[0].sub_domain.get_myrank();
+  int np = SimPM.levels[0].sub_domain.get_nproc();
 
   //
   // Get an input file and an output file.
@@ -108,7 +100,7 @@ int main(int argc, char **argv)
   // set up dataio_utility class
   //
   string dtype = "DOUBLE";
-  class dataio_silo_utility dataio(SimPM, dtype, &(SimPM.levels[0].MCMD));
+  class dataio_silo_utility dataio(SimPM, dtype, &(SimPM.levels[0].sub_domain));
 
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
@@ -174,6 +166,7 @@ int main(int argc, char **argv)
 
   if (lev >= SimPM.grid_nlevels) rep.error("Level doesn't exist", lev);
 #ifdef PION_NESTED
+  SimPM.levels.resize(SimPM.grid_nlevels);
   class setup_grid_NG_MPI *SimSetup = new setup_grid_NG_MPI();
   SimSetup->setup_NG_grid_levels(SimPM);
 #endif
@@ -213,7 +206,7 @@ int main(int argc, char **argv)
   for (int v = 0; v < MAX_DIM; v++)
     SimPM.Xmax[v] = SimPM.levels[lev].Xmax[v];
   SimPM.dx = SimPM.Range[XX] / SimPM.NG[XX];
-  SimPM.levels[0].MCMD.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
+  SimPM.levels[0].sub_domain.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
 
 #ifndef PION_NESTED
   class setup_fixed_grid_pllel *SimSetup = new setup_fixed_grid_pllel();
@@ -296,7 +289,7 @@ int main(int argc, char **argv)
     for (int v = 0; v < MAX_DIM; v++)
       SimPM.Xmax[v] = SimPM.levels[lev].Xmax[v];
     SimPM.dx = SimPM.Range[XX] / SimPM.NG[XX];
-    SimPM.levels[0].MCMD.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
+    SimPM.levels[0].sub_domain.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
     // ----------------------------------------------------------------
     // ----------------------------------------------------------------
 
@@ -512,6 +505,9 @@ int main(int argc, char **argv)
         break;
     }
 
+    /* hack to ensure results are printed correctly in debug mode */
+    rep.redirect("silocompare-log-tail");
+
     //
     // move onto next first and second files
     //
@@ -526,8 +522,6 @@ int main(int argc, char **argv)
     delete grid;
     grid = 0;
   }
-  delete COMM;
-  COMM = 0;
-  // MPI_Finalize();
+
   return 0;
 }

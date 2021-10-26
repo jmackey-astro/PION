@@ -10,7 +10,7 @@ if(PION_PARALLEL)
         inflow_boundaries.cpp
         jet_boundaries.cpp
         jetreflect_boundaries.cpp
-        MCMD_boundaries.cpp
+        sub_domain_boundaries.cpp
         oneway_out_boundaries.cpp
         outflow_boundaries.cpp
         periodic_boundaries.cpp
@@ -19,7 +19,7 @@ if(PION_PARALLEL)
         RT_MPI_boundaries.cpp
         stellar_wind_boundaries.cpp
     )
-    target_link_libraries(boundaries PUBLIC decomposition)
+    target_link_libraries(boundaries PUBLIC sub_domain)
     if(PION_NESTED_GRID)
         add_library(
             nested_boundaries

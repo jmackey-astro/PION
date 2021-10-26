@@ -30,7 +30,7 @@ int assign_update_bcs_MPI::assign_boundary_data(
 )
 {
 #ifdef TEST_MPI_BC
-  class MCMDcontrol *ppar = &(par.levels[level].MCMD);
+  class Sub_domain *ppar = &(par.levels[level].sub_domain);
   cout << ppar->get_myrank() << " Setting up MPI boundaries..." << endl;
 #endif
   int err = assign_update_bcs::assign_boundary_data(par, level, grid, mp);
@@ -109,9 +109,9 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
   // block of MPI processes.
   int nb = grid->BC_bd.size();
   int map[nb];
-  int rank = par.levels[level].MCMD.get_myrank();
+  int rank = par.levels[level].sub_domain.get_myrank();
   int ix[MAX_DIM];
-  par.levels[level].MCMD.get_domain_coordinates(rank, ix);
+  par.levels[level].sub_domain.get_domain_coordinates(rank, ix);
   // x-direction
   for (int j = 0; j < par.ndim; j++) {
     if (ix[j] % 2 == 0) {
@@ -185,7 +185,7 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
         break;
     }
 
-    COMM->barrier("External BC update");
+    par.levels[0].sub_domain.barrier("External BC update");
 
     // if (i==XP || (i==YP && par.ndim>=2) || (i==ZP && par.ndim==3)) {
     //  // Need to make sure all processors are updating boundaries along
@@ -195,7 +195,7 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
     //  //      cout <<"Barrier synching for dir="<<i<<" with
     //  1=XP,2=YP,3=ZP.\n"; ostringstream tmp; tmp
     //  <<"assign_update_bcs_MPI_TimeUpdateExternalBCs_"<<i;
-    //  COMM->barrier(tmp.str());
+    //  par.levels[0].sub_domain.barrier(tmp.str());
     //  tmp.str("");
     //}
   }

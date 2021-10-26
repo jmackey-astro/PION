@@ -1,4 +1,4 @@
-/// \file sim_control.cpp
+
 ///
 /// \brief Simulation Control Class Member Function definitions.
 ///

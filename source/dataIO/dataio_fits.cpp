@@ -960,10 +960,10 @@ int DataIOFits::read_fits_image(
     class SimParams &SimPM,  ///< pointer to simulation parameters
     fitsfile *ff,
     string name,
-    double *localxmin,
-    double *globalxmin,
-    int *npt,
-    long int ntot)
+    const double *localxmin,
+    const double *globalxmin,
+    const int *npt,
+    const long int ntot)
 {
   double *data = 0;
   data         = mem.myalloc(data, ntot);

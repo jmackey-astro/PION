@@ -1096,12 +1096,13 @@ int dataio_silo::generate_quadmesh(
     cout << "coords: ";
     cout << coordnames[i] << "  ";
     cout << node_coords[i] << "  " << nodedims[i];
-    cout << "\n";
+    cout << endl;
   }
-  cout << "dbfile: " << dbfile << "\tcoordnames:" << coordnames << "\n";
+  cout << "dbfile: " << dbfile << "\tcoordnames:" << coordnames << endl;
+  ;
   cout << "nodecoords:" << node_coords << "\tnodedims:" << nodedims
-       << "\tndim:" << ndim << "\n";
-  cout << "gridopts:" << GridOpts << "\n";
+       << "\tndim:" << ndim << endl;
+  cout << "gridopts:" << GridOpts << endl;
 #endif
 
   //

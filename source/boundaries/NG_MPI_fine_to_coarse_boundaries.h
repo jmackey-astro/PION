@@ -71,7 +71,7 @@ public:
   ///
   /// Delete the temporary arrays used to send data to another
   /// MPI process
-  void BC_FINE_TO_COARSE_SEND_clear_sends();
+  void BC_FINE_TO_COARSE_SEND_clear_sends(class Sub_domain &);
 };
 
 #endif  // NG_MPI_FINE_TO_COARSE_BOUNDARIES_H

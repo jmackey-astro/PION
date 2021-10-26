@@ -86,21 +86,23 @@ void setup_grid_NG_MPI::setup_NG_grid_levels(
   setup_NG_grid::setup_NG_grid_levels(SimPM);
 
   // For each level, do a domain decomposition
-  int myrank = -1, nproc = -1;
-  COMM->get_rank_nproc(&myrank, &nproc);
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-    SimPM.levels[l].MCMD.set_myrank(myrank);
-    SimPM.levels[l].MCMD.set_nproc(nproc);
-    err = SimPM.levels[l].MCMD.decomposeDomain(
-        SimPM.ndim, SimPM.levels[l], SimPM.get_pbc_bools());
+    if (l == 0) {
+      err = SimPM.levels[l].sub_domain.decomposeDomain(
+          SimPM.ndim, SimPM.levels[l], SimPM.get_pbc_bools());
+    }
+    else {
+      err = SimPM.levels[l].sub_domain.decomposeDomain(
+          SimPM.ndim, SimPM.levels[l]);
+    }
     rep.errorTest("PLLEL Init():Decompose Domain!", 0, err);
-    SimPM.levels[l].MCMD.ReadSingleFile = true;  // legacy option.
+    SimPM.levels[l].sub_domain.set_ReadSingleFile(true);  // legacy option.
   }
 
   // For each level, get rank of process for parent grid and each
   // child grid.
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-    SimPM.levels[l].MCMD.set_NG_hierarchy(SimPM, l);
+    SimPM.levels[l].sub_domain.set_NG_hierarchy(SimPM, l);
   }
 
   return;
@@ -170,21 +172,24 @@ int setup_grid_NG_MPI::setup_grid(
     if (SimPM.coord_sys == COORD_CRT)
       grid[l] = new UniformGridParallel(
           SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
-          SimPM.levels[l].MCMD.LocalXmin, SimPM.levels[l].MCMD.LocalXmax,
-          SimPM.levels[l].MCMD.LocalNG, SimPM.levels[l].Xmin,
-          SimPM.levels[l].Xmax, SimPM.Xmin, SimPM.Xmax);
+          SimPM.levels[l].sub_domain.get_Xmin(),
+          SimPM.levels[l].sub_domain.get_Xmax(),
+          SimPM.levels[l].sub_domain.get_directional_Ncells(),
+          SimPM.levels[l].Xmin, SimPM.levels[l].Xmax, SimPM.Xmin, SimPM.Xmax);
     else if (SimPM.coord_sys == COORD_CYL)
       grid[l] = new uniform_grid_cyl_parallel(
           SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
-          SimPM.levels[l].MCMD.LocalXmin, SimPM.levels[l].MCMD.LocalXmax,
-          SimPM.levels[l].MCMD.LocalNG, SimPM.levels[l].Xmin,
-          SimPM.levels[l].Xmax, SimPM.Xmin, SimPM.Xmax);
+          SimPM.levels[l].sub_domain.get_Xmin(),
+          SimPM.levels[l].sub_domain.get_Xmax(),
+          SimPM.levels[l].sub_domain.get_directional_Ncells(),
+          SimPM.levels[l].Xmin, SimPM.levels[l].Xmax, SimPM.Xmin, SimPM.Xmax);
     else if (SimPM.coord_sys == COORD_SPH)
       grid[l] = new uniform_grid_sph_parallel(
           SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
-          SimPM.levels[l].MCMD.LocalXmin, SimPM.levels[l].MCMD.LocalXmax,
-          SimPM.levels[l].MCMD.LocalNG, SimPM.levels[l].Xmin,
-          SimPM.levels[l].Xmax, SimPM.Xmin, SimPM.Xmax);
+          SimPM.levels[l].sub_domain.get_Xmin(),
+          SimPM.levels[l].sub_domain.get_Xmax(),
+          SimPM.levels[l].sub_domain.get_directional_Ncells(),
+          SimPM.levels[l].Xmin, SimPM.levels[l].Xmax, SimPM.Xmin, SimPM.Xmax);
     else
       rep.error("Bad Geometry in setup_grid()", SimPM.coord_sys);
 
@@ -458,7 +463,8 @@ void setup_grid_NG_MPI::setup_dataio_class(
 
 #ifdef SILO
     case 5:  // Start from Silo snapshot.
-      dataio = new dataio_silo_utility(par, "DOUBLE", &(par.levels[0].MCMD));
+      dataio =
+          new dataio_silo_utility(par, "DOUBLE", &(par.levels[0].sub_domain));
       break;
 #endif  // if SILO
 

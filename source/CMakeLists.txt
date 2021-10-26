@@ -1,6 +1,5 @@
 # add internal libraries
 add_subdirectory(boundaries)
-add_subdirectory(comms)
 #add_subdirectory(contrib)
 add_subdirectory(coord_sys)
 add_subdirectory(dataIO)
@@ -15,7 +14,7 @@ add_subdirectory(spatial_solvers)
 add_subdirectory(tools)
 
 if (PION_PARALLEL)
-    add_subdirectory(decomposition)
+    add_subdirectory(sub_domain)
 endif(PION_PARALLEL)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -32,10 +31,6 @@ target_link_libraries(global INTERFACE dataio tools)
 if(PION_OMP)
     target_link_libraries(global INTERFACE OpenMP::OpenMP_CXX)
 endif(PION_OMP)
-
-if(PION_PARALLEL)
-    target_link_libraries(global INTERFACE comms)
-endif(PION_PARALLEL)
 
 if(PION_NESTED_GRID)
     add_executable(pion-ng main.cpp) 

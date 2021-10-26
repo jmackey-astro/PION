@@ -1,7 +1,4 @@
-///
-/// \file reporting.h
-/// \author Jonathan Mackey
-///
+/// /// \file reporting.h /// \author Jonathan Mackey ///
 /// This file declares the reporting class, for dealing with standard
 /// input/output to screen.
 ///
@@ -23,10 +20,6 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
-
-#ifdef PARALLEL
-#include "comms/comms.h"
-#endif  // PARALLEL
 
 using namespace std;
 
@@ -74,11 +67,7 @@ public:
     cout << endl;  // try to write all to stdout/file.
     cerr.flush();
     cerr << endl;  // try to write all to stderr.
-#ifdef PARALLEL
-    if (COMM) {
-      COMM->abort();
-    }
-#endif  // PARALLEL
+
     exit(1);
   }
 
@@ -171,12 +160,15 @@ public:
     return;
   }
 
+#ifdef PARALLEL
+  void set_rank(const int rank) { myrank = rank; }
+#endif
+
 private:
   ofstream errmsg, infomsg;  //, iomsg;
   streambuf *saved_buffer_cout, *saved_buffer_cerr;
 #ifdef PARALLEL
   int myrank;  ///< rank in list of MPI processes
-  int nproc;   ///< number of MPI procs.
 #endif         // PARALLEL
 };
 

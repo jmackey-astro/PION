@@ -40,9 +40,9 @@ public:
   }
 
 #ifdef PARALLEL
-  void set_MCMD_pointer(class MCMDcontrol *m)
+  void set_sub_domain_pointer(class Sub_domain *m)
   {
-    MCMD = m;
+    sub_domain = m;
     return;
   }
 #endif  // PARALLEL
@@ -68,7 +68,7 @@ protected:
   class ReadParams *rp;     ///< pointer to readparams.
   class SimParams *SimPM;   ///< pointer to simulation parameters
 #ifdef PARALLEL
-  class MCMDcontrol *MCMD;
+  class Sub_domain *sub_domain;
 #endif                          // PARALLEL
   class microphysics_base *mp;  ///< pointer to microphysics class
 };

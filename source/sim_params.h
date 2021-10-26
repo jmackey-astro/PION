@@ -22,10 +22,12 @@
 #include "defines/testing_flags.h"
 
 #include "constants.h"
+#include "dataIO/readparams.h"
 #include "raytracing/rad_src_data.h"
 #include "sim_constants.h"
+
 #ifdef PARALLEL
-#include "decomposition/MCMD_control.h"
+#include "sub_domain/sub_domain.h"
 #endif
 
 // *******************************************************************
@@ -184,7 +186,7 @@ public:
                     ///< for level).
   int multiplier;   ///< 2^l, l=0=coarsest.
 #ifdef PARALLEL
-  class MCMDcontrol MCMD;  ///< domain decomposition on this level
+  class Sub_domain sub_domain;  ///< domain decomposition on this level
 #endif
 };
 // *******************************************************************
@@ -198,6 +200,7 @@ public:
 class SimParams {
 public:
   SimParams();
+  SimParams(const std::string);
   ~SimParams();
   int gridType;    ///< Uniform, Finite Volume, cubic cell grid: 1 = only
                    ///< option.
@@ -298,6 +301,35 @@ public:
 
   std::vector<int> get_pbc_bools()
       const;  ///< Return a boolean vector for periodic boundary conditions
+
+private:
+  int read_gridparams(const std::string  ///< parameter file.
+  );
+
+  /** \brief Reads in extra physics params from the text file, if they are
+   * there. */
+  int read_extra_physics();
+
+  /** \brief if we are doing raytracing, read in the source list. */
+  int read_radsources();
+
+  /** \brief Reads in units params from the text file, if they are there. */
+  int read_units();
+
+  ///
+  /// If we got one or more stellar wind sources, this function reads
+  /// their properties
+  ///
+  int read_wind_sources();
+
+  ///
+  /// Read in parameters for a stellar jet, if requested by N_jet !=0
+  ///
+  int read_jet_params(
+      class JetParams &jpar  ///< pointer to jet parameters class.
+  );
+
+  class ReadParams rp;
 };
 
 // *******************************************************************

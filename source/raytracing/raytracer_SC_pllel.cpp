@@ -66,7 +66,7 @@ raytracer_USC_pllel::raytracer_USC_pllel(
     class GridBaseClass *ggg,      ///< Pointer to grid
     class microphysics_base *mmm,  ///< Pointer to MicroPhysics Class.
     class SimParams *sp,           ///< simulation parameters
-    class MCMDcontrol *mcmd,       ///< domain decomposition info
+    class Sub_domain *mcmd,        ///< domain decomposition info
     int nd,                        ///< number of dimensions of grid
     int csys,                      ///< coordinate system
     int nv,                        ///< number of variables in state vector
@@ -78,8 +78,8 @@ raytracer_USC_pllel::raytracer_USC_pllel(
 #ifdef RT_TESTING
   cout << "SC PARALLEL raytracer class constructor!\n";
 #endif
-  par  = sp;
-  MCMD = mcmd;
+  par        = sp;
+  sub_domain = mcmd;
   return;
 }
 
@@ -123,7 +123,7 @@ int raytracer_USC_pllel::Add_Source(struct rad_src_info *src  ///< source info.
 #ifdef RT_TESTING
   cout << "\t**** PARALLEL Add_Source: Setup extra RT boundaries.\n";
 #endif
-  int err = Setup_RT_Boundaries(*par, *MCMD, gridptr, id, *src);
+  int err = Setup_RT_Boundaries(*par, *sub_domain, gridptr, id, *src);
   if (err) rep.error("Failed to setup RT Boundaries", err);
 
     //
@@ -177,7 +177,7 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
 #ifdef RT_TESTING
   cout << "RT_MPI: receiving RT boundaries\n";
 #endif
-  err += Receive_RT_Boundaries(*par, *MCMD, gridptr, s_id, *RS);
+  err += Receive_RT_Boundaries(*par, *sub_domain, gridptr, s_id, *RS);
 #ifdef RT_TESTING
   cout << "RT_MPI: received RT boundaries\n";
 #endif
@@ -207,7 +207,7 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
 #ifdef RT_TESTING
   cout << "RT_MPI: sending RT boundaries\n";
 #endif
-  err += Send_RT_Boundaries(*par, *MCMD, gridptr, s_id, *RS);
+  err += Send_RT_Boundaries(*par, *sub_domain, gridptr, s_id, *RS);
 #ifdef RT_TESTING
   cout << "RT_MPI: sent RT boundaries\n";
 #endif

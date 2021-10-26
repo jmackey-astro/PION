@@ -24,7 +24,7 @@
 ///    emission.
 /// - 2015.07.03 JM: Got rid of NEW_STOKES_CALC (because old code was
 ///    broken, so I just deleted the old code).
-/// - 2015.07.03 JM: updated for pion_dev: uses MCMD, SimSetup,
+/// - 2015.07.03 JM: updated for pion_dev: uses sub_domain, SimSetup,
 ///    constants.h
 /// - 2015.07.13 JM: Multithreaded add_integration_pts_to_pixels
 /// - 2015.08.05 JM: Added pion_flt datatype for low-memory cells.
@@ -2219,12 +2219,6 @@ int point_velocity::get_velocity_bin_number(
 //
 // int main(int argc, char **argv)
 // {
-//   //
-//   // First initialise MPI, even though this is a single processor
-//   // piece of code.
-//   //
-//   int err = COMM->init(&argc, &argv);
-
 //   int angle=atoi(argv[1]);
 //   //
 //   // Normal vector to trace rays along (and measure angle from (if
@@ -2324,8 +2318,6 @@ int point_velocity::get_velocity_bin_number(
 //     cout << "\t Deleting Grid Data..." << endl;
 //     delete grid; grid=0;
 //   }
-//   COMM->finalise();
-//   delete COMM; COMM=0;
 
 //   return 0;
 // }

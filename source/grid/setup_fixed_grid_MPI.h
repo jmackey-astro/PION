@@ -11,8 +11,8 @@
 #define SETUP_FIXED_GRID_MPI_H
 
 #include "boundaries/assign_update_bcs_MPI.h"
-#include "decomposition/MCMD_control.h"
 #include "setup_fixed_grid.h"
+#include "sub_domain/sub_domain.h"
 
 #ifdef PARALLEL
 

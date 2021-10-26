@@ -83,11 +83,6 @@ using namespace std;
 int main(int argc, char **argv)
 {
   int err = 0;
-#ifdef PARALLEL
-  err        = COMM->init(&argc, &argv);
-  int myrank = -1, nproc = -1;
-  COMM->get_rank_nproc(&myrank, &nproc);
-#endif
 
   //
   // Set up simulation controller class.
@@ -107,6 +102,12 @@ int main(int argc, char **argv)
   class sim_control *sim_control = new class sim_control_pllel();
 #endif /* PARALLEL */
 #endif /* PION_NESTED */
+
+#ifdef PARALLEL
+  int myrank = sim_control->SimPM.levels[0].sub_domain.get_myrank();
+  int nproc  = sim_control->SimPM.levels[0].sub_domain.get_nproc();
+  rep.set_rank(myrank);
+#endif
 
   if (!sim_control)
     rep.error("(pion) Couldn't initialise sim_control", sim_control);
@@ -238,10 +239,6 @@ int main(int argc, char **argv)
     cerr << "(PION) err!=0 from Init"
          << "\n";
     delete sim_control;
-#ifdef PARALLEL
-    cout << "rank: " << myrank << " nproc: " << nproc << "\n";
-    delete COMM;
-#endif
     return 1;
   }
   //
@@ -252,10 +249,6 @@ int main(int argc, char **argv)
     cerr << "(PION) err!=0 from Time_Int"
          << "\n";
     delete sim_control;
-#ifdef PARALLEL
-    cout << "rank: " << myrank << " nproc: " << nproc << "\n";
-    delete COMM;
-#endif
     return 1;
   }
   //
@@ -266,10 +259,6 @@ int main(int argc, char **argv)
     cerr << "(PION) err!=0 from Finalise"
          << "\n";
     delete sim_control;
-#ifdef PARALLEL
-    cout << "rank: " << myrank << " nproc: " << nproc << "\n";
-    delete COMM;
-#endif
     return 1;
   }
 
@@ -279,11 +268,6 @@ int main(int argc, char **argv)
     delete g;
   delete[] args;
   args = 0;
-#ifdef PARALLEL
-  cout << "rank: " << myrank << " nproc: " << nproc << "\n";
-  delete COMM;
-  COMM = 0;
-#endif
 
   cout << "-------------------------------------------------------\n"
        << "---------   pion " << grid_type << " " << parallelism

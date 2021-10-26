@@ -3,7 +3,6 @@ add_library(
 
 	basic_tests.cpp                          
 	blast_wave.cpp                           
-    get_sim_info.cpp                         
 	icgen_base.cpp                           
 	inside_sphere.cpp                        
 	jet.cpp                                  

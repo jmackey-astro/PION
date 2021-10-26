@@ -15,7 +15,7 @@
 
 #include "dataIO/dataio_base.h"
 #include "dataIO/dataio_silo.h"
-#include "decomposition/MCMD_control.h"
+#include "sub_domain/sub_domain.h"
 #include <silo.h>
 #include <vector>
 
@@ -29,9 +29,9 @@ public:
   /// Constructor.
   ///
   dataio_silo_pllel(
-      class SimParams &,   ///< pointer to simulation parameters
-      std::string,         ///< FLOAT or DOUBLE for files.
-      class MCMDcontrol *  ///< address of MCMD controller class.
+      class SimParams &,  ///< pointer to simulation parameters
+      std::string,        ///< FLOAT or DOUBLE for files.
+      class Sub_domain *  ///< address of sub_domain controller class.
   );
 
   /// Destructor (doensn't have much to do).
@@ -76,7 +76,7 @@ public:
   );
 
 protected:
-  class MCMDcontrol *mpiPM;
+  class Sub_domain *mpiPM;
   ///
   /// Choose filename based on outfile, group_rank, and counter.
   ///

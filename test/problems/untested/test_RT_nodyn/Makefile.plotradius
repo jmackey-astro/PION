@@ -135,11 +135,11 @@ dataio_fits.o:  dataio_fits.cc dataio_fits.h dataio.h ${GLOBAL} solver_eqn_base.
 readparams.o:   readparams.cc readparams.h ${GLOBAL}
 utility_fits_class.o: utility_fits_class.cc dataio_fits.h dataio.h ${GLOBAL}
 
-comm_mpi.o: comm_mpi.cc comm_mpi.h comms.h ${GLOBAL}
-comm_files.o: comm_files.cc comm_files.h comms.h ${GLOBAL}
+comm_mpi.o: comm_mpi.cc comm_mpi.h sub_domain_comms.h ${GLOBAL}
+comm_files.o: comm_files.cc comm_files.h sub_domain_comms.h ${GLOBAL}
 
 dataio_utility.o:	dataio_utility.cc dataio_utility.h dataio_silo.h dataio.h ${GLOBAL}
-dataio_silo_MPI.o:  dataio_silo_MPI.cc dataio_silo.h dataio.h ${GLOBAL} comms.h
+dataio_silo_MPI.o:  dataio_silo_MPI.cc dataio_silo.h dataio.h ${GLOBAL} sub_domain_comms.h
 
 clean:
 	rm -f *.o plot_radius

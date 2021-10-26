@@ -14,9 +14,9 @@
 #include "defines/testing_flags.h"
 
 #include "boundaries/boundaries.h"
-#include "decomposition/MCMD_control.h"
 #include "grid/grid_base_class.h"
 #include "sim_params.h"
+#include "sub_domain/sub_domain.h"
 
 #include <vector>
 
@@ -82,7 +82,7 @@ public:
   ///
   virtual int Setup_RT_Boundaries(
       class SimParams &,      ///< pointer to simulation parameters
-      class MCMDcontrol &,    ///< domain decomposition info
+      class Sub_domain &,     ///< domain decomposition info
       class GridBaseClass *,  ///< pointer to grid.
       const int,              ///< source id
       struct rad_src_info &);
@@ -92,7 +92,7 @@ public:
   ///
   virtual int Receive_RT_Boundaries(
       class SimParams &,      ///< pointer to simulation parameters
-      class MCMDcontrol &,    ///< domain decomposition info
+      class Sub_domain &,     ///< domain decomposition info
       class GridBaseClass *,  ///< pointer to grid.
       const int,              ///< source id
       struct rad_src_info &);
@@ -103,7 +103,7 @@ public:
   ///
   virtual int Send_RT_Boundaries(
       class SimParams &,      ///< pointer to simulation parameters
-      class MCMDcontrol &,    ///< domain decomposition info
+      class Sub_domain &,     ///< domain decomposition info
       class GridBaseClass *,  ///< pointer to grid.
       const int,              ///< source id
       struct rad_src_info &);
@@ -124,7 +124,7 @@ protected:
   ///
   int setup_RT_infinite_src_BD(
       class SimParams &,      ///< pointer to simulation parameters
-      class MCMDcontrol &,    ///< domain decomposition info
+      class Sub_domain &,     ///< domain decomposition info
       class GridBaseClass *,  ///< pointer to grid.
       const int,              ///< Source id.
       struct rad_src_info &,
@@ -151,7 +151,7 @@ protected:
   ///
   int setup_RT_finite_ptsrc_BD(
       class SimParams &,      ///< pointer to simulation parameters
-      class MCMDcontrol &,    ///< domain decomposition info
+      class Sub_domain &,     ///< domain decomposition info
       class GridBaseClass *,  ///< pointer to grid.
       const int,              ///< Source id.
       struct rad_src_info &,  ///< SimParams list of radiation sources.

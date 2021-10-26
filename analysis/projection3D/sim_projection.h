@@ -9,7 +9,7 @@
 /// - 2013.10.15 JM: Updated to use microphysics classes to get the
 ///    gas temperature and n(H), and added [N II] forbidden line
 ///    emission.
-/// - 2015.07.03 JM: updated for pion_dev: uses MCMD, SimSetup,
+/// - 2015.07.03 JM: updated for pion_dev: uses sub_domain, SimSetup,
 ///    constants.h
 /// - 2015.07.13 JM: Multithreaded add_integration_pts_to_pixels
 /// - 2015.10.13 JM: added 6GHz Bremsstrahlung and Emission measure

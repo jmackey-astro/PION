@@ -30,8 +30,8 @@ using namespace std;
 #include "dataIO/dataio_silo_utility.h"
 #include "grid/uniform_grid.h"
 
-#include "MCMD_control.h"
 #include "setup_fixed_grid_MPI.h"
+#include "sub_domain.h"
 
 
 // ##################################################################
@@ -41,20 +41,13 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-
+  int err = 0;
   //
-  // First initialise MPI, even though this is a single processor
-  // piece of code.
+  // Also initialise the sub_domain class with myrank and nproc.
   //
-  int err = COMM->init(&argc, &argv);
-  //
-  // Also initialise the MCMD class with myrank and nproc.
-  //
-  class MCMDcontrol MCMD;
-  int r = -1, np = -1;
-  COMM->get_rank_nproc(&r, &np);
-  MCMD.set_myrank(r);
-  MCMD.set_nproc(np);
+  class Sub_domain sub_domain;
+  int r  = sub_domain->get_myrank();
+  int np = sub_domain->get_nproc();
 
   //
   // Get an input file and an output file.
@@ -84,8 +77,8 @@ int main(int argc, char **argv)
   // set up dataio_utility classes, one to read double data, and the
   // other to write float data.
   //
-  class dataio_silo_utility io_read("DOUBLE", &MCMD);
-  class dataio_silo_pllel io_write("FLOAT", &MCMD);
+  class dataio_silo_utility io_read("DOUBLE", &sub_domain);
+  class dataio_silo_pllel io_write("FLOAT", &sub_domain);
 
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
@@ -143,12 +136,12 @@ int main(int argc, char **argv)
   class setup_fixed_grid *SimSetup = 0;
   SimSetup                         = new setup_fixed_grid_pllel();
   class GridBaseClass *grid        = 0;
-  err                              = MCMD.decomposeDomain();
+  err                              = sub_domain.decomposeDomain();
   if (err) rep.error("main: failed to decompose domain!", err);
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
-  SimSetup->setup_grid(&grid, &MCMD);
+  SimSetup->setup_grid(&grid, &sub_domain);
   if (!grid) rep.error("Grid setup failed", grid);
 
   // ----------------------------------------------------------------
@@ -233,8 +226,6 @@ int main(int argc, char **argv)
     delete grid;
     grid = 0;
   }
-  delete COMM;
-  COMM = 0;
-  // MPI_Finalize();
+
   return 0;
 }

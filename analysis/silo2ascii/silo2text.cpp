@@ -25,9 +25,9 @@
 #include "tools/reporting.h"
 #include "tools/timer.h"
 
-#include "decomposition/MCMD_control.h"
 #include "grid/setup_fixed_grid_MPI.h"
 #include "grid/uniform_grid.h"
+#include "sub_domain/sub_domain.h"
 
 #include <dirent.h>
 #include <errno.h>
@@ -49,29 +49,21 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-
+  int err = 0;
   //
-  // First initialise MPI, even though this is a single processor
-  // piece of code.
-  //
-  int err = COMM->init(&argc, &argv);
-  //
-  // Also initialise the MCMD class with myrank and nproc.
+  // Also initialise the sub_domain class with myrank and nproc.
   //
   //
   // get a setup_grid class, to set up the grid, and a grid pointer.
   //
   class setup_fixed_grid *SimSetup = 0;
   SimSetup                         = new setup_fixed_grid_pllel();
-  int myrank = -1, nproc = -1;
-  COMM->get_rank_nproc(&myrank, &nproc);
-  cout << "Projection3D: myrank=" << myrank << ", nproc=" << nproc << "\n";
   class SimParams SimPM;
-  SimPM.levels.clear();
-  SimPM.levels.resize(1);
-  SimPM.levels[0].MCMD.set_myrank(myrank);
-  SimPM.levels[0].MCMD.set_nproc(nproc);
 
+  int myrank = SimPM.levels[0].sub_domain.get_myrank();
+  int nproc  = SimPM.levels[0].sub_domain.get_nproc();
+
+  cout << "Projection3D: myrank=" << myrank << ", nproc=" << nproc << "\n";
 
   //
   // Get an input file and an output file.
@@ -97,7 +89,8 @@ int main(int argc, char **argv)
   //
   // set up dataio_utility class
   //
-  class dataio_silo_utility dataio(SimPM, "DOUBLE", &(SimPM.levels[0].MCMD));
+  class dataio_silo_utility dataio(
+      SimPM, "DOUBLE", &(SimPM.levels[0].sub_domain));
   //
   // Get list of first and second files to read, and make sure they match.
   //
@@ -162,7 +155,8 @@ int main(int argc, char **argv)
     SimPM.levels[0].simtime    = SimPM.simtime;
     SimPM.levels[0].dt         = 0.0;
     SimPM.levels[0].multiplier = 1;
-    err = SimPM.levels[0].MCMD.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
+    err =
+        SimPM.levels[0].sub_domain.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
     if (err) rep.error("main: failed to decompose domain!", err);
 
     // *****************************************************
@@ -232,10 +226,5 @@ int main(int argc, char **argv)
       ff++;
   }  // move onto next file
 
-  //
-  // Finish up and quit.
-  //
-  delete COMM;
-  COMM = 0;
   return 0;
 }

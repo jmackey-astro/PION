@@ -24,11 +24,6 @@ using namespace std;
 int main(int argc, char **argv)
 {
   //
-  // First initialise MPI via the comms class.
-  //
-  int err = COMM->init(&argc, &argv);
-
-  //
   // Get input directory and file-base, output directory and two
   // output file-names from cmd-line args.
   //
@@ -372,8 +367,6 @@ int main(int argc, char **argv)
    
   delete grid; grid=0;
 
-  COMM->finalise();
-  delete COMM; COMM=0;
   return 0;
 }
 

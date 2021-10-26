@@ -9,7 +9,6 @@
 /// - 2015.01.08 JM: created file, moved class from global.h
 /// - 2017.12.09 JM: got rid of SimPM refs.
 
-#include "comms/comms.h"
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
@@ -99,9 +98,6 @@ int reporting::redirect(const string &path)
   // For parallel execution (production runs) we only want a single
   // log file, and errors should be printed to stderr.
   //
-  myrank = -1, nproc = -1;
-  COMM->get_rank_nproc(&myrank, &nproc);
-  // cout <<"myrank="<<myrank<<"\n";
 #ifdef REPORT_RANK0
   if (myrank == 0) {
 #endif
@@ -169,8 +165,6 @@ void reporting::kill_stdout_from_other_procs(
   // from proc. 0, so we redirect all stdout/stderr from other
   // processes to some dead end like /dev/null.
   //
-  myrank = -1, nproc = -1;
-  COMM->get_rank_nproc(&myrank, &nproc);
   if (myrank != core) {
     // saved_buffer_cout = cout.rdbuf(); // <-- save
     // cout.rdbuf (nullstream.rdbuf());  // <-- redirect

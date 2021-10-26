@@ -136,18 +136,18 @@ readparams.o:   readparams.cc readparams.h global.h
 #utility_fits_class.o: utility_fits_class.cc dataio_fits.h dataio.h global.h
 
 dataio_utility: dataio_utility.cc dataio_utility.h dataio_silo.h \
-		dataio_silo_MPI.h dataio.h global.h comms.h file_status.h
+		dataio_silo_MPI.h dataio.h global.h sub_domain_comms.h file_status.h
 
 dataio_silo_MPI.o:    dataio_silo_MPI.cc dataio_silo.h dataio.h \
-		      global.h comms.h file_status.h
+		      global.h sub_domain_comms.h file_status.h
 
 stellar_wind_BC.o: stellar_wind_BC.cc stellar_wind_BC.h global.h
 VectorOps.o:           VectorOps.cc VectorOps.h global.h uniformGrid.h
 VectorOps_spherical.o: VectorOps_spherical.cc VectorOps_spherical.h VectorOps.h \
 		       global.h uniformGrid.h
 
-comm_mpi.o: comm_mpi.cc comm_mpi.h comms.h global.h
-comm_files.o: comm_files.cc comm_files.h comms.h global.h
+comm_mpi.o: comm_mpi.cc comm_mpi.h sub_domain_comms.h global.h
+comm_files.o: comm_files.cc comm_files.h sub_domain_comms.h global.h
 
 clean:
 	rm -f *.o BW_multifile

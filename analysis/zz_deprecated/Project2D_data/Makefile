@@ -283,7 +283,7 @@ OBJECTS = file_status.o  \
         mem_manage.o \
         reporting.o \
         interpolate.o \
-        MCMD_control.o \
+        sub_domain.o \
         setup_fixed_grid.o \
         setup_fixed_grid_MPI.o \
         readparams.o \
@@ -316,7 +316,7 @@ OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
           axisymmetric_boundaries.o \
           fixed_boundaries.o jet_boundaries.o \
           jetreflect_boundaries.o double_Mach_ref_boundaries.o \
-          stellar_wind_boundaries.o MCMD_boundaries.o \
+          stellar_wind_boundaries.o sub_domain_boundaries.o \
           periodic_boundaries_MPI.o assign_update_bcs_MPI.o \
           RT_MPI_boundaries.o
 
@@ -365,18 +365,18 @@ constants.o: constants.cpp ${GLOBAL}
 timer.o: tools/timer.cpp tools/timer.h ${GLOBAL}
 sim_params.o: 	  sim_params.cpp  ${GLOBAL}
 
-comm_mpi.o: comm_mpi.cpp comm_mpi.h comms.h
-comm_files.o: comm_files.cpp comm_files.h comms.h ${GLOBAL}
+comm_mpi.o: comm_mpi.cpp comm_mpi.h sub_domain_comms.h
+comm_files.o: comm_files.cpp comm_files.h sub_domain_comms.h ${GLOBAL}
 
 uniform_grid.o: uniform_grid.cpp uniform_grid.h ${GLOBAL} stellar_wind_BC.h
-uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid.h ${GLOBAL} comms.h
+uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid.h ${GLOBAL} sub_domain_comms.h
 stellar_wind_BC.o: stellar_wind_BC.cpp stellar_wind_BC.h ${GLOBAL}
 
 VectorOps.o:           VectorOps.cpp VectorOps.h uniform_grid.h ${GLOBAL}
 VectorOps_spherical.o: VectorOps_spherical.cpp VectorOps_spherical.h VectorOps.h \
 		       uniform_grid.h ${GLOBAL}
 
-MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
+sub_domain.o: sub_domain.cpp sub_domain.h ${GLOBAL}
 
 setup_fixed_grid_MPI.o: setup_fixed_grid_MPI.cpp setup_fixed_grid_MPI.h \
   setup_fixed_grid.h ${GLOBAL} uniform_grid_pllel.h \
@@ -397,8 +397,8 @@ setup_grid_NG_MPI.o: setup_grid_NG_MPI.cpp setup_grid_NG_MPI.h \
   NG_MPI_fine_to_coarse_boundaries.h \
   NG_MPI_coarse_to_fine_boundaries.h \
   NG_fine_to_coarse_boundaries.h periodic_boundaries_MPI.h \
-  MCMD_boundaries.h boundaries.h \
-  grid_base_class.h solver_eqn_base.h MCMD_control.h
+  sub_domain_boundaries.h boundaries.h \
+  grid_base_class.h solver_eqn_base.h sub_domain.h
 
 ######################
 # MICROPHYSICS STUFF #
@@ -470,7 +470,7 @@ raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h ${GLOBAL} \
     uniform_grid.h raytracer_base.h
 
 raytracer_SC_pllel.o : raytracer_SC_pllel.cpp raytracer_SC.h \
-    ${GLOBAL} uniform_grid.h comms.h raytracer_base.h
+    ${GLOBAL} uniform_grid.h sub_domain_comms.h raytracer_base.h
 
 ########################
 # Data I/O
@@ -491,12 +491,12 @@ dataio_silo.o:  dataio_silo.cpp dataio_silo.h dataio_base.h ${GLOBAL} \
     solver_eqn_base.h file_status.h
 
 dataio_silo_MPI.o:    dataio_silo_MPI.cpp dataio_silo.h dataio_base.h \
-    ${GLOBAL} comms.h file_status.h
+    ${GLOBAL} sub_domain_comms.h file_status.h
 
 readparams.o:	readparams.cpp readparams.h ${GLOBAL}
 
 dataio_silo_utility.o: dataio_silo_utility.cpp dataio_silo_utility.h\
-    ${GLOBAL} file_status.h dataio_base.h dataio_silo.h comms.h
+    ${GLOBAL} file_status.h dataio_base.h dataio_silo.h sub_domain_comms.h
 
 #####################
 # BOUNDARY CLASSES  #
@@ -549,20 +549,20 @@ assign_update_bcs.o: assign_update_bcs.cpp assign_update_bcs.h \
 
 assign_update_bcs_MPI.o: assign_update_bcs_MPI.cpp \
   assign_update_bcs_MPI.h periodic_boundaries_MPI.h \
-  MCMD_boundaries.h boundaries.h ${GLOBAL} \
-  grid_base_class.h solver_eqn_base.h MCMD_control.h 
+  sub_domain_boundaries.h boundaries.h ${GLOBAL} \
+  grid_base_class.h solver_eqn_base.h sub_domain.h 
 
 periodic_boundaries_MPI.o: periodic_boundaries_MPI.cpp \
   periodic_boundaries_MPI.h boundaries.h ${GLOBAL} \
-  grid_base_class.h MCMD_control.h MCMD_boundaries.h
+  grid_base_class.h sub_domain.h sub_domain_boundaries.h
 
-MCMD_boundaries.o: MCMD_boundaries.cpp \
-  MCMD_boundaries.h boundaries.h ${GLOBAL} \
-  grid_base_class.h MCMD_control.h
+sub_domain_boundaries.o: sub_domain_boundaries.cpp \
+  sub_domain_boundaries.h boundaries.h ${GLOBAL} \
+  grid_base_class.h sub_domain.h
 
 RT_MPI_boundaries.o: RT_MPI_boundaries.cpp RT_MPI_boundaries.h \
   boundaries.h ${GLOBAL} \
-  grid_base_class.h MCMD_control.h
+  grid_base_class.h sub_domain.h
 
 #####################
 # EQUATIONS CLASSES #

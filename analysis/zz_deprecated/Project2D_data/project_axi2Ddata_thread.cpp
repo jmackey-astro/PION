@@ -61,8 +61,8 @@ using namespace std;
 #include "grid/uniform_grid.h"
 #include "image_io.h"
 
-#include "MCMD_control.h"
 #include "setup_fixed_grid_MPI.h"
+#include "sub_domain.h"
 
 #include "microphysics/microphysics_base.h"
 #ifndef EXCLUDE_MPV1
@@ -286,19 +286,13 @@ void calculate_column(void *arg)
 
 int main(int argc, char **argv)
 {
+  int err = 0;
   //
-  // First initialise the comms class, since we need to define
-  // PARALLEL to read a parallel file.
+  // Also initialise the sub_domain class with myrank and nproc.
   //
-  int err = COMM->init(&argc, &argv);
-  //
-  // Also initialise the MCMD class with myrank and nproc.
-  //
-  class MCMDcontrol MCMD;
-  int myrank = -1, nproc = -1;
-  COMM->get_rank_nproc(&myrank, &nproc);
-  MCMD.set_myrank(myrank);
-  MCMD.set_nproc(nproc);
+  class Sub_domain sub_domain;
+  int myrank = sub_domain->get_myrank();
+  int nproc  = sub_domain->get_nproc();
 
   tp_init(&tp, NUM_THREADS_MAIN, "Main Threadpool");
 
@@ -415,7 +409,7 @@ int main(int argc, char **argv)
   //
   // set up dataio_utility class
   //
-  class dataio_silo_utility dataio("DOUBLE", &MCMD);
+  class dataio_silo_utility dataio("DOUBLE", &sub_domain);
 
   //
   // Get list of files to read:
@@ -465,7 +459,7 @@ int main(int argc, char **argv)
   // grid to set up.  If nproc==1, then this sets the local domain to
   // be the full domain.
   //
-  MCMD.decomposeDomain();
+  sub_domain.decomposeDomain();
   if (err) rep.error("main: failed to decompose domain!", err);
 
 
@@ -478,7 +472,7 @@ int main(int argc, char **argv)
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
-  SimSetup->setup_grid(&grid, &MCMD);
+  SimSetup->setup_grid(&grid, &sub_domain);
   if (!grid) rep.error("Grid setup failed", grid);
   cout << "\t\tg=" << grid << "\tDX = " << grid->DX() << "\n";
   double delr = grid->DX();
@@ -826,9 +820,6 @@ int main(int argc, char **argv)
 
   delete MP;
   MP = 0;
-
-  delete COMM;
-  COMM = 0;
 
   return 0;
 }

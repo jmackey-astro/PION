@@ -1,7 +1,7 @@
-/// \file comm_mpi.cpp
+/// \file Sub_domain.cpp
 ///
-/// \brief Contains comms class for multi-process communication using
-/// the Message Passing Interface (MPI).
+/// \brief Contains Sub_domain class functions for multi-process communication
+/// using the Message Passing Interface (MPI).
 ///
 /// \author Jonathan Mackey
 /// \date 2009-01-23.
@@ -10,7 +10,7 @@
 ///
 /// Modifications:\n
 /// - 2010-02-03 JM: changed variable name (used 'i' twice in
-///    function). comm_mpi::receive_double_data() wasn't checking
+///    function). Sub_domain::receive_double_data() wasn't checking
 ///    that I got the number of elements expected either, so I fixed
 ///    that.
 /// - 2010.11.15 JM: replaced endl with c-style newline chars.
@@ -29,114 +29,21 @@
 ///    boundaries).
 
 #ifdef PARALLEL
-#ifdef USE_MPI
-
-//#define TEST_COMMS
-
-#include "constants.h"
-#include "defines/functionality_flags.h"
-#include "defines/testing_flags.h"
 
 #include "tools/command_line_interface.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
 
-#include "comms/comm_mpi.h"
-
 #include <sstream>
+
+#include "sub_domain.h"
+
 using namespace std;
 
-class comms_base *COMM = new comm_mpi();
-
 // ##################################################################
 // ##################################################################
 
-comm_mpi::comm_mpi()
-{
-#ifdef TEST_COMMS
-  cout << "*** comm_mpi constructor. ***\n";
-#endif
-  myrank = -1;
-  nproc  = -1;
-}
-
-// ##################################################################
-// ##################################################################
-
-comm_mpi::~comm_mpi()
-{
-#ifdef TEST_COMMS
-  cout << "*** comm_mpi  destructor. ***\n";
-#endif
-  finalise();
-}
-
-// ##################################################################
-// ##################################################################
-
-int comm_mpi::init(
-    int *argc,    ///< number of program arguments.
-    char ***argv  ///< character list of arguments.
-)
-{
-  int err = MPI_Init(argc, argv);
-  if (err) {
-    cerr << "error!!!"
-         << "\n";
-    MPI_Abort(MPI_COMM_WORLD, err);
-  }
-
-  err += MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-  err += MPI_Comm_size(MPI_COMM_WORLD, &nproc);
-  if (err) {
-    cerr << "Error!!! couldn't get rank/nproc.\n";
-    MPI_Abort(MPI_COMM_WORLD, err);
-  }
-
-  if (myrank == 0) cout << "(pion)  comm_mpi: nproc = " << nproc << "\n";
-
-  return 0;
-}
-
-// ##################################################################
-// ##################################################################
-
-int comm_mpi::get_rank_nproc(
-    int *r,  ///< rank.
-    int *n   ///< nproc
-)
-{
-  *r = myrank;
-  *n = nproc;
-#ifdef TEST_COMMS
-  cout << "comm_mpi::get_rank_nproc():  rank: " << myrank;
-  cout << " of nproc: " << nproc << "\n";
-#endif
-  return 0;
-}
-
-// ##################################################################
-// ##################################################################
-
-int comm_mpi::finalise()
-{
-  MPI_Barrier(MPI_COMM_WORLD);
-#ifdef TEST_COMMS
-  int i = -1;
-  cout << "comm_mpi::finalise():  rank: ";
-  MPI_Comm_rank(MPI_COMM_WORLD, &i);
-  cout << i << " nproc: ";
-  MPI_Comm_size(MPI_COMM_WORLD, &i);
-  cout << i << "\n";
-#endif
-  MPI_Finalize();
-  return 0;
-}
-
-// ##################################################################
-// ##################################################################
-
-int comm_mpi::abort()
+int Sub_domain::abort()
 {
   MPI_Abort(MPI_COMM_WORLD, 999);
   return 0;
@@ -145,7 +52,7 @@ int comm_mpi::abort()
 // ##################################################################
 // ##################################################################
 
-int comm_mpi::barrier(const std::string)
+int Sub_domain::barrier(const std::string)
 {
   MPI_Barrier(MPI_COMM_WORLD);
   return 0;
@@ -154,10 +61,10 @@ int comm_mpi::barrier(const std::string)
 // ##################################################################
 // ##################################################################
 
-double comm_mpi::global_operation_double(
+double Sub_domain::global_operation_double(
     const string s,  ///< Either Max, Min, or Sum
     const double d   ///< this process's max/min value.
-)
+    ) const
 {
   double local = d, global = 0.0;
   int err = 0;
@@ -178,11 +85,12 @@ double comm_mpi::global_operation_double(
         MPI_Allreduce(&local, &global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   }
   else
-    rep.error("comm_mpi:global_operation_double: Bad identifier", s);
+    rep.error("Sub_domain:global_operation_double: Bad identifier", s);
 
   if (err)
     rep.error(
-        "comm_mpi:global_operation_double: MPI call returned abnormally", err);
+        "Sub_domain:global_operation_double: MPI call returned abnormally",
+        err);
 
   return global;
 }
@@ -190,11 +98,11 @@ double comm_mpi::global_operation_double(
 // ##################################################################
 // ##################################################################
 
-void comm_mpi::global_op_double_array(
+void Sub_domain::global_op_double_array(
     const std::string s,  ///< MAX,MIN,SUM
     const size_t Nel,     ///< Number of elements in array.
     double *data          ///< pointer to this process's data array.
-)
+    ) const
 {
   int err = 0;
   double op_data[Nel];
@@ -221,11 +129,11 @@ void comm_mpi::global_op_double_array(
         MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   }
   else
-    rep.error("comm_mpi:global_op_double_array: Bad identifier", s);
+    rep.error("Sub_domain:global_op_double_array: Bad identifier", s);
 
   if (err)
     rep.error(
-        "comm_mpi:global_op_double_array: MPI call returned abnormally", err);
+        "Sub_domain:global_op_double_array: MPI call returned abnormally", err);
 
   for (size_t v = 0; v < Nel; v++)
     data[v] = op_data[v];
@@ -235,12 +143,12 @@ void comm_mpi::global_op_double_array(
 // ##################################################################
 // ##################################################################
 
-int comm_mpi::broadcast_data(
+int Sub_domain::broadcast_data(
     const int sender,        ///< rank of sender.
     const std::string type,  ///< Type of data INT,DOUBLE,etc.
     const int n_el,          ///< number of elements
     void *data               ///< pointer to data.
-)
+    ) const
 {
   int err = 0;
   if (type == "DOUBLE") {
@@ -263,7 +171,7 @@ int comm_mpi::broadcast_data(
 // ##################################################################
 // ##################################################################
 
-int comm_mpi::send_cell_data(
+int Sub_domain::send_cell_data(
     const int to_rank,     ///< rank to send to.
     std::list<cell *> *l,  ///< list of cells to get data from.
     long int nc,           ///< number of cells in list (extra checking!)
@@ -298,8 +206,8 @@ int comm_mpi::send_cell_data(
                  + sizeof((*c)->id);
   long int totalsize = 0;
   totalsize          = sizeof(long int) + nc * unitsize;
-#ifdef TEST_COMMS
-  cout << "comm_mpi::send_cell_data() Send buffer unitsize= " << unitsize;
+#ifndef NDEBUG
+  cout << "Sub_domain::send_cell_data() Send buffer unitsize= " << unitsize;
   cout << " total size = " << totalsize << "\n";
   cout.flush();
 #endif
@@ -334,7 +242,7 @@ int comm_mpi::send_cell_data(
         reinterpret_cast<void *>(send_buff), totalsize, &position,
         MPI_COMM_WORLD);
 
-#ifdef TEST_COMMS
+#ifndef NDEBUG
     // rep.printVec("cpos",(*c)->pos,ndim);
     // rep.printVec("P ",(*c)->P,nvar);
     // rep.printVec("Ph",(*c)->Ph,nvar);
@@ -382,9 +290,9 @@ int comm_mpi::send_cell_data(
   si->to_rank   = to_rank;
   si->data      = reinterpret_cast<void *>(send_buff);
   si->type      = COMM_CELLDATA;
-  comm_mpi::sent_list.push_back(si);
+  sent_list.push_back(si);
 
-#ifdef TEST_COMMS
+#ifndef NDEBUG
   // rep.printVec("send_buff",reinterpret_cast<pion_flt *>(send_buff),113);
 #endif
 
@@ -396,8 +304,8 @@ int comm_mpi::send_cell_data(
       &(si->request));
   if (err) rep.error("MPI_Send failed", err);
 
-#ifdef TEST_COMMS
-  cout << "comm_mpi::send_cell_data: sending " << position;
+#ifndef NDEBUG
+  cout << "Sub_domain::send_cell_data: sending " << position;
   cout << " bytes in buffer size: " << totalsize << " to rank ";
   cout << to_rank << "\n";
   cout.flush();
@@ -416,13 +324,13 @@ int comm_mpi::send_cell_data(
 // ##################################################################
 // ##################################################################
 
-int comm_mpi::wait_for_send_to_finish(
+int Sub_domain::wait_for_send_to_finish(
     string &id  ///< identifier for the send we are waiting on.
 )
 {
-#ifdef TEST_COMMS
+#ifndef NDEBUG
   cout << "rank: " << myrank
-       << "  comm_mpi::wait_for_send_to_finish() starting\n";
+       << "  Sub_domain::wait_for_send_to_finish() starting\n";
   // cout <<"   send_id = "<<id<<"\n";
   cout.flush();
 #endif  // TEST_COMMS
@@ -433,9 +341,9 @@ int comm_mpi::wait_for_send_to_finish(
   list<sent_info *>::iterator i;
   struct sent_info *si = 0;
 
-#ifdef TEST_COMMS
+#ifndef NDEBUG
   cout << "rank: " << myrank;
-  cout << "  comm_mpi::wait_for_send_to_finish() ";
+  cout << "  Sub_domain::wait_for_send_to_finish() ";
   cout << " finding in list, ";
   cout << "send id=" << id << "\n";
 #endif  // TEST_COMMS
@@ -443,7 +351,7 @@ int comm_mpi::wait_for_send_to_finish(
   for (i = sent_list.begin(); i != sent_list.end(); ++i) {
     si = (*i);
     el++;
-#ifdef TEST_COMMS
+#ifndef NDEBUG
     cout << "\t\t el=" << el << ", id = " << si->id << "\n";
     cout.flush();
 #endif  // TEST_COMMS
@@ -451,9 +359,9 @@ int comm_mpi::wait_for_send_to_finish(
   }
   if (i == sent_list.end()) rep.error("Failed to find send with id:", id);
 
-#ifdef TEST_COMMS
+#ifndef NDEBUG
   cout << "found send id=" << si->id << " and looking for id=" << id << "\n";
-  // cout <<"rank: "<<myrank<<"  comm_mpi::wait_for_send_to_finish() found
+  // cout <<"rank: "<<myrank<<"  Sub_domain::wait_for_send_to_finish() found
   // this send.\n";
 #endif  // TEST_COMMS
 
@@ -462,8 +370,8 @@ int comm_mpi::wait_for_send_to_finish(
   //
   MPI_Status status;
 
-#ifdef TEST_COMMS
-  // cout <<"rank: "<<myrank<<"  comm_mpi::wait_for_send_to_finish() waiting
+#ifndef NDEBUG
+  // cout <<"rank: "<<myrank<<"  Sub_domain::wait_for_send_to_finish() waiting
   // for send.\n"; cout <<"request: "<<si->request<<" and address:
   // "<<&(si->request)<<"\n";
 #endif  // TEST_COMMS
@@ -471,16 +379,16 @@ int comm_mpi::wait_for_send_to_finish(
   int err = MPI_Wait(&(si->request), &status);
   if (err) rep.error("Waiting for send to complete!", err);
 
-#ifdef TEST_COMMS
+#ifndef NDEBUG
   cout << "rank: " << myrank
-       << "  comm_mpi::wait_for_send_to_finish() send has finished\n";
+       << "  Sub_domain::wait_for_send_to_finish() send has finished\n";
 #endif  // TEST_COMMS
 
   //
   // Now free the data, and remove the send from the list.
   //
-#ifdef TEST_COMMS
-  // cout <<"rank: "<<myrank<<"  comm_mpi::wait_for_send_to_finish() deleting
+#ifndef NDEBUG
+  // cout <<"rank: "<<myrank<<"  Sub_domain::wait_for_send_to_finish() deleting
   // send record\n";
 #endif  // TEST_COMMS
 
@@ -497,9 +405,9 @@ int comm_mpi::wait_for_send_to_finish(
   si = mem.myfree(si);
   sent_list.erase(i);
 
-#ifdef TEST_COMMS
+#ifndef NDEBUG
   cout << "rank: " << myrank;
-  cout << "  comm_mpi::wait_for_send_to_finish() returning";
+  cout << "  Sub_domain::wait_for_send_to_finish() returning";
   cout << endl;
 #endif  // TEST_COMMS
   return 0;
@@ -508,7 +416,7 @@ int comm_mpi::wait_for_send_to_finish(
 // ##################################################################
 // ##################################################################
 
-int comm_mpi::look_for_data_to_receive(
+int Sub_domain::look_for_data_to_receive(
     int *from_rank,      ///< rank of sender
     string &id,          ///< identifier for receive.
     int *recv_tag,       ///< comm_tag associated with data.
@@ -517,9 +425,9 @@ int comm_mpi::look_for_data_to_receive(
 )
 {
 
-#ifdef TEST_COMMS
+#ifndef NDEBUG
   cout << "rank: " << myrank;
-  cout << "  comm_mpi::look_for_data_to_receive() starting\n";
+  cout << "  Sub_domain::look_for_data_to_receive() starting\n";
 #endif  // TEST_COMMS
   //
   // Create a new received info record.
@@ -532,9 +440,9 @@ int comm_mpi::look_for_data_to_receive(
     rep.error("only know two types of data to look for!", type);
   ri->type = type;
 
-#ifdef TEST_COMMS
+#ifndef NDEBUG
   cout << "rank: " << myrank;
-  cout << "  comm_mpi::look_for_data_to_receive() looking for source";
+  cout << "  Sub_domain::look_for_data_to_receive() looking for source";
   cout << " for comm_tag: " << comm_tag << "\n";
   cout.flush();
 
@@ -571,9 +479,9 @@ int comm_mpi::look_for_data_to_receive(
         "looking for specific rank but got different", ri->status.MPI_SOURCE);
   }
 
-#ifdef TEST_COMMS
+#ifndef NDEBUG
   cout << "rank: " << myrank;
-  cout << "  comm_mpi::look_for_data_to_receive() found data from ";
+  cout << "  Sub_domain::look_for_data_to_receive() found data from ";
   cout << "rank " << *from_rank << ", parsing...\n";
   cout.flush();
 #endif  // TEST_COMMS
@@ -590,8 +498,8 @@ int comm_mpi::look_for_data_to_receive(
   id = temp.str();
   temp.str("");
 
-#ifdef TEST_COMMS
-  cout << "comm_mpi::look_for_data_to_receive: found data from ";
+#ifndef NDEBUG
+  cout << "Sub_domain::look_for_data_to_receive: found data from ";
   cout << *from_rank << " with tag:" << *recv_tag << "\n";
   cout.flush();
 #endif  // TEST_COMMS
@@ -601,10 +509,10 @@ int comm_mpi::look_for_data_to_receive(
   ri->id        = id;
   ri->comm_tag  = *recv_tag;
   ri->from_rank = *from_rank;
-  comm_mpi::recv_list.push_back(ri);
+  recv_list.push_back(ri);
 
-#ifdef TEST_COMMS
-  cout << "comm_mpi::look_for_data_to_receive: returning.\n";
+#ifndef NDEBUG
+  cout << "Sub_domain::look_for_data_to_receive: returning.\n";
   cout.flush();
 #endif  // TEST_COMMS
 
@@ -614,7 +522,7 @@ int comm_mpi::look_for_data_to_receive(
 // ##################################################################
 // ##################################################################
 
-int comm_mpi::receive_cell_data(
+int Sub_domain::receive_cell_data(
     const int from_rank,   ///< rank of process we are receiving from.
     std::list<cell *> *l,  ///< list of cells to get data for.
     const long int nc,     ///< number of cells in list (extra checking!)
@@ -626,15 +534,15 @@ int comm_mpi::receive_cell_data(
 {
   int err = 0;
 
-#ifdef TEST_COMMS
-  cout << "comm_mpi::receive_cell_data: starting.\n";
+#ifndef NDEBUG
+  cout << "Sub_domain::receive_cell_data: starting.\n";
 #endif  // TEST_COMMS
 
   //
   // Find the recv in the list of active receives.
   //
-#ifdef TEST_COMMS
-  cout << "comm_mpi::receive_cell_data: recv_list size=" << recv_list.size()
+#ifndef NDEBUG
+  cout << "Sub_domain::receive_cell_data: recv_list size=" << recv_list.size()
        << "\n";
   cout.flush();
 #endif  // TEST_COMMS
@@ -650,9 +558,9 @@ int comm_mpi::receive_cell_data(
   }
   if (iget == recv_list.end()) rep.error("Failed to find recv with id:", id);
 
-#ifdef TEST_COMMS
+#ifndef NDEBUG
   cout << "found recv id=" << info->id << " and looking for id=" << id << "\n";
-  cout << "comm_mpi::receive_cell_data: found recv id\n";
+  cout << "Sub_domain::receive_cell_data: found recv id\n";
   cout.flush();
 #endif  // TEST_COMMS
 
@@ -669,8 +577,8 @@ int comm_mpi::receive_cell_data(
     // int MPI_Get_count(MPI_Status *status, MPI_Datatype datatype, int
     // *count)
     //
-#ifdef TEST_COMMS
-  cout << "comm_mpi::receive_cell_data: getting size of buffer.\n";
+#ifndef NDEBUG
+  cout << "Sub_domain::receive_cell_data: getting size of buffer.\n";
   cout.flush();
 #endif  // TEST_COMMS
 
@@ -678,8 +586,8 @@ int comm_mpi::receive_cell_data(
   err += MPI_Get_count(&(info->status), MPI_PACKED, &ct);
   if (err) rep.error("getting size of message to receive", err);
 
-#ifdef TEST_COMMS
-  cout << "comm_mpi::receive_cell_data: buffer is " << ct << " bytes.\n.";
+#ifndef NDEBUG
+  cout << "Sub_domain::receive_cell_data: buffer is " << ct << " bytes.\n.";
   cout.flush();
 #endif  // TEST_COMMS
 
@@ -696,8 +604,8 @@ int comm_mpi::receive_cell_data(
   // int MPI_Recv(void* buf, int count, MPI_Datatype datatype, int source, int
   // tag, MPI_Comm comm, MPI_Status *status)
   //
-#ifdef TEST_COMMS
-  cout << "comm_mpi::receive_cell_data: receiving buffer of ";
+#ifndef NDEBUG
+  cout << "Sub_domain::receive_cell_data: receiving buffer of ";
   cout << "data from rank: " << from_rank << "\n";
   cout.flush();
 #endif  // TEST_COMMS
@@ -706,7 +614,7 @@ int comm_mpi::receive_cell_data(
       buf, ct, MPI_PACKED, from_rank, comm_tag, MPI_COMM_WORLD,
       &(info->status));
   if (err) rep.error("MPI_Recv failed", err);
-#ifdef TEST_COMMS
+#ifndef NDEBUG
   cout << "\tcomm_receive_any_data: status: " << info->status.MPI_SOURCE;
   cout << ", " << info->status.MPI_TAG << ", ct=" << ct << "\n";
   cout.flush();
@@ -718,8 +626,8 @@ int comm_mpi::receive_cell_data(
   //   int MPI_Unpack(void* inbuf, int insize, int *position, void *outbuf,
   //   int outcount, MPI_Datatype datatype, MPI_Comm comm)
 
-#ifdef TEST_COMMS
-  cout << "comm_mpi::receive_cell_data: getting number of cells received\n";
+#ifndef NDEBUG
+  cout << "Sub_domain::receive_cell_data: getting number of cells received\n";
   cout.flush();
 #endif  // TEST_COMMS
 
@@ -728,21 +636,21 @@ int comm_mpi::receive_cell_data(
 
   err = MPI_Unpack(buf, ct, &position, &ncell, 1, MPI_LONG, MPI_COMM_WORLD);
   if (err) rep.error("Unpack", err);
-#ifdef TEST_COMMS
-  cout << "comm_mpi::receive_cell_data: got " << ncell << " cells.\n";
+#ifndef NDEBUG
+  cout << "Sub_domain::receive_cell_data: got " << ncell << " cells.\n";
   cout.flush();
 #endif  // TEST_COMMS
 
   if (ncell != static_cast<int>(l->size()) || (ncell != nc)) {
-    cerr << myrank << "\tcomm_mpi:recv: length of data = " << l->size();
+    cerr << myrank << "\tSub_domain:recv: length of data = " << l->size();
     cerr << " or we're told it's " << nc << "\n";
-    cerr << myrank << "\tcomm_mpi:recv: cells received = " << ncell << "\n";
-    cerr << myrank << "\tcomm_mpi:recv: Bugging out!\n";
+    cerr << myrank << "\tSub_domain:recv: cells received = " << ncell << "\n";
+    cerr << myrank << "\tSub_domain:recv: Bugging out!\n";
     return (-99);
   }
 
-#ifdef TEST_COMMS
-  cout << myrank << "\tcomm_mpi:recv: got " << ncell
+#ifndef NDEBUG
+  cout << myrank << "\tSub_domain:recv: got " << ncell
        << " cells, as expected.\n";
   cout.flush();
 #endif  // TEST_COMMS
@@ -750,8 +658,8 @@ int comm_mpi::receive_cell_data(
   //
   // Allocate arrays to unpack data into.
   //
-#ifdef TEST_COMMS
-  cout << "comm_mpi::receive_cell_data: allocating arrays to unpack data "
+#ifndef NDEBUG
+  cout << "Sub_domain::receive_cell_data: allocating arrays to unpack data "
           "into.\n";
   cout.flush();
 #endif  // TEST_COMMS
@@ -764,8 +672,8 @@ int comm_mpi::receive_cell_data(
   //
   // Data should come in in the order the boundary cells are listed in.
   //
-#ifdef TEST_COMMS
-  cout << "comm_mpi::receive_cell_data: unpacking data into list of cells.\n";
+#ifndef NDEBUG
+  cout << "Sub_domain::receive_cell_data: unpacking data into list of cells.\n";
   cout.flush();
 #endif  // TEST_COMMS
 
@@ -774,24 +682,24 @@ int comm_mpi::receive_cell_data(
   list<cell *>::iterator c = l->begin();
 
   for (int i = 0; i < ncell; i++) {
-#ifdef TEST_COMMS
-    // cout <<"comm_mpi::receive_cell_data: unpacking cell "<<i<<".\n";
+#ifndef NDEBUG
+    // cout <<"Sub_domain::receive_cell_data: unpacking cell "<<i<<".\n";
     // cout.flush();
 #endif  // TEST_COMMS
     CI.get_ipos(*c, cpos);
-#ifdef TEST_COMMS
+#ifndef NDEBUG
     // cout <<"position="<<position<<" : cell id = "<<(*c)->id<<" : ";
     // rep.printVec("cpos",cpos,ndim);
     // cout.flush();
 #endif  // TEST_COMMS
     err += MPI_Unpack(buf, ct, &position, &c_id, 1, MPI_LONG, MPI_COMM_WORLD);
-#ifdef TEST_COMMS
+#ifndef NDEBUG
     // cout <<"position="<<position<<" : ";
     // cout <<"cell id = "<<c_id<<"\n";
     // cout.flush();
 #endif  // TEST_COMMS
     err += MPI_Unpack(buf, ct, &position, ipos, ndim, MPI_INT, MPI_COMM_WORLD);
-#ifdef TEST_COMMS
+#ifndef NDEBUG
     // cout <<"position="<<position<<" : ";
     // rep.printVec("recvd pos",ipos,ndim);
     // cout.flush();
@@ -803,7 +711,7 @@ int comm_mpi::receive_cell_data(
 #else
 #error "MUST define either PION_DATATYPE_FLOAT or PION_DATATYPE_DOUBLE"
 #endif
-#ifdef TEST_COMMS
+#ifndef NDEBUG
     // rep.printVec("\tlocal",cpos,ndim);
     // cout <<"position="<<position<<" : ";
     // rep.printVec("data var",p,nvar);
@@ -827,7 +735,7 @@ int comm_mpi::receive_cell_data(
       //    cout <<"; distance="<<ipos[v]-cpos[v]<<"\n";
       //    rep.error("positions do not match",ipos[v]);
       //  }
-#ifdef TEST_COMMS
+#ifndef NDEBUG
       // rep.printVec("\trecvd",ipos,ndim);
       // rep.printVec("\tlocal",cpos,ndim);
       // cout.flush();
@@ -841,8 +749,8 @@ int comm_mpi::receive_cell_data(
   //  cout <<myrank<<"\tcomm_unpack_data: length of data in boundary =
   //  "<<b->data.size()<<"\n"; cout <<myrank<<"\tcomm_unpack_data: cells
   //  received for boundary= "<<ncell<<"\n";
-#ifdef TEST_COMMS
-  cout << "comm_mpi::receive_cell_data: checking we got the right amount of "
+#ifndef NDEBUG
+  cout << "Sub_domain::receive_cell_data: checking we got the right amount of "
           "data.\n";
 #endif  // TEST_COMMS
   if (c != l->end()) {
@@ -854,8 +762,8 @@ int comm_mpi::receive_cell_data(
     //
     // Free memory and delete entry from recv_list
     //
-#ifdef TEST_COMMS
-  cout << "comm_mpi::receive_cell_data: freeing memory\n";
+#ifndef NDEBUG
+  cout << "Sub_domain::receive_cell_data: freeing memory\n";
 #endif  // TEST_COMMS
   if (recv_list.size() == 1) {
     recv_list.pop_front();
@@ -867,8 +775,8 @@ int comm_mpi::receive_cell_data(
   ipos = mem.myfree(ipos);
   p    = mem.myfree(p);
 
-#ifdef TEST_COMMS
-  cout << "comm_mpi::receive_cell_data: returning\n";
+#ifndef NDEBUG
+  cout << "Sub_domain::receive_cell_data: returning\n";
 #endif  // TEST_COMMS
   return 0;
 }
@@ -876,7 +784,7 @@ int comm_mpi::receive_cell_data(
 // ##################################################################
 // ##################################################################
 
-int comm_mpi::send_double_data(
+int Sub_domain::send_double_data(
     const int to_rank,    ///< rank to send to.
     const long int n_el,  ///< size of buffer, in number of doubles.
     const double *data,   ///< pointer to double array.
@@ -884,7 +792,7 @@ int comm_mpi::send_double_data(
     const int comm_tag    ///< comm_tag, to say what kind of send.
 )
 {
-  if (!data) rep.error("comm_mpi::send_double_data() null pointer!", data);
+  if (!data) rep.error("Sub_domain::send_double_data() null pointer!", data);
   int err = 0;
 
   //
@@ -914,7 +822,7 @@ int comm_mpi::send_double_data(
   id = temp.str();
   temp.str("");
   si->id = id;
-  comm_mpi::sent_list.push_back(si);
+  sent_list.push_back(si);
 
   //
   // Non-blocking send of data:
@@ -935,7 +843,7 @@ int comm_mpi::send_double_data(
 // ##################################################################
 // ##################################################################
 
-int comm_mpi::receive_double_data(
+int Sub_domain::receive_double_data(
     const int from_rank,  ///< rank of process we are receiving from.
     const int comm_tag,   ///< comm_tag: what sort of comm we are looking for
                           ///< (PER,MPI,etc.)
@@ -946,15 +854,15 @@ int comm_mpi::receive_double_data(
 )
 {
   int err = 0;
-#ifdef TEST_COMMS
-  cout << "comm_mpi::receive_double_data: starting.\n";
+#ifndef NDEBUG
+  cout << "Sub_domain::receive_double_data: starting.\n";
 #endif  // TEST_COMMS
 
   //
   // Find the recv in the list of active receives.
   //
-#ifdef TEST_COMMS
-  cout << "comm_mpi::receive_double_data: recv_list size=" << recv_list.size()
+#ifndef NDEBUG
+  cout << "Sub_domain::receive_double_data: recv_list size=" << recv_list.size()
        << "\n";
 #endif  // TEST_COMMS
   if (recv_list.empty())
@@ -967,9 +875,9 @@ int comm_mpi::receive_double_data(
     if (info->id == id) break;
   }
   if (iget == recv_list.end()) rep.error("Failed to find recv with id:", id);
-#ifdef TEST_COMMS
+#ifndef NDEBUG
   cout << "found recv id=" << info->id << " and looking for id=" << id << "\n";
-  cout << "comm_mpi::receive_double_data: found recv id\n";
+  cout << "Sub_domain::receive_double_data: found recv id\n";
 #endif  // TEST_COMMS
 
   //
@@ -987,18 +895,19 @@ int comm_mpi::receive_double_data(
     // int MPI_Get_count(MPI_Status *status, MPI_Datatype datatype, int
     // *count)
     //
-#ifdef TEST_COMMS
-  cout << "comm_mpi::receive_double_data: getting size of buffer.\n";
+#ifndef NDEBUG
+  cout << "Sub_domain::receive_double_data: getting size of buffer.\n";
 #endif  // TEST_COMMS
   int ct = 0;
   err += MPI_Get_count(&(info->status), MPI_DOUBLE, &ct);
   if (err) rep.error("getting size of message to receive", err);
-#ifdef TEST_COMMS
-  cout << "comm_mpi::receive_double_data: buffer is " << ct << " elements.\n.";
+#ifndef NDEBUG
+  cout << "Sub_domain::receive_double_data: buffer is " << ct
+       << " elements.\n.";
 #endif  // TEST_COMMS
   if (ct < 0) rep.error("bad buffer size count", ct);
   if (ct != nel) {
-    cout << "comm_mpi::receive_double_data: getting " << ct
+    cout << "Sub_domain::receive_double_data: getting " << ct
          << " doubles, but expecting " << nel << "\n";
     rep.error("Getting wrong amount of data", ct - nel);
   }
@@ -1008,9 +917,10 @@ int comm_mpi::receive_double_data(
   // int MPI_Recv(void* buf, int count, MPI_Datatype datatype, int source, int
   // tag, MPI_Comm comm, MPI_Status *status)
   //
-#ifdef TEST_COMMS
-  cout << "comm_mpi::receive_double_data: receiving buffer of data from rank: "
-       << from_rank << "\n";
+#ifndef NDEBUG
+  cout
+      << "Sub_domain::receive_double_data: receiving buffer of data from rank: "
+      << from_rank << "\n";
 #endif  // TEST_COMMS
   void *buf = data;
   err += MPI_Recv(
@@ -1023,8 +933,8 @@ int comm_mpi::receive_double_data(
     //
     // Free memory and delete entry from recv_list
     //
-#ifdef TEST_COMMS
-  cout << "comm_mpi::receive_double_data: freeing memory\n";
+#ifndef NDEBUG
+  cout << "Sub_domain::receive_double_data: freeing memory\n";
 #endif  // TEST_COMMS
   if (recv_list.size() == 1) {
     recv_list.pop_front();
@@ -1040,7 +950,7 @@ int comm_mpi::receive_double_data(
 // ##################################################################
 
 #ifdef SILO
-int comm_mpi::silo_pllel_init(
+int Sub_domain::silo_pllel_init(
     const int num_files,           ///< number of files to write
     const std::string iotype,      ///< READ or WRITE
     const std::string session_id,  ///< identifier for this read/write.
@@ -1048,8 +958,8 @@ int comm_mpi::silo_pllel_init(
     int *rank_in_group             ///< rank in group (nth proc in file i).
 )
 {
-  comm_mpi::silo_id     = session_id;
-  comm_mpi::bat         = 0;
+  silo_id               = session_id;
+  bat                   = 0;
   int tag               = 0;
   PMPIO_iomode_t iomode = PMPIO_READ;
   if (iotype == "READ") {
@@ -1080,16 +990,16 @@ int comm_mpi::silo_pllel_init(
 // ##################################################################
 // ##################################################################
 
-int comm_mpi::silo_pllel_wait_for_file(
+int Sub_domain::silo_pllel_wait_for_file(
     const std::string id,        ///< identifier for this read/write.
     const std::string filename,  ///< File Name
     const std::string dir,       ///< Directory to open in file.
     DBfile **dbfile              ///< pointer that file gets returned in.
 )
 {
-#ifdef TEST_COMMS
-  cout << "comm_mpi::silo_pllel_wait_for_file() opening file: ";
-  cout << filename << " into directory: " << dir << "\n";
+#ifndef NDEBUG
+  cout << "Sub_domain::silo_pllel_wait_for_file() opening file: ";
+  cout << filename << " into directory: " << dir << endl;
 #endif
 
   if (id != silo_id) rep.error(id, silo_id);
@@ -1105,15 +1015,17 @@ int comm_mpi::silo_pllel_wait_for_file(
   return 0;
 }
 
-int comm_mpi::silo_pllel_finish_with_file(
+int Sub_domain::silo_pllel_finish_with_file(
     const std::string id,  ///< identifier for this read/write.
     DBfile **dbfile        ///< pointer to file we have been working on.
 )
 {
-#ifdef TEST_COMMS
-  cout << "comm_mpi::silo_pllel_finish_with_file() passing file on to next "
-          "proc.\n";
+#ifndef NDEBUG
+  cout << "Sub_domain::silo_pllel_finish_with_file() passing file on to next "
+          "proc."
+       << endl;
 #endif
+
   if (id != silo_id) rep.error(id, silo_id);
   if (!(*dbfile)) rep.error("file pointer is null!", *dbfile);
 
@@ -1128,12 +1040,12 @@ int comm_mpi::silo_pllel_finish_with_file(
 // ##################################################################
 // ##################################################################
 
-void comm_mpi::silo_pllel_get_ranks(
+void Sub_domain::silo_pllel_get_ranks(
     const std::string id,  ///< identifier for this read/write.
     const int proc,        ///< processor rank
     int *group,            ///< rank of group processor is in.
     int *rank              ///< rank of processor within group.
-)
+    ) const
 {
   if (id != silo_id) rep.error(id, silo_id);
 
@@ -1147,5 +1059,4 @@ void comm_mpi::silo_pllel_get_ranks(
 // ##################################################################
 // ##################################################################
 
-#endif  // USE_MPI
 #endif  // PARALLEL

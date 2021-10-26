@@ -77,14 +77,14 @@ UniformGridParallel::UniformGridParallel(
     int nd,
     int nv,
     int eqt,
-    int nbc,         ///< number of boundary cells to use.
-    double *xn,      ///< array of minimum values of x,y,z for this grid.
-    double *xp,      ///< array of maximum values of x,y,z for this grid.
-    int *nc,         ///< array of number of cells in x,y,z directions.
-    double *lev_xn,  // level xmin
-    double *lev_xp,  // level xmax
-    double *sim_xn,  ///< array of min. x/y/z for full simulation.
-    double *sim_xp   ///< array of max. x/y/z for full simulation.
+    int nbc,           ///< number of boundary cells to use.
+    const double *xn,  ///< array of minimum values of x,y,z for this grid.
+    const double *xp,  ///< array of maximum values of x,y,z for this grid.
+    const int *nc,     ///< array of number of cells in x,y,z directions.
+    double *lev_xn,    // level xmin
+    double *lev_xp,    // level xmax
+    double *sim_xn,    ///< array of min. x/y/z for full simulation.
+    double *sim_xp     ///< array of max. x/y/z for full simulation.
     ) :
     VectorOps_Cart(nd),
     UniformGrid(nd, nv, eqt, nbc, xn, xp, nc, lev_xn, lev_xp, sim_xn, sim_xp)
@@ -129,9 +129,9 @@ uniform_grid_cyl_parallel::uniform_grid_cyl_parallel(
     int nv,
     int eqt,
     int nbc,  ///< number of boundary cells to use.
-    double *xn,
-    double *xp,
-    int *nc,
+    const double *xn,
+    const double *xp,
+    const int *nc,
     double *lev_xn,  // level xmin
     double *lev_xp,  // level xmax
     double *sim_xn,  ///< array of min. x/y/z for full simulation.
@@ -205,9 +205,9 @@ uniform_grid_sph_parallel::uniform_grid_sph_parallel(
     int nv,
     int eqt,
     int nbc,  ///< number of boundary cells to use.
-    double *xn,
-    double *xp,
-    int *nc,
+    const double *xn,
+    const double *xp,
+    const int *nc,
     double *lev_xn,  // level xmin
     double *lev_xp,  // level xmax
     double *sim_xn,  ///< array of min. x/y/z for full simulation.

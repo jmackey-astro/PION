@@ -241,10 +241,10 @@ protected:
       class SimParams &,  ///< pointer to simulation parameters
       fitsfile *,         ///< fitsfile pointer.
       string,             ///< extname of hdu to read from.
-      double *,           ///<  vector local xmin (subdomain).
-      double *,           ///< vector global xmin (full domain).
-      int *,              ///< vector npix to read in each direction.
-      long int            ///< total npix to read.
+      const double *,     ///<  vector local xmin (subdomain).
+      const double *,     ///< vector global xmin (full domain).
+      const int *,        ///< vector npix to read in each direction.
+      const long int      ///< total npix to read.
   );
 };
 

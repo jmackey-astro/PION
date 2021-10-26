@@ -6,7 +6,7 @@
 /// - 2018.08.08 JM: moved code.
 
 #include "boundaries/periodic_boundaries_MPI.h"
-#include "decomposition/MCMD_control.h"
+#include "sub_domain/sub_domain.h"
 using namespace std;
 
 // ##################################################################
@@ -20,12 +20,12 @@ int periodic_pllel_bc::BC_assign_PERIODIC(
 {
   //
   // For parallel grid, periodic data may be on a different proc.,
-  // which is already pointed to by ppar->ngbprocs[b->dir]
+  // which is already pointed to by ppar->get_neighbour_ranks(b->dir)
   // So I just have to call BC_assign_BCMPI and it will do the job.
-  int err                 = 0;
-  class MCMDcontrol *ppar = &(par.levels[level].MCMD);
-  if (ppar->ngbprocs[b->dir] < 0
-      || ppar->ngbprocs[b->dir] == ppar->get_myrank()) {
+  int err                = 0;
+  class Sub_domain *ppar = &(par.levels[level].sub_domain);
+  if (ppar->get_neighbour_rank(b->dir) < 0
+      || ppar->get_neighbour_rank(b->dir) == ppar->get_myrank()) {
     // cout <<"BC_assign_PERIODIC: non comm periodic in direction ";
     // cout <<b->dir<<"\n";
     err = periodic_bc::BC_assign_PERIODIC(par, level, grid, b);
@@ -52,13 +52,13 @@ int periodic_pllel_bc::BC_update_PERIODIC(
 {
   //
   // For parallel grid, periodic data can be on a different proc.,
-  // which is already pointed to by ppar->ngbprocs[b->dir]
+  // which is already pointed to by ppar->get_neighbour_rank(b->dir)
   // So I just have to call BC_update_BCMPI and it will do the job.
   //
-  int err                 = 0;
-  class MCMDcontrol *ppar = &(par.levels[level].MCMD);
-  if (ppar->ngbprocs[b->dir] < 0
-      || ppar->ngbprocs[b->dir] == ppar->get_myrank()) {
+  int err                = 0;
+  class Sub_domain *ppar = &(par.levels[level].sub_domain);
+  if (ppar->get_neighbour_rank(b->dir) < 0
+      || ppar->get_neighbour_rank(b->dir) == ppar->get_myrank()) {
 #ifndef NDEBUG
     cout << "BC_update_PERIODIC: non-communicating periodic BC in ";
     cout << "direction " << b->dir << "\n";

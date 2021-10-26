@@ -248,7 +248,7 @@ OBJECTS = file_status.o  \
         mem_manage.o \
         reporting.o \
         interpolate.o \
-        MCMD_control.o \
+        sub_domain.o \
         setup_fixed_grid.o \
         setup_fixed_grid_MPI.o \
         silo_dbl2flt.o \
@@ -311,18 +311,18 @@ constants.o: constants.cpp ${GLOBAL}
 timer.o: tools/timer.cpp tools/timer.h ${GLOBAL}
 command_line_interface.o:  tools/command_line_interface.cpp ${GLOBAL}
 
-comm_mpi.o: comm_mpi.cc comm_mpi.h comms.h
-comm_files.o: comm_files.cc comm_files.h comms.h ${GLOBAL}
+comm_mpi.o: comm_mpi.cc comm_mpi.h sub_domain_comms.h
+comm_files.o: comm_files.cc comm_files.h sub_domain_comms.h ${GLOBAL}
 
 uniform_grid.o: uniform_grid.cc uniform_grid.h ${GLOBAL} stellar_wind_BC.h
-uniform_grid_pllel.o: uniform_grid_pllel.cc uniform_grid.h ${GLOBAL} comms.h
+uniform_grid_pllel.o: uniform_grid_pllel.cc uniform_grid.h ${GLOBAL} sub_domain_comms.h
 stellar_wind_BC.o: stellar_wind_BC.cc stellar_wind_BC.h ${GLOBAL}
 
 VectorOps.o:           VectorOps.cc VectorOps.h uniform_grid.h ${GLOBAL}
 VectorOps_spherical.o: VectorOps_spherical.cc VectorOps_spherical.h VectorOps.h \
 		       uniform_grid.h ${GLOBAL}
 
-MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
+sub_domain.o: sub_domain.cpp sub_domain.h ${GLOBAL}
 
 setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
     grid_base_class.h uniform_grid.h
@@ -395,7 +395,7 @@ raytracer_SC.o: raytracer_SC.cc raytracer_SC.h ${GLOBAL} \
     uniform_grid.h raytracer_base.h
 
 raytracer_SC_pllel.o : raytracer_SC_pllel.cc raytracer_SC.h \
-    ${GLOBAL} uniform_grid.h comms.h raytracer_base.h
+    ${GLOBAL} uniform_grid.h sub_domain_comms.h raytracer_base.h
 
 ########################
 # Data I/O
@@ -409,15 +409,15 @@ dataio_silo.o:  dataio_silo.cc dataio_silo.h dataio.h ${GLOBAL} \
     solver_eqn_base.h file_status.h
 
 dataio_silo_MPI.o:    dataio_silo_MPI.cc dataio_silo.h dataio.h \
-    ${GLOBAL} comms.h file_status.h
+    ${GLOBAL} sub_domain_comms.h file_status.h
 
 readparams.o:	readparams.cc readparams.h ${GLOBAL}
 
 dataio_silo_MPI.o:    dataio_silo_MPI.cc dataio_silo.h dataio.h \
-    ${GLOBAL} comms.h file_status.h
+    ${GLOBAL} sub_domain_comms.h file_status.h
 
 dataio_silo_utility.o: dataio_silo_utility.cpp dataio_silo_utility.h\
-    ${GLOBAL} file_status.h dataio.h dataio_silo.h comms.h
+    ${GLOBAL} file_status.h dataio.h dataio_silo.h sub_domain_comms.h
 
 
 clean:

@@ -15,7 +15,6 @@
 
 #include "boundaries/NG_MPI_BC89flux.h"
 #include "boundaries/assign_update_bcs_NG_MPI.h"
-#include "decomposition/MCMD_control.h"
 #include "grid/grid_base_class.h"
 #include "grid/setup_NG_grid.h"
 #include "grid/setup_fixed_grid_MPI.h"

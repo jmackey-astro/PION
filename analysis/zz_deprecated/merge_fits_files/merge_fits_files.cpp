@@ -22,9 +22,9 @@
 #include "tools/timer.h"
 
 #include "dataIO/dataio_fits.h"
-#include "decomposition/MCMD_control.h"
 #include "grid/setup_fixed_grid_MPI.h"
 #include "grid/uniform_grid.h"
+#include "sub_domain/sub_domain.h"
 
 #include "fitsio.h"
 #include <sstream>
@@ -32,13 +32,7 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-
-  //
-  // First initialise MPI, even though this is a single processor
-  // piece of code.
-  //
-  int err = COMM->init(&argc, &argv);
-
+  int err = 0;
   // Get an input file, an output file, and a step.
   if (argc != 5) {
     cerr << "Error: must call as follows...\n";
@@ -51,24 +45,23 @@ int main(int argc, char **argv)
   string outfilebase = argv[3];
 
   //
-  // Also initialise the MCMD class with myrank and nproc.
+  // Also initialise the sub_domain class with myrank and nproc.
   // Get nproc from command-line (number of fits files for each
   // snapshot)
   //
-  int myrank = -1, nproc = -1;
-  COMM->get_rank_nproc(&myrank, &nproc);
-  nproc = atoi(argv[4]);
   class SimParams SimPM;
-  SimPM.levels.clear();
-  SimPM.levels.resize(1);
-  SimPM.levels[0].MCMD.set_myrank(myrank);
-  SimPM.levels[0].MCMD.set_nproc(nproc);
-  class MCMDcontrol *MCMD = &(SimPM.levels[0].MCMD);
+
+  class Sub_domain *sub_domain = &(SimPM.levels[0].sub_domain);
+
+  int nproc = atoi(argv[4]);
+
+  int myrank = sub_domain->get_myrank();
+  sub_domain->set_nproc(nproc);
 
   cout << "reading from file base " << infilebase << endl;
   cout << "Writing to file " << outfilebase << endl;
   // cout <<"Step between outputs is "<<step<<" timesteps.\n";
-  cout << "number of processors: " << MCMD->get_nproc() << "\n";
+  cout << "number of processors: " << sub_domain->get_nproc() << "\n";
   cout << "**********************************************\n";
   // Open two input files and output file.
   class DataIOFits dataio(SimPM);
@@ -148,10 +141,10 @@ int main(int argc, char **argv)
     //
     // This should set LocalXmin and Xmin/max/range/NG
     //
-    MCMD->set_myrank(0);
+    sub_domain->set_myrank(0);
     err = dataio.ReadHeader(infile, SimPM);
     if (err) rep.error("Didn't read header", err);
-    MCMD->decomposeDomain(SimPM.ndim, SimPM.levels[0]);
+    sub_domain->decomposeDomain(SimPM.ndim, SimPM.levels[0]);
 
     //
     // Outfile:
@@ -239,10 +232,10 @@ int main(int argc, char **argv)
     // place in oufile image.
     //
     cout << "\tNow copying infile hdus into outfile.\n";
-    for (int proc = 0; proc < MCMD->get_nproc(); proc++) {
+    for (int proc = 0; proc < sub_domain->get_nproc(); proc++) {
       cout << "\t\tproc " << proc << ": ";
-      MCMD->set_myrank(proc);
-      MCMD->decomposeDomain(SimPM.ndim, SimPM.levels[0]);
+      sub_domain->set_myrank(proc);
+      sub_domain->decomposeDomain(SimPM.ndim, SimPM.levels[0]);
       //
       // read infile header to get local ng/xmin/xmax
       //
@@ -259,8 +252,8 @@ int main(int argc, char **argv)
 
       err = dataio.ReadHeader(infile, SimPM);
       if (err) rep.error("Didn't read header", err);
-      MCMD->set_myrank(proc);
-      MCMD->decomposeDomain(SimPM.ndim, SimPM.levels[0]);
+      sub_domain->set_myrank(proc);
+      sub_domain->decomposeDomain(SimPM.ndim, SimPM.levels[0]);
 
       err = fits_open_file(&ffin, infile.c_str(), READONLY, &status);
       if (status) {
@@ -269,8 +262,8 @@ int main(int argc, char **argv)
       }
 
       double *array = 0;
-      cout << "MCMD->LocalNcell = " << MCMD->LocalNcell << "\n";
-      array = new double[MCMD->LocalNcell];
+      cout << "sub_domain->LocalNcell = " << sub_domain->LocalNcell << "\n";
+      array = new double[sub_domain->LocalNcell];
       if (!array) rep.error("mem alloc", array);
 
       for (int im = 2; im <= num; im++) {  // hdu1 is header.
@@ -291,19 +284,21 @@ int main(int argc, char **argv)
             new long int[SimPM.ndim];  // I think this is the increment in num.
                                        // pix. per read.
         long int npix = 1;
-        double dx     = MCMD->LocalRange[XX] / MCMD->LocalNG[XX];
+        double dx     = sub_domain->LocalRange[XX] / sub_domain->LocalNG[XX];
         for (int i = 0; i < SimPM.ndim; i++) {
           inc[i]  = 1;
           fpix[i] = 1;
-          lpix[i] = MCMD->LocalNG[i];  // It's inclusive: fpix,fpix+1,...,lpix
+          lpix[i] =
+              sub_domain->LocalNG[i];  // It's inclusive: fpix,fpix+1,...,lpix
           npix *= (lpix[i] - fpix[i] + 1);  // +1 because of previous line.
           //    cout <<"fpix[i],lpix[i] = "<<fpix[i]<<", "<<lpix[i]<<endl;
         }
-        if (npix != MCMD->LocalNcell) {
-          cout << "ncell = " << MCMD->LocalNcell << " and counted " << npix
-               << " cells.\n";
+        if (npix != sub_domain->LocalNcell) {
+          cout << "ncell = " << sub_domain->LocalNcell << " and counted "
+               << npix << " cells.\n";
           rep.error(
-              "Pixel counting failed in Image Read", npix - MCMD->LocalNcell);
+              "Pixel counting failed in Image Read",
+              npix - sub_domain->LocalNcell);
         }
         double nulval = -1.e99;
         int anynul    = 0;
@@ -320,20 +315,22 @@ int main(int argc, char **argv)
         //
         npix = 1;
         for (int i = 0; i < SimPM.ndim; i++) {
-          fpix[i] = static_cast<long int>(
-                        (MCMD->LocalXmin[i] - SimPM.Xmin[i]) / dx * 1.00000001)
-                    + 1;
-          lpix[i] = fpix[i] + MCMD->LocalNG[i]
+          fpix[i] =
+              static_cast<long int>(
+                  (sub_domain->LocalXmin[i] - SimPM.Xmin[i]) / dx * 1.00000001)
+              + 1;
+          lpix[i] = fpix[i] + sub_domain->LocalNG[i]
                     - 1;  // -1 because it's inclusive: fpix,pfix+1,...,lpix
           npix *= (lpix[i] - fpix[i] + 1);  // +1 because of previous line.
                                             //	   cout <<"fpix[i],lpix[i] =
                                             //"<<fpix[i]<<", "<<lpix[i]<<endl;
         }
-        if (npix != MCMD->LocalNcell) {
-          cout << "ncell = " << MCMD->LocalNcell << " and counted " << npix
-               << " cells.\n";
+        if (npix != sub_domain->LocalNcell) {
+          cout << "ncell = " << sub_domain->LocalNcell << " and counted "
+               << npix << " cells.\n";
           rep.error(
-              "Pixel counting failed in Image Write", npix - MCMD->LocalNcell);
+              "Pixel counting failed in Image Write",
+              npix - sub_domain->LocalNcell);
         }
         fits_write_subset(ffout, TDOUBLE, fpix, lpix, array, &status);
         if (status) fits_report_error(stderr, status);
@@ -366,11 +363,6 @@ int main(int argc, char **argv)
   cout << "\n***************************************************\n";
   // cout <<"couldn't find file "<<infile<<" for step "<<start<<"... assuming
   // i'm finished!\n";
-
-  if (COMM) {
-    delete COMM;
-    COMM = 0;
-  }
 
   return 0;
 }

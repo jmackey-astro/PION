@@ -19,12 +19,12 @@
 #include "tools/command_line_interface.h"
 #include "tools/reporting.h"
 
-#include "decomposition/MCMD_control.h"
 #include "grid/uniform_grid_pllel.h"
 #include "raytracing/raytracer_SC.h"
 #include "raytracing/raytracer_SC_pllel.h"
 #include "setup_fixed_grid.h"
 #include "setup_fixed_grid_MPI.h"
+#include "sub_domain/sub_domain.h"
 
 #include "dataIO/dataio_base.h"
 #include "dataIO/dataio_text.h"
@@ -72,8 +72,8 @@ int setup_fixed_grid_pllel::setup_grid(
   cout << "setup_fixed_grid_pllel: setting up parallel grid.\n";
 #endif
   cout << "(pion mpi) setting up grid\n";
-  class GridBaseClass **grid = &g[0];
-  class MCMDcontrol *MCMD    = &(SimPM.levels[0].MCMD);
+  class GridBaseClass **grid   = &g[0];
+  class Sub_domain *sub_domain = &(SimPM.levels[0].sub_domain);
 
   if (SimPM.gridType != 1) {
     SimPM.gridType = 1;
@@ -132,21 +132,24 @@ int setup_fixed_grid_pllel::setup_grid(
 
   if (SimPM.coord_sys == COORD_CRT) {
     *grid = new UniformGridParallel(
-        SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, MCMD->LocalXmin,
-        MCMD->LocalXmax, MCMD->LocalNG, SimPM.Xmin, SimPM.Xmax, SimPM.Xmin,
-        SimPM.Xmax);
+        SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
+        sub_domain->get_Xmin(), sub_domain->get_Xmax(),
+        sub_domain->get_directional_Ncells(), SimPM.Xmin, SimPM.Xmax,
+        SimPM.Xmin, SimPM.Xmax);
   }
   else if (SimPM.coord_sys == COORD_CYL) {
     *grid = new uniform_grid_cyl_parallel(
-        SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, MCMD->LocalXmin,
-        MCMD->LocalXmax, MCMD->LocalNG, SimPM.Xmin, SimPM.Xmax, SimPM.Xmin,
-        SimPM.Xmax);
+        SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
+        sub_domain->get_Xmin(), sub_domain->get_Xmax(),
+        sub_domain->get_directional_Ncells(), SimPM.Xmin, SimPM.Xmax,
+        SimPM.Xmin, SimPM.Xmax);
   }
   else if (SimPM.coord_sys == COORD_SPH) {
     *grid = new uniform_grid_sph_parallel(
-        SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, MCMD->LocalXmin,
-        MCMD->LocalXmax, MCMD->LocalNG, SimPM.Xmin, SimPM.Xmax, SimPM.Xmin,
-        SimPM.Xmax);
+        SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
+        sub_domain->get_Xmin(), sub_domain->get_Xmax(),
+        sub_domain->get_directional_Ncells(), SimPM.Xmin, SimPM.Xmax,
+        SimPM.Xmin, SimPM.Xmax);
   }
   else {
     rep.error("Bad Geometry in setup_grid()", SimPM.coord_sys);
@@ -227,8 +230,8 @@ int setup_fixed_grid_pllel::setup_raytracing(
     // set up regular tracer if simple one not already set up.
     //
     grid->RT = new raytracer_USC_pllel(
-        grid, MP, &SimPM, &(SimPM.levels[0].MCMD), SimPM.ndim, SimPM.coord_sys,
-        SimPM.nvar, SimPM.ftr, SimPM.RS.Nsources);
+        grid, MP, &SimPM, &(SimPM.levels[0].sub_domain), SimPM.ndim,
+        SimPM.coord_sys, SimPM.nvar, SimPM.ftr, SimPM.RS.Nsources);
     if (!grid->RT) rep.error("init raytracer error 2", grid->RT);
   }
 
@@ -401,7 +404,7 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
   cout << "PLLEL: BC types and data set up.\n";
   for (int i = 0; i < 2 * par.ndim; i++) {
     cout << "Neighbouring processor in dir " << i << " = "
-         << par.levels[0].MCMD.ngbprocs[i] << "\n";
+         << par.levels[0].sub_domain.get_neighbour_rank(i) << "\n";
   }
 #endif
   return (0);
@@ -426,13 +429,14 @@ void setup_fixed_grid_pllel::setup_dataio_class(
 
 #ifdef FITS
     case 2:  // Start from FITS restartfile
-      dataio = new DataIOFits_pllel(par, &(par.levels[0].MCMD));
+      dataio = new DataIOFits_pllel(par, &(par.levels[0].sub_domain));
       break;
 #endif  // if FITS
 
 #ifdef SILO
     case 5:  // Start from Silo ICfile or restart file.
-      dataio = new dataio_silo_utility(par, "DOUBLE", &(par.levels[0].MCMD));
+      dataio =
+          new dataio_silo_utility(par, "DOUBLE", &(par.levels[0].sub_domain));
       break;
 #endif  // if SILO
     default:

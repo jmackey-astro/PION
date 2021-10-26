@@ -1,6 +1,6 @@
 /// \file assign_update_bcs_NG_MPI.h
 /// \brief Declares a class that inherits boundary types related to
-///   static mesh-refinement (NG) and MCMD domain decomposition and
+///   static mesh-refinement (NG) and sub_domain domain decomposition and
 ///   implements assignment and update functions.
 /// \author Jonathan Mackey
 ///
@@ -18,8 +18,8 @@
 #include "boundaries/assign_update_bcs_MPI.h"
 #include "boundaries/assign_update_bcs_NG.h"
 #include "boundaries/boundaries.h"
-#include "decomposition/MCMD_control.h"
 #include "spatial_solvers/solver_eqn_base.h"
+#include "sub_domain/sub_domain.h"
 
 class assign_update_bcs_NG_MPI :
     virtual public assign_update_bcs_MPI,

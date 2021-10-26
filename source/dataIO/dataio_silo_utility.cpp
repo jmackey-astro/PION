@@ -55,7 +55,7 @@ using namespace std;
 dataio_silo_utility::dataio_silo_utility(
     class SimParams &SimPM,  ///< pointer to simulation parameters
     std::string dtype,       ///< FLOAT or DOUBLE for files.
-    class MCMDcontrol *p) :
+    class Sub_domain *p) :
     dataio_silo_pllel(SimPM, dtype, p)
 {
 #ifdef TEST_SILO_IO
@@ -126,9 +126,9 @@ int dataio_silo_utility::SRAD_get_nproc_numfiles(string fname, int *np, int *nf)
 // ##################################################################
 
 bool dataio_silo_utility::SRAD_point_on_my_domain(
-    const cell *c,             ///< pointer to cell
-    class SimParams &SimPM,    ///< pointer to simulation parameters
-    class MCMDcontrol *filePM  ///< pointer to class with nproc.
+    const cell *c,            ///< pointer to cell
+    class SimParams &SimPM,   ///< pointer to simulation parameters
+    class Sub_domain *filePM  ///< pointer to class with nproc.
 )
 {
   //
@@ -138,8 +138,8 @@ bool dataio_silo_utility::SRAD_point_on_my_domain(
   double dpos[SimPM.ndim];
   CI.get_dpos(c, dpos);
   for (int i = 0; i < SimPM.ndim; i++) {
-    if (dpos[i] < filePM->LocalXmin[i]) on = false;
-    if (dpos[i] > filePM->LocalXmax[i]) on = false;
+    if (dpos[i] < filePM->get_Xmin(i)) on = false;
+    if (dpos[i] > filePM->get_Xmax(i)) on = false;
   }
   return on;
 }
@@ -153,7 +153,7 @@ int dataio_silo_utility::SRAD_read_var2grid(
     const string variable,     ///< variable name to read.
     const long int npt,        ///< number of cells expected.
     class SimParams &SimPM,    ///< pointer to simulation parameters
-    class MCMDcontrol *filePM  ///< pointer to class with nproc.
+    class Sub_domain *filePM   ///< pointer to class with nproc.
 )
 {
   //
@@ -306,7 +306,7 @@ int dataio_silo_utility::SRAD_read_var2grid(
     cell *start              = ggg->FirstPt();
     long int ct              = 0;
     for (int i = 0; i < SimPM.ndim; i++) {
-      while (CI.get_dpos(start, i) < filePM->LocalXmin[i])
+      while (CI.get_dpos(start, i) < filePM->get_Xmin(i))
         start = ggg->NextPt(start, posdir[i]);
     }
     //
@@ -316,13 +316,13 @@ int dataio_silo_utility::SRAD_read_var2grid(
     //
     class cell *cx = start, *cy = start, *cz = start;
     double norm = 1.0 / sqrt(4.0 * M_PI);
-    if (SimPM.ndim < 3) filePM->LocalNG[ZZ] = 1;
-    if (SimPM.ndim < 2) filePM->LocalNG[YY] = 1;
-    for (int k = 0; k < filePM->LocalNG[ZZ]; k++) {
+    if (SimPM.ndim < 3) filePM->set_directional_Ncells(ZZ, 1);
+    if (SimPM.ndim < 2) filePM->set_directional_Ncells(YY, 1);
+    for (int k = 0; k < filePM->get_directional_Ncells(ZZ); k++) {
       cy = cz;
-      for (int j = 0; j < filePM->LocalNG[YY]; j++) {
+      for (int j = 0; j < filePM->get_directional_Ncells(YY); j++) {
         cx = cy;
-        for (int i = 0; i < filePM->LocalNG[XX]; i++) {
+        for (int i = 0; i < filePM->get_directional_Ncells(XX); i++) {
           if (!SRAD_point_on_my_domain(cx, SimPM, filePM))
             rep.error("FAST READ IS IN THE WRONG PLACE!!!", cx->pos[XX]);
           if (silo_dtype == DB_FLOAT) {
@@ -410,9 +410,9 @@ int dataio_silo_utility::serial_read_any_data(
   int err = SRAD_get_nproc_numfiles(firstfile, &nproc, &numfiles);
 
   //
-  // Set up a MCMDcontrol class for iterating over the quadmeshes
+  // Set up a Sub_domain class for iterating over the quadmeshes
   //
-  class MCMDcontrol filePM;
+  class Sub_domain filePM;
   filePM.set_nproc(nproc);
 
   if (err) {
@@ -454,7 +454,7 @@ int dataio_silo_utility::serial_read_pllel_silodata(
     const int numfiles,        ///< number of files
     const int groupsize,       ///< number of groups
     class SimParams &SimPM,    ///< pointer to simulation parameters
-    class MCMDcontrol *filePM  ///< number of processes used to write file.
+    class Sub_domain *filePM   ///< number of processes used to write file.
 )
 {
   int err = 0;
@@ -510,7 +510,7 @@ int dataio_silo_utility::serial_read_pllel_silodata(
       for (std::vector<string>::iterator i = readvars.begin();
            i != readvars.end(); ++i) {
         err = SRAD_read_var2grid(
-            dbfile, ggg, (*i), filePM->LocalNcell, SimPM, filePM);
+            dbfile, ggg, (*i), filePM->get_Ncell(), SimPM, filePM);
         if (err) rep.error("error reading variable", (*i));
       }
     }  // loop over domains within a file.
@@ -566,7 +566,7 @@ int dataio_silo_utility::ReadData(
 
     if (!cg[l]) rep.error("dataio_silo_utility::ReadData() null grid!", cg[l]);
     dataio_silo::gp = cg[l];
-    mpiPM           = &(SimPM.levels[l].MCMD);
+    mpiPM           = &(SimPM.levels[l].sub_domain);
 
     //
     // set grid properties for quadmesh: each level of the NG
@@ -687,7 +687,7 @@ int dataio_silo_utility::ReadLevelData(
              << "  i=" << count;
 #endif
       }
-      COMM->barrier("pllel_file_read");
+      mpiPM->barrier("pllel_file_read");
       tsf = clk.time_so_far("readdata");
 #ifdef TEST_SILO_IO
       cout << "\t time = " << tsf << " secs."
@@ -1217,8 +1217,8 @@ int dataio_silo_utility::PP_read_var2grid(
     //
     // Get number of elements in each direction for this subdomain.
     // Can read it from the quadvar struct or else we could get it
-    // from mpiPM->localNG[] I suppose...  N.B. qv->dims is the number
-    // of data entries in each direction (by contrast quadmesh has
+    // from mpiPM->get_directional_Ncells() I suppose...  N.B. qv->dims is the
+    // number of data entries in each direction (by contrast quadmesh has
     // qm->dims[] = num.nodes = qv->dims[]+1).
     //
     qm_NX[v] = qv->dims[v];

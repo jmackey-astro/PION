@@ -33,11 +33,11 @@ script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 
 ${mpi} ../icgen-ug \
   ${script_dir}/problems/blastwave_crt3d/params_BW_UGcrt3Dpbc_NR032.txt \
-  silo redirect=iclog omp-nthreads=${nt}
+  silo redirect=iclog omp-nthreads=${nt} || exit 1
 
 ${mpi} ../pion-ug \
   BW_UGcrt3Dpbc_NR032_0000.00000000.silo \
-  outfile=BW_UGcrt3Dpbc_NR032_new redirect=pionlog omp-nthreads=${nt}
+  outfile=BW_UGcrt3Dpbc_NR032_new redirect=pionlog omp-nthreads=${nt} || exit 1
 
 
 REF_FILE=BW_UGcrt3Dpbc_NR032_REF_0000.00000140.silo
@@ -48,7 +48,6 @@ if grep -q "RESULTS ARE THE SAME" tmp.txt; then
   echo -e "${GREEN}*** 3Dpbc-Blastwave TEST HAS BEEN PASSED ***"
   tail -n10 tmp.txt
   echo -e "*** 3Dpbc-Blastwave TEST HAS BEEN PASSED ***${NC}"
-  rm *.silo
   exit 0
 else
   echo -e "${RED}*** 3Dpbc-Blastwave TEST HAS BEEN FAILED ***"
