@@ -177,11 +177,9 @@ int time_integrator::first_order_update(
   //
   // Calculate updates for each physics module
   //
+  err += calc_conduction_dU(dt, OA1, grid);
   err += calc_microphysics_dU(dt, grid);
   err += calc_dynamics_dU(dt, OA1, grid);
-#ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(dt, OA1, grid);
-#endif  // THERMAL_CONDUCTION
   if (err) rep.error("first_order_update: error from calc_*_dU", err);
 
   //
@@ -219,29 +217,48 @@ int time_integrator::second_order_update(
   }
 #endif
 
-  //
   // Raytracing, to get column densities for microphysics update.
-  //
   err += RT_all_sources(SimPM, grid, 0);
   rep.errorTest("second_order_update: RT", 0, err);
 
-  //
   // Calculate updates for each physics module
-  //
+  err += calc_conduction_dU(dt, OA2, grid);
   err += calc_microphysics_dU(dt, grid);
   err += calc_dynamics_dU(dt, OA2, grid);
-#ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(dt, OA2, grid);
-#endif  // THERMAL_CONDUCTION
   if (err) rep.error("second_order_update: error from calc_*_dU", err);
 
-  //
   // Now update Ph[i] to new values (and P[i] also if full step).
-  //
   err += grid_update_state_vector(dt, OA2, ooa, grid);
   if (err) rep.error("second_order_update: state-vec update", err);
 
   return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int time_integrator::calc_conduction_dU(
+    const double delt,         ///< timestep to integrate
+    const int step,            ///< whether OA1 or OA2.
+    class GridBaseClass *grid  ///< Computational grid.
+)
+{
+  int err = 0;
+  // ----------------------------------------------------------------
+  // cout <<"\ttime_integrator::calc_conduction_dU setting TC Edot\n";
+  if (step != OA1) err = set_thermal_conduction_Edot(SimPM, step, grid);
+  rep.errorTest("calc_conduction_dU: set_thermal_conduction_Edot()", 0, err);
+  // We need to multiply dU[ERG] by dt to convert from Edot to Delta-E
+  class cell *c = grid->FirstPt();
+  do {
+    c->dU[ERG] *= delt;
+  } while ((c = grid->NextPt(c)) != 0);
+  // ----------------------------------------------------------------
+  return err;
 }
 
 
@@ -572,7 +589,7 @@ int time_integrator::calc_dynamics_dU(
 // the flux calculations.
 //
 int time_integrator::preprocess_data(
-    const int csp,             ///< spatial order of accuracy required.
+    const int csp,             ///< order of accuracy required.
     class SimParams &SimPM,    ///< pointer to simulation parameters
     class GridBaseClass *grid  ///< pointer to grid.
 )
@@ -580,41 +597,16 @@ int time_integrator::preprocess_data(
   //  cout <<"\t\t\tpreprocess_data(): Starting: ndim = "<<SimPM.ndim<<"\n";
   int err = 0;
 
-#ifdef THERMAL_CONDUCTION
-  //
-  // If we are on the first half-step (or first order integration) we don't
-  // need to calculate Edot, because it was already done in calc_dt().  But on
-  // the second half step we need to calculate it here.
-  //
-  if (csp != OA1) {
-    // cout <<"\tFV_solver_base::preprocess_data: setting Edot for 2nd
-    // step.\n";
-    err = set_thermal_conduction_Edot(SimPM);
-    if (err) {
-      rep.error(
-          "FV_solver_base::preprocess_data: set_thermal_conduction_Edot()",
-          err);
-    }
-  }
-  //
-  // We need to multiply dU[ERG] by dt to convert from Edot to Delta-E
-  // TODO: Wrap this in an if statement when I get the SimPM.EP.conduction
-  //       flag integrated into the code.
-  //
-  class cell *c = grid->FirstPt();
-  // cout <<"\tmultiplying conduction dU by dt.\n";
-  do {
-    c->dU[ERG] *= SimPM.dt;
-  } while ((c = grid->NextPt(c)) != 0);
-#endif  // THERMAL CONDUCTION
-
+  // ----------------------------------------------------------------
   // For the H-correction we need a maximum speed in each direction
   // for every cell.
   if (SimPM.artviscosity == AV_HCORRECTION
       || SimPM.artviscosity == AV_HCORR_FKJ98) {
     err += calc_Hcorrection(csp, SimPM, grid);
   }
+  // ----------------------------------------------------------------
 
+  // ----------------------------------------------------------------
   // HLLD has a switch based on velocity divergence, where it can
   // reduce to HLL near strong shocks.  So set divV here.
   if (SimPM.solverType == FLUX_RS_HLLD) {
@@ -650,6 +642,7 @@ int time_integrator::preprocess_data(
     }
 #endif
   }
+  // ----------------------------------------------------------------
 
   return err;
 }
@@ -703,20 +696,16 @@ int time_integrator::calc_Hcorrection(
     rep.printVec("cpt", cpt->pos, SimPM.ndim);
 #endif
 
-    //
     // loop over the number of cells in the line/plane of starting
     // cells.
-    //
     enum axes x1 = axis[(idim + 1) % 3];
     enum axes x2 = axis[(idim + 2) % 3];
     enum axes x3 = axis[idim];
 
-    //
     // loop over the two perpendicular axes, to trace out a plane of
     // starting cells for calculating fluxes along columns along this
     // axis.  The plane can be a single cell
     // (in 1D) or a line (in 2D) or a plane (in 3D).
-    //
     int index[3];
 #ifdef PION_OMP
     #pragma omp parallel

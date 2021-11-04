@@ -69,16 +69,18 @@ protected:
   /// Old microphysics timescales calculation with no radiation field.
   ///
   double get_mp_timescales_no_radiation(
-      class SimParams &,  ///< pointer to simulation parameters
-      class GridBaseClass *);
+      class SimParams &,     ///< pointer to simulation parameters
+      class GridBaseClass *  ///< pointer to sub-domain grid
+  );
 
   ///
   /// New microphysics timescales calculation with pre-calculated radiation
   /// field.
   ///
   double get_mp_timescales_with_radiation(
-      class SimParams &,  ///< pointer to simulation parameters
-      class GridBaseClass *);
+      class SimParams &,     ///< pointer to simulation parameters
+      class GridBaseClass *  ///< pointer to sub-domain grid
+  );
 
   ///
   /// Calculate the dynamics timestep, based on the Courant condition that
@@ -86,10 +88,10 @@ protected:
   /// the minimum timestep on the local grid, or negative if an error occurs.
   ///
   double calc_dynamics_dt(
-      class SimParams &,  ///< pointer to simulation parameters
-      class GridBaseClass *);
+      class SimParams &,     ///< pointer to simulation parameters
+      class GridBaseClass *  ///< pointer to sub-domain grid
+  );
 
-#ifdef THERMAL_CONDUCTION
   ///
   /// If doing thermal conduction, this calculates the max. timestep we can
   /// use without conduction changing the gas temperature by more than 30%. It
@@ -97,11 +99,24 @@ protected:
   /// what the flux in and out of cells is.  This Edot value is multiplied by
   /// the timestep dt in spatial_solver->preprocess_data().
   ///
-  double calc_conduction_dt_and_Edot(
+  double set_conduction_dt_and_Edot(
       class SimParams &,     ///< pointer to simulation parameters
       class GridBaseClass *  ///< pointer to grid.
   );
-#endif  // THERMAL CONDUCTION
+
+  ///
+  /// Calculate the change in internal energy densiy in every cell due to
+  /// thermal conduction.  This sweeps through the data Ndim+2 times (once to
+  /// get the temperature (stored in dU[RHO] temporarily, so this function must
+  /// be called at the beginning of a dynamics update where I am not
+  /// overwriting any information).  It uses c->Ph[] as the source data for
+  /// calculating T, n(H), etc.
+  ///
+  virtual int set_thermal_conduction_Edot(
+      class SimParams &,     ///< pointer to simulation parameters
+      const int,             ///< whether half-step or full step
+      class GridBaseClass *  ///< pointer to grid.
+  );
 
   ///
   /// Limits the timestep based on a number of criteria.  Makes sure we don't

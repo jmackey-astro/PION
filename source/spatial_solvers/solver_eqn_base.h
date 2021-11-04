@@ -118,22 +118,6 @@ public:
       const double       ///< EOS gamma.
   );
 
-#ifdef THERMAL_CONDUCTION
-  ///
-  /// Calculate the rate of heating and cooling in every cell due to thermal
-  /// conduction.  This sweeps through the data Ndim+2 times (once to get
-  /// the temperature (stored in dU[RHO] temporarily, so this function must
-  /// be called at the beginning of a dynamics update where I am not
-  /// overwriting any information!!.  This is probably not safe for
-  /// long-term). It uses c->Ph[] as the source data for calculating T, n(H),
-  /// etc. It is virtual because with MHD the flux becomes dependent on the
-  /// magnetic field direction so I may want to add that later.
-  ///
-  virtual int set_thermal_conduction_Edot(
-      class SimParams &  ///< pointer to simulation parameters
-  );
-#endif  // THERMAL CONDUCTION
-
   ///
   /// Calculate Flux between a left and right state.
   ///

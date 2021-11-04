@@ -40,22 +40,29 @@
 /// i.e. they are not all independent.
 ///
 struct which_physics {
+  /// if we are doing dynamics or not (1=yes,0=no).
   int dynamics;
-  ///< if we are doing dynamics or not (default is yes).
+  /// if we are doing ray-tracing or not (1=yes,0=no).
   int raytracing;
-  ///< if we are doing ray-tracing or not.
+  /// radiative cooling (1-8=yes,0=no).
   int cooling;
-  ///< radiative cooling.
+  /// if we have multiple chemical species and solve rate equations
+  /// (1=yes,0=no).
   int chemistry;
-  ///< if we have multiple chemical species and solve rate equations.
+  /// collisional ionisation (1=yes,0=no).
   int coll_ionisation;
-  ///< collisional ionisation.
+  /// radiative recombination (1=yes,0=no).
   int rad_recombination;
-  ///< radiative recombination.
+  /// if we have photo-ionisation (with or w/o raytracing) (1=yes,0=no).
   int phot_ionisation;
-  ///< if we have photo-ionisation (with or w/o raytracing).
+
+  /// if we are using thermal conduction (1=yes, 0=no)
+  int sat_thermal_cond;
+  /// the value of the TC scaling (1.0=0.33*Spitzer)
+  double tc_strength;
+
+  /// flag for whether to update the energy with the rates (1=yes,0=no).
   int update_erg;
-  ///< flag for whether to update the energy with the rates.
   ///
   /// Set this if we want to limit timesteps by cooling/recomb times.
   /// - limit=0 : only dynamical timestep
@@ -65,28 +72,20 @@ struct which_physics {
   /// - limit=4 : limit by dyn. +recomb times (NOT cooling/heating).
   ///
   int MP_timestep_limit;
-  double MinTemperature;  ///< Minimum temperature to allow in the simulation.
-  double MaxTemperature;  ///< Maximum temperature to allow in the simulation.
-#ifdef THERMAL_CONDUCTION
-  int thermal_conduction;  ///< 0 if no conductivity, 1 if using it.
-#endif                     // THERMAL CONDUCTION
+  /// Minimum temperature to allow in the simulation.
+  double MinTemperature;
+  /// Maximum temperature to allow in the simulation.
+  double MaxTemperature;
 
-  ///
   /// Mass fraction of H, X, used for calculating mean mass per
   /// particle by assuming the rest is He.
-  ///
   double H_MassFrac;
-  ///
   /// Mass fraction of He, Y, used for calculation electron/ion
   /// densities as a function of H number density, and for setting
   /// the mean mass per particle, mu.
-  ///
   double Helium_MassFrac;
-  ///
-  /// Mass fraction of metals, Z, used for heating/cooling in
   /// microphysics (but doesn't contribute to mean mass per particle,
   /// mu).
-  ///
   double Metal_MassFrac;
 };
 // *******************************************************************

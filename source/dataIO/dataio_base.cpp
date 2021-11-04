@@ -266,18 +266,18 @@ void DataIOBase::set_params(
   p           = p029;
   p->critical = false;
   params.push_back(p);
-  //#ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
+
   pm_double *pMNT =
       new pm_double("EP_Min_Temperature", &SimPM.EP.MinTemperature, 0.0);
   p           = pMNT;
   p->critical = false;
   params.push_back(p);
+
   pm_double *pMXT =
       new pm_double("EP_Max_Temperature", &SimPM.EP.MaxTemperature, 1.0e100);
   p           = pMXT;
   p->critical = false;
   params.push_back(p);
-  //#endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 
   //
   // Hydrogen abundance (by mass) X.
@@ -306,6 +306,17 @@ void DataIOBase::set_params(
       new pm_double("EP_Metal_MassFrac", &SimPM.EP.Metal_MassFrac, 0.0142);
   p           = pZZZ;
   p->critical = false;
+  params.push_back(p);
+
+  pm_int *pSTC =
+      new pm_int("EP_sat_thermal_cond", &SimPM.EP.sat_thermal_cond, 0);
+  p           = pSTC;
+  p->critical = false;
+  params.push_back(p);
+
+  pm_double *pTCs = new pm_double("EP_tc_strength", &SimPM.EP.tc_strength, 1.0);
+  p               = pTCs;
+  p->critical     = false;
   params.push_back(p);
 
   //
@@ -435,8 +446,12 @@ void DataIOBase::set_params(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void DataIOBase::clear_param_list(std::list<class pm_base *> &listptr)
 {
@@ -454,8 +469,12 @@ void DataIOBase::clear_param_list(std::list<class pm_base *> &listptr)
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int DataIOBase::read_simulation_parameters(
     class SimParams &SimPM  ///< pointer to simulation parameters
@@ -1089,8 +1108,12 @@ int DataIOBase::read_simulation_parameters(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void DataIOBase::set_tracer_params(
     class SimParams &SimPM  ///< pointer to simulation parameters
@@ -1131,8 +1154,12 @@ void DataIOBase::set_tracer_params(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void DataIOBase::set_windsrc_params()
 {
@@ -1311,8 +1338,12 @@ void DataIOBase::set_windsrc_params()
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void DataIOBase::set_rt_src_params(
     class SimParams &SimPM  ///< pointer to simulation parameters
@@ -1467,8 +1498,12 @@ void DataIOBase::set_rt_src_params(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void DataIOBase::set_jet_pm_params()
 {
@@ -1488,8 +1523,12 @@ void DataIOBase::set_jet_pm_params()
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void DataIOBase::set_bc_pm_params(
     class SimParams &SimPM  ///< pointer to simulation parameters
@@ -1538,8 +1577,12 @@ void DataIOBase::set_bc_pm_params(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int DataIOBase::write_simulation_parameters(
     class SimParams &SimPM  ///< pointer to simulation parameters
@@ -1917,8 +1960,12 @@ int DataIOBase::write_simulation_parameters(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int DataIOBase::check_header_parameters(
     class SimParams &SimPM  ///< pointer to simulation parameters
@@ -2113,6 +2160,8 @@ int DataIOBase::check_header_parameters(
 
   return 0;
 }
+
+
 
 // -----------------------------------------------------
 // --------- BASE DATA I/O CLASS DEFINITIONS -----------

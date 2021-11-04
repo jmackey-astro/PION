@@ -95,7 +95,6 @@ int calc_timestep::calculate_timestep(
 
   par.dt = min(t_dyn, t_mp);
 
-#ifdef THERMAL_CONDUCTION
   //
   // In order to calculate the timestep limit imposed by thermal conduction,
   // we need to calcuate the multidimensional energy fluxes
@@ -103,7 +102,7 @@ int calc_timestep::calculate_timestep(
   // by the actual dt later (since at this stage we don't know dt).  This
   // later multiplication is done in spatial_solver->preprocess_data()
   //
-  double t_cond = calc_conduction_dt_and_Edot();
+  double t_cond = set_conduction_dt_and_Edot(par, grid);
 #ifndef NDEBUG
   if (t_cond < t_dyn && t_cond < t_mp) {
     cout << "CONDUCTION IS LIMITING TIMESTEP: t_c=" << t_cond
@@ -112,7 +111,6 @@ int calc_timestep::calculate_timestep(
   }
 #endif
   par.dt = min(par.dt, t_cond);
-#endif  // THERMAL CONDUCTION
 
   //
   // If using MHD with GLM divB cleaning, the following sets the
@@ -179,12 +177,12 @@ int calc_timestep::calculate_timestep(
 
 
 
-#ifdef THERMAL_CONDUCTION
-double calc_timestep::calc_conduction_dt_and_Edot(
+double calc_timestep::set_conduction_dt_and_Edot(
     class SimParams &par,      ///< pointer to simulation parameters
     class GridBaseClass *grid  ///< pointer to grid.
 )
 {
+  if (par.EP.sat_thermal_cond == 0) return 1.0e200;
   //
   // N.B. THIS IS VERY AD-HOC CODE THAT HAS NEVER BEEN USED FOR
   // PRODUCTION SIMULATIONS.  USE AT YOUR OWN RISK!
@@ -193,7 +191,7 @@ double calc_timestep::calc_conduction_dt_and_Edot(
   // c->dU[ERG] since this is where it will be updated.
   //
   // cout <<"\tCCdt: setting Edot.\n";
-  spatial_solver->set_thermal_conduction_Edot();
+  set_thermal_conduction_Edot(par, OA1, grid);
   // cout <<"\tCCdt: Done with div(Q).  Now getting timestep.\n";
 
   //
@@ -206,32 +204,252 @@ double calc_timestep::calc_conduction_dt_and_Edot(
   //
   double dt = 1.0e200, gm1 = par.gamma - 1.0, tempdt = 0.0,
          minP = par.RefVec[PG] * 1.0e-3;
-  cell *c     = grid->FirstPt();
+  cell *c     = grid->FirstPt_All();
   do {
     // DIDN'T WORK -- CHECKERBOARDING!
     // if (c->dU[ERG]<0.0) tempdt = c->Ph[PG]/(gm1*(fabs(c->dU[ERG]
     // +TINYVALUE))); else                tempdt = 1.0e200;
     // SEEMS TO WORK BETTER
-    if (fabs(c->Ph[PG] > minP))
-      tempdt = c->Ph[PG] / (gm1 * (fabs(c->dU[ERG] + TINYVALUE)));
-    else
-      tempdt = 1.0e200;
-    dt = min(dt, tempdt);
-  } while ((c = grid->NextPt(c)) != 0);
+    // if (fabs(c->Ph[PG] > minP))
+    //  tempdt = c->Ph[PG] / (gm1 * (fabs(c->dU[ERG] + TINYVALUE)));
+    // else
+    //  tempdt = 1.0e200;
+    tempdt = par.CFL * par.dx * par.dx * 0.5 / c->dU[VX];
+    // cout <<par.dx<<"  "<<par.CFL<<"  "<<c->dU[VX]<<"\n";
+    c->dU[VX] = 0.0;
+    dt        = min(dt, tempdt);
+  } while ((c = grid->NextPt_All(c)) != 0);
   // cout <<"Final conduction dt="<<dt<<", to be multiplied by 0.3.\n";
 
   //
   // first timestep can be dodgy with conduction and stellar winds,
   // so set it to a very small value
   //
-  if (par.timestep == 0) dt = min(dt, 1.0e3);
+  if (par.timestep == 0) dt = min(dt, 1.0e0);
 
   //
   // Set timestep to be 1/10th of the thermal conduction timescale.
   //
-  return 0.1 * dt;
-}  // calc_conduction_dt_and_Edot()
-#endif  // THERMAL CONDUCTION
+  return dt;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int calc_timestep::set_thermal_conduction_Edot(
+    class SimParams &par,      ///< pointer to simulation parameters
+    const int oa,              ///< order of accuracy required.
+    class GridBaseClass *grid  ///< pointer to grid.
+)
+{
+  if (par.EP.sat_thermal_cond == 0) return 0;
+  //
+  // This function is quite similar to calc_dU() and dU_column()
+  // because it steps through the grid in the same way.
+  //
+  // cout <<"calc_conduction_dt_and_Edot()\n\tcalculating
+  // Temperature.\n";
+  //
+  // First we need to calculate the temperature in every cell.  This
+  // is stored in dU[RHO] -- reset to zero at the end of function.
+  //
+  if (!MP) rep.error("No Microphysics == No Conduction", MP);
+  cell *c = grid->FirstPt_All();
+  do {
+    // cout <<"dU[RHO]="<<c->dU[RHO];
+    c->dU[RHO] = MP->Temperature(c->Ph, par.gamma);
+    // cout <<", replaced with T="<<c->dU[RHO]<<"\n";
+  } while ((c = grid->NextPt_All(c)) != 0);
+
+  // cout <<"\tT calculated, now calculating divQ.\n";
+  //
+  // Allocate arrays
+  //
+  enum direction posdirs[MAX_DIM], negdirs[MAX_DIM];
+  enum axes axis[MAX_DIM];
+  posdirs[0] = XP;
+  posdirs[1] = YP;
+  posdirs[2] = ZP;
+  negdirs[0] = XN;
+  negdirs[1] = YN;
+  negdirs[2] = ZN;
+  axis[0]    = XX;
+  axis[1]    = YY;
+  axis[2]    = ZZ;
+
+  // Loop through each dimension.
+  for (int idim = 0; idim < par.ndim; idim++) {
+#ifndef NDEBUG
+    cout << "\t\t\tidim=" << idim << "\n";
+#endif  // NDEBUG
+
+#ifdef PION_OMP
+    #pragma omp parallel
+    {
+      spatial_solver->SetDirection(axis[idim]);
+    }
+#else
+    spatial_solver->SetDirection(axis[idim]);
+#endif  // PION_OMP
+    class cell *cpt    = grid->FirstPt_All();
+    class cell *marker = cpt;
+#ifdef TEST_INT
+    cout << "Direction=" << axis[idim] << ", i=" << idim << "\n";
+    rep.printVec("cpt", cpt->pos, par.ndim);
+#endif
+    // loop over the number of cells in the line/plane of starting
+    // cells.
+    enum axes x1 = axis[(idim + 1) % 3];
+    enum axes x2 = axis[(idim + 2) % 3];
+    enum axes x3 = axis[idim];
+    // loop over the two perpendicular axes, to trace out a plane of
+    // starting cells for calculating fluxes along columns along this
+    // axis.  The plane can be a single cell
+    // (in 1D) or a line (in 2D) or a plane (in 3D).
+    int index[3];
+#ifdef PION_OMP
+    #pragma omp parallel
+    {
+      #pragma omp for collapse(2) private(index,cpt)
+#endif
+      for (int ax2 = 0; ax2 < grid->NG_All(x2); ax2++) {
+        for (int ax1 = 0; ax1 < grid->NG_All(x1); ax1++) {
+          index[x1]    = static_cast<int>(ax1);
+          index[x2]    = static_cast<int>(ax2);
+          index[x3]    = 0;
+          cpt          = grid->get_cell_all(index[0], index[1], index[2]);
+          cell *npt    = grid->NextPt(cpt, posdirs[idim]);
+          cell *lpt    = 0;
+          double q_neg = 0.0, q_pos = 0.0, gradT = 0.0, Qclassical = 0.0,
+                 Qsaturated = 0.0, T = 0.0;
+          double dx    = grid->DX();
+          double kappa = 0.0, vc = 0.0, cn = 0.0;
+          if (npt == 0) rep.error("Couldn't find two cells in column", 0);
+          q_neg = 0.0;  // no flux coming in from non-existent boundary data.
+          q_pos = 0.0;
+          // Run through column, calculating conductive flux
+          do {
+            // Now use the Slavin & Cox (1992) formula for conduction to
+            // get the conductive heat flux from cpt to npt in direction
+            // posdir[idim].
+            gradT = (npt->dU[RHO] - cpt->dU[RHO])
+                    / (grid->idifference_cell2cell(cpt, npt, axis[idim])
+                       * CI.phys_per_int());
+            // If flow is from npt to cpt, we use npt's values for
+            // calculating Q. Else we use cpt's values. (if
+            // gradT>0, then T2>T1, flow from 2->1 in the *negative*
+            // direction).
+            if (gradT > 0.0) {
+              c = npt;
+              // vc = cpt->Ph[VX + idim];
+              // cn = spatial_solver->maxspeed(npt->Ph, par.gamma);
+            }
+            else {
+              c = cpt;
+              // vc = -npt->Ph[VX + idim];
+              // cn = spatial_solver->maxspeed(cpt->Ph, par.gamma);
+            }
+            // get ln(Lambda) and then the classical and
+            // saturated fluxes. For ln(Lambda) the formula is only
+            // valid for T>4.2e5.  The value of 4.2735e23 is
+            // (1.4*m_p)^{-1}.
+            T = c->dU[RHO];
+            // if (T < 4.2e5)
+            //  Qclassical = 29.7;
+            // else
+            //  Qclassical = 29.7 + log(T / (1.0e6 * sqrt(c->Ph[RO]
+            //  * 4.2735e23)));
+            // Qclassical = -1.84e-5 * pow(T, 2.5) * gradT / Qclassical;
+            // kappa =
+            //    max(0.0, max(6e-7, 6.0e-7 * pow(T, 2.5) * exp(-5e3 / T))
+            //                 * (1.0 - vc / cn));
+            // Qclassical = -kappa * gradT;
+
+            // For saturated Q we follow S&C(1992) and use phi_s=0.3
+            Qsaturated = -1.5 * c->Ph[RO] * pow(c->Ph[PG] / c->Ph[RO], 1.5);
+            if (gradT < 0.0) Qsaturated *= -1.0;
+            // Qsaturated *= max(0.0, min(1.0, 1.0 - 1.0 * vc / cn)); //
+            // upwinding?
+            Qsaturated *= par.EP.tc_strength;
+            // now Q = Qs*(1-exp(-Qc/Qs)).
+            //  - (Qs>>Qc)=>(Q->Qc).
+            //  - (Qc>>Qs)=>(Q->Qs).
+            q_pos = Qsaturated;  // * (1.0 - exp(-Qclassical / Qsaturated));
+            if (c->isbd) q_pos = 0.0;
+            // Finally cpt needs an updated -div(q) value from the
+            // current direction. This is a hack, because there is no
+            // VectorOps function to do this for me. I should write a
+            // function in VectorOps which I can call to do this... I
+            // should also make the base grid derive from
+            // base-VectorOps, so that the functions are accessible!
+            if (par.coord_sys == COORD_CYL && axis[idim] == Rcyl) {
+              double rp = CI.get_dpos(c, Rcyl) + 0.5 * dx;
+              double rn = rp - dx;
+              cpt->dU[ERG] +=
+                  2.0 * (rn * q_neg - rp * q_pos) / (rp * rp - rn * rn);
+            }
+            else if (par.coord_sys == COORD_SPH && axis[idim] == Rsph) {
+              double rc = CI.get_dpos(c, Rsph);
+              double rp = rc + 0.5 * dx;
+              double rn = rp - dx;
+              rc        = (pow(rp, 3.0) - pow(rn, 3.0)) / 3.0;
+              cpt->dU[ERG] += (rn * rn * q_neg - rp * rp * q_pos) / rc;
+            }
+            else {
+              cpt->dU[ERG] += (q_neg - q_pos) / dx;
+            }
+            // cout <<"\tQc="<<Qclassical<<", Qs="<<Qsaturated<<",
+            // Q="<<q_pos<<", Edot="<<cpt->dU[ERG]<<"\n";
+
+            // set diffusion coefficient D = kappa /(n kB)
+            if (oa == OA1)
+              // saturated flux is hyperbolic, so multiply by dx to remove a
+              // factor of dx in the dt calculation
+              if (1 == 1)  //(Qsaturated >= Qclassical)
+                cpt->dU[VX] = max(
+                    cpt->dU[VX],
+                    2.0 * spatial_solver->maxspeed(c->Ph, par.gamma) * par.dx);
+              else  // classical flux --> diffusion equation
+                cpt->dU[VX] = max(
+                    cpt->dU[VX], kappa * 2.3e-24 / (c->Ph[RO] * pconst.kB()));
+
+            // Set npt to cpt, set current q_pos to q_neg for next cell.
+            // Move to next cell.
+            q_neg = q_pos;
+            lpt   = cpt;
+            cpt   = npt;
+          } while ((npt = grid->NextPt(npt, posdirs[idim])) != 0);
+          cpt->dU[VX] = max(cpt->dU[VX], lpt->dU[VX]);
+        }  // ax1
+      }    // ax2
+#ifdef PION_OMP
+    }  // OMP loop
+#endif
+  }  // Loop over three directions.
+
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+    spatial_solver->SetDirection(axis[0]);  // Reset fluxes to x-dir.
+  }
+#else
+  spatial_solver->SetDirection(axis[0]);  // Reset fluxes to x-dir.
+#endif  // PION_OMP
+
+  //
+  // Now reset the temporary storage of Temperature in dU[RHO] to zero.
+  //
+  c = grid->FirstPt_All();
+  do {
+    c->dU[RHO] = 0.0;
+  } while ((c = grid->NextPt_All(c)) != 0);
+
+  return 0;
+}
 
 
 

@@ -510,7 +510,6 @@ int sim_control_pllel::calculate_timestep(
 
   par.dt = min(t_dyn, t_mp);
 
-#ifdef THERMAL_CONDUCTION
   //
   // Calculate the timestep limit imposed by thermal conduction,
   // and calcuate the multidimensional energy fluxes
@@ -518,15 +517,16 @@ int sim_control_pllel::calculate_timestep(
   // by dt later (since at this stage we don't know dt).  This
   // later multiplication is done in eqn->preprocess_data()
   //
-  double t_cond = calc_conduction_dt_and_Edot();
+  double t_cond = set_conduction_dt_and_Edot(par, grid);
   t_cond = SimPM.levels[0].sub_domain.global_operation_double("MIN", t_cond);
+#ifndef NDEBUG
   if (t_cond < par.dt) {
     cout << "PARALLEL CONDUCTION IS LIMITING TIMESTEP: t_c=";
     cout << t_cond << ", t_m=" << t_mp;
     cout << ", t_dyn=" << t_dyn << "\n";
   }
+#endif
   par.dt = min(par.dt, t_cond);
-#endif  // THERMAL CONDUCTION
 
   //
   // If using MHD with GLM divB cleaning, the following sets the

@@ -277,10 +277,8 @@ int RT_MPI_bc::Receive_RT_Boundaries(
         rep.error("Getting data, but not RT", comm_tag);
       }
 
-      //
       // Set pointer to boundary we are receiving, and note which one
       // it is in i_recv.
-      //
       b         = 0;
       bool test = false;
       i_recv    = -1;

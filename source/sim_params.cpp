@@ -105,6 +105,9 @@ SimParams::SimParams()
   EP.Helium_MassFrac = 0.2703;
   EP.Metal_MassFrac  = 0.0142;
 
+  EP.sat_thermal_cond = 0;
+  EP.tc_strength      = 1.0;
+
   RS.Nsources = -1;
   RS.sources.clear();
 
@@ -1177,6 +1180,18 @@ int SimParams::read_extra_physics()
     EP.Metal_MassFrac = atof(a.c_str());
   else
     EP.Metal_MassFrac = 0.0142;
+
+  // default to not use thermal conduction:
+  if ((a = rp.find_parameter("EP_sat_thermal_cond")) != "")
+    EP.sat_thermal_cond = atoi(a.c_str());
+  else
+    EP.sat_thermal_cond = 0;
+
+  // default to use the Cowie & McKee (1977) saturated flux with phi=0.3
+  if ((a = rp.find_parameter("EP_tc_strength")) != "")
+    EP.tc_strength = atof(a.c_str());
+  else
+    EP.tc_strength = 1.0;
 
   return 0;
 }

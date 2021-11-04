@@ -710,7 +710,7 @@ int sim_init::override_params(int narg, string *args)
            << "\n";
     }
 
-    else if (args[i].find("wind_radius") != string::npos) {
+    else if (args[i].find("wind_radius=") != string::npos) {
       if (SWP.Nsources < 1) {
         rep.error("reset wind radius without a source", SWP.Nsources);
       }
@@ -731,6 +731,16 @@ int sim_init::override_params(int narg, string *args)
       cout << SWP.params[src]->radius << " cm."
            << "\n";
     }
+
+    else if (args[i].find("tc_strength=") != string::npos) {
+      cout << "\tOVERRIDE PARAMS: resetting EP.tc_strength from ";
+      cout << SimPM.EP.tc_strength << " to ";
+      double c = atof((args[i].substr(12)).c_str());
+      if (c < 0.0 || c > 1.01) rep.error("Bad tc_strength flag:", c);
+      SimPM.EP.tc_strength = c;
+      cout << SimPM.EP.tc_strength << "\n";
+    }
+
 
     else
       rep.error("Don't recognise this optional argument, please fix.", args[i]);

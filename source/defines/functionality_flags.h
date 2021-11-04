@@ -84,7 +84,7 @@
 ///
 /// Flag for whether to do thermal conduction or not...
 /// This is not yet working well -- the solution is very sketchy.
-//#define THERMAL_CONDUCTION
+#define THERMAL_CONDUCTION
 
 //
 // Stuff for the internal energy solver (which only works in cartesian

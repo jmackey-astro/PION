@@ -76,6 +76,16 @@ public:
   );
 
   ///
+  /// Calculates change in internal energy density for each point
+  /// due to heat transport by thermal conduction, for a timestep dt.
+  ///
+  int calc_conduction_dU(
+      const double,          ///< dt, timestep to integrate
+      const int,             ///< order of accuracy for update.
+      class GridBaseClass *  ///< grid pointer
+  );
+
+  ///
   /// This function does some checking on radiation sources to see
   /// what microphysics update to call, then calls one of
   /// calc_RT_microphysics_dU() or
@@ -118,9 +128,7 @@ public:
   /// due to the dynamics, for a timestep dt, using either 1st or
   /// 2nd order accuracy in space.
   /// It calls spatial_solver->preprocess_data(), then set_dynamics_dU(), and
-  /// finally spatial_solver->PostProcess_dU().
-  /// set_dynamics_dU() is the function that used to be called
-  /// calc_dU().
+  /// spatial_solver->PostProcess_dU().
   ///
   int calc_dynamics_dU(
       const double,          ///< dt, timestep to integrate
@@ -129,7 +137,7 @@ public:
   );
 
   ///
-  /// This function used to be called calc_dU -- for every column of
+  /// For every column of
   /// simulation data on the grid this calls dU_Column() to get the
   /// changes in the state vectors arising from the hydrodynamics
   /// over the timestep dt.  It uses the requested spatial order of

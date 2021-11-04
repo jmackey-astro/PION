@@ -719,9 +719,6 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
 #endif
   err += calc_microphysics_dU(dt2_this, grid);
   err += calc_dynamics_dU(dt2_this, OA1, grid);
-#ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(dt2_this, OA1, grid);
-#endif  // THERMAL_CONDUCTION
   rep.errorTest("NG-MPI scn::advance_step_OA1: calc_x_dU", 0, err);
   if (l > 0) save_fine_fluxes(SimPM, l);
   if (l < SimPM.grid_nlevels - 1) save_coarse_fluxes(SimPM, l);
@@ -989,9 +986,6 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
 #endif
   err += calc_microphysics_dU(dt_now, grid);
   err += calc_dynamics_dU(dt_now, OA1, grid);
-#ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(dt_now, OA1, grid);
-#endif  // THERMAL_CONDUCTION
   rep.errorTest("NG-MPI scn::advance_step_OA2: calc_x_dU", 0, err);
 
   // update state vector Ph to half-step values
@@ -1053,9 +1047,6 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
 #endif
   err += calc_microphysics_dU(dt_now, grid);
   err += calc_dynamics_dU(dt_now, OA2, grid);
-#ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(dt_now, OA2, grid);
-#endif  // THERMAL_CONDUCTION
   rep.errorTest("scn::advance_step_OA2: calc_x_dU OA2", 0, err);
   if (l > 0) save_fine_fluxes(SimPM, l);
   if (l < SimPM.grid_nlevels - 1) save_coarse_fluxes(SimPM, l);
