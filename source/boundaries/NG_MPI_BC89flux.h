@@ -92,10 +92,6 @@ public:
   void clear_sends_BC89_fluxes(class Sub_domain &);
 
 protected:
-  /// List of IDs for MPI sends related to the BC89 Flux
-  /// correction algorithms.  Should be cleared at the beginning
-  /// of each timestep.
-  std::vector<string> BC89_flux_send_list;
 };
 
 #endif  // NG_BC89FLUX_H

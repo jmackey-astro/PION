@@ -158,7 +158,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
 #ifdef TEST_MPI_NG_F2C
   cout << "BC_update_FINE_TO_COARSE_SEND: Sending " << ct;
   cout << " doubles from proc " << sub_domain->get_myrank();
-  cout << " to parent proc " << pproc << "\n";
+  cout << " to parent proc " << pproc << ", tag=" << comm_tag << "\n";
 #endif
   err += sub_domain->send_double_data(pproc, ct, data, id, comm_tag);
   if (err) rep.error("Send_F2C send_data failed.", err);
@@ -168,10 +168,10 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
 #endif
 
   // store ID to clear the send later (and delete the MPI temp data)
-  NG_F2C_send_list.push_back(id);
+  sub_domain->NG_F2C_send_list.push_back(id);
 #ifdef TEST_MPI_NG_F2C
   cout << "F2C_Send: id=[ " << id << " ]  size=";
-  cout << NG_F2C_send_list.size() << "\n";
+  cout << sub_domain->NG_F2C_send_list.size() << "\n";
 #endif
   data = mem.myfree(data);
 
@@ -184,22 +184,22 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
 void NG_MPI_fine_to_coarse_bc::BC_FINE_TO_COARSE_SEND_clear_sends(
     class Sub_domain &sub_domain)
 {
-  for (unsigned int i = 0; i < NG_F2C_send_list.size(); i++) {
+  for (unsigned int i = 0; i < sub_domain.NG_F2C_send_list.size(); i++) {
 #ifdef TEST_MPI_NG_F2C
     cout << "F2C_send: clearing send # " << i + 1 << " of ";
-    cout << NG_F2C_send_list.size() << ", id=";
-    cout << NG_F2C_send_list[i] << "...";
+    cout << sub_domain.NG_F2C_send_list.size() << ", id=";
+    cout << sub_domain.NG_F2C_send_list[i] << "...";
     cout.flush();
 #endif
-    // cout <<"waiting for send : "<<NG_F2C_send_list[i]<<"\n";
-    sub_domain.wait_for_send_to_finish(NG_F2C_send_list[i]);
+    // cout <<"waiting for send : "<<sub_domain.NG_F2C_send_list[i]<<"\n";
+    sub_domain.wait_for_send_to_finish(sub_domain.NG_F2C_send_list[i]);
 #ifdef TEST_MPI_NG_F2C
     cout << " ... done!\n";
     cout.flush();
 #endif
     // cout <<"cleared F2C send "<<i<<"\n";
   }
-  NG_F2C_send_list.clear();
+  sub_domain.NG_F2C_send_list.clear();
   // cout <<"clear F2C sends returning\n";
   return;
 }

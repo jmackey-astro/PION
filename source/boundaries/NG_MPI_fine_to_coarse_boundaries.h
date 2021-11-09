@@ -43,10 +43,6 @@ protected:
       boundary_data *     ///< boundary data
   );
 
-  /// List of IDs for all sends, should be cleared at the beginning
-  /// of each timestep.
-  std::vector<string> NG_F2C_send_list;
-
 public:
   /// Send data from this grid to a coarser grid (maybe on another
   /// MPI process)

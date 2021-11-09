@@ -214,6 +214,9 @@ double calc_timestep::set_conduction_dt_and_Edot(
     //  tempdt = c->Ph[PG] / (gm1 * (fabs(c->dU[ERG] + TINYVALUE)));
     // else
     //  tempdt = 1.0e200;
+    // This is appropriate for saturated TC, where dU[VX] is set to
+    // the max speed * dx, to cancel one of the dx factors in the
+    // numerator (saturated TC is hyperbolic).
     tempdt = par.CFL * par.dx * par.dx * 0.5 / c->dU[VX];
     // cout <<par.dx<<"  "<<par.CFL<<"  "<<c->dU[VX]<<"\n";
     c->dU[VX] = 0.0;
@@ -379,7 +382,7 @@ int calc_timestep::set_thermal_conduction_Edot(
             //  - (Qs>>Qc)=>(Q->Qc).
             //  - (Qc>>Qs)=>(Q->Qs).
             q_pos = Qsaturated;  // * (1.0 - exp(-Qclassical / Qsaturated));
-            if (c->isbd) q_pos = 0.0;
+            if (!c->isdomain) q_pos = 0.0;
             // Finally cpt needs an updated -div(q) value from the
             // current direction. This is a hack, because there is no
             // VectorOps function to do this for me. I should write a

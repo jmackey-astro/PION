@@ -364,9 +364,10 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
 #ifdef TEST_C2F
     cout << "BC_update_COARSE_TO_FINE_SEND: l=" << l << ", Sending " << n_el;
     cout << " doubles from proc " << sub_domain->get_myrank();
-    cout << " to child proc " << b->NGsendC2F[ib]->rank << endl;
+    cout << " to child proc " << b->NGsendC2F[ib]->rank << ", id=" << comm_tag
+         << endl;
 #endif
-    err += par.levels[0].sub_domain.send_double_data(
+    err += par.levels[l].sub_domain.send_double_data(
         b->NGsendC2F[ib]->rank, n_el, buf, id, comm_tag);
     if (err) rep.error("Send_C2F send_data failed.", err);
 #ifdef TEST_C2F
@@ -374,7 +375,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     cout << endl;
 #endif
     // store ID to clear the send later (and delete the MPI temp data)
-    NG_C2F_send_list.push_back(id);
+    par.levels[l].sub_domain.NG_C2F_send_list.push_back(id);
     buf = mem.myfree(buf);
   }  // loop over send boundaries
   return 0;
@@ -386,20 +387,23 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
 void NG_MPI_coarse_to_fine_bc::BC_COARSE_TO_FINE_SEND_clear_sends(
     class Sub_domain &sub_domain)
 {
-  for (unsigned int ib = 0; ib < NG_C2F_send_list.size(); ib++) {
+  if ((sub_domain.NG_C2F_send_list).empty()) {
+    return;
+  }
+  for (unsigned int ib = 0; ib < sub_domain.NG_C2F_send_list.size(); ib++) {
 #ifdef TEST_C2F
     cout << "C2F_send: clearing send # " << ib + 1 << " of ";
-    cout << NG_C2F_send_list.size() << ", id=";
-    cout << NG_C2F_send_list[ib] << "...";
+    cout << sub_domain.NG_C2F_send_list.size() << ", id=";
+    cout << sub_domain.NG_C2F_send_list[ib] << "...";
     cout.flush();
 #endif
-    sub_domain.wait_for_send_to_finish(NG_C2F_send_list[ib]);
+    sub_domain.wait_for_send_to_finish(sub_domain.NG_C2F_send_list[ib]);
 #ifdef TEST_C2F
     cout << " ... done!\n";
     cout.flush();
 #endif
   }
-  NG_C2F_send_list.clear();
+  sub_domain.NG_C2F_send_list.clear();
   return;
 }
 
@@ -648,7 +652,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
       cout << comm_tag << endl;
     }
 #endif
-    err = par.levels[0].sub_domain.look_for_data_to_receive(
+    err = par.levels[l].sub_domain.look_for_data_to_receive(
         &from_rank, recv_id, &recv_tag, comm_tag, COMM_DOUBLEDATA);
     if (err) rep.error("look for double data failed", err);
 #ifdef TEST_C2F
@@ -682,7 +686,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     // Receive data into buffer.  Data stored for each coarse cell:
     // Ph[nv],cellvol,cellpos[nd],slopeX[nv],slopeY[nv],slopeZ[nv]
     //
-    err = par.levels[0].sub_domain.receive_double_data(
+    err = par.levels[l].sub_domain.receive_double_data(
         from_rank, recv_tag, recv_id, n_el, buf);
     if (err) rep.error("(BC_update_C2F_RECV) getdata failed", err);
 

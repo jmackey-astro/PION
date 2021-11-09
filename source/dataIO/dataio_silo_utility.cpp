@@ -816,7 +816,7 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
     // int ng=min(nmesh-ifile*groupsize, groupsize);
 
     for (int igroup = 0; igroup < ng; igroup++) {
-      cout << "DBSetDir 1" << std::endl;
+      // cout << "DBSetDir 1" << std::endl;
       DBSetDir(dbfile, "/");
       //
       // choose pseudo-rank for reading file.
@@ -844,7 +844,7 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
       //
       string qm_dir;
       set_dir_in_file(qm_dir, pseudo_rank, igroup, l);
-      cout << "DBSetDir 2:" << qm_dir.c_str() << std::endl;
+      // cout << "DBSetDir 2:" << qm_dir.c_str() << std::endl;
       DBSetDir(dbfile, qm_dir.c_str());
 
       //

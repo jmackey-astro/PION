@@ -494,8 +494,8 @@ int UniformGrid::allocate_grid_data()
   size_t ix = 0;
   for (size_t i = 0; i < G_ncell_all; i++) {
 #ifndef NDEBUG
-    cout << "i=" << i << " of " << G_ncell_all;
-    cout << ": ix=" << ix << ", nel=" << nel << "\n";
+    // cout << "i=" << i << " of " << G_ncell_all;
+    // cout << ": ix=" << ix << ", nel=" << nel << "\n";
 #endif
     carr[i].id = static_cast<long int>(i);
     ix         = CI.set_cell_pointers(&(carr[i]), data, ix);

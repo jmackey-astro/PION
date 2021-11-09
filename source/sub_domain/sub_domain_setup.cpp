@@ -57,6 +57,11 @@ Sub_domain::Sub_domain()
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
 
   ++m_count;
+
+  NG_F2C_send_list.clear();
+  NG_C2F_send_list.clear();
+  NG_C2F_send_list.resize(0);
+  BC89_flux_send_list.clear();
 }
 
 // ##################################################################

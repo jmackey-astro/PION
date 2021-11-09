@@ -422,6 +422,19 @@ private:
 
   /* MPI communication */
 public:
+  /// List of IDs for fine-to-coarse sends from this level, should be cleared at
+  /// the beginning of each timestep.
+  std::vector<std::string> NG_F2C_send_list;
+
+  /// List of IDs for coarse-to-fine sends from this level, should be cleared at
+  /// the beginning of each timestep.
+  std::vector<std::string> NG_C2F_send_list;
+
+  /// List of IDs for MPI sends related to the BC89 Flux
+  /// correction algorithms.  Should be cleared at the beginning
+  /// of each timestep.
+  std::vector<std::string> BC89_flux_send_list;
+
   /// Tell other processes to abort!
   int abort();
 
@@ -571,6 +584,7 @@ public:
 private:
   std::list<struct sent_info *> sent_list;
   std::list<struct recv_info *> recv_list;
+
 
 #ifdef SILO
   PMPIO_baton_t *bat;

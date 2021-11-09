@@ -114,10 +114,6 @@ protected:
       const int *,            ///< level xmin of fine grid.
       const int *             ///< level xmax of fine grid.
   );
-
-  /// List of IDs for all sends, should be cleared at the beginning
-  /// of each timestep.
-  std::vector<string> NG_C2F_send_list;
 };
 
 #endif  // NG_MPI_COARSE_TO_FINE_BOUNDARIES_H

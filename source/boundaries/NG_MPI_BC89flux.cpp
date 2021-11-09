@@ -471,14 +471,14 @@ int NG_MPI_BC89flux::setup_flux_send(
 
 void NG_MPI_BC89flux::clear_sends_BC89_fluxes(class Sub_domain &sub_domain)
 {
-  for (unsigned int ib = 0; ib < BC89_flux_send_list.size(); ib++) {
+  for (unsigned int ib = 0; ib < sub_domain.BC89_flux_send_list.size(); ib++) {
 #ifdef TEST_BC89FLUX
     cout << "clear_sends_BC89_fluxes: waiting for send " << ib;
-    cout << " of " << BC89_flux_send_list.size() << endl;
+    cout << " of " << sub_domain.BC89_flux_send_list.size() << endl;
 #endif
-    sub_domain.wait_for_send_to_finish(BC89_flux_send_list[ib]);
+    sub_domain.wait_for_send_to_finish(sub_domain.BC89_flux_send_list[ib]);
   }
-  BC89_flux_send_list.clear();
+  sub_domain.BC89_flux_send_list.clear();
   return;
 }
 
@@ -571,7 +571,7 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
       cout << endl;
 #endif
       // store ID to clear the send later
-      BC89_flux_send_list.push_back(id);
+      sub_domain->BC89_flux_send_list.push_back(id);
     }  // loop over ranks
     data = mem.myfree(data);
   }  // loop over send boundaries.
