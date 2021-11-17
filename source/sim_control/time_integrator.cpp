@@ -1178,10 +1178,11 @@ int time_integrator::grid_update_state_vector(
   // Loop through grid, updating Ph[] with CellAdvanceTime function.
   class cell *c = grid->FirstPt_All();
   int index[3];
+  double T = 0.0;
 #ifdef PION_OMP
   #pragma omp parallel
   {
-    #pragma omp for collapse(2) private(c,index)
+    #pragma omp for collapse(2) private(c,index,err,temperg,T)
 #endif
     // loop through cells in 1st y-z plane and calculate the MP update for the
     // x-column of cells associated with each starting cell.
@@ -1223,7 +1224,7 @@ int time_integrator::grid_update_state_vector(
 #endif  // NDEBUG
 
           if (MP) {
-            double T = MP->Temperature(c->Ph, SimPM.gamma);
+            T = MP->Temperature(c->Ph, SimPM.gamma);
             if (T > SimPM.EP.MaxTemperature) {
               // cout <<"warning, temperature too large: "<<T<<"\n";
               MP->Set_Temp(c->Ph, SimPM.EP.MaxTemperature, SimPM.gamma);

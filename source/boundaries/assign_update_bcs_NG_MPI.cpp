@@ -355,3 +355,62 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
 
 // ##################################################################
 // ##################################################################
+
+
+
+int assign_update_bcs_NG_MPI::TimeUpdateInternalBCs(
+    class SimParams &par,          ///< pointer to simulation parameters
+    const int level,               ///< level in grid hierarchy
+    class GridBaseClass *grid,     ///< pointer to grid.
+    class FV_solver_base *solver,  ///< pointer to equations
+    const double simtime,          ///< current simulation time
+    const int cstep,
+    const int maxstep)
+{
+#ifdef TEST_MPI_NG
+  cout << "assign_update_bcs_NG::TimeUpdateInternalBCs() running.\n";
+#endif
+  struct boundary_data *b;
+  int err  = 0;
+  size_t i = 0;
+  // cout <<"BC_nbd = "<<grid->BC_bd.size()<<"\n";
+  for (i = 0; i < grid->BC_bd.size(); i++) {
+    b = grid->BC_bd[i];
+    switch (b->itype) {
+      case STWIND:
+        err += BC_update_STWIND(par, grid, simtime, b, cstep, maxstep);
+        break;
+
+      case PERIODIC:
+      case OUTFLOW:
+      case ONEWAY_OUT:
+      case INFLOW:
+      case REFLECTING:
+      case AXISYMMETRIC:
+      case FIXED:
+      case JETBC:
+      case JETREFLECT:
+      case DMACH:
+      case DMACH2:
+      case BCMPI:
+      case COARSE_TO_FINE:
+      case FINE_TO_COARSE:
+      case COARSE_TO_FINE_SEND:
+      case COARSE_TO_FINE_RECV:
+      case FINE_TO_COARSE_SEND:
+      case FINE_TO_COARSE_RECV:
+        //
+        // boundaries not affected by NG grid are updated elsewhere
+        //
+        break;
+    }
+  }
+#ifdef TEST_MPI_NG
+  cout << "updated NG-grid serial internal BCs\n";
+  cout << "assign_update_bcs_NG::TimeUpdateInternalBCs() returns.\n";
+#endif
+  return 0;
+}
+
+// ##################################################################
+// ##################################################################

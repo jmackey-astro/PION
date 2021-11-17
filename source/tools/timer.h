@@ -42,10 +42,12 @@ public:
   ///
   double pause_timer(string);
 
-  ///
-  /// Return total time since timer started, and keep running.
-  ///
+  /// Return total time since timer started (for running timer), and keep
+  /// running.
   double time_so_far(string);
+
+  /// Return time since timer started (for paused timer), and stay paused.
+  double time_so_far_paused(string);
 
   ///
   /// stop a timer, identified by a string, and return time in
