@@ -506,13 +506,13 @@ void Sub_domain::determine_child_neighbours(
   if (par.ndim == 1) return;
 
   /* ranks of neighbours in each direction */
-  for (int i = 0; i < par.ndim; i++) {
+  for (int i = 0; i < par.ndim; ++i) {
     vector<double> centre(par.ndim);
     vector<vector<int> > neighbours(2);
     determine_child_neighbour_ranks(
         par, level, centre, neighbours, (i + 1) % par.ndim, i);
 
-    for (int j = 0; j < 2; j++) {
+    for (int j = 0; j < 2; ++j) {
       if (!neighbours[j].empty()) {
         sort(neighbours[j].begin(), neighbours[j].end());
         neighbours[j].erase(
@@ -524,10 +524,10 @@ void Sub_domain::determine_child_neighbours(
           child.rank = c;
           int domain_coordinates[par.ndim];
           get_domain_coordinates(child.rank, domain_coordinates);
-          for (int i = 0; i < par.ndim; i++) {
-            child.Xmin[i] = par.levels[level + 1].Xmin[i]
-                            + domain_coordinates[i] * 0.5 * range[i];
-            child.Xmax[i] = child.Xmin[i] + 0.5 * range[i];
+          for (int k = 0; k < par.ndim; ++k) {
+            child.Xmin[k] = par.levels[level + 1].Xmin[k]
+                            + domain_coordinates[k] * 0.5 * range[k];
+            child.Xmax[k] = child.Xmin[k] + 0.5 * range[k];
           }
           cgrid_ngb[2 * i + j].push_back(child);
         }
