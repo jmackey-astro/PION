@@ -243,7 +243,7 @@ ifeq ($(MAKE_UNAME), SUPERMUC)
   #CXXFLAGS += -g #-wd981 -wd383
   #CXXFLAGE = -O1 -Wall
   CXXFLAGS += -DINTEL
-  #CXXFLAGS += -DTESTING
+  #CXXFLAGS += -DNDEBUG
 
   # -wd981 disables a warning about order of evaluation of operands:
   #  see http://software.intel.com/en-us/forums/showthread.php?t=62309

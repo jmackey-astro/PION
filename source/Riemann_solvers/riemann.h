@@ -31,6 +31,8 @@
 #ifndef RIEMANN_H
 #define RIEMANN_H
 
+#include <vector>
+
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
@@ -115,12 +117,12 @@ public:
 
 protected:
 private:
-  const int rs_nvar;   ///< length of state vectors required for the Riemann
-                       ///< solver, i.e.5.
-  pion_flt *rs_left;   ///< Local copy of the left state.
-  pion_flt *rs_right;  ///< Local copy of the right state.
-  pion_flt *rs_pstar;  ///< Local copy of result state.
-  pion_flt *rs_meanp;  ///< The average state.
+  const int rs_nvar;  ///< length of state vectors required for the Riemann
+                      ///< solver, i.e.5.
+  std::vector<pion_flt> rs_left;   ///< Local copy of the left state.
+  std::vector<pion_flt> rs_right;  ///< Local copy of the right state.
+  std::vector<pion_flt> rs_pstar;  ///< Local copy of result state.
+  std::vector<pion_flt> rs_meanp;  ///< The average state.
   long int linct;      ///< Counter for how many linear solves we have done.
   long int exact;      ///< Counter for how many exact solves we have done.
   long int total;      ///< counter for how many solves the instance has done.

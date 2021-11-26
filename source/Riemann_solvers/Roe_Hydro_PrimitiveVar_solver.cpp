@@ -22,6 +22,10 @@
 
 #include "Roe_Hydro_PrimitiveVar_solver.h"
 
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 using namespace std;
 
 Riemann_Roe_Hydro_PV::Riemann_Roe_Hydro_PV(
@@ -31,26 +35,18 @@ Riemann_Roe_Hydro_PV::Riemann_Roe_Hydro_PV(
     eqns_base(nv),
     eqns_Euler(nv), rs_nvar(5)
 {
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_PV::Riemann_Roe_Hydro_PV ...starting.\n";
-#endif  // FUNCTION_ID
+  spdlog::info("Riemann_Roe_Hydro_PV::Riemann_Roe_Hydro_PV ...starting");
   //
   // eq_gamma, eq_nvar are defined in eqns_base class
   //
   eq_gamma = g;
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_PV::Riemann_Roe_Hydro_PV ...returning.\n";
-#endif  // FUNCTION_ID
+  spdlog::info("Riemann_Roe_Hydro_PV::Riemann_Roe_Hydro_PV ...returning");
 }
 
 Riemann_Roe_Hydro_PV::~Riemann_Roe_Hydro_PV()
 {
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_PV::~Riemann_Roe_Hydro_PV ...starting.\n";
-#endif  // FUNCTION_ID
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_PV::~Riemann_Roe_Hydro_PV ...returning.\n";
-#endif  // FUNCTION_ID
+  spdlog::info("Riemann_Roe_Hydro_PV::~Riemann_Roe_Hydro_PV ...starting"
+               "Riemann_Roe_Hydro_PV::~Riemann_Roe_Hydro_PV ...returning");
 }
 
 int Riemann_Roe_Hydro_PV::Roe_prim_var_solver(
@@ -59,9 +55,7 @@ int Riemann_Roe_Hydro_PV::Roe_prim_var_solver(
     const double rpv_g,
     pion_flt *rpv_pstar)
 {
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_PV::Roe_prim_var_solver ...starting.\n";
-#endif  // FUNCTION_ID
+  spdlog::info("Riemann_Roe_Hydro_PV::Roe_prim_var_solver ...starting");
   int err = 0;
 
   //
@@ -76,10 +70,11 @@ int Riemann_Roe_Hydro_PV::Roe_prim_var_solver(
   //
   for (int v = 0; v < rs_nvar; v++) {
     if (!isfinite(rpv_left[v]) || !isfinite(rpv_right[v]) || !isfinite(rpv_g)) {
-      rep.printVec(" left", rpv_left, rs_nvar);
-      rep.printVec("right", rpv_right, rs_nvar);
-      rep.printVec("pstar", rpv_pstar, rs_nvar);
-      rep.error("NAN input states to linear solver!", "NANANANANA");
+      spdlog::debug(" left : {}", rpv_left);
+      spdlog::debug("right : {}", rpv_right);
+      spdlog::debug("pstar : {}", rpv_pstar);
+      spdlog::error(
+          "{}: {}", "NAN input states to linear solver!", "NANANANANA");
     }
   }
 #endif  // RSTESTING
@@ -199,8 +194,6 @@ int Riemann_Roe_Hydro_PV::Roe_prim_var_solver(
   //
   // Now we are finished, so return 0 for success.
   //
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_PV::Roe_prim_var_solver ...returning.\n";
-#endif  // FUNCTION_ID
+  spdlog::info("Riemann_Roe_Hydro_PV::Roe_prim_var_solver ...returning");
   return err;
 }

@@ -20,7 +20,7 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
-#include "tools/reporting.h"
+
 
 #include "constants.h"
 #include "grid/cell_interface.h"
@@ -41,8 +41,8 @@ using namespace std;
 
 void point_quantities::SetMicrophysics(class microphysics_base *ptr)
 {
-#ifdef TESTING
-  cout << "point_quantities::SetSolver() Setting microphysics pointer.\n";
+#ifndef NDEBUG
+  spdlog::info("point_quantities::SetSolver() Setting microphysics pointer");
 #endif
   point_quantities::MP = ptr;
 }
@@ -159,7 +159,8 @@ double point_quantities::get_point_temperature(
     // if (ct>0) val /= static_cast<double>(ct);
   }
   else {
-    rep.error("get_point_temperature(): no microphysics class", 1);
+    spdlog::error(
+        "{}: {}", "get_point_temperature(): no microphysics class", 1);
   }
   // if (!isfinite(val))
   // cout <<"Invalid Temperature="<<val<<endl;

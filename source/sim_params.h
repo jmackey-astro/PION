@@ -174,16 +174,19 @@ public:
   long int Ncell;  ///< Total number of 'real' grid zones within the domain
                    ///< (Total for level).
   long int step;   ///< number of steps taken on this level.
-  double Range[MAX_DIM];  ///< Size of domain in x,y,z-direction on this level
-  double Xmin[MAX_DIM];   ///< Min value of x,y,z in domain on this level
-  double Xmax[MAX_DIM];   ///< Max value of x,y,z in domain on this level
-  double dx;              ///< Linear side length of grid cells on this level
-  double simtime;         ///< simulation time at this level.
-  double dt;              ///< current timestep at this level.
-  double last_dt;         ///< previous timestep at this level.
-  int NG[MAX_DIM];  ///< Number of 'real' grid zones in each direction (Total
-                    ///< for level).
-  int multiplier;   ///< 2^l, l=0=coarsest.
+  std::array<double, MAX_DIM>
+      Range;  ///< Size of domain in x,y,z-direction on this level
+  std::array<double, MAX_DIM>
+      Xmin;  ///< Min value of x,y,z in domain on this level
+  std::array<double, MAX_DIM>
+      Xmax;        ///< Max value of x,y,z in domain on this level
+  double dx;       ///< Linear side length of grid cells on this level
+  double simtime;  ///< simulation time at this level.
+  double dt;       ///< current timestep at this level.
+  double last_dt;  ///< previous timestep at this level.
+  std::array<int, MAX_DIM> NG;  ///< Number of 'real' grid zones in each
+                                ///< direction (Total for level).
+  int multiplier;               ///< 2^l, l=0=coarsest.
 #ifdef PARALLEL
   class Sub_domain sub_domain;  ///< domain decomposition on this level
 #endif
@@ -231,13 +234,16 @@ public:
                         ///< dt<min_timestep, but out.
 
   // Grid data
-  int NG[MAX_DIM];  ///< Number of 'real' grid zones in each direction (Total
-                    ///< for sim) (top level).
-  long int Ncell;   ///< Total number of 'real' grid zones (within the range)
-                    ///< (Total for sim) (top level).
-  double Range[MAX_DIM];  ///< Size of domain in x,y,z-direction (top level).
-  double Xmin[MAX_DIM];   ///< Min value of x,y,z in domain (top level).
-  double Xmax[MAX_DIM];   ///< Max value of x,y,z in domain (top level).
+  std::array<int, MAX_DIM> NG;  ///< Number of 'real' grid zones in each
+                                ///< direction (Total for sim) (top level).
+  long int Ncell;  ///< Total number of 'real' grid zones (within the range)
+                   ///< (Total for sim) (top level).
+  std::array<double, MAX_DIM>
+      Range;  ///< Size of domain in x,y,z-direction (top level).
+  std::array<double, MAX_DIM>
+      Xmin;  ///< Min value of x,y,z in domain (top level).
+  std::array<double, MAX_DIM>
+      Xmax;   ///< Max value of x,y,z in domain (top level).
   double dx;  ///< Linear side length of (uniform, cubic, cartesian) grid
               ///< cells (top level).
 

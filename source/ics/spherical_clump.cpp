@@ -11,7 +11,10 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -31,10 +34,10 @@ int IC_spherical_clump::setup_data(
   int err = 0;
 
   ICsetup_base::gg = ggg;
-  if (!gg) rep.error("null pointer to grid!", ggg);
+  if (!gg) spdlog::error("{}: {}", "null pointer to grid!", fmt::ptr(ggg));
 
   ICsetup_base::rp = rrp;
-  if (!rp) rep.error("null pointer to ReadParams", rp);
+  if (!rp) spdlog::error("{}: {}", "null pointer to ReadParams", fmt::ptr(rp));
 
   string seek, str;
 
@@ -43,7 +46,7 @@ int IC_spherical_clump::setup_data(
   //
   seek = "AMB_density";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_spherical_clump::AMB_density = atof(str.c_str());
 
   //
@@ -51,7 +54,7 @@ int IC_spherical_clump::setup_data(
   //
   seek = "AMB_pressure";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_spherical_clump::AMB_pressure = atof(str.c_str());
 
   //
@@ -61,7 +64,7 @@ int IC_spherical_clump::setup_data(
   //
   seek = "SC_radius";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_spherical_clump::SC_rad = atof(str.c_str());
 
   //
@@ -69,7 +72,7 @@ int IC_spherical_clump::setup_data(
   //
   seek = "SC_pressure";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_spherical_clump::SC_pressure_profile = atoi(str.c_str());
 
   //
@@ -77,7 +80,7 @@ int IC_spherical_clump::setup_data(
   //
   seek = "SC_overdensity";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_spherical_clump::SC_overdensity = atof(str.c_str());
 
   //
@@ -85,7 +88,7 @@ int IC_spherical_clump::setup_data(
   //
   seek = "SC_density_profile";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_spherical_clump::SC_density_profile = atoi(str.c_str());
 
   seek = "SC_magfieldX";
@@ -122,23 +125,23 @@ int IC_spherical_clump::setup_data(
   else if (eqns == EQMHD || eqns == EQGLM || eqns == EQFCD)
     eqns = 2;
   else
-    rep.error("Bad equations", eqns);
+    spdlog::error("{}: {}", "Bad equations", eqns);
 
   // now make sure we are to do a blast wave sim.
   string ics = rp->find_parameter("ics");
 
   if (ics == "")
-    rep.error("didn't get any ics to set up.", ics);
+    spdlog::error("{}: {}", "didn't get any ics to set up.", ics);
   else if (ics == "Clump_Spherical" && SimPM->coord_sys == COORD_SPH) {
-    cout << "Setting up Spherically symmetric 1D cloud.\n";
+    spdlog::info("Setting up Spherically symmetric 1D cloud");
     err += setup_clump();
   }
   else if (ics == "Clump_Axisymmetric" && SimPM->coord_sys == COORD_CYL) {
-    cout << "Setting up Axisymmetric 2D cloud.\n";
+    spdlog::info("Setting up Axisymmetric 2D cloud");
     err += setup_clump();
   }
   else
-    rep.error("Don't know what Initial Condition is!", ics);
+    spdlog::error("{}: {}", "Don't know what Initial Condition is!", ics);
 
   // Add noise to data?  Smooth data?
   double noise = 0.0;
@@ -148,7 +151,8 @@ int IC_spherical_clump::setup_data(
     noise = atof(ics.c_str());
   else
     noise = -1;
-  if (isnan(noise)) rep.error("noise parameter is not a number", noise);
+  if (isnan(noise))
+    spdlog::error("{}: {}", "noise parameter is not a number", noise);
   if (noise > 0) err += AddNoise2Data(gg, *SimPM, 2, noise);
 
   ics = rp->find_parameter("smooth");
@@ -156,7 +160,8 @@ int IC_spherical_clump::setup_data(
     smooth = atoi(ics.c_str());
   else
     smooth = -1;
-  if (isnan(smooth)) rep.error("Smooth parameter not a number", smooth);
+  if (isnan(smooth))
+    spdlog::error("{}: {}", "Smooth parameter not a number", smooth);
   if (smooth > 0) err += SmoothData(smooth);
 
   return err;
@@ -165,10 +170,11 @@ int IC_spherical_clump::setup_data(
 int IC_spherical_clump::setup_clump()
 {
   int ndim = gg->Ndim();
-  if (ndim > 2) rep.error("Bad ndim in setup spherical Clump 1D", ndim);
-  cout << "Setting up spherically symmetric clump with radius " << SC_rad;
-  cout << " with an overdensity of " << SC_overdensity << " in an ambient";
-  cout << " medium with rho=" << AMB_density << ", p=" << AMB_pressure << "\n";
+  if (ndim > 2)
+    spdlog::error("{}: {}", "Bad ndim in setup spherical Clump 1D", ndim);
+  spdlog::debug(
+      "Setting up spherically symmetric clump with radius {} with an overdensity of {} in an ambient medium with rho={}, p={}",
+      SC_rad, SC_overdensity, AMB_density, AMB_pressure);
 
   //
   // Centred at [0]
@@ -180,7 +186,7 @@ int IC_spherical_clump::setup_clump()
   //
   // Data.
   //
-  cout << "Assigning primitive vectors.\n";
+  spdlog::info("Assigning primitive vectors");
   class cell *cpt = gg->FirstPt();
   do {
     // Set values of primitive variables.
@@ -222,7 +228,9 @@ int IC_spherical_clump::setup_clump()
         break;
 
       default:
-        rep.error("Bad density profile in spherical_clump", SC_density_profile);
+        spdlog::error(
+            "{}: {}", "Bad density profile in spherical_clump",
+            SC_density_profile);
         break;
     }
 
@@ -239,12 +247,11 @@ int IC_spherical_clump::setup_clump()
         break;
 
       default:
-        rep.error("Bad pressure profile", SC_pressure_profile);
+        spdlog::error("{}: {}", "Bad pressure profile", SC_pressure_profile);
         break;
     }
-    //       cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
   } while ((cpt = gg->NextPt(cpt)) != 0);
-  cout << "Got through data successfully.\n";
+  spdlog::info("Got through data successfully");
   // Data done.
   return (0);
 }

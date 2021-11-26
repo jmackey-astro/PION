@@ -53,7 +53,10 @@
 #ifdef SILO
 
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+#include <fstream>
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "raytracing/raytracer_base.h"
 #include "tools/command_line_interface.h"
@@ -80,7 +83,7 @@ dataio_silo::dataio_silo(
     DataIOBase(SimPM)
 {
 #ifndef NDEBUG
-  cout << "setting up dataio_silo class.\n";
+  spdlog::info("setting up dataio_silo class.");
 #endif
   dataio_silo::eqn = 0;
   dataio_silo::mp  = 0;
@@ -118,7 +121,7 @@ dataio_silo::dataio_silo(
     silo_dtype = DB_DOUBLE;  ///< defined in <silo.h> (ext.lib.)
   }
   else {
-    rep.error("Bad datatype for silo initialisation", dtype);
+    spdlog::error("{}: {}", "Bad datatype for silo initialisation", dtype);
   }
 
   return;
@@ -130,7 +133,7 @@ dataio_silo::dataio_silo(
 dataio_silo::~dataio_silo()
 {
 #ifndef NDEBUG
-  cout << "deleting dataio_silo class.\n";
+  spdlog::info("deleting dataio_silo class.");
 #endif
   dataio_silo::eqn = 0;
   dataio_silo::gp  = 0;
@@ -180,7 +183,7 @@ dataio_silo::~dataio_silo()
 void dataio_silo::SetSolver(FV_solver_base *solver)
 {
 #ifndef NDEBUG
-  cout << "dataio_silo::SetSolver() Setting solver pointer.\n";
+  spdlog::info("dataio_silo::SetSolver() Setting solver pointer.");
 #endif
   dataio_silo::eqn = solver;
 }
@@ -195,7 +198,7 @@ void dataio_silo::SetSolver(FV_solver_base *solver)
 void dataio_silo::SetMicrophysics(class microphysics_base *ptr)
 {
 #ifdef TESTING
-  cout << "dataio_silo::SetSolver() Setting solver pointer.\n";
+  spdlog::info("dataio_silo::SetSolver() Setting solver pointer.");
 #endif
   dataio_silo::mp = ptr;
 }
@@ -212,7 +215,7 @@ int dataio_silo::WriteHeader(
     class SimParams &SimPM       ///< pointer to simulation parameters
 )
 {
-  rep.error("dataio_silo::WriteHeader() don't call me!", 1);
+  spdlog::error("{}: {}", "dataio_silo::WriteHeader() don't call me!", 1);
   return 0;
 }
 
@@ -234,12 +237,15 @@ int dataio_silo::OutputData(
   if (!have_setup_writevars) {
     // set what data to write to the mesh.
     err = dataio_silo::setup_write_variables(SimPM);
-    if (err) rep.error("dataio_silo::OutputData() write vars", err);
+    if (err)
+      spdlog::error("{}: {}", "dataio_silo::OutputData() write vars", err);
   }
   string filename = outfile;
 
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-    if (!cg[l]) rep.error("dataio_silo::OutputData() null pointer!", cg[l]);
+    if (!cg[l])
+      spdlog::error(
+          "{}: {}", "dataio_silo::OutputData() null pointer!", fmt::ptr(cg[l]));
     dataio_silo::gp = cg[l];
 
     // write a different file for each level in the NG grid.
@@ -254,14 +260,15 @@ int dataio_silo::OutputData(
 
     err = dataio_silo::choose_filename(filename, file_counter);
     if (err) {
-      cerr << "dataio_silo::OutputData() error choosing filename.\n";
+      spdlog::error("dataio_silo::OutputData() error choosing filename");
       return err;
     }
-    if (l == 0) cout << "\tWriting to file: " << silofile << "\n";
-    ofstream fff;
+    if (l == 0) spdlog::debug("\tWriting to file: {}", silofile);
+    std::ofstream fff;
     fff.open(silofile.c_str());
     if (!fff) {
-      rep.error("!!!**** Can't write file.  directory exists???", silofile);
+      spdlog::error(
+          "{}: {}", "!!!**** Can't write file.  directory exists???", silofile);
     }
     fff.close();
 
@@ -275,12 +282,13 @@ int dataio_silo::OutputData(
     }
     *db_ptr = DBCreate(
         silofile.c_str(), DB_CLOBBER, DB_LOCAL, "PION data", silo_filetype);
-    if (!(*db_ptr)) rep.error("open silo file failed.", *db_ptr);
+    if (!(*db_ptr))
+      spdlog::error("{}: {}", "open silo file failed.", fmt::ptr(*db_ptr));
 
     // set grid properties for quadmesh
     err = dataio_silo::setup_grid_properties(gp, SimPM);
     if (err) {
-      rep.error("dataio_silo::OutputData() grid props", err);
+      spdlog::error("{}: {}", "dataio_silo::OutputData() grid props", err);
     }
 
     //
@@ -304,7 +312,8 @@ int dataio_silo::OutputData(
     err += DBWrite(
         *db_ptr, "level_xmax", &(SimPM.levels[l].Xmax), dim1, 1, DB_DOUBLE);
     err = write_simulation_parameters(SimPM);
-    if (err) rep.error("dataio_silo::OutputData() writing header", err);
+    if (err)
+      spdlog::error("{}: {}", "dataio_silo::OutputData() writing header", err);
 
     //
     // Create data directory, generate the mesh in the file, and
@@ -315,13 +324,16 @@ int dataio_silo::OutputData(
     DBSetDir(*db_ptr, "/rank_0000_domain_0000");
     string meshname = "unigrid0000";
     err             = dataio_silo::generate_quadmesh(*db_ptr, meshname, SimPM);
-    if (err) rep.error("dataio_silo::OutputData() writing quadmesh", err);
+    if (err)
+      spdlog::error(
+          "{}: {}", "dataio_silo::OutputData() writing quadmesh", err);
 
     dataio_silo::create_data_arrays(SimPM);
     for (std::vector<string>::iterator i = varnames.begin();
          i != varnames.end(); ++i) {
       err = dataio_silo::write_variable2mesh(SimPM, *db_ptr, meshname, (*i));
-      if (err) rep.error("dataio_silo::OutputData() writing var", (*i));
+      if (err)
+        spdlog::error("{}: {}", "dataio_silo::OutputData() writing var", (*i));
     }
 
     // write multimesh info (so data are compatible with MPI files)
@@ -369,7 +381,7 @@ int dataio_silo::OutputData(
     // write the multimesh
     err = DBPutMultimesh(
         *db_ptr, mm_name.c_str(), nmesh, mm_names, meshtypes, mm_opts);
-    if (err) rep.error("dataio_silo:: multimesh", err);
+    if (err) spdlog::error("{}: {}", "dataio_silo:: multimesh", err);
     DBClearOptlist(mm_opts);
 
     // re-use all the multimesh vars for the multivar object
@@ -394,7 +406,9 @@ int dataio_silo::OutputData(
       DBAddOption(mm_opts, DBOPT_MMESH_NAME, mn);
       err = DBPutMultivar(
           *db_ptr, vname.c_str(), nmesh, mm_names, meshtypes, mm_opts);
-      if (err) rep.error("dataio_silo_pllel::SaveLevelData() variable", (*i));
+      if (err)
+        spdlog::error(
+            "{}: {}", "dataio_silo_pllel::SaveLevelData() variable", (*i));
       DBClearOptlist(mm_opts);
     }
 
@@ -422,26 +436,26 @@ int dataio_silo::ReadHeader(
   int err  = 0;
   silofile = infile;
 #ifndef NDEBUG
-  cout << "Reading Header from file: " << silofile << "\n";
+  spdlog::debug("Reading Header from file: {}", silofile);
 #endif
 
   // Create file
   //*db_ptr=0;
   if (silofile.size() >= strlength - 1) {
-    rep.error("string too large", silofile);
+    spdlog::error("{}: {}", "string too large", silofile);
   }
   char temp[strlength];
   strcpy(temp, silofile.c_str());
   *db_ptr = DBOpen(temp, DB_UNKNOWN, DB_READ);
   if (!(*db_ptr)) {
-    rep.error("open silo file failed.", *db_ptr);
+    spdlog::error("{}: {}", "open silo file failed.", fmt::ptr(*db_ptr));
   }
 
   DBSetDir(*db_ptr, "/header");
   err = read_simulation_parameters(SimPM);
   if (err) {
-    rep.error(
-        "dataio_silo::ReadHeader() error reading header \
+    spdlog::error(
+        "{}: {}", "dataio_silo::ReadHeader() error reading header \
                from silo file",
         err);
   }
@@ -449,7 +463,7 @@ int dataio_silo::ReadHeader(
 
   DBClose(*db_ptr);  //*db_ptr=0;
 #ifndef NDEBUG
-  cout << "FINISHED reading Header from file: " << silofile << "\n";
+  spdlog::info("FINISHED reading Header from file: {}", silofile);
 #endif
   return err;
 }
@@ -474,7 +488,7 @@ int dataio_silo::ReadData(
     string::size_type p;
     if ((p = silofile.find("_level")) == string::npos
         && SimPM.grid_nlevels > 1) {
-      rep.error("dataio_silo::ReadData() level", silofile);
+      spdlog::error("{}: {}", "dataio_silo::ReadData() level", silofile);
     }
     else if (SimPM.grid_nlevels > 1) {
       ostringstream temp;
@@ -485,13 +499,16 @@ int dataio_silo::ReadData(
       silofile.replace(p + 6, 2, temp.str());
       // cout <<"p="<<p<<"  string="<<temp.str()<<", silofile=";
     }
-    if (l == 0) cout << "(pion) reading from file: " << silofile << "\n";
+    if (l == 0) spdlog::debug("(pion) reading from file: {}", silofile);
 
-    if (!cg[l]) rep.error("dataio_silo::ReadData() null grid", cg[l]);
+    if (!cg[l])
+      spdlog::error(
+          "{}: {}", "dataio_silo::ReadData() null grid", fmt::ptr(cg[l]));
     dataio_silo::gp = cg[l];
 
     *db_ptr = DBOpen(silofile.c_str(), DB_UNKNOWN, DB_READ);
-    if (!(*db_ptr)) rep.error("open silo file failed.", *db_ptr);
+    if (!(*db_ptr))
+      spdlog::error("{}: {}", "open silo file failed.", fmt::ptr(*db_ptr));
 
     int ftype = DBGetDriverType(*db_ptr);
     if (ftype == DB_HDF5) {
@@ -500,7 +517,7 @@ int dataio_silo::ReadData(
     }
 
     err = set_readvars(SimPM);
-    if (err) rep.error("failed to set readvars in ReadData", err);
+    if (err) spdlog::error("{}: {}", "failed to set readvars in ReadData", err);
 
     //
     // set grid properties for quadmesh: each level of the NG
@@ -508,7 +525,10 @@ int dataio_silo::ReadData(
     // call this each time.
     //
     err = setup_grid_properties(gp, SimPM);
-    rep.errorTest("dataio_silo::ReadData() setup_grid_properties", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}",
+          "dataio_silo::ReadData() setup_grid_properties", 0, err);
 
     DBSetDir(*db_ptr, "/rank_0000_domain_0000");
     string meshname = "unigrid0000";
@@ -524,7 +544,8 @@ int dataio_silo::ReadData(
           SimPM, *db_ptr, meshname, (*i), gp->Ncell());
 #endif
       if (err)
-        rep.error("dataio_silo::ReadData() error reading variable", (*i));
+        spdlog::error(
+            "{}: {}", "dataio_silo::ReadData() error reading variable", (*i));
     }
     DBSetDir(*db_ptr, "/");
 
@@ -581,7 +602,9 @@ int dataio_silo::setup_grid_properties(
 {
   // set grid parameters -- UNIFORM FIXED GRID
   if (!grid)
-    rep.error("dataio_silo::setup_grid_properties() null pointer!", grid);
+    spdlog::error(
+        "{}: {}", "dataio_silo::setup_grid_properties() null pointer!",
+        fmt::ptr(grid));
 
   // first delete arrays, if allocated
   if (nodedims) {
@@ -767,7 +790,7 @@ int dataio_silo::setup_grid_properties(
   else if (SimPM.coord_sys == COORD_SPH)
     silo_coordsys = DB_SPHERICAL;
   else
-    rep.error("bad coord system", SimPM.coord_sys);
+    spdlog::error("{}: {}", "bad coord system", SimPM.coord_sys);
   err = DBAddOption(
       GridOpts, DBOPT_COORDSYS, reinterpret_cast<void *>(&silo_coordsys));
   // rep.errorTest("add coord-sys opt silo qmesh",0,err);
@@ -800,10 +823,14 @@ int dataio_silo::setup_grid_properties(
 #endif
   err =
       DBAddOption(GridOpts, DBOPT_LO_OFFSET, reinterpret_cast<void *>(lo_off));
-  rep.errorTest("add lo-offset opt silo qmesh", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "add lo-offset opt silo qmesh", 0, err);
   err =
       DBAddOption(GridOpts, DBOPT_HI_OFFSET, reinterpret_cast<void *>(hi_off));
-  rep.errorTest("add hi-offset opt silo qmesh", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "add hi-offset opt silo qmesh", 0, err);
   // rep.errorTest("add GridOpts silo qmesh",0,err);
   // rep.printVec("lo-off",lo_off,ndim);
   // rep.printVec("hi-off",hi_off,ndim);
@@ -831,7 +858,8 @@ int dataio_silo::setup_write_variables(
 )
 {
   if (!varnames.empty())
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "dataio_silo::setup_write_variables() variable list not empty!",
         varnames.size());
 
@@ -933,7 +961,8 @@ int dataio_silo::setup_write_variables(
           break;
 
         default:
-          rep.error("Bad radiation source type", SimPM.RS.sources[v].type);
+          spdlog::error(
+              "{}: {}", "Bad radiation source type", SimPM.RS.sources[v].type);
           break;
       }  // switch
     }    // loop over Tau vars for source
@@ -974,10 +1003,9 @@ int dataio_silo::setup_write_variables(
   }
 
 #ifndef NDEBUG
-  cout << "list of vars: ";
+  spdlog::debug("list of vars: ");
   for (unsigned int i = 0; i < varnames.size(); i++)
-    cout << varnames[i] << "  ";
-  cout << "\n";
+    spdlog::debug("{}  ", varnames[i]);
 #endif  // NDEBUG
   have_setup_writevars = true;
   return 0;
@@ -1037,7 +1065,7 @@ int dataio_silo::write_header_param(class pm_base *p)
   }
 
   if (err) {
-    cout << "\t" << p->name << ":  ERROR WRITING VAR!\n";
+    spdlog::error("\t{}:  ERROR WRITING VAR!\n", p->name);
   }
   // else {
   //   cout <<"\t"<<p->name<<":  "; p->show_val(); cout <<"\n";
@@ -1070,7 +1098,7 @@ int dataio_silo::generate_quadmesh(
   // if      (SimPM.coord_sys==COORD_CRT) csys=DB_CARTESIAN;
   // else if (SimPM.coord_sys==COORD_CYL) csys=DB_CYLINDRICAL;
   // else if (SimPM.coord_sys==COORD_SPH) csys=DB_SPHERICAL;
-  // else rep.error("bad coord system",SimPM.coord_sys);
+  // else spdlog::error("{}: {}", "bad coord system",SimPM.coord_sys);
   // DBAddOption(GridOpts,DBOPT_COORDSYS,&csys);
 
   //
@@ -1093,16 +1121,12 @@ int dataio_silo::generate_quadmesh(
 
 #ifndef NDEBUG
   for (int i = 0; i < ndim; i++) {
-    cout << "coords: ";
-    cout << coordnames[i] << "  ";
-    cout << node_coords[i] << "  " << nodedims[i];
-    cout << endl;
+    spdlog::debug(
+        "coords: {}  {}  {}", coordnames[i], node_coords[i], nodedims[i]);
   }
-  cout << "dbfile: " << dbfile << "\tcoordnames:" << coordnames << endl;
-  ;
-  cout << "nodecoords:" << node_coords << "\tnodedims:" << nodedims
-       << "\tndim:" << ndim << endl;
-  cout << "gridopts:" << GridOpts << endl;
+  spdlog::debug(
+      "dbfile: {}\tndim:{}\tgridopts:{}", fmt::ptr(dbfile), ndim,
+      fmt::ptr(GridOpts));
 #endif
 
   //
@@ -1281,32 +1305,39 @@ int dataio_silo::write_variable2mesh(
 )
 {
   if (!data0)
-    rep.error("allocate data arrays before trying to write data!", data0);
+    spdlog::error(
+        "{}: {}", "allocate data arrays before trying to write data!", data0);
   int err = 0;
 
   if (variable == "Velocity" || variable == "MagneticField") {
     // put data into vec array.
     err = get_vector_data_array(variable, SimPM, vec_data);
-    if (err) rep.error("failed to get vector data for var.", variable);
+    if (err)
+      spdlog::error("{}: {}", "failed to get vector data for var.", variable);
     // write data to mesh.
     err = write_vector2mesh(dbfile, meshname, variable, vec_data);
-    if (err) rep.error("failed to write vector data for var.", variable);
+    if (err)
+      spdlog::error("{}: {}", "failed to write vector data for var.", variable);
   }  // vector variable
 
   else if (variable == "NG_Mask") {
     // array is an int, so need different functions
     err = get_int_scalar_data_array(variable, SimPM, mask);
-    if (err) rep.error("failed to get scalar data for var.", variable);
+    if (err)
+      spdlog::error("{}: {}", "failed to get scalar data for var.", variable);
     err = write_scalar2mesh(dbfile, meshname, variable, mask);
-    if (err) rep.error("failed to write scalar data for var.", variable);
+    if (err)
+      spdlog::error("{}: {}", "failed to write scalar data for var.", variable);
   }
 
   else {
     // scalar variable, already have array, so just get data and write it.
     err = get_scalar_data_array(variable, SimPM, data0);
-    if (err) rep.error("failed to get scalar data for var.", variable);
+    if (err)
+      spdlog::error("{}: {}", "failed to get scalar data for var.", variable);
     err = write_scalar2mesh(dbfile, meshname, variable, data0);
-    if (err) rep.error("failed to write scalar data for var.", variable);
+    if (err)
+      spdlog::error("{}: {}", "failed to write scalar data for var.", variable);
   }  // scalar variable
 
   return 0;
@@ -1342,7 +1373,7 @@ int dataio_silo::get_int_scalar_data_array(
 #endif
   }
   else
-    rep.error("what INT variable?", variable);
+    spdlog::error("{}: {}", "what INT variable?", variable);
 
   return 0;
 }
@@ -1395,7 +1426,7 @@ int dataio_silo::get_scalar_data_array(
   else if (variable.substr(0, 2) == "Tr") {
     int itr = atoi(variable.substr(2, 3).c_str());
     if (!isfinite(itr) || itr < 0 || itr >= MAX_NVAR) {
-      rep.error("Bad tracer variable identifier.", variable);
+      spdlog::error("{}: {}", "Bad tracer variable identifier.", variable);
     }
     v = SimPM.ftr + itr;
   }
@@ -1458,7 +1489,8 @@ int dataio_silo::get_scalar_data_array(
   else if (variable.find("ColDiff") != string::npos) {
     int tdv = atoi(variable.substr(8).c_str());
     if (!isfinite(tdv) || tdv < 0 || tdv > 9) {
-      rep.error("Bad diffuse Column-density identifier.", variable);
+      spdlog::error(
+          "{}: {}", "Bad diffuse Column-density identifier.", variable);
     }
     v = -10 - tdv;
   }
@@ -1468,12 +1500,13 @@ int dataio_silo::get_scalar_data_array(
   else if (variable.find("Col_Src") != string::npos) {
     int tdv = atoi(variable.substr(8).c_str());
     if (!isfinite(tdv) || tdv < 0 || tdv > 9) {
-      rep.error("Bad Ionising source identifier.", variable);
+      spdlog::error("{}: {}", "Bad Ionising source identifier.", variable);
     }
     v = -20 - tdv;
   }
   else
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "Bad variable requested for dataio_silo::get_scalar_data_array()",
         variable);
 #endif  // RT_TESTING_OUTPUTCOL
@@ -1696,8 +1729,8 @@ int dataio_silo::get_scalar_data_array(
   else if (v <= -20 && v > -30) {
     // ionising-RT column density variable.
 #ifndef NDEBUG
-    cout << "writing variable " << v << " corresponding to NH0 RT ";
-    cout << "variable " << variable << "\n";
+    spdlog::debug(
+        "writing variable {} corresponding to NH0 RT variable {}", v, variable);
 #endif
     double Tau[MAX_TAU];
     int col_id = abs(v + 20);
@@ -1732,8 +1765,9 @@ int dataio_silo::get_scalar_data_array(
   else if (v <= -10 && v > -20) {
     // diffuse-RT column density variable.
 #ifndef NDEBUG
-    cout << "writing variable " << v << " corresponding to Ntot RT ";
-    cout << "variable " << variable << "\n";
+    spdlog::debug(
+        "writing variable {} corresponding to Ntot RT variable {}", v,
+        variable);
 #endif
     double Tau[MAX_TAU];
     int col_id = abs(v + 10);
@@ -1772,7 +1806,8 @@ int dataio_silo::get_scalar_data_array(
     // Hardcode this for double arrays (to save coding).
     //
     if (silo_dtype == DB_FLOAT)
-      rep.error("(silo) Use double precision for debugging!", silo_dtype);
+      spdlog::error(
+          "{}: {}", "(silo) Use double precision for debugging!", silo_dtype);
     do {
       darr[ct] = c->e.ci_cooling;
       ct++;
@@ -1848,7 +1883,7 @@ int dataio_silo::get_scalar_data_array(
 #endif  // COUNT_ENERGETICS
 
   else
-    rep.error("Don't understand what variable to write.", v);
+    spdlog::error("{}: {}", "Don't understand what variable to write.", v);
 
   return 0;
 }
@@ -1878,7 +1913,7 @@ int dataio_silo::get_vector_data_array(
       err += get_scalar_data_array("MagneticFieldZ", SimPM, buffer[2]);
   }
   else {
-    cerr << "Don't know variable: " << variable << " as a vector array.\n";
+    spdlog::error("Don't know variable: {} as a vector array", variable);
     err = 99;
   }
   return err;
@@ -1927,7 +1962,7 @@ int dataio_silo::write_vector2mesh(
 {
   int err = 0;
   if (variable != "Velocity" && variable != "MagneticField")
-    rep.error("Don't know what vector to write!!!", variable);
+    spdlog::error("{}: {}", "Don't know what vector to write!!!", variable);
   // cout <<"writing variable "<<variable<<" to mesh.\n";
   //
   // Set up array of vector element names.  Has to be done with (char **).
@@ -2020,7 +2055,7 @@ int dataio_silo::read_header_param(class pm_base *p)
       err = 0;
     }
     else {
-      cout << "\t" << p->name << ":  ERROR READING VAR!\n";
+      spdlog::error("\t{}:  ERROR READING VAR!", p->name);
     }
   }
 
@@ -2117,23 +2152,22 @@ int dataio_silo::read_variable2grid(
   DBquadvar *silodata = 0;
   silodata            = DBGetQuadvar(dbfile, variable.c_str());
   if (!silodata) {
-    rep.error(
-        "dataio_silo::read_variable2grid() failed to read variable", variable);
+    spdlog::error(
+        "{}: {}", "dataio_silo::read_variable2grid() failed to read variable",
+        variable);
   }
-  rep.errorTest(
-      "dataio_silo::read_variable2grid() ncells", silodata->nels, npt);
+  if (silodata->nels != npt)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "dataio_silo::read_variable2grid() ncells", silodata->nels, npt);
   //
   // Check that datatype is what we are expecting!  If not, then
   // delete data arrays, reset datatype, and re-create data arrays.
   //
   if (silodata->datatype != silo_dtype) {
-    cout << "HMMM: file has datatype " << silodata->datatype;
-    cout << " but I am trying to read datatype " << silo_dtype << "\n";
-    cout << "    DB_INT=16, DB_SHORT=17, DB_LONG=18, DB_FLOAT=19, ";
-    cout << "DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\n";
-    cout << "SRAD_read_var2grid() quadvar has type=" << silodata->datatype;
-    cout << " but expecting type=" << silo_dtype << "\n";
-    cout << "\t... resetting datatype for this file.\n";
+    spdlog::debug(
+        "HMMM: file has datatype {} but I am trying to read datatype {}\n    DB_INT=16, DB_SHORT=17, DB_LONG=18, DB_FLOAT=19, DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\nSRAD_read_var2grid() quadvar has type={} but expecting type={}\n\t... resetting datatype for this file.\n",
+        silodata->datatype, silo_dtype, silodata->datatype, silo_dtype);
     delete_data_arrays();
     silo_dtype = silodata->datatype;
     create_data_arrays(SimPM);
@@ -2230,7 +2264,9 @@ int dataio_silo::read_variable2grid(
 #endif
     }
     if (ct != npt)
-      rep.error("wrong number of points read for vector variable", ct - npt);
+      spdlog::error(
+          "{}: {}", "wrong number of points read for vector variable",
+          ct - npt);
   }  // vector variable
 
   //
@@ -2270,12 +2306,12 @@ int dataio_silo::read_variable2grid(
     else if (variable.substr(0, 2) == "Tr") {
       int itr = atoi(variable.substr(2, 3).c_str());
       if (!isfinite(itr) || itr < 0 || itr >= MAX_NVAR) {
-        rep.error("Bad tracer variable identifier.", variable);
+        spdlog::error("{}: {}", "Bad tracer variable identifier.", variable);
       }
       v1 = SimPM.ftr + itr;
     }
     else
-      rep.error("what var to read???", variable);
+      spdlog::error("{}: {}", "what var to read???", variable);
 
       // cout <<"reading variable "<<variable<<" into element "<<v1<<" of
       // state vec.\n";
@@ -2316,7 +2352,9 @@ int dataio_silo::read_variable2grid(
 #endif
     }
     if (ct != npt)
-      rep.error("wrong number of points read for scalar variable", ct - npt);
+      spdlog::error(
+          "{}: {}", "wrong number of points read for scalar variable",
+          ct - npt);
   }  // scalar variable
 
   //  cout <<"Read variable "<<variable<<"\n";

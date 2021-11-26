@@ -5,6 +5,10 @@
 /// Modifications :\n
 /// - 2018.08.08 JM: moved code.
 
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 #include "boundaries/NG_fine_to_coarse_boundaries.h"
 #include "tools/mem_manage.h"
 using namespace std;
@@ -24,9 +28,10 @@ int NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
   // Make a list of child-grid cells to map onto the coarse grid
   //
   if (b->NGrecvF2C.size() <= static_cast<unsigned int>(i))
-    rep.error("BC_assign_FINE_TO_COARSE: recv vec too small", i);
+    spdlog::error("{}: {}", "BC_assign_FINE_TO_COARSE: recv vec too small", i);
   if (b->NGrecvF2C[i].empty())
-    rep.error("BC_assign_FINE_TO_COARSE: empty boundary data", b->itype);
+    spdlog::error(
+        "{}: {}", "BC_assign_FINE_TO_COARSE: empty boundary data", b->itype);
 
   //
   // If we are doing raytracing, then also send the column densities
@@ -40,8 +45,9 @@ int NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
     F2C_tauoff[isrc] = F2C_Nxd;
     F2C_Nxd += 2 * s->NTau;  // Need col2cell and cell_col for each Tau.
 #ifdef TEST_MPI_NG
-    cout << "F2C_BC: RT Source " << isrc << ": adding " << 2 * s->NTau;
-    cout << " cols, running total = " << F2C_Nxd << "\n";
+    spdlog::debug(
+        "F2C_BC: RT Source {}: adding {} cols, running total = {}", isrc,
+        2 * s->NTau, F2C_Nxd);
 #endif
   }
 
@@ -57,7 +63,7 @@ int NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
 
   // add each cell in the child grid to the "avg" vector:
 #ifdef TEST_MPI_NG
-  cout << "F2C_SERIAL: adding cells to avg struct. nel=" << nel << "\n";
+  spdlog::debug("F2C_SERIAL: adding cells to avg struct. nel={}", nel);
 #endif
   add_cells_to_avg(par.ndim, child, nel, b->avg);
 
@@ -75,15 +81,14 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
 )
 {
 #ifdef TEST_MPI_NG
-  cout << "NG_fine_to_coarse_bc::add_cells_to_avg()";
-  cout << " nd=" << ndim << ", grid=" << grid << ", nel=" << nel;
-  cout << ", avg.size=" << avg.size() << "\n";
-  cout << "NG=" << grid->NG(XX) << "\n";
+  spdlog::debug(
+      "NG_fine_to_coarse_bc::add_cells_to_avg() nd={}, grid={}, nel={}, avg.size={}NG={}",
+      ndim, grid, nel, avg.size(), grid->NG(XX));
 #endif
   // loop through avg vector and add cells and positions
   cell *f = grid->FirstPt(), *m = f;
   int v = 0, ix = 0, iy = 0, iz = 0;
-  int ipos[MAX_DIM];
+  std::array<int, MAX_DIM> ipos;
   int dxo2 = grid->idx() / 2;
 
   for (v = 0; v < nel; v++) {
@@ -110,9 +115,9 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
       ipos[i] = 0.0;
     CI.get_dpos_vec(ipos, avg[v].cpos);
 #ifdef TEST_MPI_NG
-    rep.printVec("~AVG cellpos", ipos, ndim);
+    spdlog::debug("~AVG cellpos : {}", ipos);
     for (unsigned int i = 0; i < avg[0].c.size(); i++) {
-      rep.printVec("cellpos", avg[v].c[i]->pos, ndim);
+      spdlog::debug("cellpos : {}", avg[v].c[i]->pos);
     }
     // rep.printVec("fine cell pos",f->pos,ndim);
 #endif
@@ -124,7 +129,7 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
     if (ix >= grid->NG(XX)) {
       // end of column, loop to next y-column
 #ifdef TEST_MPI_NG
-      cout << "eoc: " << ix << "," << iy << "," << iz << "\n";
+      spdlog::debug("eoc: {},{},{}", ix, iy, iz);
 #endif
       ix = 0;
       if (ndim > 1) {
@@ -133,13 +138,13 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
           f = grid->NextPt(f, YP);
           iy++;
 #ifdef TEST_MPI_NG
-          cout << "moving to next row, iy=" << iy << "\n";
+          spdlog::debug("moving to next row, iy={}", iy);
 #endif
         }
         else {
           // end of plane, loop to next z-column
 #ifdef TEST_MPI_NG
-          cout << "eop: " << ix << "," << iy << "," << iz << "\n";
+          spdlog::debug("eop: {},{},{}", ix, iy, iz);
 #endif
           iy = 0;
           if (ndim > 2) {
@@ -154,7 +159,7 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
             else {
               // must be at end of grid.
 #ifdef TEST_MPI_NG
-              cout << "eog: " << ix << "," << iy << "," << iz << "\n";
+              spdlog::debug("eog: {},{},{}", ix, iy, iz);
 #endif
             }
           }  // ndim==3
@@ -237,8 +242,8 @@ int NG_fine_to_coarse_bc::average_cells(
     class GridBaseClass *grid,     ///< fine-level grid
     const int ncells,              ///< number of fine-level cells
     std::vector<cell *> &c,        ///< list of cells
-    const pion_flt *cpos,          ///< centre of coarse cell.
-    double *cd                     ///< [OUTPUT] averaged data (conserved var).
+    const std::array<pion_flt, MAX_DIM> &cpos,  ///< centre of coarse cell.
+    double *cd  ///< [OUTPUT] averaged data (conserved var).
 )
 {
   pion_flt u[par.nvar];
@@ -261,7 +266,7 @@ int NG_fine_to_coarse_bc::average_cells(
   for (c_iter = c.begin(); c_iter != c.end(); ++c_iter) {
     cell *f = (*c_iter);
 #ifdef TEST_MPI_NG
-    if (!f) rep.error("cell doesn't exist average_cells", f);
+    if (!f) spdlog::error("{}: {}", "cell doesn't exist average_cells", f);
 #endif
     // cout <<"cell "<<f->id<<" averaging. ";
     // get conserved vars for cell in fine grid, *cellvol.
@@ -292,9 +297,9 @@ int NG_fine_to_coarse_bc::average_cells(
   //
   // If doing RT, we also want to update column densities here.
   //
-  int pos[MAX_DIM];
+  std::array<int, MAX_DIM> pos;
   CI.get_ipos_vec(cpos, pos);
-  get_F2C_TauAvg(par, ncells, c, pos, &(cd[par.nvar]));
+  get_F2C_TauAvg(par, ncells, c, pos.data(), &(cd[par.nvar]));
 
   // DEBUG
   /*
@@ -354,7 +359,7 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_1D(
   class cell *f1, *f2;
   struct rad_src_info *s;
   // int diffx,diffy;
-  int spos[MAX_DIM];
+  std::array<int, MAX_DIM> spos;
   for (int iT = 0; iT < MAX_TAU; iT++)
     Tavg[iT] = 0.0;
 
@@ -411,22 +416,23 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_2D(
   class cell *f1, *f2, *f3, *f4;
   struct rad_src_info *s;
   int diffx, diffy;
-  int spos[MAX_DIM];
+  std::array<int, MAX_DIM> spos;
   for (int iT = 0; iT < MAX_TAU; iT++)
     Tavg[iT] = 0.0;
   for (int iT = 0; iT < MAX_TAU; iT++)
     dTavg[iT] = 0.0;
 
 #ifdef RT_TESTING
-  cout << "2D F2C RT Routine\n";
+  spdlog::info("2D F2C RT Routine");
 #endif
   f1 = c[0];
   f2 = c[1];
   f3 = c[2];
   f4 = c[3];
 #ifdef RT_TESTING
-  cout << "f: [" << f1->pos[XX] << "," << f1->pos[YY] << "], c: [";
-  cout << cpos[XX] << "," << cpos[YY] << "] : ";
+  spdlog::debug(
+      "f: [{},{}], c: [{},{}] : ", f1->pos[XX], f1->pos[YY], cpos[XX],
+      cpos[YY]);
 #endif
   for (int isrc = 0; isrc < par.RS.Nsources; isrc++) {
     s = &(par.RS.sources[isrc]);
@@ -440,9 +446,9 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_2D(
     diffx = spos[XX] - cpos[XX];
     diffy = spos[YY] - cpos[YY];
 #ifdef RT_TESTING
-    cout << "diffxy = " << diffx << "  " << diffy << ": ";
-    cout << "t1=" << *Tau1 << ", t2=" << *Tau2 << ", t3=";
-    cout << *Tau3 << ", t4=" << *Tau4;
+    spdlog::debug(
+        "diffxy = {}  {}: t1={}, t2={}, t3={}, t4={}", diffx, diffy, *Tau1,
+        *Tau2, *Tau3, *Tau4);
 #endif
     // column from source through cell depends on
     // which direction is to the source
@@ -517,7 +523,7 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_2D(
         }
       }
 #ifdef RT_TESTING
-      cout << "  tc=" << *Tavg;
+      spdlog::debug("  tc={}", *Tavg);
 #endif
       // column through cell is sum of 4 fine cells divided by 2.
       // this is a fairly crude approx, and so it is checked in the
@@ -540,7 +546,7 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_2D(
       // CI.print_cell(f2);
       // CI.print_cell(f3);
       // CI.print_cell(f4);
-      // rep.error("interpolation",99);
+      // spdlog::error("{}: {}", "interpolation",99);
       for (int iT = 0; iT < s->NTau; iT++)
         dTavg[iT] = 0.99 * Tavg[iT];
     }
@@ -554,7 +560,7 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_2D(
       T[F2C_tauoff[isrc] + s->NTau + iT] = dTavg[iT];
 
 #ifdef RT_TESTING
-    cout << "  dtc=" << *Tau1 << "\n";
+    spdlog::debug("  dtc={}", *Tau1);
 #endif
   }
   // rep.printVec("*** T ***",T,F2C_Nxd);
@@ -578,14 +584,14 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_3D(
   class cell *f[8];  // list of fine cells
   struct rad_src_info *s;
   // int diffx,diffy,diffz;
-  int spos[MAX_DIM];
+  std::array<int, MAX_DIM> spos;
   for (int iT = 0; iT < MAX_TAU; iT++)
     Tavg[iT] = 0.0;
   for (int iT = 0; iT < MAX_TAU; iT++)
     dTavg[iT] = 0.0;
 
 #ifdef RT_TESTING
-  cout << "3D F2C RT Routine\n";
+  spdlog::info("3D F2C RT Routine");
 #endif
   for (int i = 0; i < 8; i++)
     f[i] = c[i];
@@ -642,12 +648,10 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_3D(
       T[F2C_tauoff[isrc] + s->NTau + iT] = dTavg[iT];
 
 #ifdef RT_TESTING
-    cout << "  3D  dtc=" << *Tau1 << "\n";
+    spdlog::debug("  3D  dtc={}", *Tau1);
 #endif
   }
   // rep.printVec("*** T ***",T,F2C_Nxd);
-
-  return;
 }
 
 // ##################################################################

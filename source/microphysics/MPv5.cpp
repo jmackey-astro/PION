@@ -24,7 +24,10 @@
 #include "defines/testing_flags.h"
 
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -51,7 +54,7 @@ MPv5::MPv5(
     MPv3(nd, csys, nv, ntr, tracers, ephys, rsrcs, g)
 {
 #ifndef NDEBUG
-  cout << "MPv5 constructor setting up.\n";
+  spdlog::info("MPv5 constructor setting up");
 #endif
   return;
 }
@@ -62,7 +65,7 @@ MPv5::MPv5(
 MPv5::~MPv5()
 {
 #ifndef NDEBUG
-  cout << "MPv5 destructor.\n";
+  spdlog::info("MPv5 destructor");
 #endif
   return;
 }
@@ -163,7 +166,7 @@ int MPv5::ydot(
         break;
 
       default:
-        rep.error("Bad ion_src_type in dYdt()", ion_src_type);
+        spdlog::error("{}: {}", "Bad ion_src_type in dYdt()", ion_src_type);
         break;
     }  // switch
   }

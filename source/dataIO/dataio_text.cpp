@@ -10,7 +10,10 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -20,6 +23,7 @@
 #include "grid/stellar_wind_BC.h"
 #include "raytracing/raytracer_base.h"
 
+#include <fstream>
 #include <sstream>
 using namespace std;
 
@@ -62,14 +66,14 @@ int dataio_text::ReadHeader(
 )
 {
   // read info from parameterfile.
-  cout
-      << "dataio_text::ReadHeader() Read simulation info from parameterfile.\n";
+  spdlog::info(
+      "dataio_text::ReadHeader() Read simulation info from parameterfile");
   if (!file_exists(pfile)) {
-    cerr << "dataio_text::ReadHeader() file doesn't exist.\n";
+    spdlog::error("dataio_text::ReadHeader() file doesn't exist");
     return 99;
   }
   int err = get_parameters(pfile, SimPM);
-  cout << "dataio_text::ReadHeader() Header info all read in.\n";
+  spdlog::info("dataio_text::ReadHeader() Header info all read in");
   return err;
 }
 
@@ -82,12 +86,15 @@ int dataio_text::ReadData(
     class SimParams &SimPM              ///< pointer to simulation parameters
 )
 {
-  if (!cg[0]) rep.error("dataio_text::ReadData() null pointer to grid!", cg[0]);
+  if (!cg[0])
+    spdlog::error(
+        "{}: {}", "dataio_text::ReadData() null pointer to grid!",
+        fmt::ptr(cg[0]));
   dataio_text::gp = cg[0];
 
-  cout << "dataio_text::ReadData() Assigning initial data.\n";
+  spdlog::info("dataio_text::ReadData() Assigning initial data");
   int err = assign_initial_data(SimPM);
-  cout << "dataio_text::ReadData() Assigned initial data.\n";
+  spdlog::info("dataio_text::ReadData() Assigned initial data");
 
   // We have read in all the parameters we need, so delete it.
   // if(rp!=0) {
@@ -107,7 +114,7 @@ int dataio_text::ReadData(
 
 void dataio_text::SetSolver(FV_solver_base *solver)
 {
-  cout << "dataio_text::SetSolver() Setting solver pointer.\n";
+  spdlog::info("dataio_text::SetSolver() Setting solver pointer");
   dataio_text::eqn = solver;
   return;
 }
@@ -122,7 +129,7 @@ void dataio_text::SetSolver(FV_solver_base *solver)
 void dataio_text::SetMicrophysics(class microphysics_base *ptr)
 {
 #ifdef TESTING
-  cout << "dataio_text::SetMicrophysics() Setting solver pointer.\n";
+  spdlog::info("dataio_text::SetMicrophysics() Setting solver pointer");
 #endif
   dataio_text::mp = ptr;
 }
@@ -141,13 +148,15 @@ int dataio_text::OutputData(
 {
   int err = 0;
   if (!cg[0])
-    rep.error("dataio_text::output_ascii_data() null pointer to grid!", cg[0]);
+    spdlog::error(
+        "{}: {}", "dataio_text::output_ascii_data() null pointer to grid!",
+        fmt::ptr(cg[0]));
   dataio_text::gp = cg[0];
 
-  cout << "dataio_text::OutputData() writing data.\n";
+  spdlog::info("dataio_text::OutputData() writing data");
   string fname = set_filename(outfile, counter);
   err          = output_ascii_data(fname, SimPM);
-  cout << "dataio_text::OutputData() written data.\n";
+  spdlog::info("dataio_text::OutputData() written data");
 
   return err;
 }
@@ -184,19 +193,17 @@ int dataio_text::get_parameters(
     class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
-  cout << "(dataio_text::get_parameters) from file " << pfile << " starting.\n";
+  spdlog::info("(dataio_text::get_parameters) from file {} starting", pfile);
 
   rp = new ReadParams();
   if (!rp) {
-    cerr << "(init) Error initialising *rp...exiting."
-         << "\n";
+    spdlog::error("(init) Error initialising *rp...exiting.");
     return (1);
   }
 
   // Parse the parameterfile.
   if (rp->read_paramfile(pfile) != 0) {
-    cerr << "(init) Error reading parameterfile...exiting."
-         << "\n";
+    spdlog::error("(init) Error reading parameterfile...exiting.");
     return (1);
   }
   //   rp->write_out_parameters();
@@ -206,7 +213,9 @@ int dataio_text::get_parameters(
 
   ts = rp->find_parameter("solver");
   if (ts == "") {
-    rep.warning("No solver specified; using LF.", "LF", ts);
+    spdlog::warn(
+        "{}: Expected {} but got {}", "No solver specified; using LF.", "LF",
+        ts);
     SimPM.solverType = FLUX_LF;
   }
   else if (ts == "LF") {
@@ -237,22 +246,26 @@ int dataio_text::get_parameters(
     SimPM.solverType = FLUX_RS_HLL;
   }
   else
-    rep.error("No solver specified!", ts);
+    spdlog::error("{}: {}", "No solver specified!", ts);
 
   ts = rp->find_parameter("eqnndim");
   if (ts == "") {
-    rep.warning("Setting eqnndim=3, not found in param-file", -1, -1);
+    spdlog::warn(
+        "{}: Expected {} but got {}",
+        "Setting eqnndim=3, not found in param-file", -1, -1);
     SimPM.eqnNDim = 3;
   }
   else if (ts == "3") {
     SimPM.eqnNDim = 3;
   }
   else
-    rep.error("eqnndim !=3 in paramfile.", ts);
+    spdlog::error("{}: {}", "eqnndim !=3 in paramfile.", ts);
 
   ts = rp->find_parameter("eqn");
   if (ts == "") {
-    rep.warning("No equations specified; using Euler.", "euler", ts);
+    spdlog::warn(
+        "{}: Expected {} but got {}", "No equations specified; using Euler.",
+        "euler", ts);
     SimPM.eqntype = 1;
     SimPM.nvar    = 5;
   }
@@ -283,25 +296,27 @@ int dataio_text::get_parameters(
   }
 #endif  // if INCLUDE_EINT_ADI_HYDRO
   else {
-    cout << " Please use \'euler\',\'i-mhd\',\'glm-mhd\',\'euler-Eint\' for "
-            "eqn-type\n";
-    rep.error(
-        "\'eqn\' not in param-file: Don't know what equations to set", ts);
+    spdlog::error(
+        " Please use \'euler\',\'i-mhd\',\'glm-mhd\',\'euler-Eint\' for eqn-type");
+    spdlog::error(
+        "{}: {}", "\'eqn\' not in param-file: Don't know what equations to set",
+        ts);
   }
 
   //  ts=rp->find_parameter("gridtype");
   //  if(ts!="")
   //    SimPM.gridType =atoi(ts.c_str());
-  //  else {rep.warning("No GridType set; using Uniform
-  //  Finite-Volume.",1,SimPM.gridType); SimPM.gridType=1;} if
-  //  (SimPM.gridType!=1) rep.error("GridType not set to Uniform
+  //  else {spdlog::warn("{}: Expected {} but got {}", "No GridType set; using
+  //  Uniform Finite-Volume.",1,SimPM.gridType); SimPM.gridType=1;} if
+  //  (SimPM.gridType!=1) spdlog::error("{}: {}", "GridType not set to Uniform
   //  Finite-Volume; need to set later.",SimPM.gridType);
 
   ts = rp->find_parameter("ndim");
   if (ts != "") SimPM.ndim = atoi(ts.c_str());
-  //  else rep.error("No grid dimensions specified in parameterfile",ts);
+  //  else spdlog::error("{}: {}", "No grid dimensions specified in
+  //  parameterfile",ts);
   else {
-    cout << "No ndim specified in parameterfile, assuming ndim=1!!!\n";
+    spdlog::warn("No ndim specified in parameterfile, assuming ndim=1!!!");
     SimPM.ndim = 1;
   }
 
@@ -310,7 +325,7 @@ int dataio_text::get_parameters(
   if (ts != "")
     tr = atoi(ts.c_str());
   else {
-    cout << "No tracer number specified in paramfile, using none.\n";
+    spdlog::warn("No tracer number specified in paramfile, using none");
     tr = 0;
   }
   SimPM.ntracer = tr;
@@ -322,18 +337,19 @@ int dataio_text::get_parameters(
   if (ts != "")
     nv = atoi(ts.c_str());
   else {
-    cout << "nvar not specified in paramfile. Inferring from equations.\n";
+    spdlog::warn("nvar not specified in paramfile. Inferring from equations");
     nv = SimPM.nvar;
   }
   if (nv < SimPM.nvar + SimPM.ntracer)
-    rep.error("Bad nvar in paramfile (account for tracers).", nv);
+    spdlog::error("{}: {}", "Bad nvar in paramfile (account for tracers).", nv);
   else if (nv > SimPM.nvar + SimPM.ntracer)
-    rep.error("too many variables (which are tracers?)", nv);
+    spdlog::error("{}: {}", "too many variables (which are tracers?)", nv);
   if (SimPM.nvar <= nv) {
     SimPM.nvar = nv;
   }
   else {
-    rep.warning(
+    spdlog::warn(
+        "{}: Expected {} but got {}",
         "nvar in paramfile less than that specified by eqn. type", SimPM.nvar,
         nv);
   }
@@ -348,7 +364,8 @@ int dataio_text::get_parameters(
   else if (ts == "spherical")
     SimPM.coord_sys = COORD_SPH;
   else
-    rep.error("Don't recognise coordinate system in GetParameters", ts);
+    spdlog::error(
+        "{}: {}", "Don't recognise coordinate system in GetParameters", ts);
 
   // Now assign dataio_text variables with parameters from the file.
   // Get the base path/filename to write output to.
@@ -371,14 +388,13 @@ int dataio_text::get_parameters(
     SimPM.typeofop = 5;
 #endif  // if SILO
   else {
-    cerr << "Error, bad type of outputfile in pfile.\n";
+    spdlog::error("Error, bad type of outputfile in pfile");
     return (1);
   }
   SimPM.opfreq = atoi((rp->find_parameter("OutputFrequency")).c_str());
-  cout << "\tOutFile: " << SimPM.outFileBase
-       << ".xxx\t Type=" << SimPM.typeofop;
-  cout << " every " << SimPM.opfreq << " timesteps."
-       << "\n";
+  spdlog::debug(
+      "\tOutFile: {}.xxx\t Type={} every {} timesteps.", SimPM.outFileBase,
+      SimPM.typeofop, SimPM.opfreq);
 
   //
   // Boundary conditions.
@@ -413,7 +429,7 @@ int dataio_text::get_parameters(
   else
     SimPM.BC_Nint = atoi(ts.c_str());
   if (SimPM.BC_Nint > 0) {
-    if (SimPM.BC_INT) rep.error("BC_INT already initialized", 2);
+    if (SimPM.BC_INT) spdlog::error("{}: {}", "BC_INT already initialized", 2);
     SimPM.BC_INT = mem.myalloc(SimPM.BC_INT, SimPM.BC_Nint);
   }
   // SimPM.BC_INT.clear();
@@ -431,7 +447,7 @@ int dataio_text::get_parameters(
       v++;
     }
     else
-      rep.error("Didn't find internal BC", v);
+      spdlog::error("{}: {}", "Didn't find internal BC", v);
   } while (v < SimPM.BC_Nint);
   // SimPM.BC_Nint = SimPM.BC_INT.size();
 
@@ -455,7 +471,7 @@ int dataio_text::get_parameters(
     //    cout <<SimPM.etav<<"\n";
   }
   else {
-    cerr << "\tUnknown viscosity requested... please update me.\n";
+    spdlog::error("\tUnknown viscosity requested... please update me");
     return (1);
   }
 
@@ -495,7 +511,7 @@ int dataio_text::get_parameters(
   else if (SimPM.spOOA == OA2) {
   }  // cout<<"\tSecond Order Spatial Accuracy.\n";
   else {
-    cout << "\t Error: Spatial Accuracy requested is not available.\n";
+    spdlog::error("\t Error: Spatial Accuracy requested is not available");
     return (1);
   }
   if (SimPM.tmOOA == OA1) {
@@ -503,7 +519,7 @@ int dataio_text::get_parameters(
   else if (SimPM.tmOOA == OA2) {
   }  // cout<<"\tSecond Order Time Accuracy.\n";
   else {
-    cout << "\t Error: Time Accuracy requested is not available.\n";
+    spdlog::error("\t Error: Time Accuracy requested is not available");
     return (1);
   }
 
@@ -530,8 +546,8 @@ int dataio_text::get_parameters(
   // Code units
   string unit;
   if ((unit = rp->find_parameter("units")) == "") {
-    cout << "No units specified in parameterfile.  Using code units for input "
-            "data.\n";
+    spdlog::warn(
+        "No units specified in parameterfile.  Using code units for input data");
     uc.unitsys  = "code";
     uc.density  = "no units";
     uc.length   = "no units";
@@ -540,7 +556,7 @@ int dataio_text::get_parameters(
     uc.rhoVal = uc.lenVal = uc.velVal = uc.magVal = 1.;
   }
   else if (unit == "MKS") {
-    cout << "\t Using MKS (SI) as reference units.\n";
+    spdlog::info("\t Using MKS (SI) as reference units");
     uc.unitsys  = "mks";
     uc.density  = "kg/m^3";
     uc.length   = "m";
@@ -552,10 +568,10 @@ int dataio_text::get_parameters(
     uc.magVal   = atoi((rp->find_parameter("magval")).c_str());
   }
   else {
-    rep.error("Don't recognise units system", unit);
+    spdlog::error("{}: {}", "Don't recognise units system", unit);
   }
 
-  cout << "(dataio_text::get_parameters) Finished getting parameters.\n";
+  spdlog::info("(dataio_text::get_parameters) Finished getting parameters");
   return (0);
 }  // dataio_text::get_parameters
 
@@ -569,8 +585,7 @@ int dataio_text::output_ascii_data(
 {
   ofstream outf(outfile.c_str());
   if (!outf.is_open()) {
-    cerr << "Error opening file " << outfile << " for writing.  Quitting..."
-         << "\n";
+    spdlog::error("Error opening file {} for writing.  Quitting...", outfile);
     return (1);
   }
   //  cout <<"(dataio_text::output_ascii_data) Writing data in format:
@@ -679,14 +694,14 @@ int dataio_text::assign_initial_data(
     class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
-  cout << "(dataio_text::assign_initial_data) Assigning Data.\n";
+  spdlog::info("(dataio_text::assign_initial_data) Assigning Data");
   int err   = 0;
   double dx = gp->DX();
 
   // Get initial conditions, and assign them to the grid.
   string typeofic = rp->find_parameter("IC");
   if (typeofic == "SHOCKTUBE") {
-    cout << "\t Using shock tube conditions.\n";
+    spdlog::info("\t Using shock tube conditions");
     int which_riemann = atoi((rp->find_parameter("RIEMANN")).c_str());
     double left[SimPM.nvar], right[SimPM.nvar];
     double interface = 0.0;
@@ -708,7 +723,8 @@ int dataio_text::assign_initial_data(
       // Get Shock Angle.
       double theta;
       if ((rp->find_parameter("ShockAngle")) == "") {
-        rep.warning(
+        spdlog::warn(
+            "{}: Expected {} but got {}",
             "dataio_text::assign_initial_data 2D sim, but no shock "
             "angle in paramfile.",
             1, 1);
@@ -717,14 +733,14 @@ int dataio_text::assign_initial_data(
       else {
         theta = atof((rp->find_parameter("ShockAngle")).c_str()) * M_PI / 180.;
       }
-      cout << "theta=" << theta << "\n";
+      spdlog::debug("theta={}", theta);
       // Assign position of dividing line: pivot point and slope.
       double xpivot, ypivot, slope;
       if (theta > 0. && theta < M_PI / 2.) {
         xpivot = gp->SIM_Xmin(XX) + gp->SIM_Range(XX) / 2.;
         ypivot = gp->SIM_Xmin(YY) + gp->SIM_Range(YY) / 2.;
         slope  = tan(theta);
-        // if (!eqn) rep.error("equations not set!",eqn);
+        // if (!eqn) spdlog::error("{}: {}", "equations not set!",eqn);
         // eqn->rotateXY(left,-(M_PI/2.-theta));
         // eqn->rotateXY(right,-(M_PI/2.-theta));
         double ct = cos(-(M_PI / 2. - theta));
@@ -751,14 +767,14 @@ int dataio_text::assign_initial_data(
         }
       }
       else if (theta <= 0.) {
-        cout << "using theta=0\n";
+        spdlog::debug("using theta=0");
         xpivot = gp->SIM_Xmin(XX) + gp->SIM_Range(XX) / 2.;
         ypivot = gp->SIM_Xmin(YY) + gp->SIM_Range(YY) / 2.;
         slope  = 0;
         theta  = 0;
       }
       else {
-        cout << "please use an angle between 0 and 90 degrees.\n";
+        spdlog::error("please use an angle between 0 and 90 degrees");
         exit(1);
       }
 
@@ -774,8 +790,8 @@ int dataio_text::assign_initial_data(
         } while ((cpt = gp->NextPt(cpt)) != 0);
       }
       else {
-        cout << "2D and non-zero slope, so setting angle to " << theta
-             << " radians.\n";
+        spdlog::info(
+            "2D and non-zero slope, so setting angle to {} radians", theta);
         // Slope is non-zero, so set a shock at angle theta to x-axis,
         // passing through centre of domain.
         do {
@@ -834,26 +850,24 @@ int dataio_text::assign_initial_data(
       } while ((cpt = gp->NextPt(cpt)) != 0);
     }
     if (err != 0) {
-      cerr << "\tError assigning data"
-           << "\n";
+      spdlog::error("\tError assigning data");
       return (1);
     }
   }
   else {
-    cerr << "\tWhat sort of ICs??? only know 'SHOCKTUBE'"
-         << "\n";
+    spdlog::error("\tWhat sort of ICs??? only know 'SHOCKTUBE'");
     return (1);
   }
 
   // Initial Condition Smoothing?
   int smooth = atoi((rp->find_parameter("SmoothICS")).c_str());
   if (smooth > 0) {
-    cout << "Can't smooth data... sorry!  Write a smoothing function.\n";
+    spdlog::warn("Can't smooth data... sorry!  Write a smoothing function");
     //    cout <<"\t Smoothing Data... ns="<<smooth;
     //    err += gp->smoothData(smooth);
     //    cout <<"  ...Done\n";
     if (err != 0) {
-      cerr << "\tSmoothing Data failed. exiting.\n";
+      spdlog::error("\tSmoothing Data failed. exiting");
       return (1);
     }
   }  // if smooth>0;
@@ -861,17 +875,18 @@ int dataio_text::assign_initial_data(
   // Initial Conditions:  Add noise?
   int noise = atoi((rp->find_parameter("NoisyICS")).c_str());
   if (noise > 0) {
-    cout << "\t Adding noise to Data at 0.1% level to pressure, type=" << noise;
+    spdlog::debug(
+        "\t Adding noise to Data at 0.1% level to pressure, type={}", noise);
     err += add_noise2data(SimPM, noise, 0.001);
-    cout << "  ...Done\n";
+    spdlog::info("  ...Done");
     if (err != 0) {
-      cerr << "\tAdding noise to Data failed. exiting.\n";
+      spdlog::error("\tAdding noise to Data failed. exiting");
       return (1);
     }
   }  // if noise>0;
 
   //  initial_conserved_quantities();
-  cout << "(dataio_text::assign_initial_data) Done.\n";
+  spdlog::info("(dataio_text::assign_initial_data) Done");
   return (0);
 }
 
@@ -1003,9 +1018,8 @@ int dataio_text::get_riemann_ics(
     case 7:
       /** case 7: Sam Falle's test 'BW', the Brio and Wu problem.\n */
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       l[RO] = 1.;
@@ -1027,9 +1041,8 @@ int dataio_text::get_riemann_ics(
       /** case 8: Sam Falle's test 'AW', an Alfven wave. (seems to have no
        * difference in left and right states).\n */
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       l[RO] = l[PG] = 1.;
@@ -1044,15 +1057,14 @@ int dataio_text::get_riemann_ics(
       r[BZ]         = 0.;
       *xm           = 0.5;
       SimPM.gamma   = 5. / 3.;
-      cout << "THIS SHOCK TUBE TEST DOESN'T WORK...ALFVEN WAVE.\n";
+      spdlog::error("THIS SHOCK TUBE TEST DOESN'T WORK...ALFVEN WAVE");
       return (1);
       break;
     case 9:
       /** case 9: Sam Falle's test 'FS', a fast shock.\n*/
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       l[RO] = 3.;
@@ -1078,9 +1090,8 @@ int dataio_text::get_riemann_ics(
     case 10:
       /** case 10: Sam Falle's test 'SS', a slow shock.\n*/
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting.\n");
         return (1);
       }
       l[RO] = 1.368;
@@ -1102,9 +1113,8 @@ int dataio_text::get_riemann_ics(
     case 11:
       /** case 11: Sam Falle's test 'FR', a fast rarefaction.\n*/
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       l[RO] = 1.;
@@ -1126,9 +1136,8 @@ int dataio_text::get_riemann_ics(
     case 12:
       /** case 12: Sam Falle's test 'SR', a slow rarefaction.\n*/
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       l[RO] = 1.;
@@ -1150,9 +1159,8 @@ int dataio_text::get_riemann_ics(
     case 13:
       /** case 13: Sam Falle's test 'OFS', an oblique fast shock.\n*/
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       l[RO] = 1.;
@@ -1185,13 +1193,12 @@ int dataio_text::get_riemann_ics(
     case 15:
       /** case 15: Ryu and Jones test 1a.\n*/
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM.gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem");
       l[RO] = 1.;
       l[VX] = 10.;
       l[VY] = l[VZ] = 0.;
@@ -1209,13 +1216,12 @@ int dataio_text::get_riemann_ics(
     case 16:
       /** case 16: Ryu and Jones test 1b.\n*/
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM.gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem.");
       l[RO] = 1.;
       l[VX] = l[VY] = l[VZ] = 0.;
       l[BX]                 = 3. / sqrt(4 * M_PI);
@@ -1233,13 +1239,12 @@ int dataio_text::get_riemann_ics(
     case 17:
       /** case 17: Ryu and Jones test 2a.\n*/
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM.gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem.");
       l[RO] = 1.08;
       l[VX] = 1.2;
       l[VY] = 0.01;
@@ -1259,13 +1264,12 @@ int dataio_text::get_riemann_ics(
     case 18:
       /** case 18: Ryu and Jones test 2b.\n*/
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM.gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem.");
       l[RO] = 1.;
       l[VX] = l[VY] = l[VZ] = 0.;
       l[BX]                 = 3. / sqrt(4. * M_PI);
@@ -1285,13 +1289,12 @@ int dataio_text::get_riemann_ics(
     case 19:
       /** case 19: Ryu and Jones test 3a.\n*/
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM.gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem.");
       l[RO] = 0.1;
       l[VX] = 50.;
       l[VY] = l[VZ] = 0.;
@@ -1310,13 +1313,12 @@ int dataio_text::get_riemann_ics(
     case 20:
       /** case 20: Ryu and Jones test 3b.\n*/
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM.gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem.");
       l[RO] = 1.;
       l[VX] = -1.;
       l[VY] = l[VZ] = 0.;
@@ -1336,13 +1338,12 @@ int dataio_text::get_riemann_ics(
     case 21:
       /** case 21: Ryu and Jones test 4a.\n*/
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM.gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem.");
       l[RO] = 1.;
       l[VX] = l[VY] = l[VZ] = 0.;
       l[BX]                 = 1.;
@@ -1360,13 +1361,12 @@ int dataio_text::get_riemann_ics(
     case 22:
       /** case 22: Ryu and Jones test 4b.\n*/
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM.gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem.");
       l[RO] = 0.4;
       l[VX] = -0.66991;
       l[VY] = 0.98263;
@@ -1386,13 +1386,12 @@ int dataio_text::get_riemann_ics(
     case 23:
       /** case 23: Ryu and Jones test 4c.\n*/
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM.gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem.");
       l[RO] = 0.65;
       l[VX] = 0.667;
       l[VY] = -0.257;
@@ -1414,13 +1413,12 @@ int dataio_text::get_riemann_ics(
     case 24:
       /** case 24: Ryu and Jones test 4d.\n*/
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM.gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem.");
       l[RO] = 1.;
       l[VX] = l[VY] = l[VZ] = 0.;
       l[BX]                 = 0.7;
@@ -1439,13 +1437,12 @@ int dataio_text::get_riemann_ics(
     case 25:
       /** case 25: Ryu and Jones test 5a.\n*/
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM.gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem.");
       l[RO] = 1.;
       l[VX] = l[VY] = l[VZ] = 0.;
       l[BX]                 = 0.75;
@@ -1463,13 +1460,12 @@ int dataio_text::get_riemann_ics(
     case 26:
       /** case 26: Ryu and Jones test 5b.\n*/
       if (SimPM.eqntype != EQMHD && SimPM.eqntype != EQGLM) {
-        cerr
-            << "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD "
-               "test problem. Exiting.\n";
+        spdlog::error(
+            "(dataio_text::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM.gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem.");
       l[RO] = 1.;
       l[VX] = l[VY] = l[VZ] = 0.;
       l[BX]                 = 1.3;
@@ -1485,11 +1481,10 @@ int dataio_text::get_riemann_ics(
       *xm                   = 0.5;
       break;
     default:
-      cout << "Error: only know 26 tests, but sw!={1,..,26}"
-           << "\n";
+      spdlog::error("Error: only know 26 tests, but sw!={1,..,26}");
       return (1);
   }
-  cout << "(dataio_text::get_riemann_ics) Got test number: " << sw << "\n";
+  spdlog::info("(dataio_text::get_riemann_ics) Got test number: {}", sw);
   return (0);
 }
 
@@ -1507,18 +1502,18 @@ int dataio_text::add_noise2data(
   long int ct = 0;
   switch (n) {
     case 1:
-      cout << "\tAdding random noise to pressure at fractional level of "
-           << frac << "\n";
+      spdlog::debug(
+          "\tAdding random noise to pressure at fractional level of {}", frac);
       cpt = gp->FirstPt();
       do {
         avg += cpt->P[PG];
         ct++;
       } while ((cpt = gp->NextPt(cpt)) != 0);
-      cout << "avg = " << avg << "\t ct= " << ct << "\n";
+      spdlog::debug("avg = {}\t ct= {}", avg, ct);
       avg /= static_cast<double>(ct);
       avg *= frac;  // avg is now a fraction 'frac' of the mean pressure
                     // on the grid.
-      cout << "avg = " << avg << "\n";
+      spdlog::debug("avg = {}", avg);
       cpt = gp->FirstPt();
       do {
         if (cpt->isedge == 0) {  // Don't want to alter any edge cells.
@@ -1530,8 +1525,9 @@ int dataio_text::add_noise2data(
       break;
 
     case 2:
-      cout << "Adding adiabatic random noise to cells at fractional level of "
-           << frac << "\n";
+      spdlog::debug(
+          "Adding adiabatic random noise to cells at fractional level of {}",
+          frac);
       cpt = gp->FirstPt();
       do {
         double temp;
@@ -1546,15 +1542,15 @@ int dataio_text::add_noise2data(
       break;
 
     case 3:
-      cout << "Adding adiabatic wave to cells at fractional level of " << frac
-           << "\n";
+      spdlog::debug(
+          "Adding adiabatic wave to cells at fractional level of {}", frac);
       // First get average pressure value.
       cpt = gp->FirstPt();
       do {
         avg += cpt->P[PG];
         ct++;
       } while ((cpt = gp->NextPt(cpt)) != 0);
-      cout << "avg = " << avg << "\t ct= " << ct << "\n";
+      spdlog::debug("avg = {}\t ct= {}", avg, ct);
       avg /= static_cast<double>(ct);
       // Now add wave to preshock state.
       cpt = gp->FirstPt();
@@ -1575,8 +1571,8 @@ int dataio_text::add_noise2data(
       break;
 
     default:
-      cerr << "\t Error, don't know what type of noise corresponds to " << n
-           << "...\n";
+      spdlog::error(
+          "\t Error, don't know what type of noise corresponds to {}...", n);
       return (1);
   }
   return (0);

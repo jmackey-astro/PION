@@ -27,6 +27,8 @@
 #include "dataIO/file_status.h"
 #include <fitsio.h>
 
+#include <fstream>
+
 //
 // Image I/O class, for writing ASCII, FITS, VTK images.
 //
@@ -75,7 +77,7 @@ protected:
   fitsfile *ff;       ///< Fits file pointer.
   FILE *fvtk;         ///< VTK file pointer (standard c pointer).
   bool vtk_header_written;  ///< whether the VTK header has been written or not.
-  ofstream outf;            ///< Ascii text file I/O stream.
+  std::ofstream outf;       ///< Ascii text file I/O stream.
   class utility_fitsio utfits;  ///< utility fits i/o class for writing images.
 
   ///

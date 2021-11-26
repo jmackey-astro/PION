@@ -9,7 +9,7 @@
 
 
 #include <cmath>
-#include <iostream>
+
 #include <sstream>
 using namespace std;
 #include "defines/functionality_flags.h"
@@ -19,8 +19,12 @@ using namespace std;
 #include "constants.h"
 #include "sim_params.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
 #include "tools/timer.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
 
 #include "angle_projection.h"
 #include "projection_constants.h"
@@ -69,7 +73,7 @@ double get_Z_from_R(
 )
 {
   if (!isfinite(tan(angle))) {
-    cerr << "get_Z_from_R() Request Z coord when theta=pi/2.\n";
+    spdlog::error("get_Z_from_R() Request Z coord when theta=pi/2");
     return pos[Zcyl];
   }
   else {
@@ -92,7 +96,7 @@ double get_R_from_Z(
 )
 {
   if (!isfinite(tan(angle))) {
-    cerr << "get_R_from_Z() all R have same Z when theta=pi/2.\n";
+    spdlog::error("get_R_from_Z() all R have same Z when theta=pi/2");
     return -1.0e200;
   }
   return sqrt(
@@ -159,14 +163,14 @@ cell *get_start_of_ray(
     c = grid->NextPt(c, ZPcyl);
   }
 
-  if (!c) rep.error("cell error", c);
+  if (!c) spdlog::error("{}: {}", "cell error", fmt::ptr(c));
 
 #ifdef DEBUG
   if (grid->SIM_Xmax(Rcyl) - pos[Rcyl] < grid->DX()) {
-    cout << z_ini << ", " << grid->SIM_Xmin(Zcyl) << ", "
-         << grid->SIM_Xmax(Zcyl) << ", " << CI.get_dpos(c, Zcyl) << "\n";
-    cout << r_ini << ", " << grid->SIM_Xmin(Rcyl) << ", "
-         << grid->SIM_Xmax(Rcyl) << ", " << CI.get_dpos(c, Rcyl) << "\n";
+    spdlog::debug(
+        "{}, {}, {}, {}\n{}, {}, {}, {}", z_ini, grid->SIM_Xmin(Zcyl),
+        grid->SIM_Xmax(Zcyl), CI.get_dpos(c, Zcyl), r_ini, grid->SIM_Xmin(Rcyl),
+        grid->SIM_Xmax(Rcyl), CI.get_dpos(c, Rcyl));
   }
 #endif
 
@@ -195,7 +199,7 @@ void get_entry_exit_points(
     cell **next             ///< cell the ray exits into.              (output)
 )
 {
-  double cpos[2];
+  std::array<double, MAX_DIM> cpos;
   CI.get_dpos(ray, cpos);
   double dxo2  = 0.5 * grid->DX();
   double dx    = grid->DX();
@@ -236,18 +240,19 @@ void get_entry_exit_points(
   //
   double midpt = get_R_from_Z(pos, cpos[Zcyl], angle);
 #ifdef DEBUG
-  cout << "pos=" << pos[Zcyl] << ", cpos=" << cpos[Zcyl] << "\n";
+  spdlog::debug("pos={}, cpos={}", pos[Zcyl], cpos[Zcyl]);
 #endif
   double mn = (cpos[Rcyl] - dxo2) * ONE_MINUS_EPS;
   double mx = (cpos[Rcyl] + dxo2) * ONE_PLUS_EPS;
 #ifdef DEBUG
-  cout << "Check reasonable: " << entry[Rcyl] << "  " << exit[Rcyl];
-  cout << "  " << midpt << "  " << mn << "  " << mx << endl;
+  spdlog::debug(
+      "Check reasonable: {}  {}  {}  {}  {}", entry[Rcyl], exit[Rcyl], midpt,
+      mn, mx);
 #endif
   if ((entry[Rcyl] < mn && exit[Rcyl] < mn && midpt < mn)
       || (entry[Rcyl] > mx && exit[Rcyl] > mx && midpt > mx)) {
 #ifdef DEBUG
-    cout << "impossible values\n";
+    spdlog::warn("impossible values");
 #endif
     *next       = 0;
     entry[Rcyl] = 1.0e99;
@@ -374,7 +379,7 @@ void add_cell_emission_to_ray(
   double per_angle = 1.0 / (4.0 * pconst.pi() * pconst.sqasec_per_sr());
   // cout <<n_e<<", "<< n_H0 <<", "<< n_Hp <<", "<< T <<"\n";
   if (!isfinite(T)) {
-    rep.error("bugging out, T is infinite", T);
+    spdlog::error("{}: {}", "bugging out, T is infinite", T);
   }
 
   ans[PROJ_D] += integral * P[RO];
@@ -436,7 +441,7 @@ int generate_angle_image(
   //
   // Loop over all pixels
   //
-  cout << "looping over pixels\n";
+  spdlog::info("looping over pixels");
   double ttsf = 0.0;
 #ifdef PROJ_OMP
 #pragma omp parallel for private(ttsf)
@@ -451,14 +456,13 @@ int generate_angle_image(
     // viewing angle deviates from 90 degrees.
     //
     size_t ipix = 0;
-    double pos[2], startpos[2];
+    std::array<double, MAX_DIM> pos, startpos;
     vector<double> entry(2), exit(2);
     double invst    = 1.0 / sin(angle);
     double integral = 0.0;
 
 #ifdef DEBUG
-    cout << "column = " << i << "/" << npix[0] << ",\n";
-//      cout.flush();
+    spdlog::debug("column = {}/{}", i, npix[0]);
 #endif
 
     //
@@ -466,22 +470,20 @@ int generate_angle_image(
     //
     for (int j = 0; j < npix[1]; j++) {
       int ncell = 0;
-      pixel_centre(SimPM.Xmin, dx, n_extra, i, j, pos);
+      pixel_centre(SimPM.Xmin.data(), dx, n_extra, i, j, &pos[0]);
 #ifdef DEBUG
       //        double temp[3];
-      cout << "Pixel: [" << i << ", " << j << "] of [" << npix[0] << ","
-           << npix[1] << "]   ";
-      rep.printVec("pos", pos, 2);
-//        cout.flush();
+      spdlog::debug("Pixel: [{}, {}] of [{},{}]   ", i, j, npix[0], npix[1]);
+      spdlog::debug("pos : {}", pos);
 #endif
 
       cell *c         = grid->FirstPt();
-      cell *ray       = get_start_of_ray(grid, pos, angle);
+      cell *ray       = get_start_of_ray(grid, &pos[0], angle);
       cell *next_cell = 0;
       CI.get_dpos(ray, startpos);
 #ifdef DEBUG
-      cout << "ray=" << ray << endl;
-      rep.printVec("starting cell", startpos, 2);
+      spdlog::debug("ray={}", ray);
+      spdlog::debug("starting cell : {}", startpos);
 #endif
 
       // if pixel is on the grid, then find the cell that this
@@ -500,7 +502,7 @@ int generate_angle_image(
           c = grid->NextPt(c, RPcyl);
       }
 #ifdef DEBUG
-      cout << "pix on grid? c=" << c << endl;
+      spdlog::debug("pix on grid? c={}", c);
 #endif
 
       // set up array for answer
@@ -515,18 +517,17 @@ int generate_angle_image(
       bool at_source = false;
       if (pos[Zcyl] < SimPM.Xmax[Zcyl] - dx) {
 #ifdef DEBUG
-        cout << "incoming ray starting" << endl;
+        spdlog::debug("incoming ray starting");
 #endif
         // We have an incoming ray.  Trace ray until we get to pos[]
         // or the edge of the grid.
         inout = 1;  // to show that we are on the inward trajectory.
         // first check that the ray passes through cell *ray:
         get_entry_exit_points(
-            grid, pos, angle, inout, ray, entry, exit, &next_cell);
+            grid, &pos[0], angle, inout, ray, entry, exit, &next_cell);
         if (entry[Rcyl] > 1.0e90) {
 #ifdef DEBUG
-          cout << "INCOMING RAY ERROR: doesn't intersect grid, skipping"
-               << endl;
+          spdlog::error("INCOMING RAY ERROR: doesn't intersect grid, skipping");
 #endif
         }
         else {
@@ -536,7 +537,7 @@ int generate_angle_image(
             // Get entry and exit points of ray, and pointer to next cell.
             //
             get_entry_exit_points(
-                grid, pos, angle, inout, ray, entry, exit, &next_cell);
+                grid, &pos[0], angle, inout, ray, entry, exit, &next_cell);
 
             //
             // Integrate through cell along path (constant gas density)
@@ -550,10 +551,13 @@ int generate_angle_image(
             // For each emission variable, add to ans[] vector
             add_cell_emission_to_ray(SimPM, MP, integral, ray->P, XR, ans);
             if (ans[PROJ_NtD] < 0.0) {
-              rep.printVec("Ray state vec", ray->P, SimPM.nvar);
-              cout << "ray  " << ray << ",  next_cell=" << next_cell << "\n";
-              cout << ray->isgd << ", " << ray->isbd << "\n";
-              rep.error("error", 99);
+              spdlog::debug(
+                  "Ray state vec : {}",
+                  std::vector<double>(ray->P, ray->P + SimPM.nvar));
+              spdlog::debug(
+                  "ray  {},  next_cell={}\n{}, {}", fmt::ptr(ray),
+                  fmt::ptr(next_cell), ray->isgd, ray->isbd);
+              spdlog::error("{}: {}", "error", 99);
             }
 
             //
@@ -576,7 +580,7 @@ int generate_angle_image(
             }
           } while (!at_source);
 #ifdef DEBUG
-          cout << "incoming ray finished" << endl;
+          spdlog::info("incoming ray finished");
 #endif
         }
       }
@@ -586,10 +590,10 @@ int generate_angle_image(
       //
       if (pix_on_grid) {
 #ifdef DEBUG
-        cout << "pix on grid starting: ray=" << ray << endl;
-        double temp[2];
+        spdlog::debug("pix on grid starting: ray={}", ray);
+        std::array<double, MAX_DIM> temp;
         CI.get_dpos(ray, temp);
-        rep.printVec("cell pos on ray", temp, 2);
+        spdlog::debug("cell pos on ray : {}", temp);
 #endif
         //
         // The pixel/cell itself is a special case because we only go
@@ -597,9 +601,9 @@ int generate_angle_image(
         // slope of the path changes sign.
         //
         inout = 0;
-        // rep.error("got to cell",1);
+        // spdlog::error("{}: {}", "got to cell",1);
         get_entry_exit_points(
-            grid, pos, angle, inout, ray, entry, exit, &next_cell);
+            grid, &pos[0], angle, inout, ray, entry, exit, &next_cell);
         // Path length is twice the inward part.
         integral = invst * 2.0
                    * sqrt(entry[Rcyl] * entry[Rcyl] - pos[Rcyl] * pos[Rcyl]);
@@ -608,20 +612,20 @@ int generate_angle_image(
         ray = next_cell;
         ncell++;
 #ifdef DEBUG
-        cout << "pix on grid finishing: ray=";
+        spdlog::debug("pix on grid finishing: ray=");
         if (ray) {
-          cout << ray << endl;
+          spdlog::debug("{}", ray);
           CI.get_dpos(ray, temp);
-          rep.printVec("cell pos on ray", temp, 2);
+          spdlog::debug("cell pos on ray : {}", temp);
         }
         else {
-          cout << "0, doesn't exist!\n";
+          spdlog::warn("0, doesn't exist!");
         }
 #endif
       }
 #ifdef DEBUG
       else
-        cout << "  PIXEL NOT ON GRID  ";
+        spdlog::warn("  PIXEL NOT ON GRID  ");
 #endif
 
       //
@@ -629,39 +633,40 @@ int generate_angle_image(
       //
       if (pos[Zcyl] > SimPM.Xmin[Zcyl] + dx && ray != 0) {
 #ifdef DEBUG
-        cout << "outgoing ray starting, ncell=" << ncell << endl;
-        cout << "pos[Zcyl] = " << pos[Zcyl] << ", Xmin=" << SimPM.Xmin[Zcyl];
-        cout << ", Xmin+dx=" << SimPM.Xmin[Zcyl] + dx << endl;
+        spdlog::debug(
+            "outgoing ray starting, ncell={}\npos[Zcyl] = {}, Xmin={}, Xmin+dx={}",
+            ncell, pos[Zcyl], SimPM.Xmin[Zcyl], SimPM.Xmin[Zcyl] + dx);
 #endif
         // We have an outgoing ray.  Trace ray until we get to the
         // edge of the grid.
         inout = -1;
         // first check that the ray passes through cell *ray:
         get_entry_exit_points(
-            grid, pos, angle, inout, ray, entry, exit, &next_cell);
+            grid, &pos[0], angle, inout, ray, entry, exit, &next_cell);
         if (entry[Rcyl] > 1.0e90) {
 #ifdef DEBUG
-          cout << "  OUTGOING RAY ERROR  " << endl;
-          cout << " ray=" << ray << ", next_cell=" << next_cell << " pos=";
-          rep.printVec("", pos, 2);
-          rep.error("rays", 1);
+          spdlog::error(
+              "  OUTGOING RAY ERROR\n ray={}, next_cell={} pos=", ray,
+              next_cell);
+          spdlog::debug(" : {}", pos);
+          spdlog::error("{}: {}", "rays", 1);
 #endif
         }
         else {
 #ifdef DEBUG
-          cout << "entering loop for outgoing ray, ncell=" << ncell << endl;
+          spdlog::debug("entering loop for outgoing ray, ncell={}", ncell);
 #endif
           do {
             //
             // Get entry and exit points of ray, and pointer to next cell.
             //
 #ifdef DEBUG
-            cout << "getting entry/exit points of ray, ncell=" << ncell << "\n";
+            spdlog::debug("getting entry/exit points of ray, ncell={}", ncell);
 #endif
             get_entry_exit_points(
-                grid, pos, angle, inout, ray, entry, exit, &next_cell);
+                grid, &pos[0], angle, inout, ray, entry, exit, &next_cell);
 #ifdef DEBUG
-            cout << "entry/exit next_cell=" << next_cell << "\n";
+            spdlog::debug("entry/exit next_cell={}", next_cell);
 #endif
             //
             // Integrate through cell along path (constant gas density)
@@ -681,7 +686,7 @@ int generate_angle_image(
             ncell++;
           } while (ray != 0 && ray->isgd);
 #ifdef DEBUG
-          cout << "outgoing ray finishing" << endl;
+          spdlog::debug("outgoing ray finishing");
 #endif
         }
       }
@@ -698,9 +703,8 @@ int generate_angle_image(
       for (size_t v = 0; v < NIMG; v++)
         img_array[v][ipix] = ans[v];
 #ifdef DEBUG
-      rep.printSTLVec("ans", ans);
-      cout << "i,j=" << i << ", " << j << " ... Ray crossed " << ncell
-           << " cells." << endl;
+      spdlog::debug("ans : {}", ans);
+      spdlog::debug("i,j={}, {} ... Ray crossed {} cells.", i, j, ncell);
 #endif
     }
   }

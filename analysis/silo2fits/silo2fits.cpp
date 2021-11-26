@@ -39,7 +39,7 @@
 #include "constants.h"
 #include "sim_params.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
 #include "tools/timer.h"
 
 #include "grid/setup_fixed_grid_MPI.h"
@@ -70,8 +70,12 @@
 
 #include "raytracing/raytracer_SC.h"
 
+#include <spdlog/sinks/rotating_file_sink.h>
+#include <spdlog/spdlog.h>
+
 #include <fitsio.h>
-#include <iostream>
+
+#include <fstream>
 #include <silo.h>
 #include <sstream>
 using namespace std;
@@ -85,6 +89,20 @@ using namespace std;
 int main(int argc, char **argv)
 {
   int err = 0;
+
+  auto max_logfile_size = 1048576 * 5;
+  auto max_logfiles     = 3;
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "silo2fits", "silo2fits.log", max_logfile_size, max_logfiles));
+
+#ifdef NDEBUG
+  spdlog::set_level(spdlog::level::err);
+  spdlog::flush_on(spdlog::level::err);
+#else
+  spdlog::set_level(spdlog::level::trace);
+  spdlog::flush_on(spdlog::level::trace);
+#endif
+
   //
   // Also initialise the sub_domain class with myrank and nproc.
   // Get nproc from command-line (number of fits files for each
@@ -95,27 +113,15 @@ int main(int argc, char **argv)
   int myrank = SimPM.levels[0].sub_domain.get_myrank();
   int nproc  = SimPM.levels[0].sub_domain.get_nproc();
 
-  if (nproc > 1) rep.error("This is serial code", nproc);
+  if (nproc > 1) spdlog::error("{}: {}", "This is serial code", nproc);
 
   //
   // Get input files and an output file.
   //
   if (argc < 5) {
-    cout << "Use as follows:\n";
-    cout << "<executable-filename> <input-path>";
-    cout << " <input-silo-file-base>";
-    cout << " <output-path> <output-fits-file-base> [Nskip]";
-    cout << " [<xmin> <xmax> [<ymin> <ymax> [<zmin> <zmax>]]]";
-    cout << "\n";
-    cout << "******************************************\n";
-    cout << "input path:  path to input files.\n";
-    cout
-        << "input file:  base filename of sequence of files including _0000 if parallel.\n";
-    cout << "output path: directory to write output files to.\n";
-    cout << "output file: filename for output FITS file(s).\n";
-    cout << "[Nskip]:     skip files each iteration.\n";
-    cout << "xmin/xmax:   optional parameters to resize the domain.\n";
-    rep.error("Bad number of args", argc);
+    spdlog::error("{}: {}", "Bad number of args", argc);
+    spdlog::error(
+        "Use as follows:\n<executable-filename> <input-path> <input-silo-file-base> <output-path> <output-fits-file-base> [Nskip] [<xmin> <xmax> [<ymin> <ymax> [<zmin> <zmax>]]]\n******************************************\ninput path:  path to input files.\ninput file:  base filename of sequence of files including _0000 if parallel.\noutput path: directory to write output files to.\noutput file: filename for output FITS file(s).\n[Nskip]:     skip files each iteration.\nxmin/xmax:   optional parameters to resize the domain");
   }
 
   //
@@ -146,13 +152,12 @@ int main(int argc, char **argv)
   ostringstream redir;
   redir.str("");
   redir << op_path << "/msg_" << outfile << "_rank" << myrank << "_";
-  // rep.redirect(redir.str());
 
   //*******************************************************************
   // Get input files, read header, setup grid
   //*******************************************************************
-  cout << "-------------------------------------------------------\n";
-  cout << "--------------- Getting List of Files to read ---------\n";
+  spdlog::info(
+      "-------------------------------------------------------\n--------------- Getting List of Files to read ---------");
 
   //
   // set up dataio_utility class and fits-writer class.
@@ -165,27 +170,27 @@ int main(int argc, char **argv)
   //
   list<string> files;
   err += dataio.get_files_in_dir(input_path, input_file, &files);
-  if (err) rep.error("failed to get list of files", err);
+  if (err) spdlog::error("{}: {}", "failed to get list of files", err);
   //
   // remove non-silo files
   //
   for (list<string>::iterator s = files.begin(); s != files.end(); s++) {
     // If file is not a .silo file, then remove it from the list.
     if ((*s).find(".silo") == string::npos) {
-      cout << "removing file " << *s << " from list.\n";
+      spdlog::debug("removing file {} from list", *s);
       files.erase(s);
       s = files.begin();
     }
     else {
-      cout << "files: " << *s << endl;
+      spdlog::debug("files: {}", *s);
     }
   }
   size_t nfiles = files.size();
-  if (nfiles < 1) rep.error("Need at least one file, but got none", nfiles);
+  if (nfiles < 1)
+    spdlog::error("{}: {}", "Need at least one file, but got none", nfiles);
 
-  cout << "--------------- Got list of Files ---------------------\n";
-  cout << "-------------------------------------------------------\n";
-  cout << "--------------- Setting up Grid -----------------------\n";
+  spdlog::info(
+      "--------------- Got list of Files ---------------------\n-------------------------------------------------------\n--------------- Setting up Grid -----------------------");
 
   //
   // Set low-memory cells
@@ -204,7 +209,7 @@ int main(int argc, char **argv)
   string first_file = temp.str();
   temp.str("");
   err = dataio.ReadHeader(first_file, SimPM);
-  if (err) rep.error("Didn't read header", err);
+  if (err) spdlog::error("{}: {}", "Didn't read header", err);
 
 
   //
@@ -214,10 +219,12 @@ int main(int argc, char **argv)
   redir.str("");
   redir << op_path << "/data_" << outfile << ".txt";
   ofstream outf;
-  if (outf.is_open()) rep.error("Output text file is already open!", 1);
+  if (outf.is_open())
+    spdlog::error("{}: {}", "Output text file is already open!", 1);
   outf.open(redir.str().c_str());
   if (!outf.is_open())
-    rep.error("Failed to open text file for writing", redir.str());
+    spdlog::error(
+        "{}: {}", "Failed to open text file for writing", redir.str());
   outf.setf(ios_base::scientific);
   outf.precision(6);
   outf << "Text data for simulation " << input_file << "\n\n";
@@ -245,8 +252,6 @@ int main(int argc, char **argv)
   }
   outf.close();
 
-  cout.flush();
-
   //
   // get a setup_grid class, and use it to set up the grid!
   //
@@ -264,27 +269,26 @@ int main(int argc, char **argv)
   G.resize(SimPM.grid_nlevels);
   SimSetup->setup_grid(G, SimPM);
   class GridBaseClass *grid = G[0];
-  if (!grid) rep.error("Grid setup failed", grid);
+  if (!grid) spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid));
   SimPM.dx = grid->DX();
-  cout << "\t\tg=" << grid << "\tDX = " << grid->DX() << endl;
+  spdlog::debug("\t\tg={}\tDX = {}", fmt::ptr(grid), grid->DX());
 
   //
   // setup microphysics class
   //
   err += SimSetup->setup_microphysics(SimPM);
   // err += setup_raytracing();
-  if (err) rep.error("Setup of microphysics", err);
+  if (err) spdlog::error("{}: {}", "Setup of microphysics", err);
   class microphysics_base *MP = SimSetup->get_mp_ptr();
 
-  cout << "--------------- Finished Setting up Grid --------------\n";
-  cout << "-------------------------------------------------------\n";
+  spdlog::info(
+      "--------------- Finished Setting up Grid --------------\n-------------------------------------------------------");
 
   size_t ifile = 0;
   class DataIOFits_pllel writer(SimPM, &(SimPM.levels[0].sub_domain));
 
-  cout << "-------------------------------------------------------\n";
-  cout << "--------------- Starting Loop over all input files ----\n";
-  cout << "-------------------------------------------------------\n";
+  spdlog::info(
+      "-------------------------------------------------------\n--------------- Starting Loop over all input files ----\n-------------------------------------------------------");
   clk.start_timer("analyse_data");
 
   //*******************************************************************
@@ -293,12 +297,12 @@ int main(int argc, char **argv)
 
   for (ifile = 0; ifile < nfiles; ifile++) {
     ifile += Nskip;
-    cout << "------ Starting Next Loop: ifile=" << ifile << ", time so far=";
-    cout << clk.time_so_far("analyse_data") << " ----\n";
+    spdlog::debug(
+        "------ Starting Next Loop: ifile={}, time so far={}", ifile,
+        clk.time_so_far("analyse_data ----"));
     // cout <<"-------------------------------------------------------\n";
     // cout <<"--------------- Reading Simulation data to grid -------\n";
-    cout << " reading file " << *ff << "\n";
-    cout.flush();
+    spdlog::info(" reading file {}", *ff);
 
     // *******************
     // * Read Input Data *
@@ -316,33 +320,34 @@ int main(int argc, char **argv)
 
     // Read header to get timestep info.
     err = dataio.ReadHeader(infile, SimPM);
-    if (err) rep.error("Didn't read header", err);
+    if (err) spdlog::error("{}: {}", "Didn't read header", err);
     // cout.flush();
 
     // read data onto grid.
     err = dataio.ReadData(infile, G, SimPM);
-    rep.errorTest("(main) Failed to read data", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "(main) Failed to read data", 0, err);
 
-    cout << "--------------- Finished Reading Data  ----------------\n";
-    cout << "-------------------------------------------------------\n";
-    cout << "--------------- Starting Writing Data  ----------------\n";
+    spdlog::info(
+        "--------------- Finished Reading Data  ----------------\n{}",
+        "-------------------------------------------------------\n{}",
+        "--------------- Starting Writing Data  ----------------");
 
     temp.str("");
     temp << op_path << "/" << outfile;
     writer.OutputData(temp.str(), G, SimPM, SimPM.timestep);
-    cout << "--------------- Finished Writing Data  ----------------\n";
+    spdlog::info("--------------- Finished Writing Data  ----------------");
 
   }  // Loop over all files.
 
 
-  cout << "-------------------------------------------------------\n";
-  cout << "---- Finised with all Files: time=";
-  cout << clk.stop_timer("analyse_data") << "--------\n";
-  cout << "-------------------------------------------------------\n";
-  cout << "--------------- Clearing up and Exiting ---------------\n";
+  spdlog::info(
+      "-------------------------------------------------------\n---- Finised with all Files: time={}--------\n-------------------------------------------------------\n--------------- Clearing up and Exiting ---------------",
+      clk.stop_timer("analyse_data"));
 
   if (grid != 0) {
-    cout << "\t Deleting Grid Data..." << endl;
+    spdlog::info("\t Deleting Grid Data...");
     delete grid;
     grid = 0;
   }

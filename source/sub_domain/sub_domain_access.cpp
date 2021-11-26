@@ -1,5 +1,8 @@
 #include "sub_domain.h"
+#include <spdlog/spdlog.h>
 #include <tools/command_line_interface.h>
+
+#include <sstream>
 
 using namespace std;
 
@@ -229,17 +232,18 @@ void Sub_domain::gather_abutting_domains(
 void Sub_domain::print_grid(
     std::vector<int> &coords, int current_dimension) const
 {
+  stringstream grid;
   for (coords[current_dimension] = 0;
        coords[current_dimension] < num_subdomains[current_dimension];
        coords[current_dimension]++) {
     if (current_dimension == m_ndim - 1) {
       int proc;
       MPI_Cart_rank(cart_comm, &coords[0], &proc);
-      cout << proc << " ";
+      grid << proc << " ";
     }
     else {
       print_grid(coords, current_dimension + 1);
     }
   }
-  cout << "\n";
+  spdlog::debug("{}", grid.str());
 }

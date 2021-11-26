@@ -46,8 +46,12 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
 #include "tools/timer.h"
+
+#include <spdlog/sinks/rotating_file_sink.h>
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif /* NDEBUG */
@@ -102,10 +106,28 @@ int main(int argc, char **argv)
   int err = 0;
 
   if (argc < 2) {
-    cerr << "Error, please give a filename to read IC parameters from.\n";
-    cerr << "Usage <icgen> <paramfile> [ic-filetype]\n";
+    spdlog::error(
+        "Error, please give a filename to read IC parameters from.\nUsage <icgen> <paramfile> [ic-filetype]");
     return (1);
   }
+
+  auto max_logfile_size = 1048576 * 5;
+  auto max_logfiles     = 3;
+#ifdef PARALLEL
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "icgen_pre_mpi", "icgen.log", max_logfile_size, max_logfiles));
+#else
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "icgen", "icgen.log", max_logfile_size, max_logfiles));
+#endif /* PARALLEL */
+
+#ifdef NDEBUG
+  spdlog::set_level(spdlog::level::err);
+  spdlog::flush_on(spdlog::level::err);
+#else
+  spdlog::set_level(spdlog::level::trace);
+  spdlog::flush_on(spdlog::level::info);
+#endif
 
   string pfile = argv[1];
   string icftype;
@@ -119,38 +141,15 @@ int main(int argc, char **argv)
   int r  = SimPM.levels[0].sub_domain.get_myrank();
   int np = SimPM.levels[0].sub_domain.get_nproc();
 
-  rep.set_rank(r);
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "icgen", "icgen_process_" + to_string(r) + ".log", max_logfile_size,
+      max_logfiles));
 #endif /* PARALLEL */
 
-  // Redirect stdout/stderr if required.
   string *args = 0;
   args         = new string[argc];
   for (int i = 0; i < argc; i++)
     args[i] = argv[i];
-  for (int i = 0; i < argc; i++) {
-    if (args[i].find("redirect=") != string::npos) {
-      string outpath = (args[i].substr(9));
-#ifdef PARALLEL
-      ostringstream path;
-      path << outpath << "_" << r << "_";
-      outpath = path.str();
-      if (r == 0) {
-        cout << "Redirecting stdout to " << outpath << "info.txt"
-             << "\n";
-      }
-#else
-      cout << "Redirecting stdout to " << outpath << "info.txt"
-           << "\n";
-#endif
-      rep.redirect(outpath);  // Redirects cout and cerr to text files in
-                              // the directory specified.
-    }
-  }
-#ifdef PARALLEL
-#ifdef NDEBUG
-  rep.kill_stdout_from_other_procs(0);
-#endif /* NDEBUG */
-#endif /* PARALLEL */
 
 #ifdef PION_OMP
   // set number of OpenMP threads, if included
@@ -160,10 +159,10 @@ int main(int argc, char **argv)
     if (args[i].find("omp-nthreads=") != string::npos) {
       nth = atoi((args[i].substr(13)).c_str());
       if (nth > omp_get_num_procs()) {
-        cout << "\toverride: requested too many threads.\n";
+          spdlog::warn("override: requested too many threads";
         nth = min(nth, omp_get_num_procs());
       }
-      cout << "\toverride: setting OpenMP N-threads to " << nth << "\n";
+      spdlog::warn("override: setting OpenMP N-threads to {}", nth);
       found_omp = true;
     }
   }
@@ -190,10 +189,10 @@ int main(int argc, char **argv)
    * have to do something with SimPM.levels[0] because this
    * is used to set the local domain size in decomposeDomain
    */
-  SimPM.grid_nlevels = 1;
+  SimPM.grid_nlevels     = 1;
   SimPM.levels[0].parent = 0;
-  SimPM.levels[0].child = 0;
-  SimPM.levels[0].Ncell = SimPM.Ncell;
+  SimPM.levels[0].child  = 0;
+  SimPM.levels[0].Ncell  = SimPM.Ncell;
   for (int v = 0; v < MAX_DIM; v++)
     SimPM.levels[0].NG[v] = SimPM.NG[v];
   for (int v = 0; v < MAX_DIM; v++)
@@ -202,14 +201,16 @@ int main(int argc, char **argv)
     SimPM.levels[0].Xmin[v] = SimPM.Xmin[v];
   for (int v = 0; v < MAX_DIM; v++)
     SimPM.levels[0].Xmax[v] = SimPM.Xmax[v];
-  SimPM.levels[0].dx = SimPM.Range[XX] / SimPM.NG[XX];
-  SimPM.levels[0].simtime = SimPM.simtime;
-  SimPM.levels[0].dt = 0.0;
-  SimPM.levels[0].multiplier = 1;
+  SimPM.levels[0].dx                     = SimPM.Range[XX] / SimPM.NG[XX];
+  SimPM.levels[0].simtime                = SimPM.simtime;
+  SimPM.levels[0].dt                     = 0.0;
+  SimPM.levels[0].multiplier             = 1;
 #ifdef PARALLEL
   class setup_fixed_grid_pllel *SimSetup = new setup_fixed_grid_pllel();
   err = SimPM.levels[0].sub_domain.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
-  rep.errorTest("Couldn't Decompose Domain!", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "Couldn't Decompose Domain!", 0, err);
 #else
   class setup_fixed_grid *SimSetup = new setup_fixed_grid();
 #endif /* PARALLEL */
@@ -221,15 +222,16 @@ int main(int argc, char **argv)
   vector<class GridBaseClass *> grid(SimPM.grid_nlevels);
   err      = SimSetup->setup_grid(grid, SimPM);
   SimPM.dx = grid[0]->DX();
-  if (!grid[0]) rep.error("Grid setup failed", grid[0]);
+  if (!grid[0]) spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid[0]));
 
   //
   // read in what kind of ICs we are setting up.
   //
   rp = new ReadParams;
-  if (!rp) rep.error("icgen:: initialising RP", rp);
+  if (!rp) spdlog::error("{}: {}", "icgen:: initialising RP", fmt::ptr(rp));
+  ;
   err += rp->read_paramfile(pfile);
-  if (err) rep.error("Error reading parameterfile", pfile);
+  if (err) spdlog::error("{}: {}", "Error reading parameterfile", pfile);
   string seek = "ics";
   string ics  = rp->find_parameter(seek);
   setup_ics_type(ics, &ic);
@@ -240,11 +242,14 @@ int main(int argc, char **argv)
 
 #ifdef PION_NESTED
   err = SimSetup->set_equations(SimPM);
-  rep.errorTest("(icgen::set_equations) err!=0 Fix me!", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(icgen::set_equations) err!=0 Fix me!",
+        0, err);
   class FV_solver_base *solver = SimSetup->get_solver_ptr();
 #endif
 
-  cout << "MAIN: setting up microphysics module\n";
+  spdlog::info("MAIN: setting up microphysics module");
   SimSetup->setup_microphysics(SimPM);
   MP = SimSetup->get_mp_ptr();
   ic->set_mp_pointer(MP);
@@ -257,7 +262,7 @@ int main(int argc, char **argv)
 #endif /* PION_NESTED */
     for (int l = 0; l < SimPM.grid_nlevels; l++) {
       err += ic->setup_data(rp, grid[l]);
-      if (err) rep.error("Initial conditions setup failed.", err);
+      if (err) spdlog::error("{}: {}", "Initial conditions setup failed.", err);
     }
 #ifndef PION_NESTED
   }
@@ -287,7 +292,7 @@ int main(int argc, char **argv)
   // Set up the boundary conditions and data
   //
   SimSetup->boundary_conditions(SimPM, grid);
-  if (err) rep.error("icgen Couldn't set up boundaries.", err);
+  if (err) spdlog::error("{}: {}", "icgen Couldn't set up boundaries.", err);
 
 #ifndef PION_NESTED
   err += SimSetup->setup_raytracing(SimPM, grid[0]);
@@ -295,20 +300,23 @@ int main(int argc, char **argv)
   err +=
       SimSetup->update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
   if (err)
-    rep.error("icgen: Failed to setup raytracer and/or microphysics", err);
+    spdlog::error(
+        "{}: {}", "icgen: Failed to setup raytracer and/or microphysics", err);
   // ----------------------------------------------------------------
   // call "setup" to set up the data on the computational grid.
   err += ic->setup_data(rp, grid[0]);
-  if (err) rep.error("Initial conditions setup failed.", err);
+  if (err) spdlog::error("{}: {}", "Initial conditions setup failed.", err);
     // ----------------------------------------------------------------
 
 #ifndef PARALLEL
   err = SimSetup->assign_boundary_data(SimPM, 0, grid[0], MP);
-  rep.errorTest("icgen::assign_boundary_data", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "icgen::assign_boundary_data", 0, err);
 #endif /* PARALLEL */
 #else
   err += SimSetup->setup_raytracing(SimPM, grid);
-  if (err) rep.error("icgen-ng: Failed to setup raytracer", err);
+  if (err) spdlog::error("{}: {}", "icgen-ng: Failed to setup raytracer", err);
 
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     // cout <<"icgen_NG: assigning boundary data for level "<<l<<"\n";
@@ -316,7 +324,10 @@ int main(int argc, char **argv)
 #ifdef PARALLEL
     SimPM.levels[0].sub_domain.barrier("level assign boundary data");
 #endif /* PARALLEL */
-    rep.errorTest("icgen-ng::assign_boundary_data", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "icgen-ng::assign_boundary_data", 0,
+          err);
   }
   // ----------------------------------------------------------------
 
@@ -326,17 +337,20 @@ int main(int argc, char **argv)
     err += SimSetup->TimeUpdateExternalBCs(
         SimPM, l, grid[l], solver, SimPM.simtime, SimPM.tmOOA, SimPM.tmOOA);
   }
-  rep.errorTest("icgen-ng: error from bounday update", 0, err);
-  // ----------------------------------------------------------------
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "icgen-ng: error from bounday update", 0,
+        err);
+    // ----------------------------------------------------------------
 
 #ifdef PARALLEL
-  // ----------------------------------------------------------------
+    // ----------------------------------------------------------------
 #ifndef NDEBUG
-  cout << "icgen-ng: updating C2F boundaries\n";
+  spdlog::info("icgen-ng: updating C2F boundaries");
 #endif /* NDEBUG */
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
 #ifndef NDEBUG
-    cout << "icgen-ng updating C2F boundaries for level " << l << "\n";
+    spdlog::debug("icgen-ng updating C2F boundaries for level {}", l);
 #endif /* NDEBUG */
     if (l < SimPM.grid_nlevels - 1) {
       for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
@@ -347,7 +361,7 @@ int main(int argc, char **argv)
       }
     }
 #ifndef NDEBUG
-    cout << "icgen-ng: updating C2F boundaries, sent, now recv\n";
+    spdlog::info("icgen-ng: updating C2F boundaries, sent, now recv");
 #endif /* NDEBUG */
     if (l > 0) {
       for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
@@ -358,24 +372,30 @@ int main(int argc, char **argv)
       }
     }
 #ifndef NDEBUG
-    cout << "icgen-ng: updating C2F boundaries: done with level\n";
+    spdlog::info("icgen-ng: updating C2F boundaries: done with level");
 #endif /* NDEBUG */
   }
-  cout << "icgen-ng: updating C2F boundaries done\n";
+  spdlog::info("icgen-ng: updating C2F boundaries done");
   SimSetup->BC_COARSE_TO_FINE_SEND_clear_sends(SimPM.levels[0].sub_domain);
-  rep.errorTest("icgen-ng: error from boundary update", 0, err);
-  // ----------------------------------------------------------------
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "icgen-ng: error from boundary update", 0,
+        err);
+    // ----------------------------------------------------------------
 
-  // ----------------------------------------------------------------
+    // ----------------------------------------------------------------
 #ifndef NDEBUG
-  cout << "icgen-ng: updating external boundaries\n";
+  spdlog::info("icgen-ng: updating external boundaries");
 #endif /* NDEBUG */
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     err += SimSetup->TimeUpdateExternalBCs(
         SimPM, l, grid[l], solver, SimPM.simtime, SimPM.tmOOA, SimPM.tmOOA);
   }
-  rep.errorTest("icgen-ng: error from boundary update", 0, err);
-  // ----------------------------------------------------------------
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "icgen-ng: error from boundary update", 0,
+        err);
+    // ----------------------------------------------------------------
 #endif /* PARALLEL */
 
   // ----------------------------------------------------------------
@@ -384,19 +404,21 @@ int main(int argc, char **argv)
     err += SimSetup->TimeUpdateInternalBCs(
         SimPM, l, grid[l], solver, SimPM.simtime, SimPM.tmOOA, SimPM.tmOOA);
   }
-  rep.errorTest("icgen-ng: error from bounday update", 0, err);
-  // ----------------------------------------------------------------
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "icgen-ng: error from bounday update", 0,
+        err);
+    // ----------------------------------------------------------------
 
 #ifdef PARALLEL
-  // ----------------------------------------------------------------
-  // update fine-to-coarse level boundaries
+    // ----------------------------------------------------------------
+    // update fine-to-coarse level boundaries
 #ifndef NDEBUG
-  cout << "icgen-ng: updating F2C boundaries\n";
+  spdlog::info("icgen-ng: updating F2C boundaries");
 #endif /* NDEBUG */
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
 #ifndef NDEBUG
-    cout << "icgen-ng updating F2C boundaries for level " << l << "\n";
-    cout << l << "\n";
+    spdlog::debug("icgen-ng updating F2C boundaries for level {}", l);
 #endif /* NDEBUG */
     if (l > 0) {
       for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
@@ -416,8 +438,11 @@ int main(int argc, char **argv)
     }
   }
   SimSetup->BC_FINE_TO_COARSE_SEND_clear_sends(SimPM.levels[0].sub_domain);
-  rep.errorTest("icgen-ng: error from boundary update", 0, err);
-  // ----------------------------------------------------------------
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "icgen-ng: error from boundary update", 0,
+        err);
+    // ----------------------------------------------------------------
 #endif /* PARALLEL */
 #endif /* PION_NESTED */
 
@@ -426,34 +451,35 @@ int main(int argc, char **argv)
   // chemistry...
   //
   if (SimPM.ntracer > 0 && (SimPM.EP.chemistry)) {
-    cout << "MAIN: equilibrating the chemical species.\n";
-    if (!MP) rep.error("microphysics init", MP);
+    spdlog::info("MAIN: equilibrating the chemical species.");
+    if (!MP) spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
 
     // first avoid cooling the gas in getting to equilbrium, by
     // setting update_erg to false.
     bool uerg           = SimPM.EP.update_erg;
     SimPM.EP.update_erg = false;
     err                 = ic->equilibrate_MP(grid[0], MP, rp, SimPM);
-    if (err) rep.error("setting chemical states to equilibrium failed", err);
+    if (err)
+      spdlog::error(
+          "{}: {}", "setting chemical states to equilibrium failed", err);
 
     SimPM.EP.update_erg = uerg;
-    cout << "MAIN: finished equilibrating the chemical species.\n";
+    spdlog::info("MAIN: finished equilibrating the chemical species.");
   }
   // ----------------------------------------------------------------
 
-  cout << "IC file-type is " << icftype << "\n";
+  spdlog::debug("IC file-type is ", icftype);
   seek          = "OutputFile";
   string icfile = rp->find_parameter(seek);
   if (icfile == "") {
-    cout << "WARNING: no filename for ic file.  writing to IC_temp.****\n";
+    spdlog::warn("WARNING: no filename for ic file.  writing to IC_temp.****");
     icfile = "IC_temp";
   }
 
   dataio = 0;  // zero the class pointer.
 #ifdef SILO
   if (icftype == "silo") {
-    cout << "WRITING SILO FILE: ";
-    cout << icfile << "\n";
+    spdlog::info("WRITING SILO FILE: {}", icfile);
 #ifdef PARALLEL
 #ifdef PION_NESTED
     dataio =
@@ -469,15 +495,13 @@ int main(int argc, char **argv)
 #elif !defined(PION_NESTED) /* elifndef would be nice */
 #ifndef PARALLEL
   if (icftype == "text") {
-    cout << "WRITING ASCII TEXT FILE: ";
-    cout << icfile << "\n";
+    spdlog::info("WRITING ASCII TEXT FILE: {}", icfile);
   }
 #endif
 
 #ifdef FITS
   if (icftype == "fits") {
-    cout << "WRITING FITS FILE: ";
-    cout << icfile << "\n";
+    spdlog::info("WRITING FITS FILE: {}", icfile);
 #ifdef PARALLEL
     dataio = new DataIOFits_pllel(SimPM, &SimPM.levels[0].sub_domain);
 #else
@@ -487,11 +511,11 @@ int main(int argc, char **argv)
 #endif /* FITS */
 #endif /* PION_NESTED */
 
-  if (!dataio) rep.error("IO class initialisation: ", icftype);
+  if (!dataio) spdlog::error("{}: {}", "IO class initialisation: ", icftype);
   err = dataio->OutputData(icfile, grid, SimPM, 0);
-  if (err) rep.error("File write error", err);
+  if (err) spdlog::error("{}: {}", "File write error", err);
   delete dataio;
-  cout << icftype << " FILE WRITTEN... exiting\n";
+  spdlog::info("{} FILE WRITTEN... exiting", icftype);
 
   // delete everything and return
   if (MP) {

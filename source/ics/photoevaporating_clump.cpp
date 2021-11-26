@@ -34,7 +34,11 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -80,10 +84,10 @@ int IC_photoevaporatingclump::setup_data(
   int err = 0;
 
   ICsetup_base::gg = ggg;
-  if (!gg) rep.error("null pointer to grid!", ggg);
+  if (!gg) spdlog::error("{}: {}", "null pointer to grid!", fmt::ptr(ggg));
 
   ICsetup_base::rp = rrp;
-  if (!rp) rep.error("null pointer to ReadParams", rp);
+  if (!rp) spdlog::error("{}: {}", "null pointer to ReadParams", fmt::ptr(rp));
 
   IC_photoevaporatingclump::ndim   = SimPM->ndim;
   IC_photoevaporatingclump::coords = SimPM->coord_sys;
@@ -93,12 +97,13 @@ int IC_photoevaporatingclump::setup_data(
   else if (eqns == EQMHD || eqns == EQGLM || eqns == EQFCD)
     eqns = 2;
   else
-    rep.error("Bad equations", eqns);
+    spdlog::error("{}: {}", "Bad equations", eqns);
 
   // initialise pre and post shock vectors to zero.
   IC_photoevaporatingclump::ambient = 0;
   ambient                           = new double[SimPM->nvar];
-  if (!ambient) rep.error("malloc pre/post shock vecs", ambient);
+  if (!ambient)
+    spdlog::error("{}: {}", "malloc pre/post shock vecs", fmt::ptr(ambient));
   for (int v = 0; v < SimPM->nvar; v++)
     ambient[v] = 0.0;
 
@@ -107,13 +112,13 @@ int IC_photoevaporatingclump::setup_data(
   // cloud radius
   seek = "PECcloudradius";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_photoevaporatingclump::clrad = atof(str.c_str());
   if (ndim > 1)
     clrad *= SimPM->Range[YY];  // radius is given in units of y-dir range.
   else
     clrad *= SimPM->Range[XX];
-  cout << "Cloud Radius in cm is " << clrad << endl;
+  spdlog::debug("Cloud Radius in cm is {}", clrad);
 
   cltr = mem.myalloc(cltr, SimPM->ntracer);
   ostringstream temp;
@@ -132,7 +137,7 @@ int IC_photoevaporatingclump::setup_data(
   // density ratio
   seek = "PECdratio";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_photoevaporatingclump::dratio = atof(str.c_str());
 
   // pressure ratio
@@ -262,55 +267,56 @@ int IC_photoevaporatingclump::setup_data(
   // now make sure we are to do a photo-evaporation sim.
   string ics = rp->find_parameter("ics");
   if (ics == "")
-    rep.error("didn't get any ics to set up.", ics);
+    spdlog::error("{}: {}", "didn't get any ics to set up.", ics);
   else if (ics == "PhotoEvaporatingClump" || ics == "PEC") {
     ics = "PE_CLUMP";
-    cout << "\t\tSetting up PhotoEvaporating Clump problem.\n";
+    spdlog::info("\t\tSetting up PhotoEvaporating Clump problem");
   }
   else if (ics == "PhotoEvaporatingClump2" || ics == "PEC2") {
     ics = "PE_CLUMP2";
-    cout << "\t\tSetting up PhotoEvaporating Clump problem.\n";
+    spdlog::info("\t\tSetting up PhotoEvaporating Clump problem");
   }
   else if (ics == "PhotoEvap_radial") {
     ics = "PE_SLOPE";
-    cout << "\t\tSetting up Photoevaporation into radial density profile.\n";
+    spdlog::info("\t\tSetting up Photoevaporation into radial density profile");
   }
   else if (ics == "PhotoEvap_powerlaw") {
     ics = "PE_POWERLAW";
-    cout << "\t\tSetting up Photoevaporation into power law density profile in "
-            "Zcyl (XX).\n";
+    spdlog::info(
+        "\t\tSetting up Photoevaporation into power law density profile in Zcyl (XX)");
   }
   else if (ics == "PhotoEvap_paralleltest") {
     ics = "PE_PARALLELTEST";
-    cout << "\t\tSetting up Photoevaporation of parallel rays with varying "
-            "density.\n";
+    spdlog::info(
+        "\t\tSetting up Photoevaporation of parallel rays with varying density");
   }
   else if (ics == "PhotoEvap_CloudClump") {
     ics = "PE_CLOUD_CLUMP";
-    cout << "\t\tSetting up Photoevaporation into cloud with clump.\n";
+    spdlog::info("\t\tSetting up Photoevaporation into cloud with clump");
   }
   else
-    rep.error("Don't know what Initial Condition is!", ics);
+    spdlog::error("{}: {}", "Don't know what Initial Condition is!", ics);
 
   // set cloud centre
   IC_photoevaporatingclump::cloudcentre = 0;
   cloudcentre                           = new double[ndim];
-  if (!cloudcentre) rep.error("cloud centre malloc", cloudcentre);
+  if (!cloudcentre)
+    spdlog::error("{}: {}", "cloud centre malloc", fmt::ptr(cloudcentre));
 
   seek = "PEC_xpos";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   cloudcentre[XX] = atof(str.c_str());
   if (ndim > 1) {
     seek = "PEC_ypos";
     str  = rp->find_parameter(seek);
-    if (str == "") rep.error("didn't find parameter", seek);
+    if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
     cloudcentre[YY] = atof(str.c_str());
   }
   if (ndim > 2) {
     seek = "PEC_zpos";
     str  = rp->find_parameter(seek);
-    if (str == "") rep.error("didn't find parameter", seek);
+    if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
     cloudcentre[ZZ] = atof(str.c_str());
   }
 
@@ -324,7 +330,8 @@ int IC_photoevaporatingclump::setup_data(
   //  else if (coords==COORD_CYL) {
   //    // cylindrical (Axial symmetry), so centre cloud on axis.
   //    cloudcentre[YY] = 0.0;
-  //    if (ndim>2) rep.error("3d cylindrical coords not done yet!",ndim);
+  //    if (ndim>2) spdlog::error("{}: {}", "3d cylindrical coords not done
+  //    yet!",ndim);
   //  }
 
   //
@@ -339,8 +346,7 @@ int IC_photoevaporatingclump::setup_data(
     IC_photoevaporatingclump::radial_slope = atof(str.c_str());
   else
     IC_photoevaporatingclump::radial_slope = 0.0;
-  cout << "radial_slope=" << radial_slope
-       << "  *****************************\n";
+  spdlog::debug("radial_slope={}", radial_slope);
 
   temp.str("");
   temp << "PEC_core_radius";
@@ -354,7 +360,7 @@ int IC_photoevaporatingclump::setup_data(
     core_radius *= SimPM->Range[YY];  // r is fraction of y-range.
   else
     core_radius *= SimPM->Range[XX];
-  cout << "core_radius=" << core_radius << " cm *********************\n";
+  spdlog::debug("core_radius={} cm", core_radius);
 
   //
   // setup the problem.
@@ -372,7 +378,7 @@ int IC_photoevaporatingclump::setup_data(
   else if (ics == "PE_CLOUD_CLUMP")
     err += setup_cloud_clump();
   else
-    rep.error("Bad ics", ics);
+    spdlog::error("{}: {}", "Bad ics", ics);
 
   //
   // Add noise to data?  Smooth data?
@@ -384,10 +390,12 @@ int IC_photoevaporatingclump::setup_data(
     noise = atof(ics.c_str());
   else
     noise = -1;
-  if (isnan(noise)) rep.error("noise parameter is not a number", noise);
+  if (isnan(noise))
+    spdlog::error("{}: {}", "noise parameter is not a number", noise);
   if (noise > 0) {
-    cout << "\t\tNOISE!!! Adding random adiabatic noise";
-    cout << " at fractional level = " << noise << endl;
+    spdlog::debug(
+        "\t\tNOISE!!! Adding random adiabatic noise at fractional level = {}",
+        noise);
     err += AddNoise2Data(gg, *SimPM, 4, noise);
   }
   ics = rp->find_parameter("smooth");
@@ -395,7 +403,8 @@ int IC_photoevaporatingclump::setup_data(
     smooth = atoi(ics.c_str());
   else
     smooth = -1;
-  if (isnan(smooth)) rep.error("Smooth parameter not a number", smooth);
+  if (isnan(smooth))
+    spdlog::error("{}: {}", "Smooth parameter not a number", smooth);
   if (smooth > 0) err += SmoothData(smooth);
 
   delete[] cloudcentre;
@@ -410,10 +419,11 @@ int IC_photoevaporatingclump::setup_data(
 
 int IC_photoevaporatingclump::setup_pec2()
 {
-  cout << "\t\tSetting up a " << ndim << "-D simulation with an I-front";
-  cout << " hitting TWO circular clouds with overdensity of " << dratio
-       << ".\n";
-  rep.printVec("ambient ", ambient, SimPM->nvar);
+  spdlog::debug(
+      "\t\tSetting up a {}-D simulation with an I-front hitting TWO circular clouds with overdensity of {}",
+      ndim, dratio);
+  spdlog::debug(
+      "ambient  : {}", std::vector<double>(ambient, ambient + SimPM->nvar));
   // ******* OLD CODE FOR HARD-EDGED CLUMPS *******
   //  int nsub;
   //  if (ndim==2) nsub=100; else nsub=32;
@@ -426,7 +436,7 @@ int IC_photoevaporatingclump::setup_pec2()
   // class inside_sphere stest2(cloudcentre,clrad,SimPM->dx,nsub,ndim);
   // ******* OLD CODE FOR HARD-EDGED CLUMPS *******
 
-  double cloud1[ndim], cloud2[ndim];
+  std::array<double, MAX_DIM> cloud1, cloud2;
   for (int v = 0; v < ndim; v++)
     cloud1[v] = cloud2[v] = cloudcentre[v];
   //
@@ -438,9 +448,10 @@ int IC_photoevaporatingclump::setup_pec2()
   cloud2[XX] += 1.0 * clrad;
   cloud2[YY] += 0.5 * clrad;
 
-  cout << "\t\tAssigning primitive vectors.\n";
+  spdlog::info("\t\tAssigning primitive vectors");
   // double vfrac=0.0;
-  double cell_pos[ndim], d;
+  std::array<double, MAX_DIM> cell_pos;
+  double d;
   double rho1 = ambient[RO] * dratio;
   double pg1  = ambient[PG] * pratio;
   //  double BX1  = ambient[BX]*pratio;
@@ -532,7 +543,7 @@ int IC_photoevaporatingclump::setup_pec2()
   //  cpt = firstPt();
   //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;} while  (
   //  (cpt=nextPt(cpt))!=NULL);
-  cout << "\t\tGot through data successfully.\n";
+  spdlog::info("\t\tGot through data successfully");
   // Data done.
   return (0);
 }
@@ -542,9 +553,11 @@ int IC_photoevaporatingclump::setup_pec2()
 
 int IC_photoevaporatingclump::setup_pec()
 {
-  cout << "\t\tSetting up a " << ndim << "-D simulation with an I-front";
-  cout << " hitting a circular cloud with overdensity of " << dratio << ".\n";
-  rep.printVec("ambient ", ambient, SimPM->nvar);
+  spdlog::debug(
+      "\t\tSetting up a {}-D simulation with an I-front hitting a circular cloud with overdensity of ",
+      ndim, dratio);
+  spdlog::debug(
+      "ambient  : {}", std::vector<double>(ambient, ambient + SimPM->nvar));
   int nsub;
   if (ndim == 2)
     nsub = 100;
@@ -552,7 +565,7 @@ int IC_photoevaporatingclump::setup_pec()
     nsub = 32;
   class inside_sphere stest(cloudcentre, clrad, SimPM->dx, nsub, ndim);
 
-  cout << "\t\tAssigning primitive vectors.\n";
+  spdlog::info("\t\tAssigning primitive vectors");
   double vfrac    = 0.0;
   class cell *cpt = gg->FirstPt();
   do {
@@ -562,7 +575,6 @@ int IC_photoevaporatingclump::setup_pec()
 
     // This is where I set the state inside the cloud.
     if ((vfrac = stest.volumeFraction(cpt)) > 0) {
-      // cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
       cpt->P[RO] = vfrac * (dratio * cpt->P[RO]) + (1. - vfrac) * cpt->P[RO];
       cpt->P[PG] = vfrac * (pratio * cpt->P[PG]) + (1. - vfrac) * cpt->P[PG];
       if (eqns == 2)
@@ -575,7 +587,7 @@ int IC_photoevaporatingclump::setup_pec()
   //  cpt = firstPt();
   //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;} while  (
   //  (cpt=nextPt(cpt))!=NULL);
-  cout << "\t\tGot through data successfully.\n";
+  spdlog::info("\t\tGot through data successfully");
   // Data done.
   return (0);
 }
@@ -585,13 +597,14 @@ int IC_photoevaporatingclump::setup_pec()
 
 int IC_photoevaporatingclump::setup_powerlaw_density()
 {
-  cout << "\t\tSetting up a " << ndim << "-D simulation with an I-front";
-  cout << " propagating into an ambient medium with 1/r^3 profile in Zcyl.\n";
-  cout << "WARNING: THIS FUNCTION HAS BEEN TAKEN OVER FOR A SPECIFIC "
-          "PROBLEM!!\n";
-  rep.printVec("ambient ", ambient, SimPM->nvar);
+  spdlog::debug(
+      "\t\tSetting up a {}-D simulation with an I-front propagating into an ambient medium with 1/r^3 profile in Zcyl",
+      ndim);
+  spdlog::warn("this function has been taken over for a specific problem!");
+  spdlog::debug(
+      "ambient  : {}", std::vector<double>(ambient, ambient + SimPM->nvar));
 
-  cout << "\t\tAssigning primitive vectors.\n";
+  spdlog::info("\t\tAssigning primitive vectors");
   // double dist=0.0;
 
   // *************  HARDCODED FOR NEW PROBLEM *****************
@@ -602,7 +615,8 @@ int IC_photoevaporatingclump::setup_powerlaw_density()
   double srcpos[SimPM->ndim];
   for (int v = 0; v < SimPM->ndim; v++) {
     srcpos[v] = SimPM->RS.sources[0].pos[v];
-    if (isnan(srcpos[v])) rep.error("Bad source position", srcpos[v]);
+    if (isnan(srcpos[v]))
+      spdlog::error("{}: {}", "Bad source position", srcpos[v]);
   }
 
   //
@@ -612,7 +626,7 @@ int IC_photoevaporatingclump::setup_powerlaw_density()
   double xoffset = 12.344e18;
   double x0      = 3.086e18;
   double rho0    = 9.352e-23;
-  double dpos[ndim];
+  std::array<double, MAX_DIM> dpos;
   class cell *cpt = gg->FirstPt();
   do {
     CI.get_dpos(cpt, dpos);
@@ -624,7 +638,7 @@ int IC_photoevaporatingclump::setup_powerlaw_density()
   //  cpt = firstPt();
   //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;} while  (
   //  (cpt=nextPt(cpt))!=NULL);
-  cout << "\t\tGot through data successfully.\n";
+  spdlog::info("\t\tGot through data successfully");
   // Data done.
   return (0);
   // *************  HARDCODED FOR NEW PROBLEM *****************
@@ -635,10 +649,11 @@ int IC_photoevaporatingclump::setup_powerlaw_density()
 
 int IC_photoevaporatingclump::setup_cloud_clump()
 {
-  cout << "\t\tSetting up a " << ndim << "-D simulation with an I-front";
-  cout << " propagating into an ambient medium with 1/r^" << radial_slope
-       << " profile.\n";
-  rep.printVec("ambient ", ambient, SimPM->nvar);
+  spdlog::debug(
+      "\t\tSetting up a {}-D simulation with an I-front propagating into an ambient medium with 1/r^{} profile",
+      ndim, radial_slope);
+  spdlog::debug(
+      "ambient  : {}", std::vector<double>(ambient, ambient + SimPM->nvar));
 
   //
   // Set up the clump-locator class.
@@ -651,29 +666,32 @@ int IC_photoevaporatingclump::setup_cloud_clump()
   class inside_sphere stest(cloudcentre, clrad, SimPM->dx, nsub, ndim);
   double vfrac = 0.0;
 
-  cout << "\t\tAssigning primitive vectors.\n";
+  spdlog::info("\t\tAssigning primitive vectors");
   double dist = 0.0;
 
   //
   // source position:
   //
-  double srcpos[SimPM->ndim];
+  std::vector<double> srcpos(SimPM->ndim);
   // if (SimPM->RS.Nsources!=1) {
-  //  rep.error("Bad number of sources",SimPM->RS.Nsources);
+  //  spdlog::error("{}: {}", "Bad number of sources",SimPM->RS.Nsources);
   //}
   for (int v = 0; v < SimPM->ndim; v++) {
     srcpos[v] = SimPM->RS.sources[0].pos[v];
-    if (isnan(srcpos[v])) rep.error("Bad source position", srcpos[v]);
+    if (isnan(srcpos[v]))
+      spdlog::error("{}: {}", "Bad source position", srcpos[v]);
   }
-  double ISM_centre[SimPM->ndim];
+  std::vector<double> ISM_centre(SimPM->ndim);
   for (int v = 0; v < SimPM->ndim; v++) {
     ISM_centre[v] = 0.0;
   }
-  rep.printVec("source position ", srcpos, SimPM->ndim);
-  rep.printVec("clump centre    ", cloudcentre, SimPM->ndim);
-  rep.printVec("ISM Cloud centre", ISM_centre, SimPM->ndim);
+  spdlog::debug("source position  : {}", srcpos);
+  spdlog::debug(
+      "clump centre     : {}",
+      std::vector<double>(cloudcentre, cloudcentre + SimPM->ndim));
+  spdlog::debug("ISM Cloud centre : {}", ISM_centre);
 
-  double dpos[ndim];
+  std::array<double, MAX_DIM> dpos;
   class cell *cpt = gg->FirstPt();
   do {
     CI.get_dpos(cpt, dpos);
@@ -687,7 +705,7 @@ int IC_photoevaporatingclump::setup_cloud_clump()
     // (PEC_xpos,PEC_ypos,PEC_zpos).
     //
     if (!pconst.equalD(radial_slope, 0.0)) {
-      dist = gg->distance_vertex2cell(ISM_centre, cpt);
+      dist = gg->distance_vertex2cell(&ISM_centre[0], cpt);
 
       //
       // We use rho=rho0/(1+(r/r0)^n)
@@ -701,7 +719,6 @@ int IC_photoevaporatingclump::setup_cloud_clump()
     // Here dratio is the actual clump density.
     //
     if ((vfrac = stest.volumeFraction(cpt)) > 0) {
-      // cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
       cpt->P[RO] =
           std::max(static_cast<pion_flt>(vfrac * (dratio)), cpt->P[RO]);
       cpt->P[PG] = vfrac * (pratio * cpt->P[PG]) + (1. - vfrac) * cpt->P[PG];
@@ -711,12 +728,11 @@ int IC_photoevaporatingclump::setup_cloud_clump()
         cpt->P[SimPM->ftr + v] =
             vfrac * cltr[v] + (1. - vfrac) * cpt->P[SimPM->ftr + v];
     }
-    // cout <<dpos[0]<<"  "<<cpt->P[RO]<<"  "<<cpt->P[PG]<<"\n";
   } while ((cpt = gg->NextPt(cpt)) != 0);
   //  cpt = firstPt();
   //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;} while  (
   //  (cpt=nextPt(cpt))!=NULL);
-  cout << "\t\tGot through data successfully.\n";
+  spdlog::info("\t\tGot through data successfully");
   // Data done.
 
   return 0;
@@ -727,34 +743,38 @@ int IC_photoevaporatingclump::setup_cloud_clump()
 
 int IC_photoevaporatingclump::setup_radialprofile()
 {
-  cout << "\t\tSetting up a " << ndim << "-D simulation with an I-front";
-  cout << " propagating into an ambient medium with 1/r^" << radial_slope
-       << " profile.\n";
-  rep.printVec("ambient ", ambient, SimPM->nvar);
+  spdlog::debug(
+      "\t\tSetting up a {}-D simulation with an I-front propagating into an ambient medium with 1/r^{} profile",
+      ndim, radial_slope);
+  spdlog::debug(
+      "ambient  : {}", std::vector<double>(ambient, ambient + SimPM->nvar));
 
-  cout << "\t\tAssigning primitive vectors.\n";
+  spdlog::info("\t\tAssigning primitive vectors");
   double dist = 0.0;
 
   //
   // source position:
   //
-  double srcpos[SimPM->ndim];
+  std::vector<double> srcpos(SimPM->ndim);
   // if (SimPM->RS.Nsources!=1) {
-  //  rep.error("Bad number of sources",SimPM->RS.Nsources);
+  //  spdlog::error("{}: {}", "Bad number of sources",SimPM->RS.Nsources);
   //}
   for (int v = 0; v < SimPM->ndim; v++) {
     srcpos[v] = SimPM->RS.sources[0].pos[v];
-    if (isnan(srcpos[v])) rep.error("Bad source position", srcpos[v]);
+    if (isnan(srcpos[v]))
+      spdlog::error("{}: {}", "Bad source position", srcpos[v]);
   }
-  rep.printVec("source position", srcpos, SimPM->ndim);
-  rep.printVec("cloud centre   ", cloudcentre, SimPM->ndim);
+  spdlog::debug("source position : {}", srcpos);
+  spdlog::debug(
+      "cloud centre    : {}",
+      std::vector<double>(cloudcentre, cloudcentre + SimPM->ndim));
   //
   // set scale radius of core. (TAKE CLUMP RADIUS AS THE SCALE RADIUS OF
   // CORE!!!)
   //
   double r0 = clrad;
 
-  double dpos[ndim];
+  std::array<double, MAX_DIM> dpos;
   class cell *cpt = gg->FirstPt();
   do {
     CI.get_dpos(cpt, dpos);
@@ -790,7 +810,7 @@ int IC_photoevaporatingclump::setup_radialprofile()
   //  cpt = firstPt();
   //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;} while  (
   //  (cpt=nextPt(cpt))!=NULL);
-  cout << "\t\tGot through data successfully.\n";
+  spdlog::info("\t\tGot through data successfully");
   // Data done.
   return (0);
 }
@@ -800,17 +820,20 @@ int IC_photoevaporatingclump::setup_radialprofile()
 
 int IC_photoevaporatingclump::setup_paralleltest()
 {
-  cout << "\t\tSetting up a " << ndim << "-D simulation with an I-front";
-  cout << " propagating into an ambient medium with parallel rays\n";
-  rep.printVec("ambient ", ambient, SimPM->nvar);
+  spdlog::debug(
+      "\t\tSetting up a {}-D simulation with an I-front propagating into an ambient medium with parallel rays",
+      ndim);
+  spdlog::debug(
+      "ambient  : {}", std::vector<double>(ambient, ambient + SimPM->nvar));
 
-  cout << "\t\tAssigning primitive vectors.\n";
-  double srcpos[SimPM->ndim];
+  spdlog::info("\t\tAssigning primitive vectors");
+  std::vector<double> srcpos(SimPM->ndim);
   for (int v = 0; v < SimPM->ndim; v++) {
     srcpos[v] = SimPM->RS.sources[0].pos[v];
-    if (isnan(srcpos[v])) rep.error("Bad source position", srcpos[v]);
+    if (isnan(srcpos[v]))
+      spdlog::error("{}: {}", "Bad source position", srcpos[v]);
   }
-  rep.printVec("srcpos", srcpos, SimPM->ndim);
+  spdlog::debug("srcpos : {}", srcpos);
 
   class cell *c = gg->FirstPt(), *tmp = 0;
   do {
@@ -825,7 +848,7 @@ int IC_photoevaporatingclump::setup_paralleltest()
   } while ((c = gg->NextPt(c)) != 0);
   //  c = firstPt();
   //  do {cout <<"c.rho = "<<c->P[RO]<<endl;} while  ( (c=nextPt(c))!=NULL);
-  cout << "\t\tGot through data successfully.\n";
+  spdlog::info("\t\tGot through data successfully");
   // Data done.
   return (0);
 }

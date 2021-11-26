@@ -12,7 +12,10 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -51,10 +54,10 @@ int IC_radiative_shock::setup_data(
   int err = 0;
 
   ICsetup_base::gg = ggg;
-  if (!gg) rep.error("null pointer to grid!", ggg);
+  if (!gg) spdlog::error("{}: {}", "null pointer to grid!", fmt::ptr(ggg));
 
   ICsetup_base::rp = rrp;
-  if (!rp) rep.error("null pointer to ReadParams", rp);
+  if (!rp) spdlog::error("{}: {}", "null pointer to ReadParams", fmt::ptr(rp));
 
   string seek, str;
 
@@ -64,24 +67,24 @@ int IC_radiative_shock::setup_data(
   else if (eqns == EQMHD || eqns == EQGLM || eqns == EQFCD)
     eqns = 2;
   else
-    rep.error("Bad equations", eqns);
+    spdlog::error("{}: {}", "Bad equations", eqns);
 
   // Find shock velocity (cm/s)
   seek = "RADSH_vs";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_radiative_shock::vsh = atof(str.c_str());
 
   // Find initial gas density(g/cm^3)
   seek = "RADSH_r0";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_radiative_shock::rho0 = atof(str.c_str());
 
   // Find initial gas temperature (K)
   seek = "RADSH_T0";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_radiative_shock::T0 = atof(str.c_str());
 
   // Find initial gas B-field (Gauss)
@@ -100,17 +103,17 @@ int IC_radiative_shock::setup_data(
   string ics = rp->find_parameter("ics");
 
   if (ics == "")
-    rep.error("didn't get any ics to set up.", ics);
+    spdlog::error("{}: {}", "didn't get any ics to set up.", ics);
   else if (ics == "RadiativeShock") {
-    cout << "\t\tsetting up test problem: " << ics << endl;
+    spdlog::debug("\t\tsetting up test problem: {}", ics);
     err += setup_RadiativeShock();
   }
   else if (ics == "RadiativeShockOutflow") {
-    cout << "\t\tsetting up test problem: " << ics << endl;
+    spdlog::debug("\t\tsetting up test problem: {}", ics);
     err += setup_OutflowRadiativeShock();
   }
   else
-    rep.error("Don't know what Initial Condition is!", ics);
+    spdlog::error("{}: {}", "Don't know what Initial Condition is!", ics);
 
   // Add noise to data?  Smooth data?
   double noise = 0.0;
@@ -120,7 +123,8 @@ int IC_radiative_shock::setup_data(
     noise = atof(ics.c_str());
   else
     noise = -1;
-  if (isnan(noise)) rep.error("noise parameter is not a number", noise);
+  if (isnan(noise))
+    spdlog::error("{}: {}", "noise parameter is not a number", noise);
   if (noise > 0) err += AddNoise2Data(gg, *SimPM, 2, noise);
 
   ics = rp->find_parameter("smooth");
@@ -128,7 +132,8 @@ int IC_radiative_shock::setup_data(
     smooth = atoi(ics.c_str());
   else
     smooth = -1;
-  if (isnan(smooth)) rep.error("Smooth parameter not a number", smooth);
+  if (isnan(smooth))
+    spdlog::error("{}: {}", "Smooth parameter not a number", smooth);
   if (smooth > 0) err += SmoothData(smooth);
 
   return err;
@@ -140,8 +145,9 @@ int IC_radiative_shock::setup_data(
 int IC_radiative_shock::setup_RadiativeShock()
 {
 
-  cout << "\t\tSetting up radiative shock problem with v=" << vsh;
-  cout << ", rho=" << rho0 << ", T=" << T0 << " ...\n";
+  spdlog::debug(
+      "\t\tSetting up radiative shock problem with v={}, rho={}, T={}", vsh,
+      rho0, T0);
   double mu = 1.27;   // 1.2; // mean mass per particle -- rough guess, good
                       // for neutral H, He.
   double x  = 0.101;  // initial ionisation fraction...
@@ -190,8 +196,9 @@ int IC_radiative_shock::setup_RadiativeShock()
 
 int IC_radiative_shock::setup_OutflowRadiativeShock()
 {
-  cout << "\t\tSetting up OUTFLOW radiative shock problem with v=" << vsh;
-  cout << ", rho=" << rho0 << ", T=" << T0 << " ...\n";
+  spdlog::debug(
+      "\t\tSetting up OUTFLOW radiative shock problem with v={}, rho={}, T={}",
+      vsh, rho0, T0);
 
   double mu =
       1.22;  // mean mass per particle -- rough guess, good for neutral H, He.
@@ -202,7 +209,7 @@ int IC_radiative_shock::setup_OutflowRadiativeShock()
     xboundary *= 2.5;  // stable shock should be near centre of grid.
   double range = (SimPM->Xmax[XX] - SimPM->Xmin[XX]) * 5.0 / SimPM->NG[XX];
   double mach0 = vsh / sqrt(gam * pg / rho0);
-  cout << "shock mach no. = " << mach0 << endl;
+  spdlog::debug("shock mach no. = {}", mach0);
   double rho1 = rho0 * mach0 * mach0;  // isothermal shock jump condition.
   //  double vel1 = rho0*vsh/rho1;
 
@@ -250,7 +257,7 @@ int IC_radiative_shock::setup_OutflowRadiativeShock()
   }
 
   class cell *c = gg->FirstPt();
-  double dpos[SimPM->ndim];
+  std::array<double, MAX_DIM> dpos;
   do {
     CI.get_dpos(c, dpos);
     if (dpos[XX] >= xboundary + range) {
@@ -292,10 +299,9 @@ int IC_radiative_shock::setup_OutflowRadiativeShock()
       // in boundary region, so we interpolate values.
       //
       double frac = (dpos[XX] - xboundary + range) / 2. / range;
-      // cout <<"x: "<<dpos[XX]<<"  frac: "<<frac<<endl;
-      c->P[RO] = frac * rho0 + (1. - frac) * rho1;
-      c->P[PG] = frac * pg + (1. - frac) * pg1;
-      c->P[VX] = -frac * vsh;
+      c->P[RO]    = frac * rho0 + (1. - frac) * rho1;
+      c->P[PG]    = frac * pg + (1. - frac) * pg1;
+      c->P[VX]    = -frac * vsh;
       // magnetic field???
       if (eqns == 2) {
         c->P[BY] = c->P[BZ] =

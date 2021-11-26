@@ -5,6 +5,10 @@
 /// Modifications :\n
 /// - 2018.08.08 JM: moved code.
 
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 #include "boundaries/NG_coarse_to_fine_boundaries.h"
 #include "tools/mem_manage.h"
 using namespace std;
@@ -28,7 +32,8 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
   // alogrithm to interpolate the coarse data onto the finer grid.
   //
   if (b->data.empty())
-    rep.error("BC_assign_COARSE_TO_FINE: empty boundary data", b->itype);
+    spdlog::error(
+        "{}: {}", "BC_assign_COARSE_TO_FINE: empty boundary data", b->itype);
 
     //
     // If we are doing raytracing, then also send the column densities
@@ -43,14 +48,15 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
     C2F_tauoff[isrc] = C2F_Nxd;
     C2F_Nxd += 2 * s->NTau;  // Need col2cell and cell_col for each Tau.
 #ifdef TEST_MPI_NG
-    cout << "C2F_BC: RT Source " << isrc << ": adding " << 2 * s->NTau;
-    cout << " cols, running total = " << C2F_Nxd << "\n";
+    spdlog::debug(
+        "C2F_BC: RT Source {}: adding {} cols, running total = {}", isrc,
+        2 * s->NTau, C2F_Nxd);
 #endif
   }
 #endif  // C2F_TAU
 
 #ifdef TEST_C2F
-  cout << "assigning C2F boundary for dir " << b->dir << "\n";
+  spdlog::debug("assigning C2F boundary for dir {}", b->dir);
 #endif
   list<cell *>::iterator bpt = b->data.begin();
   int gidx                   = grid->idx();
@@ -69,7 +75,7 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
       while (fabs(distance = grid->idifference_cell2cell((*bpt), pc, ax))
              > 0.75 * gidx)
         pc = parent->NextPt(pc, pos);
-      if (!pc) rep.error("C2F boundaries setup", distance);
+      if (!pc) spdlog::error("{}: {}", "C2F boundaries setup", distance);
     }
 #ifdef TEST_C2F
     // rep.printVec("bpt pos",(*bpt)->pos,par.ndim);
@@ -99,8 +105,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   if ((step) % 2 != 0) return 0;
 #endif
 #ifdef TEST_C2F
-  cout << "C2F: updating boundary data from coarse grid to level ";
-  cout << level << "\n";
+  spdlog::debug(
+      "C2F: updating boundary data from coarse grid to level {}", level);
 #endif
 
   //
@@ -118,8 +124,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   class GridBaseClass *coarse = par.levels[level].parent;
   class GridBaseClass *fine   = par.levels[level].grid;
 #ifdef TEST_C2F
-  cout << "C2F: fine=" << fine << ", parent=" << coarse << ", level=";
-  cout << level << "\n";
+  spdlog::debug("C2F: fine={}, parent={}, level={}", fine, coarse, level);
 #endif
 
   list<cell *>::iterator f_iter = b->data.begin();
@@ -138,7 +143,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   //
   if (step % 2 != 0) {
 #ifdef TEST_C2F
-    cout << "C2F: odd step, interpolating coarse data in time.\n";
+    spdlog::info("C2F: odd step, interpolating coarse data in time.");
     int ct = 0;
 #endif
     double U[par.nvar];
@@ -154,8 +159,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       // cout <<"updated cell "<<ct<<" of "<<b->data.size()<<"\n";
       for (int v = 0; v < par.nvar; v++) {
         if (!isfinite(c->Ph[v])) {
-          rep.printVec("NAN c->P ", c->P, par.nvar);
-          rep.printVec("NAN c->Ph", c->Ph, par.nvar);
+          spdlog::debug("NAN c->P  : {}", c->P);
+          spdlog::debug("NAN c->Ph : {}", c->Ph);
         }
       }
 #endif
@@ -170,7 +175,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
     cell *f1 = 0, *f2 = 0;
     struct rad_src_info *s;
     int off = 0, ncells = 0;
-    pion_flt Tau[MAX_TAU], T[C2F_Nxd], cpos[MAX_DIM];
+    std::array<pion_flt, MAX_DIM> Tau, T, cpos;
     std::vector<cell *> fcl;
     c = (*f_iter)->npt;
     CI.get_dpos(c, cpos);
@@ -215,7 +220,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       }
     }
     else {
-      rep.error("C2F RT 3D not implemented", par.ndim);
+      spdlog::error("{}: {}", "C2F RT 3D not implemented", par.ndim);
     }
     if (ncells == 0) {
       // cout <<"ncells=0: skipping column\n";
@@ -287,8 +292,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
 
     else if (par.ndim == 2) {
 #ifdef TEST_C2F
-      cout << "interpolating coarse to fine 2d: ncells=";
-      cout << b->data.size() << "\n";
+      spdlog::debug(
+          "interpolating coarse to fine 2d: ncells={}", b->data.size());
 #endif
       pion_flt c_vol = 0.0;
 
@@ -313,8 +318,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
             || fine->NextPt((*f_iter), YP)->npt != c) {
 #ifdef TEST_C2F
           if (level == 3) {
-            cout << "skipping for f_iter id=";
-            cout << (*f_iter)->id << " c=" << c->id << "\n";
+            spdlog::debug(
+                "skipping for f_iter id={} c={}", (*f_iter)->id, c->id);
           }
 #endif
           continue;
@@ -322,8 +327,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         else {
 #ifdef TEST_C2F
           if (level == 3) {
-            cout << "NOT skipping for f_iter id=" << (*f_iter)->id;
-            cout << " c=" << c->id << "\n";
+            spdlog::debug(
+                "NOT skipping for f_iter id={} c={}", (*f_iter)->id, c->id);
           }
 #endif
         }
@@ -346,8 +351,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       // Need to do trilinear interpolation on 8 fine cells.
       //
 #ifdef TEST_C2F
-      cout << "interpolating coarse to fine 2d: ncells=";
-      cout << b->data.size() << "\n";
+      spdlog::debug(
+          "interpolating coarse to fine 2d: ncells={}", b->data.size());
 #endif
       pion_flt c_vol = 0.0;
       cell *fch[8];  // fine-level cells (children)
@@ -384,7 +389,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
 
 #ifdef TEST_C2F
         for (int v = 0; v < 8; v++) {
-          if (fch[v] == 0) rep.error("fine-cell list", v);
+          if (fch[v] == 0) spdlog::error("{}: {}", "fine-cell list", v);
         }
 #endif
 
@@ -447,8 +452,8 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
   for (int v = 0; v < par.nvar; v++)
     cU[v] *= c_vol;
 #ifdef TEST_C2F
-  rep.printVec("1D coarse", cU, par.nvar);
-  rep.printVec("1D fine  ", fU, par.nvar);
+  spdlog::debug("1D coarse : {}", cU);
+  spdlog::debug("1D fine   : {}", fU);
 #endif
   // scale f1U, f2U by ratio of coarse to fine energy.
   // scale fine conserved vec by adding the difference between
@@ -462,7 +467,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
 #ifdef TEST_C2F
   for (int v = 0; v < par.nvar; v++)
     fU[v] = f1U[v] + f2U[v];
-  rep.printVec("1D fine 2", fU, par.nvar);
+  spdlog::debug("1D fine 2 : {}", fU);
 #endif
   solver->UtoP(f2U, f2->Ph, par.EP.MinTemperature, par.gamma);
   for (int v = 0; v < par.nvar; v++)
@@ -555,8 +560,8 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
   for (int i = 0; i < 8; i++) {
     for (int v = 0; v < par.nvar; v++) {
       if (!isfinite(fU[i][v])) {
-        cout << "error in 3D C2F interpolation: i=" << i << "v=" << v << "\n";
-        rep.printVec("Unscaled fine", fU[i], par.nvar);
+        spdlog::debug("error in 3D C2F interpolation: i={}v={}", i, v);
+        spdlog::debug("Unscaled fine : {}", fU[i]);
       }
     }
   }
@@ -586,8 +591,8 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
   for (int i = 0; i < 8; i++) {
     for (int v = 0; v < par.nvar; v++) {
       if (!isfinite(fU[i][v])) {
-        cout << "error in 3D C2F interpolation: i=" << i << "v=" << v << "\n";
-        rep.error("C2F fine cell not finite", fU[i], par.nvar);
+        spdlog::debug("error in 3D C2F interpolation: i={}v={}", i, v);
+        spdlog::error("{}: {}", "C2F fine cell not finite", fU[i], par.nvar);
       }
     }
   }
@@ -665,10 +670,10 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   for (int v = 0; v < par.nvar; v++) {
     if (!isfinite(f1U[v]) || !isfinite(f1U[v]) || !isfinite(f3U[v])
         || !isfinite(f4U[v])) {
-      rep.printVec("Unscaled fine00", f1U, par.nvar);
-      rep.printVec("Unscaled fine10", f2U, par.nvar);
-      rep.printVec("Unscaled fine01", f3U, par.nvar);
-      rep.printVec("Unscaled fine11", f4U, par.nvar);
+      spdlog::debug("Unscaled fine00 : {}", f1U);
+      spdlog::debug("Unscaled fine10 : {}", f2U);
+      spdlog::debug("Unscaled fine01 : {}", f3U);
+      spdlog::debug("Unscaled fine11 : {}", f4U);
     }
   }
 #endif
@@ -712,7 +717,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
 #ifdef DEBUG_NG
   for (int v = 0; v < par.nvar; v++) {
     if (!isfinite(f3->P[v]) || !isfinite(f4->P[v]))
-      rep.error("fine 3,4 not finite", f3->P[v]);
+      spdlog::error("{}: {}", "fine 3,4 not finite", f3->P[v]);
   }
 #endif
   return;
@@ -775,15 +780,16 @@ void NG_coarse_to_fine_bc::get_C2F_Tau(
 
   else if (par.ndim == 2) {
 #ifdef RT_TESTING
-    cout << "2D C2F RT Routine\n";
+    spdlog::info("2D C2F RT Routine");
 #endif
     f0 = c[0];
     f1 = c[1];
     f2 = c[2];
     f3 = c[3];
 #ifdef RT_TESTING
-    cout << "f: [" << f0->pos[XX] << "," << f0->pos[YY] << "], c: [";
-    cout << cpos[XX] << "," << cpos[YY] << "] : ";
+    spdlog::debug(
+        "f: [{},{}], c: [{},{}] : ", f0->pos[XX], f0->pos[YY], cpos[XX],
+        cpos[YY]);
 #endif
     for (int isrc = 0; isrc < par.RS.Nsources; isrc++) {
       s = &(par.RS.sources[isrc]);
@@ -794,9 +800,9 @@ void NG_coarse_to_fine_bc::get_C2F_Tau(
       diffx = s->pos[XX] - cpos[XX];
       diffy = s->pos[YY] - cpos[YY];
 #ifdef RT_TESTING
-      cout << "diffxy = " << diffx << "  " << diffy << "\n";
-      cout << "t1=" << *Tau1 << ", t2=" << *Tau2 << ", t3=";
-      cout << *Tau3 << ", t4=" << *Tau4;
+      spdlog::debug(
+          "diffxy = {}  {}\nt1={}, t2={}, t3={}, t4={}", diffx, diffy, *Tau1,
+          *Tau2, *Tau3, *Tau4);
 #endif
       // column from source through cell depends on
       // which direction is to the source.
@@ -893,13 +899,13 @@ void NG_coarse_to_fine_bc::get_C2F_Tau(
         CI.set_cell_col(f1, s->id, dTau);
       }
 #ifdef RT_TESTING
-      cout << "  tc=" << *tmp;
+      spdlog::debug("  tc={}", *tmp);
 #endif
     }  // loop over sources.
   }    // if 2D
 
   else {
-    rep.error("3D C2F RT not implemented in NG grid", par.ndim);
+    spdlog::error("{}: {}", "3D C2F RT not implemented in NG grid", par.ndim);
   }  // if 3D
 }  // if there is a finer level
 

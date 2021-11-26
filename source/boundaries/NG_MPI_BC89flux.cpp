@@ -20,8 +20,13 @@
 #include "boundaries/NG_MPI_BC89flux.h"
 #include "constants.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
-#include <iostream>
+
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
+
 using namespace std;
 
 // ##################################################################
@@ -34,14 +39,13 @@ int NG_MPI_BC89flux::setup_flux_recv(
 )
 {
 #ifdef TEST_BC89FLUX
-  cout << "NG_MPI_BC89flux::setup_flux_recv() recv from level=";
-  cout << lp1 << "\n";
+  spdlog::info("NG_MPI_BC89flux::setup_flux_recv() recv from level={}", lp1);
 #endif
   int l     = lp1 - 1;  // my level
   size_t nc = 1;        // number of cells in each interface
-  int ixmin[MAX_DIM], ixmax[MAX_DIM], ncell[MAX_DIM];  // interface region
-  int f_lxmin[MAX_DIM], f_lxmax[MAX_DIM];              // finer grid
-  int d_xmin[MAX_DIM], d_xmax[MAX_DIM];                // full domain
+  std::array<int, MAX_DIM> ixmin, ixmax, ncell;  // interface region
+  std::array<int, MAX_DIM> f_lxmin, f_lxmax;     // finer grid
+  std::array<int, MAX_DIM> d_xmin, d_xmax;       // full domain
   struct flux_interface *fi    = 0;
   class Sub_domain *sub_domain = &(par.levels[l].sub_domain);
   vector<struct cgrid> cg;
@@ -49,17 +53,19 @@ int NG_MPI_BC89flux::setup_flux_recv(
   int nchild = cg.size();
 
   // coarse grid quantities
-  int cg_ixmin[MAX_DIM], cg_ixmax[MAX_DIM];
+  std::array<int, MAX_DIM> cg_ixmin, cg_ixmax;
   int idx = grid->idx();
 
   // if only one MPI process, then no send/recv necessary and we
   // call the serial version:
   if (par.levels[0].sub_domain.get_nproc() == 1) {
 #ifdef TEST_BC89FLUX
-    cout << "setup_flux_recv(): nproc=1, calling serial version.\n";
+    spdlog::debug("setup_flux_recv(): nproc=1, calling serial version");
 #endif
     int err = NG_BC89flux::setup_flux_recv(par, grid, lp1);
-    rep.errorTest("UniformGrid flux setup", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "UniformGrid flux setup", 0, err);
     err = flux_update_recv[l].size();
     for (int i = 0; i < err; i++) {
       flux_update_recv[l][i].rank.push_back(0);
@@ -81,7 +87,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
     cg_ixmax[v] = grid->iXmax(static_cast<axes>(v));
 
 #ifdef TEST_BC89FLUX
-  cout << "NG_MPI_BC89flux::setup_flux_recv: " << nchild << " child grids\n";
+  spdlog::debug("NG_MPI_BC89flux::setup_flux_recv: {} child grids", nchild);
 #endif
 
   // Two cases: if there are children, then part or all of grid is
@@ -117,7 +123,9 @@ int NG_MPI_BC89flux::setup_flux_recv(
 
         ncell[ax] = (ixmax[ax] - ixmin[ax]) / idx;
         if ((ixmax[ax] - ixmin[ax]) % idx != 0) {
-          rep.error("interface region not divisible!", ixmax[ax] - ixmin[ax]);
+          spdlog::error(
+              "{}: {}", "interface region not divisible!",
+              ixmax[ax] - ixmin[ax]);
         }
       }  // all dimensions
       for (int d = 0; d < 2 * par.ndim; d++)
@@ -147,7 +155,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
           if (recv[off + ZP]) nel[off + ZP] = ncell[XX] * ncell[YY];
           break;
         default:
-          rep.error("bad ndim in setup_flux_recv", par.ndim);
+          spdlog::error("{}: {}", "bad ndim in setup_flux_recv", par.ndim);
           break;
       }  // dims
     }    // all child grids
@@ -156,16 +164,17 @@ int NG_MPI_BC89flux::setup_flux_recv(
     flux_update_recv[l].resize(nchild * 2 * par.ndim);
     for (int ic = 0; ic < nchild; ic++) {
 #ifdef TEST_BC89FLUX
-      cout << "NG_MPI_BC89flux::setup_flux_recv: ";
-      cout << ic << " has " << 2 * par.ndim << "boundaries,\n";
+      spdlog::debug(
+          "NG_MPI_BC89flux::setup_flux_recv: {} has {}boundaries,\n", ic,
+          2 * par.ndim);
 #endif
       int off = ic * 2 * par.ndim;
       for (int d = 0; d < 2 * par.ndim; d++) {
         int el = off + d;
 #ifdef TEST_BC89FLUX
-        cout << "NG_MPI_BC89flux::setup_flux_recv: ";
-        cout << ic << " d=" << d << ", recv[el]=" << recv[el] << ", nel=";
-        cout << nel[el] << "\n";
+        spdlog::debug(
+            "NG_MPI_BC89flux::setup_flux_recv: {} d={}, recv[el]={}, nel={}",
+            ic, d, recv[el], nel[el]);
 #endif
         if (recv[el] == true) {
           flux_update_recv[l][el].fi.resize(nel[el]);
@@ -200,7 +209,8 @@ int NG_MPI_BC89flux::setup_flux_recv(
       for (int d = 0; d < 2 * par.ndim; d++) {
         if (recv[off + d]) {
 #ifdef TEST_BC89FLUX
-          cout << "parallel setup_flux_recv(): adding cells for child grids.\n";
+          spdlog::debug(
+              "parallel setup_flux_recv(): adding cells for child grids");
 #endif
           add_cells_to_face(
               par, grid, static_cast<enum direction>(d), ixmin, ixmax, ncell, 1,
@@ -212,8 +222,8 @@ int NG_MPI_BC89flux::setup_flux_recv(
 
   else {
 #ifdef TEST_BC89FLUX
-    cout << "parallel setup_flux_recv(): no child grids, looking for "
-            "neighbours.\n";
+    spdlog::debug(
+        "parallel setup_flux_recv(): no child grids, looking for neighbours");
 #endif
     // There are no children, but my grid might have a boundary in
     // common with the l+1 level's outer boundary.  There is at most
@@ -225,7 +235,9 @@ int NG_MPI_BC89flux::setup_flux_recv(
 
     sub_domain->get_level_lp1_ngb_info(cgngb);
     if (cgngb.size() != static_cast<size_t>(2 * par.ndim)) {
-      rep.error("l+1 neigbouring grids vector not set up right", cgngb.size());
+      spdlog::error(
+          "{}: {}", "l+1 neigbouring grids vector not set up right",
+          cgngb.size());
     }
 
     // try to find a direction (there is at most one).  If we find
@@ -237,7 +249,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
     for (int d = 0; d < 2 * par.ndim; d++) {
       nsub = cgngb[d].size();
 #ifdef TEST_BC89FLUX
-      cout << "pllel setup_flux_recv(): dir=" << d << ", nsub=" << nsub << "\n";
+      spdlog::debug("pllel setup_flux_recv(): dir={}, nsub={}", d, nsub);
 #endif
       if (nsub > 0) {
         flux_update_recv[l].resize(nsub);
@@ -275,8 +287,9 @@ int NG_MPI_BC89flux::setup_flux_recv(
               ncell[perp[0]] = (ixmax[perp[0]] - ixmin[perp[0]]) / idx;
               nel            = ncell[perp[0]];
 #ifdef TEST_BC89FLUX
-              cout << "BC89 recv 2D from l+1 ngb: xmax=" << ixmax[perp[0]];
-              cout << ", xmin=" << ixmin[perp[0]] << ", nel=" << nel << "\n";
+              spdlog::debug(
+                  "BC89 recv 2D from l+1 ngb: xmax={}, xmin={}, nel={}",
+                  ixmax[perp[0]], ixmin[perp[0]], nel);
 #endif
               break;
 
@@ -292,9 +305,9 @@ int NG_MPI_BC89flux::setup_flux_recv(
               for (int p = 0; p < 2; p++)
                 nel *= ncell[perp[p]];
 #ifdef TEST_BC89FLUX
-              cout << "BC89 recv 3D from l+1 ngb: nel=" << nel << "\n";
-              rep.printVec("interface xmin", ixmin, 3);
-              rep.printVec("interface xmax", ixmax, 3);
+              spdlog::debug("BC89 recv 3D from l+1 ngb: nel={}", nel);
+              spdlog::debug("interface xmin : {}", ixmin);
+              spdlog::debug("interface xmax : {}", ixmax);
 #endif
               break;
           }
@@ -311,8 +324,9 @@ int NG_MPI_BC89flux::setup_flux_recv(
               fi->flux[v] = 0.0;
           }
 #ifdef TEST_BC89FLUX
-          cout << "ic=" << ic << "parallel setup_flux_recv(): ";
-          cout << "adding cells for l+1 neigbouring grids.\n";
+          spdlog::debug(
+              "ic={}parallel setup_flux_recv(): adding cells for l+1 neigbouring grids.\n",
+              ic);
 #endif
           add_cells_to_face(
               par, grid, grid->OppDir(static_cast<enum direction>(edge)), ixmin,
@@ -327,23 +341,19 @@ int NG_MPI_BC89flux::setup_flux_recv(
   for (int l = 0; l < par.grid_nlevels; l++) {
     for (unsigned int d = 0; d < flux_update_send[l].size(); d++) {
       struct flux_update *fup = &(flux_update_send[l][d]);
-      cout << "l=" << l << ", FUP_SEND: d=" << d << " info: \n";
-      cout << "\t ranks: ";
+      spdlog::debug("l={}, FUP_SEND: d={} info: \n\t ranks: ", l, d);
       for (unsigned int r = 0; r < fup->rank.size(); r++)
-        cout << fup->rank[r] << "  ";
-      cout << "\n";
-      cout << "\t nel = " << fup->fi.size() << " dir=" << fup->dir
-           << ", ax=" << fup->ax << "\n";
+        spdlog::debug("{}  ", fup->rank[r]);
+      spdlog::debug(
+          "\t nel = {} dir={}, ax={}", fup->fi.size(), fup->dir, fup->ax);
     }
     for (unsigned int d = 0; d < flux_update_recv[l].size(); d++) {
       struct flux_update *fup = &(flux_update_recv[l][d]);
-      cout << "l=" << l << ", FUP_RECV: d=" << d << " info: \n";
-      cout << "\t ranks: ";
+      spdlog::debug("l={}, FUP_RECV: d={} info: \n\t ranks: ", l, d);
       for (unsigned int r = 0; r < fup->rank.size(); r++)
-        cout << fup->rank[r] << "  ";
-      cout << "\n";
-      cout << "\t nel = " << fup->fi.size() << " dir=" << fup->dir
-           << ", ax=" << fup->ax << "\n";
+        spdlog::debug("{}  ", fup->rank[r]);
+      spdlog::debug(
+          "\t nel = {} dir={}, ax={}", fup->fi.size(), fup->dir, fup->ax);
     }
   }
 #endif
@@ -361,12 +371,15 @@ int NG_MPI_BC89flux::setup_flux_send(
 )
 {
 #ifdef TEST_BC89FLUX
-  cout << " NG_MPI_BC89flux::setup_flux_send() send to level=";
-  cout << lm1 << " from MY LEVEL l=" << lm1 + 1 << "\n";
+  spdlog::info(
+      " NG_MPI_BC89flux::setup_flux_send() send to level={} from MY LEVEL l={}",
+      lm1, lm1 + 1);
 #endif
 
   int err = NG_BC89flux::setup_flux_send(par, grid, lm1);
-  rep.errorTest("NG_BC89flux::setup_flux_send", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "NG_BC89flux::setup_flux_send", 0, err);
 
   // Add ranks for each send, based on parent rank.
   int l = lm1 + 1;  // my level
@@ -378,7 +391,7 @@ int NG_MPI_BC89flux::setup_flux_send(
 
   // Size of flux_update_send[] is ALWAYS 2*ndim
   int ns = flux_update_send[l].size();
-  if (ns != 2 * par.ndim) rep.error("bad flux send size", ns);
+  if (ns != 2 * par.ndim) spdlog::error("{}: {}", "bad flux send size", ns);
 
   if (par.levels[l].sub_domain.get_nproc() == 1) {
     for (int d = 0; d < ns; d++) {
@@ -397,13 +410,13 @@ int NG_MPI_BC89flux::setup_flux_send(
     std::vector<struct cgrid> pgngb;
     sub_domain->get_parent_grid_info(&pg);
     sub_domain->get_parent_ngb_grid_info(pgngb);
-    int pg_ixmin[MAX_DIM], pg_ixmax[MAX_DIM];
+    std::array<int, MAX_DIM> pg_ixmin, pg_ixmax;
     CI.get_ipos_vec(pg.Xmin, pg_ixmin);
     CI.get_ipos_vec(pg.Xmax, pg_ixmax);
 
     for (int ax = 0; ax < par.ndim; ax++) {
 #ifdef TEST_BC89FLUX
-      cout << "setup_flux_send: axis=" << ax << endl;
+      spdlog::debug("setup_flux_send: axis={}", ax);
 #endif
       int d = -1, pp = -1;
       // negative direction
@@ -414,23 +427,23 @@ int NG_MPI_BC89flux::setup_flux_send(
         if (fg_ixmin[ax] == pg_ixmin[ax]) {
           pp = pgngb[d].rank;
 #ifdef TEST_BC89FLUX
-          cout << "setup_flux_send: negative direction, ngb of parent " << pp
-               << endl;
+          spdlog::debug(
+              "setup_flux_send: negative direction, ngb of parent {}", pp);
 #endif
         }
         // else it is parent.
         else {
           pp = pg.rank;
 #ifdef TEST_BC89FLUX
-          cout << "negative direction, send to parent " << pp << endl;
+          spdlog::debug("negative direction, send to parent {}", pp);
 #endif
         }
         flux_update_send[l][d].dir = d;
         flux_update_send[l][d].ax  = ax;
         flux_update_send[l][d].rank.push_back(pp);
 #ifdef TEST_BC89FLUX
-        cout << "setup_flux_send: axis=" << ax << ", d=" << d
-             << ", send rank = " << pp << endl;
+        spdlog::debug(
+            "setup_flux_send: axis={}, d={}, send rank = {}", ax, d, pp);
 #endif
       }
       // positive direction
@@ -441,23 +454,23 @@ int NG_MPI_BC89flux::setup_flux_send(
         if (fg_ixmax[ax] == pg_ixmax[ax]) {
           pp = pgngb[d].rank;
 #ifdef TEST_BC89FLUX
-          cout << "setup_flux_send: positive direction, ngb of parent " << pp
-               << endl;
+          spdlog::debug(
+              "setup_flux_send: positive direction, ngb of parent {}", pp);
 #endif
         }
         // else it is parent.
         else {
           pp = pg.rank;
 #ifdef TEST_BC89FLUX
-          cout << "setup_flux_send: positive direction, send to parent " << pp
-               << endl;
+          spdlog::debug(
+              "setup_flux_send: positive direction, send to parent {}", pp);
 #endif
         }
         flux_update_send[l][d].dir = d;
         flux_update_send[l][d].ax  = ax;
         flux_update_send[l][d].rank.push_back(pp);
 #ifdef TEST_BC89FLUX
-        cout << "axis=" << ax << ", d=" << d << ", send rank = " << pp << endl;
+        spdlog::debug("axis={}, d={}, send rank = {}", ax, d, pp);
 #endif
       }
     }  // loop over axes
@@ -473,8 +486,9 @@ void NG_MPI_BC89flux::clear_sends_BC89_fluxes(class Sub_domain &sub_domain)
 {
   for (unsigned int ib = 0; ib < sub_domain.BC89_flux_send_list.size(); ib++) {
 #ifdef TEST_BC89FLUX
-    cout << "clear_sends_BC89_fluxes: waiting for send " << ib;
-    cout << " of " << sub_domain.BC89_flux_send_list.size() << endl;
+    spdlog::debug(
+        "clear_sends_BC89_fluxes: waiting for send {} of {}", ib,
+        sub_domain.BC89_flux_send_list.size());
 #endif
     sub_domain.wait_for_send_to_finish(sub_domain.BC89_flux_send_list[ib]);
   }
@@ -496,14 +510,14 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
   return 0;
 #endif
   if (step != ooa) {
-    cout << "l=" << l << ": don't send fluxes on half step\n";
+    spdlog::debug("l={}: don't send fluxes on half step", l);
     return 1;
   }
   if (par.levels[l].step % 2 != 0) {
-    rep.error("Don't call BC89 Flux-SEND on odd steps", 1);
+    spdlog::error("{}: {}", "Don't call BC89 Flux-SEND on odd steps", 1);
   }
   if (l == 0) {
-    rep.error("Coarsest level trying to send flux data", l);
+    spdlog::error("{}: {}", "Coarsest level trying to send flux data", l);
   }
   int err = 0;
 
@@ -516,15 +530,16 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
     // some sends may be null, so we skip them:
     if (fup->fi[0] == 0) {
 #ifdef TEST_BC89FLUX
-      cout << "l=" << l << ": BC89_FLUX send " << isend << " of " << n_send;
-      cout << " is null, continuing..." << endl;
+      spdlog::debug(
+          "l={}: BC89_FLUX send {} of {} is null, continuing...", l, isend,
+          n_send);
 #endif
       continue;
     }
     else {
 #ifdef TEST_BC89FLUX
-      cout << "l=" << l << ": BC89_FLUX send " << isend;
-      cout << " is not null: sending data." << endl;
+      spdlog::debug(
+          "l={}: BC89_FLUX send {} is not null: sending data.", l, isend);
 #endif
     }
     size_t n_el    = fup->fi.size();
@@ -546,29 +561,29 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
     // loop over procs on level l-1 to send to.
     for (unsigned int ii = 0; ii < fup->rank.size(); ii++) {
 #ifdef TEST_BC89FLUX
-      cout << "l=" << l << ": isend=" << isend << ", send " << ii << " of ";
-      cout << fup->rank.size() << " to rank " << fup->rank[ii] << endl;
+      spdlog::debug(
+          "l={}: isend={}, send {} of {} to rank {}", l, isend, ii,
+          fup->rank.size(), fup->rank[ii]);
 #endif
       if (fup->rank[ii] == sub_domain->get_myrank()) {
 #ifdef TEST_BC89FLUX
-        cout << "l=" << l << ": ignoring BC89 for isend=" << isend
-             << " (to myrank)." << endl;
+        spdlog::debug(
+            "l={}: ignoring BC89 for isend={} (to myrank).", l, isend);
 #endif
         continue;
       }
       // unique as long as isend<30, l<100.
       int comm_tag = BC_MPI_FLUX_tag + 100 * isend + l;
 #ifdef TEST_BC89FLUX
-      cout << "l=" << l << ": BC89 FLUX: Sending " << n_data;
-      cout << " doubles from proc " << sub_domain->get_myrank();
-      cout << " to parent proc " << fup->rank[ii] << endl;
+      spdlog::debug(
+          "l={}: BC89 FLUX: Sending {} doubles from proc {} to parent proc {}",
+          l, n_data, sub_domain->get_myrank(), fup->rank[ii]);
 #endif
       err += sub_domain->send_double_data(
           fup->rank[ii], n_data, data, id, comm_tag);
-      if (err) rep.error("FLUX_F2C send_data failed.", err);
+      if (err) spdlog::error("{}: {}", "FLUX_F2C send_data failed.", err);
 #ifdef TEST_BC89FLUX
-      cout << "l=" << l << ": BC89 FLUX: returned with id=" << id;
-      cout << endl;
+      spdlog::debug("l={}: BC89 FLUX: returned with id={}", l, id);
 #endif
       // store ID to clear the send later
       sub_domain->BC89_flux_send_list.push_back(id);
@@ -576,7 +591,7 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
     data = mem.myfree(data);
   }  // loop over send boundaries.
 #ifdef TEST_BC89FLUX
-  cout << "BC89 MPI flux send finished" << endl;
+  spdlog::info("BC89 MPI flux send finished");
 #endif
   return 0;
 }
@@ -596,11 +611,11 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
   return 0;
 #endif
   if (step != ooa) {
-    cout << "don't receive fluxes on half step\n";
-    rep.error("trying to receive BC89 flux on half step", l);
+    spdlog::error("don't receive fluxes on half step");
+    spdlog::error("{}: {}", "trying to receive BC89 flux on half step", l);
   }
   if (l == par.grid_nlevels - 1) {
-    rep.error("finest level trying to receive data from l+1", l);
+    spdlog::error("{}: {}", "finest level trying to receive data from l+1", l);
   }
   int err = 0;
 
@@ -618,27 +633,30 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
     // some recvs may be null, so we skip them:
     if (fup->fi[0] == 0) {
 #ifdef TEST_BC89FLUX
-      cout << "l=" << l << ": recv " << irecv << " is null, continuing...\n";
+      spdlog::debug("l={}: recv {} is null, continuing...", l, irecv);
 #endif
       continue;
     }
     else if (fup->rank[0] == sub_domain->get_myrank()) {
 #ifdef TEST_BC89FLUX
-      cout << "l=" << l << ": calling serial BC89 for irecv=" << irecv;
-      cout << " (same rank). dir=" << fup->dir << endl;
+      spdlog::debug(
+          "l={}: calling serial BC89 for irecv={} (same rank). dir={}", l,
+          irecv, fup->dir);
 #endif
       int d                     = fup->dir;
       struct flux_update *fsend = &(flux_update_send[l + 1][d]);
       err                       = recv_BC89_flux_boundary(
           spatial_solver, par, grid, dt, *fsend, *fup, d,
           static_cast<axes>(fup->ax));
-      rep.errorTest("serial BC89 call", 0, err);
+      if (0 != err)
+        spdlog::error("{}: Expected {} but got {}", "serial BC89 call", 0, err);
       continue;
     }
     else {
 #ifdef TEST_BC89FLUX
-      cout << "l=" << l << ": recv " << irecv << " is not null: ";
-      cout << "recving data from " << fup->rank[0] << endl;
+      spdlog::debug(
+          "l={}: recv {} is not null: recving data from {}", l, irecv,
+          fup->rank[0]);
 #endif
     }
 
@@ -666,7 +684,7 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
     // unique as long as isend<30, l<10, rank<10000.
     int comm_tag = BC_MPI_FLUX_tag + 100 * dir + (l + 1);
 #ifdef TEST_BC89FLUX
-    cout << "looking for data with tag: " << comm_tag << endl;
+    spdlog::debug("looking for data with tag: {}", comm_tag);
 #endif
     err = sub_domain->look_for_data_to_receive(
         &from_rank,  // rank of sender (output)
@@ -675,10 +693,11 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
         comm_tag,
         COMM_DOUBLEDATA  // type of data we want.
     );
-    if (err) rep.error("FLUX look for double data failed", err);
+    if (err) spdlog::error("{}: {}", "FLUX look for double data failed", err);
 #ifdef TEST_BC89FLUX
-    cout << "l=" << l << ": BC89 FLUX: found data from rank ";
-    cout << from_rank << ", and ID " << recv_id << endl;
+    spdlog::debug(
+        "l={}: BC89 FLUX: found data from rank {}, and ID {}", l, from_rank,
+        recv_id);
 #endif
 
     //
@@ -687,16 +706,16 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
     //
     err = sub_domain->receive_double_data(
         from_rank, recv_tag, recv_id, n_data, buf);
-    if (err) rep.error("(flux BC89) getdata failed", err);
+    if (err) spdlog::error("{}: {}", "(flux BC89) getdata failed", err);
 
     size_t iel = 0;
     for (size_t ii = 0; ii < n_el; ii++) {
       fi = fup->fi[ii];
 #ifdef TEST_BC89FLUX
-      cout << "f=" << ii << ":coarse=" << fi << ", flux =  ";
-      rep.printVec("fc->flux", fi->flux, par.nvar);
-      cout << "f=" << ii << ":  fine=" << fi << ", flux =  ";
-      rep.printVec("ff->flux", &(buf[iel]), par.nvar);
+      spdlog::debug("f={}:coarse={}, flux =  ", ii, fi);
+      spdlog::debug("fc->flux : {}", fi->flux);
+      spdlog::debug("f={}:  fine={}, flux =  ", ii, fi);
+      spdlog::debug("ff->flux : {}", &(buf[iel]));
 #endif
 
       // construct error in flux:
@@ -705,9 +724,10 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
         fi->flux[v] += buf[iel + v];
 #ifdef TEST_BC89FLUX
         if (!isfinite(buf[iel])) {
-          cout << "l=" << l << ": element " << ii << " of FLUX C2F RECV: ";
-          cout << " var " << iel << " is " << buf[iel] << endl;
-          rep.error("infinite", buf[ii]);
+          spdlog::debug(
+              "l={}: element {} of FLUX C2F RECV:  var {} is {}", l, ii, iel,
+              buf[iel]);
+          spdlog::error("{}: {}", "infinite", buf[ii]);
         }
 #endif
       }
@@ -730,27 +750,26 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
             ftmp, utmp);
       }
 #ifdef TEST_BC89FLUX
-      rep.printVec("**********  Error", utmp, par.nvar);
+      spdlog::debug("**********  Error : {}", utmp);
       int q = 1;
-      cout << "Flux Energy: " << fi->flux[q] << ": " << fi->c[0]->dU[q];
-      cout << ", " << utmp[q] << "\n";
+      spdlog::debug(
+          "Flux Energy: {}: {}, {}", fi->flux[q], fi->c[0]->dU[q], utmp[q]);
 #endif
       // correct dU so that coarse level is consistent with fine.
       for (int v = 0; v < par.nvar; v++)
         fi->c[0]->dU[v] += utmp[v];
 
     }  // loop over elements
-    if (iel != n_data) rep.error("ndata", iel - n_data);
+    if (iel != n_data) spdlog::error("{}: {}", "ndata", iel - n_data);
     buf = mem.myfree(buf);
 #ifdef TEST_BC89FLUX
-    cout << "l=" << l << ": BC89 FLUX: finished with recv ID ";
-    cout << recv_id << endl;
+    spdlog::debug("l={}: BC89 FLUX: finished with recv ID {}", l, recv_id);
 #endif
 
   }  // loop over faces in this direction.
 
 #ifdef TEST_BC89FLUX
-  cout << "l=" << l << ": BC89 FLUX: finished with recv" << endl;
+  spdlog::debug("l={}: BC89 FLUX: finished with recv", l);
 #endif
 
   return 0;

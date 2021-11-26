@@ -125,33 +125,39 @@ protected:
   ///
   cell *G_fpt_all;
 
-  const int G_ndim;     ///< Dimensionality of Grid
-  const int G_nvar;     ///< Number of variables in state vector
-  const int G_eqntype;  ///< Which equations we are using.
-  int G_coordsys;       ///< coordinate system (cart/cyl/sph)
-  int G_ntracer;        ///< number of tracer fields.
-  int G_ftr;            ///< index of first tracer field.
-  int *G_ng;            ///< number of grid points in each direction.
-  size_t G_ncell;       ///< Total number of grid points (excl. boundary)
-  int *G_nbc;           ///< depth of boundary layer in each dir [2*ndim]
+  const int G_ndim;               ///< Dimensionality of Grid
+  const int G_nvar;               ///< Number of variables in state vector
+  const int G_eqntype;            ///< Which equations we are using.
+  int G_coordsys;                 ///< coordinate system (cart/cyl/sph)
+  int G_ntracer;                  ///< number of tracer fields.
+  int G_ftr;                      ///< index of first tracer field.
+  std::array<int, MAX_DIM> G_ng;  ///< number of grid points in each direction.
+  size_t G_ncell;  ///< Total number of grid points (excl. boundary)
+  std::array<int, 2 * MAX_DIM> G_nbc;  ///< depth of boundary layer in each dir
   /// number of grid points in each dir, including boundary cells
-  int *G_ng_all;
+  std::array<int, MAX_DIM> G_ng_all;
   /// Total number of grid points, including boundary points.
   size_t G_ncell_all;
 
-  double *G_range;      ///< Size of domain in x,y,z-direction.
-  double *G_xmin;       ///< Min value of x,y,z in domain.
-  double *G_xmax;       ///< Max value of x,y,z in domain.
-  double *G_range_all;  ///< as G_range but including boundary data.
-  double *G_xmin_all;   ///< as G_xmin but including boundary data.
-  double *G_xmax_all;   ///< as G_xmax but including boundary data.
+  std::array<double, MAX_DIM> G_range;  ///< Size of domain in x,y,z-direction.
+  std::array<double, MAX_DIM> G_xmin;   ///< Min value of x,y,z in domain.
+  std::array<double, MAX_DIM> G_xmax;   ///< Max value of x,y,z in domain.
+  std::array<double, MAX_DIM>
+      G_range_all;  ///< as G_range but including boundary data.
+  std::array<double, MAX_DIM>
+      G_xmin_all;  ///< as G_xmin but including boundary data.
+  std::array<double, MAX_DIM>
+      G_xmax_all;  ///< as G_xmax but including boundary data.
 
-  int *G_irange;  ///< Size of domain in x,y,z-direction (integer coordinates).
-  int *G_ixmin;   ///< Min value of x,y,z in domain (integer coordinates).
-  int *G_ixmax;   ///< Max value of x,y,z in domain (integer coordinates).
-  int *G_irange_all;  ///< as G_irange but including boundary data.
-  int *G_ixmin_all;   ///< as G_ixmin but including boundary data.
-  int *G_ixmax_all;   ///< as G_ixmax but including boundary data.
+  std::array<int, MAX_DIM> G_irange;  ///< Size of domain in x,y,z-direction .
+  std::array<int, MAX_DIM> G_ixmin;   ///< Min value of x,y,z in domain .
+  std::array<int, MAX_DIM> G_ixmax;   ///< Max value of x,y,z in domain .
+  std::array<int, MAX_DIM>
+      G_irange_all;  ///< as G_irange but including boundary data.
+  std::array<int, MAX_DIM>
+      G_ixmin_all;  ///< as G_ixmin but including boundary data.
+  std::array<int, MAX_DIM>
+      G_ixmax_all;  ///< as G_ixmax but including boundary data.
 
   double G_dx;  ///< Linear side length of (uniform, cube-shaped, cartesian)
                 ///< grid cells.
@@ -161,19 +167,25 @@ protected:
   double G_dV;  ///< Volume of one cube-shaped, cartesian grid cell (same for
                 ///< all cells).
 
-  double *Sim_range;  ///< Size of full domain in x,y,z-direction.
-  double *Sim_xmin;   ///< Min value of x,y,z in full domain.
-  double *Sim_xmax;   ///< Max value of x,y,z in full domain.
-  int *Sim_irange;    ///< Size of full domain: int coords
-  int *Sim_ixmin;     ///< Min value of x,y,z in full domain: int coords
-  int *Sim_ixmax;     ///< Max value of x,y,z in full domain: int coords
+  std::array<double, MAX_DIM>
+      Sim_range;  ///< Size of full domain in x,y,z-direction.
+  std::array<double, MAX_DIM> Sim_xmin;  ///< Min value of x,y,z in full domain.
+  std::array<double, MAX_DIM> Sim_xmax;  ///< Max value of x,y,z in full domain.
+  std::array<int, MAX_DIM> Sim_irange;   ///< Size of full domain: int coords
+  std::array<int, MAX_DIM>
+      Sim_ixmin;  ///< Min value of x,y,z in full domain: int coords
+  std::array<int, MAX_DIM>
+      Sim_ixmax;  ///< Max value of x,y,z in full domain: int coords
 
-  double *L_range;  ///< Size of level domain in x,y,z-direction.
-  double *L_xmin;   ///< Min value of x,y,z in level domain.
-  double *L_xmax;   ///< Max value of x,y,z in level domain.
-  int *L_irange;    ///< Size of level domain: int coords
-  int *L_ixmin;     ///< Min value of x,y,z in level domain: int coords
-  int *L_ixmax;     ///< Max value of x,y,z in level domain: int coords
+  std::array<double, MAX_DIM>
+      L_range;  ///< Size of level domain in x,y,z-direction.
+  std::array<double, MAX_DIM> L_xmin;  ///< Min value of x,y,z in level domain.
+  std::array<double, MAX_DIM> L_xmax;  ///< Max value of x,y,z in level domain.
+  std::array<int, MAX_DIM> L_irange;   ///< Size of level domain: int coords
+  std::array<int, MAX_DIM>
+      L_ixmin;  ///< Min value of x,y,z in level domain: int coords
+  std::array<int, MAX_DIM>
+      L_ixmax;  ///< Max value of x,y,z in level domain: int coords
 
 #ifdef NEWGRIDDATA
   pion_flt **griddata;     ///< array for state vectors of all cells
@@ -216,13 +228,18 @@ public:
       int,  ///< nvar, length of state vectors.
       int,  ///< eqntype, which equations we are using (needed by BCs).
       int,  ///< number of boundary cells to use.
-      const double *,  ///< array of minimum values of x,y,z for this grid.
-      const double *,  ///< array of maximum values of x,y,z for this grid.
-      const int *,     ///< array of number of cells in x,y,z directions.
-      double *,        ///< array of min. x/y/z for level.
-      double *,        ///< array of max. x/y/z for level.
-      double *,        ///< array of min. x/y/z for full simulation.
-      double *         ///< array of max. x/y/z for full simulation.
+      const std::array<double, MAX_DIM>
+          &,  ///< array of minimum values of x,y,z for this grid.
+      const std::array<double, MAX_DIM>
+          &,  ///< array of maximum values of x,y,z for this grid.
+      const std::array<int, MAX_DIM>
+          &,  ///< array of number of cells in x,y,z directions.
+      std::array<double, MAX_DIM> &,  ///< array of min. x/y/z for level.
+      std::array<double, MAX_DIM> &,  ///< array of max. x/y/z for level.
+      std::array<double, MAX_DIM>
+          &,  ///< array of min. x/y/z for full simulation.
+      std::array<double, MAX_DIM>
+          &  ///< array of max. x/y/z for full simulation.
   );
 
   ///
@@ -476,8 +493,8 @@ public:
   /// physical units.
   ///
   virtual double distance(
-      const double *,  ///< position 1 (physical)
-      const double *   ///< position 2 (physical)
+      const std::array<double, MAX_DIM> &,  ///< position 1 (physical)
+      const std::array<double, MAX_DIM> &   ///< position 2 (physical)
   );
 
   ///
@@ -487,8 +504,8 @@ public:
   /// integer units (but obviously the answer is not an integer).
   ///
   virtual double idistance(
-      const int *,  ///< position 1 (integer)
-      const int *   ///< position 2 (integer)
+      const std::array<int, MAX_DIM> &,  ///< position 1 (integer)
+      const std::array<int, MAX_DIM> &   ///< position 2 (integer)
   );
 
   ///
@@ -593,13 +610,18 @@ public:
       int,  ///< nvar, length of state vectors.
       int,  ///< eqntype, which equations we are using (needed by BCs).
       int,  ///< number of boundary cells to use.
-      const double *,  ///< array of minimum values of x,y,z for this grid.
-      const double *,  ///< array of maximum values of x,y,z for this grid.
-      const int *,     ///< array of number of cells in x,y,z directions.
-      double *,        ///< array of min. x/y/z for level.
-      double *,        ///< array of max. x/y/z for level.
-      double *,        ///< array of min. x/y/z for full simulation.
-      double *         ///< array of max. x/y/z for full simulation.
+      const std::array<double, MAX_DIM>
+          &,  ///< array of minimum values of x,y,z for this grid.
+      const std::array<double, MAX_DIM>
+          &,  ///< array of maximum values of x,y,z for this grid.
+      const std::array<int, MAX_DIM>
+          &,  ///< array of number of cells in x,y,z directions.
+      std::array<double, MAX_DIM> &,  ///< array of min. x/y/z for level.
+      std::array<double, MAX_DIM> &,  ///< array of max. x/y/z for level.
+      std::array<double, MAX_DIM>
+          &,  ///< array of min. x/y/z for full simulation.
+      std::array<double, MAX_DIM>
+          &  ///< array of max. x/y/z for full simulation.
   );
 
   ///
@@ -612,8 +634,8 @@ public:
   /// physical units.
   ///
   virtual double distance(
-      const double *,  ///< position 1 (physical)
-      const double *   ///< position 2 (physical)
+      const std::array<double, MAX_DIM> &,  ///< position 1 (physical)
+      const std::array<double, MAX_DIM> &   ///< position 2 (physical)
   );
 
   ///
@@ -623,8 +645,8 @@ public:
   /// integer units (but obviously the answer is not an integer).
   ///
   virtual double idistance(
-      const int *,  ///< position 1 (integer)
-      const int *   ///< position 2 (integer)
+      const std::array<int, MAX_DIM> &,  ///< position 1 (integer)
+      const std::array<int, MAX_DIM> &   ///< position 2 (integer)
   );
 
   ///
@@ -743,13 +765,18 @@ public:
       int,  ///< nvar, length of state vectors.
       int,  ///< eqntype, which equations we are using (needed by BCs).
       int,  ///< number of boundary cells to use.
-      const double *,  ///< array of minimum values of x,y,z for this grid.
-      const double *,  ///< array of maximum values of x,y,z for this grid.
-      const int *,     ///< array of number of cells in x,y,z directions.
-      double *,        ///< array of min. x/y/z for level.
-      double *,        ///< array of max. x/y/z for level.
-      double *,        ///< array of min. x/y/z for full simulation.
-      double *         ///< array of max. x/y/z for full simulation.
+      const std::array<double, MAX_DIM>
+          &,  ///< array of minimum values of x,y,z for this grid.
+      const std::array<double, MAX_DIM>
+          &,  ///< array of maximum values of x,y,z for this grid.
+      const std::array<int, MAX_DIM>
+          &,  ///< array of number of cells in x,y,z directions.
+      std::array<double, MAX_DIM> &,  ///< array of min. x/y/z for level.
+      std::array<double, MAX_DIM> &,  ///< array of max. x/y/z for level.
+      std::array<double, MAX_DIM>
+          &,  ///< array of min. x/y/z for full simulation.
+      std::array<double, MAX_DIM>
+          &  ///< array of max. x/y/z for full simulation.
   );
 
   ///
@@ -764,8 +791,8 @@ public:
   /// physical units.
   ///
   virtual double distance(
-      const double *,  ///< position 1 (physical)
-      const double *   ///< position 2 (physical)
+      const std::array<double, MAX_DIM> &,  ///< position 1 (physical)
+      const std::array<double, MAX_DIM> &   ///< position 2 (physical)
   );
 
   ///
@@ -775,8 +802,8 @@ public:
   /// integer units (but obviously the answer is not an integer).
   ///
   virtual double idistance(
-      const int *,  ///< position 1 (integer)
-      const int *   ///< position 2 (integer)
+      const std::array<int, MAX_DIM> &,  ///< position 1 (integer)
+      const std::array<int, MAX_DIM> &   ///< position 2 (integer)
   );
 
   ///

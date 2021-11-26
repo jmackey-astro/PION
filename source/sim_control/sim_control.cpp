@@ -165,11 +165,13 @@
 #include "raytracing/raytracer_SC.h"
 #include "sim_control.h"
 #include "tools/command_line_interface.h"
-#include "tools/reporting.h"
+
 #include "tools/timer.h"
 
+#include <spdlog/spdlog.h>
+
 #include <fstream>
-#include <iostream>
+
 #include <sstream>
 #include <sys/time.h>
 #include <time.h>
@@ -185,9 +187,7 @@ sim_control::sim_control() {}
 
 sim_control::~sim_control()
 {
-#ifndef NDEBUG
-  cout << "(sim_control::Destructor)\n";
-#endif
+  spdlog::info("(sim_control::Destructor)");
 }
 
 // ##################################################################
@@ -200,20 +200,24 @@ int sim_control::Time_Int(
     vector<class GridBaseClass *> &grid  ///< grid pointers.
 )
 {
-  cout << "------------------------------------------------------------\n";
-  cout << "(sim_control::Time_Int) STARTING TIME INTEGRATION."
-       << "\n";
-  cout << "------------------------------------------------------------\n";
+  spdlog::info("(sim_control::Time_Int) STARTING TIME INTEGRATION");
   int err       = 0;
   SimPM.maxtime = false;
   clk.start_timer("time_int");
   double tsf = 0;
   err        = update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
-  rep.errorTest("TIME_INT:: initial RT src update()", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "TIME_INT:: initial RT src update()", 0,
+        err);
   err = RT_all_sources(SimPM, grid[0], 0);
-  rep.errorTest("TIME_INT:: initial RT()", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "TIME_INT:: initial RT()", 0, err);
   err += output_data(grid);
-  rep.errorTest("TIME_INT:: initial save", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "TIME_INT:: initial save", 0, err);
 
   while (SimPM.maxtime == false) {
 
@@ -226,15 +230,22 @@ int sim_control::Time_Int(
     // Update RT sources and do raytracing.
     //
     err = update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
-    rep.errorTest("TIME_INT::update_RT_sources()", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "TIME_INT::update_RT_sources()", 0,
+          err);
     err = RT_all_sources(SimPM, grid[0], 0);
-    rep.errorTest("TIME_INT:: loop RT()", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "TIME_INT:: loop RT()", 0, err);
 
     // clk.start_timer("advance_time");
     // step forward by dt.
     SimPM.levels[0].last_dt = SimPM.last_dt;
     err += calculate_timestep(SimPM, grid[0], 0);
-    rep.errorTest("TIME_INT::calc_timestep()", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "TIME_INT::calc_timestep()", 0, err);
 
     advance_time(0, grid[0]);
     // cout <<"advance_time took "<<clk.stop_timer("advance_time")<<"
@@ -242,43 +253,39 @@ int sim_control::Time_Int(
 
 #if !defined(CHECK_MAGP)
 #if !defined(BLAST_WAVE_CHECK)
-    cout << "New time: " << SimPM.simtime;
-    cout << "\t dt=" << SimPM.dt;
-    cout << "\t steps: " << SimPM.timestep;
+    spdlog::debug(
+        "New time: {}\t dt={}\t steps: {}", SimPM.simtime, SimPM.dt,
+        SimPM.timestep);
     tsf = clk.time_so_far("time_int");
-    cout << "\t runtime: " << tsf << " s"
-         << "\n";
+    spdlog::debug("\t runtime: {}s", tsf);
 #endif
 #endif
     err += check_energy_cons(grid[0]);
 
     err += output_data(grid);
     if (err != 0) {
-      cerr << "(TIME_INT::output_data) err!=0 Something went wrong\n";
+      spdlog::error("(TIME_INT::output_data) err!=0 Something went wrong");
       return (1);
     }
 
     err += check_eosim();
     if (err != 0) {
-      cerr << "(TIME_INT::) err!=0 Something went wrong\n";
+      spdlog::error("(TIME_INT::) err!=0 Something went wrong");
       return (1);
     }
   }
 
-  cout << "(sim_control::Time_Int) TIME_INT FINISHED.  MOVING ON TO FINALISE "
-          "SIM.\n";
+  spdlog::info(
+      "(sim_control::Time_Int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM");
 
   tsf = clk.time_so_far("time_int");
-  cout << "TOTALS ###: Nsteps: " << SimPM.timestep << " wall-time: ";
-  cout << tsf << " time/step: " << tsf / static_cast<double>(SimPM.timestep)
-       << "\n";
-  cout << "STEPS: " << SimPM.timestep;
-  cout.setf(ios_base::scientific);
-  cout.precision(6);
-  cout << "\t" << tsf << "\t" << tsf / static_cast<double>(SimPM.timestep);
-  cout << "\t" << static_cast<double>(SimPM.timestep * SimPM.Ncell) / tsf
-       << "\n";
-  cout << "------------------------------------------------------------\n";
+  spdlog::debug(
+      "TOTALS ###: Nsteps: {} wall-time: {} time/step: {} STEPS: {}",
+      SimPM.timestep, tsf, tsf / static_cast<double>(SimPM.timestep),
+      SimPM.timestep);
+  spdlog::debug(
+      "\t{}\t{}\t{}", tsf, tsf / static_cast<double>(SimPM.timestep),
+      static_cast<double>(SimPM.timestep * SimPM.Ncell) / tsf);
 
   return (0);
 }
@@ -309,8 +316,7 @@ void sim_control::calculate_magnetic_pressure(
               * spatial_solver->CellVolume(c, grid->DX());
   } while ((c = grid->NextPt(c)) != 0);
   if (init_magp < 0) init_magp = magp;
-  cout << SimPM.simtime << "\t" << magp / init_magp << "\t" << magp << "\n";
-  return;
+  spdlog::debug("{}\t{}\t{}", SimPM.simtime, magp / init_magp, magp);
 }
 #endif  // CHECK_MAGP
 
@@ -337,7 +343,7 @@ void sim_control::calculate_blastwave_radius(
   // if (shock_found) continue;
   cell *c = grid->LastPt();
   if (fabs(c->P[VX]) >= 1.0e4) {
-    cout << "grid does not contain shock.\n";
+    spdlog::info("grid does not contain shock");
     shockpos = CI.get_dpos(c, Rsph);
   }
   else {
@@ -352,11 +358,8 @@ void sim_control::calculate_blastwave_radius(
   }
 
   if (pconst.equalD(old_pos, 0.0)) old_pos = shockpos;
-  cout << SimPM.simtime << "\t" << shockpos;
-  // cout <<"\t"<<(shockpos-old_pos)/(SimPM.dt+TINYVALUE);
-  cout << "\n";
+  spdlog::debug("{}\t{}", SimPM.simtime, shockpos);
   old_pos = shockpos;
-  return;
 }
 #endif  // BLAST_WAVE_CHECK
 
@@ -371,13 +374,14 @@ int sim_control::check_eosim()
   if (SimPM.finishtime > 0) {
     if (SimPM.simtime >= SimPM.finishtime) {
       SimPM.maxtime = true;
-      cout << "finishtime=" << SimPM.finishtime << "\n";
+      spdlog::debug("finishtime={}", SimPM.finishtime);
       return (0);
     }
   }
   else {
-    cout << "finishtime=" << SimPM.finishtime << "\n";
-    rep.error("Don't know how to check for end of simulation.", 2);
+    spdlog::debug("finishtime={}", SimPM.finishtime);
+    spdlog::error(
+        "{}: {}", "Don't know how to check for end of simulation.", 2);
   }
 
   return (0);
@@ -411,16 +415,14 @@ int sim_control::check_energy_cons(class GridBaseClass *grid)
     nowMASS += u[RHO] * dv;
     totmom += sqrt(u[MMX] * u[MMX] + u[MMY] * u[MMY] + u[MMZ] * u[MMZ]) * dv;
   } while ((cpt = grid->NextPt(cpt)) != 0);
-  cout << "(conserved quantities) [" << nowERG << ", ";
-  cout << nowMMX << ", ";
-  cout << nowMMY << ", ";
-  cout << nowMMZ << ", ";
-  cout << nowMASS << "]\n";
-  cout << "(relative error      ) [" << (nowERG - initERG) / (initERG) << ", ";
-  cout << (nowMMX - initMMX) / (totmom) << ", ";
-  cout << (nowMMY - initMMY) / (totmom) << ", ";
-  cout << (nowMMZ - initMMZ) / (totmom) << ", ";
-  cout << (nowMASS - initMASS) / initMASS << "]\n";
+  spdlog::debug(
+      "(conserved quantities) [{}, {}, {}, {}, {}]", nowERG, nowMMX, nowMMY,
+      nowMMZ, nowMASS);
+  spdlog::debug(
+      "(relative error      ) [{}, {}, {}, {}, {}]",
+      (nowERG - initERG) / (initERG), (nowMMX - initMMX) / (totmom),
+      (nowMMY - initMMY) / (totmom), (nowMMZ - initMMZ) / (totmom),
+      (nowMASS - initMASS) / initMASS);
 
 #endif  // TEST_CONSERVATION
   return (0);
@@ -437,18 +439,16 @@ int sim_control::Finalise(vector<class GridBaseClass *>
 )
 {
   int err = 0;
-  cout << "------------------------------------------------------------\n";
-  cout << "(sim_control::Finalise) FINALISING SIMULATION."
-       << "\n";
+  spdlog::info("(sim_control::Finalise) FINALISING SIMULATION");
   err += check_energy_cons(grid[0]);
   err += output_data(grid);
-  rep.errorTest("(FINALISE::output_data) Something went wrong", 0, err);
-  cout << "\tSimTime = " << SimPM.simtime
-       << "   #timesteps = " << SimPM.timestep << "\n";
-#ifndef NDEBUG
-  cout << "(sim_control::Finalise) DONE.\n";
-#endif
-  cout << "------------------------------------------------------------\n";
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "(FINALISE::output_data) Something went wrong", 0, err);
+  spdlog::debug(
+      "\tSimTime = {}   #timesteps = {}", SimPM.simtime, SimPM.timestep);
+  spdlog::info("(sim_control::Finalise) DONE");
   return (0);
 }
 

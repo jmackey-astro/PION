@@ -28,7 +28,11 @@
 //#define MPV3_DEBUG
 
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -178,23 +182,25 @@ double MPv4::get_timeaveraged_rhodx(
   //
   double deltau = -log(edtau / dt);
 #ifdef RT_TESTING
-  cout << "**** MPv4:  INT(exp(-dtau),dt) = " << edtau << " <deltau>=" << deltau
-       << ", dt=" << dt << "\n";
+  spdlog::debug(
+      "**** MPv4:  INT(exp(-dtau),dt) = {} <deltau>={}, dt={}", edtau, deltau,
+      dt);
 #endif
   if (!isfinite(deltau)) {
     // this can happen if the ray is very attenuated, and we are taking
     // -log(0.0)
 #ifdef MPV3_DEBUG
-    cout << " INT(exp(-dtau),dt) = " << edtau << " <deltau>=" << deltau
-         << ", resetting\n";
+    spdlog::debug(
+        " INT(exp(-dtau),dt) = {} <deltau>={}, resetting", edtau, deltau);
 #endif                // MPV3_DEBUG
     deltau = 1000.0;  // This should be big enough -- exp(-1000)=10^(-440)!!
   }
   if (deltau < 0.0) {
     if (deltau < -JM_RELTOL) {
-      cout << "==EEEE== MPv4: <tau> significantly negative: " << deltau;
-      cout << " setting to zero. edtau/dt-1=" << edtau / dt - 1.0 << "\n";
-      rep.error("negative Tau", deltau);
+      spdlog::debug(
+          "==EEEE== MPv4: <tau> significantly negative: {} setting to zero. edtau/dt-1={}",
+          deltau, edtau / dt - 1.0);
+      spdlog::error("{}: {}", "negative Tau", deltau);
     }
     deltau = 0.0;
   }
@@ -204,8 +210,9 @@ double MPv4::get_timeaveraged_rhodx(
   //
   deltau *= mean_mass_per_H / Hi_monochromatic_photo_ion_xsection(2.178721e-11);
 #ifdef RT_TESTING
-  cout << "**** MPv4:  INT(exp(-dtau),dt) = " << edtau << " <deltau>=" << deltau
-       << ", dt=" << dt << "\n";
+  spdlog::debug(
+      "**** MPv4:  INT(exp(-dtau),dt) = {} <deltau>={}, dt={}", edtau, deltau,
+      dt);
 #endif
   return deltau;
 }
@@ -257,7 +264,7 @@ MPv4::MPv4(
   // here are that I have re-implemented some of the functions which
   // the explicit constructor calls.
   //
-  cout << "MPv4::MPv4() constructor.\n";
+  spdlog::info("MPv4::MPv4() constructor");
   setup_local_vectors();
   //
   // --------------------------- CVODES ----------------------------
@@ -272,7 +279,7 @@ MPv4::MPv4(
 
 MPv4::~MPv4()
 {
-  cout << "MPv4::MPv4() destructor.\n";
+  spdlog::info("MPv4::MPv4() destructor");
   return;
 }
 
@@ -324,7 +331,7 @@ double MPv4::timescales(
 {
 #ifdef MPV3_DEBUG
   if (RS->Nsources != 0) {
-    cout << "WARNING: MPv3::timescales() using non-RT version!\n";
+    spdlog::info("WARNING: MPv3::timescales() using non-RT version");
   }
 #endif  // MPV3_DEBUG
   int err = 0;
@@ -334,7 +341,7 @@ double MPv4::timescales(
   double P[nvl];
   err = convert_prim2local(p_in, P);
   if (err) {
-    rep.error("Bad input state to MPv3::timescales()", err);
+    spdlog::error("{}: {}", "Bad input state to MPv3::timescales()", err);
   }
   NV_Ith_S(y_in, lv_H0)   = P[lv_H0];
   NV_Ith_S(y_in, lv_eint) = P[lv_eint];
@@ -351,7 +358,8 @@ double MPv4::timescales(
   //
   err = ydot(0, y_in, y_out, 0);
   if (err) {
-    rep.error("dYdt() returned an error in MPv3::timescales()", err);
+    spdlog::error(
+        "{}: {}", "dYdt() returned an error in MPv3::timescales()", err);
   }
   double T = get_temperature(
       mpv_nH, NV_Ith_S(y_in, lv_eint), 1.0 - NV_Ith_S(y_in, lv_H0));
@@ -364,10 +372,9 @@ double MPv4::timescales(
 
   if (tc && T > EP->MinTemperature) {
 #ifdef RT_TESTING
-    cout << "timestep limiting: cooling time=";
-    cout << NV_Ith_S(y_in, lv_eint)
-                / (fabs(NV_Ith_S(y_out, lv_eint)) + TINYVALUE)
-         << "\n";
+    spdlog::info(
+        "timestep limiting: cooling time {}",
+        NV_Ith_S(y_in, lv_eint) / (fabs(NV_Ith_S(y_out, lv_eint)) + TINYVALUE));
 #endif
     tmin =
         min(tmin, DTFRAC * NV_Ith_S(y_in, lv_eint)
@@ -388,13 +395,13 @@ double MPv4::timescales(
     tmin = min(tmin, DTFRAC / (fabs(rate) + TINYVALUE));
 
 #ifdef RT_TESTING
-    cout << "timestep limiting: recomb time=";
-    cout << 1.0 / (fabs(rate) + TINYVALUE) << "\n";
+    spdlog::debug(
+        "timestep limiting: recomb time={}", 1.0 / (fabs(rate) + TINYVALUE));
 #endif
   }
 
   if (ti) {
-    rep.error("ionisation time not possible in timescales()", ti);
+    spdlog::error("{}: {}", "ionisation time not possible in timescales()", ti);
   }
 
   return tmin;
@@ -429,7 +436,7 @@ double MPv4::timescales_RT(
   double P[nvl];
   err = convert_prim2local(p_in, P);
   if (err) {
-    rep.error("Bad input state to MPv4::timescales_RT()", err);
+    spdlog::error("{}: {}", "Bad input state to MPv4::timescales_RT()", err);
   }
   NV_Ith_S(y_in, lv_H0)   = P[lv_H0];
   NV_Ith_S(y_in, lv_eint) = P[lv_eint];
@@ -445,7 +452,8 @@ double MPv4::timescales_RT(
   //
   err = ydot(0, y_in, y_out, 0);
   if (err) {
-    rep.error("dYdt() returned an error in MPv3::timescales_RT()", err);
+    spdlog::error(
+        "{}: {}", "dYdt() returned an error in MPv3::timescales_RT()", err);
   }
 
   //
@@ -477,8 +485,9 @@ double MPv4::timescales_RT(
 
 #ifdef MPV3_DEBUG
   if (t < 3.16e9) {
-    cout << "MP timescales: xdot=" << NV_Ith_S(y_out, lv_H0);
-    cout << ", Edot=" << NV_Ith_S(y_out, lv_eint) << " t_x=" << t;
+    spdlog::debug(
+        "MP timescales: xdot={}, Edot={} t_x={}", NV_Ith_S(y_out, lv_H0),
+        NV_Ith_S(y_out, lv_eint), t);
   }
 #endif  // MPV3_DEBUG
 
@@ -495,8 +504,8 @@ double MPv4::timescales_RT(
 
 #ifdef MPV3_DEBUG
   if (t < 3.16e9) {
-    cout << " and min(t_x,t_e)=" << t << ",  ";
-    rep.printVec("P[1-x,E]", P, nvl);
+    spdlog::debug(" and min(t_x,t_e)={},  ", t);
+    spdlog::debug("P[1-x,E] : {}", P);
   }
 #endif  // MPV3_DEBUG
 

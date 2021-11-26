@@ -159,14 +159,14 @@ protected:
   /// consistent across all levels.
   ///
   int add_cells_to_face(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      enum direction,         ///< which direction we're facing
-      int *,                  ///< xmin of interface region (integer units)
-      int *,                  ///< xmax of interface region (integer units)
-      int *,                  ///< number of elements in interface region
-      const int,              ///< number of cells per face, per dim.
-      struct flux_update &    ///< struct with list to populate
+      class SimParams &,           ///< pointer to simulation parameters
+      class GridBaseClass *,       ///< pointer to grid.
+      enum direction,              ///< which direction we're facing
+      std::array<int, MAX_DIM> &,  ///< xmin of interface region (integer units)
+      std::array<int, MAX_DIM> &,  ///< xmax of interface region (integer units)
+      std::array<int, MAX_DIM> &,  ///< number of elements in interface region
+      const int,                   ///< number of cells per face, per dim.
+      struct flux_update &         ///< struct with list to populate
   );
 
   /// array of interfaces for a finer grid within this grid.

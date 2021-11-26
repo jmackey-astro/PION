@@ -21,7 +21,10 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -53,10 +56,10 @@ int IC_basic_tests::setup_data(
   int err = 0;
 
   ICsetup_base::gg = ggg;
-  if (!gg) rep.error("null pointer to grid!", ggg);
+  if (!gg) spdlog::error("{}: {}", "null pointer to grid!", fmt::ptr(ggg));
 
   ICsetup_base::rp = rrp;
-  if (!rp) rep.error("null pointer to ReadParams", rp);
+  if (!rp) spdlog::error("{}: {}", "null pointer to ReadParams", fmt::ptr(rp));
 
   IC_basic_tests::eqns = SimPM->eqntype;
   if (eqns == EQEUL)
@@ -64,35 +67,29 @@ int IC_basic_tests::setup_data(
   else if (eqns == EQMHD || eqns == EQGLM || eqns == EQFCD)
     eqns = 2;
   else
-    rep.error("Bad equations", eqns);
+    spdlog::error("{}: {}", "Bad equations", eqns);
 
   int ndim   = SimPM->ndim;
   string ics = rp->find_parameter("ics");
 
   if (ics == "")
-    rep.error("didn't get any ics to set up.", ics);
+    spdlog::error("{}: {}", "didn't get any ics to set up.", ics);
   else if (ics == "Uniform" || ics == "uniform") {
-    // cout <<"\t\tSetting up Uniform ICs.\n";
     err += setup_uniformgrid(rrp, ggg);
   }
   else if (ics == "AdvectSineWave") {
-    // cout <<"\t\tSetting up HD/MHD advection of clump with SINE WAVE
-    // variation in VY.\n";
     err += setup_sinewave_velocity();
   }
   else if (ics == "Advection") {
-    // cout <<"\t\tSetting up HD/MHD advection of overdense clump.\n";
     if (ndim != 2 && ndim != 3)
-      rep.error("only know 2d/3d advected grids", ndim);
+      spdlog::error("{}: {}", "only know 2d/3d advected grids", ndim);
     err += setup_advection();
   }
   else if (ics == "DivBPeak") {
-    // cout <<"\t\tSetting up divB peak problem.\n";
     err += setup_divBpeak();
   }
   else if (
       ics == "FieldLoop" || ics == "FieldLoopVz" || ics == "FieldLoopStatic") {
-    // cout <<"\t\tSetting up Advection of Magnetic Field Loop problem.\n";
     //
     // We pass in the z-velocity to the fieldloop problem:
     //
@@ -104,28 +101,23 @@ int IC_basic_tests::setup_data(
       err += setup_FieldLoop(-1.0);
   }
   else if (ics == "OrszagTang") {
-    // cout <<"\t\tSetting up Orszag-Tang test problem.\n";
     err += setup_OrszagTang();
   }
   else if (ics == "DoubleMachRef") {
-    // cout <<"\t\tSetting up Double Mach Reflection test problem.\n";
     err += setup_DoubleMachRef();
   }
   else if (ics == "KelvinHelmholtz") {
-    // cout <<"\t\tSetting up Kelvin-Helmholtz Instability problems.\n";
     err += setup_KelvinHelmholtz();
   }
   else if (ics == "KelvinHelmholtzStone") {
-    // cout <<"\t\tSetting up Stone's Kelvin-Helmholtz Instability
-    // problem.\n";
     err += setup_KelvinHelmholtz_Stone();
   }
   else if (ics == "LiskaWendroffImplosion") {
-    cout << "Setting up Liska & Wendroff (2003) implosion test\n";
+    spdlog::info("Setting up Liska & Wendroff (2003) implosion test");
     err += setup_LWImplosion();
   }
   else
-    rep.error("Don't know what Initial Condition is!", ics);
+    spdlog::error("{}: {}", "Don't know what Initial Condition is!", ics);
 
   // Add noise to data?  Smooth data?
   double noise = 0;
@@ -135,7 +127,8 @@ int IC_basic_tests::setup_data(
     noise = atof(ics.c_str());
   else
     noise = -1;
-  if (isnan(noise)) rep.error("noise parameter is not a number", noise);
+  if (isnan(noise))
+    spdlog::error("{}: {}", "noise parameter is not a number", noise);
   if (noise > 0) err += AddNoise2Data(gg, *SimPM, 2, noise);
 
   ics = rp->find_parameter("smooth");
@@ -143,7 +136,8 @@ int IC_basic_tests::setup_data(
     smooth = atoi(ics.c_str());
   else
     smooth = -1;
-  if (isnan(smooth)) rep.error("Smooth parameter not a number", smooth);
+  if (isnan(smooth))
+    spdlog::error("{}: {}", "Smooth parameter not a number", smooth);
   if (smooth > 0) err += SmoothData(smooth);
 
   return err;
@@ -166,44 +160,44 @@ int IC_basic_tests::setup_uniformgrid(
   string seek, str;
   seek = "UNIFORM_ambRO";
   str  = rrp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   Amb[RO] = atof(str.c_str());
 
   seek = "UNIFORM_ambPG";
   str  = rrp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   Amb[PG] = atof(str.c_str());
 
   seek = "UNIFORM_ambVX";
   str  = rrp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   Amb[VX] = atof(str.c_str());
 
   seek = "UNIFORM_ambVY";
   str  = rrp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   Amb[VY] = atof(str.c_str());
 
   seek = "UNIFORM_ambVZ";
   str  = rrp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   Amb[VZ] = atof(str.c_str());
 
   if (SimPM->eqntype == EQMHD || SimPM->eqntype == EQGLM
       || SimPM->eqntype == EQFCD) {
     seek = "UNIFORM_ambBX";
     str  = rrp->find_parameter(seek);
-    if (str == "") rep.error("didn't find parameter", seek);
+    if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
     Amb[BX] = atof(str.c_str());
 
     seek = "UNIFORM_ambBY";
     str  = rrp->find_parameter(seek);
-    if (str == "") rep.error("didn't find parameter", seek);
+    if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
     Amb[BY] = atof(str.c_str());
 
     seek = "UNIFORM_ambBZ";
     str  = rrp->find_parameter(seek);
-    if (str == "") rep.error("didn't find parameter", seek);
+    if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
     Amb[BZ] = atof(str.c_str());
 
     if (SimPM->eqntype == EQGLM) Amb[SI] = 0.0;
@@ -232,7 +226,7 @@ int IC_basic_tests::setup_uniformgrid(
   //
   // optional radial slope in density from a central point.
   //
-  double centre[MAX_DIM];
+  std::array<double, MAX_DIM> centre;
   double core_radius = 0.0, radial_slope = 0.0, radial_vel = 0.0;
   bool use_core = true;
 
@@ -244,7 +238,6 @@ int IC_basic_tests::setup_uniformgrid(
   }
   else {
     radial_slope = atof(str.c_str());
-    // cout <<"\t***\t*** slope = "<<radial_slope<<"\n";
   }
 
   seek = "UNIFORM_radial_velocity";
@@ -264,7 +257,6 @@ int IC_basic_tests::setup_uniformgrid(
   }
   else {
     core_radius = atof(str.c_str());
-    // cout <<"\t***\t*** core = "<< core_radius <<"\n";
   }
 
   seek = "UNIFORM_core_centre_XX";
@@ -294,9 +286,9 @@ int IC_basic_tests::setup_uniformgrid(
   //
   if (use_core && pconst.equalD(radial_slope, 0.0)) use_core = false;
 
-  // cout <<"\t\tAssigning values to data.\n";
   class cell *cpt = ggg->FirstPt();
-  double distance, dpos[MAX_DIM];
+  double distance;
+  std::array<double, MAX_DIM> dpos;
   do {
     for (int v = 0; v < SimPM->nvar; v++)
       cpt->P[v] = cpt->Ph[v] = Amb[v];
@@ -313,7 +305,6 @@ int IC_basic_tests::setup_uniformgrid(
       cpt->P[VX] = radial_vel * (dpos[XX] - centre[XX]) / distance;
       cpt->P[VY] = radial_vel * (dpos[YY] - centre[YY]) / distance;
       cpt->P[VZ] = radial_vel * (dpos[ZZ] - centre[ZZ]) / distance;
-      // cout <<"core density = "<<cpt->P[RO]<<", d="<<distance<<"\n";
     }
   } while ((cpt = ggg->NextPt(cpt)) != NULL);
   //  cpt = ggg->FirstPt();
@@ -335,11 +326,11 @@ int IC_basic_tests::setup_sinewave_velocity()
   //   string seek, str;
   //   seek = "NDadv_thetaXY";
   //   str = rp->find_parameter(seek);
-  //   if (str=="") rep.error("didn't find parameter",seek);
+  //   if (str=="") spdlog::error("{}: {}", "didn't find parameter",seek);
   //   double thetaXY = M_PI/180.* atof(str.c_str());
   //   seek = "NDadv_thetaXZ";
   //   str = rp->find_parameter(seek);
-  //   if (str=="") rep.error("didn't find parameter",seek);
+  //   if (str=="") spdlog::error("{}: {}", "didn't find parameter",seek);
   //   double thetaXZ = M_PI/180.* atof(str.c_str());
 
   //   cout <<"Using angle to X-Y grid of "<<thetaXY<<" radians, X-Z of
@@ -349,11 +340,11 @@ int IC_basic_tests::setup_sinewave_velocity()
 
   int ndim = gg->Ndim();  // int nvar=gg->Nvar();
   if (ndim != 2 && ndim != 3)
-    rep.error("Bad ndim in setup_sinewave_velocity()", ndim);
+    spdlog::error("{}: {}", "Bad ndim in setup_sinewave_velocity()", ndim);
 
   //   if (ndim==2 && !pconst.equalD(thetaXZ,M_PI/2.)) {
-  //     rep.warning("Given 3d angle, but 2d sim.  setting 3d angle to
-  //     zero.",0,thetaXZ); thetaXZ=M_PI/2.;
+  //     spdlog::warn("{}: Expected {} but got {}", "Given 3d angle, but 2d sim.
+  //     setting 3d angle to zero.",0,thetaXZ); thetaXZ=M_PI/2.;
   //   }
 
   //
@@ -365,7 +356,6 @@ int IC_basic_tests::setup_sinewave_velocity()
   double vx = 1.0;  // sin(thetaXZ)*cos(thetaXY);
   double vy = 1.0;  // sin(thetaXZ)*sin(thetaXY);
   double vz = 1.0;  // cos(thetaXZ);
-  // cout <<"\t\tvx,vy,vz = "<<vx<<", "<<vy<<", "<<vz<<endl;
   double pout;
   pout = 1.0;
   double rhoin, rhoout;
@@ -394,7 +384,6 @@ int IC_basic_tests::setup_sinewave_velocity()
   double vfrac;
 
   // data
-  // cout <<"\t\tAssigning primitive vectors.\n";
   class cell *cpt = gg->FirstPt();
   do {
     // Set values of primitive variables.
@@ -417,10 +406,8 @@ int IC_basic_tests::setup_sinewave_velocity()
       cpt->P[RO] = vfrac * (rhoin) + (1. - vfrac) * rhoout;
       for (int i = 0; i < SimPM->ntracer; i++)
         cpt->P[SimPM->ftr + i] = vfrac * (-1.) + (1. - vfrac) * 1.;
-      //       cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
     }
   } while ((cpt = gg->NextPt(cpt)) != NULL);
-  // cout <<"\t\tGot through data successfully.\n";
   // Data done.
 
   return 0;
@@ -434,11 +421,11 @@ int IC_basic_tests::setup_advection()
   string seek, str;
   seek = "NDadv_thetaXY";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   double thetaXY = M_PI / 180. * atof(str.c_str());
   seek           = "NDadv_thetaXZ";
   str            = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   double thetaXZ = M_PI / 180. * atof(str.c_str());
 
   // cout <<"Using angle to X-Y grid of "<<thetaXY<<" radians, X-Z of
@@ -447,10 +434,12 @@ int IC_basic_tests::setup_advection()
   // the projection of vector onto xy plane (azimuthal angle)\n";
 
   int ndim = gg->Ndim();  // int nvar=gg->Nvar();
-  if (ndim != 2 && ndim != 3) rep.error("Bad ndim in setupNDadvectionHD", ndim);
+  if (ndim != 2 && ndim != 3)
+    spdlog::error("{}: {}", "Bad ndim in setupNDadvectionHD", ndim);
 
   if (ndim == 2 && !pconst.equalD(thetaXZ, M_PI / 2.)) {
-    rep.warning(
+    spdlog::warn(
+        "{}: Expected {} but got {}",
         "Given 3d angle, but 2d sim.  setting 3d angle to zero.", 0, thetaXZ);
     thetaXZ = M_PI / 2.;
   }
@@ -464,7 +453,7 @@ int IC_basic_tests::setup_advection()
   double vx = sin(thetaXZ) * cos(thetaXY);
   double vy = sin(thetaXZ) * sin(thetaXY);
   double vz = cos(thetaXZ);
-  cout << "\t\tvx,vy,vz = " << vx << ", " << vy << ", " << vz << endl;
+  spdlog::debug("\t\tvx,vy,vz = {}, {}, {}", vx, vy, vz);
   double pout;
   pout = 1.0;
   double rhoin, rhoout;
@@ -492,7 +481,6 @@ int IC_basic_tests::setup_advection()
   double vfrac;
 
   // data
-  // cout <<"\t\tAssigning primitive vectors.\n";
   class cell *cpt = gg->FirstPt();
   do {
     // Set values of primitive variables.
@@ -516,7 +504,6 @@ int IC_basic_tests::setup_advection()
       cpt->P[RO] = vfrac * (rhoin) + (1. - vfrac) * rhoout;
       for (int i = 0; i < SimPM->ntracer; i++)
         cpt->P[SimPM->ftr + i] = vfrac * (-1.) + (1. - vfrac) * 1.;
-      //       cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
     }
   } while ((cpt = gg->NextPt(cpt)) != NULL);
   //  cpt = firstPt();
@@ -539,7 +526,7 @@ int IC_basic_tests::setup_divBpeak()
   // See Dedner et al. (2002) JCP, 175, 645 for details of the problem and
   // reference results.
   int ndim = gg->Ndim();
-  if (ndim != 2) rep.error("divBpeak only works in 2D", ndim);
+  if (ndim != 2) spdlog::error("{}: {}", "divBpeak only works in 2D", ndim);
   int nvar  = gg->Nvar();
   double *s = new double[nvar];
   s[RO]     = 1.0;
@@ -558,16 +545,16 @@ int IC_basic_tests::setup_divBpeak()
   SimPM->gamma = 5. / 3.;
   if (fabs(SimPM->Xmin[XX] + 0.5) > 1.e-6
       || fabs(SimPM->Xmax[XX] - 1.5) > 1.e-6) {
-    cout << fabs(SimPM->Xmin[XX] + 0.5) << "\t" << fabs(SimPM->Xmax[XX] - 1.5)
-         << endl;
-    cout << SimPM->Xmin[XX] << "\t" << SimPM->Xmax[XX] << endl;
-    rep.error(
-        "Set bounds properly for divBpeak!!! x=[-.5,1.5] y=[-.5,1.5]",
+    spdlog::debug(
+        "{}\t{}\n{}\t{}", fabs(SimPM->Xmin[XX] + 0.5),
+        fabs(SimPM->Xmax[XX] - 1.5), SimPM->Xmin[XX], SimPM->Xmax[XX]);
+    spdlog::error(
+        "{}: {}", "Set bounds properly for divBpeak!!! x=[-.5,1.5] y=[-.5,1.5]",
         SimPM->Xmin[XX]);
   }
   class cell *c = gg->FirstPt();
   double r2     = 0;
-  double dpos[MAX_DIM];
+  std::array<double, MAX_DIM> dpos;
   CI.get_dpos(c, dpos);
   // rep.printVec("position of first cell",dpos,ndim);
   do {
@@ -596,44 +583,41 @@ int IC_basic_tests::setup_divBpeak()
 int IC_basic_tests::setup_FieldLoop(double vz  ///< Z-velocity of fluid
 )
 {
-  cout << "\tSetting up Field Loop test, from Stone's code test page:\n";
-  cout << "\t\thttp://www.astro.princeton.edu/~jstone/tests/field-loop/"
-          "Field-loop.html\n";
-  cout << "\tAlso see http://www.dias.ie/~fdc/MHDCodeComp/adv.html\n";
+  spdlog::info("\tSetting up Field Loop test, from Stone's code test page:"
+               "\t\thttp://www.astro.princeton.edu/~jstone/tests/field-loop/"
+               "Field-loop.html\n"
+               "\tAlso see http://www.dias.ie/~fdc/MHDCodeComp/adv.html");
   int ndim = SimPM->ndim;
   if (ndim != 2) {
-    rep.error("Bad ndim in setup_FieldLoop", ndim);
+    spdlog::error("{}: {}", "Bad ndim in setup_FieldLoop", ndim);
   }
   if (SimPM->eqntype != EQMHD && SimPM->eqntype != EQGLM
       && SimPM->eqntype != EQFCD) {
-    rep.error(
-        "Advection of Field Loop must be mhd! bad eqntype", SimPM->eqntype);
+    spdlog::error(
+        "{}: {}", "Advection of Field Loop must be mhd! bad eqntype",
+        SimPM->eqntype);
   }
   SimPM->gamma = 5. / 3.;  // just to make sure.
   // SimPM->BC_XN = "periodic";
   // SimPM->BC_XP = "periodic";
   // SimPM->BC_YN = "periodic";
   // SimPM->BC_YP = "periodic";
-  // cout <<"\tMake sure x=[-1,1] and y=[-0.5,0.5]\n";
 
   double A_max = 0.001;  // Peak in vector potential.
   double vel = 2.0, rho = 1.0, p_g = 1.0;
   // double flow_angle=60.0*M_PI/180.0;
   double radius = 0.3;
   double dist   = 0.0;
-  double centre[ndim];
+  std::array<double, MAX_DIM> centre;
   for (int v = 0; v < ndim; v++)
     centre[v] = 0.0;
-  double dpos[ndim];
+  std::array<double, MAX_DIM> dpos;
 
   if (vz < 0) {
-    // cout <<"\tWARNING - negative vz received, so setting up static
-    // problem!\n";
     vel = 0.0;
     vz  = 0.0;
   }
 
-  // cout <<"Assigning primitive vectors.\n";
   class cell *c = gg->FirstPt();
   do {
     c->P[RO] = rho;
@@ -727,28 +711,29 @@ int IC_basic_tests::setup_OrszagTang()
   string seek, str;
   seek = "OTVbeta";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   double otvbeta = atof(str.c_str());
 
   seek = "OTVmach";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   double otvmach = atof(str.c_str());
 
   int ndim = gg->Ndim();
-  cout << "\tSetting up Orszag-Tang vortex problem with plasma beta = "
-       << otvbeta;
-  cout << " and flow mach no. = " << otvmach << endl;
-  if (ndim != 2) rep.error("Bad ndim in setup_OrszagTang", ndim);
+  spdlog::debug(
+      "\tSetting up Orszag-Tang vortex problem with plasma beta = {} and flow mach no. = {}",
+      otvbeta, otvmach);
+  if (ndim != 2) spdlog::error("{}: {}", "Bad ndim in setup_OrszagTang", ndim);
   if (SimPM->eqntype != EQMHD && SimPM->eqntype != EQGLM
       && SimPM->eqntype != EQFCD)
-    rep.error("O-T vortex must be mhd! bad eqntype", SimPM->eqntype);
+    spdlog::error(
+        "{}: {}", "O-T vortex must be mhd! bad eqntype", SimPM->eqntype);
 
   SimPM->gamma = 5. / 3.;                                // just to make sure.
   double p0    = otvbeta / 2.;                           // constant pressure.
   double d0    = SimPM->gamma * otvmach * otvmach * p0;  // constant density.
   // cout <<"Assigning primitive vectors.\n";
-  double dpos[ndim];
+  std::array<double, MAX_DIM> dpos;
   class cell *c = gg->FirstPt();
   do {
     CI.get_dpos(c, dpos);
@@ -781,24 +766,25 @@ int IC_basic_tests::setup_DoubleMachRef()
   string seek, str;
   seek = "DMRmach";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   double dmrmach = atof(str.c_str());
 
   seek = "DMRtheta";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   double dmrtheta = atof(str.c_str());
 
   int ndim = gg->Ndim();
-  cout << "Setting up Double Mach Reflection problem...  ";
-  if (dmrmach <= 1) rep.error("Mach number must be >1", dmrmach);
+  spdlog::info("Setting up Double Mach Reflection problem...");
+  if (dmrmach <= 1) spdlog::error("{}: {}", "Mach number must be >1", dmrmach);
   if (dmrtheta < 0.1 || dmrtheta > 89.99)
-    rep.error("Angle must be between 0 and 90 degrees", dmrtheta);
-  cout << "with mach no. = " << dmrmach << " and angle " << dmrtheta
-       << " degrees to x-axis.\n";
-  if (ndim != 2) rep.error("Bad ndim in setup_DoubleMachRef", ndim);
+    spdlog::error("{}: {}", "Angle must be between 0 and 90 degrees", dmrtheta);
+  spdlog::debug(
+      "with mach no. = {} and angle {} degrees to x-axis", dmrmach, dmrtheta);
+  if (ndim != 2)
+    spdlog::error("{}: {}", "Bad ndim in setup_DoubleMachRef", ndim);
   if (SimPM->eqntype != EQEUL)
-    rep.error("DMR must be euler equations!", SimPM->eqntype);
+    spdlog::error("{}: {}", "DMR must be euler equations!", SimPM->eqntype);
   // SimPM->BC_XN = "inflow";
   // SimPM->BC_XP = "outflow";
   // SimPM->BC_YN = "reflecting";
@@ -838,7 +824,7 @@ int IC_basic_tests::setup_DoubleMachRef()
 
   double xs     = 0.0;
   class cell *c = gg->FirstPt();
-  double dpos[ndim];
+  std::array<double, MAX_DIM> dpos;
   do {
     CI.get_dpos(c, dpos);
     xs = x0 + dpos[YY] / tan(dmrtheta);
@@ -868,15 +854,15 @@ int IC_basic_tests::setup_DoubleMachRef()
 
 int IC_basic_tests::setup_KelvinHelmholtz_Stone()
 {
-  cout << "KH Instability: assuming x=[-0.5,0.5], y=[-0.5,0.5]\n";
+  spdlog::info("KH Instability: assuming x=[-0.5,0.5], y=[-0.5,0.5]");
   int err  = 0;
   int ndim = gg->Ndim();
-  if (ndim != 2) rep.error("KH needs 2D problem domain", ndim);
+  if (ndim != 2) spdlog::error("{}: {}", "KH needs 2D problem domain", ndim);
 
   // The following is for Jim Stone's test at:
   // http://www.astro.princeton.edu/~jstone/tests/kh/kh.html
   // SimPM->typeofbc = "XNper_XPper_YNper_YPper_";
-  cout << "KH Instability: using periodic BCs everywhere.\n";
+  spdlog::info("KH Instability: using periodic BCs everywhere");
   SimPM->gamma    = 1.4;
   double pressure = 2.5;
   double vx_high  = -0.5;
@@ -893,7 +879,7 @@ int IC_basic_tests::setup_KelvinHelmholtz_Stone()
   double noise_amp = 0.01;  // absolute amplitude of noise.
 
   class cell *c = gg->FirstPt();
-  double dpos[ndim];
+  std::array<double, MAX_DIM> dpos;
   do {
     CI.get_dpos(c, dpos);
     c->P[VY] = 0.0;
@@ -928,10 +914,10 @@ int IC_basic_tests::setup_KelvinHelmholtz_Stone()
 
 int IC_basic_tests::setup_KelvinHelmholtz()
 {
-  cout << "KH Instability: assuming x=[-0.5,0.5], y=[-0.5,0.5]\n";
+  spdlog::info("KH Instability: assuming x=[-0.5,0.5], y=[-0.5,0.5]");
   int err  = 0;
   int ndim = gg->Ndim();
-  if (ndim != 2) rep.error("KH needs 2D problem domain", ndim);
+  if (ndim != 2) spdlog::error("{}: {}", "KH needs 2D problem domain", ndim);
 
   // The following is for Frank, Jones, Ryu, \& Gaalaas, 1996, ApJ, 460, 777.
   // SimPM->typeofbc = "XNper_XPper_YNref_YPref_";
@@ -944,7 +930,7 @@ int IC_basic_tests::setup_KelvinHelmholtz()
   double a        = SimPM->Range[YY] / 25.0;  // Thickness of shear layer.
 
   class cell *c = gg->FirstPt();
-  double dpos[ndim];
+  std::array<double, MAX_DIM> dpos;
   do {
     CI.get_dpos(c, dpos);
     c->P[RO] = rho;
@@ -983,14 +969,14 @@ int IC_basic_tests::setup_LWImplosion()
   //
   int err  = 0;
   int ndim = gg->Ndim();
-  if (ndim != 2) rep.error("LWI needs 2D problem domain", ndim);
+  if (ndim != 2) spdlog::error("{}: {}", "LWI needs 2D problem domain", ndim);
 
   SimPM->gamma    = 1.4;
   double pressure = 1.0;
   double rho      = 1.0;
 
   class cell *c = gg->FirstPt();
-  double dpos[ndim];
+  std::array<double, MAX_DIM> dpos;
   do {
     CI.get_dpos(c, dpos);
     c->P[RO] = rho;

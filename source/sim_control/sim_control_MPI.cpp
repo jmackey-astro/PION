@@ -64,8 +64,10 @@
 
 #include "constants.h"
 #include "tools/command_line_interface.h"
-#include "tools/reporting.h"
+
 #include "tools/timer.h"
+
+#include <spdlog/spdlog.h>
 
 #include "raytracing/raytracer_SC.h"
 #include "sim_control/sim_control_MPI.h"
@@ -81,7 +83,7 @@
 #endif  // if FITS
 
 #include <fstream>
-#include <iostream>
+
 #include <sstream>
 using namespace std;
 
@@ -93,7 +95,7 @@ using namespace std;
 sim_control_pllel::sim_control_pllel() : sim_control()
 {
 #ifndef NDEBUG
-  cout << "sim_control_pllel constructor.\n";
+  spdlog::info("sim_control_pllel constructor");
 #endif
 }
 
@@ -103,7 +105,7 @@ sim_control_pllel::sim_control_pllel() : sim_control()
 sim_control_pllel::~sim_control_pllel()
 {
 #ifndef NDEBUG
-  cout << "sim_control_pllel destructor.\n";
+  spdlog::info("sim_control_pllel destructor");
 #endif
 }
 
@@ -120,8 +122,8 @@ int sim_control_pllel::Init(
 )
 {
 #ifndef NDEBUG
-  cout << "(sim_control_pllel::init) Initialising grid: infile = " << infile
-       << "\n";
+  spdlog::debug(
+      "(sim_control_pllel::init) Initialising grid: infile = {}", infile);
 #endif
   int err = 0;
 
@@ -134,7 +136,8 @@ int sim_control_pllel::Init(
   // not be.
   //
   setup_dataio_class(SimPM, typeOfFile);
-  if (!dataio->file_exists(infile)) rep.error("infile doesn't exist!", infile);
+  if (!dataio->file_exists(infile))
+    spdlog::error("{}: {}", "infile doesn't exist!", infile);
 
   if (typeOfFile == 2) {
     // FITS
@@ -165,7 +168,7 @@ int sim_control_pllel::Init(
     }
   }
   else
-    rep.error("bad input file type in Init", typeOfFile);
+    spdlog::error("{}: {}", "bad input file type in Init", typeOfFile);
 
   //
   // We need to decompose the domain here, because setup_grid() needs
@@ -174,7 +177,10 @@ int sim_control_pllel::Init(
   // should be ok because it only happens during initialisation.
   //
   err = dataio->ReadHeader(infile, SimPM);
-  rep.errorTest("PLLEL Init(): failed to read header", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "PLLEL Init(): failed to read header", 0,
+        err);
 
   // have to do something with SimPM.levels[0] because this
   // is used to set the local domain size in decomposeDomain
@@ -197,11 +203,17 @@ int sim_control_pllel::Init(
   std::vector<int> pbc = SimPM.get_pbc_bools();
   err                  = SimPM.levels[0].sub_domain.decomposeDomain(
       SimPM.ndim, SimPM.levels[0], std::move(pbc));
-  rep.errorTest("PLLEL Init():Couldn't Decompose Domain!", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "PLLEL Init():Couldn't Decompose Domain!",
+        0, err);
 
   // Now see if any commandline args override the Parameters from the file.
   err = override_params(narg, args);
-  rep.errorTest("(INIT::override_params) err!=0 Something went wrong", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "(INIT::override_params) err!=0 Something went wrong", 0, err);
 
   // Now set up the grid structure.
   grid.resize(1);
@@ -210,28 +222,39 @@ int sim_control_pllel::Init(
   // cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
   SimPM.dx             = grid[0]->DX();
   SimPM.levels[0].grid = grid[0];
-  rep.errorTest("(INIT::setup_grid) err!=0 Something went wrong", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "(INIT::setup_grid) err!=0 Something went wrong", 0, err);
 
   //
   // All grid parameters are now set, so I can set up the appropriate
   // equations/solver class.
   //
   err = set_equations(SimPM);
-  rep.errorTest("(INIT::set_equations) err!=0 Fix me!", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(INIT::set_equations) err!=0 Fix me!", 0,
+        err);
   spatial_solver->SetEOS(SimPM.gamma);
 
   //
   // Now setup Microphysics, if needed.
   //
   err = setup_microphysics(SimPM);
-  rep.errorTest("(INIT::setup_microphysics) err!=0", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(INIT::setup_microphysics) err!=0", 0,
+        err);
 
   //
   // Now assign data to the grid, either from file, or via some function.
   //
   err = dataio->ReadData(infile, grid, SimPM);
-  rep.errorTest(
-      "(INIT::assign_initial_data) err!=0 Something went wrong", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "(INIT::assign_initial_data) err!=0 Something went wrong", 0, err);
   //  cout <<"Read data finished\n";
 
   //
@@ -249,7 +272,7 @@ int sim_control_pllel::Init(
   //
   if (SimPM.eqntype == EQGLM && SimPM.timestep == 0) {
 #ifndef NDEBUG
-    cout << "Initial state, zero-ing glm variable.\n";
+    spdlog::info("Initial state, zero-ing glm variable");
 #endif
     c = grid[0]->FirstPt();
     do {
@@ -262,11 +285,17 @@ int sim_control_pllel::Init(
   //
   //  cout <<"starting BC setup\n";
   err = boundary_conditions(SimPM, grid);
-  rep.errorTest("(INIT::boundary_conditions) err!=0", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(INIT::boundary_conditions) err!=0", 0,
+        err);
 
   //  cout <<"assigning BC data\n";
   err = assign_boundary_data(SimPM, 0, grid[0], MP);
-  rep.errorTest("(INIT::assign_boundary_data) err!=0", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(INIT::assign_boundary_data) err!=0", 0,
+        err);
 
   //
   // Setup Raytracing on each grid, if needed.
@@ -277,7 +306,10 @@ int sim_control_pllel::Init(
   err += setup_evolving_RT_sources(SimPM);
   // cout <<"Updating evolving RT sources\n";
   err += update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
-  rep.errorTest("Failed to setup raytracer and/or microphysics", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "Failed to setup raytracer and/or microphysics", 0, err);
 
   //
   // If testing the code, this calculates the momentum and energy on the
@@ -292,14 +324,18 @@ int sim_control_pllel::Init(
   err += TimeUpdateExternalBCs(
       SimPM, 0, grid[0], spatial_solver, SimPM.simtime, SimPM.tmOOA,
       SimPM.tmOOA);
-  if (err) rep.error("first_order_update: error from bounday update", err);
+  if (err)
+    spdlog::error(
+        "{}: {}", "first_order_update: error from bounday update", err);
 
   //
   // If using opfreq_time, set the next output time correctly.
   //
   if (SimPM.op_criterion == 1) {
     if (SimPM.opfreq_time < TINYVALUE)
-      rep.error("opfreq_time not set right and is needed!", SimPM.opfreq_time);
+      spdlog::error(
+          "{}: {}", "opfreq_time not set right and is needed!",
+          SimPM.opfreq_time);
     SimPM.next_optime = SimPM.simtime + SimPM.opfreq_time;
     double tmp        = ((SimPM.simtime / SimPM.opfreq_time)
                   - floor(SimPM.simtime / SimPM.opfreq_time))
@@ -321,7 +357,8 @@ int sim_control_pllel::Init(
       textio = 0;
     }
     setup_dataio_class(SimPM, SimPM.typeofop);
-    if (!dataio) rep.error("INIT:: dataio initialisation", SimPM.typeofop);
+    if (!dataio)
+      spdlog::error("{}: {}", "INIT:: dataio initialisation", SimPM.typeofop);
   }
   dataio->SetSolver(spatial_solver);
   dataio->SetMicrophysics(MP);
@@ -332,7 +369,7 @@ int sim_control_pllel::Init(
 
   if (SimPM.timestep == 0) {
 #ifndef NDEBUG
-    cout << "(PARALLEL INIT) Writing initial data.\n";
+    spdlog::info("(PARALLEL INIT) Writing initial data");
 #endif
     output_data(grid);
   }
@@ -346,7 +383,6 @@ int sim_control_pllel::Init(
     }
   } while ((c = (grid[0])->NextPt_All(c)) != 0);
 #endif  // NDEBUG
-  cout << "------------------------------------------------------------\n";
   return (err);
 }
 
@@ -360,15 +396,18 @@ int sim_control_pllel::Time_Int(
     vector<class GridBaseClass *> &grid  ///< vector of grids.
 )
 {
-  cout << "-------------------------------------------------------\n";
-  cout << "(sim_control_pllel::time_int) STARTING TIME INTEGRATION."
-       << "\n";
-  cout << "-------------------------------------------------------\n";
+  spdlog::info(
+      "-------------------------------------------------------(sim_control_pllel::time_int) STARTING TIME INTEGRATION.\n-------------------------------------------------------\n");
   int err = 0;
   err     = update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
-  rep.errorTest("TIME_INT:: initial RT src update()", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "TIME_INT:: initial RT src update()", 0,
+        err);
   err = RT_all_sources(SimPM, grid[0], 0);
-  rep.errorTest("TIME_INT:: initial RT()", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "TIME_INT:: initial RT()", 0, err);
   int log_freq  = 10;
   SimPM.maxtime = false;
   clk.start_timer("time_int");
@@ -378,39 +417,44 @@ int sim_control_pllel::Time_Int(
     // Update RT sources.
     //
     err = update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
-    rep.errorTest("TIME_INT::update_RT_sources()", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "TIME_INT::update_RT_sources()", 0,
+          err);
     err = RT_all_sources(SimPM, grid[0], 0);
-    rep.errorTest("TIME_INT:: loop RT()", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "TIME_INT:: loop RT()", 0, err);
 
-    // clk.start_timer("advance_time");
+      // clk.start_timer("advance_time");
 #ifndef NDEBUG
-    cout << "MPI time_int: calculating dt\n";
+    spdlog::info("MPI time_int: calculating dt");
 #endif
     SimPM.levels[0].last_dt = SimPM.last_dt;
     err += calculate_timestep(SimPM, grid[0], 0);
-    rep.errorTest("TIME_INT::calc_timestep()", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "TIME_INT::calc_timestep()", 0, err);
 
 #ifndef NDEBUG
-    cout << "MPI time_int: stepping forward in time\n";
+    spdlog::info("MPI time_int: stepping forward in time");
 #endif
     advance_time(0, grid[0]);
     // cout <<"advance_time took "<<clk.stop_timer("advance_time")<<"
     // secs.\n";
 #ifndef NDEBUG
-    cout << "MPI time_int: finished timestep\n";
+    spdlog::info("MPI time_int: finished timestep");
     log_freq = 1;
 #endif
 
     if ((SimPM.levels[0].sub_domain.get_myrank() == 0)
         && (SimPM.timestep % log_freq) == 0) {
-      cout << "New time: " << SimPM.simtime;
-      cout << "\t dt=" << SimPM.dt;
-      cout << "\t steps: " << SimPM.timestep;
+      spdlog::debug(
+          "New time: {}\t dt={}\t steps: {}", SimPM.simtime, SimPM.dt,
+          SimPM.timestep);
       tsf = clk.time_so_far("time_int");
-      cout << "\t runtime: " << tsf << " s"
-           << "\n";
+      spdlog::debug("\t runtime: {} s", tsf);
 #ifndef NDEBUG
-      cout.flush();
 #endif  // NDEBUG
     }
 
@@ -422,30 +466,27 @@ int sim_control_pllel::Time_Int(
         SimPM.levels[0].sub_domain.global_operation_double("MAX", tsf);
     if (maxt > get_max_walltime()) {
       SimPM.maxtime = true;
-      cout << "RUNTIME>" << get_max_walltime() << " SECS.\n";
+      spdlog::debug("RUNTIME>{} SECS.\n", get_max_walltime());
     }
 
     err += output_data(grid);
     if (err != 0) {
-      cerr << "(TIME_INT::output_data) err!=0 Something went bad"
-           << "\n";
+      spdlog::error("(TIME_INT::output_data) err!=0 Something went bad");
       return (1);
     }
 
     err += check_eosim();
     if (err != 0) {
-      cerr << "(TIME_INT::) err!=0 Something went bad"
-           << "\n";
+      spdlog::error("(TIME_INT::) err!=0 Something went bad");
       return (1);
     }
   }
-  cout << "(sim_control_pllel::time_int) FINISHED - FINALISING SIM"
-       << "\n";
+  spdlog::info("(sim_control_pllel::time_int) FINISHED - FINALISING SIM");
   tsf = clk.time_so_far("time_int");
-  cout << "TOTALS: Nsteps: " << SimPM.timestep;
-  cout << ", sim-time: " << SimPM.simtime;
-  cout << ", wall-time: " << tsf;
-  cout << ", time/step: " << tsf / static_cast<double>(SimPM.timestep) << "\n";
+  spdlog::debug(
+      "TOTALS: Nsteps: {}, sim-time: {}, wall-time: {}, time/step: {}",
+      SimPM.timestep, SimPM.simtime, tsf,
+      tsf / static_cast<double>(SimPM.timestep));
 #ifdef RT_TESTING
   if (grid[0]->RT != 0) {
     //
@@ -461,12 +502,11 @@ int sim_control_pllel::Time_Int(
     wait = clk.pause_timer(t2);
     clk.start_timer(t3);
     run = clk.pause_timer(t3);
-    cout << "TOTALS RT: active: " << run << " idle: " << wait
-         << " total: " << total << "\n";
+    spdlog::debug("TOTALS RT: active: {} idle: {} total: {}", run, wait, total);
   }
 #endif
-  cout << "                               "
-          "**************************************\n\n";
+  spdlog::info(
+      "                               **************************************");
   return (0);
 }
 
@@ -491,7 +531,7 @@ int sim_control_pllel::calculate_timestep(
   t_mp  = calc_microphysics_dt(par, grid, l);
 
 #ifndef NDEBUG
-  cout << "calc_time: local t_dyn= " << t_dyn;
+  spdlog::debug("calc_time: local t_dyn= {}", t_dyn);
 #endif
 
   //
@@ -501,11 +541,10 @@ int sim_control_pllel::calculate_timestep(
   t_mp  = SimPM.levels[0].sub_domain.global_operation_double("MIN", t_mp);
 
 #ifndef NDEBUG
-  cout << " , global t_dyn= " << t_dyn << endl;
+  spdlog::debug(" , global t_dyn= {}", t_dyn);
   // Write step-limiting info every tenth timestep.
   if (t_mp < t_dyn && (par.timestep % 10) == 0)
-    cout << "Limiting timestep by MP: mp_t=" << t_mp << "\thydro_t=" << t_dyn
-         << "\n";
+    spdlog::debug("Limiting timestep by MP: mp_t={}\thydro_t={}", t_mp, t_dyn);
 #endif
 
   par.dt = min(t_dyn, t_mp);
@@ -521,9 +560,9 @@ int sim_control_pllel::calculate_timestep(
   t_cond = SimPM.levels[0].sub_domain.global_operation_double("MIN", t_cond);
 #ifndef NDEBUG
   if (t_cond < par.dt) {
-    cout << "PARALLEL CONDUCTION IS LIMITING TIMESTEP: t_c=";
-    cout << t_cond << ", t_m=" << t_mp;
-    cout << ", t_dyn=" << t_dyn << "\n";
+    spdlog::debug(
+        "PARALLEL CONDUCTION IS LIMITING TIMESTEP: t_c={}, t_m={}, t_dyn={}",
+        t_cond, t_mp, t_dyn);
   }
 #endif
   par.dt = min(par.dt, t_cond);
@@ -587,7 +626,8 @@ int sim_control_pllel::calculate_timestep(
   t_dyn = par.dt;
   t_mp  = SimPM.levels[0].sub_domain.global_operation_double("MIN", t_dyn);
   if (!pconst.equalD(t_dyn, t_mp))
-    rep.error("synchonisation trouble in timesteps!", t_dyn - t_mp);
+    spdlog::error(
+        "{}: {}", "synchonisation trouble in timesteps!", t_dyn - t_mp);
 #endif  // NDEBUG
 
   return 0;

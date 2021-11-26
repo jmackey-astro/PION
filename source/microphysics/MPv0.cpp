@@ -55,7 +55,11 @@
 
 #include "constants.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -79,9 +83,9 @@ MPv0::MPv0(
     microphysics_base(nv, ntr, tracers, ephys, rsrcs),
     kB(pconst.kB()), m_p(pconst.m_p())
 {
-  cout << "\t\tMPv0 constructor.\n";
-  cout << "WARNING: THIS CODE HAS NEVER BEEN USED IN PUBLICATIONS.\n";
-  cout << "IT SHOULD BE CONSIDERED UNTESTED AND UNRELIABLE.\n";
+  spdlog::info("\t\tMPv0 constructor");
+  spdlog::warning("WARNING: THIS CODE HAS NEVER BEEN USED IN PUBLICATIONS.\n"
+                  "IT SHOULD BE CONSIDERED UNTESTED AND UNRELIABLE");
   set_atomic_data();  // sets atomic data arrays to right values.
   //  cout <<"\t\tAtomic data set.\n";
   min_elecf = 1.e-5;  // minimum electron fraction (to seed reactions!).
@@ -101,19 +105,20 @@ MPv0::MPv0(
   //  cout <<"\t\tExtra Physics flags set.\n";
 
   if (!ep.cooling) {
-    cout << "\t\t cooling not needed.\n";
+    spdlog::info("\t\t cooling not needed");
     cool = 0;
   }
   else {
     cool = 0;
     cool = new CoolingFn(ep.cooling);
-    if (!cool) rep.error("CoolingFn init", cool);
+    if (!cool) spdlog::error("{}: {}", "CoolingFn init", cool);
   }
   //  cout <<"\t\tCooling Function set up.\n";
 
   // Set up tracer variables.
-  cout << "\t\tSetting up Tracer Variables.  Assuming tracers are last " << ntr
-       << " variables in state vec.\n";
+  spdlog::debug(
+      "\t\tSetting up Tracer Variables.  Assuming tracers are last {} variables in state vec",
+      ntr);
   int ftr = nv_prim - ntr;  // first tracer variable.
   string s;
 
@@ -247,13 +252,14 @@ MPv0::MPv0(
       nions++;
     }
     else
-      rep.error("Bad Tracer type!", s);
+      spdlog::error("{}: {}", "Bad Tracer type!", s);
   }
   if ((ct + colour) != len)
-    rep.error("didn't get all tracers", len - ct - colour);
+    spdlog::error("{}: {}", "didn't get all tracers", len - ct - colour);
   if (pvar.size() != static_cast<unsigned int>(ct))
-    rep.error(
-        "tracers init error", pvar.size() - static_cast<unsigned int>(ct));
+    spdlog::error(
+        "{}: {}", "tracers init error",
+        pvar.size() - static_cast<unsigned int>(ct));
   //  cout <<"\t\tset up tracers\n";
 
   MPv0::nvl = lvar.size();
@@ -269,7 +275,7 @@ MPv0::MPv0(
     //    ions.push_back("H1+"); // only ion is H 1+
     //    els.push_back("H"); // only element is H
     if (nions != 1) {
-      cerr << "Nions setup wrong.\n";
+      spdlog::error("Nions setup wrong");
       nions = 1;
     }
     if (nels != 1) {
@@ -283,9 +289,11 @@ MPv0::MPv0(
     // no chemistry, so better be doing cooling, otherwise no point
     // existing...
     if (!cool)
-      rep.error("set up MP but no microphysics and not doing cooling!", nions);
+      spdlog::error(
+          "{}: {}", "set up MP but no microphysics and not doing cooling!",
+          nions);
     if (nions != 0) {
-      cout << "nions = " << nions << ", setting to zero.\n";
+      spdlog::debug("nions = {}, setting to zero", nions);
       nions = 0;
     }
     ii   = 0;
@@ -294,13 +302,13 @@ MPv0::MPv0(
     return;
   }
   else
-    rep.error("No known chemistry defined.", chemtype);
+    spdlog::error("{}: {}", "No known chemistry defined.", chemtype);
 
   ii = 0;
   ee = 0;
   ii = new ion_struct *[nions];
   ee = new element_struct *[nels];
-  if (!ii || !ee) rep.error("MPv0 init, ii/ee malloc", ii);
+  if (!ii || !ee) spdlog::error("{}: {}", "MPv0 init, ii/ee malloc", ii);
 
   for (int i = 0; i < nions; i++) {
     ii[i]        = &ion_props[ions[i]];
@@ -328,20 +336,19 @@ MPv0::MPv0(
         ee[i]->ion_indices = 0;
       }
       ee[i]->ion_indices = new int[ct];
-      if (!ee[i]->ion_indices) rep.error("meminit MPv0()", 0);
+      if (!ee[i]->ion_indices) spdlog::error("{}: {}", "meminit MPv0()", 0);
       ct = 0;
       for (unsigned int v = 0; v < ee[i]->ions.size(); v++) {
         for (int vv = 0; vv < nions; vv++)
           if (ions[vv] == ee[i]->ions[v]) {
-            cout << "\t\tFor element " << ee[i]->el << " adding ion "
-                 << ions[vv] << " with index " << ii[vv]->index << "\n";
-            ee[i]->ion_indices[ct] = ii[vv]->index;
-            ct++;
+              spdlog::debug("\t\tFor element {} adding ion {} with index {}", ee[i]->el, ions[vv], vv]->index);
+              ee[i]->ion_indices[ct] = ii[vv]->index;
+              ct++;
           }
       }
     }
     else {
-      cout << "!!!!!!!!!!!!-- No ions found for element " << ee[i]->el << "\n";
+      spdlog::debug("!!!!!!!!!!!!-- No ions found for element {}", ee[i]->el);
       if (ee[i]->ion_indices) {
         delete[] ee[i]->ion_indices;
         ee[i]->ion_indices = 0;
@@ -355,7 +362,7 @@ MPv0::MPv0(
   // At the moment I assume that im1 should always be tracked, as I don't
   // explicitly include the neutral stage as a variable usually, but I do want
   // to track it.
-  cout << "setting higher/lower stages.\n";
+  spdlog::info("setting higher/lower stages");
   for (int i = 0; i < nions; i++) {
     bool higherstage = false, lowerstage = false;
     for (int j = 0; j < nions; j++) {
@@ -380,7 +387,7 @@ MPv0::MPv0(
       ii[i]->iim1 = &ion_props[ii[i]->im1];
     }
   }
-  cout << "setting higher/lower stages.\n";
+  spdlog::info("setting higher/lower stages");
 
   for (int i = 0; i < nions; i++)
     show_ion_struct(ii[i]);
@@ -395,7 +402,6 @@ MPv0::MPv0(
   cout<<"\n";
   */
   //  cout <<"\t\tinit done.\n";
-  return;
 }
 
 // ##################################################################
@@ -403,7 +409,7 @@ MPv0::MPv0(
 
 void MPv0::copy_ion_struct(const ion_struct src, ion_struct *dest)
 {
-  rep.error("unused function. test me!", -99);
+  spdlog::error("{}: {}", "unused function. test me!", -99);
   dest->ion     = src.ion;
   dest->ip1     = src.ip1;
   dest->im1     = src.im1;
@@ -420,7 +426,7 @@ void MPv0::copy_ion_struct(const ion_struct src, ion_struct *dest)
 void MPv0::copy_element_struct(
     const struct element_struct src, struct element_struct *dest)
 {
-  rep.error("unused function. test me!", -99);
+  spdlog::error("{}: {}", "unused function. test me!", -99);
   dest->el       = src.el;
   dest->nspecies = src.nspecies;
   dest->mass     = src.mass;
@@ -434,7 +440,7 @@ void MPv0::copy_element_struct(
   }
   if (dest->nspecies > 0) dest->ion_indices = new int[dest->nspecies];
   if (!dest->ion_indices)
-    rep.error("meminit copy_element_struct()", dest->ion_indices);
+    spdlog::error("{}: {}", "meminit copy_element_struct()", dest->ion_indices);
   for (int i = 0; i < dest->nspecies; i++)
     dest->ion_indices[i] = src.ion_indices[i];
   return;
@@ -445,13 +451,10 @@ void MPv0::copy_element_struct(
 
 void MPv0::show_ion_struct(const ion_struct *i)
 {
-  cout << "\t\tion: " << i->ion << "\tel: " << i->el << " index:" << i->index
-       << " pv_index:" << i->pv_index;
-  cout << "\tpot:" << i->ion_pot << "  charge:" << i->charge << "\n";
-  cout << "\t\t\tip1: " << i->ip1 << " im1: " << i->im1 << " el:" << i->el
-       << "\n";
-  cout << "\t\t\tiip1: " << i->iip1 << "  iim1: " << i->iim1 << "\n";
-  return;
+  spdlog::debug(
+      "\t\tion: {}\tel: {} index:{} pv_index:{}\tpot:{}  charge:{}\n\t\t\tip1: {} im1: {} el:{}\n\t\t\tiip1: {}  iim1: {}",
+      i->ion, i->el, i->index, i->pv_index, i->ion_pot, i->charge, i->ip1,
+      i->im1, i->el, i->iip1, i->iim1);
 }
 
 // ##################################################################
@@ -469,7 +472,7 @@ MPv0::~MPv0()
   }
   if (ee) {
     for (int i = 0; i < nels; i++) {
-      cout << "deleting " << i << "\n";
+      spdlog::debug("deleting {}", i);
       delete[] ee[i]->ion_indices;
     }
     delete[] ee;
@@ -512,7 +515,7 @@ int MPv0::Set_Eint(
 )
 {
   if (T <= 0) {
-    cout << "negative temperature in Set_Eint().\n";
+    spdlog::info("negative temperature in Set_Eint()");
     return 1;
   }
   P[lv_eint] = Get_nTot(P) * kB * T / (gamma - 1.);
@@ -561,13 +564,13 @@ double MPv0::neutral_fraction(const double *P, const ion_struct *i)
   }
   //  for (int j=0; j<e->nspecies; j++) nf -= P[lvar[e->ions[j+1]]];
   if (nf < 0.) {
-    // rep.error("neutral_fraction() too small",nf);
+    // spdlog::error("{}: {}", "neutral_fraction() too small",nf);
     //    cout <<"neutral fraction negative: "<<nf<<"   correcting."<<"\n";
     nf = 0.0;
   }
   else if (nf > 1.0) {
     //    rep.printVec("P",P,nvl);
-    //    rep.error("neutral_fraction() too large",nf);
+    //    spdlog::error("{}: {}", "neutral_fraction() too large",nf);
     nf = 1.0;
   }
   return nf;
@@ -645,15 +648,16 @@ int MPv0::convert_prim2local(
       // loop over all ions.
       // cout <<"setting ion fraction.\n";
       xi = ii[i]->index;  // current ion index in local array.
-      if (xi >= nvl) rep.error("more ions than variables", xi - nvl);
+      if (xi >= nvl)
+        spdlog::error("{}: {}", "more ions than variables", xi - nvl);
       p_local[xi] = p_in[ii[i]->pv_index];
 
       if (p_local[xi] > 1.01) {
-        rep.printVec("P", p_local, nvl);
-        cerr << "ion fraction >1! for ion " << ii[i]->ion << " at value "
-             << p_local[xi] - 1. << "\n";
-        cout << "neutral fraction: " << neutral_fraction(p_local, ii[i])
-             << "\n";
+        spdlog::debug("P : {}", p_local);
+        spdlog::error(
+            "ion fraction >1! for ion {} at value {}", ii[i]->ion,
+            p_local[xi] - 1.);
+        spdlog::debug("neutral fraction: {}", neutral_fraction(p_local, ii[i]));
         ;
         //	return 1;
         // p_local[xi] = 1.0;
@@ -666,7 +670,7 @@ int MPv0::convert_prim2local(
     // no chemical species, not even electron fraction.
   }
   else {
-    rep.error("ni<0 in MPv0::TimeUpdateMP", nions);
+    spdlog::error("{}: {}", "ni<0 in MPv0::TimeUpdateMP", nions);
   }
 
   if (ep.phot_ionisation) {
@@ -716,7 +720,7 @@ int MPv0::TimeUpdate_OnlyCooling(
     double *ttt)
 {
   //  cout <<"only cooling: nvl = "<<nvl<<"\n";
-  if (nvl != 2) rep.error("nvl wrong", nvl);
+  if (nvl != 2) spdlog::error("{}: {}", "nvl wrong", nvl);
   int err = 0;
   gamma   = g;
 
@@ -749,8 +753,8 @@ int MPv0::TimeUpdate_OnlyCooling(
     err = Step_RK4(nvl, P, 0.0, dt, P);
   }
   else
-    rep.error("this integration method not known.", sw_int);
-  if (err) rep.error("integration failed.", err);
+    spdlog::error("{}: {}", "this integration method not known.", sw_int);
+  if (err) spdlog::error("{}: {}", "integration failed.", err);
   //  rep.printVec("p_new",P,nvl);
 
   *ttt = P[lv_eint] * (gamma - 1.0) / kB
@@ -810,21 +814,21 @@ int MPv0::TimeUpdateMP(
   }
   else if (sw_int == 2) {
     // DANGEROUS!!!
-    cout << "Requesting single step RK4 integration for MPv0! Are you sure "
-            "about this?\n";
+    spdlog::warn(
+        "Requesting single step RK4 integration for MPv0! Are you sure about this?");
     err = Step_RK4(nvl, P, 0.0, dt, P);
   }
   else
-    rep.error("this integration method not known.", sw_int);
-  if (err) rep.error("integration failed.", err);
+    spdlog::error("{}: {}", "this integration method not known.", sw_int);
+  if (err) spdlog::error("{}: {}", "integration failed.", err);
   //  rep.printVec("p_new",P,nvl);
 
   int xi = 0;
   for (int i = 0; i < nions; i++) {
     xi = ii[i]->index;
     if (P[xi] >= 1.0001) {
-      cout << "ion: " << ii[i]->ion << " has i-frac=" << P[xi]
-           << "  ...setting to 1.\n";
+      spdlog::debug(
+          "ion: {} has i-frac={}  ...setting to 1", ii[i]->ion, P[xi]);
       P[xi] = 1.0;
     }
   }
@@ -864,7 +868,9 @@ int MPv0::TimeUpdate_RTsinglesrc(
 )
 {
   if (!ep.phot_ionisation)
-    rep.error("RT requested, but phot_ionisation not set!", ep.phot_ionisation);
+    spdlog::error(
+        "{}: {}", "RT requested, but phot_ionisation not set!",
+        ep.phot_ionisation);
   MPv0::tau_cell = 0.0;
   MPv0::photons_in =
       phot_in;  // units are photons/cm^3/s (/Hz if using frequency info).
@@ -884,7 +890,8 @@ int MPv0::TimeUpdate_RTsinglesrc(
   FUV_extinction = 1.086 * 5.0e-22 * tau2cell
                    / 6.3e-18;  // Extinction from Henney et al. 2009.
   FUV_attenuated_flux = FUV_unattenuated_flux * exp(-1.9 * FUV_extinction);
-  rep.error("New interface is only for MP_Hydrogen so far", -1234567);
+  spdlog::error(
+      "{}: {}", "New interface is only for MP_Hydrogen so far", -1234567);
 
   MPv0::path_length = ds;
   double temp       = 0.0;
@@ -928,7 +935,7 @@ int MPv0::dPdt_OnlyCooling(
   R[lv_eint] = -cool->CoolingRate(
       temp, 1.0, P[lv_nh], FUV_unattenuated_flux, FUV_extinction);
   if (R[lv_eint] > 0) {
-    cout << "rate positive!: " << R[lv_eint] << "\n";
+    spdlog::debug("rate positive!: {}", R[lv_eint]);
     R[lv_eint] = 0;
   }
   // R[lv_eint] /= 10.0; ///??? What's this for????
@@ -944,7 +951,7 @@ int MPv0::dPdt(
     double *R         ///< Rate Vector to write to.
 )
 {
-  if (nv != nvl) rep.error("variables wrong!", nv - nvl);
+  if (nv != nvl) spdlog::error("{}: {}", "variables wrong!", nv - nvl);
 
   // first if just cooling, call a different function
   if (nions == 0) return dPdt_OnlyCooling(nv, P, R);
@@ -956,7 +963,7 @@ int MPv0::dPdt(
   double temp        = 0.0;
   double temperature = 0.0;
 
-  if (nions < 0) rep.error("nions<0 in MPv0::dPdt", nions);
+  if (nions < 0) spdlog::error("{}: {}", "nions<0 in MPv0::dPdt", nions);
 
   struct ion_struct *iip1 = 0, *iim1 = 0;
   temperature = Get_Temp(P);
@@ -1034,7 +1041,8 @@ int MPv0::dPdt(
         // if we are using a cooling curve, then we don't want to double
         // count this!
       }
-      //      else rep.error("no lower stage to recombine to!",iim1);
+      //      else spdlog::error("{}: {}", "no lower stage to recombine
+      //      to!",iim1);
       if (iip1) {
         // may or may not have higher stage.
         temp = Rad_Recomb_rate(temperature, iip1) * P[lv_elec]
@@ -1133,7 +1141,7 @@ double MPv0::phot_xsection(const struct ion_struct *ci)
   if (ci->i == H_1p)
     return 6.3e-18;  // in cm^2
   else {
-    cout << "unknown photo-ionisation x-section\n";
+    spdlog::info("unknown photo-ionisation x-section");
     return 0.0;
   }
 }
@@ -1326,7 +1334,7 @@ double MPv0::Coll_Ion_rate(
     K  = 0.16;
   }
   else
-    rep.error("Bad ion in Coll_Ion_rate()", ii);
+    spdlog::error("{}: {}", "Bad ion in Coll_Ion_rate()", ii);
 
   //  if (ci->i == C3p) {
   //  cout <<"temp="<<ci->ion_pot/kB/temperature<<" and ci
@@ -1496,7 +1504,7 @@ double MPv0::Rad_Recomb_rate(
                  + (1. + a2) * log(1. + sqrt(temperature / a4))));
   }
   else
-    rep.error("unknown ion in Rad_Recomb_rate()", ii);
+    spdlog::error("{}: {}", "unknown ion in Rad_Recomb_rate()", ii);
   return r;
 #endif  // RAGA_RATES
 }
@@ -1618,7 +1626,7 @@ double MPv0::rad_recomb(double T, enum species i)
                  + (1. + a2) * log(1. + sqrt(T / a4))));
   }
   else
-    rep.error("unknown ion in Rad_Recomb_rate()", ii);
+    spdlog::error("{}: {}", "unknown ion in Rad_Recomb_rate()", ii);
   return r;
 }
 
@@ -1679,7 +1687,7 @@ double MPv0::dielec_recomb(double T, enum species i)
   // else if (i=="") {
   //}
   else {
-    cout << "unknown ion: " << i << "\n";
+    spdlog::debug("unknown ion: {}", i);
     return -1.0;
   }
 
@@ -1728,7 +1736,7 @@ int MPv0::Init_ionfractions(
     T = Get_Temp(p_local);
   //  cout <<"Temp = "<<T<<"\n";
   if (nions <= 0) {
-    cout << "no ions to init.\n";
+    spdlog::info("no ions to init");
     err += convert_local2prim(p_local, p_prim, p_prim, gamma);
     return err;
   }
@@ -2443,7 +2451,7 @@ double MPv0::timescales(
     //
     //  cout <<"gamma: "<<gamma<<"\n";
     //  cout <<"only cooling: nvl = "<<nvl<<"\n";
-    if (nvl != 2) rep.error("nvl wrong", nvl);
+    if (nvl != 2) spdlog::error("{}: {}", "nvl wrong", nvl);
     gamma = gam;
     // set up local state vector.
     double P[nvl];
@@ -2481,7 +2489,9 @@ double MPv0::timescales(
     return mintime;
   }
   else {
-    rep.error("Can't limit timestep in Microphysics unless only cooling", 99);
+    spdlog::error(
+        "{}: {}", "Can't limit timestep in Microphysics unless only cooling",
+        99);
   }
   return VERY_LARGE_VALUE;
 }

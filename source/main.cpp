@@ -53,7 +53,6 @@
 /// - 2015.04.30 JM: tidying up.
 /// - 2018.04.27 JM: removed some args (simpler command-line running).
 
-#include <iostream>
 #include <sstream>
 using namespace std;
 
@@ -74,7 +73,8 @@ using namespace std;
 #endif /* PARALLEL */
 #endif /* PION_NESTED */
 
-#include "tools/reporting.h"
+#include <spdlog/sinks/rotating_file_sink.h>
+#include <spdlog/spdlog.h>
 
 #ifdef PION_OMP
 #include <omp.h>
@@ -83,6 +83,24 @@ using namespace std;
 int main(int argc, char **argv)
 {
   int err = 0;
+
+  auto max_logfile_size = 1048576 * 5;
+  auto max_logfiles     = 3;
+#ifdef PARALLEL
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "pion_pre_mpi", "pion.log", max_logfile_size, max_logfiles));
+#else
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "pion", "pion.log", max_logfile_size, max_logfiles));
+#endif /* PARALLEL */
+
+#ifdef NDEBUG
+  spdlog::set_level(spdlog::level::err);
+  spdlog::flush_on(spdlog::level::err);
+#else
+  spdlog::set_level(spdlog::level::trace);
+  spdlog::flush_on(spdlog::level::trace);
+#endif
 
   //
   // Set up simulation controller class.
@@ -103,50 +121,30 @@ int main(int argc, char **argv)
 #endif /* PARALLEL */
 #endif /* PION_NESTED */
 
+  if (!sim_control)
+    spdlog::error(
+        "{}: {}", "(pion) Couldn't initialise sim_control",
+        fmt::ptr(sim_control));
+
 #ifdef PARALLEL
   int myrank = sim_control->SimPM.levels[0].sub_domain.get_myrank();
   int nproc  = sim_control->SimPM.levels[0].sub_domain.get_nproc();
-  rep.set_rank(myrank);
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "pion", "pion_process_" + to_string(myrank) + ".log", max_logfile_size,
+      max_logfiles));
 #endif
 
-  if (!sim_control)
-    rep.error("(pion) Couldn't initialise sim_control", sim_control);
   //
   // Check that command-line arguments are sufficient.
   //
   if (argc < 2) {
     sim_control->print_command_line_options(argc, argv);
-    rep.error("Bad arguments", argc);
+    spdlog::error("{}: {}", "Bad arguments", argc);
   }
 
   string *args = new string[argc];
   for (int i = 0; i < argc; i++)
     args[i] = argv[i];
-
-  // Set up reporting class.
-  for (int i = 0; i < argc; i++) {
-    if (args[i].find("redirect=") != string::npos) {
-      string outpath = (args[i].substr(9));
-#ifdef PARALLEL
-      ostringstream path;
-      path << outpath << "_" << myrank << "_";
-      outpath = path.str();
-      if (myrank == 0) {
-        cout << "\tRedirecting stdout to " << outpath << "info.txt"
-             << "\n";
-      }
-#else
-      cout << "Redirecting stdout to " << outpath << "info.txt"
-           << "\n";
-#endif
-      rep.redirect(outpath);
-    }
-  }
-#ifdef PARALLEL
-#ifdef NDEBUG
-  rep.kill_stdout_from_other_procs(0);
-#endif
-#endif
 
 #ifdef PION_OMP
   // set number of OpenMP threads, if included
@@ -156,10 +154,10 @@ int main(int argc, char **argv)
     if (args[i].find("omp-nthreads=") != string::npos) {
       nth = atoi((args[i].substr(13)).c_str());
       if (nth > omp_get_num_procs()) {
-        cout << "\toverride: requested too many threads.\n";
+        spdlog::warn("override: requested too many threads");
         nth = min(nth, omp_get_num_procs());
       }
-      cout << "\toverride: setting OpenMP N-threads to " << nth << "\n";
+      spdlog::warn("override: setting OpenMP N-threads to {}");
       found_omp = true;
     }
   }
@@ -175,32 +173,31 @@ int main(int argc, char **argv)
   parallelism += "/OpenMP";
 #endif /* PION_OMP */
 #elif PION_OMP
-  string parallelism = "OpenMP";
+  string parallelism             = "OpenMP";
 #else
   string parallelism = "SERIAL";
 #endif /* PARALLEL */
 
-  cout << "-------------------------------------------------------\n"
-       << "---------   pion " << grid_type << " " << parallelism
-       << " v2.0  running   ---------------\n"
-       << "-------------------------------------------------------\n\n";
+  spdlog::info(
+      "-------------------------------------------------------\n---------   pion {} {} v2.0  running   ---------------\n-------------------------------------------------------",
+      grid_type, parallelism);
 
   // Set what type of file to open: 1=parameterfile, 2/5=restartfile.
   int ft;
   if (args[1].find(".silo") != string::npos) {
-    cout << "(pion) reading ICs from SILO IC file " << args[1] << "\n";
+    spdlog::info("(pion) reading ICs from SILO IC file {}", args[1]);
     ft = 5;
   }
   else if (args[1].find(".fits") != string::npos) {
-    cout << "(pion) reading ICs from Fits ICfile " << args[1] << "\n";
+    spdlog::info("(pion) reading ICs from Fits ICfile {}", args[1]);
     ft = 2;
   }
   else {
-    cout << "(pion) IC file not fits/silo: assuming text parameterfile "
-         << args[1] << "\n";
+    spdlog::info(
+        "(pion) IC file not fits/silo: assuming text parameterfile {}",
+        args[1]);
     ft = 1;
   }
-
   //
   // set up vector of grids.
   //
@@ -214,16 +211,18 @@ int main(int argc, char **argv)
     if (args[i].find("maxwalltime=") != string::npos) {
       double tmp = atof((args[i].substr(12)).c_str());
       if (isnan(tmp) || isinf(tmp) || tmp < 0.0)
-        rep.error("Don't recognise max walltime as a valid runtime!", tmp);
+        spdlog::error(
+            "{}: {}", "Don't recognise max walltime as a valid runtime!", tmp);
 
       sim_control->set_max_walltime(tmp * 3600.0);
 
 #ifdef PARALLEL
       if (myrank == 0) {
 #endif
-        cout << "\tResetting MAXWALLTIME to ";
-        cout << sim_control->get_max_walltime() << " seconds, or ";
-        cout << sim_control->get_max_walltime() / 3600.0 << " hours.\n";
+        spdlog::info(
+            "\tResetting MAXWALLTIME to {} seconds, or {} hours.\n",
+            sim_control->get_max_walltime(),
+            sim_control->get_max_walltime() / 3600.0);
 #ifdef PARALLEL
       }
 #endif
@@ -236,8 +235,7 @@ int main(int argc, char **argv)
   //
   err = sim_control->Init(args[1], ft, argc, args, grid);
   if (err != 0) {
-    cerr << "(PION) err!=0 from Init"
-         << "\n";
+    spdlog::error("(PION) err!=0 from Init");
     delete sim_control;
     return 1;
   }
@@ -246,8 +244,7 @@ int main(int argc, char **argv)
   //
   err += sim_control->Time_Int(grid);
   if (err != 0) {
-    cerr << "(PION) err!=0 from Time_Int"
-         << "\n";
+    spdlog::error("(PION) err!=0 from Time_Int");
     delete sim_control;
     return 1;
   }
@@ -256,8 +253,7 @@ int main(int argc, char **argv)
   //
   err += sim_control->Finalise(grid);
   if (err != 0) {
-    cerr << "(PION) err!=0 from Finalise"
-         << "\n";
+    spdlog::error("(PION) err!=0 from Finalise");
     delete sim_control;
     return 1;
   }
@@ -269,10 +265,9 @@ int main(int argc, char **argv)
   delete[] args;
   args = 0;
 
-  cout << "-------------------------------------------------------\n"
-       << "---------   pion " << grid_type << " " << parallelism
-       << " v2.0  finished ---------------\n"
-       << "-------------------------------------------------------\n\n";
+  spdlog::info(
+      "-------------------------------------------------------\n---------   pion {} {} v2.0  finished ---------------\n-------------------------------------------------------",
+      grid_type, parallelism);
 
   return 0;
 }

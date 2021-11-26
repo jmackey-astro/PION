@@ -11,7 +11,11 @@
 #include "defines/testing_flags.h"
 
 #include "assign_update_bcs_NG_MPI.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 using namespace std;
 
 //#define TEST_MPI_NG
@@ -35,152 +39,156 @@ int assign_update_bcs_NG_MPI::assign_boundary_data(
   //
   for (size_t i = 0; i < grid->BC_bd.size(); i++) {
 #ifdef TEST_MPI_NG
-    cout << "LEVEL " << level << ": NG grid assign BCs: BC[" << i
-         << "] starting.\n";
-    cout.flush();
+    spdlog::debug("LEVEL {}: NG grid assign BCs: BC[{}] starting.\n", level, i);
 #endif
     b = grid->BC_bd[i];
     switch (b->itype) {
       case PERIODIC:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": NG_MPI_Assign: assigning bc " << i;
-        cout << " with type " << b->type << "\n";
-        cout.flush();
+        spdlog::debug(
+            "LEVEL {}: NG_MPI_Assign: assigning bc {} with type {}", level, i,
+            b->type);
 #endif
         err += BC_assign_PERIODIC(par, level, grid, b);
         break;
       case BCMPI:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": NG_MPI_Assign: assigning bc " << i;
-        cout << " with type " << b->type << "\n";
-        cout.flush();
+        spdlog::debug(
+            "LEVEL {}: NG_MPI_Assign: assigning bc {} with type {}", level, i,
+            b->type);
 #endif
         err += BC_assign_BCMPI(par, level, grid, grid->BC_bd[i], BC_MPItag);
         break;
       case OUTFLOW:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": NG_MPI_Assign: assigning bc " << i;
-        cout << " with type " << b->type << "\n";
-        cout.flush();
+        spdlog::debug(
+            "LEVEL {}: NG_MPI_Assign: assigning bc {} with type {}", level, i,
+            b->type);
 #endif
         err += BC_assign_OUTFLOW(par, grid, b);
         break;
       case ONEWAY_OUT:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": NG_MPI_Assign: assigning bc " << i;
-        cout << " with type " << b->type << "\n";
-        cout.flush();
+        spdlog::debug(
+            "LEVEL {}: NG_MPI_Assign: assigning bc {} with type {}", level, i,
+            b->type);
 #endif
         err += BC_assign_ONEWAY_OUT(par, grid, b);
         break;
       case INFLOW:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": NG_MPI_Assign: assigning bc " << i;
-        cout << " with type " << b->type << "\n";
-        cout.flush();
+        spdlog::debug(
+            "LEVEL {}: NG_MPI_Assign: assigning bc {} with type {}", level, i,
+            b->type);
 #endif
         err += BC_assign_INFLOW(par, grid, b);
         break;
       case REFLECTING:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": NG_MPI_Assign: assigning bc " << i;
-        cout << " with type " << b->type << "\n";
-        cout.flush();
+        spdlog::debug(
+            "LEVEL {}: NG_MPI_Assign: assigning bc {} with type {}", level, i,
+            b->type);
 #endif
         err += BC_assign_REFLECTING(par, grid, b);
         break;
       case AXISYMMETRIC:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": NG_MPI_Assign: assigning bc " << i;
-        cout << " with type " << b->type << "\n";
-        cout.flush();
+        spdlog::debug(
+            "LEVEL {}: NG_MPI_Assign: assigning bc {} with type {}", level, i,
+            b->type);
 #endif
         err += BC_assign_AXISYMMETRIC(par, grid, b);
         break;
       case FIXED:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": NG_MPI_Assign: assigning bc " << i;
-        cout << " with type " << b->type << "\n";
+        spdlog::debug(
+            "LEVEL {}: NG_MPI_Assign: assigning bc {} with type {}", level, i,
+            b->type);
 #endif
         err += BC_assign_FIXED(par, grid, b);
         break;
       case JETBC:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": NG_MPI_Assign: assigning bc " << i;
-        cout << " with type " << b->type << "\n";
+        spdlog::debug(
+            "LEVEL {}: NG_MPI_Assign: assigning bc {} with type {}", level, i,
+            b->type);
 #endif
         err += BC_assign_JETBC(par, grid, b);
         break;
       case JETREFLECT:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": NG_MPI_Assign: assigning bc " << i;
-        cout << " with type " << b->type << "\n";
+        spdlog::debug(
+            "LEVEL {}: NG_MPI_Assign: assigning bc {} with type {}", level, i,
+            b->type);
 #endif
         err += BC_assign_JETREFLECT(par, grid, b);
         break;
       case DMACH:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": NG_MPI_Assign: assigning bc " << i;
-        cout << " with type " << b->type << "\n";
+        spdlog::debug(
+            "LEVEL {}: NG_MPI_Assign: assigning bc {} with type {}", level, i,
+            b->type);
 #endif
         err += BC_assign_DMACH(par, grid, b);
         break;
       case DMACH2:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": NG_MPI_Assign: assigning bc " << i;
-        cout << " with type " << b->type << "\n";
+        spdlog::debug(
+            "LEVEL {}: NG_MPI_Assign: assigning bc {} with type {}", level, i,
+            b->type);
 #endif
         err += BC_assign_DMACH2(par, grid, b);
         break;
       case STWIND:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": NG_MPI_Assign: assigning bc " << i;
-        cout << " with type " << b->type << "\n";
+        spdlog::debug(
+            "LEVEL {}: NG_MPI_Assign: assigning bc {} with type {}", level, i,
+            b->type);
 #endif
         err += BC_assign_STWIND(par, grid, b, mp);
         break;
       case FINE_TO_COARSE_SEND:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": NG_MPI_Assign: assigning bc " << i;
-        cout << " with type " << b->type << "\n";
-        cout.flush();
+        spdlog::debug(
+            "LEVEL {}: NG_MPI_Assign: assigning bc {} with type {}", level, i,
+            b->type);
 #endif
         err += BC_assign_FINE_TO_COARSE_SEND(par, level, b);
         break;
 
       case FINE_TO_COARSE_RECV:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": NG_MPI_Assign: assigning bc " << i;
-        cout << " with type " << b->type << "\n";
-        cout.flush();
+        spdlog::debug(
+            "LEVEL {}: NG_MPI_Assign: assigning bc {} with type {}", level, i,
+            b->type);
 #endif
         err += BC_assign_FINE_TO_COARSE_RECV(par, level, b);
         break;
 
       case COARSE_TO_FINE_SEND:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": NG_MPI_Assign: assigning bc " << i;
-        cout << " with type " << b->type << "\n";
-        cout.flush();
+        spdlog::debug(
+            "LEVEL {}: NG_MPI_Assign: assigning bc {} with type {}", level, i,
+            b->type);
 #endif
         err += BC_assign_COARSE_TO_FINE_SEND(par, level, b);
         break;
 
       case COARSE_TO_FINE_RECV:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": NG_MPI_Assign: assigning bc " << i;
-        cout << " with type " << b->type << "\n";
-        cout.flush();
+        spdlog::debug(
+            "LEVEL {}: NG_MPI_Assign: assigning bc {} with type {}", level, i,
+            b->type);
 #endif
         err += BC_assign_COARSE_TO_FINE_RECV(par, level, b);
         break;
 
       default:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": leaving BC " << i
-             << " alone in NG grid assign fn.\n";
+        spdlog::debug(
+            "LEVEL {}: leaving BC {} alone in NG grid assign fn", level, i);
 #endif
-        rep.error("Unhandled boundary", 2);
+        spdlog::error("{}: {}", "Unhandled boundary", 2);
         break;
     }
   }
@@ -204,7 +212,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
     const int maxstep)
 {
 #ifdef TEST_MPI_NG
-  cout << "LEVEL " << level << ": update_bcs_NG_MPI: ext BC update" << endl;
+  spdlog::debug("LEVEL {}: update_bcs_NG_MPI: ext BC update{}", level, endl);
 #endif
 
   struct boundary_data *b;
@@ -234,97 +242,108 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
   }
 
 #ifdef TEST_MPI_NG
-  rep.printVec("TimeUpdateExternalBCs Map", map, nb);
-  cout << "LEVEL " << level << ": BC_nbd = " << grid->BC_bd.size() << "\n";
+  spdlog::debug("TimeUpdateExternalBCs Map : {}", map);
+  spdlog::debug("LEVEL {}: BC_nbd = {}", level, grid->BC_bd.size());
 #endif
   for (i = 0; i < grid->BC_bd.size(); i++) {
     b = grid->BC_bd[map[i]];
 #ifdef TEST_MPI_NG
-    cout << "updating bc " << map[i] << " with type " << b->type << "\n";
-    cout.flush();
+    spdlog::debug("updating bc {} with type {}", map[i], b->type);
 #endif
     switch (b->itype) {
       case PERIODIC:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": update_bcs_NG_MPI: updating bc ";
-        cout << map[i] << " with type " << b->type << "\n";
+        spdlog::debug(
+            "LEVEL {}: update_bcs_NG_MPI: updating bc {} with type {}", level,
+            map[i], b->type);
 #endif
         err += BC_update_PERIODIC(par, level, grid, b, cstep, maxstep);
         break;
       case BCMPI:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": update_bcs_NG_MPI: updating bc ";
-        cout << map[i] << " with type " << b->type << "\n";
+        spdlog::debug(
+            "LEVEL {}: update_bcs_NG_MPI: updating bc {} with type {}", level,
+            map[i], b->type);
 #endif
         err += BC_update_BCMPI(par, level, grid, b, cstep, maxstep, BC_MPItag);
         break;
       case OUTFLOW:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": update_bcs_NG_MPI: updating bc ";
-        cout << map[i] << " with type " << b->type << "\n";
+        spdlog::debug(
+            "LEVEL {}: update_bcs_NG_MPI: updating bc {} with type {}", level,
+            map[i], b->type);
 #endif
         err += BC_update_OUTFLOW(par, grid, b, cstep, maxstep);
         break;
       case ONEWAY_OUT:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": update_bcs_NG_MPI: updating bc ";
-        cout << map[i] << " with type " << b->type << "\n";
+        spdlog::debug(
+            "LEVEL {}: update_bcs_NG_MPI: updating bc {} with type {}", level,
+            map[i], b->type);
 #endif
         err += BC_update_ONEWAY_OUT(par, grid, b, cstep, maxstep);
         break;
       case INFLOW:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": update_bcs_NG_MPI: updating bc ";
-        cout << map[i] << " with type " << b->type << "\n";
+        spdlog::debug(
+            "LEVEL {}: update_bcs_NG_MPI: updating bc {} with type {}", level,
+            map[i], b->type);
 #endif
         err += BC_update_INFLOW(par, grid, b, cstep, maxstep);
         break;
       case REFLECTING:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": update_bcs_NG_MPI: updating bc ";
-        cout << map[i] << " with type " << b->type << "\n";
+        spdlog::debug(
+            "LEVEL {}: update_bcs_NG_MPI: updating bc {} with type {}", level,
+            map[i], b->type);
 #endif
         err += BC_update_REFLECTING(par, grid, b, cstep, maxstep);
         break;
       case AXISYMMETRIC:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": update_bcs_NG_MPI: updating bc ";
-        cout << map[i] << " with type " << b->type << "\n";
+        spdlog::debug(
+            "LEVEL {}: update_bcs_NG_MPI: updating bc {} with type {}", level,
+            map[i], b->type);
 #endif
         err += BC_update_AXISYMMETRIC(par, grid, b, cstep, maxstep);
         break;
       case FIXED:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": update_bcs_NG_MPI: updating bc ";
-        cout << map[i] << " with type " << b->type << "\n";
+        spdlog::debug(
+            "LEVEL {}: update_bcs_NG_MPI: updating bc {} with type {}", level,
+            map[i], b->type);
 #endif
         err += BC_update_FIXED(par, grid, b, cstep, maxstep);
         break;
       case JETBC:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": update_bcs_NG_MPI: updating bc ";
-        cout << map[i] << " with type " << b->type << "\n";
+        spdlog::debug(
+            "LEVEL {}: update_bcs_NG_MPI: updating bc {} with type {}", level,
+            map[i], b->type);
 #endif
         err += BC_update_JETBC(par, grid, b, cstep, maxstep);
         break;
       case JETREFLECT:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": update_bcs_NG_MPI: updating bc ";
-        cout << map[i] << " with type " << b->type << "\n";
+        spdlog::debug(
+            "LEVEL {}: update_bcs_NG_MPI: updating bc {} with type {}", level,
+            map[i], b->type);
 #endif
         err += BC_update_JETREFLECT(par, grid, b, cstep, maxstep);
         break;
       case DMACH:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": update_bcs_NG_MPI: updating bc ";
-        cout << map[i] << " with type " << b->type << "\n";
+        spdlog::debug(
+            "LEVEL {}: update_bcs_NG_MPI: updating bc {} with type {}", level,
+            map[i], b->type);
 #endif
         err += BC_update_DMACH(par, grid, simtime, b, cstep, maxstep);
         break;
       case DMACH2:
 #ifdef TEST_MPI_NG
-        cout << "LEVEL " << level << ": update_bcs_NG_MPI: updating bc ";
-        cout << map[i] << " with type " << b->type << "\n";
+        spdlog::debug(
+            "LEVEL {}: update_bcs_NG_MPI: updating bc {} with type {}", level,
+            map[i], b->type);
 #endif
         err += BC_update_DMACH2(par, grid, b, cstep, maxstep);
         break;
@@ -341,13 +360,14 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
         break;
 
       default:
-        rep.error("Unhandled BC: NG-MPI update external", b->itype);
+        spdlog::error(
+            "{}: {}", "Unhandled BC: NG-MPI update external", b->itype);
         break;
     }
     par.levels[0].sub_domain.barrier("external bcs");
   }
 #ifdef TEST_MPI_NG
-  cout << "LEVEL " << level << ": updated NG-MPI-grid external BCs\n";
+  spdlog::debug("LEVEL {}: updated NG-MPI-grid external BCs", level);
 #endif
 
   return (0);

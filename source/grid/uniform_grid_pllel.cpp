@@ -53,12 +53,15 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
 
 #include "grid/uniform_grid_pllel.h"
 #include "microphysics/microphysics_base.h"
 #include <fstream>
-#include <iostream>
 #include <sstream>
 using namespace std;
 
@@ -77,34 +80,39 @@ UniformGridParallel::UniformGridParallel(
     int nd,
     int nv,
     int eqt,
-    int nbc,           ///< number of boundary cells to use.
-    const double *xn,  ///< array of minimum values of x,y,z for this grid.
-    const double *xp,  ///< array of maximum values of x,y,z for this grid.
-    const int *nc,     ///< array of number of cells in x,y,z directions.
-    double *lev_xn,    // level xmin
-    double *lev_xp,    // level xmax
-    double *sim_xn,    ///< array of min. x/y/z for full simulation.
-    double *sim_xp     ///< array of max. x/y/z for full simulation.
+    int nbc,  ///< number of boundary cells to use.
+    const std::array<double, MAX_DIM>
+        &xn,  ///< array of minimum values of x,y,z for this grid.
+    const std::array<double, MAX_DIM>
+        &xp,  ///< array of maximum values of x,y,z for this grid.
+    const std::array<int, MAX_DIM>
+        &nc,  ///< array of number of cells in x,y,z directions.
+    std::array<double, MAX_DIM> &lev_xn,  // level xmin
+    std::array<double, MAX_DIM> &lev_xp,  // level xmax
+    std::array<double, MAX_DIM>
+        &sim_xn,  ///< array of min. x/y/z for full simulation.
+    std::array<double, MAX_DIM>
+        &sim_xp  ///< array of max. x/y/z for full simulation.
     ) :
     VectorOps_Cart(nd),
     UniformGrid(nd, nv, eqt, nbc, xn, xp, nc, lev_xn, lev_xp, sim_xn, sim_xp)
 {
 
 #ifndef NDEBUG
-  cout << "UniformGridParallel constructor.\n";
-  rep.printVec("Local Xmin", xn, nd);
-  rep.printVec("Local Xmax", xp, nd);
-  rep.printVec("Local Npt ", nc, nd);
+  spdlog::info("UniformGridParallel constructor");
+  spdlog::debug("Local Xmin : {}", xn);
+  spdlog::debug("Local Xmax : {}", xp);
+  spdlog::debug("Local Npt  : {}", nc);
 
-  rep.printVec("SIM Xmin ", Sim_xmin, G_ndim);
-  rep.printVec("SIM Xmax ", Sim_xmax, G_ndim);
-  rep.printVec("SIM Range", Sim_range, G_ndim);
+  spdlog::debug("SIM Xmin  : {}", Sim_xmin);
+  spdlog::debug("SIM Xmax  : {}", Sim_xmax);
+  spdlog::debug("SIM Range : {}", Sim_range);
 
-  rep.printVec("SIM iXmin ", Sim_ixmin, G_ndim);
-  rep.printVec("SIM iXmax ", Sim_ixmax, G_ndim);
-  rep.printVec("SIM iRange", Sim_irange, G_ndim);
+  spdlog::debug("SIM iXmin  : {}", Sim_ixmin);
+  spdlog::debug("SIM iXmax  : {}", Sim_ixmax);
+  spdlog::debug("SIM iRange : {}", Sim_irange);
 
-  cout << "UniformGridParallel constructor done.\n";
+  spdlog::info("UniformGridParallel constructor done");
 #endif
 
   return;
@@ -129,13 +137,15 @@ uniform_grid_cyl_parallel::uniform_grid_cyl_parallel(
     int nv,
     int eqt,
     int nbc,  ///< number of boundary cells to use.
-    const double *xn,
-    const double *xp,
-    const int *nc,
-    double *lev_xn,  // level xmin
-    double *lev_xp,  // level xmax
-    double *sim_xn,  ///< array of min. x/y/z for full simulation.
-    double *sim_xp   ///< array of max. x/y/z for full simulation.
+    const std::array<double, MAX_DIM> &xn,
+    const std::array<double, MAX_DIM> &xp,
+    const std::array<int, MAX_DIM> &nc,
+    std::array<double, MAX_DIM> &lev_xn,  // level xmin
+    std::array<double, MAX_DIM> &lev_xp,  // level xmax
+    std::array<double, MAX_DIM>
+        &sim_xn,  ///< array of min. x/y/z for full simulation.
+    std::array<double, MAX_DIM>
+        &sim_xp  ///< array of max. x/y/z for full simulation.
     ) :
     VectorOps_Cart(nd),
     UniformGrid(nd, nv, eqt, nbc, xn, xp, nc, lev_xn, lev_xp, sim_xn, sim_xp),
@@ -145,15 +155,13 @@ uniform_grid_cyl_parallel::uniform_grid_cyl_parallel(
     uniform_grid_cyl(
         nd, nv, eqt, nbc, xn, xp, nc, lev_xn, lev_xp, sim_xn, sim_xp)
 {
-#ifndef NDEBUG
-  cout << "uniform_grid_cyl_parallel:: cyl. uniform PARALLEL grid";
-  cout << " G_ndim=" << G_ndim << " and G_nvar=" << G_nvar << "\n";
-#endif
-  if (G_ndim > 2) rep.error("Need to write code for 3 dimensions", G_ndim);
+  spdlog::debug(
+      "uniform_grid_cyl_parallel:: cyl. uniform PARALLEL grid\n G_ndim={} and G_nvar={}",
+      G_ndim, G_nvar);
+  if (G_ndim > 2)
+    spdlog::error("{}: {}", "Need to write code for 3 dimensions", G_ndim);
 
-#ifndef NDEBUG
-  cout << "cylindrical grid: dR=" << G_dx << "\n";
-#endif
+  spdlog::debug("cylindrical grid: dR={}", G_dx);
   return;
 }
 
@@ -162,9 +170,7 @@ uniform_grid_cyl_parallel::uniform_grid_cyl_parallel(
 
 uniform_grid_cyl_parallel::~uniform_grid_cyl_parallel()
 {
-#ifndef NDEBUG
-  cout << "uniform_grid_cyl_parallel destructor. Present and correct!\n";
-#endif
+  spdlog::info("uniform_grid_cyl_parallel destructor. Present and correct!");
 }
 
 // ##################################################################
@@ -177,8 +183,6 @@ double uniform_grid_cyl_parallel::iR_cov(const cell *c)
   // function to get R_com() in integer units, measured from the
   // integer coord-sys. origin.
   //
-  // cout <<" Cell radius: "<< R_com(c,G_dx)/CI.phys_per_int() +G_ixmin[Rcyl];
-  // rep.printVec("  cell centre",c->pos,G_ndim);
   return (R_com(c, G_dx) - Sim_xmin[Rcyl]) / CI.phys_per_int()
          + Sim_ixmin[Rcyl];
 }
@@ -205,13 +209,15 @@ uniform_grid_sph_parallel::uniform_grid_sph_parallel(
     int nv,
     int eqt,
     int nbc,  ///< number of boundary cells to use.
-    const double *xn,
-    const double *xp,
-    const int *nc,
-    double *lev_xn,  // level xmin
-    double *lev_xp,  // level xmax
-    double *sim_xn,  ///< array of min. x/y/z for full simulation.
-    double *sim_xp   ///< array of max. x/y/z for full simulation.
+    const std::array<double, MAX_DIM> &xn,
+    const std::array<double, MAX_DIM> &xp,
+    const std::array<int, MAX_DIM> &nc,
+    std::array<double, MAX_DIM> &lev_xn,  // level xmin
+    std::array<double, MAX_DIM> &lev_xp,  // level xmax
+    std::array<double, MAX_DIM>
+        &sim_xn,  ///< array of min. x/y/z for full simulation.
+    std::array<double, MAX_DIM>
+        &sim_xp  ///< array of max. x/y/z for full simulation.
     ) :
     VectorOps_Cart(nd),
     UniformGrid(nd, nv, eqt, nbc, xn, xp, nc, lev_xn, lev_xp, sim_xn, sim_xp),
@@ -221,15 +227,13 @@ uniform_grid_sph_parallel::uniform_grid_sph_parallel(
     uniform_grid_sph(
         nd, nv, eqt, nbc, xn, xp, nc, lev_xn, lev_xp, sim_xn, sim_xp)
 {
-#ifndef NDEBUG
-  cout << "uniform_grid_sph_parallel:: sph. uniform PARALLEL grid";
-  cout << " G_ndim=" << G_ndim << " and G_nvar=" << G_nvar << "\n";
-#endif
-  if (G_ndim != 1) rep.error("Need to write code for >1 dimension", G_ndim);
+  spdlog::debug(
+      "uniform_grid_sph_parallel:: sph. uniform PARALLEL grid G_ndim={} and G_nvar={}",
+      G_ndim, G_nvar);
+  if (G_ndim != 1)
+    spdlog::error("{}: {}", "Need to write code for >1 dimension", G_ndim);
 
-#ifndef NDEBUG
-  cout << "spherical grid: dr=" << G_dx << "\n";
-#endif
+  spdlog::debug("spherical grid: dr={}", G_dx);
   return;
 }
 
@@ -238,9 +242,7 @@ uniform_grid_sph_parallel::uniform_grid_sph_parallel(
 
 uniform_grid_sph_parallel::~uniform_grid_sph_parallel()
 {
-#ifndef NDEBUG
-  cout << "uniform_grid_sph_parallel destructor. Present and correct!\n";
-#endif
+  spdlog::info("uniform_grid_sph_parallel destructor. Present and correct!");
 }
 
 // ##################################################################

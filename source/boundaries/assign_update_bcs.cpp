@@ -10,7 +10,10 @@
 #include "defines/testing_flags.h"
 
 #include "assign_update_bcs.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+
 using namespace std;
 
 
@@ -37,85 +40,73 @@ int assign_update_bcs::assign_boundary_data(
     switch (b->itype) {
       case PERIODIC:
 #ifdef TEST_MPI_NG
-        cout << "assign_bcs: assigning bc " << i << " with type " << b->type
-             << "\n";
+        spdlog::debug("assign_bcs: assigning bc {} with type {}", i, b->type);
 #endif
         err += BC_assign_PERIODIC(par, level, grid, b);
         break;
       case OUTFLOW:
 #ifdef TEST_MPI_NG
-        cout << "assign_bcs: assigning bc " << i << " with type " << b->type
-             << "\n";
+        spdlog::debug("assign_bcs: assigning bc {} with type {}", i, b->type);
 #endif
         err += BC_assign_OUTFLOW(par, grid, b);
         break;
       case ONEWAY_OUT:
 #ifdef TEST_MPI_NG
-        cout << "assign_bcs: assigning bc " << i << " with type " << b->type
-             << "\n";
+        spdlog::debug("assign_bcs: assigning bc {} with type {}", i, b->type);
 #endif
         err += BC_assign_ONEWAY_OUT(par, grid, b);
         break;
       case INFLOW:
 #ifdef TEST_MPI_NG
-        cout << "assign_bcs: assigning bc " << i << " with type " << b->type
-             << "\n";
+        spdlog::debug("assign_bcs: assigning bc {} with type {}", i, b->type);
 #endif
         err += BC_assign_INFLOW(par, grid, b);
         break;
       case REFLECTING:
 #ifdef TEST_MPI_NG
-        cout << "assign_bcs: assigning bc " << i << " with type " << b->type
-             << "\n";
+        spdlog::debug("assign_bcs: assigning bc {} with type {}", i, b->type);
 #endif
         err += BC_assign_REFLECTING(par, grid, b);
         break;
       case AXISYMMETRIC:
 #ifdef TEST_MPI_NG
-        cout << "assign_bcs: assigning bc " << i << " with type " << b->type
-             << "\n";
+        spdlog::debug("assign_bcs: assigning bc {} with type {}", i, b->type);
 #endif
         err += BC_assign_AXISYMMETRIC(par, grid, b);
         break;
       case FIXED:
 #ifdef TEST_MPI_NG
-        cout << "assign_bcs: assigning bc " << i << " with type " << b->type
-             << "\n";
+        spdlog::debug("assign_bcs: assigning bc {} with type {}", i, b->type);
 #endif
         err += BC_assign_FIXED(par, grid, b);
         break;
       case JETBC:
 #ifdef TEST_MPI_NG
-        cout << "assign_bcs: assigning bc " << i << " with type " << b->type
-             << "\n";
+        spdlog::debug("assign_bcs: assigning bc {} with type {}", i, b->type);
 #endif
         err += BC_assign_JETBC(par, grid, b);
         break;
       case JETREFLECT:
 #ifdef TEST_MPI_NG
-        cout << "assign_bcs: assigning bc " << i << " with type " << b->type
-             << "\n";
+        spdlog::debug("assign_bcs: assigning bc {} with type {}", i, b->type);
 #endif
         err += BC_assign_JETREFLECT(par, grid, b);
         break;
       case DMACH:
 #ifdef TEST_MPI_NG
-        cout << "assign_bcs: assigning bc " << i << " with type " << b->type
-             << "\n";
+        spdlog::debug("assign_bcs: assigning bc {} with type {}", i, b->type);
 #endif
         err += BC_assign_DMACH(par, grid, b);
         break;
       case DMACH2:
 #ifdef TEST_MPI_NG
-        cout << "assign_bcs: assigning bc " << i << " with type " << b->type
-             << "\n";
+        spdlog::debug("assign_bcs: assigning bc {} with type {}", i, b->type);
 #endif
         err += BC_assign_DMACH2(par, grid, b);
         break;
       case STWIND:
 #ifdef TEST_MPI_NG
-        cout << "assign_bcs: assigning bc " << i << " with type " << b->type
-             << "\n";
+        spdlog::debug("assign_bcs: assigning bc {} with type {}", i, b->type);
 #endif
         err += BC_assign_STWIND(par, grid, grid->BC_bd[i], mp);
         break;
@@ -128,8 +119,9 @@ int assign_update_bcs::assign_boundary_data(
       case COARSE_TO_FINE_RECV:
         break;  // assigned in NG grid class
       default:
-        rep.error(
-            "assign_update_bcs::Unhandled BC: assign", grid->BC_bd[i]->itype);
+        spdlog::error(
+            "{}: {}", "assign_update_bcs::Unhandled BC: assign",
+            grid->BC_bd[i]->itype);
         break;
     }
   }
@@ -179,7 +171,8 @@ int assign_update_bcs::TimeUpdateInternalBCs(
 
       default:
         //      cout <<"no internal boundaries to update.\n";
-        rep.error("assign_update_bcs::Unhandled BC:  internal", b->itype);
+        spdlog::error(
+            "{}: {}", "assign_update_bcs::Unhandled BC:  internal", b->itype);
         break;
     }
   }
@@ -199,7 +192,7 @@ int assign_update_bcs::TimeUpdateExternalBCs(
     const int maxstep)
 {
 #ifdef TEST_MPI_NG
-  cout << "update_bcs: external boundary update" << endl;
+  spdlog::info("update_bcs: external boundary update");
 #endif
   struct boundary_data *b;
   int err = 0;
@@ -250,7 +243,8 @@ int assign_update_bcs::TimeUpdateExternalBCs(
         //
         break;
       default:
-        rep.error("assign_update_bcs::Unhandled BC: external", b->itype);
+        spdlog::error(
+            "{}: {}", "assign_update_bcs::Unhandled BC: external", b->itype);
         break;
     }
   }

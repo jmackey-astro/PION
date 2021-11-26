@@ -16,6 +16,7 @@
 ///
 #include "raytracing/raytracer_shielding.h"  // short-characteristics ray-tracer.
 #include "tools/timer.h"
+#include <spdlog/spdlog.h>
 using namespace std;
 
 raytracer_shielding::raytracer_shielding(
@@ -24,7 +25,7 @@ raytracer_shielding::raytracer_shielding(
     ) :
     raytracer_USC_infinity(ggg, mmm)
 {
-  cout << "raytracer_shielding:: constructor reporting for duty.\n";
+  spdlog::info("raytracer_shielding:: constructor reporting for duty");
 
   //
   // Set have_set_Vshell to have Nsources elements, and initialise to false.
@@ -37,7 +38,7 @@ raytracer_shielding::raytracer_shielding(
 
 raytracer_shielding::~raytracer_shielding()
 {
-  cout << "raytracer_shielding:: destructor: mission complete.\n";
+  spdlog::info("raytracer_shielding:: destructor: mission complete");
 }
 
 int raytracer_shielding::RayTrace_Column_Density(
@@ -52,9 +53,9 @@ int raytracer_shielding::RayTrace_Column_Density(
     // done once. Trace through the grid setting Vshell in each cell (for
     // parallel rays this is identically grid->DX()).
     //
-    cout << "raytracer_shielding::RayTrace_Column_Density: setting Vshell for "
-            "source "
-         << s_id << ".\n";
+    spdlog::debug(
+        "raytracer_shielding::RayTrace_Column_Density: setting Vshell for source {}",
+        s_id);
     cell *c   = gridptr->FirstPt();
     double dx = gridptr->DX();
     do {
@@ -142,11 +143,12 @@ int raytracer_shielding::ProcessCell(
       break;
 
     default:
-      cout << "source id:" << source->id
-           << ", opactity-src=" << source->opacity_src
-           << " str=" << source->strength << "\n";
-      rep.error(
-          "Bad opacity_src idendifier in  raytracer_shielding", source->id);
+      spdlog::debug(
+          "source id:{}, opactity-src={} str={}", source->id,
+          source->opacity_src, source->strength);
+      spdlog::error(
+          "{}: {}", "Bad opacity_src idendifier in  raytracer_shielding",
+          source->id);
       break;
   }
   //-----------------------------------------
@@ -164,42 +166,42 @@ raytracer_shielding_pllel::raytracer_shielding_pllel(
     raytracer_USC_infinity(ggg, mmm),
     raytracer_shielding(ggg, mmm)
 {
-  cout << "raytracer_shielding_pllel:: constructor reporting for duty.\n";
-  return;
+  spdlog::info("raytracer_shielding_pllel:: constructor reporting for duty");
 }
 
 raytracer_shielding_pllel::~raytracer_shielding_pllel()
 {
-  cout << "raytracer_shielding_pllel:: destructor doing some destructing.\n";
-  return;
+  spdlog::info("raytracer_shielding_pllel:: destructor doing some destructing");
 }
 
 int raytracer_shielding_pllel::Add_Source(
     const struct rad_src_info *src  ///< source info.
 )
 {
-  cout << "\n--BEGIN-----raytracer_shielding_pllel::AddSource()------------\n";
+  spdlog::info(
+      "--BEGIN-----raytracer_shielding_pllel::AddSource()------------");
   //
   // First call serial version.  This finds the source, and centres it
   // on a cell if needed.
   //
-  cout << "\t**** PARALLEL DIFFUSE Add_Source: calling serial version.\n";
+  spdlog::info("\t**** PARALLEL DIFFUSE Add_Source: calling serial version");
   int id = raytracer_USC_infinity::Add_Source(src);
-  cout << "\t**** PARALLEL DIFFUSE Add_Source: serial version returned with id="
-       << id << "\n";
+  spdlog::debug(
+      "\t**** PARALLEL DIFFUSE Add_Source: serial version returned with id={}",
+      id);
 
   //
   // Now tell the parallel grid to decide which boundaries it needs to
   // receive data from before processing this source, and which it needs
   // to send data to after processing.
   //
-  cout << "\t**** PARALLEL DIFFUSE Add_Source: Setting up extra RT boundaries "
-          "on grid.\n";
+  spdlog::info(
+      "\t**** PARALLEL DIFFUSE Add_Source: Setting up extra RT boundaries on grid");
   int err = gridptr->Setup_RT_Boundaries(id);
-  if (err) rep.error("Failed to setup RT Boundaries", err);
+  if (err) spdlog::error("{}: {}", "Failed to setup RT Boundaries", err);
 
-  cout << "\t**** PARALLEL DIFFUSE Add_Source: all done..\n";
-  cout << "\n--END-----raytracer_shielding_pllel::AddSource()------------\n";
+  spdlog::info("\t**** PARALLEL DIFFUSE Add_Source: all done..");
+  spdlog::info("--END-----raytracer_shielding_pllel::AddSource()------------");
   return id;
 }
 
@@ -209,12 +211,9 @@ int raytracer_shielding_pllel::RayTrace_SingleSource(
     const double g    ///< eos gamma.
 )
 {
-#ifdef RT_TESTING
-  cout << "Running raytracer_shielding_pllel::RayTrace_SingleSource().\n";
-#endif  // RT_TESTING
+  spdlog::info("Running raytracer_shielding_pllel::RayTrace_SingleSource()");
 
   int err = 0;
-  // cout <<"RT: Starting Raytracing for source: "<<s_id<<"\n";
 
   string t1 = "totalRT", t2 = "waitingRT", t3 = "doingRT", t4 = "tempRT";
   double total = 0.0, wait = 0.0, run = 0.0;
@@ -226,7 +225,6 @@ int raytracer_shielding_pllel::RayTrace_SingleSource(
   clk.start_timer(t2);
   // clk.start_timer(t4);
   err += gridptr->Receive_RT_Boundaries(s_id);
-  // cout <<"RT: waiting to receive for "<<clk.stop_timer(t4)<<" secs.\n";
   clk.pause_timer(t2);
 
   //
@@ -235,7 +233,6 @@ int raytracer_shielding_pllel::RayTrace_SingleSource(
   clk.start_timer(t3);
   // clk.start_timer(t4);
   err += raytracer_USC_infinity::RayTrace_SingleSource(s_id, dt, g);
-  // cout <<"RT: Tracing over domain took "<<clk.stop_timer(t4)<<" secs.\n";
   run = clk.pause_timer(t3);
 
   //
@@ -244,13 +241,9 @@ int raytracer_shielding_pllel::RayTrace_SingleSource(
   clk.start_timer(t2);
   // clk.start_timer(t4);
   err += gridptr->Send_RT_Boundaries(s_id);
-  // cout <<"RT: Sending boundaries/Waiting for "<<clk.stop_timer(t4)<<"
-  // secs.\n";
   wait  = clk.pause_timer(t2);
   total = clk.pause_timer(t1);
 
-  // cout <<"Diffuse RT: step:"<<SimPM.timestep<<" Total RT time="<<total;
-  // cout <<" secs; processing="<<run<<" secs; waiting="<<wait<<"\n";
   return err;
 }
 

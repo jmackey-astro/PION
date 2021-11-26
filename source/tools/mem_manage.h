@@ -16,7 +16,8 @@
 
 #include <new>
 
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
 
 // ------------------ MEMORY MANAGEMENT -------------------
 /** \brief This class contains generic functions for dynamically allocating
@@ -51,8 +52,10 @@ public:
       ptr = new T[n_el];
     }
     catch (const std::bad_alloc &) {
-      cerr << "mem_alloc() pointer initialisation failed.\n";
-      rep.error("mem_alloc() pointer initialisation failed.", ptr);
+      spdlog::error("mem_alloc() pointer initialisation failed");
+      spdlog::error(
+          "{}: {}", "mem_alloc() pointer initialisation failed.",
+          fmt::ptr(ptr));
     }
     return ptr;
   }

@@ -69,50 +69,50 @@ protected:
 
   /// do what it says
   void add_cells_to_C2F_send_list(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to coarse-level grid
-      struct c2f *bdata,      ///< pointer to list of cells
-      int *ixmin,             ///< child grid xmin (integer)
-      int *ixmax,             ///< child grid xmax (integer)
-      const int,              ///< level of fine grid.
-      const int *,            ///< level xmin of fine grid.
-      const int *             ///< level xmax of fine grid.
+      class SimParams &,                 ///< pointer to simulation parameters
+      class GridBaseClass *,             ///< pointer to coarse-level grid
+      struct c2f *bdata,                 ///< pointer to list of cells
+      std::array<int, MAX_DIM> &ixmin,   ///< child grid xmin (integer)
+      std::array<int, MAX_DIM> &ixmax,   ///< child grid xmax (integer)
+      const int,                         ///< level of fine grid.
+      const std::array<int, MAX_DIM> &,  ///< level xmin of fine grid.
+      const std::array<int, MAX_DIM> &   ///< level xmax of fine grid.
   );
 
   /// do what it says for 1D grids
   void add_cells_to_C2F_send_list_1D(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to coarse-level grid
-      struct c2f *bdata,      ///< pointer to list of cells
-      int *ixmin,             ///< child grid xmin (integer)
-      int *ixmax,             ///< child grid xmax (integer)
-      const int,              ///< level of fine grid.
-      const int *,            ///< level xmin of fine grid.
-      const int *             ///< level xmax of fine grid.
+      class SimParams &,                 ///< pointer to simulation parameters
+      class GridBaseClass *,             ///< pointer to coarse-level grid
+      struct c2f *bdata,                 ///< pointer to list of cells
+      std::array<int, MAX_DIM> &ixmin,   ///< child grid xmin (integer)
+      std::array<int, MAX_DIM> &ixmax,   ///< child grid xmax (integer)
+      const int,                         ///< level of fine grid.
+      const std::array<int, MAX_DIM> &,  ///< level xmin of fine grid.
+      const std::array<int, MAX_DIM> &   ///< level xmax of fine grid.
   );
 
   /// do what it says for 2D grids
   void add_cells_to_C2F_send_list_2D(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to coarse-level grid
-      struct c2f *bdata,      ///< pointer to list of cells
-      int *ixmin,             ///< child grid xmin (integer)
-      int *ixmax,             ///< child grid xmax (integer)
-      const int,              ///< level of fine grid.
-      const int *,            ///< level xmin of fine grid.
-      const int *             ///< level xmax of fine grid.
+      class SimParams &,                 ///< pointer to simulation parameters
+      class GridBaseClass *,             ///< pointer to coarse-level grid
+      struct c2f *bdata,                 ///< pointer to list of cells
+      std::array<int, MAX_DIM> &ixmin,   ///< child grid xmin (integer)
+      std::array<int, MAX_DIM> &ixmax,   ///< child grid xmax (integer)
+      const int,                         ///< level of fine grid.
+      const std::array<int, MAX_DIM> &,  ///< level xmin of fine grid.
+      const std::array<int, MAX_DIM> &   ///< level xmax of fine grid.
   );
 
   /// do what it says for 3D grids
   void add_cells_to_C2F_send_list_3D(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to coarse-level grid
-      struct c2f *bdata,      ///< pointer to list of cells
-      int *ixmin,             ///< child grid xmin (integer)
-      int *ixmax,             ///< child grid xmax (integer)
-      const int,              ///< level of fine grid.
-      const int *,            ///< level xmin of fine grid.
-      const int *             ///< level xmax of fine grid.
+      class SimParams &,                 ///< pointer to simulation parameters
+      class GridBaseClass *,             ///< pointer to coarse-level grid
+      struct c2f *bdata,                 ///< pointer to list of cells
+      std::array<int, MAX_DIM> &ixmin,   ///< child grid xmin (integer)
+      std::array<int, MAX_DIM> &ixmax,   ///< child grid xmax (integer)
+      const int,                         ///< level of fine grid.
+      const std::array<int, MAX_DIM> &,  ///< level xmin of fine grid.
+      const std::array<int, MAX_DIM> &   ///< level xmax of fine grid.
   );
 };
 

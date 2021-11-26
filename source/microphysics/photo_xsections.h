@@ -25,7 +25,7 @@
 
 //#define TEST_XDR
 //#define NEON
-#include <iostream>
+
 #include <map>
 #include <stdio.h>
 #include <stdlib.h>

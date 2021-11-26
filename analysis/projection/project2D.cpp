@@ -12,7 +12,7 @@
 
 #include <cmath>
 #include <fitsio.h>
-#include <iostream>
+
 #include <silo.h>
 #include <sstream>
 using namespace std;
@@ -23,8 +23,13 @@ using namespace std;
 #include "sim_params.h"
 #include "tools/interpolate.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
 #include "tools/timer.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+#include <spdlog/sinks/rotating_file_sink.h>
 
 #include "dataIO/dataio_fits.h"
 #include "dataIO/dataio_silo_utility.h"
@@ -56,13 +61,13 @@ using namespace std;
 
 
 void setup_image_array(
-    double ***img_array,  ///< pointer to be initialised.
-    size_t NIMG,          ///< number of images to make
-    size_t Ncell,         ///< total number of grid cells
-    int NG[],             ///< number of Grid Cells in each direction
-    int n_extra,          ///< number of extra pixels in z-direction
-    int npix[],           ///< OUTPUT: Number of pixels in each direction
-    size_t &numpix        ///< OUTPUT: total number of pixels
+    double ***img_array,          ///< pointer to be initialised.
+    size_t NIMG,                  ///< number of images to make
+    size_t Ncell,                 ///< total number of grid cells
+    std::array<int, MAX_DIM> NG,  ///< number of Grid Cells in each direction
+    int n_extra,                  ///< number of extra pixels in z-direction
+    int npix[],     ///< OUTPUT: Number of pixels in each direction
+    size_t &numpix  ///< OUTPUT: total number of pixels
 )
 {
   npix[0]    = NG[Zcyl] + 2 * n_extra;
@@ -86,6 +91,25 @@ void setup_image_array(
 int main(int argc, char **argv)
 {
   int err = 0;
+
+  auto max_logfile_size = 1048576 * 5;
+  auto max_logfiles     = 3;
+#ifdef PARALLEL
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "project2D_pre_mpi", "project2D.log", max_logfile_size, max_logfiles));
+#else
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "project2D", "project2D.log", max_logfile_size, max_logfiles));
+#endif /* PARALLEL */
+
+#ifdef NDEBUG
+  spdlog::set_level(spdlog::level::err);
+  spdlog::flush_on(spdlog::level::err);
+#else
+  spdlog::set_level(spdlog::level::trace);
+  spdlog::flush_on(spdlog::level::trace);
+#endif
+
   //
   // Also initialise the sub_domain class with myrank and nproc.
   //
@@ -95,6 +119,12 @@ int main(int argc, char **argv)
 
   int myrank = sub_domain->get_myrank();
   int nproc  = sub_domain->get_nproc();
+
+#ifdef PARALLEL
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "project2D", "project2D_process_" + to_string(myrank) + ".log",
+      max_logfile_size, max_logfiles));
+#endif /* PARALLEL */
 
 #ifdef PROJ_OMP
   omp_set_dynamic(0);
@@ -107,21 +137,9 @@ int main(int argc, char **argv)
   // Get input files and an output file.
   //
   if (argc < 6) {
-    cout << "Use as follows:\n";
-    cout
-        << "executable-filename: <executable-filename> <input-path> <input-silo-file-base> <angle>\n";
-    cout << "\t\t <output-file> <op-file-type>";
-    cout << " <skip>\n";
-    cout << "******************************************\n";
-    cout << "input path:   path to input files.\n";
-    cout << "input file:   base filename of sequence of files.\n";
-    cout
-        << "angle:        Angle with respect to symmetry-axis for projection (degrees, float)\n";
-    cout << "output file:  filename for output file(s).\n";
-    cout << "op-file-type: integer/string [1,fits,FITS], [3,vtk,VTK]\n";
-    cout << "skip:         will skip this number of input files each loop. ";
-    cout << "(0 means it will calculate every file)\n";
-    rep.error("Bad number of args", argc);
+    spdlog::error("{}: {}", "Bad number of args", argc);
+    spdlog::error(
+        "Use as follows:\nexecutable-filename: <executable-filename> <input-path> <input-silo-file-base> <angle>\n\t\t <output-file> <op-file-type> <skip>\n******************************************\ninput path:   path to input files.\ninput file:   base filename of sequence of files.\nangle:        Angle with respect to symmetry-axis for projection (degrees, float)\noutput file:  filename for output file(s).\nop-file-type: integer/string [1,fits,FITS], [3,vtk,VTK]\nskip:         will skip this number of input files each loop. (0 means it will calculate every file)");
   }
 
   //
@@ -135,7 +153,7 @@ int main(int argc, char **argv)
   if (!isfinite(angle) || angle >= 180.0 || angle <= 0.0
       //|| pconst.equalD(angle,90.0)
   ) {
-    cerr << "bad angle: " << angle << ", must be in range (0,180)\n";
+    spdlog::error("bad angle: {}, must be in range (0,180)", angle);
     exit(1);
   }
   int angle_int = static_cast<int>(angle * ONE_PLUS_EPS);
@@ -145,16 +163,6 @@ int main(int argc, char **argv)
   // outfile should contain the path as well (relative or absolute)
   //
   string outfile = argv[4];
-
-  //
-  // Redirect output to a text file if you want to:
-  //
-  //  ostringstream redir; redir.str(""); redir<<outfile<<"_msg_";
-  ostringstream redir;
-  redir.str("");
-  redir << outfile << "_msg_" << myrank << "_";
-  // rep.redirect(redir.str());
-
 
   //
   // Save data as VTK or FITS images
@@ -168,20 +176,21 @@ int main(int argc, char **argv)
   int op_filetype;
   if (optype == "1" || optype == "fits" || optype == "FITS") {
     op_filetype = OP_FITS;
-    cout << "\t\tsaving data to fits files.\n";
+    spdlog::info("\t\tsaving data to fits files");
   }
   else if (optype == "2" || optype == "silo" || optype == "SILO") {
     op_filetype = OP_SILO;
-    cout << "\t\tsaving data to silo files.\n";
-    rep.error(
-        "don't know how to output silo files yet... fix me please!", "sorry");
+    spdlog::info("\t\tsaving data to silo files");
+    spdlog::error(
+        "{}: {}", "don't know how to output silo files yet... fix me please!",
+        "sorry");
   }
   else if (optype == "3" || optype == "vtk" || optype == "VTK") {
     op_filetype = OP_VTK;
-    cout << "\t\tsaving data to vtk files.\n";
+    spdlog::info("\t\tsaving data to vtk files");
   }
   else
-    rep.error("What sort of output is this?", optype);
+    spdlog::error("{}: {}", "What sort of output is this?", optype);
 
   // write one image file for each snapshot
   int multi_opfiles = 1.0;
@@ -193,8 +202,8 @@ int main(int argc, char **argv)
   //*******************************************************************
   // Get input files, read header, setup grid
   //*******************************************************************
-  cout << "-------------------------------------------------------\n";
-  cout << "--------------- Getting List of Files to read ---------\n";
+  spdlog::info(
+      "-------------------------------------------------------\n--------------- Getting List of Files to read ---------");
 
   //
   // set up dataio_utility class
@@ -206,7 +215,7 @@ int main(int argc, char **argv)
   //
   list<string> files;
   err += dataio.get_files_in_dir(input_path, input_file, &files);
-  if (err) rep.error("failed to get list of files", err);
+  if (err) spdlog::error("{}: {}", "failed to get list of files", err);
   for (list<string>::iterator s = files.begin(); s != files.end(); s++) {
     // If file is not a .silo file, then remove it from the list.
     if ((*s).find(".silo") == string::npos) {
@@ -219,11 +228,11 @@ int main(int argc, char **argv)
     }
   }
   int nfiles = static_cast<int>(files.size());
-  if (nfiles < 1) rep.error("Need at least one file, but got none", nfiles);
+  if (nfiles < 1)
+    spdlog::error("{}: {}", "Need at least one file, but got none", nfiles);
 
-  cout << "--------------- Got list of Files ---------------------\n";
-  cout << "-------------------------------------------------------\n";
-  cout << "--------------- Setting up Grid -----------------------\n";
+  spdlog::info(
+      "--------------- Got list of Files ---------------------\n-------------------------------------------------------\n--------------- Setting up Grid -----------------------");
   //
   // Set up an iterator to run through all the files.
   //
@@ -237,7 +246,7 @@ int main(int argc, char **argv)
   string first_file = temp.str();
   temp.str("");
   err = dataio.ReadHeader(first_file, SimPM);
-  if (err) rep.error("Didn't read header", err);
+  if (err) spdlog::error("{}: {}", "Didn't read header", err);
 
   //
   // First decompose the domain, so I know the dimensions of the local
@@ -261,7 +270,7 @@ int main(int argc, char **argv)
   SimPM.levels[0].dt         = 0.0;
   SimPM.levels[0].multiplier = 1;
   err = sub_domain->decomposeDomain(SimPM.ndim, SimPM.levels[0]);
-  if (err) rep.error("main: failed to decompose domain!", err);
+  if (err) spdlog::error("{}: {}", "main: failed to decompose domain!", err);
 
   //
   // get a setup_grid class, and use it to set up the grid.
@@ -273,17 +282,18 @@ int main(int argc, char **argv)
   cg.resize(1);
   SimSetup->setup_grid(cg, SimPM);
   class GridBaseClass *grid = cg[0];
-  if (!grid) rep.error("Grid setup failed", grid);
-  cout << "\t\tg=" << grid << "\tDX = " << grid->DX() << "\n";
+  if (!grid) spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid));
+  spdlog::debug("\t\tg={}\tDX = {}", fmt::ptr(grid), grid->DX());
   err += SimSetup->setup_microphysics(SimPM);
-  if (err) rep.error("Setup of microphysics and raytracing", err);
+  if (err) spdlog::error("{}: {}", "Setup of microphysics and raytracing", err);
   class microphysics_base *MP = SimSetup->get_mp_ptr();
 
   //
   // This code needs 2d data to project...
   //
   if (SimPM.ndim != 2 || SimPM.coord_sys != COORD_CYL) {
-    rep.error("projection needs 2D axisymmetric data", SimPM.ndim);
+    spdlog::error(
+        "{}: {}", "projection needs 2D axisymmetric data", SimPM.ndim);
   }
 
   //
@@ -291,8 +301,8 @@ int main(int argc, char **argv)
   //
   class Xray_emission XR;
 
-  cout << "--------------- Finished Setting up Grid --------------\n";
-  cout << "-------------------------------------------------------\n";
+  spdlog::info(
+      "--------------- Finished Setting up Grid --------------\n-------------------------------------------------------");
 
   //
   // Output file: if multiple files, we will append _xxx to the name.
@@ -378,7 +388,7 @@ int main(int argc, char **argv)
         im_name[im] = "Proj_BREMS6GHZ";
         break;
       default:
-        rep.error("Bad image count", im);
+        spdlog::error("{}: {}", "Bad image count", im);
         break;
     }
   }
@@ -389,18 +399,17 @@ int main(int argc, char **argv)
   // loop over all files:
   // *******************************************************************
 
-  cout << "-------------------------------------------------------\n";
-  cout << "--------------- Starting Loop over all input files ----\n";
-  cout << "-------------------------------------------------------\n";
+  spdlog::info(
+      "-------------------------------------------------------\n--------------- Starting Loop over all input files ----\n-------------------------------------------------------");
   unsigned int ifile = 0;
   clk.start_timer("total");
   double ttsf = 0.0;
 
   for (ifile = 0; ifile < static_cast<unsigned int>(nfiles);
        ifile += 1 + skip) {
-    cout << "--------- Starting Next Loop: ifile=" << ifile << "------\n";
-    cout << "========= reading file: " << *ff << "\n";
-    cout.flush();
+    spdlog::debug(
+        "--------- Starting Next Loop: ifile={}------\n========= reading file: {}",
+        ifile, *ff);
     // cout <<"-------------------------------------------------------\n";
     // cout <<"--------------- Reading Simulation data to grid -------\n";
 
@@ -422,17 +431,20 @@ int main(int argc, char **argv)
     // Read header to get timestep info.
     //
     err = dataio.ReadHeader(infile, SimPM);
-    rep.errorTest("(main) Didn't read header", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "(main) Didn't read header", 0, err);
     SimPM.grid_nlevels = 1;
-    cout << "!! time = " << SimPM.simtime << ", step=" << SimPM.timestep
-         << "\n";
+    spdlog::debug("!! time = {}, step={}", SimPM.simtime, SimPM.timestep);
 
     //
     // Read data (this reader can read serial or parallel data.
     //
-    cout << "reading from input file: " << infile << "\n";
+    spdlog::debug("reading from input file: {}", infile);
     err = dataio.ReadData(infile, cg, SimPM);
-    rep.errorTest("(main) Failed to read data", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "(main) Failed to read data", 0, err);
 
 
 
@@ -453,9 +465,9 @@ int main(int argc, char **argv)
       for (size_t ip = 0; ip < num_pix; ip++)
         img_array[im][ip] = 0.0;
 
-    rep.printVec("Xmin", SimPM.Xmin, 2);
-    rep.printVec("Xmax", SimPM.Xmax, 2);
-    cout << "Angle w.r.t. symmetry axis=" << angle_int << " degrees\n";
+    spdlog::debug("Xmin : {}", SimPM.Xmin);
+    spdlog::debug("Xmax : {}", SimPM.Xmax);
+    spdlog::debug("Angle w.r.t. symmetry axis={} degrees", angle_int);
 
     if (angle_int == 90) {
       err += generate_perpendicular_image(
@@ -468,12 +480,11 @@ int main(int argc, char **argv)
     }
 
     tsf = clk.stop_timer("analysis");
-    cout << "\tFinished loop " << ifile << ": loop time = " << tsf;
+    spdlog::debug("\tFinished loop {}: loop time = {}", ifile, tsf);
     ttsf = clk.time_so_far("total");
-    cout << ",\t total runtime=" << ttsf << "\n";
-    cout << "--------------- Finished Analysing this step ----------\n";
-    cout << "-------------------------------------------------------\n";
-    cout << "--------------- Writing image and getting next Im-file \n";
+    spdlog::debug(",\t total runtime={}\n", ttsf);
+    spdlog::info(
+        "--------------- Finished Analysing this step ----------\n-------------------------------------------------------\n--------------- Writing image and getting next Im-file");
 
     //
     // **********************
@@ -483,12 +494,12 @@ int main(int argc, char **argv)
     this_outfile = imio.get_output_filename(
         outfile, multi_opfiles, op_filetype, SimPM.timestep);
     err = imio.open_image_file(this_outfile, op_filetype, &filehandle);
-    if (err) rep.error("failed to open output file", err);
+    if (err) spdlog::error("{}: {}", "failed to open output file", err);
     //
     // Write N images, here it is one for each variable.
     //
     double Xmin[2], pos[2];
-    pixel_centre(SimPM.Xmin, dx, n_extra, 0, 0, pos);
+    pixel_centre(SimPM.Xmin.data(), dx, n_extra, 0, 0, pos);
     Xmin[Zcyl]      = pos[Zcyl] * sin(angle);
     Xmin[Rcyl]      = grid->SIM_Xmin(Rcyl);
     double im_dx[2] = {grid->DX() * sin(angle), grid->DX()};
@@ -499,19 +510,17 @@ int main(int argc, char **argv)
       err = imio.write_image_to_file(
           filehandle, op_filetype, img_array[outputs], num_pix, 2, npix,
           im_name[outputs], Xmin, im_dx, SimPM.simtime, SimPM.timestep);
-      if (err) rep.error("Failed to write image to file", err);
+      if (err) spdlog::error("{}: {}", "Failed to write image to file", err);
     }
     err = imio.close_image_file(filehandle);
-    if (err) rep.error("failed to close output file", err);
+    if (err) spdlog::error("{}: {}", "failed to close output file", err);
 
 
   }  // Loop over all files.
 
 
-  cout << "-------------------------------------------------------\n";
-  cout << "-------------- Finished Analysing all Files -----------\n";
-  cout << "-------------------------------------------------------\n";
-  cout << "--------------- Clearing up and Exiting ---------------\n";
+  spdlog::info(
+      "-------------------------------------------------------\n-------------- Finished Analysing all Files -----------\n-------------------------------------------------------\n--------------- Clearing up and Exiting ---------------");
 
   //
   // free memory for images.
@@ -522,7 +531,7 @@ int main(int argc, char **argv)
   img_array = mem.myfree(img_array);
 
   if (grid != 0) {
-    cout << "\t Deleting Grid Data..." << endl;
+    spdlog::info("\t Deleting Grid Data...");
     delete grid;
     grid = 0;
   }

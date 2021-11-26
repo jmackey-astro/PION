@@ -11,7 +11,11 @@
 #include "defines/testing_flags.h"
 #include "tools/interpolate.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -25,7 +29,6 @@
 #include "constants.h"
 #include <cmath>
 #include <cstdio>
-#include <iostream>
 #include <vector>
 using namespace std;
 
@@ -81,10 +84,6 @@ stellar_wind_latdep::~stellar_wind_latdep() {}
 // Generate interpolating tables for wind density function
 void stellar_wind_latdep::setup_tables()
 {
-  // cout << "###############################" << "\n";
-  // cout << "Setting up interpolating tables" << "\n";
-  // cout << "###############################" << "\n";
-
   // Min, mid and max values of theta - 5pts between min and mid,
   // 20pts between mid and max
   double t_min = 0.00;
@@ -100,7 +99,6 @@ void stellar_wind_latdep::setup_tables()
       theta_vec[k] = (t_mid + (k - 4) * ((t_max - t_mid) / (Ntheta - 5.0)))
                      * pconst.pi() / 180.0;
   }
-  // cout << "- Theta vector generated" << "\n";
 
   // Set up Omega vector
   log_mu_vec.resize(NOmega);
@@ -112,7 +110,6 @@ void stellar_wind_latdep::setup_tables()
   // Omega approaches 1
   for (int i = 0; i < NOmega; i++)
     Omega_vec[i] = 1.0 - pconst.pow_fast(10.0, log_mu_vec[i]);
-  // cout << "- Omega vector generated" << "\n";
 
   // set up interpolating table for (1-Omega*sin(theta))^0.35
   // to get vinf(theta,Omega) via 2D interpolation.
@@ -153,8 +150,6 @@ void stellar_wind_latdep::setup_tables()
     norm_vec[j] = integrate_Simpson(0.0, 0.5 * pconst.pi(), 1000, Omega_vec[j]);
   }
 
-  // cout << "Finished interpolating tables setup" << "\n";
-  // cout << "###############################" << "\n" << "\n";
   return;
 }
 
@@ -306,11 +301,9 @@ void stellar_wind_latdep::set_wind_cell_reference_state(
     set_rho   = false;
   }
 
-  double pp[ndim];
+  std::array<double, MAX_DIM> pp;
   CI.get_dpos(wc->c, pp);
   double Omega = std::min(0.999, WS->v_rot / WS->vcrit);
-  // rep.printVec("cell pos", pp, ndim);
-  // cout <<"dist="<<wc->dist<<"\n";
 
   // calculate terminal wind velocity
   double Vinf = interp_v_inf(wc->theta, Omega, WS->Vinf);
@@ -356,7 +349,8 @@ void stellar_wind_latdep::set_wind_cell_reference_state(
       z = grid->difference_vertex2cell(WS->dpos, c, ZZ);
       break;
     default:
-      rep.error("bad ndim in set_wind_cell_reference_state", ndim);
+      spdlog::error(
+          "{}: {}", "bad ndim in set_wind_cell_reference_state", ndim);
       break;
   }
 
@@ -396,7 +390,8 @@ void stellar_wind_latdep::set_wind_cell_reference_state(
       break;
 
     default:
-      rep.error("bad ndim in set_wind_cell_reference_state", ndim);
+      spdlog::error(
+          "{}: {}", "bad ndim in set_wind_cell_reference_state", ndim);
       break;
   }
 
@@ -414,7 +409,7 @@ void stellar_wind_latdep::set_wind_cell_reference_state(
 
     switch (ndim) {
       case 1:
-        rep.error("1D spherical but MHD?", ndim);
+        spdlog::error("{}: {}", "1D spherical but MHD?", ndim);
         break;
       case 2:
         // split monopole
@@ -456,7 +451,8 @@ void stellar_wind_latdep::set_wind_cell_reference_state(
         break;
 
       default:
-        rep.error("bad ndim in set_wind_cell_reference_state", ndim);
+        spdlog::error(
+            "{}: {}", "bad ndim in set_wind_cell_reference_state", ndim);
         break;
     }
   }
@@ -500,14 +496,13 @@ void stellar_wind_latdep::set_wind_cell_reference_state(
 #endif  // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 
 #ifndef NDEBUG
-  cout << "\n";
-  rep.printVec("wc->p", wc->p, nvar);
+  spdlog::debug("wc->p : {}", std::vector<double>(wc->p, wc->p + nvar));
 #endif
 #ifdef TEST_INF
   for (int v = 0; v < nvar; v++) {
     if (!isfinite(wc->p[v])) {
-      cerr << "NAN in wind source " << v << " " << wc->p[v] << "\n";
-      rep.error("NAN in wind source", wc->p[v]);
+      spdlog::error("NAN in wind source {} {}", v, wc->p[v]);
+      spdlog::error("{}: {}", "NAN in wind source", wc->p[v]);
     }
   }
 #endif
@@ -548,15 +543,14 @@ int stellar_wind_latdep::add_evolving_source(
 )
 {
   if (type != WINDTYPE_LATDEP) {
-    rep.error("Bad wind type for evolving stellar wind (lat-dep)!", type);
+    spdlog::error(
+        "{}: {}", "Bad wind type for evolving stellar wind (lat-dep)!", type);
   }
   //
   // First we will read the file, and see when the source should
   // switch on in the simulation (it may not be needed for a while).
   //
-#ifndef NDEBUG
-  cout << "\t\tsw-evo: adding source from file " << infile << "\n";
-#endif
+  spdlog::debug("\t\tsw-evo: adding source from file {}", infile);
 
 
   //
@@ -569,7 +563,7 @@ int stellar_wind_latdep::add_evolving_source(
   double om                       = 0.0;
   temp                            = mem.myalloc(temp, 1);
   int err                         = read_evolution_file(infile, temp);
-  if (err) rep.error("couldn't read wind evolution file", infile);
+  if (err) spdlog::error("{}: {}", "couldn't read wind evolution file", infile);
 
   // assign data for v_esc from v_crit.
   for (int i = 0; i < temp->Npt; i++)
@@ -578,7 +572,7 @@ int stellar_wind_latdep::add_evolving_source(
   // optionally enhance Mdot artificially
   // Mdot = Mdot_0 * (1 + {omega-0.5}/0.5*enhance) for omega>0.5
   if (enhance) {
-    cout << "Enhancing Mdot by factor of (1+" << enhance << ") at Omega=1\n";
+    spdlog::debug("Enhancing Mdot by factor of (1+{}) at Omega=1", enhance);
     for (int i = 0; i < temp->Npt; i++) {
       om = temp->vrot_evo[i] / temp->vcrt_evo[i];
       if (om > 0.5) temp->Mdot_evo[i] *= 1.0 + 2.0 * enhance * (om - 0.5);
@@ -591,11 +585,10 @@ int stellar_wind_latdep::add_evolving_source(
   temp->tfinish       = temp->time_evo[temp->Npt - 1];
   temp->update_freq   = update_freq / t_scalefactor;
   temp->t_next_update = max(temp->tstart, t_now);
-#ifndef NDEBUG
-  cout << "\t\t tstart=" << temp->tstart;
-  cout << ", next update=" << temp->t_next_update;
-  cout << ", and tfinish=" << temp->tfinish << "\n";
-#endif
+
+  spdlog::debug(
+      "\t\t tstart={}, next update={}, and tfinish={}", temp->tstart,
+      temp->t_next_update, temp->tfinish);
 
   //
   // Optional time offset between simulation time and evolutionary
@@ -604,7 +597,6 @@ int stellar_wind_latdep::add_evolving_source(
   for (int i = 0; i < temp->Npt; i++) {
     temp->time_evo[i] += time_offset;
     temp->time_evo[i] /= t_scalefactor;
-    // cout <<"t="<<temp->time_evo[i]<<"\n";
   }
   //
   // Decide if the wind src is active yet.  If it is, then
@@ -644,14 +636,13 @@ int stellar_wind_latdep::add_evolving_source(
     interpolate.root_find_linear_vec(temp->time_evo, temp->X_Z_evo, t_now, xz);
     interpolate.root_find_linear_vec(temp->time_evo, temp->X_D_evo, t_now, xd);
 
-#ifndef NDEBUG
-    cout << "Source is Active\n";
-#endif
+    spdlog::info("Source is Active");
   }
   else {
-    cout << "WARNING: Source is not yet active: tnow=" << t_now;
-    cout << ", tstart=";
-    cout << temp->tstart << ". Setting wind source to INACTIVE.\n";
+    spdlog::debug(
+        "WARNING: Source is not yet active: tnow={}, tstart={}. Setting wind source to INACTIVE",
+        t_now, temp->tstart);
+
     temp->is_active = false;
     mdot            = -100.0;
     vinf            = -100.0;
@@ -728,18 +719,18 @@ int stellar_wind_latdep::add_rotating_source(
   ws->type               = type;
   switch (type) {
     case WINDTYPE_LATDEP:
-      cout << "\tAdding latitude-dependent wind source as id=" << ws->id
-           << "\n";
+      spdlog::debug("\tAdding latitude-dependent wind source as id={}", ws->id);
       break;
     default:
-      rep.error("What type of source is this?  add a new type?", type);
+      spdlog::error(
+          "{}: {}", "What type of source is this?  add a new type?", type);
       break;
   }
 
   for (int v = 0; v < ndim; v++)
     ws->dpos[v] = pos[v];
 #ifndef NDEBUG
-  rep.printVec("ws->dpos", ws->dpos, ndim);
+  spdlog::debug("ws->dpos : {}", ws->dpos);
 #endif
 
   for (int v = ndim; v < MAX_DIM; v++)
@@ -767,9 +758,7 @@ int stellar_wind_latdep::add_rotating_source(
   ws->tracers = mem.myalloc(ws->tracers, ntracer);
   for (int v = 0; v < ntracer; v++) {
     ws->tracers[v] = trv[v];
-#ifndef NDEBUG
-    cout << "ws->tracers[v] = " << ws->tracers[v] << "\n";
-#endif
+    spdlog::debug("ws->tracers[v] = {}", ws->tracers[v]);
   }
 
   // if using microphysics, find H+ tracer variable, if it exists.
@@ -784,29 +773,33 @@ int stellar_wind_latdep::add_rotating_source(
 
   ws->cells_added = false;
   if (!ws->wcells.empty())
-    rep.error("wind_source: wcells not empty!", ws->wcells.size());
+    spdlog::error(
+        "{}: {}", "wind_source: wcells not empty!", ws->wcells.size());
 
   //
   // Make sure the source position is compatible with the geometry:
   //
   if (coordsys == COORD_SPH) {
     if (!pconst.equalD(ws->dpos[Rsph], 0.0))
-      rep.error("Spherical symmetry but source not at origin!", ws->dpos[Rsph]);
+      spdlog::error(
+          "{}: {}", "Spherical symmetry but source not at origin!",
+          ws->dpos[Rsph]);
   }
   if (coordsys == COORD_CYL && ndim == 2) {
     //
     // Axisymmetry
     //
     if (!pconst.equalD(ws->dpos[Rcyl], 0.0))
-      rep.error("Axisymmetry but source not at R=0!", ws->dpos[Rcyl]);
+      spdlog::error(
+          "{}: {}", "Axisymmetry but source not at R=0!", ws->dpos[Rcyl]);
   }
 
   wlist.push_back(ws);
   nsrc++;
-#ifndef NDEBUG
-  cout << "\tAdded wind source id=" << nsrc - 1 << " to list of ";
-  cout << nsrc << " elements.\n";
-#endif  // NDEBUG
+
+  spdlog::debug(
+      "\tAdded wind source id={} to list of {} elements", nsrc - 1, nsrc);
+
   return ws->id;
 }
 
@@ -828,14 +821,16 @@ void stellar_wind_latdep::update_source(
   // needs activating then we set that.
   //
   if (!wd->is_active) {
-    cout << "stellar_wind_latdep::update_source() activating source id=";
-    cout << wd->ws->id << " at Simulation time t=" << t_now << "\n";
-    rep.printVec("Source position", wd->ws->dpos, ndim);
+    spdlog::debug(
+        "stellar_wind_latdep::update_source() activating source id={} at Simulation time t=",
+        wd->ws->id, t_now);
+    spdlog::debug("Source position : {}", wd->ws->dpos);
     wd->is_active = true;
   }
 
   if (t_now < wd->tstart) {
-    rep.error("Requested updating inactive source", wd->tstart - t_now);
+    spdlog::error(
+        "{}: {}", "Requested updating inactive source", wd->tstart - t_now);
   }
 
   wd->t_next_update = t_now;  // (We update every timestep now)
@@ -896,8 +891,6 @@ void stellar_wind_latdep::update_source(
       Lstar / pconst.Lsun(), Mstar / pconst.Msun(), Twind,
       rstar / pconst.Rsun(), Z);
   wd->ws->Md0 = std::min(wd->ws->Md0, wd->ws->Mdot);  // just in case
-  // if (vrot/vcrit>0.8)
-  //  cout <<"Mdot="<<mdot<<", md0 = "<<wd->ws->Md0<<", Z="<<Z<<"\n";
 
   //
   // Now re-assign state vector of each wind-boundary-cell with

@@ -176,7 +176,7 @@ protected:
 class IC_shocktube : public ICsetup_base {
 public:
   IC_shocktube();
-  ~IC_shocktube();
+  ~IC_shocktube(){};
   int setup_data(
       class ReadParams *,    ///< pointer to parameter list.
       class GridBaseClass *  ///< pointer to grid
@@ -189,11 +189,12 @@ protected:
   int eqns;    ///< set to 1 for euler eqns, 2 for mhd equations (including all
                ///< divB cleaning methods)
   double gam,  ///< eos gamma;
-      shockpos,    ///< position of shock.
-      angleXY,     ///< angle shock normal makes with x-axis, in XY plane.
-      angleXZ,     ///< angle shock normal makes with x-axis, in XZ plane.
-      *preshock,   ///< preshock state vector.
-      *postshock;  ///< postshock state vector.
+      shockpos,  ///< position of shock.
+      angleXY,   ///< angle shock normal makes with x-axis, in XY plane.
+      angleXZ;   ///< angle shock normal makes with x-axis, in XZ plane.
+
+  std::vector<double> preshock,  ///< preshock state vector.
+      postshock;                 ///< postshock state vector.
 
   int assign_data(
       double *,  ///< left state.
@@ -581,18 +582,18 @@ public:
 
 protected:
   void get_data_vals(
-      double *,                   ///< Cell centre
-      vector<double> &,           ///< radius vector
-      vector<vector<double> > &,  ///< arrays of variable data.
-      const int,                  ///< number of variables.
-      double *                    ///< array for output data values at pos.
+      std::array<double, MAX_DIM> &,  ///< Cell centre
+      vector<double> &,               ///< radius vector
+      vector<vector<double> > &,      ///< arrays of variable data.
+      const int,                      ///< number of variables.
+      double *                        ///< array for output data values at pos.
   );
   void get_3D_data_vals(
-      double *,                   ///< Cell centre
-      vector<double> &,           ///< radius vector
-      vector<vector<double> > &,  ///< arrays of variable data.
-      const int,                  ///< number of variables.
-      double *                    ///< array for output data values at pos.
+      std::array<double, MAX_DIM> &,  ///< Cell centre
+      vector<double> &,               ///< radius vector
+      vector<vector<double> > &,      ///< arrays of variable data.
+      const int,                      ///< number of variables.
+      double *                        ///< array for output data values at pos.
   );
 };
 

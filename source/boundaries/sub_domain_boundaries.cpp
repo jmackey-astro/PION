@@ -5,6 +5,8 @@
 /// Modifications :\n
 /// - 2018.08.08 JM: moved code.
 
+#include <spdlog/spdlog.h>
+
 #include "boundaries/sub_domain_boundaries.h"
 using namespace std;
 
@@ -28,16 +30,16 @@ int sub_domain_bc::BC_assign_BCMPI(
   int err = 0;
 
 #ifdef TEST_COMMS
-  cout << "*******************************************\n";
-  cout << "BC_assign_BCMPI: sending data in dir: " << b->dir << "\n";
+  spdlog::info("*******************************************");
+  spdlog::debug("BC_assign_BCMPI: sending data in dir: {}", b->dir);
 #endif
   int ncell = 0;
   if (b->send_data.size() != 0) {
-    rep.error("send_data is not empty!", b->send_data.size());
+    spdlog::error("{}: {}", "send_data is not empty!", b->send_data.size());
   }
   err += BC_select_data2send(par, grid, &(b->send_data), &ncell, b, comm_tag);
 #ifdef TEST_COMMS
-  cout << "BC_assign_BCMPI: got " << ncell << " cells in send_data\n";
+  spdlog::debug("BC_assign_BCMPI: got {} cells in send_data\n", ncell);
 #endif
   return err;
 }
@@ -56,16 +58,18 @@ int sub_domain_bc::BC_select_data2send(
   // Check inputs.
   if (!(*l).empty()) {
 #ifdef TEST_COMMS
-    rep.warning(
+    spdlog::warn(
+        "{}: Expected {} but got {}",
         "BC_select_data2send: List not empty! Emptying it now.", 0,
         (*l).size());
 #endif
     (*l).clear();
-    if (!(*l).empty()) rep.error("emptying list.", (*l).empty());
+    if (!(*l).empty()) spdlog::error("{}: {}", "emptying list.", (*l).empty());
   }
   if (*nc != 0) {
 #ifdef TEST_COMMS
-    rep.warning(
+    spdlog::warn(
+        "{}: Expected {} but got {}",
         "BC_select_data2send: uninitialized counter in input. setting "
         "it to zero.",
         0, *nc);
@@ -90,7 +94,8 @@ int sub_domain_bc::BC_select_data2send(
   else if (comm_tag == BC_MPItag)
     Nc = min(4, par.Nbc);
   else
-    rep.error("bad tag in sub_domain_bc::BC_select_data2send", comm_tag);
+    spdlog::error(
+        "{}: {}", "bad tag in sub_domain_bc::BC_select_data2send", comm_tag);
 
   do {
     temp = *c;
@@ -103,8 +108,9 @@ int sub_domain_bc::BC_select_data2send(
   } while (c != b->data.end());
 
 #ifdef TEST_COMMS
-  cout << "Got " << count << " cells, expected " << b->data.size();
-  cout << "  list size = " << (*l).size() << "\n";
+  spdlog::debug(
+      "Got {} cells, expected {}  list size = {}", count, b->data.size(),
+      (*l).size());
 #endif
   *nc = count;
 
@@ -124,13 +130,10 @@ int sub_domain_bc::BC_update_BCMPI(
     int comm_tag)
 {
 #ifdef TEST_COMMS
-  cout << "*******************************************\n";
-  cout << par.levels[level].sub_domain.get_myrank() << ": ";
-  cout << "BC_update_BCMPI: sending data in dir: " << b->dir;
-  cout << ": sending " << b->send_data.size();
-  cout << " cells.  Boundary data contains " << b->data.size();
-  cout << " cells.\n";
-  cout.flush();
+  spdlog::debug(
+      "*******************************************\n{}: BC_update_BCMPI: sending data in dir: {}: sending {} cells.  Boundary data contains {} cells.\n",
+      par.levels[level].sub_domain.get_myrank(), b->dir, b->send_data.size(),
+      b->data.size());
 #endif
 
   //
@@ -140,7 +143,7 @@ int sub_domain_bc::BC_update_BCMPI(
   class Sub_domain *ppar = &(par.levels[level].sub_domain);
   string send_id;
 #ifdef TEST_COMMS
-  cout << "BC_update_BCMPI: sending data...\n";
+  spdlog::info("BC_update_BCMPI: sending data...");
 #endif
   err += ppar->send_cell_data(
       ppar->get_neighbour_rank(b->dir),  // to_rank
@@ -149,7 +152,7 @@ int sub_domain_bc::BC_update_BCMPI(
       par.ndim, par.nvar,
       send_id,  // identifier for send.
       comm_tag);
-  if (err) rep.error("sending data failed", err);
+  if (err) spdlog::error("{}: {}", "sending data failed", err);
 
   //
   // receive data.  Expect to receive data from the same
@@ -178,17 +181,17 @@ int sub_domain_bc::BC_update_BCMPI(
       comm_tag,      ///< requested comm_tag
       COMM_CELLDATA  ///< type of data we want.
   );
-  if (err) rep.error("look for cell data failed", err);
+  if (err) spdlog::error("{}: {}", "look for cell data failed", err);
 #ifdef TEST_COMMS
-  cout << "BC_update_BCMPI: got data to receive from rank: " << from_rank
-       << "\n";
+  spdlog::debug(
+      "BC_update_BCMPI: got data to receive from rank: {}", from_rank);
 #endif
 
 #ifdef TEST_COMMS
-  cout << ppar->get_myrank() << "\tBC_update_BCMPI: Receiving Data type ";
-  cout << recv_tag << " from rank: " << from_rank << " from direction ";
-  cout << b->dir << ", expecting rank " << ppar->get_neighbour_rank(b->dir)
-       << "\n";
+  spdlog::debug(
+      "{}\tBC_update_BCMPI: Receiving Data type {} from rank: {} from direction {}, expecting rank {}",
+      ppar->get_myrank(), recv_tag, from_rank, b->dir,
+      ppar->get_neighbour_rank(b->dir));
 #endif
 
   //
@@ -203,7 +206,8 @@ int sub_domain_bc::BC_update_BCMPI(
                  ///< (PER,MPI,etc.)
       recv_id    ///< identifier for receive, for any book-keeping.
   );
-  if (err) rep.error("ppar->receive_cell_data() returned error", err);
+  if (err)
+    spdlog::error("{}: {}", "ppar->receive_cell_data() returned error", err);
 
   //
   // If on a full timestep update, set P=Ph for received boundary.
@@ -225,7 +229,7 @@ int sub_domain_bc::BC_update_BCMPI(
   //
   //  cout <<"BC_update_BCMPI: waiting for finish "<<b->dir<<"\n";
   err = ppar->wait_for_send_to_finish(send_id);
-  if (err) rep.error("Waiting for send to complete!", err);
+  if (err) spdlog::error("{}: {}", "Waiting for send to complete!", err);
   // cout <<"BC_update_BCMPI: send and receive finished.\n";
   // cout <<"BC_update_BCMPI: Sent BC "<<b->dir<<", received BC "<<dir<<"\n";
   // cout <<"*******************************************\n\n";

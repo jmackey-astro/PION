@@ -10,7 +10,9 @@
 #include "defines/testing_flags.h"
 
 #include "assign_update_bcs_MPI.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
 
 #include <sstream>
 using namespace std;
@@ -31,11 +33,14 @@ int assign_update_bcs_MPI::assign_boundary_data(
 {
 #ifdef TEST_MPI_BC
   class Sub_domain *ppar = &(par.levels[level].sub_domain);
-  cout << ppar->get_myrank() << " Setting up MPI boundaries..." << endl;
+  spdlog::debug("{} Setting up MPI boundaries...", ppar->get_myrank());
 #endif
   int err = assign_update_bcs::assign_boundary_data(par, level, grid, mp);
 
-  rep.errorTest("assign_update_bcs::assign_boundary_data", err, 0);
+  if (err != 0)
+    spdlog::error(
+        "{}: Expected {} but got {}", "assign_update_bcs::assign_boundary_data",
+        err, 0);
   //
   // Loop through all boundaries, and assign data to MPI one.
   //
@@ -43,8 +48,8 @@ int assign_update_bcs_MPI::assign_boundary_data(
     switch (grid->BC_bd[i]->itype) {
       case BCMPI:
 #ifdef TEST_MPI_BC
-        cout << ppar->get_myrank() << " assigning MPI boundary in dir " << i
-             << "\n";
+        spdlog::debug(
+            "{} assigning MPI boundary in dir {}", ppar->get_myrank(), i);
 #endif
         err += BC_assign_BCMPI(par, level, grid, grid->BC_bd[i], BC_MPItag);
         break;
@@ -69,14 +74,14 @@ int assign_update_bcs_MPI::assign_boundary_data(
       case COARSE_TO_FINE_RECV:
         break;  // assigned in NG grid class
       default:
-        rep.error(
-            "assign_update_bcs_MPI::Unhandled BC: assign",
+        spdlog::error(
+            "{}: {}", "assign_update_bcs_MPI::Unhandled BC: assign",
             grid->BC_bd[i]->itype);
         break;
     }
   }
 #ifdef TEST_MPI_BC
-  cout << ppar->get_myrank() << ": finished assigning boundaries\n";
+  spdlog::debug("{}: finished assigning boundaries\n", ppar->get_myrank());
 #endif
   return (err);
 }
@@ -98,7 +103,7 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
     const int maxstep)
 {
 #ifdef TEST_MPI_NG
-  cout << "update_bcs_MPI: external boundary update" << endl;
+  spdlog::info("update_bcs_MPI: external boundary update");
 #endif
   struct boundary_data *b;
   int err  = 0;
@@ -130,8 +135,7 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
   for (i = 0; i < grid->BC_bd.size(); i++) {
     b = grid->BC_bd[map[i]];
 #ifdef TEST_MPI_BC
-    cout << "updating bc " << map[i] << " with type " << b->type << "\n";
-    cout.flush();
+    spdlog::debug("updating bc {} with type {}", map[i], b->type);
 #endif
     switch (b->itype) {
 
@@ -181,7 +185,9 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
         break;
 
       default:
-        rep.error("assign_update_bcs_MPI::Unhandled BC: external", b->itype);
+        spdlog::error(
+            "{}: {}", "assign_update_bcs_MPI::Unhandled BC: external",
+            b->itype);
         break;
     }
 

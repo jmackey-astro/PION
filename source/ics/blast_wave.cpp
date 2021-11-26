@@ -12,7 +12,9 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -20,6 +22,7 @@
 #include "coord_sys/VectorOps.h"
 #include "ics/icgen.h"
 #include "ics/icgen_base.h"
+#include <fstream>
 #include <sstream>
 using namespace std;
 
@@ -49,10 +52,10 @@ int IC_blastwave::setup_data(
   int err = 0;
 
   ICsetup_base::gg = ggg;
-  if (!gg) rep.error("null pointer to grid!", ggg);
+  if (!gg) spdlog::error("{}: {}", "null pointer to grid!", fmt::ptr(ggg));
 
   ICsetup_base::rp = rrp;
-  if (!rp) rep.error("null pointer to ReadParams", rp);
+  if (!rp) spdlog::error("{}: {}", "null pointer to ReadParams", fmt::ptr(rp));
 
   string seek, str;
 
@@ -70,32 +73,32 @@ int IC_blastwave::setup_data(
 
   //  seek = "BWradius";
   //  str = rp->find_parameter(seek);
-  //  if (str=="") rep.error("didn't find parameter",seek);
+  //  if (str=="") spdlog::error("{}: {}", "didn't find parameter",seek);
   //  IC_blastwave::bw_rad = atof(str.c_str());
 
   seek = "BWpressure";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_blastwave::bw_PG = atof(str.c_str());
 
   seek = "BWdensity";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_blastwave::bw_RO = atof(str.c_str());
 
   //  seek = "BWpgRatio";
   //  str = rp->find_parameter(seek);
-  //  if (str=="") rep.error("didn't find parameter",seek);
+  //  if (str=="") spdlog::error("{}: {}", "didn't find parameter",seek);
   //  IC_blastwave::bw_PGratio = atof(str.c_str());
 
   //  seek = "BWroRatio";
   //  str = rp->find_parameter(seek);
-  //  if (str=="") rep.error("didn't find parameter",seek);
+  //  if (str=="") spdlog::error("{}: {}", "didn't find parameter",seek);
   //  IC_blastwave::bw_ROratio = atof(str.c_str());
 
   seek = "BW_blast_dens";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_blastwave::bw_blastRO = atof(str.c_str());
 
   seek = "BWmagfieldX";
@@ -137,7 +140,7 @@ int IC_blastwave::setup_data(
       BW_tr[t] = atof(str.c_str());
     else
       BW_tr[t] = -1.0e99;
-    cout << "seek=" << seek << ", str=" << str << ", val=" << BW_tr[t] << "\n";
+    spdlog::debug("seek={}, str={}, val={}", seek, str, BW_tr[t]);
   }
 
   IC_blastwave::gam = SimPM->gamma;
@@ -148,7 +151,7 @@ int IC_blastwave::setup_data(
   else if (eqns == EQMHD || eqns == EQGLM || eqns == EQFCD)
     eqns = 2;
   else
-    rep.error("Bad equations", eqns);
+    spdlog::error("{}: {}", "Bad equations", eqns);
 
   //
   // Now get optional second ambient medium params, which define an interface
@@ -160,21 +163,21 @@ int IC_blastwave::setup_data(
   string ics = rp->find_parameter("ics");
 
   if (ics == "")
-    rep.error("didn't get any ics to set up.", ics);
+    spdlog::error("{}: {}", "didn't get any ics to set up.", ics);
   else if (ics == "BlastWave" && SimPM->coord_sys == COORD_CRT) {
-    cout << "Setting up Cartesian BlastWave problem.\n";
+    spdlog::info("Setting up Cartesian BlastWave problem");
     err += setup_cart_bw();
   }
   else if (ics == "BlastWave" && SimPM->coord_sys == COORD_CYL) {
-    cout << "Setting up Cylindrical BlastWave problem.\n";
+    spdlog::info("Setting up Cylindrical BlastWave problem");
     err += setup_cyl_bw();
   }
   else if (ics == "BlastWave" && SimPM->coord_sys == COORD_SPH) {
-    cout << "Setting up Spherical BlastWave problem.\n";
+    spdlog::info("Setting up Spherical BlastWave problem");
     err += setup_sph_bw();
   }
   else if (ics == "BlastWave_File" && SimPM->coord_sys == COORD_SPH) {
-    cout << "Setting up Spherical Blastwave with input density field.\n";
+    spdlog::info("Setting up Spherical Blastwave with input density field");
     //
     // get text file to read density, pressure etc. from.
     //
@@ -182,7 +185,7 @@ int IC_blastwave::setup_data(
     seek = "BWfilename";
     str  = rp->find_parameter(seek);
     if (str == "")
-      rep.error("Need input filename to read data from", str);
+      spdlog::error("{}: {}", "Need input filename to read data from", str);
     else
       fname = str;
     //
@@ -192,7 +195,7 @@ int IC_blastwave::setup_data(
     seek      = "BW_Hplus_tracer";
     str       = rp->find_parameter(seek);
     if (str == "")
-      rep.error("Need ID of tracer variable", str);
+      spdlog::error("{}: {}", "Need ID of tracer variable", str);
     else
       tr_id = atoi(str.c_str());
     //
@@ -202,16 +205,14 @@ int IC_blastwave::setup_data(
   }
   /*
   else if (ics=="BlastWaveReflect" && SimPM->coord_sys = COORD_CRT) {
-    cout <<"Setting up Reflecting BlastWave problem.\n";
     err += setup_cart_symmetric_bw();
   }
   else if (ics=="BlastWaveReflect" && SimPM->coord_sys = COORD_CYl) {
-    cout <<"Setting up Reflecting BlastWave problem.\n";
     err += setup_cyl_symmetric_bw();
   }
   */
   else
-    rep.error("Don't know what Initial Condition is!", ics);
+    spdlog::error("{}: {}", "Don't know what Initial Condition is!", ics);
 
   // Add noise to data?  Smooth data?
   double noise = 0.0;
@@ -221,7 +222,8 @@ int IC_blastwave::setup_data(
     noise = atof(ics.c_str());
   else
     noise = -1;
-  if (isnan(noise)) rep.error("noise parameter is not a number", noise);
+  if (isnan(noise))
+    spdlog::error("{}: {}", "noise parameter is not a number", noise);
   if (noise > 0) err += AddNoise2Data(gg, *SimPM, 2, noise);
 
   ics = rp->find_parameter("smooth");
@@ -229,7 +231,8 @@ int IC_blastwave::setup_data(
     smooth = atoi(ics.c_str());
   else
     smooth = -1;
-  if (isnan(smooth)) rep.error("Smooth parameter not a number", smooth);
+  if (isnan(smooth))
+    spdlog::error("{}: {}", "Smooth parameter not a number", smooth);
   if (smooth > 0) err += SmoothData(smooth);
 
   return err;
@@ -352,8 +355,8 @@ void IC_blastwave::get_amb2_params()
       ambient[t + SimPM->ftr] = atof(str.c_str());
     else
       ambient[t + SimPM->ftr] = -1.0e99;
-    cout << "AMB2: seek=" << seek << ", str=" << str
-         << ", val=" << ambient[t + SimPM->ftr] << "\n";
+    spdlog::debug(
+        "AMB2: seek={}, str={}, val={}", seek, str, ambient[t + SimPM->ftr]);
   }
 
   seek = "BW_interface";
@@ -376,13 +379,13 @@ void IC_blastwave::get_amb2_params()
 int IC_blastwave::setup_sph_bw_File(const std::string fname, const int tr_id)
 {
   int ndim = gg->Ndim();
-  if (ndim != 1) rep.error("Bad ndim in setup spherical BW", ndim);
-  cout << "Setting up a 1D spherically symmetric simulation of a blast\n";
-  cout << " wave with energy = " << bw_energy;
-  cout << ", density =" << bw_blastRO << " in " << bw_nzones << " zones,\n";
-  cout << " and no magnetic field, and nvar=" << SimPM->nvar << "\n";
-  cout << "Reading input density, pressure, and y(H+) from file " << fname
-       << "\n";
+  if (ndim != 1)
+    spdlog::error("{}: {}", "Bad ndim in setup spherical BW", ndim);
+  spdlog::debug(
+      "Setting up a 1D spherically symmetric simulation of a blast wave with"
+      "energy = {}, density ={} in {} zones, and no magnetic field, and nvar={}\n"
+      "Reading input density, pressure, and y(H+) from file {}",
+      bw_energy, bw_blastRO, bw_nzones, SimPM->nvar, fname);
 
   //
   // open input file.
@@ -390,7 +393,7 @@ int IC_blastwave::setup_sph_bw_File(const std::string fname, const int tr_id)
   ifstream infile;
   infile.open(fname.c_str());
   if (!infile.is_open()) {
-    cerr << "Error opening file.\n";
+    spdlog::error("Error opening file");
     return 1;
   }
   //
@@ -416,35 +419,32 @@ int IC_blastwave::setup_sph_bw_File(const std::string fname, const int tr_id)
       // We have found a line of data, so read it into variables.
       istringstream ff(line);
       ff >> r;
-      // cout <<r<< "\t";
       radius.push_back(r);
       //
       // Read in the fluid variables plus the first tracer (this is H+).
       //
       for (int v = 0; v < SimPM->nvar - SimPM->ntracer + 1; v++) {
         ff >> x[v];
-        // cout <<x[v]<<"  ";
         data[v].push_back(x[v]);
       }
-      // cout <<"\n";
       i++;
     }
   }
-  cout << "read " << i << " lines.\n";
+  spdlog::debug("read {} lines", i);
   infile.close();
 
   //
   // Now see if the number of lines of data equals the number of grid cells
   //
   if (i != SimPM->Ncell) {
-    cerr << "nlines=" << i << "; Ncell=" << SimPM->Ncell << "\n";
+    spdlog::error("nlines={}; Ncell={}", i, SimPM->Ncell);
     return 1;
   }
 
   //
   // Centred at [0]
   //
-  double centre[ndim];
+  std::array<double, MAX_DIM> centre;
   centre[Rsph] = 0.0;
   //
   // Set values for the region with the SN energy:
@@ -455,15 +455,13 @@ int IC_blastwave::setup_sph_bw_File(const std::string fname, const int tr_id)
   //
   // Now add the primitive variables to the grid.
   //
-  cout << "Assigning primitive vectors.\n";
+  spdlog::info("Assigning primitive vectors");
   class cell *c = gg->FirstPt();
-  double dpos[ndim];
+  std::array<double, MAX_DIM> dpos;
   i = 0;
   do {
-    // cout <<"i="<<i<<" radius[i]="<<radius[i]<<",
     // gg->Xmin(XX)="<<gg->Xmin(XX)<<"\n";
     if (radius[i] > gg->Xmin(XX) && radius[i] < gg->Xmax(XX)) {
-      // cout <<"inside radius setup\n";
       // Set values of primitive variables.
       c->P[RO] = data[RO][i];
       c->P[PG] = data[PG][i];
@@ -491,18 +489,17 @@ int IC_blastwave::setup_sph_bw_File(const std::string fname, const int tr_id)
       // This is exact for spherical coords.
       // The ion fraction should be 1 already, so ignore it.
       CI.get_dpos(c, dpos);
-      // cout <<"radius["<<i<<"]="<<radius[i]<<",
       // dist="<<gg->distance(centre,dpos)<<"  bw_rad="<<bw_rad<<"\n";
       if (gg->distance(centre, dpos) <= bw_rad) {
         c->P[PG] = Pin;
         c->P[RO] = bw_blastRO;
-        cout << "Setting cell " << c->id << " to internal value.\n";
+        spdlog::debug("Setting cell {} to internal value", c->id);
       }
       c = gg->NextPt(c);
     }
     i++;
   } while (c != 0);
-  cout << "Got through data successfully.\n";
+  spdlog::info("Got through data successfully");
   // Data done.
 
   return 0;
@@ -514,16 +511,17 @@ int IC_blastwave::setup_sph_bw_File(const std::string fname, const int tr_id)
 int IC_blastwave::setup_sph_bw()
 {
   int ndim = gg->Ndim();
-  if (ndim != 1) rep.error("Bad ndim in setup spherical BW", ndim);
-  cout << "Setting up a 1D spherically symmetric simulation of a blast\n";
-  cout << " wave with energy = " << bw_energy;
-  cout << ", density =" << bw_blastRO << " in " << bw_nzones << " zones,\n";
-  cout << " and no magnetic field, and nvar=" << SimPM->nvar << endl;
+  if (ndim != 1)
+    spdlog::error("{}: {}", "Bad ndim in setup spherical BW", ndim);
+  spdlog::debug(
+      "Setting up a 1D spherically symmetric simulation of a blast wave with energy = {}, "
+      "density = {} in {} zones, and no magnetic field, and nvar=",
+      bw_energy, bw_blastRO, bw_nzones, SimPM->nvar);
 
   //
   // Centred at [0]
   //
-  double centre[ndim];
+  std::array<double, MAX_DIM> centre;
   centre[Rsph] = 0.0;
   //
   // Set values for the region with the SN energy:
@@ -534,9 +532,9 @@ int IC_blastwave::setup_sph_bw()
   //
   // Data.
   //
-  cout << "Assigning primitive vectors.\n";
+  spdlog::info("Assigning primitive vectors");
   class cell *cpt = gg->FirstPt();
-  double dpos[ndim];
+  std::array<double, MAX_DIM> dpos;
   do {
     // Set values of primitive variables.
     cpt->P[RO] = bw_RO;
@@ -560,14 +558,12 @@ int IC_blastwave::setup_sph_bw()
       // for (int i=0;i<SimPM->ntracer;i++) {
       // cpt->P[SimPM->ftr+i] = 1.0;
       //}
-      //       cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
     }
     //
     // Now we could have an outer ambient medium, in which case we check
     // here and overwrite the data if we are at a radius greater than the
     // interface value.
     //
-    // cout <<"ambient="<<ambient<<", interface="<<interface<<",
     // dpos="<<dpos[Rsph]<<"\n";
     if (ambient != 0 && dpos[Rsph] >= interface) {
       for (int v = 0; v < SimPM->nvar; v++)
@@ -575,7 +571,7 @@ int IC_blastwave::setup_sph_bw()
     }
 
   } while ((cpt = gg->NextPt(cpt)) != NULL);
-  cout << "Got through data successfully.\n";
+  spdlog::info("Got through data successfully");
   // Data done.
   return (0);
 }
@@ -586,14 +582,14 @@ int IC_blastwave::setup_sph_bw()
 int IC_blastwave::setup_cyl_bw()
 {
   int ndim = gg->Ndim();
-  if (ndim != 2) rep.error("Bad ndim in setupNDSimpleBlastWave", ndim);
-  cout << "Setting up a 2D cylindrically symmetric simulation of a blast\n";
-  cout << " wave with energy = " << bw_energy;
-  cout << ", density =" << bw_blastRO << " in " << bw_nzones << " zones,\n";
-  cout << " and magnetic field BZ = " << bw_BZ << " and nvar=" << SimPM->nvar
-       << "\n";
+  if (ndim != 2)
+    spdlog::error("{}: {}", "Bad ndim in setupNDSimpleBlastWave", ndim);
+  spdlog::debug(
+      "Setting up a 2D cylindrically symmetric simulation of a blast wave with energy = {}, "
+      "density = {} in {} zones, and magnetic field BZ = {} and nvar = {}",
+      bw_energy, bw_blastRO, bw_nzones, bw_BZ, SimPM->nvar);
   // Centred at (0,0)
-  double centre[ndim];
+  std::array<double, MAX_DIM> centre;
   centre[Zcyl] = 0.0;
   centre[Rcyl] = 0.0;
   //
@@ -603,13 +599,13 @@ int IC_blastwave::setup_cyl_bw()
   double Pin = 3.0 * bw_energy * (gam - 1.0) / (4.0 * M_PI * pow(bw_rad, 3.0));
 
   // Set up the inside_sphere class, with 100 subpoints per cell.
-  class inside_sphere stest(centre, bw_rad, gg->DX(), 100, ndim);
+  class inside_sphere stest(centre.data(), bw_rad, gg->DX(), 100, ndim);
   double vfrac;
 
   // Data.
-  cout << "Assigning primitive vectors.\n";
+  spdlog::info("Assigning primitive vectors");
   class cell *cpt = gg->FirstPt();
-  double dpos[ndim];
+  std::array<double, MAX_DIM> dpos;
   do {
     // Set values of primitive variables.
     cpt->P[RO] = bw_RO;
@@ -636,10 +632,9 @@ int IC_blastwave::setup_cyl_bw()
       for (int i = 0; i < SimPM->ntracer; i++) {
         cpt->P[SimPM->ftr + i] = -vfrac + (1. - vfrac);
       }
-      //       cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
     }
   } while ((cpt = gg->NextPt(cpt)) != NULL);
-  cout << "Got through data successfully.\n";
+  spdlog::info("Got through data successfully");
   // Data done.
   return (0);
 }
@@ -651,7 +646,7 @@ int IC_blastwave::setup_cart_bw()
 {
   int ndim = gg->Ndim();
   if (ndim < 2 || ndim > 3)
-    rep.error("Bad ndim in setupNDSimpleBlastWave", ndim);
+    spdlog::error("{}: {}", "Bad ndim in setupNDSimpleBlastWave", ndim);
 
   double centre[ndim];
   for (int i = 0; i < ndim; i++) {
@@ -670,7 +665,7 @@ int IC_blastwave::setup_cart_bw()
   else if (ndim == 3)
     Pin = 3.0 * bw_energy * (gam - 1.0) / (4.0 * M_PI * pow(bw_rad, 3.0));
   else
-    rep.error("bad ndim", ndim);
+    spdlog::error("{}: {}", "bad ndim", ndim);
 
   // Set up the inside_sphere class, with 100 subpoints per cell.
   int nsub = 0;
@@ -682,7 +677,7 @@ int IC_blastwave::setup_cart_bw()
   double vfrac;
 
   // Data.
-  cout << "Assigning primitive vectors.\n";
+  spdlog::info("Assigning primitive vectors");
   class cell *cpt = gg->FirstPt();
   do {
     // Set values of primitive variables.
@@ -701,16 +696,12 @@ int IC_blastwave::setup_cart_bw()
     if ((vfrac = stest.volumeFraction(cpt)) > 0) {
       cpt->P[PG] = vfrac * (Pin) + (1.0 - vfrac) * cpt->P[PG];
       cpt->P[RO] = vfrac * (bw_blastRO) + (1.0 - vfrac) * cpt->P[RO];
-      // cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
       for (int i = 0; i < SimPM->ntracer; i++) {
         cpt->P[SimPM->ftr + i] = -vfrac + (1.0 - vfrac);
       }
     }
   } while ((cpt = gg->NextPt(cpt)) != NULL);
-  //  cpt = firstPt();
-  //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;} while  (
-  //  (cpt=nextPt(cpt))!=NULL);
-  cout << "Got through data successfully.\n";
+  spdlog::info("Got through data successfully");
   // Data done.
   return (0);
 }

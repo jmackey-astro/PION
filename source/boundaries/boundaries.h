@@ -104,8 +104,9 @@ enum BoundaryTypes {
 /// Struct to hold data on 2^ndim cells on a fine grid that should
 /// be averaged to be sent to a coarser grid.
 struct averaging {
-  std::vector<cell *> c;   ///< list of cells to be averaged
-  pion_flt cpos[MAX_DIM];  ///< position of cell-centre of coarse cell
+  std::vector<cell *> c;  ///< list of cells to be averaged
+  std::array<pion_flt, MAX_DIM>
+      cpos;  ///< position of cell-centre of coarse cell
   pion_flt *avg_state;
 };
 

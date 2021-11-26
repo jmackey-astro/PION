@@ -7,7 +7,7 @@
 #include "sim_constants.h"
 #include "sim_params.h"
 #include "tools/interpolate.h"
-#include "tools/reporting.h"
+
 
 //
 // Stellar wind class for angle dependent winds, developed for BSGs etc.

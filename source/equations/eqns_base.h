@@ -27,6 +27,8 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
+#include <vector>
+
 /// Abstract Base Class for equations, from which others are derived.
 ///
 /// The public functions declared here are basically the only ones accessible
@@ -40,7 +42,6 @@ class eqns_base {
 public:
   eqns_base(const int  ///< Number of Variables in State Vector
   );
-  virtual ~eqns_base();
 
   ///  Converts from primitive to conserved variables.
   virtual void PtoU(
@@ -204,7 +205,7 @@ protected:
 
   /// state vector of typical values in the simulation (for testing
   /// if a variable value is small or large).
-  pion_flt *eq_refvec;
+  std::vector<pion_flt> eq_refvec;
 };
 
 #endif  // EQNS_BASE_H

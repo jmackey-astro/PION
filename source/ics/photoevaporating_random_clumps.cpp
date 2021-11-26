@@ -9,7 +9,11 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -60,28 +64,29 @@ int IC_photevap_random_clumps::setup_data(
   int err = 0;
 
   ICsetup_base::gg = ggg;
-  if (!gg) rep.error("null pointer to grid!", ggg);
+  if (!gg) spdlog::error("{}: {}", "null pointer to grid!", fmt::ptr(ggg));
 
   ICsetup_base::rp = rrp;
-  if (!rp) rep.error("null pointer to ReadParams", rp);
+  if (!rp) spdlog::error("{}: {}", "null pointer to ReadParams", fmt::ptr(rp));
 
   IC_photevap_random_clumps::ndim = SimPM->ndim;
   if (ndim != 1 && ndim != 2 && ndim != 3)
-    rep.error("Photoevaporation problem must be 1-3D", ndim);
+    spdlog::error("{}: {}", "Photoevaporation problem must be 1-3D", ndim);
   IC_photevap_random_clumps::coords = SimPM->coord_sys;
-  if (coords != COORD_CRT) rep.error("Bad coord sys", coords);
+  if (coords != COORD_CRT) spdlog::error("{}: {}", "Bad coord sys", coords);
   IC_photevap_random_clumps::eqns = SimPM->eqntype;
   if (eqns == EQEUL)
     eqns = 1;
   else if (eqns == EQMHD || eqns == EQGLM || eqns == EQFCD)
     eqns = 2;
   else
-    rep.error("Bad equations", eqns);
+    spdlog::error("{}: {}", "Bad equations", eqns);
 
   // initialise ambient vectors to zero.
   IC_photevap_random_clumps::ambient = 0;
   ambient                            = new double[SimPM->nvar];
-  if (!ambient) rep.error("malloc ambient vecs", ambient);
+  if (!ambient)
+    spdlog::error("{}: {}", "malloc ambient vecs", fmt::ptr(ambient));
   for (int v = 0; v < SimPM->nvar; v++)
     ambient[v] = 0.0;
 
@@ -90,13 +95,13 @@ int IC_photevap_random_clumps::setup_data(
   // Number of Clumps
   seek = "PERCnumclumps";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_photevap_random_clumps::Nclumps = atoi(str.c_str());
 
   // profile of clumps
   seek = "PERCclump_profile";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_photevap_random_clumps::profile = atoi(str.c_str());
 
   cltr = mem.myalloc(cltr, SimPM->ntracer);
@@ -111,17 +116,17 @@ int IC_photevap_random_clumps::setup_data(
       cltr[v] = 0.0;
     else
       cltr[v] = atof(str.c_str());
-    cout << "***********tracer[" << v << "] = " << cltr[v] << endl;
+    spdlog::debug("***********tracer[{}] = {}", v, cltr[v]);
   }
 
   seek = "PERCmin_size";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_photevap_random_clumps::min_size = atof(str.c_str());
 
   seek = "PERCmax_size";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_photevap_random_clumps::max_size = atof(str.c_str());
 
   // ambient medium state vector
@@ -239,18 +244,18 @@ int IC_photevap_random_clumps::setup_data(
   seek       = "ics";
   string ics = rp->find_parameter(seek);
   if (ics == "")
-    rep.error("didn't get any ics to set up.", ics);
+    spdlog::error("{}: {}", "didn't get any ics to set up.", ics);
   else if (ics == "PhotEvap_RandomClumps" || ics == "PERC") {
     ics = "PERC";
-    cout << "\t\tSetting up PhotoEvaporation problem with Random Clumps.\n";
+    spdlog::info("\t\tSetting up PhotoEvaporation problem with Random Clumps");
   }
   else if (ics == "PhotEvap_RandomClumps2" || ics == "PERC2") {
     ics = "PERC2";
-    cout << "\t\tSetting up PhotoEvaporation problem with Random Clumps (FIXED "
-            "TOTAL MASS!).\n";
+    spdlog::info(
+        "\t\tSetting up PhotoEvaporation problem with Random Clumps (FIXED TOTAL MASS!)");
   }
   else
-    rep.error("Don't know what Initial Condition is!", ics);
+    spdlog::error("{}: {}", "Don't know what Initial Condition is!", ics);
 
   // see if the ambient medium has a radial profile in it.
   IC_photevap_random_clumps::radial_slope = 0.0;
@@ -262,8 +267,7 @@ int IC_photevap_random_clumps::setup_data(
     IC_photevap_random_clumps::radial_slope = atof(str.c_str());
   else
     IC_photevap_random_clumps::radial_slope = 0.0;
-  cout << "radial_slope=" << radial_slope
-       << "  *****************************\n";
+  spdlog::debug("radial_slope={}", radial_slope);
 
   // setup the problem.
   if (ics == "PERC")
@@ -271,21 +275,18 @@ int IC_photevap_random_clumps::setup_data(
   else if (ics == "PERC2")
     err += setup_perc_fixedmass();
   else
-    rep.error("Bad ics", ics);
+    spdlog::error("{}: {}", "Bad ics", ics);
 
   //
   // Set tracer values!
   //
-  // cout <<"ntracer = "<<SimPM->ntracer<<"\t
   // amb[tr1]="<<ambient[SimPM->ftr+1]<<"\tcl[tr1]="<<cltr[1];
   cell *c = gg->FirstPt();
-  cout << "\tamb-density=" << ambdens << " clump_mass=" << clump_mass << endl;
+  spdlog::debug("\tamb-density={} clump_mass={}", ambdens, clump_mass);
   do {
     for (int v = SimPM->ftr; v < SimPM->nvar; v++) {
-      // cout <<"trval before="<<c->P[v];
       c->P[v] = (ambdens / c->P[RO]) * ambient[v]
                 + (1.0 - ambdens / c->P[RO]) * cltr[v - SimPM->ftr];
-      // cout <<"\tafter="<<c->P[v]<<endl;
     }
   } while ((c = gg->NextPt(c)) != 0);
 
@@ -298,7 +299,8 @@ int IC_photevap_random_clumps::setup_data(
     noise = atof(ics.c_str());
   else
     noise = -1;
-  if (isnan(noise)) rep.error("noise parameter is not a number", noise);
+  if (isnan(noise))
+    spdlog::error("{}: {}", "noise parameter is not a number", noise);
   if (noise > 0.0) err += AddNoise2Data(gg, *SimPM, 2, noise);
 
   seek = "smooth";
@@ -307,7 +309,8 @@ int IC_photevap_random_clumps::setup_data(
     smooth = atoi(ics.c_str());
   else
     smooth = -1;
-  if (isnan(smooth)) rep.error("Smooth parameter not a number", smooth);
+  if (isnan(smooth))
+    spdlog::error("{}: {}", "Smooth parameter not a number", smooth);
   if (smooth > 0) err += SmoothData(smooth);
 
   cltr    = mem.myfree(cltr);
@@ -320,30 +323,32 @@ int IC_photevap_random_clumps::setup_data(
 
 int IC_photevap_random_clumps::setup_perc_fixedmass()
 {
-  cout << "\t\tSetting up a " << ndim << "-D simulation with an I-front";
-  cout << " hitting " << Nclumps << " random clumps with total mass of ";
+  spdlog::debug(
+      "\t\tSetting up a {}-D simulation with an I-front hitting random clumps with total mass of {}",
+      ndim, Nclumps);
 
   string seek, str;
   seek = "PERCclump_mass";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_photevap_random_clumps::clump_mass = atof(str.c_str());
 
   seek = "PERCrandomseed";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   srand(atoi(str.c_str()));
 
   // clump_mass is as a fraction of the ambient mass.
   class cell *cpt = gg->FirstPt();
   double vol      = gg->CellVolume(cpt, 0);
-  cout << clump_mass * (ambient[RO] * vol * SimPM->Ncell)
-       << "\n\t\t(=" << clump_mass;
-  cout << " times ambient mass) and radial sizes of ";
-  cout << min_size << " to " << max_size << " in units of y-range.\n";
-  rep.printVec("ambient ", ambient, SimPM->nvar);
+  spdlog::debug(
+      "{}\n\t\t(={} times ambient mass) and radial sizes of {} to {} in units of y-range",
+      clump_mass * (ambient[RO] * vol * SimPM->Ncell), clump_mass, min_size,
+      max_size);
+  spdlog::debug(
+      "ambient  : {}", std::vector<double>(ambient, ambient + SimPM->nvar));
 
-  cout << "\t\tAssigning primitive vectors.\n";
+  spdlog::info("\t\tAssigning primitive vectors");
   double m1 = 0.0;
   do {
     // Set values of primitive variables.
@@ -366,14 +371,14 @@ int IC_photevap_random_clumps::setup_perc_fixedmass()
   //
   clump_mass *= ambient[RO] * vol * SimPM->Ncell;
 
-  cout << "setting up clump properties...\n";
+  spdlog::info("setting up clump properties...");
 #ifdef SERIAL
   int err = clumps_random_setup_fixedmass();
 #endif  // SERIAL
 #ifdef PARALLEL
   int err = clumps_random_setup_pllel_fixedmass();
 #endif  // PARALLEL
-  cout << "adding clumps to grid...\n";
+  spdlog::info("adding clumps to grid...");
   cpt         = gg->FirstPt();
   double mass = 0.0;
   do {
@@ -384,13 +389,12 @@ int IC_photevap_random_clumps::setup_perc_fixedmass()
   double mtot = sub_domain->global_operation_double("SUM", mass);
   mass        = mtot;
 #endif  // PARALLEL
-  cout << "***** TOTAL MASS:" << mass << " CLUMP   MASS IS "
-       << clump_mass / mass << " OF THIS.*****\n";
-  cout << "***** TOTAL MASS:" << mass << " AMBIENT MASS IS " << m1 / mass
-       << " OF THIS.*****\n";
-  cout << "***** AMB+CLUMP:" << clump_mass + m1 << "  *****\n";
-  cout << "***** if these don't match up, it's because some clump mass is off "
-          "grid in XN/XP directions.\n";
+  spdlog::debug(
+      "***** TOTAL MASS:{} CLUMP MASS IS {} OF THIS.*****\n"
+      "***** TOTAL MASS:{} AMBIENT MASS IS {} OF THIS.*****\n***** AMB+CLUMP:{} *****\n"
+      "***** if these don't match up, it's because some clump mass is off "
+      "grid in XN/XP directions",
+      mass, clump_mass / mass, mass, m1 / mass, clump_mass + m1);
   return (err);
 }
 
@@ -399,26 +403,28 @@ int IC_photevap_random_clumps::setup_perc_fixedmass()
 
 int IC_photevap_random_clumps::setup_perc()
 {
-  cout << "\t\tSetting up a " << ndim << "-D simulation with an I-front";
-  cout << " hitting " << Nclumps << " random clumps with overdensities of ";
+  spdlog::debug(
+      "\t\tSetting up a {}-D simulation with an I-front hitting {} random clumps with overdensities of ",
+      ndim, Nclumps);
 
   string seek, str;
   seek = "PERCmin_overdensity";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_photevap_random_clumps::min_overdensity = atof(str.c_str());
 
   seek = "PERCmax_overdensity";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_photevap_random_clumps::max_overdensity = atof(str.c_str());
 
-  cout << min_overdensity << " to " << max_overdensity
-       << " and radial sizes of";
-  cout << min_size << " to " << max_size << " in units of y-range.\n";
-  rep.printVec("ambient ", ambient, SimPM->nvar);
+  spdlog::debug(
+      "{} to {} and radial sizes of {} to {} in units of y-range",
+      min_overdensity, max_overdensity, min_size, max_size);
+  spdlog::debug(
+      "ambient  : {}", std::vector<double>(ambient, ambient + SimPM->nvar));
 
-  cout << "\t\tAssigning primitive vectors.\n";
+  spdlog::info("\t\tAssigning primitive vectors");
   class cell *cpt = gg->FirstPt();
   do {
     // Set values of primitive variables.
@@ -426,14 +432,14 @@ int IC_photevap_random_clumps::setup_perc()
       cpt->P[v] = ambient[v];
   } while ((cpt = gg->NextPt(cpt)) != NULL);
 
-  cout << "setting up clump properties...\n";
+  spdlog::info("setting up clump properties...");
 #ifdef SERIAL
   int err = clumps_random_setup();
 #endif  // SERIAL
 #ifdef PARALLEL
   int err = clumps_random_setup_pllel();
 #endif  // PARALLEL
-  cout << "adding clumps to grid...\n";
+  spdlog::info("adding clumps to grid...");
   cpt = gg->FirstPt();
   do {
     err += clumps_random_set_dens(cpt);
@@ -470,7 +476,7 @@ int IC_photevap_random_clumps::clumps_random_setup_fixedmass()
   double empty_xn = 0.0, empty_xp = 0.0;
   double empty_yn = 0.0, empty_yp = 0.0;
   double empty_zn = 0.0, empty_zp = 0.0;
-  cout << "x3 = " << x3 << " and Xrange=" << SimPM->Range[XX] << endl;
+  spdlog::debug("x3 = {} and Xrange={}", x3, SimPM->Range[XX]);
 
   string seek, str;
   seek = "PERCempty_xn";
@@ -528,8 +534,9 @@ int IC_photevap_random_clumps::clumps_random_setup_fixedmass()
     max_mass = 0.0;
   else
     max_mass = atof(str.c_str()) * clump_mass;
-  cout << "min/max masses: " << min_mass << ", " << max_mass
-       << ",  and total mass: " << clump_mass << endl;
+  spdlog::debug(
+      "min/max masses: {}, {},  and total mass: {}", min_mass, max_mass,
+      clump_mass);
 
   std::vector<double> masses;
   double mass_remaining = clump_mass, this_mass = 0.0;
@@ -541,12 +548,13 @@ int IC_photevap_random_clumps::clumps_random_setup_fixedmass()
     mass_remaining -= this_mass;
     nnn++;
   } while (mass_remaining > (clump_mass * SMALLVALUE));
-  cout << "Used up all the mass in " << nnn << " clumps (Nclumps was "
-       << Nclumps << ")  Mass left over=" << mass_remaining << "\n";
+  spdlog::debug(
+      "Used up all the mass in {} clumps (Nclumps was {})  Mass left over={}",
+      nnn, Nclumps, mass_remaining);
   Nclumps = nnn;
   // set up clumps
   cl = new struct clump[Nclumps];
-  if (!cl) rep.error("Initialising clumps", cl);
+  if (!cl) spdlog::error("{}: {}", "Initialising clumps", fmt::ptr(cl));
   for (int j = 0; j < Nclumps; j++) {
     cl[j].mass = masses[j];
   }
@@ -555,7 +563,7 @@ int IC_photevap_random_clumps::clumps_random_setup_fixedmass()
 #ifdef FIXED_NUM_CLUMPS
   // set up clumps
   cl = new struct clump[Nclumps];
-  if (!cl) rep.error("Initialising clumps", cl);
+  if (!cl) spdlog::error("{}: {}", "Initialising clumps", fmt::ptr(cl));
 
   // choose random values on the interval [0,M_cl], and use them for clump
   // masses
@@ -567,7 +575,7 @@ int IC_photevap_random_clumps::clumps_random_setup_fixedmass()
   masses.push_back(clump_mass);
   sort(masses.begin(), masses.end());
   for (int j = 0; j < Nclumps + 1; j++)
-    cout << "masses: " << masses[j] << endl;
+    spdlog::debug("masses: {}", masses[j]);
   for (int j = 0; j < Nclumps; j++) {
     cl[j].mass = masses[j + 1] - masses[j];
   }
@@ -579,7 +587,6 @@ int IC_photevap_random_clumps::clumps_random_setup_fixedmass()
     //
     // if (SimPM->typeofbc.find("YNper") != std::string::npos) {
     if (SimPM->BC_YN == "periodic") {
-      // cout <<"find = "<<SimPM->typeofbc.find("YNper")<<endl;
       // for periodic BCs we don't care how near the y or z boundary a
       // clump is, but we do want it to be away from the incident
       // radiation boundary. max_size is a fraction of the y-range, so we
@@ -592,7 +599,6 @@ int IC_photevap_random_clumps::clumps_random_setup_fixedmass()
       cl[j].centre[ZZ] = SimPM->Xmin[ZZ] + zmax * random_frac();
     }
     else {
-      // cout <<"not periodic bcs!\n";
       cl[j].centre[XX] = SimPM->Xmin[XX] + empty_xn
                          + (xmax - empty_xp - empty_xn) * random_frac();
       cl[j].centre[YY] = SimPM->Xmin[YY] + empty_yn
@@ -660,7 +666,7 @@ int IC_photevap_random_clumps::clumps_random_setup()
 
   string seek = "PERCrandomseed";
   string str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   srand(atoi(str.c_str()));
   //  srand(12);
   //
@@ -670,7 +676,7 @@ int IC_photevap_random_clumps::clumps_random_setup()
 
   // set up clumps
   cl = new struct clump[Nclumps];
-  if (!cl) rep.error("Initialising clumps", cl);
+  if (!cl) spdlog::error("{}: {}", "Initialising clumps", fmt::ptr(cl));
 
   //
   // Assign random values within some sensible limits.
@@ -683,7 +689,6 @@ int IC_photevap_random_clumps::clumps_random_setup()
     //
     // if (SimPM->typeofbc.find("YNper") != std::string::npos) {
     if (SimPM->BC_YN == "periodic") {
-      // cout <<"find = "<<SimPM->typeofbc.find("YNper")<<endl;
       // for periodic BCs we don't care how near the y or z boundary a
       // clump is, but we do want it to be away from the incident
       // radiation boundary. max_size is a fraction of the y-range, so we
@@ -697,7 +702,6 @@ int IC_photevap_random_clumps::clumps_random_setup()
       cl[j].centre[ZZ] = zmax * random_frac();
     }
     else {
-      // cout <<"not periodic bcs!\n";
       cl[j].centre[XX] = 0.1 * xmax + 0.8 * xmax * random_frac();
       cl[j].centre[YY] =
           max_size * ymax + (1.0 - 2.0 * max_size) * ymax * random_frac();
@@ -777,12 +781,14 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel_fixedmass()
   else {
     err += sub_domain->broadcast_data(0, "INT", 1, &Nclumps);
     // set up clumps
-    if (cl) rep.error("I'm not root, but cl already initialised!", cl);
+    if (cl)
+      spdlog::error(
+          "{}: {}", "I'm not root, but cl already initialised!", fmt::ptr(cl));
     cl = new struct clump[Nclumps];
-    if (!cl) rep.error("Initialising clumps", cl);
+    if (!cl) spdlog::error("{}: {}", "Initialising clumps", fmt::ptr(cl));
   }
   if (err) {
-    cerr << "didn't set up clumps (pllel)\n";
+    spdlog::error("didn't set up clumps (pllel)");
     return err;
   }
 
@@ -870,12 +876,14 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel()
   }
   else {
     // set up clumps
-    if (cl) rep.error("I'm not root, but cl already initialised!", cl);
+    if (cl)
+      spdlog::error(
+          "{}: {}", "I'm not root, but cl already initialised!", fmt::ptr(cl));
     cl = new struct clump[Nclumps];
-    if (!cl) rep.error("Initialising clumps", cl);
+    if (!cl) spdlog::error("{}: {}", "Initialising clumps", fmt::ptr(cl));
   }
   if (err) {
-    cerr << "didn't set up clumps (pllel)\n";
+    spdlog::error("didn't set up clumps (pllel)");
     return err;
   }
 
@@ -946,13 +954,10 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel()
 
 void IC_photevap_random_clumps::print_clump(struct clump *rc)
 {
-  cout << "--clump overdensity:" << rc->overdensity << "  mass:" << rc->mass
-       << endl;
-  rep.printVec("Centre", rc->centre, SimPM->ndim);
-  rep.printVec("Radius", rc->size, SimPM->ndim);
-  rep.printVec("Angles", rc->ang, SimPM->ndim);
-  cout << "-------------------\n";
-  return;
+  spdlog::debug("--clump overdensity:{}  mass:{}", rc->overdensity, rc->mass);
+  spdlog::debug("Centre : {}", rc->centre);
+  spdlog::debug("Radius : {}", rc->size);
+  spdlog::debug("Angles : {}", rc->ang);
 }
 
 // ##################################################################
@@ -961,7 +966,7 @@ void IC_photevap_random_clumps::print_clump(struct clump *rc)
 int IC_photevap_random_clumps::clumps_random_set_dens(class cell *c)
 {
   int err = 0;
-  double x0[ndim], x1[ndim], dpos[ndim];
+  std::array<double, MAX_DIM> x0, x1, dpos;
   CI.get_dpos(c, dpos);
   for (int j = 0; j < Nclumps; j++) {
     //
@@ -1005,7 +1010,7 @@ int IC_photevap_random_clumps::clumps_random_set_dens(class cell *c)
     if (profile == 0) {
       // top-hat profile
       string e = "Need to make this trace ellipses, not postage stamps!!!";
-      rep.error("Fix IC code for top-hat density profile", e);
+      spdlog::error("{}: {}", "Fix IC code for top-hat density profile", e);
       bool inside = true;
       for (int k = 0; k < ndim; k++)
         if (fabs(x1[k]) > cl[j].size[k]) inside = false;
@@ -1025,7 +1030,7 @@ int IC_photevap_random_clumps::clumps_random_set_dens(class cell *c)
       c->P[RO] += ambient[RO] * cl[j].overdensity * exp(-ef);
     }
     else
-      rep.error("Bad profile id in parameter-file", profile);
+      spdlog::error("{}: {}", "Bad profile id in parameter-file", profile);
   }
   return err;
 }

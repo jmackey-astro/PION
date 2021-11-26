@@ -46,15 +46,17 @@
 #include "defines/testing_flags.h"
 
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
 #include "tools/timer.h"
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
 
 #include "raytracing/raytracer_SC_pllel.h"
 #include <fstream>
-#include <iostream>
 using namespace std;
 
 #ifdef PARALLEL
@@ -75,9 +77,8 @@ raytracer_USC_pllel::raytracer_USC_pllel(
     ) :
     raytracer_USC(ggg, mmm, nd, csys, nv, ftr, Nsources)
 {
-#ifdef RT_TESTING
-  cout << "SC PARALLEL raytracer class constructor!\n";
-#endif
+  spdlog::info("SC PARALLEL raytracer class constructor!");
+
   par        = sp;
   sub_domain = mcmd;
   return;
@@ -85,9 +86,7 @@ raytracer_USC_pllel::raytracer_USC_pllel(
 
 raytracer_USC_pllel::~raytracer_USC_pllel()
 {
-#ifdef RT_TESTING
-  cout << "SC PARALLEL raytracer class destructor!\n";
-#endif
+  spdlog::info("SC PARALLEL raytracer class destructor!");
 }
 
 // ##################################################################
@@ -100,10 +99,8 @@ int raytracer_USC_pllel::Add_Source(struct rad_src_info *src  ///< source info.
   // First call serial version.  This finds the source, and centres
   // it on a cell vertex if needed.
   //
-#ifdef RT_TESTING
-  cout << "\n--BEGIN-----raytracer_USC_pllel::AddSource()------------\n";
-  cout << "\t**** PARALLEL Add_Source: calling serial version.\n";
-#endif
+  spdlog::info("\n--BEGIN-----raytracer_USC_pllel::AddSource()------------\n"
+               "\t**** PARALLEL Add_Source: calling serial version.\n");
   if (src->at_infinity) {
     raytracer_USC_infinity::add_source_to_list(src);
   }
@@ -111,33 +108,26 @@ int raytracer_USC_pllel::Add_Source(struct rad_src_info *src  ///< source info.
     add_source_to_list(src);
   }
   int id = SourceList.back().s->id;
-#ifdef RT_TESTING
-  cout << "\t**** PARALLEL Add_Source: serial fn ret id=" << id << "\n";
-#endif
+  spdlog::debug("\t**** PARALLEL Add_Source: serial fn ret id={}", id);
 
   //
   // Now tell the parallel grid to decide which boundaries it needs
   // to receive data from before processing this source, and which it
   // needs to send data to after processing.
   //
-#ifdef RT_TESTING
-  cout << "\t**** PARALLEL Add_Source: Setup extra RT boundaries.\n";
-#endif
+  spdlog::info("\t**** PARALLEL Add_Source: Setup extra RT boundaries");
   int err = Setup_RT_Boundaries(*par, *sub_domain, gridptr, id, *src);
-  if (err) rep.error("Failed to setup RT Boundaries", err);
+  if (err) spdlog::error("{}: {}", "Failed to setup RT Boundaries", err);
 
-    //
-    // Set Vshell for every cell on the grid.
-    //
-#ifdef RT_TESTING
-  cout << "\t**** PARALLEL: setting Vshell for source.\n";
-#endif
+  //
+  // Set Vshell for every cell on the grid.
+  //
+  spdlog::info("\t**** PARALLEL: setting Vshell for source");
+
   set_Vshell_for_source(&SourceList.back());
 
-#ifdef RT_TESTING
-  cout << "\t**** PARALLEL Add_Source: all done..\n";
-  cout << "--END-----raytracer_USC_pllel::AddSource()------------\n";
-#endif
+  spdlog::info("\t**** PARALLEL Add_Source: all done..\n"
+               "--END-----raytracer_USC_pllel::AddSource()------------\n");
   return id;
 }
 
@@ -151,9 +141,7 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
 )
 {
   int err = 0;
-#ifdef RT_TESTING
-  cout << "RT_MPI: Starting Raytracing for source: " << s_id << "\n";
-#endif
+  spdlog::debug("RT_MPI: Starting Raytracing for source: {}", s_id);
 
   // Find source in list.
   struct rad_src_info *RS = 0;
@@ -162,7 +150,8 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
     if ((*i).s->id == s_id) RS = (*i).s;
   }
   if (!RS) {
-    rep.error("RayTrace_SingleSource() source not in source list.", s_id);
+    spdlog::error(
+        "{}: {}", "RayTrace_SingleSource() source not in source list.", s_id);
   }
 
   string t1 = "totalRT", t2 = "waitingRT", t3 = "doingRT";  //, t4="tempRT";
@@ -174,14 +163,11 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   //
   clk.start_timer(t2);
   // clk.start_timer(t4);
-#ifdef RT_TESTING
-  cout << "RT_MPI: receiving RT boundaries\n";
-#endif
+  spdlog::info("RT_MPI: receiving RT boundaries");
   err += Receive_RT_Boundaries(*par, *sub_domain, gridptr, s_id, *RS);
-#ifdef RT_TESTING
-  cout << "RT_MPI: received RT boundaries\n";
-#endif
-  // cout <<"RT: waiting to receive for "<<clk.stop_timer(t4)<<" secs.\n";
+
+  spdlog::info("RT_MPI: received RT boundaries");
+
   clk.pause_timer(t2);
 
   //
@@ -189,14 +175,12 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   //
   clk.start_timer(t3);
   // clk.start_timer(t4);
-#ifdef RT_TESTING
-  cout << "RT_MPI: calling serial raytrace function\n";
-#endif
+  spdlog::info("RT_MPI: calling serial raytrace function");
+
   err += raytracer_USC::RayTrace_SingleSource(s_id, dt, g);
-#ifdef RT_TESTING
-  cout << "RT_MPI: serial raytrace done.\n";
-#endif
-  // cout <<"RT: Tracing over domain took "<<clk.stop_timer(t4)<<" secs.\n";
+
+  spdlog::info("RT_MPI: serial raytrace done");
+
   run = clk.pause_timer(t3);
 
   //
@@ -204,22 +188,13 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   //
   clk.start_timer(t2);
   // clk.start_timer(t4);
-#ifdef RT_TESTING
-  cout << "RT_MPI: sending RT boundaries\n";
-#endif
+  spdlog::info("RT_MPI: sending RT boundaries");
+
   err += Send_RT_Boundaries(*par, *sub_domain, gridptr, s_id, *RS);
-#ifdef RT_TESTING
-  cout << "RT_MPI: sent RT boundaries\n";
-#endif
-  // cout <<"RT: Sending boundaries/Waiting for "<<clk.stop_timer(t4)<<"
-  // secs.\n";
+  spdlog::info("RT_MPI: sent RT boundaries");
+
   wait  = clk.pause_timer(t2);
   total = clk.pause_timer(t1);
-
-  // if ( (SimPM.timestep%1024==0) && s_id==0) {
-  //  cout <<"RT: step:"<<SimPM.timestep<<" Total RT time="<<total;
-  //  cout <<" secs; processing="<<run<<" secs; waiting="<<wait<<"\n";
-  //}
 
   return err;
 }

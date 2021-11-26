@@ -65,7 +65,10 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -430,44 +433,44 @@ void pm_dvararr::set_ptr(void *p)
 
 void pm_int::show_val()
 {
-  cout << *ptr;
+  spdlog::debug("{}", *ptr);
 }
 void pm_double::show_val()
 {
-  cout << *ptr;
+  spdlog::debug("{}", *ptr);
 }
 void pm_float::show_val()
 {
-  cout << *ptr;
+  spdlog::debug("{}", *ptr);
 }
 void pm_long::show_val()
 {
-  cout << *ptr;
+  spdlog::debug("{}", *ptr);
 }
 void pm_string::show_val()
 {
-  cout << *ptr << ", name=" << name;
+  spdlog::debug("{}, name={}", *ptr, name);
 }
 void pm_ddimarr::show_val()
 {
-  cout << "[";
+  spdlog::debug("[");
   for (int i = 0; i < len - 1; i++)
-    cout << ptr[i] << ", ";
-  cout << ptr[len - 1] << "]";
+    spdlog::debug("{}, ", ptr[i]);
+  spdlog::debug("{}]", ptr[len - 1]);
 }
 void pm_idimarr::show_val()
 {
-  cout << "[";
+  spdlog::debug("[");
   for (int i = 0; i < len - 1; i++)
-    cout << ptr[i] << ", ";
-  cout << ptr[len - 1] << "]";
+    spdlog::debug("{}, ", ptr[i]);
+  spdlog::debug("{}]", ptr[len - 1]);
 }
 void pm_dvararr::show_val()
 {
-  cout << "[";
+  spdlog::debug("[");
   for (int i = 0; i < len - 1; i++)
-    cout << ptr[i] << ", ";
-  cout << ptr[len - 1] << "]";
+    spdlog::debug("{}, ", ptr[i]);
+  spdlog::debug("{}]", ptr[len - 1]);
 }
 
 // ##################################################################
@@ -496,7 +499,7 @@ void pm_string::set_to_default()
 void pm_ddimarr::set_to_default()
 {
   if (!defval)
-    rep.error("No default value!", "SET ME!");
+    spdlog::error("{}: {}", "No default value!", "SET ME!");
   else
     for (int i = 0; i < len; i++)
       ptr[i] = defval[i];
@@ -504,7 +507,7 @@ void pm_ddimarr::set_to_default()
 void pm_idimarr::set_to_default()
 {
   if (!defval)
-    rep.error("No default value!", "SET ME!");
+    spdlog::error("{}: {}", "No default value!", "SET ME!");
   else
     for (int i = 0; i < len; i++)
       ptr[i] = defval[i];
@@ -513,7 +516,7 @@ void pm_idimarr::set_to_default()
 void pm_dvararr::set_to_default()
 {
   if (!defval)
-    rep.error("No default value!", "SET ME!");
+    spdlog::error("{}: {}", "No default value!", "SET ME!");
   else
     for (int i = 0; i < len; i++)
       ptr[i] = defval[i];

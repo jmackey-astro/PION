@@ -37,7 +37,10 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -53,10 +56,12 @@ using namespace std;
 eqns_Euler::eqns_Euler(int nv) : eqns_base(nv)
 {
 #ifndef NDEBUG
-  cout << "(eqns_Euler::eqns_Euler) Setting up Euler Equations Class.\n";
-  cout << "\tVector lengths: " << eq_nvar << "\n";
+  spdlog::info(
+      "(eqns_Euler::eqns_Euler) Setting up Euler Equations Class.\n\tVector lengths: {}",
+      eq_nvar);
 #endif
-  if (eq_nvar < 5) rep.error("eqns_Euler initialised with eq_nvar<5.", eq_nvar);
+  if (eq_nvar < 5)
+    spdlog::error("{}: {}", "eqns_Euler initialised with eq_nvar<5.", eq_nvar);
   // cout <<"Setting Flux functions to X-dir: pu2f(), u2f()\n";
   //  pu2flux = &eqns_Euler::pu2f;
   //  u2flux = &eqns_Euler::u2f;
@@ -74,7 +79,7 @@ eqns_Euler::eqns_Euler(int nv) : eqns_base(nv)
 eqns_Euler::~eqns_Euler()
 {
 #ifndef NDEBUG
-  cout << "(eqns_Euler::~eqns_Euler) Deleting Euler Equations Class.\n";
+  spdlog::info("(eqns_Euler::~eqns_Euler) Deleting Euler Equations Class.");
 #endif
 }
 
@@ -127,15 +132,15 @@ int eqns_Euler::UtoP(
   // This is usually fatal to a simulation, so bug out by default.
   //
   if (p[eqRO] <= 0.0) {
-    rep.printVec("u", u, eq_nvar);
-    rep.printVec("p", p, eq_nvar);
+    spdlog::debug("u : {}", std::vector<double>(u, u + eq_nvar));
+    spdlog::debug("p : {}", std::vector<double>(p, p + eq_nvar));
 #ifndef NDEBUG
     //  cout <<"NEG.DENS.CELL:";CI.print_cell(dp.c);
 #endif
-    rep.error("Negative density (eqns_Euler::UtoP)", p[eqRO]);
+    spdlog::error("{}: {}", "Negative density (eqns_Euler::UtoP)", p[eqRO]);
     if (ct_rho < 1000) {
       ct_rho++;
-      cout << "(eqns_Euler::UtoP) negative density!\n";
+      spdlog::debug("(eqns_Euler::UtoP) negative density!");
     }
     // reset all variables because a negative density will change the sign
     // of all of the velocities!
@@ -178,12 +183,11 @@ int eqns_Euler::UtoP(
 #ifndef NDEBUG
     if (ct_pg < 1000) {
       ct_pg++;
-      cout << "(eqns_Euler::UtoP) negative pressure...p=" << p[eqPG];
-      cout << ", u[eqERG]=" << u[eqERG] << ", 0.5*rho*v^2=";
-      cout << 0.5 * p[eqRO]
-                  * (p[eqVX] * p[eqVX] + p[eqVY] * p[eqVY] + p[eqVZ] * p[eqVZ]);
-      cout << "... correcting\n";
-      cout << "NEG.PRES.CELL:";
+      spdlog::debug(
+          "(eqns_Euler::UtoP) negative pressure...p={}, u[eqERG]={}, 0.5*rho*v^2={}... correcting\nNEG.PRES.CELL:",
+          p[eqPG], u[eqERG],
+          0.5 * p[eqRO]
+              * (p[eqVX] * p[eqVX] + p[eqVY] * p[eqVY] + p[eqVZ] * p[eqVZ]));
       CI.print_cell(dp.c);
     }
 #endif
@@ -269,8 +273,8 @@ int eqns_Euler::HydroWaveFull(
   // First get the appropriate velocity u*
   int err = HydroWave(lr, pp, prewave, u, gamma);
   if (err != 0) {
-    cerr << "(riemann::hydro_wave_full) hydro wave call didn't work, exiting."
-         << "\n";
+    spdlog::error(
+        "(riemann::hydro_wave_full) hydro wave call didn't work, exiting.");
     return (1);
   }
   // All that is left to do is solve for the density.
@@ -404,10 +408,8 @@ void eqns_Euler::SetAvgState(
   //
   // Now reset reference velocities to be 1/10th of the sound speed.
   //
-  double refvel   = chydro(eq_refvec, g);
+  double refvel   = chydro(&eq_refvec[0], g);
   eq_refvec[eqVX] = eq_refvec[eqVY] = eq_refvec[eqVZ] = 0.1 * refvel;
-
-  return;
 }
 
 // ##################################################################

@@ -13,7 +13,10 @@
 #include <algorithm>
 #include <tools/command_line_interface.h>
 #include <tools/mem_manage.h>
-#include <tools/reporting.h>
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
 
 #include "sub_domain.h"
 
@@ -80,7 +83,7 @@ Sub_domain::~Sub_domain()
   --m_count;
 
 #ifndef NDEBUG
-  cout << "Sub_domain Destructor: done" << endl;
+  spdlog::info("Sub_domain Destructor: done");
 #endif
 }
 
@@ -121,8 +124,9 @@ int Sub_domain::decomposeDomain(
 )
 {
 #ifndef NDEBUG
-  cout << "---Sub_domain::decomposeDomain() decomposing domain. ";
-  cout << " Nproc=" << nproc << ", myrank=" << myrank << endl;
+  spdlog::info(
+      "---Sub_domain::decomposeDomain() decomposing domain.  Nproc={}, myrank={}",
+      nproc, myrank);
 #endif
 
   m_ndim = ndim;
@@ -138,12 +142,13 @@ int Sub_domain::decomposeDomain(
   /* TODO: reordering of ranks is temporarily disabled so old communicator works
    */
   MPI_Cart_create(
-      MPI_COMM_WORLD, m_ndim, num_subdomains, &periodic[0], 0, &cart_comm);
+      MPI_COMM_WORLD, m_ndim, num_subdomains.data(), &periodic[0], 0,
+      &cart_comm);
 
   /* find my rank in the Cartesian communicator */
   MPI_Comm_rank(cart_comm, &myrank);
 
-  MPI_Cart_coords(cart_comm, myrank, m_ndim, coordinates);
+  MPI_Cart_coords(cart_comm, myrank, m_ndim, coordinates.data());
 
   Ncell           = 1;
   neighbour_ranks = vector<int>(2 * m_ndim);
@@ -163,27 +168,27 @@ int Sub_domain::decomposeDomain(
 
 #ifndef NDEBUG
   if (myrank == 0) {
-    cout << "Global Ncell = " << level.Ncell << "\n";
-    cout << "Dim\t Range\t Xmin\t Xmax\t Grid size\n";
+    spdlog::debug("Global Ncell = {}", level.Ncell);
+    spdlog::debug("Dim\t Range\t Xmin\t Xmax\t Grid size");
     for (int i = 0; i < m_ndim; i++) {
-      cout << i << "\t " << level.Range[i] << "\t " << level.Xmin[i] << "\t "
-           << level.Xmax[i] << "\t " << num_subdomains[i] << "\n";
+      spdlog::debug(
+          "{:^3}\t {:^5}\t {:^4}\t {:^4}\t {:^9}", i, level.Range[i],
+          level.Xmin[i], level.Xmax[i], num_subdomains[i]);
     }
     std::vector<int> coords(m_ndim, 0);
-    cout << "Process topology:\n";
+    spdlog::debug("Process topology:");
     print_grid(coords, 0);
   }
 
-  cout << "Proc " << myrank << ":\n";
-  cout << "Ncell = " << Ncell << "\n";
-  cout << "Dim\t Range\t Xmin\t Xmax\t -ngbr\t +ngbr\t coords\n";
+  spdlog::debug("Proc {}:\tNcell = {}", myrank, Ncell);
+  spdlog::debug("Dim\t Range\t Xmin\t Xmax\t -ngbr\t +ngbr\t coords");
   for (int i = 0; i < m_ndim; i++) {
-    cout << i << "\t " << range[i] << "\t " << Xmin[i] << "\t " << Xmax[i]
-         << "\t " << neighbour_ranks[2 * i] << "\t "
-         << neighbour_ranks[2 * i + 1] << "\t " << coordinates[i] << "\n";
+    spdlog::debug(
+        "{:^3}\t {:^5}\t {:^4}\t {:^4}\t {:^5}\t {:^5}\t {:^6}", i, range[i],
+        Xmin[i], Xmax[i], neighbour_ranks[2 * i], neighbour_ranks[2 * i + 1],
+        coordinates[i]);
   }
-  cout << "---Sub_domain::decomposeDomain() Domain decomposition done.\n"
-       << endl;
+  spdlog::info("---Sub_domain::decomposeDomain() Domain decomposition done");
 #endif
   return 0;
 }
@@ -221,7 +226,7 @@ int Sub_domain::decomposeDomain(
 {
   periodic = move(pbc);
 #ifndef NDEBUG
-  rep.printVec("periodic", &periodic[0], ndim);
+  spdlog::debug("periodic : {}", periodic);
 #endif
   return decomposeDomain(ndim, level);
 }
@@ -240,7 +245,7 @@ int Sub_domain::decomposeDomain(
 {
   periodic = move(pbc);
 #ifndef NDEBUG
-  rep.printVec("periodic", &periodic[0], ndim);
+  spdlog::debug("periodic : {}", periodic);
 #endif
   return decomposeDomain(daxis, ndim, level);
 }
@@ -357,19 +362,18 @@ void Sub_domain::determine_parent_processes(
   }
 
 #ifndef NDEBUG
-  cout << "level " << level << ", parent proc = " << pgrid.rank
-       << ", parent grid xmin/xmax:\n";
-  rep.printVec("Xmin", pgrid.Xmin, par.ndim);
-  rep.printVec("Xmax", pgrid.Xmax, par.ndim);
+  spdlog::debug(
+      "level {}, parent proc = {}, parent grid xmin/xmax:", level, pgrid.rank);
+  spdlog::debug("Xmin : {}", pgrid.Xmin);
+  spdlog::debug("Xmax : {}", pgrid.Xmax);
   for (int d = 0; d < 2 * par.ndim; d++) {
     if (pgrid_ngb[d].rank > -1) {
-      cout << "pproc ngb in direction " << d << " has neighbour proc ";
-      cout << pgrid_ngb[d].rank << "\n";
-      rep.printVec("Xmin", pgrid_ngb[d].Xmin, par.ndim);
-      rep.printVec("Xmax", pgrid_ngb[d].Xmax, par.ndim);
+      spdlog::debug("pproc ngb in direction {} has neighbour proc ", d);
+      spdlog::debug("{}", pgrid_ngb[d].rank);
+      spdlog::debug("Xmin : {}", pgrid_ngb[d].Xmin);
+      spdlog::debug("Xmax : {}", pgrid_ngb[d].Xmax);
     }
   }
-  cout.flush();
 #endif
 }
 
@@ -442,12 +446,11 @@ void Sub_domain::determine_child_processes(
     }
   }
 #ifndef NDEBUG
-  cout << "child procs on level " << level + 1 << "\n";
+  spdlog::debug("child procs on level {}", level + 1);
   for (auto c : child_procs) {
-    cout << "child rank " << c.rank << ":\n";
-    rep.printVec("Xmin", c.Xmin, par.ndim);
-    rep.printVec("Xmax", c.Xmax, par.ndim);
-    cout.flush();
+    spdlog::debug("child rank {}", c.rank);
+    spdlog::debug("Xmin : {}", c.Xmin);
+    spdlog::debug("Xmax : {}", c.Xmax);
   }
 #endif
 }
@@ -535,14 +538,13 @@ void Sub_domain::determine_child_neighbours(
     }
   }
 #ifndef NDEBUG
-  cout << "Child process' neighbours:\n";
+  spdlog::debug("Child process' neighbours:");
   for (int d = 0; d < 2 * par.ndim; d++) {
-    cout << "dir " << d << ":\n";
+    spdlog::debug("dir {}:", d);
     for (auto ngb : cgrid_ngb[d]) {
-      cout << "rank = " << ngb.rank << "\n";
-      rep.printVec("Xmin", ngb.Xmin, par.ndim);
-      rep.printVec("Xmax", ngb.Xmax, par.ndim);
-      cout.flush();
+      spdlog::debug("rank = {}", ngb.rank);
+      spdlog::debug("Xmin : {}", ngb.Xmin);
+      spdlog::debug("Xmax : {}", ngb.Xmax);
     }
   }
 #endif
@@ -558,7 +560,7 @@ void Sub_domain::set_NG_hierarchy(
 )
 {
 #ifndef NDEBUG
-  cout << "Setting up NG hierarchy (Sub_domain) on level " << l << endl;
+  spdlog::info("Setting up NG hierarchy (Sub_domain) on level {}", l);
   ;
 #endif
   // set rank of parent for each grid except root level 0

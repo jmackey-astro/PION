@@ -32,14 +32,14 @@ int main(int argc, char **argv)
     cerr << "Error: must call with 4 arguments...\n";
     cerr
         << "RadShockPosn: <executable> <OutfileName> <file-base> <FirstOutput> <OutputFreq>\n";
-    rep.error("Bad number of Args", argc);
+    spdlog::error("{}: {}", "Bad number of Args", argc);
   }
   string outfile    = argv[1];
   string infilebase = argv[2];
   int startct       = atoi(argv[3]);
   int opfreq        = atoi(argv[4]);
   if (isnan(startct) || isnan(opfreq) || opfreq == 0)
-    rep.error("Bad ints in args", opfreq);
+    spdlog::error("{}: {}", "Bad ints in args", opfreq);
 
   cout << "reading from first file " << infilebase << "." << startct
        << ".fits\n";
@@ -59,27 +59,31 @@ int main(int argc, char **argv)
   cout << "Initially reading from file " << infile << endl;
 
   int err = 0;
-  if (!fs.file_exists(infile)) rep.error("First file not found!", infile);
+  if (!fs.file_exists(infile))
+    spdlog::error("{}: {}", "First file not found!", infile);
   err = dataio.ReadHeader(infile);
-  if (err) rep.error("read header went bad", err);
+  if (err) spdlog::error("{}: {}", "read header went bad", err);
 
   // check dimensionality is ok.
   if (SimPM.ndim != 1 && SimPM.ndim != 2)
-    rep.error("need 1D or 2D sim for rad.shock test", SimPM.ndim);
+    spdlog::error("{}: {}", "need 1D or 2D sim for rad.shock test", SimPM.ndim);
   // Now the header should contain the sim dimensionality, number of vars,
   // size of box, so we can use these to set up the grid.
   cout << "(UniformFV::setup_grid) Setting up grid...\n";
   grid = new UniformGrid(
-      SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
+      SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin.data(), SimPM.Xmax,
+      SimPM.NG);
   if (grid == 0)
-    rep.error("(IntUniformFV::setup_grid) Couldn't assign data!", grid);
+    spdlog::error(
+        "{}: {}", "(IntUniformFV::setup_grid) Couldn't assign data!", grid);
   cout << "(setup_grid) Done. g=" << grid << "\n";
 
   // Set up and open outfile
   if (fs.file_exists(outfile))
     cout << "WARNING:: file exists, I am overwriting a text file.\n";
   ofstream outf(outfile.c_str());
-  if (!outf.is_open()) rep.error("couldn't open outfile", outfile);
+  if (!outf.is_open())
+    spdlog::error("{}: {}", "couldn't open outfile", outfile);
   outf.setf(ios_base::scientific);
   outf.precision(6);
   outf << "# Radiative Shock Test Problem outputs.  First file: " << infile
@@ -97,7 +101,7 @@ int main(int argc, char **argv)
     // read data onto grid.
     err += dataio.ReadHeader(infile);
     err += dataio.ReadData(infile);
-    if (err) rep.error("read data went bad for file", err);
+    if (err) spdlog::error("{}: {}", "read data went bad for file", err);
     // get first point, and move to XP end of grid.
     cell *c = grid->FirstPt();
     do {
@@ -105,7 +109,7 @@ int main(int argc, char **argv)
     } while (grid->NextPt(c, XP) != 0);
     cell *c2 = grid->NextPt(c, XN);
     if (!c2) {
-      rep.error("Lost on grid", c2);
+      spdlog::error("{}: {}", "Lost on grid", c2);
       grid->PrintCell(c);
     }
     refvel = c->P[VX];

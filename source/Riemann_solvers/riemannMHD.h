@@ -143,19 +143,20 @@ private:
       alphas;  ///< The slow speed normalisation constant
                ///< \f$=(c_f^2-a^2)/(c_f^2-c_s^2)\f$.
 
-  pion_flt *RS_pdiff;     ///< Difference between left and right states (for
-                          ///< calculation).
-  pion_flt *RS_evalue;    ///< The eignevalues of the matrix \f$\bar{A}\f$.
-  pion_flt *RS_strength;  ///< The wavestrengths for each wave.
+  std::vector<pion_flt> RS_pdiff;  ///< Difference between left and right states
+                                   ///< (for calculation).
+  std::vector<pion_flt>
+      RS_evalue;  ///< The eignevalues of the matrix \f$\bar{A}\f$.
+  std::vector<pion_flt> RS_strength;  ///< The wavestrengths for each wave.
 
   /// Left state vector (local copy)
-  pion_flt *RS_left;
+  std::vector<pion_flt> RS_left;
   /// Right state vector (local copy)
-  pion_flt *RS_right;
+  std::vector<pion_flt> RS_right;
   /// Resolved state vector (local copy)
-  pion_flt *RS_pstar;
+  std::vector<pion_flt> RS_pstar;
   /// Mean state vector
-  pion_flt *RS_meanp;
+  std::vector<pion_flt> RS_meanp;
 
   /// The elements of the 7 left eigenvectors... evec[E-val][Element]
   pion_flt RS_leftevec[7][7];

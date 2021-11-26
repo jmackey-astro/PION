@@ -17,7 +17,10 @@
 #ifdef LEGACY_CODE
 
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -42,7 +45,7 @@ MPv8::MPv8(
     MPv3(nd, csys, nv, ntr, tracers, ephys, rsrcs, g)
 {
 #ifndef NDEBUG
-  cout << "MPv8 constructor setting up.\n";
+  spdlog::info("MPv8 constructor setting up");
 #endif
   gamma_minus_one = eos_gamma - 1.0;
 
@@ -88,15 +91,13 @@ MPv8::MPv8(
   T          = EP->MinTemperature;
   SBHC_EEqLo = 2.0e-19 * exp(-1.184e5 / (T + 1.0e3))
                + 2.8e-28 * sqrt(T) * exp(-92.0 / T);
-  cout << "\tPI-heating=" << SBHC_EEqHi << ", NT-heating=" << SBHC_EEqLo
-       << "\n";
+  spdlog::debug("\tPI-heating={}, NT-heating={}", SBHC_EEqHi, SBHC_EEqLo);
 
 #ifndef NDEBUG
-  cout << "MPv8: Y=" << EP->Helium_MassFrac;
-  cout << ", Z=" << EP->Metal_MassFrac << ", mmpH=" << mean_mass_per_H;
-  cout << ", NION=" << JM_NION << ", NELEC=" << JM_NELEC << "\n";
+  spdlog::debug(
+      "MPv8: Y={}, Z={}, mmpH={}, NION={}, NELEC={}", EP->Helium_MassFrac,
+      EP->Metal_MassFrac, mean_mass_per_H, JM_NION, JM_NELEC);
 #endif  // NDEBUG
-  return;
 }
 
 // ##################################################################
@@ -105,9 +106,8 @@ MPv8::MPv8(
 MPv8::~MPv8()
 {
 #ifndef NDEBUG
-  cout << "MPv8 destructor.\n";
+  spdlog::info(<< "MPv8 destructor");
 #endif
-  return;
 }
 
 // ##################################################################
@@ -139,10 +139,11 @@ int MPv8::convert_prim2local(
   //
   for (int v = 0; v < 2; v++) {
     if (!isfinite(p_local[v]))
-      rep.error("INF/NAN input to microphysics", p_local[v]);
+      spdlog::error("{}: {}", "INF/NAN input to microphysics", p_local[v]);
   }
   if (mpv_nH < 0.0 || !isfinite(mpv_nH))
-    rep.error("Bad density input to MPv8::convert_prim2local", mpv_nH);
+    spdlog::error(
+        "{}: {}", "Bad density input to MPv8::convert_prim2local", mpv_nH);
 #endif  // NDEBUG
 
   return 0;
@@ -178,10 +179,12 @@ int MPv8::convert_local2prim(
 #ifndef NDEBUG
   if (p_out[pv_Hp] < 0.0 || p_out[pv_Hp] > 1.0 * (1.0 + JM_RELTOL)
       || !isfinite(p_out[pv_Hp]))
-    rep.error(
-        "Bad output H+ value in MPv8::convert_local2prim", p_out[pv_Hp] - 1.0);
+    spdlog::error(
+        "{}: {}", "Bad output H+ value in MPv8::convert_local2prim",
+        p_out[pv_Hp] - 1.0);
   if (p_out[PG] < 0.0 || !isfinite(p_out[PG]))
-    rep.error("Bad output pressure in MPv8::convert_local2prim", p_out[PG]);
+    spdlog::error(
+        "{}: {}", "Bad output pressure in MPv8::convert_local2prim", p_out[PG]);
 #endif  // NDEBUG
 
   return 0;
@@ -319,7 +322,7 @@ int MPv8::ydot(
         break;
 
       default:
-        rep.error("Bad ion_src_type in dYdt()", ion_src_type);
+        spdlog::error("{}: {}", "Bad ion_src_type in dYdt()", ion_src_type);
         break;
     }  // switch
   }
@@ -374,7 +377,7 @@ double MPv8::get_recombination_rate(
 )
 {
 #ifdef FUNCTION_ID
-  cout << "MPv8::get_recombination_rate()\n";
+  spdlog::info("MPv8::get_recombination_rate()");
 #endif  // FUNCTION_ID
   double rate = 0.0;
   double P[nvl];
@@ -389,7 +392,7 @@ double MPv8::get_recombination_rate(
          * JM_NELEC;
 
 #ifdef FUNCTION_ID
-  cout << "MPv8::get_recombination_rate()\n";
+  spdlog::info("MPv8::get_recombination_rate()");
 #endif  // FUNCTION_ID
   return rate;
 }

@@ -9,7 +9,11 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -47,31 +51,32 @@ int IC_jet::setup_data(
   int err = 0;
 
   ICsetup_base::gg = ggg;
-  if (!gg) rep.error("null pointer to grid!", ggg);
+  if (!gg) spdlog::error("{}: {}", "null pointer to grid!", fmt::ptr(ggg));
 
   ICsetup_base::rp = rrp;
-  if (!rp) rep.error("null pointer to ReadParams", rp);
+  if (!rp) spdlog::error("{}: {}", "null pointer to ReadParams", fmt::ptr(rp));
 
   IC_jet::ndim = SimPM->ndim;
   if (ndim != 2 && ndim != 3)
-    rep.error("Shock-Cloud problem must be 2d or 3d", ndim);
+    spdlog::error("{}: {}", "Shock-Cloud problem must be 2d or 3d", ndim);
   IC_jet::coords = SimPM->coord_sys;
   if (coords != COORD_CRT && coords != COORD_CYL)
-    rep.error("Bad coord sys", coords);
+    spdlog::error("{}: {}", "Bad coord sys", coords);
   IC_jet::eqns = SimPM->eqntype;
   if (eqns == EQEUL)
     eqns = 1;
   else if (eqns == EQMHD || eqns == EQGLM || eqns == EQFCD)
     eqns = 2;
   else
-    rep.error("Bad equations", eqns);
+    spdlog::error("{}: {}", "Bad equations", eqns);
 
   //
   // initialise jet and ambient vectors to zero.
   //
   IC_jet::ambient = 0;
   ambient         = new double[SimPM->nvar];
-  if (!ambient) rep.error("malloc pre/post shock vecs", ambient);
+  if (!ambient)
+    spdlog::error("{}: {}", "malloc pre/post shock vecs", fmt::ptr(ambient));
   for (int v = 0; v < SimPM->nvar; v++)
     ambient[v] = 0.0;
 
@@ -85,7 +90,7 @@ int IC_jet::setup_data(
   //
   seek = "JETradius";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_jet::jetrad = atoi(str.c_str());
 
   //
@@ -93,7 +98,7 @@ int IC_jet::setup_data(
   //
   seek = "JETdensity";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_jet::jdens = atof(str.c_str());
 
   //
@@ -101,7 +106,7 @@ int IC_jet::setup_data(
   //
   seek = "JETpressure";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_jet::jpres = atof(str.c_str());
 
   //
@@ -109,7 +114,7 @@ int IC_jet::setup_data(
   //
   seek = "JETvelocity";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_jet::jvel = atof(str.c_str());
 
   //
@@ -117,7 +122,7 @@ int IC_jet::setup_data(
   //
   seek = "JET_Bax";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_jet::j_bax = atof(str.c_str());
 
   //
@@ -125,7 +130,7 @@ int IC_jet::setup_data(
   //
   seek = "JET_Btor";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_jet::j_btor = atof(str.c_str());
 
 #ifdef NEW_B_NORM
@@ -245,19 +250,21 @@ int IC_jet::setup_data(
       IC_jet::ambient[t + SimPM->ftr] = -1.0e99;
   }
   //------------------------------------------------------------------
-  rep.printVec("JetState", JP.jetstate, SimPM->nvar);
+  spdlog::debug(
+      "JetState : {}",
+      std::vector<double>(JP.jetstate, JP.jetstate + SimPM->nvar));
 
   //
   // now make sure we are to do a jet sim.
   //
   string ics = rp->find_parameter("ics");
   if (ics == "")
-    rep.error("didn't get any ics to set up.", ics);
+    spdlog::error("{}: {}", "didn't get any ics to set up.", ics);
   else if (ics == "jet" || ics == "Jet" || ics == "JET") {
-    cout << "\t\tSetting up Jet simulation.\n";
+    spdlog::info("\t\tSetting up Jet simulation");
   }
   else
-    rep.error("Don't know what Initial Condition is!", ics);
+    spdlog::error("{}: {}", "Don't know what Initial Condition is!", ics);
 
   //
   // Set all data to ambient state vector.
@@ -278,7 +285,8 @@ int IC_jet::setup_data(
     noise = atof(ics.c_str());
   else
     noise = -1;
-  if (isnan(noise)) rep.error("noise parameter is not a number", noise);
+  if (isnan(noise))
+    spdlog::error("{}: {}", "noise parameter is not a number", noise);
   if (noise > 0) err += AddNoise2Data(gg, *SimPM, 2, noise);
 
   ics = rp->find_parameter("smooth");
@@ -286,7 +294,8 @@ int IC_jet::setup_data(
     smooth = atoi(ics.c_str());
   else
     smooth = -1;
-  if (isnan(smooth)) rep.error("Smooth parameter not a number", smooth);
+  if (isnan(smooth))
+    spdlog::error("{}: {}", "Smooth parameter not a number", smooth);
   if (smooth > 0) err += SmoothData(smooth);
 
   return err;

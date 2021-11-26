@@ -20,7 +20,7 @@ int inflow_bc::BC_assign_INFLOW(
   enum direction ondir = b->ondir;
 
   if (b->data.empty()) {
-    rep.error("BC_assign_INFLOW: empty boundary data", b->itype);
+    spdlog::error("{}: {}", "BC_assign_INFLOW: empty boundary data", b->itype);
   }
   if (!b->refval) {
     b->refval = mem.myalloc(b->refval, par.nvar);
@@ -67,7 +67,8 @@ int inflow_bc::BC_assign_INFLOW(
     b->refval[v] = temp->P[v];
 
   if (ct != b->data.size())
-    rep.error("BC_assign_INFLOW: missed some cells!", ct - b->data.size());
+    spdlog::error(
+        "{}: {}", "BC_assign_INFLOW: missed some cells!", ct - b->data.size());
 
   return 0;
 }

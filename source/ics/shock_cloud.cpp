@@ -7,7 +7,12 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -25,7 +30,6 @@ IC_shock_cloud::IC_shock_cloud()
   ndim = coords = eqns = -1;
   gam = dratio = pratio = Bratio = 0.0;
   clrad = cltr0 = 0.0;
-  return;
 }
 
 IC_shock_cloud::~IC_shock_cloud()
@@ -38,7 +42,6 @@ IC_shock_cloud::~IC_shock_cloud()
     delete[] postshock;
     postshock = 0;
   }
-  return;
 }
 
 int IC_shock_cloud::setup_data(
@@ -49,24 +52,24 @@ int IC_shock_cloud::setup_data(
   int err = 0;
 
   ICsetup_base::gg = ggg;
-  if (!gg) rep.error("null pointer to grid!", ggg);
+  if (!gg) spdlog::error("{}: {}", "null pointer to grid!", fmt::ptr(ggg));
 
   ICsetup_base::rp = rrp;
-  if (!rp) rep.error("null pointer to ReadParams", rp);
+  if (!rp) spdlog::error("{}: {}", "null pointer to ReadParams", fmt::ptr(rp));
 
   IC_shock_cloud::ndim = SimPM->ndim;
   if (ndim != 2 && ndim != 3)
-    rep.error("Shock-Cloud problem must be 2d or 3d", ndim);
+    spdlog::error("{}: {}", "Shock-Cloud problem must be 2d or 3d", ndim);
   IC_shock_cloud::coords = SimPM->coord_sys;
   if (coords != COORD_CRT && coords != COORD_CYL)
-    rep.error("Bad coord sys", coords);
+    spdlog::error("{}: {}", "Bad coord sys", coords);
   IC_shock_cloud::eqns = SimPM->eqntype;
   if (eqns == EQEUL)
     eqns = 1;
   else if (eqns == EQMHD || eqns == EQGLM || eqns == EQFCD)
     eqns = 2;
   else
-    rep.error("Bad equations", eqns);
+    spdlog::error("{}: {}", "Bad equations", eqns);
 
   // initialise pre and post shock vectors to zero.
   IC_shock_cloud::preshock  = 0;
@@ -74,7 +77,7 @@ int IC_shock_cloud::setup_data(
   preshock                  = new double[SimPM->nvar];
   postshock                 = new double[SimPM->nvar];
   if (!preshock || !postshock)
-    rep.error("malloc pre/post shock vecs", preshock);
+    spdlog::error("{}: {}", "malloc pre/post shock vecs", fmt::ptr(preshock));
   for (int v = 0; v < SimPM->nvar; v++)
     preshock[v] = postshock[v] = 0.0;
 
@@ -83,7 +86,7 @@ int IC_shock_cloud::setup_data(
   // cloud radius
   seek = "SCcloudradius";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_shock_cloud::clrad = atof(str.c_str());
   clrad *= SimPM->Range[YY];  // radius is given in units of y-dir range.
 
@@ -103,7 +106,7 @@ int IC_shock_cloud::setup_data(
   // density ratio
   seek = "SCdratio";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   IC_shock_cloud::dratio = atof(str.c_str());
 
   // pressure ratio
@@ -308,18 +311,19 @@ int IC_shock_cloud::setup_data(
   // now make sure we are to do a shock-cloud sim.
   string ics = rp->find_parameter("ics");
   if (ics == "")
-    rep.error("didn't get any ics to set up.", ics);
+    spdlog::error("{}: {}", "didn't get any ics to set up.", ics);
   else if (ics == "ShockCloud" || ics == "shockcloud" || ics == "sc") {
-    cout << "\t\tSetting up Shock-Cloud problem.\n";
+    spdlog::info("\t\tSetting up Shock-Cloud problem");
   }
   else
-    rep.error("Don't know what Initial Condition is!", ics);
+    spdlog::error("{}: {}", "Don't know what Initial Condition is!", ics);
 
   // set cloud centre
   IC_shock_cloud::shockpos    = SimPM->Xmin[XX] + SimPM->Range[XX] / 8.0;
   IC_shock_cloud::cloudcentre = 0;
   cloudcentre                 = new double[ndim];
-  if (!cloudcentre) rep.error("cloud centre malloc", cloudcentre);
+  if (!cloudcentre)
+    spdlog::error("{}: {}", "cloud centre malloc", fmt::ptr(cloudcentre));
   cloudcentre[XX] = shockpos + 2.0 * clrad;
   ;
   if (coords == COORD_CRT) {
@@ -330,7 +334,8 @@ int IC_shock_cloud::setup_data(
   else if (coords == COORD_CYL) {
     // cylindrical (Axial symmetry), so centre cloud on axis.
     cloudcentre[YY] = 0.0;
-    if (ndim > 2) rep.error("3d cylindrical coords not done yet!", ndim);
+    if (ndim > 2)
+      spdlog::error("{}: {}", "3d cylindrical coords not done yet!", ndim);
   }
 
   // setup the shock cloud.
@@ -344,7 +349,8 @@ int IC_shock_cloud::setup_data(
     noise = atof(ics.c_str());
   else
     noise = -1;
-  if (isnan(noise)) rep.error("noise parameter is not a number", noise);
+  if (isnan(noise))
+    spdlog::error("{}: {}", "noise parameter is not a number", noise);
   if (noise > 0) err += AddNoise2Data(gg, *SimPM, 2, noise);
 
   ics = rp->find_parameter("smooth");
@@ -352,7 +358,8 @@ int IC_shock_cloud::setup_data(
     smooth = atoi(ics.c_str());
   else
     smooth = -1;
-  if (isnan(smooth)) rep.error("Smooth parameter not a number", smooth);
+  if (isnan(smooth))
+    spdlog::error("{}: {}", "Smooth parameter not a number", smooth);
   if (smooth > 0) err += SmoothData(smooth);
 
   return err;
@@ -360,10 +367,14 @@ int IC_shock_cloud::setup_data(
 
 int IC_shock_cloud::setup_shockcloud()
 {
-  cout << "\t\tSetting up a " << ndim << "-D simulation with a shock";
-  cout << " hitting a circular cloud with overdensity of " << dratio << ".\n";
-  rep.printVec("preshock ", preshock, SimPM->nvar);
-  rep.printVec("postshock", postshock, SimPM->nvar);
+  spdlog::debug(
+      "\t\tSetting up a {}-D simulation with a shock hitting a circular cloud with overdensity of {}",
+      ndim, dratio);
+  spdlog::debug(
+      "preshock  : {}", std::vector<double>(preshock, preshock + SimPM->nvar));
+  spdlog::debug(
+      "postshock : {}",
+      std::vector<double>(postshock, postshock + SimPM->nvar));
   int nsub;
   if (ndim == 2)
     nsub = 100;
@@ -371,9 +382,9 @@ int IC_shock_cloud::setup_shockcloud()
     nsub = 32;
   class inside_sphere stest(cloudcentre, clrad, SimPM->dx, nsub, ndim);
 
-  cout << "\t\tAssigning primitive vectors.\n";
+  spdlog::info("\t\tAssigning primitive vectors");
   double vfrac = 0.0;
-  double dpos[ndim];
+  std::array<double, MAX_DIM> dpos;
   class cell *cpt = gg->FirstPt();
   do {
     CI.get_dpos(cpt, dpos);
@@ -387,7 +398,6 @@ int IC_shock_cloud::setup_shockcloud()
 
     // This is where I set the state inside the blast radius.
     if ((vfrac = stest.volumeFraction(cpt)) > 0) {
-      // cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
       cpt->P[RO] = vfrac * (dratio * cpt->P[RO]) + (1. - vfrac) * cpt->P[RO];
       cpt->P[PG] = vfrac * (pratio * cpt->P[PG]) + (1. - vfrac) * cpt->P[PG];
       if (eqns == 2)
@@ -395,7 +405,7 @@ int IC_shock_cloud::setup_shockcloud()
       if (SimPM->ntracer > 0) cpt->P[SimPM->ftr] = cltr0;      // may be zero.
       if (SimPM->ntracer > 1) cpt->P[SimPM->ftr + 1] = cltr1;  // may be zero.
       if (SimPM->ntracer > 2) {
-        // rep.error("Write proper cloud tracer read-in
+        // spdlog::error("{}: {}", "Write proper cloud tracer read-in
         // routine!",SimPM->ntracer);
         //
         // must be using Harpreet's microphysics which has lots of
@@ -407,9 +417,7 @@ int IC_shock_cloud::setup_shockcloud()
     }
   } while ((cpt = gg->NextPt(cpt)) != NULL);
   //  cpt = firstPt();
-  //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;} while  (
-  //  (cpt=nextPt(cpt))!=NULL);
-  cout << "\t\tGot through data successfully.\n";
+  spdlog::info("\t\tGot through data successfully");
   // Data done.
 
   return (0);

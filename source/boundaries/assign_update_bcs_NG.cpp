@@ -11,7 +11,10 @@
 #include "defines/testing_flags.h"
 
 #include "assign_update_bcs_NG.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+
 using namespace std;
 
 // ##################################################################
@@ -26,19 +29,22 @@ int assign_update_bcs_NG::assign_boundary_data(
 {
   // first call the Uniform Grid version.
   int err = assign_update_bcs::assign_boundary_data(par, level, grid, mp);
-  rep.errorTest("assign_update_bcs::assign_boundary_data", err, 0);
+  if (err != 0)
+    spdlog::error(
+        "{}: Expected {} but got {}", "assign_update_bcs::assign_boundary_data",
+        err, 0);
 
   //
   // Then check for NG-grid boundaries and assign data for them.
   //
   for (size_t i = 0; i < grid->BC_bd.size(); i++) {
 #ifndef NDEBUG
-    cout << "NG grid assign BCs: BC[" << i << "] starting.\n";
+    spdlog::debug("NG grid assign BCs: BC[{}] starting", i);
 #endif
     switch (grid->BC_bd[i]->itype) {
       case FINE_TO_COARSE:
 #ifndef NDEBUG
-        cout << "NG grid setup: Assigning FINE_TO_COARSE BC\n";
+        spdlog::debug("NG grid setup: Assigning FINE_TO_COARSE BC");
 #endif
         err += BC_assign_FINE_TO_COARSE(
             par, grid, grid->BC_bd[i], par.levels[level].child, 0);
@@ -46,7 +52,7 @@ int assign_update_bcs_NG::assign_boundary_data(
 
       case COARSE_TO_FINE:
 #ifndef NDEBUG
-        cout << "assign_update_bcs_NG:: Assigning COARSE_TO_FINE BC\n";
+        spdlog::debug("assign_update_bcs_NG:: Assigning COARSE_TO_FINE BC");
 #endif
         err += BC_assign_COARSE_TO_FINE(
             par, grid, grid->BC_bd[i], par.levels[level].parent);
@@ -54,7 +60,7 @@ int assign_update_bcs_NG::assign_boundary_data(
 
       default:
 #ifndef NDEBUG
-        cout << "leaving BC " << i << " alone in NG grid assign fn.\n";
+        spdlog::debug("leaving BC {} alone in NG grid assign fn", i);
 #endif
         break;
     }
@@ -79,7 +85,7 @@ int assign_update_bcs_NG::TimeUpdateInternalBCs(
     const int maxstep)
 {
 #ifdef TEST_MPI_NG
-  cout << "assign_update_bcs_NG::TimeUpdateInternalBCs() running.\n";
+  spdlog::info("assign_update_bcs_NG::TimeUpdateInternalBCs() running.");
 #endif
   struct boundary_data *b;
   int err  = 0;
@@ -116,7 +122,7 @@ int assign_update_bcs_NG::TimeUpdateInternalBCs(
 
       case FINE_TO_COARSE:
 #ifdef TEST_MPI_NG
-        cout << "found FINE_TO_COARSE boundary to update\n";
+        spdlog::debug("found FINE_TO_COARSE boundary to update");
 #endif
         err +=
             BC_update_FINE_TO_COARSE(par, solver, level, b, 0, cstep, maxstep);
@@ -124,15 +130,15 @@ int assign_update_bcs_NG::TimeUpdateInternalBCs(
 
       default:
 #ifdef TEST_MPI_NG
-        cout << "no internal boundaries to update.\n";
+        spdlog::error("no internal boundaries to update");
 #endif
-        rep.error("Unhandled BC: serial NG update internal", b->itype);
+        spdlog::error(
+            "{}: {}", "Unhandled BC: serial NG update internal", b->itype);
         break;
     }
   }
 #ifdef TEST_MPI_NG
-  cout << "updated NG-grid serial internal BCs\n";
-  cout << "assign_update_bcs_NG::TimeUpdateInternalBCs() returns.\n";
+  spdlog::info("assign_update_bcs_NG::TimeUpdateInternalBCs() returns.");
 #endif
   return 0;
 }
@@ -214,12 +220,13 @@ int assign_update_bcs_NG::TimeUpdateExternalBCs(
         break;
 
       default:
-        rep.error("Unhandled BC: serial NG update external", b->itype);
+        spdlog::error(
+            "{}: {}", "Unhandled BC: serial NG update external", b->itype);
         break;
     }
   }
 #ifdef TEST_NEST
-  cout << "updated NG-grid serial external BCs\n";
+  spdlog::info("updated NG-grid serial external BCs");
 #endif
   return (0);
 }

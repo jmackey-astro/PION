@@ -41,7 +41,7 @@ int main(int argc, char **argv)
     cerr << "Error: must call with 5 arguments...\n";
     cerr
         << "stromgensphere: <executable> <OutfileName> <file-base> <FirstOutput> <OutputFreq> <x(HII) var>\n";
-    rep.error("Bad number of Args", argc);
+    spdlog::error("{}: {}", "Bad number of Args", argc);
   }
   string outfilebase = argv[1];
   string infilebase  = argv[2];
@@ -49,7 +49,7 @@ int main(int argc, char **argv)
   int opfreq         = atoi(argv[4]);
   int var            = atoi(argv[5]);
   if (isnan(startct) || isnan(opfreq) || opfreq == 0)
-    rep.error("Bad ints in args", opfreq);
+    spdlog::error("{}: {}", "Bad ints in args", opfreq);
 
   cout << "reading from first file " << infilebase << "." << startct
        << ".fits\n";
@@ -69,20 +69,23 @@ int main(int argc, char **argv)
   cout << "Initially reading from file " << infile << endl;
 
   int err = 0;
-  if (!fs.file_exists(infile)) rep.error("First file not found!", infile);
+  if (!fs.file_exists(infile))
+    spdlog::error("{}: {}", "First file not found!", infile);
   err = dataio.ReadHeader(infile);
-  if (err) rep.error("read header went bad", err);
+  if (err) spdlog::error("{}: {}", "read header went bad", err);
 
   // check dimensionality is ok.
   if (SimPM.ndim != 1 && SimPM.ndim != 2 & SimPM.ndim != 3)
-    rep.error("need 1D/2D/3D sim for stromgen test", SimPM.ndim);
+    spdlog::error("{}: {}", "need 1D/2D/3D sim for stromgen test", SimPM.ndim);
   // Now the header should contain the sim dimensionality, number of vars,
   // size of box, so we can use these to set up the grid.
   cout << "(UniformFV::setup_grid) Setting up grid...\n";
   grid = new UniformGrid(
-      SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
+      SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin.data(), SimPM.Xmax,
+      SimPM.NG);
   if (grid == 0)
-    rep.error("(IntUniformFV::setup_grid) Couldn't assign data!", grid);
+    spdlog::error(
+        "{}: {}", "(IntUniformFV::setup_grid) Couldn't assign data!", grid);
   cout << "(setup_grid) Done. g=" << grid << "\n";
 
 
@@ -101,7 +104,8 @@ int main(int argc, char **argv)
   if (fs.file_exists(outfile))
     cout << "WARNING:: file exists, I am overwriting a text file.\n";
   ofstream outf(outfile.c_str());
-  if (!outf.is_open()) rep.error("couldn't open outfile", outfile);
+  if (!outf.is_open())
+    spdlog::error("{}: {}", "couldn't open outfile", outfile);
   cout << "writing to file " << outfile << endl;
   outf.setf(ios_base::scientific);
   outf.precision(6);
@@ -116,7 +120,7 @@ int main(int argc, char **argv)
     // read data onto grid.
     err += dataio.ReadHeader(infile);
     err += dataio.ReadData(infile);
-    if (err) rep.error("read data went bad for file", err);
+    if (err) spdlog::error("{}: {}", "read data went bad for file", err);
 
     // allocate arrays for distance and ion-fraction.
     double dist[SimPM.Ncell], ifrac[SimPM.Ncell], nions = 0.0, cvol = 0.0;
@@ -137,7 +141,8 @@ int main(int argc, char **argv)
       }
       nions += (c->P[var]) * cvol;  // this is volume occupied by ions in cell.
       i++;
-      if (i > SimPM.Ncell) rep.error("bad ncell", SimPM.Ncell - i);
+      if (i > SimPM.Ncell)
+        spdlog::error("{}: {}", "bad ncell", SimPM.Ncell - i);
     } while ((c = grid->NextPt(c)) != 0);
 
     // now do a least squares fit to the data (assume uniform absolute errors)

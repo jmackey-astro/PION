@@ -5,6 +5,8 @@
 /// Modifications :\n
 /// - 2018.08.08 JM: moved code.
 
+#include <spdlog/spdlog.h>
+
 #include "boundaries/periodic_boundaries_MPI.h"
 #include "sub_domain/sub_domain.h"
 using namespace std;
@@ -60,16 +62,17 @@ int periodic_pllel_bc::BC_update_PERIODIC(
   if (ppar->get_neighbour_rank(b->dir) < 0
       || ppar->get_neighbour_rank(b->dir) == ppar->get_myrank()) {
 #ifndef NDEBUG
-    cout << "BC_update_PERIODIC: non-communicating periodic BC in ";
-    cout << "direction " << b->dir << "\n";
+    spdlog::debug(
+        "BC_update_PERIODIC: non-communicating periodic BC in direction {}",
+        b->dir);
 #endif
     err = periodic_bc::BC_update_PERIODIC(par, level, grid, b, cstep, maxstep);
   }
   else {
 #ifndef NDEBUG
-    cout << "BC_update_PERIODIC: communicating periodic BC in ";
-    cout << "direction " << b->dir << "\n";
-    cout << "BC_update_PERIODIC: calling mpi update BC function\n";
+    spdlog::debug(
+        "BC_update_PERIODIC: communicating periodic BC in direction {}\nBC_update_PERIODIC: calling mpi update BC function",
+        b->dir);
 #endif
     err = BC_update_BCMPI(par, level, grid, b, cstep, maxstep, BC_PERtag);
   }

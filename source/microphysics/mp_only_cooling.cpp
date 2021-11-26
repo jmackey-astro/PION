@@ -31,13 +31,19 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <sim_params.h>
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
 
 #include "microphysics/mp_only_cooling.h"
 
+#include <fstream>
 #include <sstream>
 using namespace std;
 
@@ -64,8 +70,9 @@ mp_only_cooling::mp_only_cooling(
     nv_prim(nv)
 {
   if (!EP->update_erg) {
-    rep.error(
-        "requested cooling microphysics but no energy update", DONT_CALL_ME);
+    spdlog::error(
+        "{}: {}", "requested cooling microphysics but no energy update",
+        DONT_CALL_ME);
   }
   Integrator_Base::Set_Nvar(1);
 
@@ -102,13 +109,14 @@ mp_only_cooling::mp_only_cooling(
       setup_WSS09_CIE();
       break;
     case WSS09_CIE_LINE_HEAT_COOL:
-      cout << "\tRequested fully ionized gas with WSS09 cooling at high";
-      cout << " temperatures,\n\tand photoionized gas at nebular";
-      cout << " temperatures, with T_eq approx 8000 K.\n";
+      spdlog::info("\tRequested fully ionized gas with WSS09 cooling at high"
+                   " temperatures,\n\tand photoionized gas at nebular"
+                   " temperatures, with T_eq approx 8000 K.");
       setup_WSS09_CIE_OnlyMetals();
       break;
     default:
-      rep.error("Invalid cooling flag in mp_only_cooling", cooling_flag);
+      spdlog::error(
+          "{}: {}", "Invalid cooling flag in mp_only_cooling", cooling_flag);
       break;
   }
 
@@ -119,7 +127,7 @@ mp_only_cooling::mp_only_cooling(
   ostringstream opfile;
   opfile << "coolingNOCHEM_" << cooling_flag << ".txt";
   ofstream outf(opfile.str().c_str());
-  if (!outf.is_open()) rep.error("couldn't open outfile", 1);
+  if (!outf.is_open()) spdlog::error("{}: {}", "couldn't open outfile", 1);
   outf << "Cooling Curve Data: Temperature(K) Rate(erg/cm^3/s) (n=1 per cc)\n";
   outf.setf(ios_base::scientific);
   outf.precision(6);
@@ -140,7 +148,8 @@ mp_only_cooling::mp_only_cooling(
     // T_max="; cout <<MaxT_allowed<<" (MAKE SURE THIS IS SET
     // APPROPRIATELY!\n";
 #else
-  rep.error(
+  spdlog::error(
+      "{}: {}",
       "Please set SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE in "
       "defines/functionality_flags.h if using cooling",
       123);
@@ -173,8 +182,8 @@ int mp_only_cooling::TimeUpdateMP(
 
   for (int v = 0; v < nv_prim; v++) {
     if (!isfinite(p_out[v])) {
-      rep.printVec("pout", p_in, nv_prim);
-      rep.error("p_out[v]", v);
+      spdlog::debug("pout : {}", std::vector<double>(p_in, p_in + nv_prim));
+      spdlog::error("{}: {}", "p_out[v]", v);
     }
   }
 
@@ -193,10 +202,10 @@ int mp_only_cooling::TimeUpdateMP(
 
   int err = Int_Adaptive_RKCK(1, &Eint, 0.0, dt, 1.0e-2, &Eint, &tout);
   if (err) {
-    rep.printVec("p_in", p_in, nv_prim);
-    cout << "Ein = " << Eint0 << ", T=" << T << ", Eout=" << Eint
-         << ", dt=" << dt << ", tout=" << tout << "\n";
-    rep.error("mp_only_cooling integration failed.", err);
+    spdlog::debug("p_in : {}", std::vector<double>(p_in, p_in + nv_prim));
+    spdlog::debug(
+        "Ein = {}, T={}, Eout={}, dt={}, tout={}", Eint0, T, Eint, dt, tout);
+    spdlog::error("{}: {}", "mp_only_cooling integration failed.", err);
   }
   p_out[PG] = Eint * (gamma - 1);
   *Tf       = p_out[PG] * Mu_tot_over_kB / p_out[RO];
@@ -238,8 +247,8 @@ int mp_only_cooling::Set_Temp(
   // check for bad input
   //
   if (T <= 0.0) {
-    cout << "mp_only_cooling::Set_Temp() Requested negative ";
-    cout << "temperature! T=" << T << "\n";
+    spdlog::error(
+        "mp_only_cooling::Set_Temp() Requested negative temperature! T={}", T);
     return 1;
   }
 #endif  // NDEBUG
@@ -372,7 +381,8 @@ double mp_only_cooling::Edot(
       break;
 
     default:
-      rep.error("bad cooling flag in mp_only_cooling::Edot", cooling_flag);
+      spdlog::error(
+          "{}: {}", "bad cooling flag in mp_only_cooling::Edot", cooling_flag);
       break;
   }
   return rate;
@@ -587,7 +597,7 @@ void mp_only_cooling::gen_mpoc_lookup_tables()
 //    err += MP.TimeUpdateMP(p,p,h,g,0,&T);
 //    if (err) {
 //      rep.printVec("p",p,2);
-//      rep.error("integration error",err);
+//      spdlog::error("{}: {}", "integration error",err);
 //    }
 //    t+=h;
 //  } while (MP.Temperature(p,g)>1.0e4);

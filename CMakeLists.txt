@@ -98,6 +98,9 @@ option(
     OFF
 )
 
+#  This is required on OSX so that the Boost code will compile successfully
+set(CMAKE_CXX_STANDARD 14)
+
 if(NOT PION_SKIP_SOURCE)
     if(PION_PARALLEL)
         add_definitions(-DPARALLEL)
@@ -128,15 +131,10 @@ if(NOT PION_SKIP_SOURCE)
     if(PION_OMP)
         add_definitions(-DPION_OMP)
     endif(PION_OMP)
-endif(NOT PION_SKIP_SOURCE)
 
-#  This is required on OSX so that the Boost code will compile successfully
-set(CMAKE_CXX_STANDARD 14)
-
-#
-# Find dependant libraries
-#
-if(NOT PION_SKIP_SOURCE)
+    #
+    # Find dependant libraries
+    #
     set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
     find_package(Boost 1.73.0 REQUIRED)
@@ -175,14 +173,13 @@ if(NOT PION_SKIP_SOURCE)
         include_directories(${OpenMP_CXX_INCLUDE_DIR})
     endif(PION_OMP)
 
-endif(NOT PION_SKIP_SOURCE)
+    find_package(spdlog REQUIRED)
+    include_directories(${SPDLOG_INCLUDE_DIRS})
 
+    #
+    # Include optional subdirectories
+    #
 
-#
-# Include optional subdirectories
-#
-
-if(NOT PION_SKIP_SOURCE)
     include_directories(
         SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/source
     )

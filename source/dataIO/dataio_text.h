@@ -14,6 +14,8 @@
 
 #include "dataio_base.h"
 
+#include <spdlog/spdlog.h>
+
 ///
 /// The Text dataio class.  Note this is only intended for 1d and 2d test
 /// problems for debugging purposes.  Outputs do not contain simulation
@@ -60,7 +62,7 @@ public:
       class SimParams &  ///< pointer to simulation parameters
   )
   {
-    cout << "can't write text header!\n";
+    spdlog::error("can't write text header!");
     return 99;
   }
 
@@ -164,12 +166,12 @@ protected:
 
   int read_header_param(class pm_base *)
   {
-    rep.error("WHY USE read_header_param FOR TEXTIO?", 0);
+    spdlog::error("{}: {}", "WHY USE read_header_param FOR TEXTIO?", 0);
     return 0;
   }
   int write_header_param(class pm_base *)
   {
-    rep.error("WHY USE write_header_param FOR TEXTIO?", 0);
+    spdlog::error("{}: {}", "WHY USE write_header_param FOR TEXTIO?", 0);
     return 0;
   }
 };

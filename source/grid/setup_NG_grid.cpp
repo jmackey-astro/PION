@@ -13,10 +13,13 @@
 
 #include "raytracing/raytracer_SC.h"
 #include "tools/command_line_interface.h"
-#include "tools/reporting.h"
+
 
 #include "grid/setup_NG_grid.h"
 #include "grid/uniform_grid.h"
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
 
 #include "spatial_solvers/solver_eqn_hydro_adi.h"
 #include "spatial_solvers/solver_eqn_mhd_adi.h"
@@ -47,7 +50,6 @@
 
 #include <climits>
 #include <fstream>
-#include <iostream>
 #include <sstream>
 #include <string>
 #include <sys/time.h>
@@ -71,26 +73,24 @@ void setup_NG_grid::setup_NG_grid_levels(
     class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
-  cout << "(pion-ng)  Setting up nested grid parameters\n";
+  spdlog::info("(pion-ng)  Setting up nested grid parameters");
   // first make sure that NG_centre[] is oriented such that an
   // oct-tree structure works.  Centre should be xmin + i/4 of the
   // full domain, where i is in [0,4]
   for (int d = 0; d < SimPM.ndim; d++) {
     double f = 4.0 * (SimPM.NG_centre[d] - SimPM.Xmin[d]) / SimPM.Range[d];
-    // cout <<"d="<<d<<", f = "<<f<<", ";
-    f = fmod(f, 1.0);
-    // cout <<" remainder ="<<f<<"\n";
+    f        = fmod(f, 1.0);
     if (!pconst.equalD(f, 0.0)) {
-      cout << "setup_NG_grid_levels:  axis=" << d << ", resetting ";
-      cout << "NG_centre to i/4 of the domain.\n";
-      cout << "current NG_centre=" << SimPM.NG_centre[d];
+      spdlog::debug(
+          "setup_NG_grid_levels:  axis={}, resetting NG_centre to i/4 of the domain... current NG_centre={}",
+          d, SimPM.NG_centre[d]);
       if (f > 0.5) {
         SimPM.NG_centre[d] += (1.0 - f) * SimPM.Range[d] / 4.0;
       }
       else {
         SimPM.NG_centre[d] -= f * SimPM.Range[d] / 4.0;
       }
-      cout << " reset to " << SimPM.NG_centre[d] << "\n";
+      spdlog::debug(" reset to {}", SimPM.NG_centre[d]);
     }
   }
 
@@ -157,16 +157,13 @@ void setup_NG_grid::setup_NG_grid_levels(
     temp << i;
     string lv = "level " + temp.str();
     string t2 = lv + "_Range";
-    cout << "\t";
-    rep.printVec(t2, SimPM.levels[i].Range, SimPM.ndim);
+    spdlog::debug("{} : {}", t2, SimPM.levels[i].Range);
     t2 = lv + "_Xmin";
-    cout << "\t";
-    rep.printVec(t2, SimPM.levels[i].Xmin, SimPM.ndim);
+    spdlog::debug("{} : {}", t2, SimPM.levels[i].Xmin);
     t2 = lv + "_Xmax";
-    cout << "\t";
-    rep.printVec(t2, SimPM.levels[i].Xmax, SimPM.ndim);
-    cout << "\t\tdx=" << SimPM.levels[i].dx;
-    cout << ", step=" << SimPM.levels[i].step << "\n";
+    spdlog::debug("{} : {}", t2, SimPM.levels[i].Xmax);
+    spdlog::debug(
+        "\t\tdx={}, step={}", SimPM.levels[i].dx, SimPM.levels[i].step);
 #endif
   }
 
@@ -181,15 +178,13 @@ int setup_NG_grid::setup_grid(
     class SimParams &SimPM                ///< pointer to simulation parameters
 )
 {
-  cout << "(pion ng)  Setting up computational grid\n";
+  spdlog::info("(pion ng)  Setting up computational grid");
 
   if (SimPM.ndim < 1 || SimPM.ndim > 3)
-    rep.error("Only know 1D,2D,3D methods!", SimPM.ndim);
+    spdlog::error("{}: {}", "Only know 1D,2D,3D methods!", SimPM.ndim);
 
-#ifndef NDEBUG
-  cout << "Setting number of boundary cells == spatial OOA: ";
-  cout << SimPM.spOOA << "\n";
-#endif  // NDEBUG
+  spdlog::debug(
+      "Setting number of boundary cells == spatial OOA: {}", SimPM.spOOA);
 
   //
   // Nbc is the depth of the boundary layer around each grid.
@@ -203,7 +198,7 @@ int setup_NG_grid::setup_grid(
     SimPM.Nbc_DD = 2;
   }
   else
-    rep.error("unhandles spatial order of accuracy", SimPM.spOOA);
+    spdlog::error("{}: {}", "unhandles spatial order of accuracy", SimPM.spOOA);
 
   //
   // May need to setup extra data in each cell.
@@ -222,15 +217,10 @@ int setup_NG_grid::setup_grid(
   //
   // Now we can setup the grid:
   //
-#ifndef NDEBUG
-  cout << "(setup_NG_grid::setup_grid) Setting up grid...\n";
-#endif
+  spdlog::info("(setup_NG_grid::setup_grid) Setting up grid...");
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-    // cout <<"level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<<
-    // grid[l]
-    // <<"\n";
-
-    if (grid[l]) rep.error("Grid already set up!", grid[l]);
+    if (grid[l])
+      spdlog::error("{}: {}", "Grid already set up!", fmt::ptr(grid[l]));
 
     if (SimPM.coord_sys == COORD_CRT)
       grid[l] = new UniformGrid(
@@ -248,15 +238,17 @@ int setup_NG_grid::setup_grid(
           SimPM.levels[l].Xmin, SimPM.levels[l].Xmax, SimPM.levels[l].NG,
           SimPM.levels[l].Xmin, SimPM.levels[l].Xmax, SimPM.Xmin, SimPM.Xmax);
     else
-      rep.error("Bad Geometry in setup_grid()", SimPM.coord_sys);
+      spdlog::error("{}: {}", "Bad Geometry in setup_grid()", SimPM.coord_sys);
 
     if (grid[l] == 0)
-      rep.error("(setup_NG_grid::setup_grid) Couldn't assign data!", grid[l]);
+      spdlog::error(
+          "{}: {}", "(setup_NG_grid::setup_grid) Couldn't assign data!",
+          fmt::ptr(grid[l]));
 
 #ifndef NDEBUG
-    cout << "(setup_NG_grid::setup_grid) Done. &grid=";
-    cout << &(grid[l]) << ", and grid=" << grid[l] << "\n";
-    cout << "DX = " << (grid[l])->DX() << "\n";
+    spdlog::debug(
+        "(setup_NG_grid::setup_grid) Done. &grid={}, and grid={}, DX={}",
+        fmt::ptr(&(grid[l])), fmt::ptr(grid[l]), (grid[l])->DX());
     dp.grid = (grid[l]);
 #endif
   }
@@ -288,8 +280,6 @@ int setup_NG_grid::setup_grid(
     if (l != SimPM.grid_nlevels - 1) setup_flux_recv(SimPM, grid[l], l + 1);
   }
 
-  // cout <<"------------------------------------------------------\n\n";
-
   return (0);
 }  // setup_grid()
 
@@ -305,7 +295,7 @@ void setup_NG_grid::set_leaf_cells(
   // if there is an interface region, set a flag on the grid cells
   // that are not leaf cells.
   //
-  int sxmin[MAX_DIM], sxmax[MAX_DIM], lxmin[MAX_DIM], lxmax[MAX_DIM];
+  std::array<int, MAX_DIM> sxmin, sxmax, lxmin, lxmax;
   bool notleaf;
   CI.get_ipos_vec(par.levels[0].Xmin, sxmin);
   CI.get_ipos_vec(par.levels[0].Xmax, sxmax);
@@ -346,21 +336,26 @@ int setup_NG_grid::setup_raytracing(
   }
   int err = 0;
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-    // cout <<"setting up raytracing for grid level "<<l<<"\n";
     err += setup_fixed_grid::setup_raytracing(SimPM, grid[l]);
-    rep.errorTest("setup_NG_grid::setup_raytracing()", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "setup_NG_grid::setup_raytracing()", 0,
+          err);
   }
 
-  // cout <<"NG setting up evolving RT sources from setup_raytracing.\n";
   err += setup_evolving_RT_sources(SimPM);
-  rep.errorTest("setup_NG_grid::setup_evolving_RT_sources()", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "setup_NG_grid::setup_evolving_RT_sources()", 0, err);
 
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-    // cout <<"NG l="<<l<<": updating evolving RT sources from
-    // setup_raytracing.\n";
     err +=
         update_evolving_RT_sources(SimPM, SimPM.levels[l].simtime, grid[l]->RT);
-    rep.errorTest("setup_NG_grid::update_RT_sources()", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "setup_NG_grid::update_RT_sources()", 0,
+          err);
   }
   return 0;
 }
@@ -374,25 +369,25 @@ int setup_NG_grid::boundary_conditions(
 )
 {
   // For uniform fixed cartesian grid.
-#ifndef NDEBUG
-  cout << "Setting up BCs in Grid with Nbc=" << par.Nbc << "\n";
-#endif
+  spdlog::debug("Setting up BCs in Grid with Nbc={}", par.Nbc);
   int err = 0;
   for (int l = 0; l < par.grid_nlevels; l++) {
-    // cout <<"level "<<l<<", setting up boundaries\n";
-
     //
     // Choose what BCs to set up based on BC strings.
     //
     err = setup_boundary_structs(par, grid[l], l);
-    rep.errorTest("sng::boundary_conditions sb_structs", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "sng::boundary_conditions sb_structs",
+          0, err);
 
     err = grid[l]->SetupBCs(par);
-    rep.errorTest("sng::boundary_conditions SetupBCs", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "sng::boundary_conditions SetupBCs", 0,
+          err);
   }
-#ifndef NDEBUG
-  cout << "(setup_NG_grid::boundary_conditions) Done.\n";
-#endif
+  spdlog::info("(setup_NG_grid::boundary_conditions) Done");
   return 0;
 }
 
@@ -405,13 +400,14 @@ int setup_NG_grid::setup_boundary_structs(
     const int l                 ///< level in NG grid
 )
 {
-#ifndef NDEBUG
-  cout << "Set BC types...\n";
-#endif
+  spdlog::info("Set BC types...");
 
   // first call fixed grid version
   int err = setup_fixed_grid::setup_boundary_structs(par, grid, l);
-  rep.errorTest("sng::setup_boundary_structs fixed grid", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "sng::setup_boundary_structs fixed grid",
+        0, err);
 
   //
   // Now check for NG grid boundaries if this grid has a parent
@@ -420,16 +416,12 @@ int setup_NG_grid::setup_boundary_structs(
   if (l > 0) {
     for (int i = 0; i < par.ndim; i++) {
       if (!pconst.equalD(par.levels[l - 1].Xmin[i], par.levels[l].Xmin[i])) {
-#ifndef NDEBUG
-        cout << "reassigning neg. bc for axis " << i << " to COARSE_TO_FINE\n";
-#endif
+        spdlog::debug("reassigning neg. bc for axis {} to COARSE_TO_FINE", i);
         grid->BC_bd[2 * i]->itype = COARSE_TO_FINE;
         grid->BC_bd[2 * i]->type  = "COARSE_TO_FINE";
       }
       if (!pconst.equalD(par.levels[l - 1].Xmax[i], par.levels[l].Xmax[i])) {
-#ifndef NDEBUG
-        cout << "reassigning pos. bc for axis " << i << " to COARSE_TO_FINE\n";
-#endif
+        spdlog::debug("reassigning pos. bc for axis {} to COARSE_TO_FINE", i);
         grid->BC_bd[2 * i + 1]->itype = COARSE_TO_FINE;
         grid->BC_bd[2 * i + 1]->type  = "COARSE_TO_FINE";
       }
@@ -448,7 +440,7 @@ int setup_NG_grid::setup_boundary_structs(
   // boundary data and add them to a new FINE_TO_COARSE boundary.
   //
   if (l < par.grid_nlevels - 1) {
-    double cxmin[MAX_DIM], cxmax[MAX_DIM], cpos[MAX_DIM];
+    std::array<double, MAX_DIM> cxmin, cxmax, cpos;
     bool within_child = true;
     size_t ct         = 0;
     for (int v = 0; v < par.ndim; v++) {
@@ -471,26 +463,21 @@ int setup_NG_grid::setup_boundary_structs(
       }
       if (within_child) {
         c->isbd = true;
-        // cout <<"Nested-grid: FINE_TO_COARSE setup, cell added.\n";
         bd->NGrecvF2C[0].push_back(c);
         ct++;
       }
     } while ((c = grid->NextPt(c)) != 0);
-#ifndef NDEBUG
-    cout << "Got " << ct << " cells for FINE_TO_COARSE boundary, ";
-    cout << bd->data.size() << "\n";
-#endif
+    spdlog::debug(
+        "Got {} cells for FINE_TO_COARSE boundary, ", ct, bd->data.size());
+
     grid->BC_bd.push_back(bd);
-#ifndef NDEBUG
-    cout << "BC_data: ";
-    cout << grid->BC_bd[grid->BC_bd.size() - 1]->NGrecvF2C[0].size();
-    cout << "\n";
-#endif
+
+    spdlog::debug(
+        "BC_data: {}",
+        grid->BC_bd[grid->BC_bd.size() - 1]->NGrecvF2C[0].size());
   }
 
-#ifndef NDEBUG
-  cout << "BC structs set up.\n";
-#endif
+  spdlog::info("BC structs set up");
   return 0;
 }
 
@@ -514,7 +501,8 @@ void setup_NG_grid::setup_dataio_class(
 #endif  // if SILO
 
     default:
-      rep.error("sim_control_NG::Init unhandled filetype", typeOfFile);
+      spdlog::error(
+          "{}: {}", "sim_control_NG::Init unhandled filetype", typeOfFile);
   }
   return;
 }

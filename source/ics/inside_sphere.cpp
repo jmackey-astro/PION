@@ -8,7 +8,8 @@
 
 #include "constants.h"
 #include "inside_sphere.h"
-//#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
 
 // ##################################################################
 // ##################################################################
@@ -27,8 +28,9 @@ bool inside_sphere::equalD(const double a, const double b)
 {
   if (a == b) return (true);
   if (fabs(a + b) < 1.e-100) {
-    cout << "tiny numbers in equalD(a,b); a,b <1.e-100... a=" << a
-         << ", b=" << b << "; returning true.\n";
+    spdlog::debug(
+        "tiny numbers in equalD(a,b); a,b <1.e-100... a={}, b={}; returning true",
+        a, b);
     return (true);
   }
   if ((fabs(a - b) / fabs(a + b + 1.e-100)) < 10. * MACHINEACCURACY)
@@ -75,21 +77,15 @@ double inside_sphere::volumeFraction(cell *cpt)
   for (int v = 0; v < ndim; v++)
     dist += pos[v];
   dist = sqrt(dist);  // distance from sphere centre to nearest edge of cell.
-  //  cout <<"distance to nearest corner: "<<dist<<endl;
 
   // Test what this is
   if (dist > sr) {
-    // cout<<"cell is outside circle. ";
-    // rep.printVec("pos",cpos,ndim);
     return (0.);
   }
   else if (dist + diag < sr) {
-    // cout<<"cell is definitely completely inside circle. ";
-    // rep.printVec("pos",cpos,ndim);
     return (1.);
   }
 
-  // cout <<"Cell may cross circle... checking... ";
   double dv  = 1.;
   double vol = 1.;
   for (int v = 0; v < ndim; v++) {
@@ -112,12 +108,9 @@ double inside_sphere::volumeFraction(cell *cpt)
     if (ndim > 2) pos[ZZ] = startpt[ZZ] + ((i / nint / nint) % nint) * dx;
     if (distance(pos, spos, ndim) <= sr) {
       frac += dv;
-      // cout <<"distance = "<<distance(pos,spos,ndim)<<"  ";
     }
-    // rep.printVec("pos",pos,ndim);
   }
   frac /= vol;
-  // cout <<"\t VOL FRAC: "<<frac<<endl;
   return (frac);
 }
 

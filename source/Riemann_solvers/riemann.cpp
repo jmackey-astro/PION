@@ -44,10 +44,13 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
 
 #include "Riemann_solvers/riemann.h"
-#include <iostream>
+
 using namespace std;
 
 // ##################################################################
@@ -86,9 +89,8 @@ int riemann_Euler::FR_find_root(
   //
   int err = findroot::solve_pos(x1, x2, ans);
   if (err != 0) {
-    cerr << "(riemann_Euler::findroot::solve_riemann) solve_pos exited "
-            "abnormally"
-         << "\n";
+    spdlog::error(
+        "(riemann_Euler::findroot::solve_riemann) solve_pos exited abnormally");
     return (1);
   }
   //  cout << "(riemann_Euler::findroot::solve_riemann) Success: ans = " <<
@@ -112,12 +114,11 @@ pion_flt riemann_Euler::FR_root_function(pion_flt pp)
   //
   int err = 0;
   pion_flt ustarL, ustarR;
-  err = HydroWave(XN, pp, rs_left, &ustarL, eq_gamma);
-  err += HydroWave(XP, pp, rs_right, &ustarR, eq_gamma);
+  err = HydroWave(XN, pp, &rs_left[0], &ustarL, eq_gamma);
+  err += HydroWave(XP, pp, &rs_right[0], &ustarR, eq_gamma);
   if (err != 0) {
-    cerr << "(riemann_Euler::FR_root_function) hydro_wave calls returned "
-            "abnormally. "
-         << "\n";
+    spdlog::error(
+        "(riemann_Euler::FR_root_function) hydro_wave calls returned abnormally. ");
     return (1.e99);
   }
   return (ustarR - ustarL);
@@ -137,15 +138,12 @@ riemann_Euler::riemann_Euler(
     eqns_base(nv),
     eqns_Euler(nv), findroot(), rs_nvar(5)
 {
-#ifdef FUNCTION_ID
-  cout << "riemann_Euler::riemann_Euler ...starting.\n";
-#endif  // FUNCTION_ID
+  spdlog::info("riemann_Euler::riemann_Euler ...starting");
 
-#ifndef NDEBUG
-  cout << "riemann_Euler::riemann_Euler: eqnvar=" << eq_nvar << "\n";
-#endif
+  spdlog::debug("riemann_Euler::riemann_Euler: eqnvar={}", eq_nvar);
   if (eq_nvar < 5) {
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "Problem with HD Riemann Solver... eq_nvar<5. Please use "
         "[rho,p_g,vx,vy,vz]. Quitting!!!",
         eq_nvar);
@@ -179,15 +177,12 @@ riemann_Euler::riemann_Euler(
   //
   // Allocate memory for arrays.
   //
-  rs_left  = mem.myalloc(rs_left, rs_nvar);
-  rs_right = mem.myalloc(rs_right, rs_nvar);
-  rs_meanp = mem.myalloc(rs_meanp, rs_nvar);
-  rs_pstar = mem.myalloc(rs_pstar, rs_nvar);
+  rs_left.resize(rs_nvar);
+  rs_right.resize(rs_nvar);
+  rs_meanp.resize(rs_nvar);
+  rs_pstar.resize(rs_nvar);
 
-#ifdef FUNCTION_ID
-  cout << "riemann_Euler::riemann_Euler ...returning.\n";
-#endif  // FUNCTION_ID
-  return;
+  spdlog::info("riemann_Euler::riemann_Euler ...returning");
 }
 
 // ##################################################################
@@ -198,24 +193,14 @@ riemann_Euler::riemann_Euler(
 //
 riemann_Euler::~riemann_Euler()
 {
-#ifdef FUNCTION_ID
-  cout << "riemann_Euler::~riemann_Euler ...starting.\n";
-#endif  // FUNCTION_ID
+  spdlog::info("riemann_Euler::~riemann_Euler ...starting");
 
 #ifdef RSTESTING
   riemann_Euler::testing();
-#endif  // RSTESTING
-  rs_left  = mem.myfree(rs_left);
-  rs_right = mem.myfree(rs_right);
-  rs_meanp = mem.myfree(rs_meanp);
-  rs_pstar = mem.myfree(rs_pstar);
-#ifdef RSTESTING
   linearpstar = mem.myfree(linearpstar);
 #endif  // RSTESTING
 
-#ifdef FUNCTION_ID
-  cout << "riemann_Euler::~riemann_Euler ...returning.\n";
-#endif  // FUNCTION_ID
+  spdlog::info("riemann_Euler::~riemann_Euler ...returning");
 }
 
 // ##################################################################
@@ -226,13 +211,12 @@ riemann_Euler::~riemann_Euler()
 //
 void riemann_Euler::testing()
 {
-  cout << "(riemann_Euler::testing) No. Solves: linear=" << linct
-       << " exact=" << exact << " total=" << total << "."
-       << "\n";
-  cout << "\tFraction linear/total: "
-       << static_cast<double>(linct) / (linct + exact) << "\n";
-  cout << "Number of solves with same-state = " << samestate
-       << " out of total numbe of solves above.\n";
+  spdlog::debug(
+      "(riemann_Euler::testing) No. Solves: linear={} exact={} total={}", linct,
+      exact, total);
+  spdlog::debug(
+      "\tFraction linear/total: {}\nNumber of solves with same-state = {} out of total numbe of solves above",
+      static_cast<double>(linct) / (linct + exact), samestate);
 }
 
 // ##################################################################
@@ -251,18 +235,14 @@ int riemann_Euler::JMs_riemann_solve(
     ///< Solve Type (1=LinearRS,2=ExactRS,3=HybridRS)
     const double g)
 {
-#ifdef FUNCTION_ID
-  cout << "riemann_Euler::JMs_riemann_solve ...starting.\n";
-#endif  // FUNCTION_ID
-
   total++;
   int err = 0;
 #ifdef RSTESTING
   for (int v = 0; v < rs_nvar; v++) {
     if (isnan(l[v]) || isnan(r[v])) {
-      cout << "NAN's detected!!!\n";
-      rep.printVec("left ", l, rs_nvar);
-      rep.printVec("right", r, rs_nvar);
+      spdlog::error("NAN's detected!!!");
+      spdlog::error("left  : {}", std::vector<double>(l, l + rs_nvar));
+      spdlog::error("right : {}", std::vector<double>(r, r + rs_nvar));
       return 99;
     }
   }
@@ -285,9 +265,10 @@ int riemann_Euler::JMs_riemann_solve(
   //
   if (l[eqRO] < TINYVALUE || l[eqPG] < TINYVALUE || r[eqRO] < TINYVALUE
       || r[eqPG] < TINYVALUE) {
-    rep.printVec("left ", l, rs_nvar);
-    rep.printVec("right", r, rs_nvar);
-    rep.error("riemann::solve() Density/Pressure too small", l[eqRO]);
+    spdlog::error("left  : {}", std::vector<double>(l, l + rs_nvar));
+    spdlog::error("right : {}", std::vector<double>(r, r + rs_nvar));
+    spdlog::error(
+        "{}: {}", "riemann::solve() Density/Pressure too small", l[eqRO]);
   }
   for (int v = 0; v < rs_nvar; v++)
     rs_left[v] = l[v];
@@ -313,8 +294,8 @@ int riemann_Euler::JMs_riemann_solve(
   //
   // Sound speeds.
   //
-  cl = chydro(rs_left, eq_gamma);
-  cr = chydro(rs_right, eq_gamma);
+  cl = chydro(&rs_left[0], eq_gamma);
+  cr = chydro(&rs_right[0], eq_gamma);
   //  cout << "(riemann_Euler::solve) Assigned data, here it is: " << eq_gamma
   //  << "\n";
 
@@ -345,8 +326,8 @@ int riemann_Euler::JMs_riemann_solve(
       case (FLUX_RSlinear):  // ALL LINEAR SOLVES.
         err = linear_solver();
         if (err != 0) {
-          cerr << "(riemann_Euler::solve) linear_solver() returned abnormally!"
-               << "\n";
+          spdlog::error(
+              "(riemann_Euler::solve) linear_solver() returned abnormally!");
           rs_pstar[eqPG] = rs_pstar[eqRO] = rs_pstar[eqVX] = TINYVALUE;
           for (int i = 0; i < rs_nvar; i++)
             ans[i] = rs_pstar[i];
@@ -357,9 +338,8 @@ int riemann_Euler::JMs_riemann_solve(
       case (FLUX_RSexact):  // ALL EXACT SOLVES
         err = exact_solver();
         if (err != 0) {
-          cerr << "(riemann_Euler::solve) exact_solver() returned abnormally - "
-                  "negative pressure!"
-               << "\n";
+          spdlog::error(
+              "(riemann_Euler::solve) exact_solver() returned abnormally - negative pressure!");
           rs_pstar[eqPG] = rs_pstar[eqRO] = TINYVALUE;
           for (int i = 0; i < rs_nvar; i++)
             ans[i] = rs_pstar[i];
@@ -376,8 +356,8 @@ int riemann_Euler::JMs_riemann_solve(
         err = linear_solver();
         linct++;
         if (err != 0) {
-          cerr << "(riemann_Euler::solve) linear_solver() returned abnormally!"
-               << "\n";
+          spdlog::error(
+              "(riemann_Euler::solve) linear_solver() returned abnormally!");
           rs_pstar[eqPG] = rs_pstar[eqRO] = rs_pstar[eqVX] = TINYVALUE;
           // for(int i=0;i<rs_nvar; i++) ans[i] = rs_pstar[i];
           // return(1);
@@ -389,10 +369,8 @@ int riemann_Euler::JMs_riemann_solve(
         if (err != 0 || linearOK() != 0) {
           err = exact_solver();
           if (err != 0) {
-            cerr
-                << "(riemann_Euler::solve) exact_solver() returned abnormally - "
-                   "negative pressure!"
-                << "\n";
+            spdlog::error(
+                "(riemann_Euler::solve) exact_solver() returned abnormally - negative pressure!");
             rs_pstar[eqPG] = rs_pstar[eqRO] = TINYVALUE;
             for (int i = 0; i < rs_nvar; i++)
               ans[i] = rs_pstar[i];
@@ -403,7 +381,8 @@ int riemann_Euler::JMs_riemann_solve(
         }
         break;
       default:
-        rep.error("Error - switch not known in RiemannEul::solve()", mode);
+        spdlog::error(
+            "{}: {}", "Error - switch not known in RiemannEul::solve()", mode);
         break;
     }  // End of switch (mode) which determines what sort of solver to use.
   }    // End of IF we don't have two rarefactions/cavitation, then do the
@@ -421,8 +400,7 @@ int riemann_Euler::JMs_riemann_solve(
     // solve_rarerare()).
     err = solve_rarerare();
     if (err != 0) {
-      cerr << "(riemann_Euler::solve) solve_rarerare() didn't work! "
-           << "\n";
+      spdlog::error("(riemann_Euler::solve) solve_rarerare() didn't work! ");
       rs_pstar[eqPG] = rs_pstar[eqRO] = rs_pstar[eqVX] = -1.9e99;
       for (int i = 0; i < rs_nvar; i++)
         ans[i] = rs_pstar[i];
@@ -439,8 +417,7 @@ int riemann_Euler::JMs_riemann_solve(
     // Solve for cavitation solution.
     err = solve_cavitation();
     if (err) {
-      cerr << "(riemann_Euler::solve) solve_cavitation() didn't work! "
-           << "\n";
+      spdlog::error("(riemann_Euler::solve) solve_cavitation() didn't work! ");
       rs_pstar[eqPG] = rs_pstar[eqRO] = rs_pstar[eqVX] = -1.9e100;
       for (int i = 0; i < rs_nvar; i++)
         ans[i] = rs_pstar[i];
@@ -480,9 +457,6 @@ int riemann_Euler::JMs_riemann_solve(
   for (int i = 0; i < rs_nvar; i++)
     ans[i] = rs_pstar[i];
 
-#ifdef FUNCTION_ID
-  cout << "riemann_Euler::JMs_riemann_solve ...returning.\n";
-#endif  // FUNCTION_ID
   return 0;
 }
 
@@ -522,7 +496,7 @@ int riemann_Euler::check_wave_locations()
       // In this case we need to check if the rarefaction straddles x=0 or
       // not.
       //
-      double cstar = chydro(rs_pstar, eq_gamma);
+      double cstar = chydro(&rs_pstar[0], eq_gamma);
       if (rs_pstar[eqVX] > cstar) {
         //
         // in this case the rarefaction straddles the origin.
@@ -558,7 +532,7 @@ int riemann_Euler::check_wave_locations()
       // In this case we need to check if the rarefaction straddles x=0 or
       // not.
       //
-      double cstar = chydro(rs_pstar, eq_gamma);
+      double cstar = chydro(&rs_pstar[0], eq_gamma);
       if (rs_pstar[eqVX] < -cstar) {
         //
         // in this case the rarefaction straddles the origin.
@@ -741,7 +715,7 @@ int riemann_Euler::linear_solver()
   // rs_meanp[eqVX] = (rr*rs_right[eqVX]+left[eqVX])/(rr+1.);
   // rs_meanp[eqPG] = ???
 
-  double mcs = chydro(rs_meanp, eq_gamma);
+  double mcs = chydro(&rs_meanp[0], eq_gamma);
   //
   // TESTER FOR THE EIGENVALUE SIGNS... (u_av-c_av, u_av, u_av+c_av)
   //
@@ -805,8 +779,7 @@ int riemann_Euler::linear_solver()
       //
       // else bug out
       //
-      cerr << "(Linear Solver) Error in logic!!! Grave."
-           << "\n";
+      spdlog::error("(Linear Solver) Error in logic!!! Grave.");
       return (1);
     }
   }
@@ -829,9 +802,9 @@ int riemann_Euler::exact_solver()
   err += FR_find_root(
       &(rs_pstar[eqPG]), rs_left[eqPG], rs_right[eqPG], eq_gamma, cl, cr);
   if (err) {
-    cout << "Riemann--exact_solver::FR_find_root: error: " << rs_left[eqPG];
-    cout << "  " << rs_right[eqPG] << "  " << eq_gamma;
-    cout << "  " << cl << "  " << cr << "  " << rs_pstar[eqPG] << "\n";
+    spdlog::error(
+        "Riemann--exact_solver::FR_find_root: error: {} {} {} {} {} {}",
+        rs_left[eqPG], rs_right[eqPG], eq_gamma, cl, cr, rs_pstar[eqPG]);
   }
 
   //
@@ -839,7 +812,7 @@ int riemann_Euler::exact_solver()
   // This gets rs_pstar[eqVX]
   //
   err += HydroWaveFull(
-      XN, rs_pstar[eqPG], rs_left, &(rs_pstar[eqVX]), &(rs_pstar[eqRO]),
+      XN, rs_pstar[eqPG], &rs_left[0], &(rs_pstar[eqVX]), &(rs_pstar[eqRO]),
       eq_gamma);
 
   //
@@ -848,29 +821,28 @@ int riemann_Euler::exact_solver()
   //
   pion_flt rhostar, temp;
   if ((rs_pstar[eqVX] > 0) && (fabs(rs_pstar[eqVX] / cr) > 1.e-6)) {
-    err +=
-        HydroWaveFull(XN, rs_pstar[eqPG], rs_left, &temp, &rhostar, eq_gamma);
+    err += HydroWaveFull(
+        XN, rs_pstar[eqPG], &rs_left[0], &temp, &rhostar, eq_gamma);
   }
   else if ((rs_pstar[eqVX] < 0) && (fabs(rs_pstar[eqVX] / cr) > 1.e-6)) {
-    err +=
-        HydroWaveFull(XP, rs_pstar[eqPG], rs_right, &temp, &rhostar, eq_gamma);
+    err += HydroWaveFull(
+        XP, rs_pstar[eqPG], &rs_right[0], &temp, &rhostar, eq_gamma);
   }
   else if (fabs(rs_pstar[eqVX] / cr) <= 1.e-6) {
-    err +=
-        HydroWaveFull(XN, rs_pstar[eqPG], rs_left, &temp, &rhostar, eq_gamma);
     err += HydroWaveFull(
-        XP, rs_pstar[eqPG], rs_right, &temp, &(rs_pstar[eqRO]), eq_gamma);
+        XN, rs_pstar[eqPG], &rs_left[0], &temp, &rhostar, eq_gamma);
+    err += HydroWaveFull(
+        XP, rs_pstar[eqPG], &rs_right[0], &temp, &(rs_pstar[eqRO]), eq_gamma);
     rhostar = (rhostar + rs_pstar[eqRO]) / 2.0;
   }
   else {
     // don't want to get here!
     rs_pstar[eqRO] = -1.0;
-    cerr << "(riemann_Euler::exact_solver) something went very wrong!!!"
-         << "\n";
-    cerr << "P*  rho: " << rs_pstar[eqRO] << "  v: " << rs_pstar[eqVX]
-         << "   p: " << rs_pstar[eqPG] << "\n";
-    rep.printVec("rs_left", rs_left, rs_nvar);
-    rep.printVec("rs_right", rs_right, rs_nvar);
+    spdlog::error(
+        "(riemann_Euler::exact_solver) something went very wrong!!!\nP*  rho: {}  v: {}   p: {}",
+        rs_pstar[eqRO], rs_pstar[eqVX], rs_pstar[eqPG]);
+    spdlog::error("rs_left : {}", rs_left);
+    spdlog::error("rs_right : {}", rs_right);
     return (1);
   }
   rs_pstar[eqRO] = rhostar;
@@ -879,8 +851,7 @@ int riemann_Euler::exact_solver()
   // Make sure everything went ok.
   //
   if (err != 0) {
-    cerr << "(riemann_Euler::solve) err!=0, something went wrong.! "
-         << "\n";
+    spdlog::error("(riemann_Euler::solve) err!=0, something went wrong.! ");
     rs_pstar[eqPG] = rs_pstar[eqRO] = rs_pstar[eqVX] = -1.9;
     return (1);
   }
@@ -890,8 +861,8 @@ int riemann_Euler::exact_solver()
   //
   err = check_wave_locations();
   if (err != 0) {
-    cerr << "(riemann_Euler::solve) checking rarefactions/shocks didn't work! "
-         << "\n";
+    spdlog::error(
+        "(riemann_Euler::solve) checking rarefactions/shocks didn't work! ");
     rs_pstar[eqPG] = rs_pstar[eqRO] = rs_pstar[eqVX] = -1.9e98;
     return (1);
   }
@@ -958,8 +929,7 @@ int riemann_Euler::solve_rarerare()
   else {
     // don't want to get here!
     rs_pstar[eqRO] = -1.0;
-    cerr << "(riemann_Euler::rare_rare) something went very wrong!!!"
-         << "\n";
+    spdlog::error("(riemann_Euler::rare_rare) something went very wrong!!!");
     return (1);
   }
   //
@@ -969,8 +939,8 @@ int riemann_Euler::solve_rarerare()
   //
   int err = check_wave_locations();
   if (err != 0) {
-    cerr << "(riemann_Euler::solve) checking rarefactions/shocks didn't work! "
-         << "\n";
+    spdlog::error(
+        "(riemann_Euler::solve) checking rarefactions/shocks didn't work! ");
     rs_pstar[eqPG] = rs_pstar[eqRO] = rs_pstar[eqVX] = -1.9;
     return (1);
   }
@@ -992,9 +962,7 @@ int riemann_Euler::solve_cavitation()
   ///
   /// The condition for cavitation is that
   /// \f[ (u_R-u_L) >= \frac{2}{\gamma -1}(c_R+c_L) \f]
-#ifdef DEBUG_RIEMANN
-  cout << "sound speed = " << cl << ", " << cr << "\n";
-#endif
+  spdlog::debug("sound speed = {}, {}", cl, cr);
   if ((rs_left[eqVX] - cl) >= 0.) {
     //
     // Everything swept to the right.
@@ -1054,10 +1022,10 @@ int riemann_Euler::solve_cavitation()
   //
   // Don't want to get here!
   //
-  cerr << "(riemann_Euler::solve_cavitation) something went very wrong!!!"
-       << "\n";
-  rep.printVec("rs_pstar", rs_pstar, rs_nvar);
-  cout << "sound speed = " << cl << ", " << cr << "\n";
+  spdlog::error(
+      "(riemann_Euler::solve_cavitation) something went very wrong!!!");
+  spdlog::debug("rs_pstar : {}", rs_pstar);
+  spdlog::debug("sound speed = {}, {}", cl, cr);
   return (1);
 }
 

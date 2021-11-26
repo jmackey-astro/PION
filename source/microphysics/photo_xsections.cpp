@@ -15,11 +15,12 @@
 /// - Meijerink (2006) PhD thesis:
 
 #include "photo_xsections.h"
-#include <iostream>
 #include <map>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+
+#include <spdlog/spdlog.h>
 
 #include "tools/mem_manage.h"
 
@@ -144,9 +145,8 @@ photo_xsections::photo_xsections(
     /*cout << xs[8] << "\n";
     cout << parameters[ions[N]].xsections[8] << "\n";*/
   }
-  cout << parameters["H1+"].xsections[5] << "\n";
+  spdlog::debug("{}", parameters["H1+"].xsections[5]);
   // cout <<"E min/max="<<Emin<<", "<<Emax<<",  Nbins="<<Nbin<<"\n";
-  return;
 }
 
 

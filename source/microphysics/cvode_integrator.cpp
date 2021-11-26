@@ -24,7 +24,10 @@
 
 #include "microphysics/cvode_integrator.h"
 #include <cmath>
-#include <iostream>
+
+
+#include <spdlog/spdlog.h>
+
 using namespace std;
 
 #define MAX_TRYS 50
@@ -62,8 +65,8 @@ cvode_solver::~cvode_solver()
 int cvode_solver::setup_cvode_solver()
 {
   if (have_setup_cvodes) {
-    cout << ">>>---- Warning! Setting up CVODES solver twice! will delete";
-    cout << " and re-init. ----<<<\n";
+    spdlog::info(
+        ">>>---- Warning! Setting up CVODES solver twice! will delete and re-init. ----<<<\n");
     if (abstol) {
 #if defined CVODE2
       N_VDestroy_Serial(abstol);
@@ -78,7 +81,7 @@ int cvode_solver::setup_cvode_solver()
 
   int err = setup_cvode_solver_without_Jacobian();
   if (err) {
-    cout << "Failed to setup solver without jacobian. err=" << err << "\n";
+    spdlog::debug("Failed to setup solver without jacobian. err={}", err);
     return err;
   }
   //
@@ -87,19 +90,19 @@ int cvode_solver::setup_cvode_solver()
 #if defined CVODE2
   err = CVDlsSetDenseJacFn(cvode_mem, Jacobian_for_cvode);
   if (err != CVDLS_SUCCESS) {
-    cerr << "setup_cvode_solver() CVDlsSetDenseJacFn: err=" << err << "\n";
+    spdlog::error("setup_cvode_solver() CVDlsSetDenseJacFn: err={}", err);
     return 6;
   }
 #elif defined CVODE3
   err = CVDlsSetJacFn(cvode_mem, Jacobian_for_cvode);
   if (err != CVDLS_SUCCESS) {
-    cerr << "setup_cvode_solver() CVDlsSetDenseJacFn: err=" << err << "\n";
+    spdlog::error("setup_cvode_solver() CVDlsSetDenseJacFn: err={}", err);
     return 6;
   }
 #else
   err = CVodeSetJacFn(cvode_mem, Jacobian_for_cvode);
   if (err != CV_SUCCESS) {
-    cerr << "setup_cvode_solver() CVDlsSetJacFn: err=" << err << "\n";
+    spdlog::error("setup_cvode_solver() CVDlsSetJacFn: err={}", err);
     return 6;
   }
 #endif
@@ -114,8 +117,8 @@ int cvode_solver::setup_cvode_solver()
 int cvode_solver::setup_cvode_solver_without_Jacobian()
 {
   if (have_setup_cvodes) {
-    cout << ">>>---- Warning! Setting up CVODES solver twice! will delete";
-    cout << " and re-init. ----<<<\n";
+    spdlog::info(
+        ">>>---- Warning! Setting up CVODES solver twice! will delete and re-init. ----<<<\n");
     if (abstol) {
       N_VDestroy_Serial(abstol);
       abstol = 0;
@@ -129,10 +132,10 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
 
   get_problem_size(&n_eq, &n_xd);
 #ifdef CVODE_DEBUG
-  cout << "\t\tN_equations=" << n_eq << ", N_extra_data=" << n_xd << "\n";
+  spdlog::debug("\t\tN_equations={}, N_extra_data={}", n_eq, n_xd);
 #endif
   if (n_eq < 0 || n_xd < 0) {
-    cout << "Error in values for problem size.\n";
+    spdlog::info("Error in values for problem size");
     return 1;
   }
 
@@ -140,7 +143,7 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
   // initialise vector for abstol.
   //
   if (abstol) {
-    cout << "Error! setup_cvode_solver(), vectors already initialised!\n";
+    spdlog::info("Error! setup_cvode_solver(), vectors already initialised!");
     return 1;
   }
 
@@ -156,7 +159,7 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
   cvode_mem = CVodeCreate(CV_BDF);
 #endif
   if (!cvode_mem) {
-    cerr << "setup_cvode_solver() error: cvode_mem=" << cvode_mem << "\n";
+    spdlog::error("setup_cvode_solver() error: cvode_mem={}", cvode_mem);
     return 2;
   }
 
@@ -168,7 +171,7 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
   double t = 0.0;
   err      = CVodeInit(cvode_mem, Ydot_for_cvode, t, abstol);
   if (err != CV_SUCCESS) {
-    cerr << "setup_cvode_solver() CVodeInit error: " << err << "\n";
+    spdlog::error("setup_cvode_solver() CVodeInit error: {}", err);
     return 3;
   }
 
@@ -181,15 +184,14 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
   get_error_tolerances(&reltol, atol);  // both args passed by reference.
 
 #ifdef CVODE_DEBUG
-  cout << "\t\treltol=" << reltol << ", atol=[" << NV_Ith_S(abstol, 0);
+  spdlog::debug("\t\treltol={}, atol=[{}", reltol, NV_Ith_S(abstol, 0));
   for (int v = 1; v < n_eq; v++)
-    cout << ", " << NV_Ith_S(abstol, v);
-  cout << "]\n";
+    spdlog::debug(", {}]\n", NV_Ith_S(abstol, v));
 #endif
 
   err = CVodeSVtolerances(cvode_mem, reltol, abstol);
   if (err != CV_SUCCESS) {
-    cerr << "setup_cvode_solver() CVodeSVtolerances: err=" << err << "\n";
+    spdlog::error("setup_cvode_solver() CVodeSVtolerances: err={}", err);
     return 4;
   }
 
@@ -202,7 +204,7 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
   err = CVDense(cvode_mem, n_eq);
 #endif
   if (err != CV_SUCCESS) {
-    cerr << "setup_cvode_solver() CVDense(): err=" << err << "\n";
+    spdlog::error("setup_cvode_solver() CVDense(): err={}", err);
     return 5;
   }
 
@@ -213,7 +215,7 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
   LS     = SUNDenseLinearSolver(vsetup, msetup);
   err    = CVDlsSetLinearSolver(cvode_mem, LS, msetup);
   if (err != CV_SUCCESS) {
-    cerr << "setup_cvode_solver() CVDlsSetLinearSolver(): err=" << err << "\n";
+    spdlog::error("setup_cvode_solver() CVDlsSetLinearSolver(): err={}", err);
     return 5;
   }
 
@@ -224,7 +226,7 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
   LS     = SUNLinSol_Dense(vsetup, msetup);
   err    = CVodeSetLinearSolver(cvode_mem, LS, msetup);
   if (err != CV_SUCCESS) {
-    cerr << "setup_cvode_solver() CVDlsSetLinearSolver(): err=" << err << "\n";
+    spdlog::error("setup_cvode_solver() CVDlsSetLinearSolver(): err={}", err);
     return 5;
   }
 
@@ -252,7 +254,7 @@ int cvode_solver::integrate_cvode_step(
   //
   err = CVodeSetUserData(cvode_mem, static_cast<void *>(this));
   if (err != CV_SUCCESS) {
-    cerr << "integrate_cvode_step() CVodeSetUserData: err=" << err << "\n";
+    spdlog::error("integrate_cvode_step() CVodeSetUserData: err={}", err);
     return 3;
   }
 
@@ -267,7 +269,7 @@ int cvode_solver::integrate_cvode_step(
   //
   err = CVodeReInit(cvode_mem, t_now, Y_Input);
   if (err != CV_SUCCESS) {
-    cerr << "integrate_cvode_step() CVodeReInit(): err=" << err << "\n";
+    spdlog::error("integrate_cvode_step() CVodeReInit(): err={}", err);
     return 4;
   }
   //
@@ -278,10 +280,10 @@ int cvode_solver::integrate_cvode_step(
   if (err == CV_SUCCESS) {
 #ifdef CVODE_DEBUG
     t_now = t_temp;
-    cout << "Success on first try: t=" << t_now << ", y = [";
+    spdlog::debug("Success on first try: t={}, y = [", t_now);
     for (int v = 0; v < n_eq - 1; v++)
-      cout << NV_Ith_S(Y_Output, v) << ", ";
-    cout << NV_Ith_S(Y_Output, n_eq - 1) << "]\n";
+      spdlog::debug(
+          "{}, {}]", NV_Ith_S(Y_Output, v), NV_Ith_S(Y_Output, n_eq - 1));
 #endif  // CVODE_DEBUG
     return 0;
   }
@@ -292,7 +294,7 @@ int cvode_solver::integrate_cvode_step(
   // it in steps, which is why it is in a loop.
   //
 #ifdef CVODE_DEBUG
-  cout << "First try failed\n";
+  spdlog::info("First try failed");
 #endif  // CVODE_DEBUG
   t_temp = t_now;
   dt *= 0.5;
@@ -303,7 +305,7 @@ int cvode_solver::integrate_cvode_step(
     //
     err = CVodeReInit(cvode_mem, t_now, Y_Input);
     if (err != CV_SUCCESS) {
-      cerr << "integrate_cvode_step() CVodeReInit(): err=" << err << "\n";
+      spdlog::error("integrate_cvode_step() CVodeReInit(): err={}", err);
       return 4;
     }
     //
@@ -313,16 +315,15 @@ int cvode_solver::integrate_cvode_step(
     err = CVode(cvode_mem, t_now + dt, Y_Output, &t_temp, CV_NORMAL);
     if (err != CV_SUCCESS) {
 #ifdef CVODE_DEBUG
-      cout << "FAILED STEP: err=" << err << ".";
-      cout << "\tOld-t=" << t_now << ", returned t=" << t_temp
-           << ", dt was = " << dt;
-      cout << ".\tFAILED loop_ct=" << fail_ct << ": Y_Output = [";
+      spdlog::debug(
+          "FAILED STEP: err={}.\tOld-t={}, returned t={}, dt was = {}.\tFAILED loop_ct={}: Y_Output = [",
+          err, t_now, t_temp, dt, fail_ct);
       for (int v = 0; v < n_eq - 1; v++)
-        cout << NV_Ith_S(Y_Output, v) << ", ";
-      cout << NV_Ith_S(Y_Output, n_eq - 1) << "]\n";
-      // cout <<"FAILED loop ct="<<fail_ct<<":    y = [";
-      // for (int v=0;v<n_eq-1;v++) cout << NV_Ith_S(Y_Input,v)<<", ";
-      // cout << NV_Ith_S(Y_Input,n_eq-1) <<"]\n";
+        spdlog::debug(
+            "{}, {}]", NV_Ith_S(Y_Output, v), NV_Ith_S(Y_Output, n_eq - 1));
+        // cout <<"FAILED loop ct="<<fail_ct<<":    y = [";
+        // for (int v=0;v<n_eq-1;v++) cout << NV_Ith_S(Y_Input,v)<<", ";
+        // cout << NV_Ith_S(Y_Input,n_eq-1) <<"]\n";
 #endif  // CVODE_DEBUG
         //
         // step failed, so don't copy yout to y, do shrink the timestep,
@@ -339,16 +340,15 @@ int cvode_solver::integrate_cvode_step(
       // or running past the end of the integration.
       //
 #ifdef CVODE_DEBUG
-      cout << "STEPPER: old-t=" << t_now << ", returned t=" << t_temp
-           << ", dt was = " << dt;
-      cout << ".\t This_loop_fail_ct=" << fail_ct << ", step_ct=" << step_ct
-           << ": yout = [";
+      spdlog::debug(
+          "STEPPER: old-t={}, returned t={}, dt was = {}.\t This_loop_fail_ct={}, step_ct={}: yout = [",
+          t_now, t_temp, dt, fail_ct, step_ct);
       for (int v = 0; v < n_eq - 1; v++)
-        cout << NV_Ith_S(Y_Output, v) << ", ";
-      cout << NV_Ith_S(Y_Output, n_eq - 1) << "]\n";
-      // cout <<"EEEEEE loop ct="<<fail_ct<<":    y = [";
-      // for (int v=0;v<n_eq-1;v++) cout << NV_Ith_S(Y_Input,v)<<", ";
-      // cout << NV_Ith_S(Y_Input,n_eq-1) <<"]\n";
+        spdlog::debug(
+            "{}, {}]", NV_Ith_S(Y_Output, v), NV_Ith_S(Y_Output, n_eq - 1));
+        // cout <<"EEEEEE loop ct="<<fail_ct<<":    y = [";
+        // for (int v=0;v<n_eq-1;v++) cout << NV_Ith_S(Y_Input,v)<<", ";
+        // cout << NV_Ith_S(Y_Input,n_eq-1) <<"]\n";
 #endif  // CVODE_DEBUG
 
       for (int v = 0; v < n_eq; v++)
@@ -365,22 +365,23 @@ int cvode_solver::integrate_cvode_step(
   } while (t_now < tf && fail_ct <= MAX_TRYS && step_ct <= MAX_STEPS);
 
   if (fail_ct > MAX_TRYS) {
-    cout << "integrate_cvode_step(): Integration failed after bisecting the "
-            "step "
-         << MAX_TRYS << "times.\n";
+    spdlog::debug(
+        "integrate_cvode_step(): Integration failed after bisecting the step {} times.\n",
+        MAX_TRYS);
     return fail_ct;
   }
   if (step_ct >= MAX_STEPS) {
-    cout << "integrate_cvode_step(): Integration took " << MAX_STEPS
-         << " and not at end of step.  giving up.\n";
+    spdlog::debug(
+        "integrate_cvode_step(): Integration took {} and not at end of step.  giving up.\n",
+        MAX_STEPS);
     return step_ct;
   }
 
 #ifdef CVODE_DEBUG
-  cout << "Final version step_ct=" << step_ct << ": t=" << t_now << ", y = [";
+  spdlog::debug("Final version step_ct={}: t={}, y = [", step_ct, t_now);
   for (int v = 0; v < n_eq - 1; v++)
-    cout << NV_Ith_S(Y_Output, v) << ", ";
-  cout << NV_Ith_S(Y_Output, n_eq - 1) << "]\n";
+    spdlog::debug(
+        "{}, {}]", NV_Ith_S(Y_Output, v), NV_Ith_S(Y_Output, n_eq - 1));
 #endif  // CVODE_DEBUG
 
   // for (int v=0;v<n_eq;v++) NV_Ith_S(Yf,v) = NV_Ith_S(Y_Output,v);

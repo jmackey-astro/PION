@@ -95,7 +95,8 @@ int main(int argc, char **argv)
       fits_report_error(stderr, status);
       return (err);
     }
-    if (bitpix1 != DOUBLE_IMG) rep.error("Bad image type", bitpix1);
+    if (bitpix1 != DOUBLE_IMG)
+      spdlog::error("{}: {}", "Bad image type", bitpix1);
     ndim = naxis1;
     err += fits_get_img_param(ff2, 0, &bitpix2, &naxis2, naxes2, &status);
     err += fits_read_keys_lng(
@@ -105,13 +106,18 @@ int main(int argc, char **argv)
       fits_report_error(stderr, status);
       return (err);
     }
-    if (bitpix2 != DOUBLE_IMG) rep.error("Bad image type", bitpix1);
+    if (bitpix2 != DOUBLE_IMG)
+      spdlog::error("{}: {}", "Bad image type", bitpix1);
     if (naxis1 != naxis2)
-      rep.errorTest("Images not same dimensionality!", naxis1, naxis2);
+      if (naxis1 != naxis2)
+        spdlog::error(
+            "{}: Expected {} but got {}", "Images not same dimensionality!",
+            naxis1, naxis2);
     long int npix = 1;
     for (int j = 0; j < ndim; j++) {
       if (naxes1[j] != naxes2[j])
-        rep.error("Bad image length in at least one direction", naxes1[j]);
+        spdlog::error(
+            "{}: {}", "Bad image length in at least one direction", naxes1[j]);
       npix *= naxes1[j];  // cout <<"npix="<<npix<<endl;
     }
 
@@ -120,7 +126,7 @@ int main(int argc, char **argv)
       array2 = new double[npix];
       array3 = new double[npix];
       if (!array1 || !array2 || !array3)
-        rep.error("memory allocation.", array3);
+        spdlog::error("{}: {}", "memory allocation.", array3);
       arraysetup = true;
     }
 

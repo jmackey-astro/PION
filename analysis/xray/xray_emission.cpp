@@ -13,7 +13,8 @@
 ///    calculation at 6 GHz, not 1.4.
 
 #include <cmath>
-#include <iostream>
+
+#include <fstream>
 #include <sstream>
 #include <vector>
 
@@ -21,8 +22,10 @@
 #include "defines/testing_flags.h"
 #include "tools/interpolate.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
 
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
 
 #include "xray_emission.h"
 using namespace std;
@@ -47,7 +50,7 @@ Xray_emission::Xray_emission()
   int err = setup_xray_tables_priv(
       &XNel, &LT, &L1, &L2, &L3, &L4, &L5, &L6, &L7, &L8);
   if (err) {
-    cerr << "Failed to setup xray tables correctly: " << err << "\n";
+    spdlog::error("Failed to setup xray tables correctly: {}", err);
     exit(err);
   }
   NE = 8;
@@ -81,10 +84,10 @@ int Xray_emission::setup_xray_tables_priv(
   //
   // read input parameters:
   //
-  ifstream ff;
+  std::ifstream ff;
   ff.open("xray-table.txt");
   if (!ff.is_open()) {
-    cerr << "Error opening file.\n";
+    spdlog::error("Error opening file");
     return 1;
   }
 
@@ -116,9 +119,9 @@ int Xray_emission::setup_xray_tables_priv(
       // We have found a line of data, so read it into variables.
       istringstream iss(line);
       iss >> lt >> temp >> temp >> l1 >> l2 >> l3 >> l4 >> l5 >> l6 >> l7 >> l8;
-#ifdef TESTING
-      cout << lt << "  " << l1 << "  " << l2 << "  " << l3 << "  " << l4 << " "
-           << l5 << " " << l6 << " " << l7 << " " << l8 << "\n";
+#ifndef NDEBUG
+      spdlog::debug(
+          "{}  {}  {}  {}  {} {} {} {} {}", lt, l1, l2, l3, l4, l5, l6, l7, l8);
 #endif
       //
       // Add all of them to the vectors:
@@ -135,7 +138,7 @@ int Xray_emission::setup_xray_tables_priv(
       Nel++;
     }
   }
-  cout << "Read " << Nel << " lines of data from input xray tables.\n";
+  spdlog::debug("Read {} lines of data from input xray tables", Nel);
   ff.close();
 
 
@@ -224,7 +227,7 @@ void Xray_emission::get_xray_emissivity(
       res[v] = 0.0;
   }
   else if (lt > LT[XNel - 1]) {
-    cout << "extrapolate, T=" << T << " : ";
+    spdlog::debug("extrapolate, T={} : ", T);
     res[0] = L1[XNel - 1]
              + (L1[XNel - 1] - L1[XNel - 2]) * (lt - LT[XNel - 1])
                    / (LT[XNel - 1] - LT[XNel - 2]);
@@ -251,7 +254,7 @@ void Xray_emission::get_xray_emissivity(
                    / (LT[XNel - 1] - LT[XNel - 2]);
     for (size_t v = 0; v < 4; v++)
       res[v] = exp(ln10 * res[v]);
-    rep.printVec("Res", res, 4);
+    spdlog::debug("Res", std::vector<double>(res, res + 4));
   }
   else {
     interpolate.root_find_linear(LT, L1, XNel, lt, &lrate);

@@ -32,7 +32,9 @@
 
 #include "tools/command_line_interface.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
 
 #include <sstream>
 
@@ -85,10 +87,12 @@ double Sub_domain::global_operation_double(
         MPI_Allreduce(&local, &global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   }
   else
-    rep.error("Sub_domain:global_operation_double: Bad identifier", s);
+    spdlog::error(
+        "{}: {}", "Sub_domain:global_operation_double: Bad identifier", s);
 
   if (err)
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "Sub_domain:global_operation_double: MPI call returned abnormally",
         err);
 
@@ -129,10 +133,12 @@ void Sub_domain::global_op_double_array(
         MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   }
   else
-    rep.error("Sub_domain:global_op_double_array: Bad identifier", s);
+    spdlog::error(
+        "{}: {}", "Sub_domain:global_op_double_array: Bad identifier", s);
 
   if (err)
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "Sub_domain:global_op_double_array: MPI call returned abnormally", err);
 
   for (size_t v = 0; v < Nel; v++)
@@ -164,7 +170,7 @@ int Sub_domain::broadcast_data(
         static_cast<float *>(data), n_el, MPI_FLOAT, sender, MPI_COMM_WORLD);
   }
   else
-    rep.error("Bad type of data to send", type);
+    spdlog::error("{}: {}", "Bad type of data to send", type);
   return err;
 }
 
@@ -187,13 +193,13 @@ int Sub_domain::send_cell_data(
   //
   if (!id.empty()) id.erase();
   if (nc == 0 || (l->empty())) {
-    cerr << myrank << "\t Nothing to send to rank: " << to_rank << " !!!\n";
+    spdlog::error("{}\t Nothing to send to rank: {} !!!", myrank, to_rank);
     return 1;
   }
   if (to_rank < 0 || to_rank > nproc) {
-    cerr << "nc=" << nc << "  ndim=" << ndim << "  nvar=" << nvar
-         << "  id=" << id << "  tag=" << comm_tag << "\n";
-    rep.error("to_rank is out of bounds", to_rank);
+    spdlog::error(
+        "nc={}  ndim={}  nvar={}  id={}  tag={}", nc, ndim, nvar, id, comm_tag);
+    spdlog::error("{}: {}", "to_rank is out of bounds", to_rank);
   }
 
   list<cell *>::iterator c = l->begin();
@@ -207,9 +213,9 @@ int Sub_domain::send_cell_data(
   long int totalsize = 0;
   totalsize          = sizeof(long int) + nc * unitsize;
 #ifndef NDEBUG
-  cout << "Sub_domain::send_cell_data() Send buffer unitsize= " << unitsize;
-  cout << " total size = " << totalsize << "\n";
-  cout.flush();
+  spdlog::debug(
+      "Sub_domain::send_cell_data() Send buffer unitsize= {} total size = {}",
+      unitsize, totalsize);
 #endif
 
   //
@@ -273,13 +279,13 @@ int Sub_domain::send_cell_data(
   //  cout <<totalsize<<" position in buf: "<<position<<" nc="<<nc<<"
   //  ct="<<ct<<"\n";
   if (ct != nc) {
-    rep.error("Length of list doesn't match nc", ct - nc);
+    spdlog::error("{}: {}", "Length of list doesn't match nc", ct - nc);
   }
   if (position > totalsize) {
-    rep.error("Overwrote buffer length", position - totalsize);
+    spdlog::error("{}: {}", "Overwrote buffer length", position - totalsize);
   }
   if (err) {
-    rep.error("MPI_Pack returned abnormally", err);
+    spdlog::error("{}: {}", "MPI_Pack returned abnormally", err);
   }
 
   //
@@ -302,13 +308,12 @@ int Sub_domain::send_cell_data(
   err += MPI_Isend(
       si->data, position, MPI_PACKED, si->to_rank, si->comm_tag, MPI_COMM_WORLD,
       &(si->request));
-  if (err) rep.error("MPI_Send failed", err);
+  if (err) spdlog::error("{}: {}", "MPI_Send failed", err);
 
 #ifndef NDEBUG
-  cout << "Sub_domain::send_cell_data: sending " << position;
-  cout << " bytes in buffer size: " << totalsize << " to rank ";
-  cout << to_rank << "\n";
-  cout.flush();
+  spdlog::debug(
+      "Sub_domain::send_cell_data: sending {} bytes in buffer size: {} to rank {}",
+      position, totalsize, to_rank);
 #endif
 
   ostringstream temp;
@@ -329,10 +334,9 @@ int Sub_domain::wait_for_send_to_finish(
 )
 {
 #ifndef NDEBUG
-  cout << "rank: " << myrank
-       << "  Sub_domain::wait_for_send_to_finish() starting\n";
-  // cout <<"   send_id = "<<id<<"\n";
-  cout.flush();
+  spdlog::debug(
+      "rank: {}  Sub_domain::wait_for_send_to_finish() starting\n", myrank);
+  // "<<id<<"\n";
 #endif  // TEST_COMMS
   //
   // Find the send in the list of active sends.
@@ -342,25 +346,24 @@ int Sub_domain::wait_for_send_to_finish(
   struct sent_info *si = 0;
 
 #ifndef NDEBUG
-  cout << "rank: " << myrank;
-  cout << "  Sub_domain::wait_for_send_to_finish() ";
-  cout << " finding in list, ";
-  cout << "send id=" << id << "\n";
+  spdlog::debug(
+      "rank: {}  Sub_domain::wait_for_send_to_finish()  finding in list, send id={}",
+      myrank, id);
 #endif  // TEST_COMMS
 
   for (i = sent_list.begin(); i != sent_list.end(); ++i) {
     si = (*i);
     el++;
 #ifndef NDEBUG
-    cout << "\t\t el=" << el << ", id = " << si->id << "\n";
-    cout.flush();
+    spdlog::debug("\t\t el={}, id = {}", el, si->id);
 #endif  // TEST_COMMS
     if (si->id == id) break;
   }
-  if (i == sent_list.end()) rep.error("Failed to find send with id:", id);
+  if (i == sent_list.end())
+    spdlog::error("{}: {}", "Failed to find send with id:", id);
 
 #ifndef NDEBUG
-  cout << "found send id=" << si->id << " and looking for id=" << id << "\n";
+  spdlog::debug("found send id={} and looking for id={}", si->id, id);
   // cout <<"rank: "<<myrank<<"  Sub_domain::wait_for_send_to_finish() found
   // this send.\n";
 #endif  // TEST_COMMS
@@ -377,11 +380,12 @@ int Sub_domain::wait_for_send_to_finish(
 #endif  // TEST_COMMS
 
   int err = MPI_Wait(&(si->request), &status);
-  if (err) rep.error("Waiting for send to complete!", err);
+  if (err) spdlog::error("{}: {}", "Waiting for send to complete!", err);
 
 #ifndef NDEBUG
-  cout << "rank: " << myrank
-       << "  Sub_domain::wait_for_send_to_finish() send has finished\n";
+  spdlog::debug(
+      "rank: {}  Sub_domain::wait_for_send_to_finish() send has finished",
+      myrank);
 #endif  // TEST_COMMS
 
   //
@@ -401,14 +405,13 @@ int Sub_domain::wait_for_send_to_finish(
     t         = mem.myfree(t);
   }
   else
-    rep.error("BAD type of data!", si->type);
+    spdlog::error("{}: {}", "BAD type of data!", si->type);
   si = mem.myfree(si);
   sent_list.erase(i);
 
 #ifndef NDEBUG
-  cout << "rank: " << myrank;
-  cout << "  Sub_domain::wait_for_send_to_finish() returning";
-  cout << endl;
+  spdlog::debug(
+      "rank: {}  Sub_domain::wait_for_send_to_finish() returning", myrank);
 #endif  // TEST_COMMS
   return 0;
 }
@@ -426,8 +429,8 @@ int Sub_domain::look_for_data_to_receive(
 {
 
 #ifndef NDEBUG
-  cout << "rank: " << myrank;
-  cout << "  Sub_domain::look_for_data_to_receive() starting\n";
+  spdlog::debug(
+      "rank: {}  Sub_domain::look_for_data_to_receive() starting\n", myrank);
 #endif  // TEST_COMMS
   //
   // Create a new received info record.
@@ -437,14 +440,13 @@ int Sub_domain::look_for_data_to_receive(
   ri->to_rank          = myrank;
   ri->data             = 0;
   if (type != COMM_CELLDATA && type != COMM_DOUBLEDATA)
-    rep.error("only know two types of data to look for!", type);
+    spdlog::error("{}: {}", "only know two types of data to look for!", type);
   ri->type = type;
 
 #ifndef NDEBUG
-  cout << "rank: " << myrank;
-  cout << "  Sub_domain::look_for_data_to_receive() looking for source";
-  cout << " for comm_tag: " << comm_tag << "\n";
-  cout.flush();
+  spdlog::debug(
+      "rank: {}  Sub_domain::look_for_data_to_receive() looking for source for comm_tag: {}",
+      myrank, comm_tag);
 
   // list<sent_info *>::iterator i;
   // struct sent_info *si=0;
@@ -473,17 +475,17 @@ int Sub_domain::look_for_data_to_receive(
   else {
     err = MPI_Probe(MPI_ANY_SOURCE, comm_tag, MPI_COMM_WORLD, &(ri->status));
   }
-  if (err) rep.error("mpi probe failed", err);
+  if (err) spdlog::error("{}: {}", "mpi probe failed", err);
   if (*from_rank >= 0 && *from_rank != ri->status.MPI_SOURCE) {
-    rep.error(
-        "looking for specific rank but got different", ri->status.MPI_SOURCE);
+    spdlog::error(
+        "{}: {}", "looking for specific rank but got different",
+        ri->status.MPI_SOURCE);
   }
 
 #ifndef NDEBUG
-  cout << "rank: " << myrank;
-  cout << "  Sub_domain::look_for_data_to_receive() found data from ";
-  cout << "rank " << *from_rank << ", parsing...\n";
-  cout.flush();
+  spdlog::debug(
+      "rank: {}  Sub_domain::look_for_data_to_receive() found data from rank {}",
+      myrank, *from_rank);
 #endif  // TEST_COMMS
 
   //
@@ -491,7 +493,8 @@ int Sub_domain::look_for_data_to_receive(
   //
   *from_rank = ri->status.MPI_SOURCE;
   *recv_tag  = ri->status.MPI_TAG;
-  if (*recv_tag != comm_tag) rep.error("bad comm_tag received", *recv_tag);
+  if (*recv_tag != comm_tag)
+    spdlog::error("{}: {}", "bad comm_tag received", *recv_tag);
   ostringstream temp;
   temp.str("");
   temp << "from " << *from_rank << " to " << myrank << " tag=" << *recv_tag;
@@ -499,9 +502,9 @@ int Sub_domain::look_for_data_to_receive(
   temp.str("");
 
 #ifndef NDEBUG
-  cout << "Sub_domain::look_for_data_to_receive: found data from ";
-  cout << *from_rank << " with tag:" << *recv_tag << "\n";
-  cout.flush();
+  spdlog::debug(
+      "Sub_domain::look_for_data_to_receive: found data from {} with tag:{}",
+      *from_rank, *recv_tag);
 #endif  // TEST_COMMS
 
   //
@@ -512,8 +515,7 @@ int Sub_domain::look_for_data_to_receive(
   recv_list.push_back(ri);
 
 #ifndef NDEBUG
-  cout << "Sub_domain::look_for_data_to_receive: returning.\n";
-  cout.flush();
+  spdlog::debug("Sub_domain::look_for_data_to_receive: returning");
 #endif  // TEST_COMMS
 
   return err;
@@ -535,20 +537,20 @@ int Sub_domain::receive_cell_data(
   int err = 0;
 
 #ifndef NDEBUG
-  cout << "Sub_domain::receive_cell_data: starting.\n";
+  spdlog::debug("Sub_domain::receive_cell_data: starting");
 #endif  // TEST_COMMS
 
   //
   // Find the recv in the list of active receives.
   //
 #ifndef NDEBUG
-  cout << "Sub_domain::receive_cell_data: recv_list size=" << recv_list.size()
-       << "\n";
-  cout.flush();
+  spdlog::debug(
+      "Sub_domain::receive_cell_data: recv_list size={}", recv_list.size());
 #endif  // TEST_COMMS
 
   if (recv_list.empty())
-    rep.error("Call look4data before receive_data", recv_list.size());
+    spdlog::error(
+        "{}: {}", "Call look4data before receive_data", recv_list.size());
 
   struct recv_info *info = 0;
   list<recv_info *>::iterator iget;
@@ -556,21 +558,24 @@ int Sub_domain::receive_cell_data(
     info = (*iget);
     if (info->id == id) break;
   }
-  if (iget == recv_list.end()) rep.error("Failed to find recv with id:", id);
+  if (iget == recv_list.end())
+    spdlog::error("{}: {}", "Failed to find recv with id:", id);
 
 #ifndef NDEBUG
-  cout << "found recv id=" << info->id << " and looking for id=" << id << "\n";
-  cout << "Sub_domain::receive_cell_data: found recv id\n";
-  cout.flush();
+  spdlog::debug(
+      "found recv id={} and looking for id={}\nSub_domain::receive_cell_data: found recv id\n",
+      info->id, id);
 #endif  // TEST_COMMS
 
   //
   // Check that everthing matches.
   //
   if (from_rank != info->from_rank)
-    rep.error("from_ranks don't match", from_rank - info->from_rank);
-  if (comm_tag != info->comm_tag) rep.error("Bad comm_tag", comm_tag);
-  if (id != info->id) rep.error("Bad id", id);
+    spdlog::error(
+        "{}: {}", "from_ranks don't match", from_rank - info->from_rank);
+  if (comm_tag != info->comm_tag)
+    spdlog::error("{}: {}", "Bad comm_tag", comm_tag);
+  if (id != info->id) spdlog::error("{}: {}", "Bad id", id);
 
     //
     // See how many bytes we are getting!
@@ -578,20 +583,18 @@ int Sub_domain::receive_cell_data(
     // *count)
     //
 #ifndef NDEBUG
-  cout << "Sub_domain::receive_cell_data: getting size of buffer.\n";
-  cout.flush();
+  spdlog::debug("Sub_domain::receive_cell_data: getting size of buffer");
 #endif  // TEST_COMMS
 
   int ct = 0;
   err += MPI_Get_count(&(info->status), MPI_PACKED, &ct);
-  if (err) rep.error("getting size of message to receive", err);
+  if (err) spdlog::error("{}: {}", "getting size of message to receive", err);
 
 #ifndef NDEBUG
-  cout << "Sub_domain::receive_cell_data: buffer is " << ct << " bytes.\n.";
-  cout.flush();
+  spdlog::debug("Sub_domain::receive_cell_data: buffer is {} bytes", ct);
 #endif  // TEST_COMMS
 
-  if (ct < 0) rep.error("bad buffer size count", ct);
+  if (ct < 0) spdlog::error("{}: {}", "bad buffer size count", ct);
 
   //
   // Allocate memory for data.
@@ -605,19 +608,19 @@ int Sub_domain::receive_cell_data(
   // tag, MPI_Comm comm, MPI_Status *status)
   //
 #ifndef NDEBUG
-  cout << "Sub_domain::receive_cell_data: receiving buffer of ";
-  cout << "data from rank: " << from_rank << "\n";
-  cout.flush();
+  spdlog::debug(
+      "Sub_domain::receive_cell_data: receiving buffer of data from rank: {}",
+      from_rank);
 #endif  // TEST_COMMS
 
   err += MPI_Recv(
       buf, ct, MPI_PACKED, from_rank, comm_tag, MPI_COMM_WORLD,
       &(info->status));
-  if (err) rep.error("MPI_Recv failed", err);
+  if (err) spdlog::error("{}: {}", "MPI_Recv failed", err);
 #ifndef NDEBUG
-  cout << "\tcomm_receive_any_data: status: " << info->status.MPI_SOURCE;
-  cout << ", " << info->status.MPI_TAG << ", ct=" << ct << "\n";
-  cout.flush();
+  spdlog::debug(
+      "\tcomm_receive_any_data: status: {}, {}, ct={}", info->status.MPI_SOURCE,
+      info->status.MPI_TAG, ct);
 #endif  // TEST_COMMS
 
   //
@@ -627,41 +630,37 @@ int Sub_domain::receive_cell_data(
   //   int outcount, MPI_Datatype datatype, MPI_Comm comm)
 
 #ifndef NDEBUG
-  cout << "Sub_domain::receive_cell_data: getting number of cells received\n";
-  cout.flush();
+  spdlog::debug(
+      "Sub_domain::receive_cell_data: getting number of cells received");
 #endif  // TEST_COMMS
 
   int position   = 0;
   long int ncell = 0;
 
   err = MPI_Unpack(buf, ct, &position, &ncell, 1, MPI_LONG, MPI_COMM_WORLD);
-  if (err) rep.error("Unpack", err);
+  if (err) spdlog::error("{}: {}", "Unpack", err);
 #ifndef NDEBUG
-  cout << "Sub_domain::receive_cell_data: got " << ncell << " cells.\n";
-  cout.flush();
+  spdlog::debug("Sub_domain::receive_cell_data: got {} cells", ncell);
 #endif  // TEST_COMMS
 
   if (ncell != static_cast<int>(l->size()) || (ncell != nc)) {
-    cerr << myrank << "\tSub_domain:recv: length of data = " << l->size();
-    cerr << " or we're told it's " << nc << "\n";
-    cerr << myrank << "\tSub_domain:recv: cells received = " << ncell << "\n";
-    cerr << myrank << "\tSub_domain:recv: Bugging out!\n";
+    spdlog::error(
+        "{}\tSub_domain:recv: length of data = {} or we're told it's {}\n{}\tSub_domain:recv: cells received = {}\n{}\tSub_domain:recv: Bugging out!\n",
+        myrank, l->size(), nc, myrank, ncell, myrank);
     return (-99);
   }
 
 #ifndef NDEBUG
-  cout << myrank << "\tSub_domain:recv: got " << ncell
-       << " cells, as expected.\n";
-  cout.flush();
+  spdlog::debug(
+      "{}\tSub_domain:recv: got {} cells, as expected", myrank, ncell);
 #endif  // TEST_COMMS
 
   //
   // Allocate arrays to unpack data into.
   //
 #ifndef NDEBUG
-  cout << "Sub_domain::receive_cell_data: allocating arrays to unpack data "
-          "into.\n";
-  cout.flush();
+  spdlog::debug(
+      "Sub_domain::receive_cell_data: allocating arrays to unpack data into");
 #endif  // TEST_COMMS
 
   int *ipos   = 0;
@@ -673,8 +672,8 @@ int Sub_domain::receive_cell_data(
   // Data should come in in the order the boundary cells are listed in.
   //
 #ifndef NDEBUG
-  cout << "Sub_domain::receive_cell_data: unpacking data into list of cells.\n";
-  cout.flush();
+  spdlog::debug(
+      "Sub_domain::receive_cell_data: unpacking data into list of cells");
 #endif  // TEST_COMMS
 
   int cpos[MAX_DIM];
@@ -717,10 +716,10 @@ int Sub_domain::receive_cell_data(
     // rep.printVec("data var",p,nvar);
     // cout.flush();
 #endif  // TEST_COMMS
-    if (err) rep.error("Unpack", err);
+    if (err) spdlog::error("{}: {}", "Unpack", err);
 
     // For a given boundary data iterator, put data into cells
-    if (c == l->end()) rep.error("Got too many cells!", i);
+    if (c == l->end()) spdlog::error("{}: {}", "Got too many cells!", i);
     for (int v = 0; v < nvar; v++)
       (*c)->Ph[v] = p[v];
       //
@@ -733,7 +732,7 @@ int Sub_domain::receive_cell_data(
       //    cout <<"*** Position x["<<v<<"] for received cell "<<i;
       //    cout <<": got x="<<ipos[v]<<" expected x="<<cpos[v];
       //    cout <<"; distance="<<ipos[v]-cpos[v]<<"\n";
-      //    rep.error("positions do not match",ipos[v]);
+      //    spdlog::error("{}: {}", "positions do not match",ipos[v]);
       //  }
 #ifndef NDEBUG
       // rep.printVec("\trecvd",ipos,ndim);
@@ -750,33 +749,34 @@ int Sub_domain::receive_cell_data(
   //  "<<b->data.size()<<"\n"; cout <<myrank<<"\tcomm_unpack_data: cells
   //  received for boundary= "<<ncell<<"\n";
 #ifndef NDEBUG
-  cout << "Sub_domain::receive_cell_data: checking we got the right amount of "
-          "data.\n";
+  spdlog::debug(
+      "Sub_domain::receive_cell_data: checking we got the right amount of data");
 #endif  // TEST_COMMS
   if (c != l->end()) {
-    cerr << "length of data = " << l->size() << "\n";
-    rep.error("Didn't get enough cells!", CI.get_ipos((*c), XX));
+    spdlog::error("length of data = {}", l->size());
+    spdlog::error("{}: {}", "Didn't get enough cells!", CI.get_ipos((*c), XX));
   }
-  if (position != ct) rep.error("length of data doesn't match", position - ct);
+  if (position != ct)
+    spdlog::error("{}: {}", "length of data doesn't match", position - ct);
 
     //
     // Free memory and delete entry from recv_list
     //
 #ifndef NDEBUG
-  cout << "Sub_domain::receive_cell_data: freeing memory\n";
+  spdlog::debug("Sub_domain::receive_cell_data: freeing memory");
 #endif  // TEST_COMMS
   if (recv_list.size() == 1) {
     recv_list.pop_front();
   }
   else
-    rep.error("recv list is big!", recv_list.size());
+    spdlog::error("{}: {}", "recv list is big!", recv_list.size());
   info = mem.myfree(info);
   buf  = mem.myfree(buf);
   ipos = mem.myfree(ipos);
   p    = mem.myfree(p);
 
 #ifndef NDEBUG
-  cout << "Sub_domain::receive_cell_data: returning\n";
+  spdlog::debug("Sub_domain::receive_cell_data: returning");
 #endif  // TEST_COMMS
   return 0;
 }
@@ -792,7 +792,10 @@ int Sub_domain::send_double_data(
     const int comm_tag    ///< comm_tag, to say what kind of send.
 )
 {
-  if (!data) rep.error("Sub_domain::send_double_data() null pointer!", data);
+  if (!data)
+    spdlog::error(
+        "{}: {}", "Sub_domain::send_double_data() null pointer!",
+        fmt::ptr(data));
   int err = 0;
 
   //
@@ -855,18 +858,19 @@ int Sub_domain::receive_double_data(
 {
   int err = 0;
 #ifndef NDEBUG
-  cout << "Sub_domain::receive_double_data: starting.\n";
+  spdlog::debug("Sub_domain::receive_double_data: starting");
 #endif  // TEST_COMMS
 
   //
   // Find the recv in the list of active receives.
   //
 #ifndef NDEBUG
-  cout << "Sub_domain::receive_double_data: recv_list size=" << recv_list.size()
-       << "\n";
+  spdlog::debug(
+      "Sub_domain::receive_double_data: recv_list size={}", recv_list.size());
 #endif  // TEST_COMMS
   if (recv_list.empty())
-    rep.error("Call look4data before receive_data", recv_list.size());
+    spdlog::error(
+        "{}: {}", "Call look4data before receive_data", recv_list.size());
 
   struct recv_info *info = 0;
   list<recv_info *>::iterator iget;
@@ -874,21 +878,25 @@ int Sub_domain::receive_double_data(
     info = (*iget);
     if (info->id == id) break;
   }
-  if (iget == recv_list.end()) rep.error("Failed to find recv with id:", id);
+  if (iget == recv_list.end())
+    spdlog::error("{}: {}", "Failed to find recv with id:", id);
 #ifndef NDEBUG
-  cout << "found recv id=" << info->id << " and looking for id=" << id << "\n";
-  cout << "Sub_domain::receive_double_data: found recv id\n";
+  spdlog::debug(
+      "found recv id={} and looking for id={}\nSub_domain::receive_double_data: found recv id",
+      info->id, id);
 #endif  // TEST_COMMS
 
   //
   // Check that everthing matches.
   //
   if (from_rank != info->from_rank)
-    rep.error("from_ranks don't match", from_rank - info->from_rank);
-  if (comm_tag != info->comm_tag) rep.error("Bad comm_tag", comm_tag);
-  if (id != info->id) rep.error("Bad id", id);
+    spdlog::error(
+        "{}: {}", "from_ranks don't match", from_rank - info->from_rank);
+  if (comm_tag != info->comm_tag)
+    spdlog::error("{}: {}", "Bad comm_tag", comm_tag);
+  if (id != info->id) spdlog::error("{}: {}", "Bad id", id);
   if (info->type != COMM_DOUBLEDATA)
-    rep.error("data is not double array!", info->type);
+    spdlog::error("{}: {}", "data is not double array!", info->type);
 
     //
     // See how many doubles we are getting.
@@ -896,20 +904,20 @@ int Sub_domain::receive_double_data(
     // *count)
     //
 #ifndef NDEBUG
-  cout << "Sub_domain::receive_double_data: getting size of buffer.\n";
+  spdlog::debug("Sub_domain::receive_double_data: getting size of buffer");
 #endif  // TEST_COMMS
   int ct = 0;
   err += MPI_Get_count(&(info->status), MPI_DOUBLE, &ct);
-  if (err) rep.error("getting size of message to receive", err);
+  if (err) spdlog::error("{}: {}", "getting size of message to receive", err);
 #ifndef NDEBUG
-  cout << "Sub_domain::receive_double_data: buffer is " << ct
-       << " elements.\n.";
+  spdlog::debug("Sub_domain::receive_double_data: buffer is {} elements", ct);
 #endif  // TEST_COMMS
-  if (ct < 0) rep.error("bad buffer size count", ct);
+  if (ct < 0) spdlog::error("{}: {}", "bad buffer size count", ct);
   if (ct != nel) {
-    cout << "Sub_domain::receive_double_data: getting " << ct
-         << " doubles, but expecting " << nel << "\n";
-    rep.error("Getting wrong amount of data", ct - nel);
+    spdlog::debug(
+        "Sub_domain::receive_double_data: getting {} doubles, but expecting {}",
+        ct, nel);
+    spdlog::error("{}: {}", "Getting wrong amount of data", ct - nel);
   }
 
   //
@@ -918,15 +926,15 @@ int Sub_domain::receive_double_data(
   // tag, MPI_Comm comm, MPI_Status *status)
   //
 #ifndef NDEBUG
-  cout
-      << "Sub_domain::receive_double_data: receiving buffer of data from rank: "
-      << from_rank << "\n";
+  spdlog::debug(
+      "Sub_domain::receive_double_data: receiving buffer of data from rank: {}",
+      from_rank);
 #endif  // TEST_COMMS
   void *buf = data;
   err += MPI_Recv(
       buf, ct, MPI_DOUBLE, info->from_rank, info->comm_tag, MPI_COMM_WORLD,
       &(info->status));
-  if (err) rep.error("MPI_Recv failed", err);
+  if (err) spdlog::error("{}: {}", "MPI_Recv failed", err);
     //  cout <<"\tcomm_receive_any_data: status: "<<status.MPI_SOURCE<<",
     //  "<<status.MPI_TAG<<", ct="<<ct<<"\n";
 
@@ -934,13 +942,13 @@ int Sub_domain::receive_double_data(
     // Free memory and delete entry from recv_list
     //
 #ifndef NDEBUG
-  cout << "Sub_domain::receive_double_data: freeing memory\n";
+  spdlog::debug("Sub_domain::receive_double_data: freeing memory");
 #endif  // TEST_COMMS
   if (recv_list.size() == 1) {
     recv_list.pop_front();
   }
   else
-    rep.error("recv list is big!", recv_list.size());
+    spdlog::error("{}: {}", "recv list is big!", recv_list.size());
   info = mem.myfree(info);
 
   return 0;
@@ -971,12 +979,12 @@ int Sub_domain::silo_pllel_init(
     iomode = PMPIO_WRITE;
   }
   else
-    rep.error("Bad iotype", iotype);
+    spdlog::error("{}: {}", "Bad iotype", iotype);
 
   bat = PMPIO_Init(
       num_files, iomode, MPI_COMM_WORLD, tag, PMPIO_DefaultCreate,
       PMPIO_DefaultOpen, PMPIO_DefaultClose, 0);
-  if (!bat) rep.error("failed to init files", myrank);
+  if (!bat) spdlog::error("{}: {}", "failed to init files", myrank);
 
   // Get the index of the group I am in.
   *group_rank = PMPIO_GroupRank(bat, myrank);
@@ -998,18 +1006,24 @@ int Sub_domain::silo_pllel_wait_for_file(
 )
 {
 #ifndef NDEBUG
-  cout << "Sub_domain::silo_pllel_wait_for_file() opening file: ";
-  cout << filename << " into directory: " << dir << endl;
+  spdlog::debug(
+      "Sub_domain::silo_pllel_wait_for_file() opening file: {} into directory: {}",
+      filename, dir);
 #endif
 
-  if (id != silo_id) rep.error(id, silo_id);
-  if (*dbfile) rep.error("please pass in null file pointer!", *dbfile);
-  if (!bat) rep.error("call init before wait_for_file!", bat);
+  if (id != silo_id) spdlog::error("{}: {}", id, silo_id);
+  if (*dbfile)
+    spdlog::error(
+        "{}: {}", "please pass in null file pointer!", fmt::ptr(*dbfile));
+  if (!bat)
+    spdlog::error("{}: {}", "call init before wait_for_file!", fmt::ptr(bat));
 
   *dbfile = static_cast<DBfile *>(
       PMPIO_WaitForBaton(bat, filename.c_str(), dir.c_str()));
   if (!(*dbfile)) {
-    rep.error("wait for baton failed to return file pointer.", *dbfile);
+    spdlog::error(
+        "{}: {}", "wait for baton failed to return file pointer.",
+        fmt::ptr(*dbfile));
   }
 
   return 0;
@@ -1021,13 +1035,13 @@ int Sub_domain::silo_pllel_finish_with_file(
 )
 {
 #ifndef NDEBUG
-  cout << "Sub_domain::silo_pllel_finish_with_file() passing file on to next "
-          "proc."
-       << endl;
+  spdlog::debug(
+      "Sub_domain::silo_pllel_finish_with_file() passing file on to next proc");
 #endif
 
-  if (id != silo_id) rep.error(id, silo_id);
-  if (!(*dbfile)) rep.error("file pointer is null!", *dbfile);
+  if (id != silo_id) spdlog::error("{}: {}", id, silo_id);
+  if (!(*dbfile))
+    spdlog::error("{}: {}", "file pointer is null!", fmt::ptr(*dbfile));
 
   PMPIO_HandOffBaton(bat, static_cast<void *>(*dbfile));
   PMPIO_Finish(bat);
@@ -1047,11 +1061,10 @@ void Sub_domain::silo_pllel_get_ranks(
     int *rank              ///< rank of processor within group.
     ) const
 {
-  if (id != silo_id) rep.error(id, silo_id);
+  if (id != silo_id) spdlog::error("{}: {}", id, silo_id);
 
   *group = PMPIO_GroupRank(bat, proc);
   *rank  = PMPIO_RankInGroup(bat, proc);
-  return;
 }
 
 #endif  // SILO

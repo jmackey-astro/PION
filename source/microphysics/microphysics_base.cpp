@@ -3,8 +3,11 @@
 /// \date 2015.03.26
 
 #include "microphysics_base.h"
-#include "tools/reporting.h"
-#include <iostream>
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 using namespace std;
 
 
@@ -22,15 +25,13 @@ microphysics_base::microphysics_base(
     nv_prim(nv),
     ntracer(ntr)
 {
-#ifndef NDEBUG
-  cout << "microphysics_base:: setting up EP and RS: ";
-#endif
-
   EP = ephys;
   RS = rsrcs;
 
 #ifndef NDEBUG
-  cout << EP << "\t" << RS << "\n";
+  spdlog::info(
+      "microphysics_base:: setting up EP and RS: {}\t{}", fmt::ptr(EP),
+      fmt::ptr(RS));
 #endif
 
   // set up a map of tracer names to indices in state vec.
@@ -52,17 +53,15 @@ microphysics_base::microphysics_base(
   // 2018r4)
   for (std::map<std::string, int>::iterator it = el_map.begin();
        it != el_map.end(); ++it) {
-    cout << "Elements Map: " << it->first << " " << it->second << "\n";
+    spdlog::debug("Elements Map: {} {}", it->first, it->second);
   }
   // for (auto elem : tr_map) { // c++11 only (not working with intel compiler
   // 2018r4)
   for (std::map<std::string, int>::iterator it = tr_map.begin();
        it != tr_map.end(); ++it) {
-    cout << "Tracers Map: " << it->first << " " << it->second << "\n";
+    spdlog::debug("Tracers Map: {} {}", it->first, it->second);
   }
 #endif
-
-  return;
 }
 
 // ##################################################################
@@ -114,14 +113,12 @@ void microphysics_base::sCMA(
 
 #ifdef DEBUG_SCMA
   if (fabs(val - 1.0) > 1.0e-1) {
-    cout << "------------  sCMA  ---------------\n";
-    rep.printVec("p_in     : ", p_in, nv_prim);
-    rep.printVec("ptemp    : ", ptemp, nv_prim);
-    rep.printVec("Corrector: ", corrector, nv_prim);
+    spdlog::debug("------------  sCMA  ---------------");
+    spdlog::debug("p_in     :  : {}", p_in);
+    spdlog::debug("ptemp    :  : {}", ptemp);
+    spdlog::debug("Corrector:  : {}", corrector);
   }
 #endif  // DEBUG_SCMA
-
-  return;
 }
 
 // ##################################################################

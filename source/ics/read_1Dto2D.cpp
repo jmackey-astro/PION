@@ -9,7 +9,11 @@
 
 #include "coord_sys/VectorOps.h"
 #include "ics/icgen.h"
+#include <fstream>
 #include <sstream>
+
+#include <spdlog/spdlog.h>
+
 using namespace std;
 
 // ##################################################################
@@ -33,14 +37,14 @@ int IC_read_1Dto2D::setup_data(
   int err = 0;
 
   ICsetup_base::gg = ggg;
-  if (!gg) rep.error("null pointer to grid!", ggg);
+  if (!gg) spdlog::error("{}: {}", "null pointer to grid!", fmt::ptr(ggg));
   ICsetup_base::rp = rrp;
-  if (!rp) rep.error("null pointer to ReadParams", rp);
+  if (!rp) spdlog::error("{}: {}", "null pointer to ReadParams", fmt::ptr(rp));
   string seek, str;
 
   seek = "1D_InputFile";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   string inputfile = str;
 
   //
@@ -54,7 +58,7 @@ int IC_read_1Dto2D::setup_data(
   ifstream infile;
   infile.open(inputfile.c_str());
   if (!infile.is_open()) {
-    cerr << "Error opening file.\n";
+    spdlog::error("Error opening file");
     return 1;
   }
   double r, x[SimPM->nvar];
@@ -71,29 +75,26 @@ int IC_read_1Dto2D::setup_data(
       // We have found a line of data, so read it into variables.
       istringstream ff(line);
       ff >> r;
-      // cout <<r<< "\t";
       radius.push_back(r);
       for (int v = 0; v < SimPM->nvar; v++) {
         ff >> x[v];
-        // cout <<x[v]<<"  ";
         data[v].push_back(x[v]);
       }
-      // cout <<"\n";
       i++;
     }
   }
-  cout << "read " << i << " lines.\n";
+  spdlog::debug("read {} lines", i);
   infile.close();
 
   if (SimPM->ndim == 2 && SimPM->coord_sys != COORD_CYL)
-    rep.error("Wrong coords, use cylindrical!", SimPM->coord_sys);
+    spdlog::error("{}: {}", "Wrong coords, use cylindrical!", SimPM->coord_sys);
 
   //
   // Now write the data to the grid... calculate r=sqrt(R^2+Z^2)
   // and assume spherical symmetry with properties at that value of r.
   //
   cell *c = ggg->FirstPt();
-  double dpos[SimPM->ndim], data_vals[SimPM->nvar];
+  std::array<double, MAX_DIM> dpos, data_vals;
   for (int v = 0; v < SimPM->nvar; v++)
     data_vals[v] = 0.0;
   // 1D sims have no B field...
@@ -111,13 +112,13 @@ int IC_read_1Dto2D::setup_data(
     CI.get_dpos(c, dpos);
     switch (SimPM->ndim) {
       case 2:
-        get_data_vals(dpos, radius, data, nvar, data_vals);
+        get_data_vals(dpos, radius, data, nvar, &data_vals[0]);
         break;
       case 3:
-        get_3D_data_vals(dpos, radius, data, nvar, data_vals);
+        get_3D_data_vals(dpos, radius, data, nvar, &data_vals[0]);
         break;
       default:
-        rep.error("read1d2d: dims", SimPM->ndim);
+        spdlog::error("{}: {}", "read1d2d: dims", SimPM->ndim);
         break;
     }
 
@@ -145,15 +146,16 @@ int IC_read_1Dto2D::setup_data(
 // ##################################################################
 
 void IC_read_1Dto2D::get_data_vals(
-    double *dpos,                   ///< Cell centre
-    vector<double> &radius,         ///< radius vector
-    vector<vector<double> > &data,  ///< arrays of variable data.
-    const int nvar,                 ///< number of variables.
-    double *out                     ///< array for output data values at pos.
+    std::array<double, MAX_DIM> &dpos,  ///< Cell centre
+    vector<double> &radius,             ///< radius vector
+    vector<vector<double> > &data,      ///< arrays of variable data.
+    const int nvar,                     ///< number of variables.
+    double *out  ///< array for output data values at pos.
 )
 {
   int imin = 0, imax = 0, len = radius.size();
-  double origin[MAX_DIM], seek = 0.0, sx = 0.0;
+  std::array<double, MAX_DIM> origin;
+  double seek = 0.0, sx = 0.0;
   for (int v = 0; v < MAX_DIM; v++)
     origin[v] = 0;
   seek = gg->distance(dpos, origin);
@@ -162,7 +164,8 @@ void IC_read_1Dto2D::get_data_vals(
     imax++;
   }
   imin = max(0, imax - 1);
-  if (imin < 0 || imax > len - 1) rep.error("position out of range.", imax);
+  if (imin < 0 || imax > len - 1)
+    spdlog::error("{}: {}", "position out of range.", imax);
   //
   // Now linearly interpolate to get the correct value.
   //
@@ -187,15 +190,16 @@ void IC_read_1Dto2D::get_data_vals(
 // ##################################################################
 
 void IC_read_1Dto2D::get_3D_data_vals(
-    double *dpos,                   ///< Cell centre
-    vector<double> &radius,         ///< radius vector
-    vector<vector<double> > &data,  ///< arrays of variable data.
-    const int nvar,                 ///< number of variables.
-    double *out                     ///< array for output data values at pos.
+    std::array<double, MAX_DIM> &dpos,  ///< Cell centre
+    vector<double> &radius,             ///< radius vector
+    vector<vector<double> > &data,      ///< arrays of variable data.
+    const int nvar,                     ///< number of variables.
+    double *out  ///< array for output data values at pos.
 )
 {
   int imin = 0, imax = 0, len = radius.size();
-  double origin[MAX_DIM], seek = 0.0, sx = 0.0;
+  std::array<double, MAX_DIM> origin;
+  double seek = 0.0, sx = 0.0;
   for (int v = 0; v < MAX_DIM; v++)
     origin[v] = 0;
   seek = gg->distance(dpos, origin);
@@ -204,7 +208,8 @@ void IC_read_1Dto2D::get_3D_data_vals(
     imax++;
   }
   imin = max(0, imax - 1);
-  if (imin < 0 || imax > len - 1) rep.error("position out of range.", imax);
+  if (imin < 0 || imax > len - 1)
+    spdlog::error("{}: {}", "position out of range.", imax);
   //
   // Now linearly interpolate to get the correct value.
   //

@@ -12,7 +12,7 @@
 #error "define PARALLEL so this will work!"
 #endif
 
-#include <iostream>
+
 #include <list>
 #include <silo.h>
 #include <sstream>
@@ -22,7 +22,7 @@ using namespace std;
 #include "defines/testing_flags.h"
 
 #include "constants.h"
-#include "tools/reporting.h"
+
 #include "tools/timer.h"
 
 #include "dataIO/dataio.h"
@@ -56,7 +56,7 @@ int main(int argc, char **argv)
     cerr << "Error: must call as follows...\n";
     cerr
         << "silo_dbl2flt: <silo_dbl2flt> <input-dir> <input-file> <output-dir> <output-file> \n";
-    rep.error("Bad number of args", argc);
+    spdlog::error("{}: {}", "Bad number of args", argc);
   }
   string indir       = argv[1];
   string inputfile   = argv[2];
@@ -88,7 +88,7 @@ int main(int argc, char **argv)
   //
   list<string> ffiles;
   err += io_read.get_files_in_dir(indir, inputfile, &ffiles);
-  if (err) rep.error("failed to get first list of files", err);
+  if (err) spdlog::error("{}: {}", "failed to get first list of files", err);
 
   for (list<string>::iterator s = ffiles.begin(); s != ffiles.end(); s++) {
     // If file is not a .silo file, then remove it from the list.
@@ -110,7 +110,8 @@ int main(int argc, char **argv)
   // Set the number of files to be the length of the shortest list.
   //
   unsigned int nfiles = ffiles.size();
-  if (nfiles < 1) rep.error("Need at least one file, but got none", nfiles);
+  if (nfiles < 1)
+    spdlog::error("{}: {}", "Need at least one file, but got none", nfiles);
 
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
@@ -128,7 +129,7 @@ int main(int argc, char **argv)
   oo << indir << "/" << *ff;
   inputfile = oo.str();
   err       = io_read.ReadHeader(inputfile);
-  if (err) rep.error("Didn't read header", err);
+  if (err) spdlog::error("{}: {}", "Didn't read header", err);
 
   //
   // get a setup_grid class, and use it to set up the grid.
@@ -137,12 +138,12 @@ int main(int argc, char **argv)
   SimSetup                         = new setup_fixed_grid_pllel();
   class GridBaseClass *grid        = 0;
   err                              = sub_domain.decomposeDomain();
-  if (err) rep.error("main: failed to decompose domain!", err);
+  if (err) spdlog::error("{}: {}", "main: failed to decompose domain!", err);
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
   SimSetup->setup_grid(&grid, &sub_domain);
-  if (!grid) rep.error("Grid setup failed", grid);
+  if (!grid) spdlog::error("{}: {}", "Grid setup failed", grid);
 
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
@@ -170,7 +171,7 @@ int main(int argc, char **argv)
     class file_status fstat;
     if (!fstat.file_exists(inputfile)) {
       cout << "first file: " << inputfile;
-      rep.error("First or output file doesn't exist", inputfile);
+      spdlog::error("{}: {}", "First or output file doesn't exist", inputfile);
     }
 
     // ----------------------------------------------------------------
@@ -180,7 +181,7 @@ int main(int argc, char **argv)
     // Read in first code header so i know how to setup grid.
     //
     err = io_read.ReadHeader(inputfile);
-    if (err) rep.error("Didn't read header", err);
+    if (err) spdlog::error("{}: {}", "Didn't read header", err);
 
     cout << "#### SIMULATION TIME: " << SimPM.simtime / 3.156e7;
     cout << " yrs for step=" << fff << "   ####\n";
@@ -193,7 +194,10 @@ int main(int argc, char **argv)
     // Read data (this reader can read serial or parallel data).
     //
     err = io_read.parallel_read_any_data(inputfile, grid);
-    rep.errorTest("(silo_dbl2flt) Failed to read inputfile", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}",
+          "(silo_dbl2flt) Failed to read inputfile", 0, err);
 
     // ----------------------------------------------------------------
     // ----------------------------------------------------------------

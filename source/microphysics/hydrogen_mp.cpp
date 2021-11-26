@@ -19,7 +19,10 @@
 #include "defines/testing_flags.h"
 #include "tools/interpolate.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -35,7 +38,7 @@ using namespace std;
 Hydrogen_chem::Hydrogen_chem() : Hummer94_Hrecomb(), hydrogen_photoion()
 {
 #ifndef NDEBUG
-  cout << "Setting up Hydrogen_chem().\n";
+  spdlog::info("Setting up Hydrogen_chem()");
 #endif
 
   cx_T = cx_rate = 0;
@@ -53,7 +56,7 @@ Hydrogen_chem::Hydrogen_chem() : Hummer94_Hrecomb(), hydrogen_photoion()
 Hydrogen_chem::~Hydrogen_chem()
 {
 #ifndef NDEBUG
-  cout << "Deleting Hydrogen_chem() class.\n";
+  spdlog::info("Deleting Hydrogen_chem() class");
 #endif
   cx_T    = mem.myfree(cx_T);
   cx_rate = mem.myfree(cx_rate);

@@ -19,8 +19,10 @@
 
 #include "tools/command_line_interface.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
 #include "tools/timer.h"
+
+#include <spdlog/spdlog.h>
 
 #include "constants.h"
 
@@ -30,7 +32,7 @@
 
 #include <fstream>
 #include <iomanip>
-#include <iostream>
+
 #include <sstream>
 using namespace std;
 
@@ -43,9 +45,7 @@ using namespace std;
 
 sim_control_NG_MPI::sim_control_NG_MPI()
 {
-#ifndef NDEBUG
-  cout << "sim_control_NG_MPI constructor.\n";
-#endif
+  spdlog::info("sim_control_NG_MPI constructor");
 }
 
 // ##################################################################
@@ -53,9 +53,7 @@ sim_control_NG_MPI::sim_control_NG_MPI()
 
 sim_control_NG_MPI::~sim_control_NG_MPI()
 {
-#ifndef NDEBUG
-  cout << "sim_control_NG_MPI destructor.\n";
-#endif
+  spdlog::info("sim_control_NG_MPI destructor");
 }
 
 // ##################################################################
@@ -70,7 +68,7 @@ int sim_control_NG_MPI::Init(
         &grid  ///< address of vector of grid pointers.
 )
 {
-  cout << "(pion) Init: infile = " << infile << "\n";
+  spdlog::debug("(pion) Init: infile = {}", infile);
   int err = 0;
 
   //
@@ -82,48 +80,61 @@ int sim_control_NG_MPI::Init(
   // ----------------------------------------------------------------
   SimPM.typeofip = typeOfFile;
   setup_dataio_class(SimPM, typeOfFile);
-  if (!dataio->file_exists(infile)) rep.error("infile doesn't exist!", infile);
+  if (!dataio->file_exists(infile))
+    spdlog::error("{}: {}", "infile doesn't exist!", infile);
 
   // ----------------------------------------------------------------
   err = dataio->ReadHeader(infile, SimPM);
-  rep.errorTest("NG_MPI Init(): failed to read header", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "NG_MPI Init(): failed to read header", 0,
+        err);
 
   // Check if any commandline args override the file parameters.
   // ----------------------------------------------------------------
   err = override_params(narg, args);
-  rep.errorTest("(NG_MPI INIT::override_params)", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(NG_MPI INIT::override_params)", 0, err);
 
   // setup the nested grid levels, and decompose the domain on each
   // level
   // ----------------------------------------------------------------
   setup_NG_grid_levels(SimPM);
   grid.resize(SimPM.grid_nlevels);
-#ifndef NDEBUG
-  cout << "NG_MPI Init: grid setup\n";
-#endif
+  spdlog::info("NG_MPI Init: grid setup");
   err = setup_grid(grid, SimPM);
-#ifndef NDEBUG
-  cout << "NG_MPI Init: grid setup finished\n";
-#endif
+  spdlog::info("NG_MPI Init: grid setup finished");
   SimPM.dx = grid[0]->DX();
-  rep.errorTest("(NG_MPI INIT::setup_grid) error", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(NG_MPI INIT::setup_grid) error", 0,
+        err);
 
   // All grid parameters are now set, so set up the appropriate
   // equations/solver class.
   // ----------------------------------------------------------------
   err = set_equations(SimPM);
-  rep.errorTest("(NG_MPI INIT::set_equations)", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(NG_MPI INIT::set_equations)", 0, err);
   spatial_solver->SetEOS(SimPM.gamma);
 
   // set up Microphysics, if needed.
   // ----------------------------------------------------------------
   err = setup_microphysics(SimPM);
-  rep.errorTest("(NG_MPI INIT::setup_microphysics)", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(NG_MPI INIT::setup_microphysics)", 0,
+        err);
 
   // assign data to the grid from snapshot file.
   // ----------------------------------------------------------------
   err = dataio->ReadData(infile, grid, SimPM);
-  rep.errorTest("(NG_MPI INIT::assign_initial_data)", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(NG_MPI INIT::assign_initial_data)", 0,
+        err);
 
   // ----------------------------------------------------------------
   // Set Ph[] = P[], and then implement the boundary conditions.
@@ -143,9 +154,7 @@ int sim_control_NG_MPI::Init(
     } while ((c = grid[l]->NextPt(c)) != 0);
 
     if (SimPM.eqntype == EQGLM && SimPM.timestep == 0) {
-#ifndef NDEBUG
-      cout << "Initial state, zero-ing glm variable.\n";
-#endif
+      spdlog::info("Initial state, zero-ing glm variable");
       c = grid[l]->FirstPt();
       do {
         c->P[SI] = c->Ph[SI] = 0.;
@@ -155,41 +164,48 @@ int sim_control_NG_MPI::Init(
 
   // ----------------------------------------------------------------
   err = boundary_conditions(SimPM, grid);
-  rep.errorTest("(NG_MPI INIT::boundary_conditions) err!=0", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "(NG_MPI INIT::boundary_conditions) err!=0", 0, err);
 
   // ----------------------------------------------------------------
   err += setup_raytracing(SimPM, grid);
-  rep.errorTest("Failed to setup raytracer", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "Failed to setup raytracer", 0, err);
 
   // ----------------------------------------------------------------
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     err = assign_boundary_data(SimPM, l, grid[l], MP);
-    rep.errorTest("NG_MPI INIT::assign_boundary_data", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "NG_MPI INIT::assign_boundary_data", 0,
+          err);
     SimPM.levels[0].sub_domain.barrier("level assign boundary data");
   }
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-#ifndef NDEBUG
-    cout << "NG_MPI updating external boundaries for level " << l << "\n";
-    cout << "UPDATING EXTERNAL BOUNDARIES FOR LEVEL ";
-    cout << l << "\n";
-#endif
+    spdlog::debug(
+        "NG_MPI updating external boundaries for level {0}\nUPDATING EXTERNAL BOUNDARIES FOR LEVEL {0}",
+        l);
     err += TimeUpdateExternalBCs(
         SimPM, l, grid[l], spatial_solver, SimPM.simtime, SimPM.tmOOA,
         SimPM.tmOOA);
   }
-  rep.errorTest("NG_MPI INIT: error from bounday update", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "NG_MPI INIT: error from bounday update",
+        0, err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-#ifndef NDEBUG
-    cout << "NG_MPI updating C2F boundaries for level " << l << "\n";
-    cout << "UPDATING C2F BOUNDARIES FOR LEVEL ";
-    cout << l << "\n";
-#endif
+    spdlog::debug(
+        "NG_MPI updating C2F boundaries for level {0}\nUPDATING C2F BOUNDARIES FOR LEVEL {0}",
+        l);
     if (l < SimPM.grid_nlevels - 1) {
       for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
         if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) {
@@ -200,10 +216,9 @@ int sim_control_NG_MPI::Init(
     }
     if (l > 0) {
       for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
-#ifndef NDEBUG
-        cout << "Init: l=" << l << ", C2F recv i=" << i
-             << ", type=" << grid[l]->BC_bd[i]->type << endl;
-#endif
+        spdlog::debug(
+            "Init: l={}, C2F recv i={}, type={}", l, i,
+            grid[l]->BC_bd[i]->type);
         if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
           err += BC_update_COARSE_TO_FINE_RECV(
               SimPM, spatial_solver, l, grid[l]->BC_bd[i],
@@ -211,51 +226,53 @@ int sim_control_NG_MPI::Init(
         }
       }
 #ifndef NDEBUG
-      cout << "CLEAR C2F send from " << l - 1 << " to " << l << "...";
+      spdlog::debug("CLEAR C2F send from {} to {}...", l - 1, l);
 #endif
       BC_COARSE_TO_FINE_SEND_clear_sends(SimPM.levels[l - 1].sub_domain);
 #ifndef NDEBUG
-      cout << "  ... done\n";
+      spdlog::debug("  ... done");
 #endif
     }
   }
-  rep.errorTest("NG_MPI INIT: error from bounday update", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "NG_MPI INIT: error from bounday update",
+        0, err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-#ifndef NDEBUG
-    cout << "NG_MPI updating external boundaries for level " << l << "\n";
-    cout << "@@@@@@@@@@@@  UPDATING EXTERNAL BOUNDARIES FOR LEVEL ";
-    cout << l << "\n";
-#endif
+    spdlog::debug(
+        "NG_MPI updating external boundaries for level {0}@@@@@@@@@@@@  UPDATING EXTERNAL BOUNDARIES FOR LEVEL {0}",
+        l);
     err += TimeUpdateExternalBCs(
         SimPM, l, grid[l], spatial_solver, SimPM.simtime, SimPM.tmOOA,
         SimPM.tmOOA);
   }
-  rep.errorTest("NG_MPI INIT: error from bounday update", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "NG_MPI INIT: error from bounday update",
+        0, err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
-#ifndef NDEBUG
-    cout << "NG_MPI updating internal boundaries for level " << l << "\n";
-    cout << "@@@@@@@@@@@@  UPDATING INTERNAL BOUNDARIES FOR LEVEL ";
-    cout << l << "\n";
-#endif
+    spdlog::debug(
+        "NG_MPI updating internal boundaries for level {0}\n@@@@@@@@@@@@  UPDATING INTERNAL BOUNDARIES FOR LEVEL {0}",
+        l);
     err += TimeUpdateInternalBCs(
         SimPM, l, grid[l], spatial_solver, SimPM.simtime, SimPM.tmOOA,
         SimPM.tmOOA);
   }
-  rep.errorTest("NG_MPI INIT: error from bounday update", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "NG_MPI INIT: error from bounday update",
+        0, err);
 
   // ----------------------------------------------------------------
   // update fine-to-coarse level boundaries
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
-#ifndef NDEBUG
-    cout << "NG_MPI updating F2C boundaries for level " << l << "\n";
-    cout << l << "\n";
-#endif
+    spdlog::debug("NG_MPI updating F2C boundaries for level {}", l);
     if (l > 0) {
       for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
         if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_SEND) {
@@ -272,15 +289,18 @@ int sim_control_NG_MPI::Init(
         }
       }
 #ifndef NDEBUG
-      cout << "CLEAR F2C send from " << l + 1 << " to " << l << "...";
+      spdlog::debug("CLEAR F2C send from {} to {}...", l + 1, l);
 #endif
       BC_FINE_TO_COARSE_SEND_clear_sends(SimPM.levels[l + 1].sub_domain);
 #ifndef NDEBUG
-      cout << "  ... done\n";
+      spdlog::debug("  ... done");
 #endif
     }
   }
-  rep.errorTest("NG_MPI INIT: error from bounday update", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "NG_MPI INIT: error from bounday update",
+        0, err);
   // ----------------------------------------------------------------
 
   //
@@ -296,7 +316,9 @@ int sim_control_NG_MPI::Init(
   // ----------------------------------------------------------------
   if (SimPM.op_criterion == 1) {
     if (SimPM.opfreq_time < TINYVALUE)
-      rep.error("opfreq_time not set right and is needed!", SimPM.opfreq_time);
+      spdlog::error(
+          "{}: {}", "opfreq_time not set right and is needed!",
+          SimPM.opfreq_time);
     SimPM.next_optime = SimPM.simtime + SimPM.opfreq_time;
     double tmp        = ((SimPM.simtime / SimPM.opfreq_time)
                   - floor(SimPM.simtime / SimPM.opfreq_time))
@@ -319,7 +341,8 @@ int sim_control_NG_MPI::Init(
       textio = 0;
     }
     setup_dataio_class(SimPM, SimPM.typeofop);
-    if (!dataio) rep.error("NG_MPI INIT:: dataio", SimPM.typeofop);
+    if (!dataio)
+      spdlog::error("{}: {}", "NG_MPI INIT:: dataio", SimPM.typeofop);
   }
   dataio->SetSolver(spatial_solver);
   dataio->SetMicrophysics(MP);
@@ -329,9 +352,7 @@ int sim_control_NG_MPI::Init(
   }
 
   if (SimPM.timestep == 0) {
-#ifndef NDEBUG
-    cout << "(NG_MPI INIT) Writing initial data.\n";
-#endif
+    spdlog::info("(NG_MPI INIT) Writing initial data");
     output_data(grid);
   }
 
@@ -349,7 +370,6 @@ int sim_control_NG_MPI::Init(
     } while ((c = (grid[l])->NextPt_All(c)) != 0);
   }
   //#endif // NDEBUG
-  cout << "-------------------------------------------------------\n";
   return (err);
 }
 
@@ -360,8 +380,7 @@ int sim_control_NG_MPI::Time_Int(
     vector<class GridBaseClass *> &grid  ///< grid pointers.
 )
 {
-  cout << "-------------------------------------------------------\n";
-  cout << "(pion-ng-mpi)  STARTING TIME INTEGRATION. \n";
+  spdlog::info("(pion-ng-mpi)  STARTING TIME INTEGRATION");
   int err       = 0;
   SimPM.maxtime = false;
 
@@ -390,25 +409,22 @@ int sim_control_NG_MPI::Time_Int(
   // Update internal and external boundaries.
 
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
-#ifdef TEST_INT
-    cout << "updating internal boundaries for level " << l << "... ";
-#endif
+    spdlog::debug("updating internal boundaries for level {}", l);
     err += TimeUpdateInternalBCs(
         SimPM, l, grid[l], spatial_solver, SimPM.levels[l].simtime, SimPM.tmOOA,
         SimPM.tmOOA);
-#ifdef TEST_INT
-    cout << "... done \n";
-#endif
+    spdlog::info("... done");
   }
-  rep.errorTest("sim_control_NG_MPI: internal boundary", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "sim_control_NG_MPI: internal boundary",
+        0, err);
   // --------------------------------------------------------------
   // ----------------------------------------------------------------
   // update fine-to-coarse level boundaries
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
     if (l < SimPM.grid_nlevels - 1) {
-#ifdef TEST_INT
-      cout << "NG_MPI Receiving F2C boundaries for level " << l << "\n";
-#endif
+      spdlog::debug("NG_MPI Receiving F2C boundaries for level {}", l);
       for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
         if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_RECV) {
           err += BC_update_FINE_TO_COARSE_RECV(
@@ -417,22 +433,21 @@ int sim_control_NG_MPI::Time_Int(
       }
       BC_FINE_TO_COARSE_SEND_clear_sends(SimPM.levels[l + 1].sub_domain);
 #ifdef TEST_INT
-      cout << "NG_MPI F2C cleared sends from l=" << l + 1 << ".\n";
+      spdlog::debug("NG_MPI F2C cleared sends from l={}", l + 1);
 #endif
     }
 
-#ifdef TEST_INT
-    cout << "NG_MPI raytracing level " << l << "\n";
-#endif
+    spdlog::debug("NG_MPI raytracing level {}", l);
     err =
         update_evolving_RT_sources(SimPM, SimPM.levels[l].simtime, grid[l]->RT);
-    rep.errorTest("NG TIME_INT::update_RT_sources error", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "NG TIME_INT::update_RT_sources error",
+          0, err);
     do_ongrid_raytracing(SimPM, grid[l], l);
 
     if (l > 0) {
-#ifdef TEST_INT
-      cout << "NG_MPI Sending F2C boundaries for level " << l << "\n";
-#endif
+      spdlog::debug("NG_MPI Sending F2C boundaries for level {}", l);
       for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
         if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_SEND) {
           err += BC_update_FINE_TO_COARSE_SEND(
@@ -442,21 +457,20 @@ int sim_control_NG_MPI::Time_Int(
     }
   }
 #ifdef TEST_INT
-  cout << "NG_MPI updated F2C boundaries for all levels.\n";
+  spdlog::info("NG_MPI updated F2C boundaries for all levels");
 #endif
-  rep.errorTest("NG_MPI time-int: error from bounday update", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "NG_MPI time-int: error from bounday update", 0, err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
   // update coarse-to-fine level boundaries
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-#ifdef TEST_INT
-    cout << "NG_MPI updating C2F boundaries for level " << l << "\n";
-    cout << l << "\n";
-#endif
-#ifdef TEST_INT
-    cout << "updating external boundaries for level " << l << "\n";
-#endif
+    spdlog::debug(
+        "NG_MPI updating C2F boundaries for level {0}\nupdating external boundaries for level {0}",
+        l);
     if (l > 0) {
       for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
         if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
@@ -471,7 +485,10 @@ int sim_control_NG_MPI::Time_Int(
     err += TimeUpdateExternalBCs(
         SimPM, l, grid[l], spatial_solver, SimPM.levels[l].simtime, SimPM.tmOOA,
         SimPM.tmOOA);
-    rep.errorTest("sim_control_NG_MPI: external boundary", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "sim_control_NG_MPI: external boundary",
+          0, err);
 
     if (l < SimPM.grid_nlevels - 1) {
       for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
@@ -482,7 +499,10 @@ int sim_control_NG_MPI::Time_Int(
       }
     }
   }
-  rep.errorTest("NG_MPI time-int: error from bounday update", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "NG_MPI time-int: error from bounday update", 0, err);
   // ----------------------------------------------------------------
 
   cout.setf(ios_base::scientific);
@@ -495,10 +515,8 @@ int sim_control_NG_MPI::Time_Int(
 
     clk.start_timer("dt");
     for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
-#ifdef TEST_INT
-      cout << "Calculate timestep, level " << l << ", dx=";
-      cout << SimPM.levels[l].dx << endl;
-#endif
+      spdlog::debug(
+          "Calculate timestep, level {}, dx={}", l, SimPM.levels[l].dx);
 
       if (!restart && !first_step) {
         SimPM.last_dt = SimPM.levels[l].last_dt;
@@ -507,14 +525,15 @@ int sim_control_NG_MPI::Time_Int(
         SimPM.levels[l].last_dt = SimPM.last_dt / SimPM.levels[l].multiplier;
       }
       err += calculate_timestep(SimPM, grid[l], l);
-      rep.errorTest("TIME_INT::calc_timestep()", 0, err);
+      if (0 != err)
+        spdlog::error(
+            "{}: Expected {} but got {}", "TIME_INT::calc_timestep()", 0, err);
 
       mindt = std::min(mindt, SimPM.dt / scale);
       mindt = SimPM.levels[0].sub_domain.global_operation_double("MIN", mindt);
-#ifdef TEST_INT
-      cout << "level " << l << " got dt=" << SimPM.dt << " and ";
-      cout << SimPM.dt / scale << "... mindt=" << mindt << "\n";
-#endif
+      spdlog::debug(
+          "level {} got dt={} and {}... mindt={}", l, SimPM.dt,
+          SimPM.dt / scale, mindt);
       SimPM.levels[l].dt = SimPM.dt;
       scale *= 2;
     }
@@ -523,10 +542,8 @@ int sim_control_NG_MPI::Time_Int(
     for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
       SimPM.levels[l].dt = mindt * scale;
       scale *= 2;
-#ifdef TEST_INT
-      cout << "new dt=" << SimPM.levels[l].dt << ", t=";
-      cout << SimPM.levels[l].simtime << "\n";
-#endif
+      spdlog::debug(
+          "new dt={}, t={}", SimPM.levels[l].dt, SimPM.levels[l].simtime);
     }
     if (first_step) {
       // take a ~3x smaller timestep for the first timestep in case
@@ -539,14 +556,14 @@ int sim_control_NG_MPI::Time_Int(
     }
     if (restart) restart = false;
     SimPM.last_dt = SimPM.levels[0].last_dt;
-    rep.errorTest("TIME_INT::calc_timestep()", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "TIME_INT::calc_timestep()", 0, err);
     clk.pause_timer("dt");
     // --------------------------------------------------------------
 
     // --------------------------------------------------------------
-#ifndef NDEBUG
-    cout << "NG_MPI time_int: stepping forward in time\n";
-#endif
+    spdlog::info("NG_MPI time_int: stepping forward in time");
     // Use a recursive algorithm to update the coarsest level.  This
     // function also updates the next level twice, by calling itself
     // for the finer level, and so on.
@@ -554,33 +571,29 @@ int sim_control_NG_MPI::Time_Int(
     advance_time(0, grid[0]);
     SimPM.simtime = SimPM.levels[0].simtime;
     SimPM.levels[0].sub_domain.barrier("step");
-#ifndef NDEBUG
-    cout << "MPI time_int: finished timestep\n";
-#endif
+    spdlog::info("MPI time_int: finished timestep");
 
     if (SimPM.levels[0].sub_domain.get_myrank() == 0) {
-      cout << "New time: " << SimPM.simtime;
-      cout << "\tdt: " << SimPM.levels[SimPM.grid_nlevels - 1].dt;
-      cout << "\t steps: " << SimPM.timestep;
-      cout << "\tl0 steps: "
-           << SimPM.timestep / static_cast<int>(pow(2, SimPM.grid_nlevels - 1));
+      spdlog::debug(
+          "New time: {}\tdt: {}\t steps: {}\tl0 steps: {}", SimPM.simtime,
+          SimPM.levels[SimPM.grid_nlevels - 1].dt, SimPM.timestep,
+          SimPM.timestep / static_cast<int>(pow(2, SimPM.grid_nlevels - 1)));
       tsf = clk.time_so_far("time_int");
-      cout << "\t runtime: " << tsf << " s"
-           << "\n";
-#ifndef NDEBUG
-      cout.flush();
-#endif  // NDEBUG
       // cout <<"\tTimings: ";
       // for (auto i : timing) {
       //  //cout << i <<"  "<< clk.time_so_far_paused(i) <<"  ";
       //  cout << clk.time_so_far_paused(i) <<"  ";
       //}
       // cout <<"\n";
+      spdlog::debug("\t runtime: {}s", tsf);
     }
     // --------------------------------------------------------------
 
     err += output_data(grid);
-    rep.errorTest("MPI_NG TIME_INT::output_data()", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "MPI_NG TIME_INT::output_data()", 0,
+          err);
 
     err += check_energy_cons(grid);
 
@@ -592,20 +605,22 @@ int sim_control_NG_MPI::Time_Int(
         SimPM.levels[0].sub_domain.global_operation_double("MAX", tsf);
     if (maxt > get_max_walltime()) {
       SimPM.maxtime = true;
-      cout << "RUNTIME>" << get_max_walltime() << " SECS.\n";
+      spdlog::debug("RUNTIME>{} SECS", get_max_walltime());
     }
 
     err += check_eosim();
-    rep.errorTest("MPI_NG TIME_INT::check_eosim()", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "MPI_NG TIME_INT::check_eosim()", 0,
+          err);
   }
-  cout << "sim_control_NG_MPI:: TIME_INT FINISHED.  MOVING ON TO ";
-  cout << "FINALISE SIM.\n";
+  spdlog::info(
+      "sim_control_NG_MPI:: TIME_INT FINISHED.  MOVING ON TO FINALISE SIM");
   tsf = clk.time_so_far("time_int");
-  cout << "TOTALS ###: Nsteps=" << SimPM.timestep;
-  cout << ", sim-time=" << SimPM.simtime;
-  cout << ", wall-time=" << tsf;
-  cout << ", time/step=" << tsf / static_cast<double>(SimPM.timestep);
-  cout << "\n";
+  spdlog::debug(
+      "TOTALS ###: Nsteps={}, sim-time={}, wall-time={}, time/step={}",
+      SimPM.timestep, SimPM.simtime, tsf,
+      tsf / static_cast<double>(SimPM.timestep));
   if (grid[0]->RT != 0) {
     // print raytracing timing info.  Start and stop timers to get
     // the correct runtime
@@ -617,8 +632,7 @@ int sim_control_NG_MPI::Time_Int(
     wait = clk.pause_timer(t2);
     clk.start_timer(t3);
     run = clk.pause_timer(t3);
-    cout << "TOTALS RT#: active=" << run << " idle=" << wait;
-    cout << " total=" << total << "\n";
+    spdlog::debug("TOTALS RT#: active={} idle={} total={}", run, wait, total);
   }
   cout << "#";
   for (auto i : timing) {
@@ -650,20 +664,16 @@ int sim_control_NG_MPI::Time_Int(
 double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
 )
 {
-#ifdef TEST_INT
-  cout << "NG-MPI advance_step_OA1, level=" << l << ", starting.\n";
-#endif
+  spdlog::debug("NG-MPI advance_step_OA1, level={}, starting", l);
   int err                   = 0;
   double dt2_fine           = 0.0;  // timestep for two finer level steps.
   double dt2_this           = 0.0;  // two timesteps for this level.
   class GridBaseClass *grid = SimPM.levels[l].grid;
   bool finest_level         = (l < (SimPM.grid_nlevels - 1)) ? false : true;
 
-#ifdef TEST_INT
-  cout << "advance_step_OA1: child=" << SimPM.levels[l].child << "\n";
-  cout << "finest_level=" << finest_level << ", l=" << l
-       << ", max=" << SimPM.grid_nlevels << "\n";
-#endif
+  spdlog::debug(
+      "advance_step_OA1: child={}\nfinest_level={}, l={}, max={}",
+      fmt::ptr(SimPM.levels[l].child), finest_level, l, SimPM.grid_nlevels);
 
   // --------------------------------------------------------
   // 0. See if there are coarse-to-fine boundary data to send
@@ -686,10 +696,9 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
     // C2F data to recv can be more than one external BC, so find
     // them later in a loop.
   }
-#ifdef TEST_INT
-  cout << "advance_step_OA1: l=" << l << " c2f = " << c2f;
-  cout << ", f2c send=" << f2cs << ", f2c recv=" << f2cr << "\n";
-#endif
+  spdlog::debug(
+      "advance_step_OA1: l={} c2f = {}, f2c send={}, f2c recv={}", l, c2f, f2cs,
+      f2cr);
   // --------------------------------------------------------
 
   // --------------------------------------------------------
@@ -700,7 +709,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
 #endif
     if (l > 0) {
 #ifdef TEST_INT
-      cout << "advance_step_OA1: l=" << l << " recv C2F BCs\n";
+      spdlog::debug("advance_step_OA1: l={} recv C2F BCs", l);
 #endif
       for (size_t i = 0; i < grid->BC_bd.size(); i++) {
         if (grid->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
@@ -709,7 +718,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
         }
       }
 #ifdef TEST_INT
-      cout << "advance_step_OA1: l=" << l << " C2F CLEAR SEND\n";
+      spdlog::debug("advance_step_OA1: l={} C2F CLEAR SEND", l);
 #endif
       BC_COARSE_TO_FINE_SEND_clear_sends(SimPM.levels[l - 1].sub_domain);
     }
@@ -722,9 +731,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   // 1. Update external boundary conditions on level l
   // We have received interpolated data from the coarser level grid
   // already from the advance_step_OA1() for level l-1, if it exists.
-#ifdef TEST_INT
-  cout << "advance_step_OA1: l=" << l << " update external BCs\n";
-#endif
+  spdlog::debug("advance_step_OA1: l={} update external BCs", l);
   err += TimeUpdateExternalBCs(
       SimPM, l, grid, spatial_solver, SimPM.levels[l].simtime, OA1, OA1);
   // --------------------------------------------------------
@@ -735,9 +742,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   //    coarse-level.
   // --------------------------------------------------------
   if (c2f >= 0) {
-#ifdef TEST_INT
-    cout << "advance_step_OA1: l=" << l << " C2F send\n";
-#endif
+    spdlog::debug("advance_step_OA1: l={} C2F send", l);
     err += BC_update_COARSE_TO_FINE_SEND(
         SimPM, grid, spatial_solver, l, grid->BC_bd[c2f], 2, 2);
   }
@@ -747,9 +752,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   // 3. advance finer-level by one step, if it exists
   // --------------------------------------------------------
   if (!finest_level) {
-#ifdef TEST_INT
-    cout << "advance_step_OA1: l=" << l << " advance l+1 step 1\n";
-#endif
+    spdlog::debug("advance_step_OA1: l={} advance l+1 step 1", l);
     dt2_fine = advance_step_OA1(l + 1);
   }
   dt2_this = SimPM.levels[l].dt;
@@ -758,9 +761,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   // --------------------------------------------------------
   // 4. Calculate dU for this level (1st order)
   // --------------------------------------------------------
-#ifdef TEST_INT
-  cout << "advance_step_OA1: l=" << l << " calc DU\n";
-#endif
+  spdlog::debug("advance_step_OA1: l={} calc DU", l);
 #ifdef PION_OMP
   #pragma omp parallel
   {
@@ -771,7 +772,10 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
 #endif
   err += calc_microphysics_dU(dt2_this, grid);
   err += calc_dynamics_dU(dt2_this, OA1, grid);
-  rep.errorTest("NG-MPI scn::advance_step_OA1: calc_x_dU", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "NG-MPI scn::advance_step_OA1: calc_x_dU",
+        0, err);
   if (l > 0) save_fine_fluxes(SimPM, l);
   if (l < SimPM.grid_nlevels - 1) save_coarse_fluxes(SimPM, l);
     // --------------------------------------------------------
@@ -784,9 +788,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
     // --------------------------------------------------------
 #ifndef C2F_FULLSTEP
   if (c2f >= 0) {
-#ifdef TEST_INT
-    cout << "advance_step_OA1: l=" << l << " C2F Send\n";
-#endif
+    spdlog::debug("advance_step_OA1: l={} C2F Send", l);
     err += BC_update_COARSE_TO_FINE_SEND(
         SimPM, grid, spatial_solver, l, grid->BC_bd[c2f], 1, 2);
   }
@@ -797,9 +799,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   // 6. Take another step on finer grid
   // --------------------------------------------------------
   if (!finest_level) {
-#ifdef TEST_INT
-    cout << "advance_step_OA1: l=" << l << " advance l+1 step 2\n";
-#endif
+    spdlog::debug("advance_step_OA1: l={} advance l+1 step 2", l);
     dt2_fine = advance_step_OA1(l + 1);
   }
   // --------------------------------------------------------
@@ -809,9 +809,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   //  - Receive level fluxes from finer grid (BC89)
   //  - update grid on level l to new time
   // --------------------------------------------------------
-#ifdef TEST_INT
-  cout << "advance_step_OA1: l=" << l << " update state vec\n";
-#endif
+  spdlog::debug("advance_step_OA1: l={} update state vec", l);
 #ifdef PION_OMP
   #pragma omp parallel
   {
@@ -823,11 +821,17 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
 #ifndef SKIP_BC89_FLUX
   if (l < SimPM.grid_nlevels - 1) {
     err += recv_BC89_fluxes_F2C(spatial_solver, SimPM, l, OA1, OA1);
-    rep.errorTest("scn::advance_step_OA1: recv_BC89_flux", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "scn::advance_step_OA1: recv_BC89_flux",
+          0, err);
   }
 #endif
   err += grid_update_state_vector(SimPM.levels[l].dt, OA1, OA1, grid);
-  rep.errorTest("scn::advance_step_OA1: state-vec update", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "scn::advance_step_OA1: state-vec update",
+        0, err);
 #ifndef SKIP_BC89_FLUX
   if (l < SimPM.grid_nlevels - 1) {
     clear_sends_BC89_fluxes(SimPM.levels[l + 1].sub_domain);
@@ -838,9 +842,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   // --------------------------------------------------------
   // 8. increment time and timestep for this level
   // --------------------------------------------------------
-#ifdef TEST_INT
-  cout << "advance_step_OA1: l=" << l << " \n";
-#endif
+  spdlog::debug("advance_step_OA1: l={}", l);
   SimPM.levels[l].simtime += SimPM.levels[l].dt;
   SimPM.levels[l].step++;
   if (l == SimPM.grid_nlevels - 1) {
@@ -848,21 +850,17 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   }
   SimPM.levels[l].last_dt = SimPM.levels[l].dt;
   if (l == 0) SimPM.last_dt = SimPM.levels[l].dt;
-    // --------------------------------------------------------
+  // --------------------------------------------------------
 
-    // --------------------------------------------------------
-    // 9. update internal boundary conditions on level l
-    // --------------------------------------------------------
-#ifdef TEST_INT
-  cout << "advance_step_OA1: l=" << l << " update internal BCS\n";
-#endif
+  // --------------------------------------------------------
+  // 9. update internal boundary conditions on level l
+  // --------------------------------------------------------
+  spdlog::debug("advance_step_OA1: l={} update internal BCS\n", l);
   err += TimeUpdateInternalBCs(
       SimPM, l, grid, spatial_solver, SimPM.levels[l].simtime, OA1, OA1);
   //  - Recv F2C data from l+1
   if (!finest_level && f2cr >= 0) {
-#ifdef TEST_INT
-    cout << "advance_step_OA1: l=" << l << " F2C Receive\n";
-#endif
+    spdlog::debug("advance_step_OA1: l={} F2C Receive", l);
     err += BC_update_FINE_TO_COARSE_RECV(
         SimPM, spatial_solver, l, grid->BC_bd[f2cr], OA1, OA1);
 
@@ -874,13 +872,17 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   // 10. Do raytracing for next step, to send with F2C BCs.
   // --------------------------------------------------------
   if (grid->RT) {
-#ifdef TEST_INT
-    cout << "advance_step_OA1: l=" << l << " RT at end of step\n";
-#endif
+    spdlog::debug("advance_step_OA1: l={} RT at end of step", l);
     update_evolving_RT_sources(SimPM, SimPM.levels[l].simtime, grid->RT);
-    rep.errorTest("NG TIME_INT::update_RT_sources error", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "NG TIME_INT::update_RT_sources error",
+          0, err);
     err += do_ongrid_raytracing(SimPM, grid, l);
-    rep.errorTest("NG-MPI::advance_step_OA1: calc_rt_cols()", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}",
+          "NG-MPI::advance_step_OA1: calc_rt_cols()", 0, err);
   }
   // --------------------------------------------------------
 
@@ -890,25 +892,19 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   if (l > 0 && SimPM.levels[l].step % 2 == 0) {
     // - send level fluxes
 #ifndef SKIP_BC89_FLUX
-#ifdef TEST_INT
-    cout << "advance_step_OA1: l=" << l << " \n";
-#endif
+    spdlog::debug("advance_step_OA1: l={}", l);
     err += send_BC89_fluxes_F2C(SimPM, l, OA1, OA1);
 #endif
-#ifdef TEST_INT
-    cout << "advance_step_OA1: l=" << l << " F2C SEND at tend of step\n";
-#endif
+    spdlog::debug("advance_step_OA1: l={} F2C SEND at tend of step", l);
     err += BC_update_FINE_TO_COARSE_SEND(
         SimPM, spatial_solver, l, grid->BC_bd[f2cs], OA1, OA1);
   }
   // --------------------------------------------------------
 
-#ifndef NDEBUG
-  cout << "NG-MPI advance_step_OA1, level=" << l << ", returning. t=";
-  cout << SimPM.levels[l].simtime << ", step=" << SimPM.levels[l].step;
-  cout << ", next dt=" << SimPM.levels[l].dt << " next time=";
-  cout << SimPM.levels[l].simtime + SimPM.levels[l].dt << "\n";
-#endif
+  spdlog::debug(
+      "NG-MPI advance_step_OA1, level={}, returning. t={}, step={}, next dt={} next time={}",
+      l, SimPM.levels[l].simtime, SimPM.levels[l].step, SimPM.levels[l].dt,
+      SimPM.levels[l].simtime + SimPM.levels[l].dt);
 
   return dt2_this + SimPM.levels[l].dt;
 }
@@ -923,10 +919,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
 double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
 )
 {
-#ifdef TEST_INT
-  cout.flush();
-  cout << "NG-MPI advance_step_OA2, level=" << l << ", starting." << endl;
-#endif
+  spdlog::debug("NG-MPI advance_step_OA2, level={}, starting", l);
   int err                   = 0;
   double dt2_fine           = 0.0;  // timestep for two finer level steps.
   double dt2_this           = 0.0;  // two timesteps for this level.
@@ -934,9 +927,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   class GridBaseClass *grid = SimPM.levels[l].grid;
   bool finest_level         = (l < SimPM.grid_nlevels - 1) ? false : true;
 
-#ifdef TEST_INT
-  cout << "advance_step_OA2: child=" << SimPM.levels[l].child << endl;
-#endif
+  spdlog::debug("advance_step_OA2: child={}", fmt::ptr(SimPM.levels[l].child));
 
   // --------------------------------------------------------
   // 0. See if there are coarse-to-fine boundary data to send
@@ -960,9 +951,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
     // C2F data to recv can be more than one external BC, so find
     // them later in a loop.
   }
-#ifdef TEST_INT
-  cout << "advance_step_OA2: l=" << l << " c2f = " << c2f << endl;
-#endif
+  spdlog::debug("advance_step_OA2: l={} c2f = {}", l, c2f);
   // --------------------------------------------------------
 
   // --------------------------------------------------------
@@ -974,7 +963,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
 #endif
     if (l > 0) {
 #ifdef TEST_INT
-      cout << "advance_step_OA2: l=" << l << " recv C2F BCs" << endl;
+      spdlog::debug("advance_step_OA2: l={} recv C2F BCs", l);
 #endif
       for (size_t i = 0; i < grid->BC_bd.size(); i++) {
         if (grid->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
@@ -983,7 +972,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
         }
       }
 #ifdef TEST_INT
-      cout << "advance_step_OA2: l=" << l << " C2F CLEAR SEND" << endl;
+      spdlog::debug("advance_step_OA2: l={} C2F CLEAR SEND", l);
 #endif
       BC_COARSE_TO_FINE_SEND_clear_sends(SimPM.levels[l - 1].sub_domain);
     }
@@ -998,7 +987,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   // --------------------------------------------------------
   clk.start_timer("ebc");
 #ifdef TEST_INT
-  cout << "advance_step_OA2: l=" << l << " update external BCs" << endl;
+  spdlog::debug("advance_step_OA2: l={} update external BCs", l);
 #endif
   err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver, ctime, OA2, OA2);
   clk.pause_timer("ebc");
@@ -1011,9 +1000,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   // --------------------------------------------------------
   clk.start_timer("c2f");
   if (c2f >= 0) {
-#ifdef TEST_INT
-    cout << "advance_step_OA2: l=" << l << " C2F SEND" << endl;
-#endif
+    spdlog::debug("advance_step_OA2: l={} C2F SEND", l);
     err += BC_update_COARSE_TO_FINE_SEND(
         SimPM, grid, spatial_solver, l, grid->BC_bd[c2f], 2, 2);
   }
@@ -1023,24 +1010,18 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   // 3. advance finer-level by one step, if it exists
   // --------------------------------------------------------
   if (!finest_level) {
-#ifdef TEST_INT
-    cout << "advance_step_OA2: l=" << l << " first fine step" << endl;
-#endif
+    spdlog::debug("advance_step_OA2: l={} first fine step", l);
     dt2_fine = advance_step_OA2(l + 1);
   }
   dt2_this = SimPM.levels[l].dt;
-#ifdef TEST_INT
-  cout << "advance_step_OA2: l=" << l << " dt=" << dt2_this << endl;
-#endif
+  spdlog::debug("advance_step_OA2: l={} dt={}", l, dt2_this);
   // --------------------------------------------------------
 
   // --------------------------------------------------------
   // 4. Calculate dU for this level (1st order predictor step)
   //    and advance to time-centred state at 0.5*dt
   // --------------------------------------------------------
-#ifdef TEST_INT
-  cout << "advance_step_OA2: l=" << l << " calc DU half step" << endl;
-#endif
+  spdlog::debug("advance_step_OA2: l={} calc DU half step", l);
   double dt_now = dt2_this * 0.5;  // half of the timestep
 #ifdef PION_OMP
   #pragma omp parallel
@@ -1056,15 +1037,21 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   clk.start_timer("dyn");
   err += calc_dynamics_dU(dt_now, OA1, grid);
   clk.pause_timer("dyn");
-  rep.errorTest("NG-MPI scn::advance_step_OA2: calc_x_dU", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "NG-MPI scn::advance_step_OA2: calc_x_dU",
+        0, err);
 
   // update state vector Ph to half-step values
   clk.start_timer("upd");
 #ifdef TEST_INT
-  cout << "advance_step_OA2: l=" << l << " update cell half step" << endl;
+  spdlog::debug("advance_step_OA2: l={} update cell half step", l);
 #endif
   err += grid_update_state_vector(dt_now, OA1, OA2, grid);
-  rep.errorTest("scn::advance_step_OA2: state-vec update OA2", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "scn::advance_step_OA2: state-vec update OA2", 0, err);
   clk.pause_timer("upd");
   // --------------------------------------------------------
 
@@ -1074,10 +1061,10 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   // - update external boundaries
   // - don't update C2F (b/c it is 1/4 step on l-1 level)
   // --------------------------------------------------------
-#ifdef TEST_INT
-  cout << "advance_step_OA2: l=" << l << " update boundaries" << endl;
-#endif
   clk.start_timer("ibc");
+#ifdef TEST_INT
+  spdlog::debug("advance_step_OA2: l={} update boundaries", l);
+#endif
   err += TimeUpdateInternalBCs(
       SimPM, l, grid, spatial_solver, ctime + dt_now, OA1, OA2);
   clk.pause_timer("ibc");
@@ -1095,7 +1082,10 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   err += TimeUpdateExternalBCs(
       SimPM, l, grid, spatial_solver, ctime + dt_now, OA1, OA2);
   clk.pause_timer("ebc");
-  rep.errorTest("scn::advance_step_OA2: bounday update OA2", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "scn::advance_step_OA2: bounday update OA2", 0, err);
   // --------------------------------------------------------
 
   // --------------------------------------------------------
@@ -1110,20 +1100,26 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
 #ifdef PION_OMP
   }
 #endif
-#ifdef TEST_INT
-  cout << "advance_step_OA2: l=" << l << " raytracing" << endl;
-#endif
   clk.start_timer("rt");
+#ifdef TEST_INT
+  spdlog::debug("advance_step_OA2: l={} raytracing", l);
+#endif
   if (grid->RT) {
     update_evolving_RT_sources(
         SimPM, SimPM.levels[l].simtime + 0.5 * dt_now, grid->RT);
-    rep.errorTest("NG TIME_INT::update_RT_sources error", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "NG TIME_INT::update_RT_sources error",
+          0, err);
     err += do_ongrid_raytracing(SimPM, grid, l);
-    rep.errorTest("scn::advance_time: calc_rt_cols() OA2", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "scn::advance_time: calc_rt_cols() OA2",
+          0, err);
   }
   clk.pause_timer("rt");
 #ifdef TEST_INT
-  cout << "advance_step_OA2: l=" << l << " full step calc dU" << endl;
+  spdlog::debug("advance_step_OA2: l={} full step calc dU", l);
 #endif
   clk.start_timer("mp");
   err += calc_microphysics_dU(dt_now, grid);
@@ -1131,7 +1127,10 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   clk.start_timer("dyn");
   err += calc_dynamics_dU(dt_now, OA2, grid);
   clk.pause_timer("dyn");
-  rep.errorTest("scn::advance_step_OA2: calc_x_dU OA2", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "scn::advance_step_OA2: calc_x_dU OA2", 0,
+        err);
   clk.start_timer("bc89");
   if (l > 0) save_fine_fluxes(SimPM, l);
   if (l < SimPM.grid_nlevels - 1) save_coarse_fluxes(SimPM, l);
@@ -1157,9 +1156,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   // 8. Take another step on finer grid
   // --------------------------------------------------------
   if (!finest_level) {
-#ifdef TEST_INT
-    cout << "advance_step_OA2: l=" << l << " second fine step" << endl;
-#endif
+    spdlog::debug("advance_step_OA2: l={} second fine step", l);
     dt2_fine = advance_step_OA2(l + 1);
   }
   // --------------------------------------------------------
@@ -1169,9 +1166,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   //  - Receive level fluxes from finer grid (FLUX)
   //  - update grid on level l to new time
   // --------------------------------------------------------
-#ifdef TEST_INT
-  cout << "advance_step_OA2: l=" << l << " full step update" << endl;
-#endif
+  spdlog::debug("advance_step_OA2: l={} full step update", l);
 #ifdef PION_OMP
   #pragma omp parallel
   {
@@ -1184,13 +1179,19 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   clk.start_timer("bc89");
   if (l < SimPM.grid_nlevels - 1) {
     err += recv_BC89_fluxes_F2C(spatial_solver, SimPM, l, OA2, OA2);
-    rep.errorTest("scn::advance_step_OA1: recv_BC89_flux", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "scn::advance_step_OA1: recv_BC89_flux",
+          0, err);
   }
   clk.pause_timer("bc89");
 #endif
   clk.start_timer("upd");
   err += grid_update_state_vector(SimPM.levels[l].dt, OA2, OA2, grid);
-  rep.errorTest("scn::advance_step_OA2: state-vec update", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "scn::advance_step_OA2: state-vec update",
+        0, err);
   clk.pause_timer("upd");
 #ifndef SKIP_BC89_FLUX
   clk.start_timer("bc89");
@@ -1199,9 +1200,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   }
   clk.pause_timer("bc89");
 #endif
-#ifdef TEST_INT
-  cout << "advance_step_OA2: l=" << l << " updated, sends cleared" << endl;
-#endif
+  spdlog::debug("advance_step_OA2: l={} updated, sends cleared", l);
   // --------------------------------------------------------
 
   // --------------------------------------------------------
@@ -1214,15 +1213,15 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   }
   SimPM.levels[l].last_dt = SimPM.levels[l].dt;
   if (l == 0) SimPM.last_dt = SimPM.levels[l].dt;
-    // --------------------------------------------------------
+  // --------------------------------------------------------
 
-    // --------------------------------------------------------
-    // 11. update internal boundary conditions on level l
-    // --------------------------------------------------------
-#ifdef TEST_INT
-  cout << "advance_step_OA2: l=" << l << " update internal BCs" << endl;
-#endif
+  // --------------------------------------------------------
+  // 11. update internal boundary conditions on level l
+  // --------------------------------------------------------
   clk.start_timer("ibc");
+#ifdef TEST_INT
+  spdlog::debug("advance_step_OA2: l={} update internal BCs", l);
+#endif
   err += TimeUpdateInternalBCs(
       SimPM, l, grid, spatial_solver, ctime + dt_now, OA2, OA2);
   clk.pause_timer("ibc");
@@ -1230,15 +1229,13 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   //  - Recv F2C data from l+1
   clk.start_timer("f2c");
   if (!finest_level && f2cr >= 0) {
-#ifdef TEST_INT
-    cout << "advance_step_OA2: l=" << l << " F2C recv start" << endl;
-#endif
+    spdlog::debug("advance_step_OA2: l={} F2C recv start", l);
     err += BC_update_FINE_TO_COARSE_RECV(
         SimPM, spatial_solver, l, grid->BC_bd[f2cr], OA2, OA2);
     //  - Clear F2C sends
     BC_FINE_TO_COARSE_SEND_clear_sends(SimPM.levels[l + 1].sub_domain);
 #ifdef TEST_INT
-    cout << "advance_step_OA2: l=" << l << " F2C recv done" << endl;
+    spdlog::debug("advance_step_OA2: l={} F2C recv done", l);
 #endif
   }
   clk.pause_timer("f2c");
@@ -1249,9 +1246,15 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   clk.start_timer("rt");
   if (grid->RT) {
     update_evolving_RT_sources(SimPM, SimPM.levels[l].simtime, grid->RT);
-    rep.errorTest("NG TIME_INT::update_RT_sources error", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "NG TIME_INT::update_RT_sources error",
+          0, err);
     err += do_ongrid_raytracing(SimPM, grid, l);
-    rep.errorTest("NG-MPI::advance_step_OA2: raytracing()", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}",
+          "NG-MPI::advance_step_OA2: raytracing()", 0, err);
   }
   clk.pause_timer("rt");
   // --------------------------------------------------------
@@ -1260,14 +1263,12 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   // 13. Send level fluxes and F2C data to coarser grid
   // --------------------------------------------------------
   if (l > 0) {
-#ifdef TEST_INT
-    cout << "step=" << SimPM.levels[l].step << endl;
-#endif
+    spdlog::debug("step={}", SimPM.levels[l].step);
 
-#ifdef TEST_INT
-    cout << "advance_step_OA2: l=" << l << " send BC89 fluxes" << endl;
-#endif
     clk.start_timer("bc89");
+#ifdef TEST_INT
+    spdlog::debug("advance_step_OA2: l={} send BC89 fluxes", l);
+#endif
     if (SimPM.levels[l].step % 2 == 0) {
       // only send level fluxes every 2nd step (coarse grid is only
       // updated at the full-step, not at the half-step).
@@ -1276,29 +1277,23 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
 #endif
     }
     clk.pause_timer("bc89");
-#ifdef TEST_INT
-    cout << "advance_step_OA2: l=" << l << " sent BC89 fluxes" << endl;
-#endif
-
-#ifdef TEST_INT
-    cout << "advance_step_OA2: l=" << l << " update F2C" << endl;
-#endif
     clk.start_timer("f2c");
     err += BC_update_FINE_TO_COARSE_SEND(
         SimPM, spatial_solver, l, grid->BC_bd[f2cs], OA2, OA2);
     clk.pause_timer("f2c");
-#ifdef TEST_INT
-    cout << "advance_step_OA2: l=" << l << " updated F2C" << endl;
-#endif
+    spdlog::debug("advance_step_OA2: l={} sent BC89 fluxes", l);
+
+    spdlog::debug("advance_step_OA2: l={} update F2C", l);
+    err += BC_update_FINE_TO_COARSE_SEND(
+        SimPM, spatial_solver, l, grid->BC_bd[f2cs], OA2, OA2);
+    spdlog::debug("advance_step_OA2: l={} updated F2C", l);
   }
   // --------------------------------------------------------
 
-#ifndef NDEBUG
-  cout << "NG-MPI advance_step_OA2, level=" << l << ", returning. t=";
-  cout << SimPM.levels[l].simtime << ", step=" << SimPM.levels[l].step;
-  cout << ", next dt=" << SimPM.levels[l].dt << " next time=";
-  cout << SimPM.levels[l].simtime + SimPM.levels[l].dt << endl;
-#endif
+  spdlog::debug(
+      "NG-MPI advance_step_OA2, level={}, returning. t={}, step={}, next dt={} next time={}",
+      l, SimPM.levels[l].simtime, SimPM.levels[l].step, SimPM.levels[l].dt,
+      SimPM.levels[l].simtime + SimPM.levels[l].dt);
   return dt2_this + SimPM.levels[l].dt;
 }
 
@@ -1353,11 +1348,9 @@ int sim_control_NG_MPI::initial_conserved_quantities(
   initMASS =
       SimPM.levels[0].sub_domain.global_operation_double("SUM", initMASS);
 
-  cout << "(conserved quantities) [" << initERG << ", ";
-  cout << initMMX << ", ";
-  cout << initMMY << ", ";
-  cout << initMMZ << ", ";
-  cout << initMASS << "]\n";
+  spdlog::debug(
+      "(conserved quantities) [{}, {}, {}, {}, {}]", initERG, initMMX, initMMY,
+      initMMZ, initMASS);
 
 #endif  // TEST_CONSERVATION
   return (0);
@@ -1411,17 +1404,12 @@ int sim_control_NG_MPI::check_energy_cons(vector<class GridBaseClass *> &grid)
   // cout <<" totmom="<<totmom<<" initMMX="<<initMMX;
   // cout <<", nowMMX="<<nowMMX<<"\n";
 
-  cout << "(conserved quantities) [" << nowERG << ", ";
-  cout << nowMMX << ", ";
-  cout << nowMMY << ", ";
-  cout << nowMMZ << ", ";
-  cout << nowMASS << "]\n";
-  cout << "(relative error      ) [";
-  cout << (nowERG - initERG) / (initERG) << ", ";
-  cout << (nowMMX - initMMX) / (totmom) << ", ";
-  cout << (nowMMY - initMMY) / (totmom) << ", ";
-  cout << (nowMMZ - initMMZ) / (totmom) << ", ";
-  cout << (nowMASS - initMASS) / initMASS << "]\n";
+  spdlog::debug(
+      "(conserved quantities) [{}, {}, {}, {}, {}]\n"
+      "(relative error      ) [{}, {}, {}, {}, {}]" nowERG,
+      nowMMX, nowMMY, nowMMZ, nowMASS, (nowERG - initERG) / (initERG),
+      (nowMMX - initMMX) / (totmom), (nowMMY - initMMY) / (totmom),
+      (nowMMZ - initMMZ) / (totmom), (nowMASS - initMASS) / initMASS);
 
 #endif  // TEST_CONSERVATION
   return (0);

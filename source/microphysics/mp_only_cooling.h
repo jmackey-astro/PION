@@ -27,6 +27,8 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
+#include <spdlog/spdlog.h>
+
 #include "microphysics/cooling.h"
 #include "microphysics/cooling_SD93_cie.h"
 #include "microphysics/hydrogen_recomb_Hummer94.h"
@@ -219,7 +221,7 @@ public:
       const double  ///< EOS gamma.
   )
   {
-    cout << "Don't call timescales for only-cooling class!\n";
+    spdlog::info("Don't call timescales for only-cooling class!");
     return 1.0e99;
   }
 
@@ -233,7 +235,7 @@ public:
       const double       ///< EOS gamma (optional)
   )
   {
-    cout << "get_recombination_rate: mp_only_cooling has no ions!\n";
+    spdlog::info("get_recombination_rate: mp_only_cooling has no ions!");
     return 1.0e99;
   }
 

@@ -17,7 +17,8 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
 
 #include "eqns_base.h"
 
@@ -159,7 +160,7 @@ public:
       const double       ///< gas EOS gamma.
   )
   {
-    rep.error("ENTHALPY FOR Ideal MHD EQNS", 456);
+    spdlog::error("{}: {}", "ENTHALPY FOR Ideal MHD EQNS", 456);
     return 456.789;
   }
 

@@ -56,7 +56,11 @@
 #include "defines/testing_flags.h"
 #include "solver_eqn_base.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+#include <spdlog/spdlog.h>
 
 #ifdef PION_OMP
 #include <omp.h>
@@ -172,10 +176,11 @@ int FV_solver_base::InterCellFlux(
 
 #ifdef DEBUG
   if (fabs(f[0]) > 1.0e-50) {
-    rep.printVec("flux=", f, eq_nvar);
-    rep.printVec("left=", lp, eq_nvar);
-    rep.printVec("rght=", rp, eq_nvar);
-    rep.printVec("pstr=", pstar, eq_nvar);
+    spdlog::debug("flux= : {}", f);
+    spdlog::debug("left= : {}", lp);
+    spdlog::debug("rght= : {}", fmt::ptr(rp));
+    ;
+    spdlog::debug("pstr= : {}", pstar);
   }
 #endif
 
@@ -266,17 +271,13 @@ void FV_solver_base::set_interface_tracer_flux(
   pion_flt corrector[eq_nvar];
   for (int v = 0; v < eq_nvar; v++)
     corrector[v] = 1.0;
-
-#ifdef FUNCTION_ID
-  cout << "FV_solver_base::set_interface_tracer_flux ...starting.\n";
-#endif  // FUNCTION_ID
-        //
-        // Calculate tracer flux here -- if mass flux is positive then
-        // contact is at x>0 and we advect the left state tracer across
-        // the boundary.  Otherwise we advect the right state to the left.
-        //
-        // N.B. Without introducing minimum density and velocity scales, it
-        // is impossible to avoid introducing some asymmetry here.
+    //
+    // Calculate tracer flux here -- if mass flux is positive then
+    // contact is at x>0 and we advect the left state tracer across
+    // the boundary.  Otherwise we advect the right state to the left.
+    //
+    // N.B. Without introducing minimum density and velocity scales, it
+    // is impossible to avoid introducing some asymmetry here.
 #ifdef TEST_SYMMETRY
   if (FV_ntr > 0) {
     if (flux[eqRHO] > 1.0e-28)
@@ -293,8 +294,8 @@ void FV_solver_base::set_interface_tracer_flux(
   if (FV_ntr > 0) {
 #ifdef TEST_INF
     if (!isfinite(flux[eqRHO])) {
-      cout << "FV_solver_base::set_interface_tracer_flux: ";
-      rep.printVec("inf flux", flux, eq_nvar);
+      spdlog::info("FV_solver_base::set_interface_tracer_flux");
+      spdlog::debug("inf flux : {}", flux);
     }
 #endif
     if (flux[eqRHO] > 0.0) {
@@ -315,11 +316,6 @@ void FV_solver_base::set_interface_tracer_flux(
     }
   }
 #endif
-
-#ifdef FUNCTION_ID
-  cout << "FV_solver_base::set_interface_tracer_flux ...returning.\n";
-#endif  // FUNCTION_ID
-  return;
 }
 
 
@@ -338,8 +334,9 @@ void FV_solver_base::set_Hcorrection(
 )
 {
   if (axis != GetDirection()) {
-    cout << GetDirection() << "\t";
-    rep.error("bad direction in FV_solver_base::set_Hcorrection()", axis);
+    spdlog::debug("{}\t", GetDirection());
+    spdlog::error(
+        "{}: {}", "bad direction in FV_solver_base::set_Hcorrection()", axis);
   }
   //
   // Sanders, Morano, Druguet, (1998, JCP, 145, 511)  eq. 10
@@ -417,10 +414,7 @@ double FV_solver_base::select_Hcorr_eta(
   //
   // Will want to comment this out later...
   //
-#ifndef NDEBUG
-  cout << "cell id=" << cl->id << " axis=" << axis << ", eta_max=" << eta
-       << "\n";
-#endif  // NDEBUG
+  spdlog::debug("cell id={} axis={}, eta_max={}", cl->id, axis, eta);
 
   return eta;
 }

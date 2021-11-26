@@ -24,7 +24,7 @@
 #include "defines/testing_flags.h"
 
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
 //#include "tools/timer.h"
 #include "constants.h"
 #include "sim_params.h"
@@ -107,7 +107,8 @@ public:
    * the number of pixels in each direction, based on the assumption that
    * pixels have the same surface area (square) as a simulation cell.
    */
-  void get_npix(int *  ///< 2D array to put number of pixels in each direction.
+  void get_npix(std::array<int, MAX_DIM>
+                    &  ///< 2D array to put number of pixels in each direction.
   );
 
   void get_image_Ipos(
@@ -116,13 +117,15 @@ public:
   );
 
   void get_image_Dpos(
-      const pion_flt *,  ///< integer position in sim coords.
-      pion_flt *         ///< converted position in image coords.
+      const std::array<pion_flt, MAX_DIM>
+          &,                           ///< integer position in sim coords.
+      std::array<pion_flt, MAX_DIM> &  ///< converted position in image coords.
   );
 
   void get_sim_Dpos(
-      const pion_flt *,  ///< position in image coordinates.
-      pion_flt *         ///< position in sim coords (dx=2).
+      const std::array<pion_flt, MAX_DIM>
+          &,                           ///< position in image coordinates.
+      std::array<pion_flt, MAX_DIM> &  ///< position in sim coords (dx=2).
   );
 
   /** \brief Given a pixel centre, calculates the position of the first point
@@ -130,13 +133,14 @@ public:
    * points and the number of points.
    */
   void set_integration_points(
-      const pion_flt *,  ///< pixel centre (x,y,zmin=0)
-      double *,          ///< dx between points (image units)
-      double *,          ///< position of nearest point.
-      int *              ///< number of points.
+      const std::array<pion_flt, MAX_DIM> &,  ///< pixel centre (x,y,zmin=0)
+      std::array<double, MAX_DIM> &,  ///< dx between points (image units)
+      std::array<double, MAX_DIM> &,  ///< position of nearest point.
+      std::array<int, MAX_DIM> &      ///< number of points.
   );
 
-  bool point_in_Isim_domain(const pion_flt *  /// Point in sim coords (integer)
+  bool point_in_Isim_domain(
+      const std::array<pion_flt, MAX_DIM> &  /// Point in sim coords (integer)
   );
 
   enum axes get_normal_axis() { return sa[ZZ]; }
@@ -146,13 +150,11 @@ public:
   {
     for (int i = 0; i < 3; i++)
       out[i] = sa[i];
-    return;
   }
   void get_image_dir_signs(int out[3])
   {
     for (int i = 0; i < 3; i++)
       out[i] = ss[i];
-    return;
   }
 
 protected:
@@ -167,16 +169,16 @@ protected:
   enum axes sa[3];  ///< Axes associated with sim closest to each image axis.
   /** \brief Sign function.  e.g. sd[0]=XN/YN/ZN, then ss[0]=-1; else ss[0]=+1.
    */
-  int ss[3];            ///< sign of sim direction in image direction.
-  double sim_xminP[3],  ///< xmin of sim:  sim coords, physical
-      sim_xmaxP[3],     ///< xmax of sim:  sim coords, physical
-      sim_rangeP[3],  ///< range of sim in each direction: sim coords, physical.
-      sim_dxP;        ///< cell size, sim coords, physical.
-  int sim_xminI[3],   ///< xmin of sim: sim coords, integer.
-      sim_xmaxI[3],   ///< xmax of sim: sim coords, integer.
-      sim_rangeI[3],  ///< range of sim: sim coords, integer.
-      sim_ncell[3],   ///< number of cells along each sim axis.
-      sim_dxI;        ///< Cell size, sim coords, integer.
+  int ss[3];  ///< sign of sim direction in image direction.
+  std::array<double, 3> sim_xminP,  ///< xmin of sim:  sim coords, physical
+      sim_xmaxP,                    ///< xmax of sim:  sim coords, physical
+      sim_rangeP;  ///< range of sim in each direction: sim coords, physical.
+  double sim_dxP;  ///< cell size, sim coords, physical.
+  std::array<int, 3> sim_xminI,  ///< xmin of sim: sim coords, integer.
+      sim_xmaxI,                 ///< xmax of sim: sim coords, integer.
+      sim_rangeI,                ///< range of sim: sim coords, integer.
+      sim_ncell;                 ///< number of cells along each sim axis.
+  int sim_dxI;                   ///< Cell size, sim coords, integer.
   //
   // Image coordinates:
   //
@@ -442,10 +444,11 @@ public:
 
 
   void find_surrounding_cells(
-      const pion_flt *,  ///< position of point, in simI coordinates.
-      cell *,            ///< cell in plane, move from here to point.
-      cell **,           ///< OUTPUT: list of 4 cells surrounding point
-      pion_flt *         ///< OUTPUT: list of weights for each cell.
+      const std::array<pion_flt, MAX_DIM>
+          &,      ///< position of point, in simI coordinates.
+      cell *,     ///< cell in plane, move from here to point.
+      cell **,    ///< OUTPUT: list of 4 cells surrounding point
+      pion_flt *  ///< OUTPUT: list of weights for each cell.
   );
 
 protected:

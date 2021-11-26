@@ -118,7 +118,11 @@
 #ifdef LEGACY_CODE
 
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -209,26 +213,25 @@ void mp_rates_ExpH_ImpMetals::set_gamma_and_srcs(
       NIdot        = RS->sources[isrc].strength;
       ion_src_type = RT_EFFECT_PION_MONO;
       got++;
-      cout << "mp_rates_ExpH_ImpMetals::set_gamma_and_srcs: Nisrc=" << ion
-           << ", got=" << got << ": ";
-      cout << " found mono-p-ion src id=" << isrc << " with NIdot=" << NIdot
-           << "\n";
+      spdlog::debug(
+          "mp_rates_ExpH_ImpMetals::set_gamma_and_srcs: Nisrc={}, got={}:  found mono-p-ion src id={} with NIdot={}",
+          ion, got, isrc, NIdot);
     }
     else if (RS->sources[isrc].effect == RT_EFFECT_MFION) {
       ion_src_type = RT_EFFECT_MFION;
       NIdot        = RS->sources[isrc].strength;
       // cout <<"Please code for multi-frequency photoionisation!\n";
-      // rep.error("multifreq not
+      // spdlog::error("{}: {}", "multifreq not
       // implemented","mp_rates_ExpH_ImpMetals::set_gamma_and_srcs");
       got++;
-      cout << "mp_rates_ExpH_ImpMetals::set_gamma_and_srcs: Nisrc=" << ion
-           << ", got=" << got << ": ";
-      cout << " found multifreq-p-ion src id=" << isrc << " with L=" << NIdot
-           << "\n";
+      spdlog::debug(
+          "mp_rates_ExpH_ImpMetals::set_gamma_and_srcs: Nisrc={}, got={}:  found multifreq-p-ion src id={} with L={}",
+          ion, got, isrc, NIdot);
     }
   }
   if (ion > 0) {
-    if (got != 1) rep.error("mismatch between ion and got", ion - got);
+    if (got != 1)
+      spdlog::error("{}: {}", "mismatch between ion and got", ion - got);
   }
 
   return;
@@ -298,13 +301,10 @@ void mp_rates_ExpH_ImpMetals::set_parameters_for_current_step(
   // gamma  = P[7];
   // gamma_minus_one = gamma-1.0;
 
-//#ifdef RT_TESTING
-#ifdef MPV2_DEBUG
-  cout << "MPR set params.  nH=" << nH << ", Vsh=" << Vshell << ", NH0=" << NH0
-       << ", dNH0=";
-  cout << dNH0 << ", G0_UV=" << G0_UV << ", G0_IR=" << G0_IR
-       << ", delta_S=" << delta_S << ", Nion=" << ion << "\n";
-#endif
+  //#ifdef RT_TESTING
+  spdlog::debug(
+      "MPR set params.  nH={}, Vsh={}, NH0={}, dNH0={}, G0_UV={}, G0_IR={}, delta_S={}, Nion={}",
+      nH, Vshell, NH0, dNH0, G0_UV, G0_IR, delta_S, ion);
   //#endif
 
   return;
@@ -390,10 +390,9 @@ int mp_rates_ExpH_ImpMetals::dYdt(
     Hi_coll_ion_rates(T, &temp1, &temp2);
     *xdot -= temp1 * ne * OneMinusX;  // the nH is divided out on both sides.
     *Edot -= temp2 * ne * OneMinusX;
-#ifdef MPV2_DEBUG
-    cout << "T=" << T << " x_in=" << x_in << " E_in=" << E_in
-         << "    CI=" << -temp2 * ne * OneMinusX << "\n";
-#endif  // MPV2_DEBUG
+    spdlog::debug(
+        "T={} x_in={} E_in={}    CI={}", T, x_in, E_in,
+        -temp2 * ne * OneMinusX);
 
 #ifdef RT_TEST_PROBS
   }  // if coll_ionisation
@@ -425,9 +424,7 @@ int mp_rates_ExpH_ImpMetals::dYdt(
         *Edot += Hi_discrete_multifreq_photoheating_rate(
             NH0, nH * delta_S * OneMinusX, nH, delta_S, Vshell);
         // cout <<"multifreq!   PI-rate="<<(temp1-temp2)<<"\n";
-#ifdef MPV2_DEBUG
-        cout << "  PI=" << (temp1 - temp2);
-#endif  // MPV2_DEBUG
+        spdlog::debug("  PI={}", (temp1 - temp2));
         break;
 
       case RT_EFFECT_PION_MONO:
@@ -442,18 +439,13 @@ int mp_rates_ExpH_ImpMetals::dYdt(
                 * OneMinusX;
         *xdot -= temp1;
         *Edot += temp1 * EXCESS_ENERGY;
-#ifdef MPV2_DEBUG
-        cout << " PIR: NIdot=" << NIdot << " nH=" << nH << " NH0=" << NH0;
-        cout << " dNH0=" << dNH0 << " ds=" << delta_S << " Vsh=" << Vshell;
-        cout << " 1-x=" << OneMinusX << "... RATE=" << temp1 << "\n";
-#endif
-#ifdef MPV2_DEBUG
-        cout << "  xdot_PI=" << *xdot << "\n";
-#endif
+        spdlog::debug(
+            " PIR: NIdot={} nH={} NH0={} dNH0={} ds={} Vsh={} 1-x={}... RATE={}  xdot_PI={}",
+            NIdot, nH, NH0, dNH0, delta_S, Vshell, OneMinusX, temp1, *xdot);
         break;
 
       default:
-        rep.error("Bad ion_src_type in dYdt()", ion_src_type);
+        spdlog::error("{}: {}", "Bad ion_src_type in dYdt()", ion_src_type);
         break;
     }  // switch
   }
@@ -473,10 +465,7 @@ int mp_rates_ExpH_ImpMetals::dYdt(
   //
   *Edot -= Hii_total_cooling(T) * x_in * ne;
 #endif
-#ifdef MPV2_DEBUG
-    cout << "  RR+FF=" << -Hii_total_cooling(T) << " xin=" << x_in
-         << " ne=" << ne << "\t\t";
-#endif  // MPV2_DEBUG
+    spdlog::debug("  RR+FF={} xin={} ne={}", -Hii_total_cooling(T), x_in, ne);
 
 #ifdef RT_TEST_PROBS
   }  // if rad_recombination
@@ -495,17 +484,14 @@ int mp_rates_ExpH_ImpMetals::dYdt(
   // prefactor).
   //
   *Edot -= 6.72e-28 * sqrt(T) * x_in * ne;
-#ifdef MPV2_DEBUG
-  cout << "  He-FF=" << -6.72e-28 * sqrt(T) * x_in * ne;
-#endif  // MPV2_DEBUG
+  spdlog::debug("  He-FF={}", -6.72e-28 * sqrt(T) * x_in * ne);
 
   //
   // collisional excitation cooling of H0 Aggarwal (1993)
   //
   *Edot -= Hi_coll_excitation_cooling_rate(T) * OneMinusX * ne;
-#ifdef MPV2_DEBUG
-  cout << "  CExH0=" << -Hi_coll_excitation_cooling_rate(T) * OneMinusX * ne;
-#endif  // MPV2_DEBUG
+  spdlog::debug(
+      "  CExH0={}", -Hi_coll_excitation_cooling_rate(T) * OneMinusX * ne);
   //
   // --------- END OF HYDROGEN COOLING, MOVING TO METAL COOLING --------
   //
@@ -521,9 +507,7 @@ int mp_rates_ExpH_ImpMetals::dYdt(
     //
     // cout <<"adding diffuse heating!\n";
     *Edot += 1.9e-26 * G0_UV / (1.0 + 6.4 * (G0_UV / nH));
-#ifdef MPV2_DEBUG
-    cout << "  DfUV=" << 1.9e-26 * G0_UV / (1.0 + 6.4 * (G0_UV / nH));
-#endif  // MPV2_DEBUG
+    spdlog::debug("  DfUV={}", 1.9e-26 * G0_UV / (1.0 + 6.4 * (G0_UV / nH)));
 
     //
     // IR heating (HAdCM09 eq.A6) from point source and/or diffuse
@@ -532,9 +516,7 @@ int mp_rates_ExpH_ImpMetals::dYdt(
     // was 1.9.
     //
     *Edot += 7.7e-32 * G0_IR / pow(1.0 + 3.0e4 / nH, 2.0);
-#ifdef MPV2_DEBUG
-    cout << "  DfIR=" << 7.7e-32 * G0_IR / pow(1.0 + 3.0e4 / nH, 2.0);
-#endif  // MPV2_DEBUG
+    spdlog::debug("  DfIR={}", 7.7e-32 * G0_IR / pow(1.0 + 3.0e4 / nH, 2.0));
   }
 
   //
@@ -551,9 +533,7 @@ int mp_rates_ExpH_ImpMetals::dYdt(
   // Cosmic ray heating (HAdCM09 eq.A7)
   //
   *Edot += 5.0e-28;
-#ifdef MPV2_DEBUG
-  cout << "  CR=" << 5.0e-28;
-#endif  // MPV2_DEBUG
+  spdlog::debug("  CR={}", 5.0e-28);
 
   //
   // Now COOLING:
@@ -565,11 +545,9 @@ int mp_rates_ExpH_ImpMetals::dYdt(
   //
   temp1 = 1.69e-22 * exp(-33610.0 / T - (2180.0 * 2180.0 / T / T)) * x_in * ne
           * exp(-T * T / 5.0e10);
-#ifdef MPV2_DEBUG
-  cout << "  CExMi="
-       << -1.69e-22 * exp(-33610.0 / T - (2180.0 * 2180.0 / T / T)) * x_in * ne
-              * exp(-T * T / 5.0e10);
-#endif  // MPV2_DEBUG
+  spdlog::debug(
+      "  CExMi={}", -1.69e-22 * exp(-33610.0 / T - (2180.0 * 2180.0 / T / T))
+                        * x_in * ne * exp(-T * T / 5.0e10));
   //
   // Collisionally excited lines of neutral metals: (HAdCM09 eq.A10).
   // Assumes the neutral metal fraction is the same as neutral H fraction.
@@ -578,11 +556,9 @@ int mp_rates_ExpH_ImpMetals::dYdt(
   //
   temp1 +=
       2.60e-23 * exp(-28390.0 / T - (1780.0 * 1780.0 / T / T)) * ne * OneMinusX;
-#ifdef MPV2_DEBUG
-  cout << "  CExMn="
-       << -2.60e-23 * exp(-28390.0 / T - (1780.0 * 1780.0 / T / T)) * ne
-              * OneMinusX;
-#endif  // MPV2_DEBUG
+  spdlog::debug(
+      "  CExMn={}", -2.60e-23 * exp(-28390.0 / T - (1780.0 * 1780.0 / T / T))
+                        * ne * OneMinusX);
 
   //
   // Now the Wiersma et al (2009,MN393,99) (metals-only) CIE cooling curve.
@@ -590,11 +566,9 @@ int mp_rates_ExpH_ImpMetals::dYdt(
   // previous two terms.
   //
   temp2 = cooling_rate_SD93CIE(T) * x_in * x_in * nH;
-#ifdef MPV2_DEBUG
-  cout << "  CIEc=" << -cooling_rate_SD93CIE(T) * x_in * x_in * nH << "\n";
-  cout << "WSS09 ccoling rate=" << temp2
-       << ", metal line cooling rate=" << temp1 << "\n";
-#endif  // MPV2_DEBUG
+  spdlog::debug(
+      "  CIEc={}\nWSS09 ccoling rate={}, metal line cooling rate={}",
+      -cooling_rate_SD93CIE(T) * x_in * x_in * nH, temp2, temp1);
   *Edot -= max(temp1, temp2);
 
   //
@@ -607,10 +581,8 @@ int mp_rates_ExpH_ImpMetals::dYdt(
   if (T < 1.0e4 && x_in < 0.2) {
     temp1 = 70.0 + 220.0 * pow(nH / 1.0e6, 0.2);
     temp2 = 3.981e-27 * pow(nH, 0.6) * sqrt(T) * exp(-temp1 / T);
-#ifdef MPV2_DEBUG
-    cout << "Without PDR, Edot=" << (*Edot) * nH
-         << ", PDR cooling rate=" << temp2 * nH << "\n";
-#endif  // MPV2_DEBUG
+    spdlog::debug(
+        "Without PDR, Edot={}, PDR cooling rate={}", (*Edot) * nH, temp2 * nH);
     *Edot -= temp2;
     // cout <<", PDR cooling rate="<<temp2*nH<<", nH="<<nH<<"\n";
   }
@@ -650,15 +622,11 @@ int mp_rates_ExpH_ImpMetals::dYdt(
   //
   if (*Edot < 0.0 && T < 2.0 * EP->MinTemperature) {
 
-#ifdef MPV2_DEBUG
-    cout << "limiting cooling: Edot=" << *Edot << ", T=" << T;
-#endif  // MPV2_DEBUG
+    spdlog::debug("limiting cooling: Edot={}, T={}", *Edot, T);
 
     *Edot = min(0.0, (*Edot) * (T - EP->MinTemperature) / EP->MinTemperature);
 
-#ifdef MPV2_DEBUG
-    cout << "... resetting Edot to " << *Edot << "\n";
-#endif  // MPV2_DEBUG
+    spdlog::debug("... resetting Edot to {}", *Edot);
   }
 #ifdef RT_TEST_PROBS
   if (!EP->update_erg) {
@@ -706,24 +674,25 @@ MPv2::MPv2(
     microphysics_base(nv, ntr, tracers, ephys, rsrcs),
     ndim(nd), eos_gamma(g), coord_sys(csys)
 {
-  cout << "MPv2: new microphysics class.\n";
+  spdlog::info("MPv2: new microphysics class");
 
   //
   // Set up tracer variables (i.e. just find which one is H+).
   //
-  cout << "\t\tSetting up Tracer Variables.  Assuming tracers are last ";
-  cout << ntracer << " variables in state vec.\n";
+  spdlog::debug(
+      "\t\tSetting up Tracer Variables.  Assuming tracers are last {} variables in state vec",
+      ntracer);
   int ftr = nv_prim - ntracer;  // first tracer variable.
   string s;
   int len =
       (trtype.length() + 5) / 6 - 1;  // first 6 chars are the type, then list
                                       // of tracers, each 6 chars long.
-  cout << "\t\ttrtype = " << trtype << "\n";
-  cout << "\t\tlen=" << len << ", ntr=" << ntracer << "\n";
+  spdlog::debug("\t\ttrtype = {}\n\t\tlen={}, ntr={}", trtype, len, ntracer);
   if (len != ntracer) {
-    cout << "warning: string doesn't match ntracer.  make sure this looks ok: "
-         << trtype << "\n";
-    // rep.error("string doesn't match ntracer",ntracer-len);
+    spdlog::warn(
+        "warning: string doesn't match ntracer.  make sure this looks ok: {}",
+        trtype);
+    // spdlog::error("{}: {}", "string doesn't match ntracer",ntracer-len);
   }
 
   //
@@ -737,7 +706,8 @@ MPv2::MPv2(
     }
   }
   if (pv_Hp < 0)
-    rep.error("No H ionisation fraction found in tracer list", trtype);
+    spdlog::error(
+        "{}: {}", "No H ionisation fraction found in tracer list", trtype);
 
   //
   // We only have two local variables: ion fraction and internal energy
@@ -765,8 +735,8 @@ MPv2::MPv2(
             || RS->sources[isrc].effect == RT_EFFECT_MFION))
       ion++;
   }
-  cout << "\t\tMPv2:: found " << diff << " diffuse and " << ion
-       << " ionising sources.\n";
+  spdlog::debug(
+      "\t\tMPv2:: found {} diffuse and {} ionising sources", diff, ion);
   MPR.set_gamma_and_srcs(gamma, diff, ion);
 
   k_B             = GS.kB();
@@ -809,7 +779,8 @@ MPv2::MPv2(
           if (RS->sources[isrc].pos[v] > 1.0e99) dir = 2 * v + 1;
           if (RS->sources[isrc].pos[v] < -1.0e99) dir = 2 * v;
         }
-        if (dir < 0) rep.error("Diffuse source not at infinity!", isrc);
+        if (dir < 0)
+          spdlog::error("{}: {}", "Diffuse source not at infinity!", isrc);
         //
         // if direction is in Z then angle is as for 3D, and if R+ then
         // 4x3D values.
@@ -819,12 +790,13 @@ MPv2::MPv2(
         else if (dir == RPcyl)
           diff_angle[count] = 16.0 * M_PI / 6.0;
         else
-          rep.error("Bad source direction", dir);
+          spdlog::error("{}: {}", "Bad source direction", dir);
         count++;
       }
     }
-    cout << "Angles for diffuse sources: [" << diff_angle[0] << ", ";
-    cout << diff_angle[1] << ", " << diff_angle[2] << "]\n";
+    spdlog::debug(
+        "Angles for diffuse sources: [{}, {}, {}]", diff_angle[0],
+        diff_angle[1], diff_angle[2]);
   }
   else if (SimPM.coord_sys == COORD_SPH && ndim == 1) {
     //
@@ -834,13 +806,15 @@ MPv2::MPv2(
     diff_angle[0] = 4.0 * M_PI;
   }
   else {
-    rep.error("Unhandled coord-sys/ndim combination in MPv2::MPv2", ndim);
+    spdlog::error(
+        "{}: {}", "Unhandled coord-sys/ndim combination in MPv2::MPv2", ndim);
   }
   // ----------------------- DIFFUSE RADIATION -------------------------------
 
   // ------------------------- IONISING SOURCE ----------------------
   if (ion) {
-    if (ion > 1) rep.error("too many ionising source in MPv2()", ion);
+    if (ion > 1)
+      spdlog::error("{}: {}", "too many ionising source in MPv2()", ion);
     //
     // Need to set up the multifrequency tables if needed.
     //
@@ -849,7 +823,8 @@ MPv2::MPv2(
         if (RS->sources[isrc].effect == RT_EFFECT_MFION) {
           int err = set_multifreq_source_properties(&RS->sources[isrc]);
           if (err)
-            rep.error(
+            spdlog::error(
+                "{}: {}",
                 "multifreq photoionisation setup failed in MPv2 const.", err);
         }
       }
@@ -875,7 +850,7 @@ MPv2::MPv2(
 
   string opfile("cooling_mpv2_aifa.txt");
   ofstream outf(opfile.c_str());
-  if (!outf.is_open()) rep.error("couldn't open outfile", 1);
+  if (!outf.is_open()) spdlog::error("{}: {}", "couldn't open outfile", 1);
   outf << "Cooling Curve Data: Temperature(K) Rates(erg/cm^3/s) x=0.99999, "
           "x=0.00001, x=0.5 (n=1 per cc)\n";
   outf.setf(ios_base::scientific);
@@ -902,8 +877,7 @@ MPv2::MPv2(
   //
 #endif  // MPV2_DEBUG
 
-  cout << "MPv2: Constructor finished and returning.\n";
-  return;
+  spdlog::info("MPv2: Constructor finished and returning");
 }
 
 // ##################################################################
@@ -945,17 +919,18 @@ int MPv2::set_multifreq_source_properties(const struct rad_src_info *rsi)
   // - make sure Rstar and Tstar are positive and finite
   //
   if (rsi->effect != RT_EFFECT_MFION)
-    rep.error("Source is not multi-frequency!", rsi->id);
+    spdlog::error("{}: {}", "Source is not multi-frequency!", rsi->id);
   if (rsi->Rstar < 0 || !isfinite(rsi->Rstar))
-    rep.error("Source has bad Rstar parameter", rsi->Rstar);
+    spdlog::error("{}: {}", "Source has bad Rstar parameter", rsi->Rstar);
   if (rsi->Tstar < 0 || !isfinite(rsi->Tstar))
-    rep.error("Source has bad Tstar parameter", rsi->Tstar);
+    spdlog::error("{}: {}", "Source has bad Tstar parameter", rsi->Tstar);
 
   double mincol = SimPM.dx * 1.0e-11, maxcol = 1.0e24,
          Emax = 1000.0 * 1.602e-12;
   int Nspl = 150, Nsub = 800;
-  cout << "#################### MPv2::set_multifreq_source_properties() MinCol="
-       << mincol << "\n";
+  spdlog::debug(
+      "#################### MPv2::set_multifreq_source_properties() MinCol={}",
+      mincol);
 
   MPR.Setup_photoionisation_rate_table(
       rsi->Tstar, rsi->Rstar * 6.96e10, rsi->strength, mincol, maxcol, Emax,
@@ -997,7 +972,7 @@ int MPv2::TimeUpdate_RTsinglesrc(
     double *         ///< return optical depth through cell in this variable.
 )
 {
-  cout << "MPv2::TimeUpdate_RTsinglesrc() is not implemented!\n";
+  spdlog::info("MPv2::TimeUpdate_RTsinglesrc() is not implemented!");
   return 1;
 }
 
@@ -1025,7 +1000,8 @@ int MPv2::TimeUpdateMP_RTnew(
   double P[nvl];
   err = convert_prim2local(p_in, P);
   if (err) {
-    rep.error("Bad input state to MPv2::TimeUpdateMP_RTnew()", err);
+    spdlog::error(
+        "{}: {}", "Bad input state to MPv2::TimeUpdateMP_RTnew()", err);
   }
 
   setup_radiation_source_parameters(p_in, P, N_heat, heat_src, N_ion, ion_src);
@@ -1046,7 +1022,9 @@ int MPv2::TimeUpdateMP_RTnew(
   double maxdelta = 0.0;
   err = MPR.dYdt(Y0[lv_Hp], Y0[lv_eint], &(Yf[lv_Hp]), &(Yf[lv_eint]));
   if (err)
-    rep.error("dYdt() returned an error in MPv2::TimeUpdateMP_RTnew()", err);
+    spdlog::error(
+        "{}: {}", "dYdt() returned an error in MPv2::TimeUpdateMP_RTnew()",
+        err);
   for (int v = 0; v < nvl; v++) {
     maxdelta = max(maxdelta, fabs(Yf[v] * dt / Y0[v]));
   }
@@ -1065,7 +1043,8 @@ int MPv2::TimeUpdateMP_RTnew(
   else {
     err = integrate_cvodes_step(Y0, 0, 0.0, dt, Yf);
     if (err) {
-      rep.error("integration failed: MPv2::TimeUpdateMP_RTnew()", err);
+      spdlog::error(
+          "{}: {}", "integration failed: MPv2::TimeUpdateMP_RTnew()", err);
     }
   }
 
@@ -1091,8 +1070,8 @@ double MPv2::Temperature(
   // Check for negative pressure/density!  If either is found, return -1.0e99.
   //
   if (pv[RO] <= 0.0 || pv[PG] <= 0.0) {
-    cout << "MPv2::Temperature() negative rho=" << pv[RO] << " or p=" << pv[PG]
-         << "\n";
+    spdlog::debug(
+        "MPv2::Temperature() negative rho={} or p={}", pv[RO], pv[PG]);
     return -1.0e99;
   }
   double P[nvl];
@@ -1137,7 +1116,7 @@ int MPv2::Init_ionfractions(
                    ///< at. (negative means use pressure)
 )
 {
-  cout << "MPv2::Init_ionfractions() is not implemented! Write me!\n";
+  spdlog::info("MPv2::Init_ionfractions() is not implemented! Write me!");
   return 1;
 }
 
@@ -1159,8 +1138,9 @@ int MPv2::convert_prim2local(
   // Check for negative ion fraction, and set to a minimum value if found.
   //
   if (p_local[lv_Hp] < 0.0) {
-    cout << "MPv2::convert_prim2local: negative ion fraction input: ";
-    cout << p_local[lv_Hp] << ", setting to 1.0e-12.\n";
+    spdlog::warn(
+        "MPv2::convert_prim2local: negative ion fraction input: {}, setting to 1.0e-12",
+        p_local[lv_Hp]);
     p_local[lv_Hp] = Min_IonFrac;
   }
 
@@ -1169,8 +1149,9 @@ int MPv2::convert_prim2local(
   // warning) and set to 10K if we find it.
   //
   if (p_local[lv_eint] <= 0.0) {
-    cout << "MPv2::convert_prim2local: negative pressure input: p=";
-    cout << p_local[lv_eint] << ", setting to 10K.\n";
+    spdlog::warn(
+        "MPv2::convert_prim2local: negative pressure input: p={}, setting to 10K",
+        p_local[lv_eint]);
     p_local[lv_eint] = (JM_NION + JM_NELEC * p_local[lv_Hp]) * lv_nH * k_B
                        * 10.0 / (gamma_minus_one);
   }
@@ -1186,10 +1167,11 @@ int MPv2::convert_prim2local(
   //
   for (int v = 0; v < nvl; v++) {
     if (!isfinite(p_local[v]))
-      rep.error("INF/NAN input to microphysics", p_local[v]);
+      spdlog::error("{}: {}", "INF/NAN input to microphysics", p_local[v]);
   }
   if (lv_nH < 0.0 || !isfinite(lv_nH))
-    rep.error("Bad density input to MPv2::convert_prim2local", lv_nH);
+    spdlog::error(
+        "{}: {}", "Bad density input to MPv2::convert_prim2local", lv_nH);
 #endif  // MP_DEBUG
 
   return 0;
@@ -1214,10 +1196,12 @@ int MPv2::convert_local2prim(
 #ifdef MP_DEBUG
   if (p_out[pv_Hp] < 0.0 || p_out[pv_Hp] > 1.0 * (1.0 + JM_RELTOL)
       || !isfinite(p_out[pv_Hp]))
-    rep.error(
-        "Bad output H+ value in MPv2::convert_local2prim", p_out[pv_Hp] - 1.0);
+    spdlog::error(
+        "{}: {}", "Bad output H+ value in MPv2::convert_local2prim",
+        p_out[pv_Hp] - 1.0);
   if (p_out[PG] < 0.0 || !isfinite(p_out[PG]))
-    rep.error("Bad output pressure in MPv2::convert_local2prim", p_out[PG]);
+    spdlog::error(
+        "{}: {}", "Bad output pressure in MPv2::convert_local2prim", p_out[PG]);
 #endif  // MP_DEBUG
 
   //
@@ -1261,11 +1245,9 @@ double MPv2::timescales(
 {
   // cout <<"MPv2::timescales() is not implemented! use new timescales fn.\n";
   // return 1.0e200;
-#ifdef MP_DEBUG
   if (RS->Nsources != 0) {
-    cout << "WARNING: MPv2::timescales() using non-RT version!\n";
+    spdlog::warn("MPv2::timescales() using non-RT version!");
   }
-#endif  // MP_DEBUG
   std::vector<struct rt_source_data> temp;
   double tmin = timescales_RT(p_in, 0, temp, 0, temp, 0.0);
   temp.clear();
@@ -1299,7 +1281,7 @@ double MPv2::timescales_RT(
   double P[nvl];
   err = convert_prim2local(p_in, P);
   if (err) {
-    rep.error("Bad input state to MPv2::timescales_RT()", err);
+    spdlog::error("{}: {}", "Bad input state to MPv2::timescales_RT()", err);
   }
 
   //
@@ -1313,7 +1295,8 @@ double MPv2::timescales_RT(
   double xdot = 0.0, Edot = 0.0;
   err = MPR.dYdt(1.0 - P[lv_Hp], P[lv_eint], &xdot, &Edot);
   if (err) {
-    rep.error("dYdt() returned an error in MPv2::timescales_RT()", err);
+    spdlog::error(
+        "{}: {}", "dYdt() returned an error in MPv2::timescales_RT()", err);
   }
 
   //
@@ -1331,17 +1314,15 @@ double MPv2::timescales_RT(
       min(t,
           0.8333 / (fabs(xdot) + TINYVALUE));  // hard-code that x can't
                                                // change by more than 0.25
+  spdlog::debug("MP timescales: xdot={}, Edot={} t_x={}", xdot, Edot, t);
+  //
+  // Now cooling/heating time (this will then be multiplied by 0.3 in
+  // gridmethods.cc:IntUniformFV::calc_microphysics_dt() to limit to 30%
+  // change in energy).  THIS IS NO LONGER NEEDED. t =
+  // min(t,P[lv_eint]/(fabs(Edot)+TINYVALUE));
 #ifdef MP_DEBUG
-  cout << "MP timescales: xdot=" << xdot << ", Edot=" << Edot << " t_x=" << t;
-#endif  // MP_DEBUG
-        //
-        // Now cooling/heating time (this will then be multiplied by 0.3 in
-        // gridmethods.cc:IntUniformFV::calc_microphysics_dt() to limit to 30%
-        // change in energy).  THIS IS NO LONGER NEEDED. t =
-        // min(t,P[lv_eint]/(fabs(Edot)+TINYVALUE));
-#ifdef MP_DEBUG
-  cout << " and min(t_x,t_e)=" << t << ",  ";
-  rep.printVec("P[x,E]", P, nvl);
+  spdlog::debug(" and min(t_x,t_e)={}, ", t);
+  spdlog::debug("P[x,E] : {}", P);
 #endif  // MP_DEBUG
 
   return t;
@@ -1368,13 +1349,15 @@ void MPv2::setup_radiation_source_parameters(
   //
 #ifdef MP_DEBUG
   if (heat_src.size() != static_cast<unsigned int>(N_heat)) {
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "Timescales: N_heating_srcs doesn't match vector size in "
         "Harpreet's MP integrator",
         heat_src.size());
   }
   if (ion_src.size() != static_cast<unsigned int>(N_ion)) {
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "Timescales: N_ionising_srcs doesn't match vector size in "
         "Harpreet's MP integrator",
         ion_src.size());
@@ -1394,8 +1377,9 @@ void MPv2::setup_radiation_source_parameters(
   bool single_src = false;
   if (N_ion > 0) {
     if (N_ion > 1)
-      rep.error(
-          "Fix MPv2 to deal with more than one ionising point source", N_ion);
+      spdlog::error(
+          "{}: {}", "Fix MPv2 to deal with more than one ionising point source",
+          N_ion);
     delta_s    = ion_src[0].dS;
     Vshell     = ion_src[0].Vshell;
     single_src = true;
@@ -1413,9 +1397,9 @@ void MPv2::setup_radiation_source_parameters(
       if (heat_src[v].type == RT_SRC_SINGLE) {
 #ifdef MP_DEBUG
         if (P[lv_Hp] < 0.99) {
-          cout << "setup_rad_src_params: heating:  ds="
-               << heat_src[0].DelCol / p_in[RO];
-          cout << ", Vshell=" << heat_src[0].Vshell << "\n";
+          spdlog::debug(
+              "setup_rad_src_params: heating:  ds={}, Vshell={}",
+              heat_src[0].DelCol / p_in[RO], heat_src[0].Vshell);
         }
 #endif  // MP_DEBUG
         delta_s    = heat_src[0].dS;
@@ -1444,14 +1428,12 @@ void MPv2::setup_radiation_source_parameters(
   for (int v = 0; v < N_heat; v++) {
     if (heat_src[v].type == RT_SRC_DIFFUSE) {
       temp = heat_src[v].strength * diff_angle[i_diff];
-#ifdef MP_DEBUG
-      cout << "setup_rad_src_params:\tdiffuse src: id=" << heat_src[v].id
-           << " 1.9Av=" << Av_UV * heat_src[v].Column;
-      cout << ", strength=" << heat_src[v].strength
-           << ", angle=" << diff_angle[i_diff];
-      cout << ": attenuated flux=" << temp * exp(-Av_UV * heat_src[v].Column)
-           << "\n";
-#endif  // MP_DEBUG
+
+      spdlog::debug(
+          "setup_rad_src_params:\tdiffuse src: id={} 1.9Av={}, strength={}, angle={}: attenuated flux={}",
+          heat_src[v].id, Av_UV * heat_src[v].Column, heat_src[v].strength,
+          diff_angle[i_diff], temp * exp(-Av_UV * heat_src[v].Column));
+
       UV_diffuse_flux += temp * exp(-Av_UV * heat_src[v].Column);
       IR_diffuse_flux += temp * exp(-Av_IR * heat_src[v].Column);
       i_diff++;
@@ -1466,14 +1448,12 @@ void MPv2::setup_radiation_source_parameters(
       // L*ds*exp(-1.9Av)/Vshell
       //
       temp = heat_src[v].strength * delta_s / heat_src[v].Vshell;
-#ifdef MP_DEBUG
-      cout << "setup_rad_src_params:\tpoint   src: id=" << heat_src[v].id
-           << " 1.9Av=" << Av_UV * heat_src[v].Column;
-      cout << ", strength=" << heat_src[v].strength << ", ds=" << delta_s;
-      cout << ", Vshell=" << heat_src[v].Vshell;
-      cout << ": attenuated flux=" << temp * exp(-Av_UV * heat_src[v].Column)
-           << "\n";
-#endif  // MP_DEBUG
+
+      spdlog::debug(
+          "setup_rad_src_params:\tpoint   src: id={} 1.9Av={}, strength={}, ds={}, Vshell={}: attenuated flux={}",
+          heat_src[v].id, Av_UV * heat_src[v].Column, heat_src[v].strength,
+          delta_s, heat_src[v].Vshell, temp * exp(-Av_UV * heat_src[v].Column));
+
       UV_diffuse_flux += temp * exp(-Av_UV * heat_src[v].Column);
       IR_diffuse_flux += temp * exp(-Av_IR * heat_src[v].Column);
       // cout
@@ -1491,15 +1471,15 @@ void MPv2::setup_radiation_source_parameters(
   UV_diffuse_flux /= 1.2e7;
   IR_diffuse_flux /= 1.2e7;
 
-#ifdef MP_DEBUG
-  cout << "\tTotal UV attenuated flux = " << UV_diffuse_flux
-       << " in units of 1.2e7 phot/cm2/s\n";
-#endif  // MP_DEBUG
+  spdlog::debug(
+      "\tTotal UV attenuated flux = {} in units of 1.2e7 phot/cm2/s",
+      UV_diffuse_flux);
 
   //
   // Now ionising sources (we should only have one!).
   //
-  if (N_ion > 1) rep.error("Code for more than one ionising source!", N_ion);
+  if (N_ion > 1)
+    spdlog::error("{}: {}", "Code for more than one ionising source!", N_ion);
 
   //
   // Now put the RT data into a vector and pass to MPR rate-calculation class.
@@ -1533,9 +1513,9 @@ void MPv2::setup_radiation_source_parameters(
   //
 #ifdef RT_TESTING
   if (P[lv_Hp] < 0.99) {
-    cout << "mpv2aifa: ionising: ds=" << delta_s << ", Vshell=" << Vshell;
-    cout << ": NH0=" << params[2] << ", dNH0=" << params[3] << ", nH=" << lv_nH
-         << "\n";
+    spdlog::debug(
+        "mpv2aifa: ionising: ds={}, Vshell={}: NH0={}, dNH0={}, nH={}", delta_s,
+        Vshell, params[2], params[3], lv_nH);
   }
 #endif
   MPR.set_parameters_for_current_step(params);
@@ -1552,7 +1532,7 @@ void MPv2::setup_radiation_source_parameters(
 int MPv2::setup_cvodes_solver_without_Jacobian()
 {
   if (have_setup_cvodes) {
-    cout << "Error! Trying to setup CVODES solver twice!\n";
+    spdlog::error("Error! Trying to setup CVODES solver twice!");
     return 1;
   }
   int err = 0;
@@ -1577,7 +1557,7 @@ int MPv2::setup_cvodes_solver_without_Jacobian()
   //
   cvode_mem = CVodeCreate(CV_BDF, CV_NEWTON);
   if (!cvode_mem) {
-    cerr << "setup_cvodes_solver() error: cvode_mem=" << cvode_mem << "\n";
+    spdlog::error("setup_cvodes_solver() error: cvode_mem={}", cvode_mem);
     return 2;
   }
 
@@ -1589,7 +1569,7 @@ int MPv2::setup_cvodes_solver_without_Jacobian()
   double t = 0.0;
   err      = CVodeInit(cvode_mem, Ydot_for_cvodes, t, y_in);
   if (err != CV_SUCCESS) {
-    cerr << "setup_cvodes_solver() CVodeInit error: " << err << "\n";
+    spdlog::error("setup_cvodes_solver() CVodeInit error: {}", err);
     return 3;
   }
 
@@ -1607,7 +1587,7 @@ int MPv2::setup_cvodes_solver_without_Jacobian()
   // "<<atol[2]<<"]\n";
   err = CVodeSVtolerances(cvode_mem, reltol, abstol);
   if (err != CV_SUCCESS) {
-    cerr << "setup_cvodes_solver() CVodeSVtolerances: err=" << err << "\n";
+    spdlog::error("setup_cvodes_solver() CVodeSVtolerances: err={}", err);
     return 4;
   }
 
@@ -1616,7 +1596,7 @@ int MPv2::setup_cvodes_solver_without_Jacobian()
   //
   err = CVDense(cvode_mem, n_eq);
   if (err != CVDLS_SUCCESS) {
-    cerr << "setup_cvodes_solver() CVDense(): err=" << err << "\n";
+    spdlog::error("setup_cvodes_solver() CVDense(): err={}", err);
     return 5;
   }
 
@@ -1646,15 +1626,13 @@ int MPv2::integrate_cvodes_step(
     vector<double> &Yf         ///< output vector.
 )
 {
-#ifdef MP_DEBUG
   if (!have_setup_cvodes) {
-    cout << "Please setup cvodes solver before integrating cvodes step!\n";
+    spdlog::warn("Please setup cvodes solver before integrating cvodes step!)");
     return 1;
   }
-#endif  // MP_DEBUG
   int err = 0;
   if (Y0.size() != static_cast<unsigned int>(n_eq)) {
-    cerr << "integrate_cvodes_step() Y0 has wrong size: " << Y0.size() << "\n";
+    spdlog::error("integrate_cvodes_step() Y0 has wrong size: {}", Y0.size());
     return 1;
   }
 
@@ -1671,7 +1649,7 @@ int MPv2::integrate_cvodes_step(
   if (n_xd > 0) {
     err = CVodeSetUserData(cvode_mem, reinterpret_cast<void *>(params));
     if (err != CV_SUCCESS) {
-      cerr << "integrate_cvodes_step() CVodeSetUserData: err=" << err << "\n";
+      spdlog::error("integrate_cvodes_step() CVodeSetUserData: err={}", err);
       return 3;
     }
   }
@@ -1689,7 +1667,7 @@ int MPv2::integrate_cvodes_step(
     //
     err = CVodeReInit(cvode_mem, t_now, y_in);
     if (err != CV_SUCCESS) {
-      cerr << "integrate_cvodes_step() CVodeReInit(): err=" << err << "\n";
+      spdlog::error("integrate_cvodes_step() CVodeReInit(): err={}", err);
       return 4;
     }
     //
@@ -1698,9 +1676,9 @@ int MPv2::integrate_cvodes_step(
     //
     err = CVode(cvode_mem, t_now + dt, y_out, &t_temp, CV_NORMAL);
     if (err != CV_SUCCESS) {
-      cout << "error with integrate: err=" << err << ", trying smaller step.\n";
-      cout << " old-t=" << t_now << ", returned t=" << t_temp
-           << ", dt was = " << dt << "\n";
+      spdlog::error(
+          "error with integrate: err={}, trying smaller step old-t={}, returned t={}, dt was = {}",
+          err, t_now, t_temp, dt);
       // cout <<"FAILED loop ct="<<fail_ct<<": yout = [";
       // for (int v=0;v<n_eq-1;v++) cout << NV_Ith_S(y_out,v)<<", ";
       // cout << NV_Ith_S(y_out,n_eq-1) <<"]\n";
@@ -1746,22 +1724,21 @@ int MPv2::integrate_cvodes_step(
   } while (t_now < tf && fail_ct <= MAX_TRYS && step_ct <= MAX_STEPS);
 
   if (fail_ct >= MAX_TRYS) {
-    cout << "Integration failed after bisecting the step " << MAX_TRYS
-         << "times.\n";
+    spdlog::debug(
+        "Integration failed after bisecting the step {}times", MAX_TRYS);
     return fail_ct;
   }
   if (step_ct >= MAX_STEPS) {
-    cout << "Integration took " << MAX_STEPS
-         << " and still didn't get to end of step.  giving up.\n";
+    spdlog::debug(
+        "Integration took {} and still didn't get to end of step.  giving up",
+        MAX_STEPS);
     return step_ct;
   }
 
-#ifdef MP_DEBUG
-  cout << "Final version step_ct=" << step_ct << ": t=" << t_now << ", y = [";
+  spdlog::debug("Final version step_ct={}: t={}, y = [", step_ct, t_now
   for (int v = 0; v < n_eq - 1; v++)
-    cout << NV_Ith_S(y_out, v) << ", ";
-  cout << NV_Ith_S(y_out, n_eq - 1) << "]\n";
-#endif  // MP_DEBUG
+    spdlog::debug("{}, ", NV_Ith_S(y_out, v));
+    spdlog::debug("{}]", NV_Ith_S(y_out, n_eq - 1));
 
   for (int v = 0; v < n_eq; v++)
     Yf[v] = NV_Ith_S(y_out, v);
@@ -1777,9 +1754,7 @@ double MPv2::get_recombination_rate(
     const double g         ///< EOS gamma (optional)
 )
 {
-#ifdef FUNCTION_ID
-  cout << "MPv2::get_recombination_rate()\n";
-#endif  // FUNCTION_ID
+  spdlog::info("MPv2::get_recombination_rate()");
   double rate = 0.0;
   double P[nvl];
   //
@@ -1793,9 +1768,7 @@ double MPv2::get_recombination_rate(
       Hii_rad_recomb_rate(get_temperature(mpv_nH, P[lv_eint], 1.0 - P[lv_H0]))
       * mpv_nH * mpv_nH * (1.0 - P[lv_H0]) * (1.0 - P[lv_H0]) * JM_NELEC;
 
-#ifdef FUNCTION_ID
-  cout << "MPv2::get_recombination_rate()\n";
-#endif  // FUNCTION_ID
+  spdlog::info("MPv2::get_recombination_rate()");
   return rate;
 }
 
@@ -1819,15 +1792,14 @@ int Ydot_for_cvodes(
   int err = MPR.dYdt(
       NV_Ith_S(y, 0), NV_Ith_S(y, 1), &(NV_Ith_S(yd, 0)), &(NV_Ith_S(yd, 1)));
 
-#ifdef MP_DEBUG
   //
   // cout to make sure it worked.
   //
   for (int v = 0; v < 2; v++) {
-    cout << "\t\tYDOT: y[" << v << "] = " << NV_Ith_S(y, v);
-    cout << ", yd[" << v << "] = " << NV_Ith_S(yd, v) << "\n";
+    spdlog::debug(
+        "\t\tYDOT: y[{}] = {}, yd[{}] = {}", v, NV_Ith_S(y, v), v,
+        NV_Ith_S(yd, v));
   }
-#endif  // MP_DEBUG
 
   return err;
 }

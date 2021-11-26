@@ -23,6 +23,8 @@
 #endif
 
 #include <cmath>
+
+#include <fstream>
 #include <iostream>
 #include <list>
 #include <silo.h>
@@ -33,7 +35,11 @@ using namespace std;
 #include "defines/testing_flags.h"
 
 #include "constants.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+#include <spdlog/sinks/rotating_file_sink.h>
 
 #include "dataIO/dataio_base.h"
 #include "dataIO/dataio_silo.h"
@@ -56,6 +62,20 @@ using namespace std;
 int main(int argc, char **argv)
 {
   int err = 0;
+
+  auto max_logfile_size = 1048576 * 5;
+  auto max_logfiles     = 3;
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "silocompare", "silocompare.log", max_logfile_size, max_logfiles));
+
+#ifdef NDEBUG
+  spdlog::set_level(spdlog::level::err);
+  spdlog::flush_on(spdlog::level::err);
+#else
+  spdlog::set_level(spdlog::level::trace);
+  spdlog::flush_on(spdlog::level::trace);
+#endif
+
   //
   // Initialise the sub_domain class with myrank and nproc.
   //
@@ -68,13 +88,9 @@ int main(int argc, char **argv)
   // Get an input file and an output file.
   //
   if (argc != 8) {
-    cerr << "Error: must call as follows...\n";
-    cerr
-        << "silocompare: <silocompare> <first-dir> <first-file>  <comp-dir> <comp-file> <level> <outfile> <fabs/plus-minus/L1/L2>\n";
-    cerr << "\t 0: Diff image is relative error for rho/p_g (abs.val)\n";
-    cerr << "\t 1: Diff image is relative error for rho/p_g (+/-)\n";
-    cerr << "\t 2: Just calculate L1+L2 error, no difference image.\n";
-    rep.error("Bad number of args", argc);
+    spdlog::error(
+        "Error: must call as follows...\nsilocompare: <silocompare> <first-dir> <first-file>  <comp-dir> <comp-file> <level> <outfile> <fabs/plus-minus/L1/L2>\n\t 0: Diff image is relative error for rho/p_g (abs.val)\n\t 1: Diff image is relative error for rho/p_g (+/-)\n\t 2: Just calculate L1+L2 error, no difference image");
+    spdlog::error("{}: {}", "Bad number of args", argc);
   }
   string fdir        = argv[1];
   string firstfile   = argv[2];
@@ -85,16 +101,13 @@ int main(int argc, char **argv)
   string outfile;
   int optype = atoi(argv[7]);
   if (optype < 0 || optype > 2)
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "Please set optype to 0 (abs val.) or 1 (+- val.) or 2 (L1/L2)",
         optype);
-  cout << "fdir=" << fdir << "\tsdir=" << sdir << endl;
-  cout << "first file: " << firstfile << "\tsecond file: ";
-  cout << secondfile << "\toutput file: " << outfilebase << "\n";
-
-  string rts("msg_");
-  rts += outfilebase;
-  // rep.redirect(rts);
+  spdlog::debug(
+      "fdir={}\tsdir={}first file: {}\tsecond file: {}\toutput file: {}", fdir,
+      sdir, firstfile, secondfile, outfilebase);
 
   //
   // set up dataio_utility class
@@ -110,31 +123,31 @@ int main(int argc, char **argv)
   //
   list<string> ffiles, sfiles;
   err += dataio.get_files_in_dir(fdir, firstfile, &ffiles);
-  if (err) rep.error("failed to get first list of files", err);
+  if (err) spdlog::error("{}: {}", "failed to get first list of files", err);
   err += dataio.get_files_in_dir(sdir, secondfile, &sfiles);
   ;
-  if (err) rep.error("failed to get second list of files", err);
+  if (err) spdlog::error("{}: {}", "failed to get second list of files", err);
 
   for (list<string>::iterator s = ffiles.begin(); s != ffiles.end(); s++) {
     // If file is not a .silo file, then remove it from the list.
     if ((*s).find(".silo") == string::npos) {
-      cout << "removing file " << *s << " from list.\n";
+      spdlog::debug("removing file {} from list", *s);
       ffiles.erase(s);
       s = ffiles.begin();
     }
     else {
-      cout << "files: " << *s << endl;
+      spdlog::debug("files: {}", *s);
     }
   }
   for (list<string>::iterator s = sfiles.begin(); s != sfiles.end(); s++) {
     // If file is not a .silo file, then remove it from the list.
     if ((*s).find(".silo") == string::npos) {
-      cout << "removing file " << *s << " from list.\n";
+      spdlog::debug("removing file {} from list", *s);
       sfiles.erase(s);
       s = sfiles.begin();
     }
     else {
-      cout << "files: " << *s << endl;
+      spdlog::debug("files: {}", *s);
     }
   }
 
@@ -149,7 +162,8 @@ int main(int argc, char **argv)
   //
   unsigned int nfiles = ffiles.size();
   nfiles = std::min(nfiles, static_cast<unsigned int>(sfiles.size()));
-  if (nfiles < 1) rep.error("Need at least one file, but got none", nfiles);
+  if (nfiles < 1)
+    spdlog::error("{}: {}", "Need at least one file, but got none", nfiles);
 
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
@@ -162,9 +176,10 @@ int main(int argc, char **argv)
   oo << fdir << "/" << *ff;
   firstfile = oo.str();
   err       = dataio.ReadHeader(firstfile, SimPM);
-  if (err) rep.error("Didn't read header", err);
+  if (err) spdlog::error("{}: {}", "Didn't read header", err);
 
-  if (lev >= SimPM.grid_nlevels) rep.error("Level doesn't exist", lev);
+  if (lev >= SimPM.grid_nlevels)
+    spdlog::error("{}: {}", "Level doesn't exist", lev);
 #ifdef PION_NESTED
   SimPM.levels.resize(SimPM.grid_nlevels);
   class setup_grid_NG_MPI *SimSetup = new setup_grid_NG_MPI();
@@ -218,7 +233,7 @@ int main(int argc, char **argv)
   vector<class GridBaseClass *> g(SimPM.grid_nlevels);
   SimSetup->setup_grid(g, SimPM);
   class GridBaseClass *grid = g[0];
-  if (!grid) rep.error("Grid setup failed", grid);
+  if (!grid) spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid));
   SimPM.dx = grid->DX();
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
@@ -240,17 +255,15 @@ int main(int argc, char **argv)
     oo.width(5);
     oo << fff << ".silo";
     outfile = oo.str();
-    cout
-        << "\n**************************************************************************************\n";
-    cout << "fff=" << fff << "\tfirst file: " << firstfile;
-    cout << "\tsecond file: " << secondfile << "\toutput file: " << outfile
-         << "\n";
+    spdlog::debug(
+        "fff={}\tfirst file: {}\tsecond file: {}\toutput file: {}", fff,
+        firstfile, secondfile, outfile);
 
     class file_status fstat;
     if (!fstat.file_exists(firstfile) || !fstat.file_exists(secondfile)) {
-      cout << "first file: " << firstfile;
-      cout << "\tand second file: " << secondfile << endl;
-      rep.error("First or second file doesn't exist", secondfile);
+      spdlog::debug(
+          "first file: {}\tand second file: {}", firstfile, secondfile);
+      spdlog::error("{}: {}", "First or second file doesn't exist", secondfile);
     }
 
     //
@@ -265,7 +278,7 @@ int main(int argc, char **argv)
     // Read in first code header so i know how to setup grid.
     //
     err = dataio.ReadHeader(firstfile, SimPM);
-    if (err) rep.error("Didn't read header", err);
+    if (err) spdlog::error("{}: {}", "Didn't read header", err);
     SimPM.grid_nlevels     = 1;
     SimPM.levels[0].parent = 0;
     SimPM.levels[0].child  = 0;
@@ -297,7 +310,10 @@ int main(int argc, char **argv)
     // Read data (this reader can read serial or parallel data).
     //
     err = dataio.ReadData(firstfile, g, SimPM);
-    rep.errorTest("(silocompare) Failed to read firstfile", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}",
+          "(silocompare) Failed to read firstfile", 0, err);
 
     // ----------------------------------------------------------------
     // ----------------------------------------------------------------
@@ -311,7 +327,7 @@ int main(int argc, char **argv)
         c->Ph[v] = c->P[v];
     } while ((c = grid->NextPt(c)) != 0);
 
-    cout << "FINISHED reading first file: " << firstfile << endl;
+    spdlog::info("FINISHED reading first file: {}", firstfile);
 
     // ***************************************************************
     // ********* FINISHED FIRST FILE, MOVE ON TO SECOND FILE *********
@@ -321,9 +337,12 @@ int main(int argc, char **argv)
     // Read data (this reader can read serial or parallel data).
     //
     err = dataio.ReadData(secondfile, g, SimPM);
-    rep.errorTest("(silocompare) Failed to read secondfile", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}",
+          "(silocompare) Failed to read secondfile", 0, err);
 
-    cout << "FINISHED reading second file: " << secondfile << endl;
+    spdlog::info("FINISHED reading second file: {}", secondfile);
 
     // c = grid->FirstPt();
     // do {
@@ -332,8 +351,8 @@ int main(int argc, char **argv)
     //  }
     //} while ( (c=grid->NextPt(c))!=0);
     c = grid->FirstPt();
-    rep.printVec("P ", c->P, SimPM.nvar);
-    rep.printVec("Ph", c->Ph, SimPM.nvar);
+    spdlog::debug("P : {}", std::vector<double>(c->P, c->P + SimPM.nvar));
+    spdlog::debug("Ph : {}", std::vector<double>(c->Ph, c->Ph + SimPM.nvar));
 
 
     // *********************************************************************
@@ -355,8 +374,8 @@ int main(int argc, char **argv)
       absdiff[v] = 0.0;
     int ipos[SimPM.ndim];
 
-    rep.printVec("P ", c->P, SimPM.nvar);
-    rep.printVec("Ph", c->Ph, SimPM.nvar);
+    spdlog::debug("P : {}", std::vector<double>(c->P, c->P + SimPM.nvar));
+    spdlog::debug("Ph : {}", std::vector<double>(c->Ph, c->Ph + SimPM.nvar));
 
     switch (optype) {
       case 0:
@@ -449,7 +468,9 @@ int main(int argc, char **argv)
         }
         break;
       default:
-        rep.error("Input a valid optype!!! (should have caught this!)", optype);
+        spdlog::error(
+            "{}: {}", "Input a valid optype!!! (should have caught this!)",
+            optype);
         break;
     }
 
@@ -501,12 +522,11 @@ int main(int argc, char **argv)
         outf.close();
         break;
       default:
-        rep.error("Input a valid optype!!! (should have caught this!)", optype);
+        spdlog::error(
+            "{}: {}", "Input a valid optype!!! (should have caught this!)",
+            optype);
         break;
     }
-
-    /* hack to ensure results are printed correctly in debug mode */
-    rep.redirect("silocompare-log-tail");
 
     //
     // move onto next first and second files

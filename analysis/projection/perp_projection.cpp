@@ -9,7 +9,7 @@
 
 
 #include <cmath>
-#include <iostream>
+
 #include <sstream>
 using namespace std;
 #include "defines/functionality_flags.h"
@@ -19,8 +19,10 @@ using namespace std;
 #include "constants.h"
 #include "sim_params.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
 #include "tools/timer.h"
+
+#include <spdlog/spdlog.h>
 
 #include "perp_projection.h"
 #include "projection_constants.h"
@@ -67,17 +69,16 @@ int generate_perpendicular_image(
     err = calculate_column(
         SimPM, MP, cz, XR, grid, iz, npix[1], NIMG, npix, grid->DX(),
         img_array);
-    rep.errorTest("calculate_column", 0, err);
+    if (0 != err)
+      spdlog::error("{}: Expected {} but got {}", "calculate_column", 0, err);
     cz = grid->NextPt(cz, ZPcyl);
   }
 
-#ifdef TESTING
-  cout << " - -- - waiting for " << iz << " threads to finish.\n";
-  cout.flush();
+#ifndef NDEBUG
+  spdlog::debug(" - -- - waiting for {} threads to finish", iz);
 #endif
-#ifdef TESTING
-  cout << " - -- - All threads are finished.\n";
-  cout.flush();
+#ifndef NDEBUG
+  spdlog::debug(" - -- - All threads are finished.\n");
 #endif
 
   //
@@ -155,8 +156,8 @@ int calculate_column(
   else {
     int tr = MP->Tr("H1+");
     if (tr == DONT_CALL_ME || tr < 0 || !isfinite(tr)) {
-#ifdef TESTING
-      cout << "No H+ tracer variable, assuming all gas is ionized\n";
+#ifndef NDEBUG
+      spdlog::warn("No H+ tracer variable, assuming all gas is ionized");
 #endif
       iHp = 0;
     }
@@ -165,8 +166,8 @@ int calculate_column(
     }
     tr = MP->Tr("WIND");
     if (tr == DONT_CALL_ME || tr < 0 || !isfinite(tr)) {
-#ifdef TESTING
-      cout << "No WIND tracer variable, assuming all gas is ISM\n";
+#ifndef NDEBUG
+      spdlog::warn("No WIND tracer variable, assuming all gas is ISM");
 #endif
       iWf = 0;
     }
@@ -178,7 +179,7 @@ int calculate_column(
   // Starting cell.
   cell *cy = cz;
   int iy   = 0;
-  double cpos[MAX_DIM];
+  std::array<double, MAX_DIM> cpos;
 
   // cout <<"\t\t assigning data from column to arrays.\n";
   do {
@@ -215,7 +216,8 @@ int calculate_column(
     // increment iy
     iy++;
   } while ((cy = grid->NextPt(cy, RPcyl)) != 0 && cy->isgd);
-  if (iy != N_R) rep.error("Bad logic for radial grid size", iy - N_R);
+  if (iy != N_R)
+    spdlog::error("{}: {}", "Bad logic for radial grid size", iy - N_R);
 
   //
   // Now for this radial column of data, we set the value for
@@ -239,10 +241,10 @@ int calculate_column(
     for (int ipix = 0; ipix < N_R; ipix++) {
       b = raw_data[DATA_R][ipix];
       if (ivar < N_HD_SCALAR) {
-#ifdef TESTING
-        cout << "ivar=" << ivar << ", ipix = " << ipix;
-        cout << ": itotal=" << npix[Zcyl] * ipix + iz
-             << ", numpix=" << npix[0] * npix[1] << "\n";
+#ifndef NDEBUG
+        spdlog::debug(
+            "ivar={}, ipix = {}: itotal={}, numpix={}", ivar, ipix,
+            npix[Zcyl] * ipix + iz, npix[0] * npix[1]);
 #endif
         img_array[ivar][npix[Zcyl] * ipix + iz] = calc_projection_column(
             raw_data[DATA_R], ems_data[ivar], abs_data[ivar], N_R, b, delr);
@@ -424,7 +426,7 @@ double calc_projection_column(
   //
   double grid_max = r[Nr - 1] + 0.5 * dr;
   if (b > grid_max) {
-    cout << "calc_projection_column: Bad B value, b=" << b << "\n";
+    spdlog::debug("calc_projection_column: Bad B value, b={}", b);
     return 0.0;
   }
 
@@ -519,7 +521,7 @@ double calc_projectionRT_column(
   //
   double grid_max = r[Nr - 1] + 0.5 * dr;
   if (b > grid_max) {
-    cout << "calc_projectionRT_column: Bad B value, b=" << b << "\n";
+    spdlog::debug("calc_projectionRT_column: Bad B value, b={}", b);
     return 0.0;
   }
 

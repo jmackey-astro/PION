@@ -33,7 +33,11 @@
 
 #include "constants.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 #include <set>
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -121,9 +125,7 @@ MPv10::MPv10(
   //***********************************************************
 
 
-  cout
-      << "\n---------------------------------------------------------------------\n";
-  cout << "MPv10: a microphysics class.\n";
+  spdlog::info("MPv10: a microphysics class");
 
   // -----------------------------------------------------------------------------
   // --------- Set up tracer variables: ---------
@@ -137,8 +139,9 @@ MPv10::MPv10(
   // ---------
   // --------- ---------
   // -----------------------------------------------------------------------------
-  cout << "\t\tSetting up Tracer Variables.  Assuming tracers are last ";
-  cout << ntracer << " variables in state vec.\n";
+  spdlog::debug(
+      "\t\tSetting up Tracer Variables.  Assuming tracers are last {} variables in state vec",
+      ntracer);
 
   int len = ntracer;
   ftr     = nv_prim - ntracer;  // first tracer variable.
@@ -229,7 +232,7 @@ MPv10::MPv10(
       species_tracer_initialise(
           tracers, i, s, "He", 2, element_list["He"], len);
       if (s[2] == '1') {
-        cout << s << "\n";
+        spdlog::debug("{}", s);
         y_ip1_index_tables.push_back(4);  // index of He2+ in tables
         y_ion_index_tables.push_back(3);  // index of He1+ in tables
         y_im1_index_tables.push_back(2);  // index of He0 in tables
@@ -379,14 +382,13 @@ MPv10::MPv10(
     }
   }
 
-  cout << "\nAfter reading in tracers, N_species=" << N_species;
-  cout << ", N_elements=" << N_elem << "\n\n";
+  spdlog::debug(
+      "\nAfter reading in tracers, N_species={}, N_elements={}", N_species,
+      N_elem);
 
   // ================================================================
   // ================================================================
-#ifndef NDEBUG
-  cout << "MPv10:: EP and RS: " << EP << "\t" << RS << endl;
-#endif
+  spdlog::debug("MPv10:: EP and RS: {}\t{}", EP, RS);
 
   // ----------------------------------------------------------------
   // --- Set up local variables: ion fraction and internal energy density.
@@ -398,7 +400,7 @@ MPv10::MPv10(
   double X        = 1.0 - EP->Helium_MassFrac;
   mean_mass_per_H = m_p / X;
   METALLICITY     = EP->Metal_MassFrac / 0.0142;  // in units of solar.
-  cout << "Metallicity = " << METALLICITY << " of solar (0.0142)\n";
+  spdlog::debug("Metallicity = {} of solar (0.0142)", METALLICITY);
 
   setup_local_vectors();
   gamma_minus_one = eos_gamma - 1.0;
@@ -433,19 +435,17 @@ MPv10::MPv10(
         && RS->sources[isrc].effect == RT_EFFECT_MFION) {
       N_rad_src++;
       rt_data.resize(N_rad_src);
-      cout << "RT_data size " << rt_data.size() << "\n";
+      spdlog::debug("RT_data size {}", rt_data.size());
       int err = set_multifreq_source_properties(
           &RS->sources[isrc], rt_data[N_rad_src - 1].strength);
-      if (err) rep.error("multifreq photoionisation setup MPv10", err);
+      if (err)
+        spdlog::error("{}: {}", "multifreq photoionisation setup MPv10", err);
     }
   }
-  cout << "\t\tMPv10: got " << N_rad_src << " radiation sources.\n";
+  spdlog::debug("\t\tMPv10: got {} radiation sources", N_rad_src);
   // ----------------------------------------------------------------
 
-  cout << "MPv10: Constructor finished and returning.\n";
-  cout
-      << "---------------------------------------------------------------------\n\n";
-  return;
+  spdlog::info("MPv10: Constructor finished and returning");
 }
 
 
@@ -463,7 +463,7 @@ int MPv10::set_multifreq_source_properties(
 )
 {
   if (rsi->effect != RT_EFFECT_MFION)
-    rep.error("Wrong source type for id", rsi->id);
+    spdlog::error("{}: {}", "Wrong source type for id", rsi->id);
   // Create empty table to store temperature / flux values -- nb There are 65
   // temperatures recorded for logg=4
   double flux_table[65][12];
@@ -503,7 +503,7 @@ int MPv10::set_multifreq_source_properties(
         + flux_table[i][j] * (1 - (Tupper - rsi->Tstar) / (Tupper - Tlower));
     // multiply by the total luminosity to have output in erg/s/bin:
     output[j] = output[j] * rsi->strength;
-    cout << "Output[" << j << "] =" << output[j] << "\n";
+    spdlog::debug("Output[{}] = {}", j, output[j]);
   }
 
   // TODO: \Maggie{I think this is now done -- need to verify, though!}
@@ -574,32 +574,32 @@ void MPv10::species_tracer_initialise(
   ///< 1 above the current index.
   if (i + 1 < length) {
     if (ip1 == tracers[i + 1]) {
-      cout << "Next ion up = " << ip1 << "\n";
+      spdlog::debug("Next ion up = {}", ip1);
       y_ip1_index_local.push_back(N_species + 1);
     }
     else {
-      cout << "Next ion up doesn't exist\n";
+      spdlog::info("Next ion up doesn't exist");
       y_ip1_index_local.push_back(-1);  // -1 flag => species doesn't exist
     }
   }
   else {
-    cout << "Next ion up doesn't exist\n";
+    spdlog::info("Next ion up doesn't exist");
     y_ip1_index_local.push_back(-1);  // -1 flag => species doesn't exist
   }
   ///< due to ordering in tracer list, if the previous ion exists, its index
   ///< will be 1 below the current index.
   if (im1 == neutral) {
-    cout << "Next ion down is neutral \n";
+    spdlog::info("Next ion down is neutral");
     y_im1_index_local.push_back(-2);  // -2 flag => species is neutral
   }
   else if (im1 == tracers[i - 1]) {  // check if the next lowest ion is the
                                      // neutral species
-    cout << "Next ion down = " << im1 << "\n";
+    spdlog::debug("Next ion down = {}", im1);
     y_im1_index_local.push_back(N_species - 1);
   }
   else {
     y_im1_index_local.push_back(-1);  // -1 flag => species doesn't exist
-    cout << "Next ion down doesn't exist.\n";
+    spdlog::info("Next ion down doesn't exist");
   }
   N_species++;
 
@@ -843,19 +843,17 @@ int MPv10::convert_prim2local(
     for (int s = 0; s < N_elem_species;
          s++) {  // loop over every species in THIS element
 #ifdef MPv10_DEBUG
-      cout << "e=" << e << ", s=" << s;
-      cout << ", species_counter=" << species_counter;
-      cout << ", ion index=";
-      cout << y_ion_index_local[species_counter] << "\n";
-      cout << "Min_NeutralFrac=" << Min_NeutralFrac;
-      cout << ", 1-Max_NeutralFrac=" << 1.0 - Max_NeutralFrac << "\n";
+      spdlog::debug(
+          "e={}, s={}, species_counter={}, ion index={}\nMin_NeutralFrac={}, 1-Max_NeutralFrac={}",
+          e, s, species_counter, y_ion_index_local[species_counter],
+          Min_NeutralFrac, 1.0 - Max_NeutralFrac);
       if (p_local[y_ion_index_local[species_counter]] > 1.01
           || p_local[y_ion_index_local[species_counter]] < -0.01) {
-        cout << "MPv10::convert_prim2local: bad ion fraction: ";
-        cout << "x(H0)=" << p_local[y_ion_index_local[species_counter]];
-        cout << ", resetting to [0,1]\n";
+        spdlog::debug(
+            "MPv10::convert_prim2local: bad ion fraction: x(H0)={}, resetting to [0,1]",
+            p_local[y_ion_index_local[species_counter]]);
       }
-      cout << "function_flag = " << function_flag << "\n";
+      spdlog::debug("function_flag = {}", function_flag);
 #endif
 
       // Introducing sense checks -- make sure value is positive, less than 1
@@ -883,10 +881,9 @@ int MPv10::convert_prim2local(
   // warning) and set to 10K if we find it.
   //
   if (p_local[lv_eint] <= 0.0) {
-#ifdef MPv10_DEBUG
-    cout << "MPv10::convert_prim2local: negative pressure input: p=";
-    cout << p_local[lv_eint] << ", setting to " << EP->MinTemperature << "K.\n";
-#endif
+    spdlog::warn(
+        "MPv10::convert_prim2local: negative pressure input: p={}, setting to {}K",
+        p_local[lv_eint], EP->MinTemperature);
     // Define y_ion_frac
     pion_flt y_ion_frac[N_species];
     for (int s = 0; s < N_species; s++) {
@@ -904,10 +901,11 @@ int MPv10::convert_prim2local(
   //
   for (int v = 0; v < 2; v++) {
     if (!isfinite(p_local[v]))
-      rep.error("INF/NAN input to microphysics", p_local[v]);
+      spdlog::error("{}: {}", "INF/NAN input to microphysics", p_local[v]);
   }
   if (mpv_nH < 0.0 || !isfinite(mpv_nH))
-    rep.error("Bad density input to MPv10::convert_prim2local", mpv_nH);
+    spdlog::error(
+        "{}: {}", "Bad density input to MPv10::convert_prim2local", mpv_nH);
 #endif  // MPv10_DEBUG
 
   // rep.printVec("prim2local local",p_local,nvl);
@@ -971,12 +969,11 @@ int MPv10::convert_local2prim(
       // Introducing sense checks -- make sure value is positive, less than 1
       if (static_cast<double>(p_out[y_ion_index_prim[species_counter]])
           < (-2 * MPv10_ABSTOL)) {
-        cout << "convert_local2prim: " << function_flag
-             << " mass fraction goes negative here. \n [";
+          spdlog::debug("convert_local2prim: {} mass fraction goes negative here. \n [", function_flag
         for (int v = 0; v < nv_prim; v++) {
-          cout << p_out[v] << ", ";
+          spdlog::debug("{}, ", p_out[v]);
         }
-        cout << "] \n";
+        spdlog::debug("]");
         print_flag = 1;
       }
 
@@ -984,14 +981,13 @@ int MPv10::convert_local2prim(
           static_cast<double>(p_out[y_ion_index_prim[species_counter]])
           > (1 + MPv10_ABSTOL)
                 * static_cast<double>(p_out[X_mass_frac_index[e]])) {
-        cout << "convert_local2prim: " << function_flag
-             << " mass frac too large for species " << s
-             << ": X = " << p_out[y_ion_index_prim[species_counter]] << "\n";
-        cout << "Prim vector: \n [";
+        spdlog::debug(
+            "convert_local2prim: {} mass frac too large for species {}: X = {}\nPrim vector: \n [",
+            function_flag, s, p_out[y_ion_index_prim[species_counter]]);
         for (int v = 0; v < nv_prim; v++) {
-          cout << p_out[v] << ", ";
+          spdlog::debug("{}, ", p_out[v]);
         }
-        cout << "] \n";
+        spdlog::debug("]");
         print_flag = 1;
       }
 #endif
@@ -1018,23 +1014,18 @@ int MPv10::convert_local2prim(
   if (T > 1.01 * EP->MaxTemperature) {
     Set_Temp(p_out, EP->MaxTemperature, 0);
 #ifdef MPv10_DEBUG
-    cout << "MPv10::convert_local2prim() HIGH temperature encountered. ";
-    cout << "T=" << T << ", obtained from nH=" << mpv_nH
-         << ", eint=" << p_local[lv_eint];
-    cout << ", x=" << p_out[pv_H1p]
-         << "...  limiting to T=" << EP->MaxTemperature << "\n";
+    spdlog::debug(
+        "MPv10::convert_local2prim() HIGH temperature encountered. T={}, obtained from nH={}, eint={} x={}...  limiting to T={}",
+        T, mpv_nH, p_local[lv_eint], p_out[pv_H1p], EP->MaxTemperature);
 #endif  // MPv10_DEBUG
   }
   if (T < 0.99 * EP->MinTemperature) {
-    cout << "Low temperature!!!\n";
+    spdlog::warn("Low temperature!!!");
     Set_Temp(p_out, EP->MinTemperature, 0);
-#ifdef MPv10_DEBUG
-    cout << "MPv10::convert_local2prim() LOW  temperature encountered. ";
-    cout << "T=" << T << ", obtained from nH=" << mpv_nH
-         << ", eint=" << p_local[lv_eint];
-    cout << ", x=" << p_out[pv_H1p]
-         << "...  limiting to T=" << EP->MinTemperature << "\n";
-#endif  // MPv10_DEBUG
+    spdlog::warn("MPv10::convert_local2prim() LOW  temperature encountered. ");
+    spdlog::debug(
+        "T={}, obtained from nH={}, eint={}, x={}...  limiting to T={}", T,
+        mpv_nH, p_local[lv_eint], p_out[pv_H1p], EP->MinTemperature);
   }
   p_out[PG] = p_local[lv_eint] * (gamma_minus_one);
   // cout << "pressure=" <<p_out[PG]<<"\n";
@@ -1103,7 +1094,7 @@ int MPv10::Set_Temp(
   //
   // cout << "set temperature\n";
   if (p_pv[PG] <= 0.0) {
-    cout << "MP_Hydrogen::Set_Temp() correcting negative pressure.\n";
+    spdlog::info("MP_Hydrogen::Set_Temp() correcting negative pressure");
     p_pv[PG] = 1.0e-12;  // Need p>0 for prim-to-local conversion.
   }
   double P[nvl];
@@ -1190,7 +1181,7 @@ int MPv10::TimeUpdateMP_RTnew(
   rep.printVec("p2l start local",P,nvl);
   cout <<"\n\n";*/
   if (err) {
-    rep.error("Bad input state to MPv10::TimeUpdateMP()", err);
+    spdlog::error("{}: {}", "Bad input state to MPv10::TimeUpdateMP()", err);
   }
   setup_radiation_source_parameters(p_in, P, ion_src);
 
@@ -1210,7 +1201,9 @@ int MPv10::TimeUpdateMP_RTnew(
   cout <<"E_int="<< NV_Ith_S(y_in,3) <<"\n";*/
 
   if (err)
-    rep.error("dYdt() returned an error in MPv10::TimeUpdateMP_RTnew()", err);
+    spdlog::error(
+        "{}: {}", "dYdt() returned an error in MPv10::TimeUpdateMP_RTnew()",
+        err);
   for (int v = 0; v < nvl; v++) {
     maxdelta = max(maxdelta, fabs(NV_Ith_S(y_out, v) * dt / NV_Ith_S(y_in, v)));
   }
@@ -1231,7 +1224,8 @@ int MPv10::TimeUpdateMP_RTnew(
     // cout <<"maxdelta="<<maxdelta<<", Doing CVODE integration...\n";
     err = integrate_cvode_step(y_in, 0, 0.0, dt, y_out);
     if (err) {
-      rep.error("integration failed: MPv10::TimeUpdateMP_RTnew()", err);
+      spdlog::error(
+          "{}: {}", "integration failed: MPv10::TimeUpdateMP_RTnew()", err);
     }
   }
 
@@ -1245,11 +1239,11 @@ int MPv10::TimeUpdateMP_RTnew(
 #ifdef TEST_INF
   for (int v = 0; v < nv_prim; v++) {
     if (!isfinite(p_in[v]) || !isfinite(p_out[v])) {
-      cout << "NAN in MPv3 update: " << v << "\n";
-      rep.printVec("Pin ", p_in, nv_prim);
-      rep.printVec("Pout", p_out, nv_prim);
-      rep.printVec("Ploc ", P, nvl);
-      // rep.error("NAN in MPv3",P[2]);
+      spdlog::debug("NAN in MPv3 update: {}", v);
+      spdlog::debug("Pin  : {}", p_in);
+      spdlog::debug("Pout : {}", p_out);
+      spdlog::debug("Ploc  : {}", P);
+      // spdlog::error("{}: {}", "NAN in MPv3",P[2]);
       return 1;
     }
   }
@@ -1278,7 +1272,7 @@ double MPv10::timescales(
 {
 #ifdef MPv10_DEBUG
   if (RS->Nsources != 0) {
-    cout << "WARNING: MPv10::timescales() using non-RT version!\n";
+    spdlog::info("WARNING: MPv10::timescales() using non-RT version!");
   }
 #endif  // MPv10_DEBUG
   std::vector<struct rt_source_data> temp;
@@ -1329,7 +1323,7 @@ double MPv10::timescales_RT(
   // cout << "\n timescales_RT calling convert_prim2local \n";
   err = convert_prim2local(p_in, P, 3);
   if (err) {
-    rep.error("Bad input state to MPv10::timescales_RT()", err);
+    spdlog::error("{}: {}", "Bad input state to MPv10::timescales_RT()", err);
   }
   for (int v = 0; v < nvl; v++)
     NV_Ith_S(y_in, v) = P[v];
@@ -1340,7 +1334,8 @@ double MPv10::timescales_RT(
   //
   err = ydot(0, y_in, y_out, 0);
   if (err) {
-    rep.error("dYdt() returned an error in MPv10::timescales_RT()", err);
+    spdlog::error(
+        "{}: {}", "dYdt() returned an error in MPv10::timescales_RT()", err);
   }
 
   //
@@ -1367,7 +1362,7 @@ double MPv10::timescales_RT(
 #ifdef MPv10_DEBUG
   if (t < 3.16e9) {
     // cout <<"MP timescales: xdot="<<NV_Ith_S(y_out, lv_H0);
-    cout << ", Edot=" << NV_Ith_S(y_out, lv_eint) << " t_x=" << t;
+    spdlog::debug("Edot={} t_x={}", NV_Ith_S(y_out, lv_eint), t);
   }
 #endif  // MPv10_DEBUG
 
@@ -1384,8 +1379,8 @@ double MPv10::timescales_RT(
 
 #ifdef MPv10_DEBUG
   if (t < 3.16e9) {
-    cout << " and min(t_x,t_e)=" << t << ",  ";
-    rep.printVec("P[1-x,E]", P, nvl);
+    spdlog::debug(" and min(t_x,t_e)={}, ", t);
+    spdlog::debug("P[1-x,E] : {}", P);
   }
 #endif  // MPv10_DEBUG
   return t;
@@ -2406,7 +2401,7 @@ double MPv10::Rad_Recomb_rate(
   else {
     return 0.0;
   }
-  // else rep.error("unknown ion in Rad_Recomb_rate()",ii);
+  // else spdlog::error("{}: {}", "unknown ion in Rad_Recomb_rate()",ii);
   return r;
 }
 
@@ -2527,7 +2522,7 @@ double MPv10::rad_recomb(double T, enum species i)
            * exp((1. - a2) * log(1. + sqrt(T / a3))
                  + (1. + a2) * log(1. + sqrt(T / a4))));
   }
-  // else rep.error("unknown ion in Rad_Recomb_rate()",ii);
+  // else spdlog::error("{}: {}", "unknown ion in Rad_Recomb_rate()",ii);
   return r;
 }
 
@@ -2591,7 +2586,7 @@ double MPv10::dielec_recomb(double T, enum species i)
   // else if (i=="") {
   //}
   else {
-    cout << "unknown ion: " << i << "\n";
+    spdlog::debug("unknown ion: {}", i);
     return -1.0;
   }
   T /= 1.16e4;  // convert from K to eV.

@@ -37,7 +37,10 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -116,7 +119,8 @@ int utility_fitsio::write_fits_image(
     //    cout <<"fpix[i],lpix[i] = "<<fpix[i]<<", "<<lpix[i]<<"\n";
   }
   if (npix != ntot)
-    rep.error("Pixel counting failed in write_fits_image()", npix - ntot);
+    spdlog::error(
+        "{}: {}", "Pixel counting failed in write_fits_image()", npix - ntot);
 
   // finally write the data.
   //  int fits_write_subset/ffpss(ff,TDOUBLE,long *fpix,
@@ -144,7 +148,7 @@ int utility_fitsio::check_fits_image_dimensions(
 {
   int status = 0, num1 = 0, num = 0;
   fits_get_hdu_num(ff, &num);
-  cout << "Current hdu: " << num << "\t and extname = " << name << "\n";
+  spdlog::debug("Current hdu: {}\t and extname = {}", num, name);
 
   char *keyval = 0;
   keyval       = mem.myalloc(keyval, 256);
@@ -152,14 +156,16 @@ int utility_fitsio::check_fits_image_dimensions(
   fits_movnam_hdu(ff, ANY_HDU, keyval, 0, &status);
   if (status) fits_report_error(stderr, status);
   fits_get_hdu_num(ff, &num1);
-  cout << "Current hdu: " << num1 << "\t and extname = " << name << "\n";
+  spdlog::debug("Current hdu: {}\t and extname = {}", num1, name);
 
-  if (num1 != num) rep.error("Not in correct hdu for given extname", name);
+  if (num1 != num)
+    spdlog::error("{}: {}", "Not in correct hdu for given extname", name);
   fits_read_keyword(ff, "extname", keyval, 0, &status);
   if (status) fits_report_error(stderr, status);
   printf("keyval= %s\n", keyval);
   //  string temp=keyval; cout <<"temp keyval = "<<temp<<"\n";
-  //  if (extname != temp) rep.error("not in correct hdu!",(extname+=temp));
+  //  if (extname != temp) spdlog::error("{}: {}", "not in correct
+  //  hdu!",(extname+=temp));
 
   int bitpix      = -1;
   int naxis       = -1;
@@ -171,8 +177,8 @@ int utility_fitsio::check_fits_image_dimensions(
   fits_read_keys_lng(
       ff, "naxis", 1, naxis, naxes, &num,
       &status);  // reads ndim keys matching naxis, returns number found.
-  cout << "naxis=" << naxis << ", axes=[" << naxes[0] << ", " << naxes[1]
-       << "], status=" << status << "\n";
+  spdlog::debug(
+      "naxis={}, axes=[{}, {}], status={}", naxis, naxes[0], naxes[1], status);
   if (status) {
     fits_report_error(stderr, status);
     return (status);
@@ -180,12 +186,14 @@ int utility_fitsio::check_fits_image_dimensions(
   //
   // Check that the image HDU has the right size:
   //
-  if (bitpix != DOUBLE_IMG) rep.error("Bad image type", bitpix);
-  if (naxis != ndim) rep.error("Bad image dimensionality!", naxis);
+  if (bitpix != DOUBLE_IMG) spdlog::error("{}: {}", "Bad image type", bitpix);
+  if (naxis != ndim)
+    spdlog::error("{}: {}", "Bad image dimensionality!", naxis);
   for (int j = 0; j < naxis; j++)
     if (naxes[j] != npix[j]) {
-      cout << "j=" << j << "  axes=" << naxes[j] << " npix=" << npix[j] << "\n";
-      rep.error(
+      spdlog::debug("j={}  axes={} npix={}\n", j, naxes[j], npix[j]);
+      spdlog::error(
+          "{}: {}",
           "Bad image length in at least one direction delta(N) follows:",
           naxes[j] - npix[j]);
     }
@@ -212,7 +220,7 @@ int utility_fitsio::read_fits_image_to_data(
 )
 {
   if (datatype != TDOUBLE && datatype != TFLOAT) {
-    cout << "read_fits_image_to_data() only double or float.";
+    spdlog::error("read_fits_image_to_data() only double or float.");
     return 1;
   }
 
@@ -237,10 +245,11 @@ int utility_fitsio::read_fits_image_to_data(
     lpix[i] = fpix[i] + npt[i]
               - 1;  // -1 because it's inclusive: fpix,fpix+1,...,lpix
     npix *= (lpix[i] - fpix[i] + 1);  // +1 because of previous line.
-    cout << "fpix[i],lpix[i] = " << fpix[i] << ", " << lpix[i] << "\n";
+    spdlog::debug("fpix[i],lpix[i] = {}, {}", fpix[i], lpix[i]);
   }
   if (npix != ntot)
-    rep.error("Pixel counting failed in read_fits_image()", npix - ntot);
+    spdlog::error(
+        "{}: {}", "Pixel counting failed in read_fits_image()", npix - ntot);
 
   //
   // Read subset of hdu to array.
@@ -269,9 +278,9 @@ int utility_fitsio::read_fits_image_to_data(
       }
       fits_clear_errmsg();
       status = 0;
-      cout << "utility_fitsio::read_fits_image() couldn't get data ";
-      cout << "for variable " << name;
-      cout << "; will return error code.\n";
+      spdlog::debug(
+          "utility_fitsio::read_fits_image() couldn't get data for variable {}; will return error code",
+          name);
       return err;
     }
   }
@@ -282,7 +291,7 @@ int utility_fitsio::read_fits_image_to_data(
       return status;
     }
     if (err) {
-      cout << "problem with ffmahd, err=" << err << "\n";
+      spdlog::error("problem with ffmahd, err={}", err);
       return err;
     }
   }
@@ -302,7 +311,7 @@ int utility_fitsio::read_fits_image_to_data(
     fits_report_error(stderr, status);
     return status;
   }
-  cout << "anynul = " << anynul << "\n";
+  spdlog::info("anynul = {}", anynul);
 
   return 0;
 }

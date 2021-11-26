@@ -64,7 +64,9 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -99,7 +101,7 @@ DataIOFits::DataIOFits(
     ) :
     DataIOBase(SimPM)
 {
-  cout << "Setting up DataIOFits class.\n";
+  spdlog::info("Setting up DataIOFits class.");
   DataIOFits::eqn      = 0;
   DataIOFits::gp       = 0;
   DataIOFits::file_ptr = 0;
@@ -110,7 +112,7 @@ DataIOFits::DataIOFits(
 
 DataIOFits::~DataIOFits()
 {
-  cout << "Deleting DataIOFits class.\n";
+  spdlog::info("Deleting DataIOFits class.");
   DataIOFits::eqn = 0;
   DataIOFits::gp  = 0;
   DataIOFits::mp  = 0;
@@ -121,7 +123,7 @@ DataIOFits::~DataIOFits()
 
 void DataIOFits::SetSolver(FV_solver_base *solver)
 {
-  cout << "DataIOFits::SetSolver() Setting solver pointer.\n";
+  spdlog::info("DataIOFits::SetSolver() Setting solver pointer.");
   DataIOFits::eqn = solver;
 }
 
@@ -133,7 +135,7 @@ void DataIOFits::SetSolver(FV_solver_base *solver)
 void DataIOFits::SetMicrophysics(class microphysics_base *ptr)
 {
 #ifdef TESTING
-  cout << "DataIOFits::SetMicrophysics() Setting solver pointer.\n";
+  spdlog::info("DataIOFits::SetMicrophysics() Setting solver pointer.");
 #endif
   DataIOFits::mp = ptr;
 }
@@ -154,7 +156,8 @@ int DataIOFits::OutputData(
   int nvar        = SimPM.nvar;
   string *extname = 0;
   if (SimPM.ntracer > 5)
-    rep.error("OutputFitsData:: only accepts <=5 tracers!", SimPM.ntracer);
+    spdlog::error(
+        "{}: {}", "OutputFitsData:: only accepts <=5 tracers!", SimPM.ntracer);
 #ifdef RT_TESTING_OUTPUTCOL
   // save column densities
   if (SimPM.RS.Nsources > 0) {
@@ -211,7 +214,7 @@ int DataIOFits::OutputData(
                        "TR1",     "TR2",     "TR3",   "TR4"};
     for (int i = 0; i < SimPM.nvar; i++)
       extname[i] = pvar[i];
-    cout << "EQN=" << DataIOFits::eqn << ", MP=" << mp << "\n";
+    spdlog::debug("EQN={}, MP={}", fmt::ptr(DataIOFits::eqn), fmt::ptr(mp));
     if (DataIOFits::eqn != 0 && mp == 0) {
       extname[nvar]     = "Eint";
       extname[nvar + 1] = "divB";
@@ -231,14 +234,14 @@ int DataIOFits::OutputData(
   }
   else {
     extname = mem.myalloc(extname, 10);
-    rep.error("What equations?!", SimPM.eqntype);
+    spdlog::error("{}: {}", "What equations?!", SimPM.eqntype);
   }
 
 #ifdef RT_TESTING_OUTPUTCOL
   // save column densities
   if (SimPM.RS.Nsources > 0) {
     if (extname[SimPM.nvar] != "")
-      rep.error("Tau not writeable!", extname[SimPM.nvar]);
+      spdlog::error("{}: {}", "Tau not writeable!", extname[SimPM.nvar]);
     //
     // Loop over all sources, and all variables for each source:
     //
@@ -256,7 +259,9 @@ int DataIOFits::OutputData(
 #endif   // RT_TESTING_OUTPUTCOL
 
   if (!cg[0])
-    rep.error("DataIOFits::OutputData() null pointer to grid!", cg[0]);
+    spdlog::error(
+        "{}: {}", "DataIOFits::OutputData() null pointer to grid!",
+        fmt::ptr(cg[0]));
   DataIOFits::gp = cg[0];
 
   fitsfile *ff = 0;
@@ -283,13 +288,13 @@ int DataIOFits::OutputData(
 
   // Create fits file.
   fits_create_file(&ff, outfile.c_str(), &status);
-  if (status) rep.error("Creating new file went bad.", status);
+  if (status) spdlog::error("{}: {}", "Creating new file went bad.", status);
   status = 0;
 
   // write fits header
   //  err += write_fits_header(ff);
-  // if(err) rep.error("DataIOFits::OutputData() couldn't write fits
-  // header",err);
+  // if(err) spdlog::error("{}: {}", "DataIOFits::OutputData() couldn't write
+  // fits header",err);
 
   // --------------------------------------------------------
   //
@@ -305,7 +310,8 @@ int DataIOFits::OutputData(
   file_ptr = ff;
   err      = write_simulation_parameters(SimPM);
   if (err)
-    rep.error("DataIOFits::OutputData() couldn't write fits header", err);
+    spdlog::error(
+        "{}: {}", "DataIOFits::OutputData() couldn't write fits header", err);
   ff = file_ptr;
   // --------------------------------------------------------
 
@@ -319,16 +325,18 @@ int DataIOFits::OutputData(
     // <<extname[i]<<"\t"<<SimPM.Xmin[1]<<"\t"<<SimPM.Xmax[1]<<"\t"<<SimPM.NG[1]<<"\t"<<SimPM.Ncell<<"\n";
     // cout
     // <<extname[i]<<"\t"<<SimPM.Xmin[2]<<"\t"<<SimPM.Xmax[2]<<"\t"<<SimPM.NG[2]<<"\t"<<SimPM.Ncell<<"\n";
-    err += create_fits_image(ff, extname[i], SimPM.ndim, SimPM.NG);
+    err += create_fits_image(ff, extname[i], SimPM.ndim, SimPM.NG.data());
     double *data = 0;
     err += put_variable_into_data_array(SimPM, extname[i], SimPM.Ncell, &data);
     err += write_fits_image(
-        ff, extname[i], SimPM.Xmin, SimPM.Xmin, gp->DX(), SimPM.ndim, SimPM.NG,
-        SimPM.Ncell, data);
+        ff, extname[i], SimPM.Xmin.data(), SimPM.Xmin.data(), gp->DX(),
+        SimPM.ndim, SimPM.NG.data(), SimPM.Ncell, data);
     data = mem.myfree(data);
   }
   if (err)
-    rep.error("DataIOFits::OutputData() Serial Image Writing went bad", err);
+    spdlog::error(
+        "{}: {}", "DataIOFits::OutputData() Serial Image Writing went bad",
+        err);
 
   // Close file
   err += fits_close_file(ff, &status);
@@ -369,7 +377,8 @@ int DataIOFits::ReadHeader(
   //  cout <<"done. Now reading header.\n";
   //  err += read_fits_header(ff);
   //  if (err)
-  //   rep.error("DataIOFits::ReadHeader() read fits header failed.",err);
+  //   spdlog::error("{}: {}", "DataIOFits::ReadHeader() read fits header
+  //   failed.",err);
 
   //
   // Get to first hdu, which is always the header
@@ -388,7 +397,9 @@ int DataIOFits::ReadHeader(
   //
   file_ptr = ff;
   err += read_simulation_parameters(SimPM);
-  if (err) rep.error("DataIOFits::ReadHeader() read fits header failed.", err);
+  if (err)
+    spdlog::error(
+        "{}: {}", "DataIOFits::ReadHeader() read fits header failed.", err);
   ff = file_ptr;
   //
   // Now should be done, so close file and move on.
@@ -444,7 +455,8 @@ int DataIOFits::WriteHeader(
   file_ptr = ff;
   err      = write_simulation_parameters(SimPM);
   if (err)
-    rep.error("DataIOFits::WriteHeader() couldn't write fits header", err);
+    spdlog::error(
+        "{}: {}", "DataIOFits::WriteHeader() couldn't write fits header", err);
   ff = file_ptr;
 
   //
@@ -469,7 +481,10 @@ int DataIOFits::ReadData(
 {
   string fname = "DataIOFits::ReadData";
 
-  if (!cg[0]) rep.error("DataIOFits::ReadData() null pointer to grid!", cg[0]);
+  if (!cg[0])
+    spdlog::error(
+        "{}: {}", "DataIOFits::ReadData() null pointer to grid!",
+        fmt::ptr(cg[0]));
   DataIOFits::gp = cg[0];
 
   int err    = 0;
@@ -498,7 +513,8 @@ int DataIOFits::ReadData(
   int nvar    = SimPM.nvar;
   string *var = 0;
   if (SimPM.ntracer > 5)
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "DataIOFits::ReadData() only handles up to 5 tracer variables! "
         "Add more if needed.",
         SimPM.ntracer);
@@ -506,7 +522,8 @@ int DataIOFits::ReadData(
       || SimPM.eqntype == EQEUL_EINT) {
     var = mem.myalloc(var, 10);
     if (SimPM.nvar > 10)
-      rep.error("DataIOFits::ReadData() need more tracers.", SimPM.nvar);
+      spdlog::error(
+          "{}: {}", "DataIOFits::ReadData() need more tracers.", SimPM.nvar);
     string t[10] = {"GasDens", "GasPres", "GasVX", "GasVY", "GasVZ",
                     "TR0",     "TR1",     "TR2",   "TR3",   "TR4"};
     for (int i = 0; i < 10; i++)
@@ -517,7 +534,8 @@ int DataIOFits::ReadData(
       || SimPM.eqntype == EQFCD) {
     var = mem.myalloc(var, 14);
     if (SimPM.nvar > 14)
-      rep.error("DataIOFits::ReadData() need more tracers.", SimPM.nvar);
+      spdlog::error(
+          "{}: {}", "DataIOFits::ReadData() need more tracers.", SimPM.nvar);
     string t[14] = {"GasDens", "GasPres", "GasVX", "GasVY", "GasVZ",
                     "Bx",      "By",      "Bz",    "psi",   "TR0",
                     "TR1",     "TR2",     "TR3",   "TR4"};
@@ -526,7 +544,7 @@ int DataIOFits::ReadData(
   }
   else {
     var = mem.myalloc(var, 10);
-    rep.error("What equations?!", SimPM.eqntype);
+    spdlog::error("{}: {}", "What equations?!", SimPM.eqntype);
   }
   // -------------------------------------------
   // Loop over all Variables and read from file.
@@ -555,7 +573,7 @@ int DataIOFits::ReadData(
       v = static_cast<int>(SI);
     else if (var[i] == "TR0") {
       v = SimPM.ftr;
-      cout << "reading from first tracer var: " << v << "\n";
+      spdlog::debug("reading from first tracer var: {}", v);
     }
     else if (var[i] == "TR1")
       v = SimPM.ftr + 1;
@@ -566,7 +584,8 @@ int DataIOFits::ReadData(
     else if (var[i] == "TR4")
       v = SimPM.ftr + 4;
     else
-      rep.error("Bad variable index in fits read routine", var[i]);
+      spdlog::error(
+          "{}: {}", "Bad variable index in fits read routine", var[i]);
     err += fits_movnam_hdu(ff, ANY_HDU, temp, 0, &status);
 
     if (err != 0) {
@@ -581,8 +600,9 @@ int DataIOFits::ReadData(
       err = 0;
       fits_clear_errmsg();
       status = 0;
-      cout << "couldn't get data for variable " << temp
-           << "; will set data to zero and hope for the best.\n";
+      spdlog::debug(
+          "couldn't get data for variable {}; will set data to zero and hope for the best",
+          temp);
     }
 
     else {
@@ -592,12 +612,14 @@ int DataIOFits::ReadData(
       // "<<var[i]<<"\n";
       //  cout <<"\t\tDataIOFits::ReadData() Reading fits image.\n";
       //  cout <<"\t\t reading from file "<<infile<<"\n";
-      err += check_fits_image_dimensions(ff, var[i], SimPM.ndim, SimPM.NG);
-      if (err) rep.error("image wrong size.", err);
+      err +=
+          check_fits_image_dimensions(ff, var[i], SimPM.ndim, SimPM.NG.data());
+      if (err) spdlog::error("{}: {}", "image wrong size.", err);
       //      cout <<"***************ncell = "<<SimPM.Ncell<<"\n";
       err += read_fits_image(
-          SimPM, ff, var[i], SimPM.Xmin, SimPM.Xmin, SimPM.NG, SimPM.Ncell);
-      if (err) rep.error("error reading image.", err);
+          SimPM, ff, var[i], SimPM.Xmin.data(), SimPM.Xmin.data(),
+          SimPM.NG.data(), SimPM.Ncell);
+      if (err) spdlog::error("{}: {}", "error reading image.", err);
       //  cout <<"\t\tDataIOFits::ReadData() Got fits image.\n";
     }  // got real hdu and read data.
 
@@ -727,8 +749,8 @@ int DataIOFits::read_header_param(class pm_base *p)
   }
 
   if (status) {
-    cout << "\t" << p->name << ":  ERROR READING VAR!";
-    cout << " err=" << err << " status=" << status << "\n";
+    spdlog::error(
+        "\t{}:  ERROR READING VAR! err={} status={}", p->name, err, status);
   }
   // else {
   //   cout <<"\t"<<p->name<<":  "; p->show_val(); cout <<"\n";
@@ -803,8 +825,8 @@ int DataIOFits::write_header_param(class pm_base *p)
   }
 
   if (status) {
-    cout << "\t" << p->name << ":  ERROR WRITING VAR!";
-    cout << " err=" << err << " status=" << status << "\n";
+    spdlog::error(
+        "\t{}:  ERROR WRITING VAR! err={} status={}", p->name, err, status);
   }
   // else {
   //   cout <<"\t"<<p->name<<":  "; p->show_val(); cout <<"\n";
@@ -874,7 +896,7 @@ int DataIOFits::put_variable_into_data_array(
   else if (name.find("Col_Src") != string::npos)
     v = -4;
   else
-    rep.error("Bad variable index in fits write routine", name);
+    spdlog::error("{}: {}", "Bad variable index in fits write routine", name);
 
   // cout <<"saving data variable "<<name<<"\n";
 
@@ -946,10 +968,11 @@ int DataIOFits::put_variable_into_data_array(
   }
 
   else
-    rep.error("Don't understand what variable to write.", v);
+    spdlog::error("{}: {}", "Don't understand what variable to write.", v);
 
   if (ct != ntot)
-    rep.error("Counting cells in put_variable_into_data()", ct - ntot);
+    spdlog::error(
+        "{}: {}", "Counting cells in put_variable_into_data()", ct - ntot);
   return 0;
 }
 
@@ -972,7 +995,8 @@ int DataIOFits::read_fits_image(
       ff, name, SimPM.ndim, localxmin, globalxmin, gp->DX(), npt, ntot, TDOUBLE,
       static_cast<void *>(data));
   if (err)
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         " DataIOFits::read_fits_image() Failed to read image from file", err);
 
   // Choose variable to read to, based on name string, whose hdu is the
@@ -1019,10 +1043,10 @@ int DataIOFits::read_fits_image(
   //  else if (name=="divB")     v=-2;
   //  else if (name=="Ptot")     v=-3;
   else
-    rep.error("Bad variable index in fits write routine", name);
+    spdlog::error("{}: {}", "Bad variable index in fits write routine", name);
   if (v >= SimPM.nvar)
-    rep.error(
-        "reading variable, but no element in vector free for it.",
+    spdlog::error(
+        "{}: {}", "reading variable, but no element in vector free for it.",
         v - SimPM.nvar);
 
   // assign data to grid points, to the variable determined above.
@@ -1037,13 +1061,15 @@ int DataIOFits::read_fits_image(
     if (B) c->P[v] *= norm;
 #endif
     if (pconst.equalD(data[ct], nulval)) {
-      cout << "(dataio::read data: ERROR: var=" << v << " and data=" << data[ct]
-           << "\n";
-      rep.error("Read null value from file! pixel count follows", ct);
+      spdlog::error(
+          "(dataio::read data: ERROR: var={} and data={}\n", v, data[ct]);
+      spdlog::error(
+          "{}: {}", "Read null value from file! pixel count follows", ct);
     }
     ct++;
   } while ((c = gp->NextPt(c)) != 0);
-  if (ct != ntot) rep.error("Counting cells in read_fits_image()", ct - ntot);
+  if (ct != ntot)
+    spdlog::error("{}: {}", "Counting cells in read_fits_image()", ct - ntot);
 
   data = mem.myfree(data);
 
@@ -1174,10 +1200,9 @@ int DataIOFits::read_fits_image(
     // Now write all the data in sequence, with each variable written to its own
   HDU image. double *vv = new double [SimPM.Ncell]; int ct; long int pix[ndim];
     string *var=0;
-    if (SimPM.ntracer>5) rep.error("OutputFitsData:: only handles up to 5 tracer
-  variables! Add more if needed.",SimPM.ntracer); if (SimPM.eqntype==EQEUL) {
-      var  = new string [10];
-      string pvar[10] =
+    if (SimPM.ntracer>5) spdlog::error("{}: {}", "OutputFitsData:: only handles
+  up to 5 tracer variables! Add more if needed.",SimPM.ntracer); if
+  (SimPM.eqntype==EQEUL) { var  = new string [10]; string pvar[10] =
   {"GasDens","GasPres","GasVX","GasVY","GasVZ","TR0","TR1","TR2","TR3","TR4"};
       for (int i=0;i<10;i++) var[i] = pvar[i];
     }
@@ -1195,7 +1220,7 @@ int DataIOFits::read_fits_image(
     }
     else {
       var = new string [10];
-      rep.error("What equations?!",SimPM.eqntype);
+      spdlog::error("{}: {}", "What equations?!",SimPM.eqntype);
     }
     for (int i=0;i<nvar;i++) {
       for (int j=0;j<ndim;j++) pix[j]=SimPM.NG[j];
@@ -1220,9 +1245,8 @@ int DataIOFits::read_fits_image(
       else if (var[i]=="TR2")     v=SimPM.ftr+2;
       else if (var[i]=="TR3")     v=SimPM.ftr+3;
       else if (var[i]=="TR4")     v=SimPM.ftr+4;
-      else rep.error("Bad variable index in fits write routine",var[i]);
-      ct=0;
-      do {
+      else spdlog::error("{}: {}", "Bad variable index in fits write
+  routine",var[i]); ct=0; do {
       //	if (isnan(cpt->P[v])) {
       //	  cout <<"NAN value in Primitive vector: ct="<<ct<<" and
   var="<<v<<" and P[v]="<<cpt->P[v]<<"\n";
@@ -1283,7 +1307,8 @@ int DataIOFits::read_fits_image(
   cpt->P, &status); } while ( (cpt=gp->NextPt(cpt))!=0 ); } // end write data to
   table.
 
-  else rep.error("Bad output type passed to outputFitsData()",flag);
+  else spdlog::error("{}: {}", "Bad output type passed to
+  outputFitsData()",flag);
 
   err += fits_close_file(ff,&status);
   return(err);

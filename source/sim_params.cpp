@@ -10,7 +10,12 @@
 
 #include "sim_params.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 #include <sstream>
 
 using namespace std;
@@ -30,7 +35,9 @@ JetParams::JetParams()
   jetstate  = 0;
   jetstate  = new pion_flt[MAX_NVAR];
   if (!jetstate)
-    rep.error("Couldn't allocate memory for JP.jetstate[]", jetstate);
+    spdlog::error(
+        "{}: {}", "Couldn't allocate memory for JP.jetstate[]",
+        fmt::ptr(jetstate));
   for (int v = 0; v < MAX_NVAR; v++)
     jetstate[v] = -1.0e30;
 }
@@ -120,7 +127,7 @@ SimParams::SimParams()
 SimParams::SimParams(const std::string pfile)
 {
   int err = read_gridparams(pfile);
-  if (err) rep.error("Read Grid Params Error", err);
+  if (err) spdlog::error("{}: {}", "Read Grid Params Error", err);
   last_dt = 1.e100;
   maxtime = false;
   levels.resize(grid_nlevels);
@@ -149,7 +156,7 @@ SimParams::~SimParams()
   if (ntracer) tracers = mem.myfree(tracers);
 
 #ifndef NDEBUG
-  cout << "SimParams Destructor: done" << endl;
+  spdlog::info("SimParams Destructor: done");
 #endif
 }
 
@@ -162,7 +169,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   int err = 0;
 
   err += rp.read_paramfile(pfile);
-  if (err) rep.error("Error reading parameterfile", pfile);
+  if (err) spdlog::error("{}: {}", "Error reading parameterfile", pfile);
   //   rp.write_out_parameters();
 
   gridType = 1;  // uniform grid. only option for now.
@@ -202,7 +209,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
     nvar    = 8;
   }
   else
-    rep.error("Don't know what these equations are:", str);
+    spdlog::error("{}: {}", "Don't know what these equations are:", str);
 
   str = rp.find_parameter("solver");
   if (str == "")
@@ -226,16 +233,16 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   else if (str == "HLL" || str == "hll" || str == "8")
     solverType = 8;
   else
-    rep.error("what kind of solver is this???", str);
+    spdlog::error("{}: {}", "what kind of solver is this???", str);
 
   // dimensionality of grid.
   str = rp.find_parameter("ndim");
   if (str == "")
-    rep.error("Bad ndim in pfile", str);
+    spdlog::error("{}: {}", "Bad ndim in pfile", str);
   else
     ndim = atoi(str.c_str());
 
-  if (isnan(ndim)) rep.error("ndim is not a number", ndim);
+  if (isnan(ndim)) spdlog::error("{}: {}", "ndim is not a number", ndim);
   eqnNDim = 3;
 
   //
@@ -245,14 +252,14 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   str = rp.find_parameter("ntracer");
   if (str == "") {
 #ifndef NDEBUG
-    cout << "Not using tracer variables.\n";
+    spdlog::debug("Not using tracer variablesn");
 #endif
     ntracer = 0;
     ftr     = nvar;
   }
   else if (isfinite(ntracer = atoi(str.c_str()))) {
 #ifndef NDEBUG
-    cout << "using " << ntracer << " passive tracer variables\n";
+    spdlog::debug("using {} passive tracer variables", ntracer);
 #endif
     ftr = nvar;
     nvar += ntracer;
@@ -274,20 +281,21 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
       temp << i;
       tracers[i] = rp.find_parameter(temp.str());
 #ifndef NDEBUG
-      cout << "using tracer(s) described as " << tracers[i] << "\n";
+      spdlog::debug("using tracer(s) described as {}", tracers[i]);
 #endif
       if (tracers[i] == "") {
-        rep.error("Can't find tracer name for number", i);
+        spdlog::error("{}: {}", "Can't find tracer name for number", i);
       }
     }
   }
   else
-    rep.error("number of tracers is not finite!", ntracer);
+    spdlog::error("{}: {}", "number of tracers is not finite!", ntracer);
 
   // coordinate system.
   str = rp.find_parameter("coordinates");
   if (str == "") {
-    cout << "no coordinate system specified.  using cartesian as default.\n";
+    spdlog::debug(
+        "no coordinate system specified.  using cartesian as default");
     coord_sys = COORD_CRT;
   }
   else if (str == "cartesian" || str == "cart")
@@ -297,43 +305,44 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   else if (str == "spherical" || str == "sph")
     coord_sys = COORD_SPH;
   else
-    rep.error("Don't recognise coordinate system in GetParameters", str);
+    spdlog::error(
+        "{}: {}", "Don't recognise coordinate system in GetParameters", str);
 
   // Domain of grid, and number of points.  These must all be present in the
   // pfile.
   string seek;
   seek = "NGridX";
   str  = rp.find_parameter(seek);
-  if (str == "") rep.error("param not found", seek);
+  if (str == "") spdlog::error("{}: {}", "param not found", seek);
   NG[XX] = atoi(str.c_str());
   Ncell  = NG[XX];
 
   seek = "Xmin";
   str  = rp.find_parameter(seek);
-  if (str == "") rep.error("param not found", seek);
+  if (str == "") spdlog::error("{}: {}", "param not found", seek);
   Xmin[XX] = atof(str.c_str());
 
   seek = "Xmax";
   str  = rp.find_parameter(seek);
-  if (str == "") rep.error("param not found", seek);
+  if (str == "") spdlog::error("{}: {}", "param not found", seek);
   Xmax[XX]  = atof(str.c_str());
   Range[XX] = Xmax[XX] - Xmin[XX];
 
   if (ndim > 1) {
     seek = "NGridY";
     str  = rp.find_parameter(seek);
-    if (str == "") rep.error("param not found", seek);
+    if (str == "") spdlog::error("{}: {}", "param not found", seek);
     NG[YY] = atoi(str.c_str());
     Ncell *= NG[YY];
 
     seek = "Ymin";
     str  = rp.find_parameter(seek);
-    if (str == "") rep.error("param not found", seek);
+    if (str == "") spdlog::error("{}: {}", "param not found", seek);
     Xmin[YY] = atof(str.c_str());
 
     seek = "Ymax";
     str  = rp.find_parameter(seek);
-    if (str == "") rep.error("param not found", seek);
+    if (str == "") spdlog::error("{}: {}", "param not found", seek);
     Xmax[YY]  = atof(str.c_str());
     Range[YY] = Xmax[YY] - Xmin[YY];
   }
@@ -345,18 +354,18 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   if (ndim > 2) {
     seek = "NGridZ";
     str  = rp.find_parameter(seek);
-    if (str == "") rep.error("param not found", seek);
+    if (str == "") spdlog::error("{}: {}", "param not found", seek);
     NG[ZZ] = atoi(str.c_str());
     Ncell *= NG[ZZ];
 
     seek = "Zmin";
     str  = rp.find_parameter(seek);
-    if (str == "") rep.error("param not found", seek);
+    if (str == "") spdlog::error("{}: {}", "param not found", seek);
     Xmin[ZZ] = atof(str.c_str());
 
     seek = "Zmax";
     str  = rp.find_parameter(seek);
-    if (str == "") rep.error("param not found", seek);
+    if (str == "") spdlog::error("{}: {}", "param not found", seek);
     Xmax[ZZ]  = atof(str.c_str());
     Range[ZZ] = Xmax[ZZ] - Xmin[ZZ];
   }
@@ -369,7 +378,8 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
 
   if (ndim > 1) {
     if (fabs(Range[1] / (NG[1]) / dx - 1.) > 100. * MACHINEACCURACY) {
-      rep.error(
+      spdlog::error(
+          "{}: {}",
           "SimParams: Cells must be same length in each direction! Set the range "
           "and number of points appropriately.",
           fabs(Range[1] / (NG[1]) / dx - 1.));
@@ -377,7 +387,8 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   }
   if (ndim > 2) {
     if (fabs(Range[2] / (NG[2]) / dx - 1.) > 100. * MACHINEACCURACY) {
-      rep.error(
+      spdlog::error(
+          "{}: {}",
           "SimParams: Cells must be same length in each direction! Set the range "
           "and number of points appropriately.",
           fabs(Range[2] / (NG[2]) / dx - 1.));
@@ -457,11 +468,11 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
 
   // output info
   str = rp.find_parameter("OutputPath");
-  if (str == "") rep.error("outputpath", str);
+  if (str == "") spdlog::error("{}: {}", "outputpath", str);
   ostringstream temp;
   temp << str;
   str = rp.find_parameter("OutputFile");
-  if (str == "") rep.error("outputfile", str);
+  if (str == "") spdlog::error("{}: {}", "outputfile", str);
   temp << str;
   outFileBase = temp.str();
   str         = rp.find_parameter("OutputFileType");
@@ -472,18 +483,20 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
     typeofop = 2;
   else if (str == "ftab") {  // fits table (not implemented yet.
     typeofop = 3;
-    rep.error("Fits Table not allowed as o/p format.. not implemented", str);
+    spdlog::error(
+        "{}: {}", "Fits Table not allowed as o/p format.. not implemented",
+        str);
   }
   else if (str == "both")
     typeofop = 4;  // Both means fits and text.
   else if (str == "silo")
     typeofop = 5;  // Silo output.
   else
-    rep.error("Error, bad type of outputfile in pfile.", str);
+    spdlog::error("{}: {}", "Error, bad type of outputfile in pfile.", str);
 
   seek = "OutputFrequency";
   str  = rp.find_parameter(seek);
-  if (str == "") rep.error("param not found", seek);
+  if (str == "") spdlog::error("{}: {}", "param not found", seek);
   opfreq = atoi(str.c_str());
   // cout <<"\tOutFile: "<<outFileBase<< ".xxx\t Type="<<typeofop;
   // cout <<" every "<<opfreq<<" timesteps."<<"\n";
@@ -568,7 +581,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   // Timing
   seek = "StartTime";
   str  = rp.find_parameter(seek);
-  if (str == "") rep.error("param not found", seek);
+  if (str == "") spdlog::error("{}: {}", "param not found", seek);
   starttime = atof(str.c_str());
   simtime   = starttime;
   seek      = "FinishTime";
@@ -581,33 +594,33 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
 
   seek = "OrderOfAccSpace";
   str  = rp.find_parameter(seek);
-  if (str == "") rep.error("param not found", seek);
+  if (str == "") spdlog::error("{}: {}", "param not found", seek);
   spOOA = atoi(str.c_str());
   seek  = "OrderOfAccTime";
   str   = rp.find_parameter(seek);
-  if (str == "") rep.error("param not found", seek);
+  if (str == "") spdlog::error("{}: {}", "param not found", seek);
   tmOOA = atoi(str.c_str());
 
   // Physics
   seek = "GAMMA";
   str  = rp.find_parameter(seek);
-  if (str == "") rep.error("param not found", seek);
+  if (str == "") spdlog::error("{}: {}", "param not found", seek);
   gamma = atof(str.c_str());
   seek  = "CFL";
   str   = rp.find_parameter(seek);
-  if (str == "") rep.error("param not found", seek);
+  if (str == "") spdlog::error("{}: {}", "param not found", seek);
   CFL = atof(str.c_str());
 
   seek = "ArtificialViscosity";
   str  = rp.find_parameter(seek);
-  if (str == "") rep.error("param not found", seek);
+  if (str == "") spdlog::error("{}: {}", "param not found", seek);
   if ((artviscosity = atoi(str.c_str())) == 0) {
     etav = 0.;
   }
   else if (artviscosity == 1 || artviscosity == 4) {
     seek = "EtaViscosity";
     str  = rp.find_parameter(seek);
-    if (str == "") rep.error("param not found", seek);
+    if (str == "") spdlog::error("{}: {}", "param not found", seek);
     etav = atof(str.c_str());
   }
   else if (artviscosity == 3) {
@@ -615,15 +628,15 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
     etav = 0.1;
   }
   else
-    rep.error("\tUnknown viscosity requested... fix me.", str);
+    spdlog::error("{}: {}", "\tUnknown viscosity requested... fix me.", str);
   // cout <<"\tArtificial Viscosity: eta="<<etav<<"\n";
   // Which Physics
   err += read_extra_physics();
-  if (err) rep.error("read_extra_physics", err);
+  if (err) spdlog::error("{}: {}", "read_extra_physics", err);
 
   // Raytracing
   err += read_radsources();
-  if (err) rep.error("read_radsources", err);
+  if (err) spdlog::error("{}: {}", "read_radsources", err);
 
   //
   // STELLAR WINDS???
@@ -631,7 +644,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   seek = "WIND_NSRC";
   str  = rp.find_parameter(seek);
   if (str == "") {
-    cout << "\tWIND_NSRC: param not found, setting to 0\n";
+    spdlog::warn("\tWIND_NSRC: param not found, setting to 0");
     SWP.Nsources = 0;
   }
   else {
@@ -639,7 +652,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
     // cout <<"\tWIND_NSRC: got "<<SWP.Nsources<<" sources.\n";
     if (SWP.Nsources > 0) {
       err += read_wind_sources();
-      if (err) rep.error("read_wind_sources", err);
+      if (err) spdlog::error("{}: {}", "read_wind_sources", err);
     }
   }
 
@@ -649,14 +662,15 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   seek = "N_JET";
   str  = rp.find_parameter(seek);
   if (str == "") {
-    cout << "\tN_JET: param not found, setting to 0\n";
+    spdlog::warn("\tN_JET: param not found, setting to 0");
     JP.jetic = 0;
   }
   else {
     JP.jetic = atoi(str.c_str());
     if (JP.jetic) {
       err += read_jet_params(JP);
-      rep.errorTest("read_jet_params", 0, err);
+      if (0 != err)
+        spdlog::error("{}: Expected {} but got {}", "read_jet_params", 0, err);
     }
   }
 
@@ -674,7 +688,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
         RefVec[v] = atof(str.c_str());
       }
       else {
-        cout << "no refvec[" << v << "], setting to 1.\n";
+        spdlog::debug("no refvec[{}], setting to 1", v);
         RefVec[v] = 1.;
       }
     }
@@ -691,10 +705,10 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
 
   // Units Used
   err += read_units();
-  if (err) rep.error("read_units", err);
+  if (err) spdlog::error("{}: {}", "read_units", err);
 
-  // seek=""; str=rp.find_parameter(seek); if (str=="") rep.error("param not
-  // found",seek);
+  // seek=""; str=rp.find_parameter(seek); if (str=="") spdlog::error("{}: {}",
+  // "param not found",seek);
   return err;
 }
 
@@ -718,7 +732,7 @@ int SimParams::read_radsources()
       if ((a = rp.find_parameter(temp2.str())) != "")
         rs_temp.pos[v] = atof(a.c_str());
       else
-        rep.error("no src position in pfile", temp2.str());
+        spdlog::error("{}: {}", "no src position in pfile", temp2.str());
     }
     for (int v = ndim; v < MAX_DIM; v++)
       rs_temp.pos[v] = 0.0;
@@ -728,15 +742,16 @@ int SimParams::read_radsources()
     if ((a = rp.find_parameter(temp2.str())) != "")
       rs_temp.strength = atof(a.c_str());
     else
-      rep.error("no src strength in pfile", temp2.str());
+      spdlog::error("{}: {}", "no src strength in pfile", temp2.str());
 
     temp2.str("");
     temp2 << "RT_Rstar____" << i;
     if ((a = rp.find_parameter(temp2.str())) != "")
       rs_temp.Rstar = atof(a.c_str());
     else {
-      cout << temp2.str()
-           << ": parameter not found in pfile.  Setting to -1.0e200.\n";
+      spdlog::debug(
+          "{}: parameter not found in pfile.  Setting to -1.0e200",
+          temp2.str());
       rs_temp.Rstar = -1.0e200;
     }
 
@@ -745,8 +760,9 @@ int SimParams::read_radsources()
     if ((a = rp.find_parameter(temp2.str())) != "")
       rs_temp.Tstar = atof(a.c_str());
     else {
-      cout << temp2.str()
-           << ": parameter not found in pfile.  Setting to -1.0e200.\n";
+      spdlog::debug(
+          "{}: parameter not found in pfile.  Setting to -1.0e200",
+          temp2.str());
       rs_temp.Tstar = -1.0e200;
     }
 
@@ -757,16 +773,17 @@ int SimParams::read_radsources()
     if ((a = rp.find_parameter(temp2.str())) != "")
       rs_temp.type = atoi(a.c_str());
     else
-      rep.error("no src type in pfile", temp2.str());
+      spdlog::error("{}: {}", "no src type in pfile", temp2.str());
 
     temp2.str("");
     temp2 << "RT_update___" << i;
     if ((a = rp.find_parameter(temp2.str())) != "")
       rs_temp.update = atoi(a.c_str());
     else {
-      // rep.error("no src update-method in pfile",temp2.str());
-      cerr << "*** no src update-method in pfile: " << temp2.str();
-      cerr << "... using C2Ray method. \n";
+      // spdlog::error("{}: {}", "no src update-method in pfile",temp2.str());
+      spdlog::error(
+          "*** no src update-method in pfile: {}... using C2Ray method",
+          temp2.str());
       rs_temp.update = RT_UPDATE_IMPLICIT;
     }
 
@@ -775,16 +792,17 @@ int SimParams::read_radsources()
     if ((a = rp.find_parameter(temp2.str())) != "")
       rs_temp.at_infinity = atoi(a.c_str());
     else
-      rep.error("no src at-infinity in pfile", temp2.str());
+      spdlog::error("{}: {}", "no src at-infinity in pfile", temp2.str());
 
     temp2.str("");
     temp2 << "RT_effect___" << i;
     if ((a = rp.find_parameter(temp2.str())) != "")
       rs_temp.effect = atoi(a.c_str());
     else {
-      // rep.error("no src update-method in pfile",temp2.str());
-      cerr << "*** no src effect param in pfile: " << temp2.str();
-      cerr << "... using monochromatic photoionisation.\n";
+      // spdlog::error("{}: {}", "no src update-method in pfile",temp2.str());
+      spdlog::error(
+          "*** no src effect param in pfile: {}... using monochromatic photoionisation",
+          temp2.str());
       rs_temp.effect = RT_EFFECT_PION_MONO;
     }
 
@@ -793,9 +811,10 @@ int SimParams::read_radsources()
     if ((a = rp.find_parameter(temp2.str())) != "")
       rs_temp.opacity_src = atoi(a.c_str());
     else {
-      // rep.error("no src update-method in pfile",temp2.str());
-      cerr << "*** no opacity src param in pfile: " << temp2.str();
-      cout << "... using neutral hydrogen.\n";
+      // spdlog::error("{}: {}", "no src update-method in pfile",temp2.str());
+      spdlog::error(
+          "*** no opacity src param in pfile: {}... using neutral hydrogen",
+          temp2.str());
       rs_temp.opacity_src = RT_OPACITY_MINUS;
     }
 
@@ -804,9 +823,10 @@ int SimParams::read_radsources()
     if ((a = rp.find_parameter(temp2.str())) != "")
       rs_temp.opacity_var = atoi(a.c_str());
     else {
-      // rep.error("no src update-method in pfile",temp2.str());
-      cerr << "*** no opacity variable index in pfile: " << temp2.str();
-      cerr << "... using First tracer.\n";
+      // spdlog::error("{}: {}", "no src update-method in pfile",temp2.str());
+      spdlog::error(
+          "*** no opacity variable index in pfile: {}... using First tracer",
+          temp2.str());
       rs_temp.opacity_var = ftr;
     }
 
@@ -815,8 +835,9 @@ int SimParams::read_radsources()
     if ((a = rp.find_parameter(temp2.str())) != "")
       rs_temp.EvoFile = a;
     else {
-      cerr << "*** no RS Evolution File in pfile: " << temp2.str();
-      cerr << "... using NOFILE, i.e. constant source.\n";
+      spdlog::error(
+          "*** no RS Evolution File in pfile: {}... using NOFILE, i.e. constant source",
+          temp2.str());
       rs_temp.EvoFile = "NOFILE";
     }
 
@@ -825,8 +846,8 @@ int SimParams::read_radsources()
     if ((a = rp.find_parameter(temp2.str())) != "")
       rs_temp.NTau = atoi(a.c_str());
     else {
-      cerr << "*** no NTau in parameter file: " << temp2.str();
-      cerr << "... using 1.\n";
+      spdlog::error(
+          "*** no NTau in parameter file: {}... using 1", temp2.str());
       rs_temp.NTau = 1;
     }
 
@@ -835,11 +856,10 @@ int SimParams::read_radsources()
     //
     RS.sources.push_back(rs_temp);
 
-    cout << "\tRT-src: i=" << i << ": strength=" << rs_temp.strength;
-    cout << " type=" << rs_temp.type << " at_inf=" << rs_temp.at_infinity;
-    cout << ", update=" << rs_temp.update;
-    cout << " and pos[]=";
-    rep.printVec("", rs_temp.pos, ndim);
+    spdlog::debug(
+        "\tRT-src: i={}: strength={} type={} at_inf={}, update={} and pos[]=",
+        i, rs_temp.strength, rs_temp.type, rs_temp.at_infinity, rs_temp.update);
+    spdlog::debug(" : {}", rs_temp.pos);
 
     // cout <<"\tRT-src: i="<<i<<": strength=";
     // cout <<RS.sources[i].strength;
@@ -881,7 +901,7 @@ int SimParams::read_wind_sources()
       if ((a = rp.find_parameter(temp.str())) != "")
         posn[v] = atof(a.c_str());
       else
-        rep.error("no src position in pfile", temp.str());
+        spdlog::error("{}: {}", "no src position in pfile", temp.str());
     }
     for (int v = ndim; v < MAX_DIM; v++)
       posn[v] = 0.0;
@@ -891,14 +911,14 @@ int SimParams::read_wind_sources()
     if ((a = rp.find_parameter(temp.str())) != "")
       rad = atof(a.c_str());
     else
-      rep.error("param not found in pfile", temp.str());
+      spdlog::error("{}: {}", "param not found in pfile", temp.str());
 
     temp.str("");
     temp << "WIND_" << i << "_type";
     if ((a = rp.find_parameter(temp.str())) != "")
       type = atoi(a.c_str());
     else
-      rep.error("param not found in pfile", temp.str());
+      spdlog::error("{}: {}", "param not found in pfile", temp.str());
     // cout <<"\t*******wind type="<<type<<"\n";
 
     temp.str("");
@@ -906,42 +926,42 @@ int SimParams::read_wind_sources()
     if ((a = rp.find_parameter(temp.str())) != "")
       Mdot = atof(a.c_str());
     else
-      rep.error("param not found in pfile", temp.str());
+      spdlog::error("{}: {}", "param not found in pfile", temp.str());
 
     temp.str("");
     temp << "WIND_" << i << "_vinf";
     if ((a = rp.find_parameter(temp.str())) != "")
       Vinf = atof(a.c_str());
     else
-      rep.error("param not found in pfile", temp.str());
+      spdlog::error("{}: {}", "param not found in pfile", temp.str());
 
     temp.str("");
     temp << "WIND_" << i << "_vrot";
     if ((a = rp.find_parameter(temp.str())) != "")
       Vrot = atof(a.c_str());
     else
-      rep.error("param not found in pfile", temp.str());
+      spdlog::error("{}: {}", "param not found in pfile", temp.str());
 
     temp.str("");
     temp << "WIND_" << i << "_temp";
     if ((a = rp.find_parameter(temp.str())) != "")
       Tw = atof(a.c_str());
     else
-      rep.error("param not found in pfile", temp.str());
+      spdlog::error("{}: {}", "param not found in pfile", temp.str());
 
     temp.str("");
     temp << "WIND_" << i << "_Rstr";
     if ((a = rp.find_parameter(temp.str())) != "")
       Rstar = atof(a.c_str());
     else
-      rep.error("param not found in pfile", temp.str());
+      spdlog::error("{}: {}", "param not found in pfile", temp.str());
 
     temp.str("");
     temp << "WIND_" << i << "_Bsrf";
     if ((a = rp.find_parameter(temp.str())) != "")
       Bstar = atof(a.c_str());
     else
-      rep.error("param not found in pfile", temp.str());
+      spdlog::error("{}: {}", "param not found in pfile", temp.str());
 
     for (int v = 0; v < ntracer; v++) {
       temp.str("");
@@ -949,7 +969,7 @@ int SimParams::read_wind_sources()
       if ((a = rp.find_parameter(temp.str())) != "")
         trcr[v] = atof(a.c_str());
       else
-        rep.error("param not found in pfile", temp.str());
+        spdlog::error("{}: {}", "param not found in pfile", temp.str());
     }
     for (int v = ntracer; v < MAX_NVAR; v++)
       trcr[v] = 0.0;
@@ -1025,8 +1045,8 @@ int SimParams::read_wind_sources()
     if ((a = rp.find_parameter(temp.str())) != "")
       PeriastronX = atof(a.c_str());
     else {
-      cout << "No periastron_vec_x in pfile for wind " << i;
-      cout << ", setting to 0.0\n";
+      spdlog::debug(
+          "No periastron_vec_x in pfile for wind {}, setting to 0.0", i);
       PeriastronX = 0.0;
     }
 
@@ -1035,8 +1055,8 @@ int SimParams::read_wind_sources()
     if ((a = rp.find_parameter(temp.str())) != "")
       PeriastronY = atof(a.c_str());
     else {
-      cout << "No periastron_vec_y in pfile for wind " << i;
-      cout << ", setting to 0.0\n";
+      spdlog::debug(
+          "No periastron_vec_y in pfile for wind {}, setting to 0.0", i);
       PeriastronY = 0.0;
     }
 
@@ -1203,7 +1223,7 @@ int SimParams::read_units()
 {
   string unit;
   if ((unit = rp.find_parameter("units")) == "") {
-    cout << "No units specified in parameterfile.  Assuming cgs.\n";
+    spdlog::debug("No units specified in parameterfile.  Assuming cgs");
     uc.unitsys  = "cgs";
     uc.density  = "g/cm^3";
     uc.length   = "cm";
@@ -1212,7 +1232,7 @@ int SimParams::read_units()
     uc.rhoVal = uc.lenVal = uc.velVal = uc.magVal = 1.;
   }
   else if (unit == "MKS" || unit == "SI") {
-    cout << "\t Using MKS (SI) as reference units.\n";
+    spdlog::debug("\t Using MKS (SI) as reference units");
     uc.unitsys  = "mks";
     uc.density  = "kg/m^3";
     uc.length   = "m";
@@ -1224,7 +1244,7 @@ int SimParams::read_units()
     uc.magVal   = atof((rp.find_parameter("magval")).c_str());
   }
   else if (unit == "cgs" || unit == "CGS") {
-    cout << "\t Using cgs as reference units.\n";
+    spdlog::debug("\t Using cgs as reference units");
     uc.unitsys  = "cgs";
     uc.density  = "g/cm^3";
     uc.length   = "cm";
@@ -1236,7 +1256,7 @@ int SimParams::read_units()
     uc.magVal   = atof((rp.find_parameter("magval")).c_str());
   }
   else {
-    rep.error("Don't recognise units system", unit);
+    spdlog::error("{}: {}", "Don't recognise units system", unit);
   }
   return 0;
 }
@@ -1251,22 +1271,22 @@ int SimParams::read_jet_params(class JetParams &jpar  ///< jet parameters class.
   if ((a = rp.find_parameter("JETradius")) != "")
     jpar.jetradius = atoi(a.c_str());
   else
-    rep.error("failed to find par: JETradius", 0);
+    spdlog::error("{}: {}", "failed to find par: JETradius", 0);
 
   if ((a = rp.find_parameter("JETdensity")) != "")
     jpar.jetstate[RO] = atof(a.c_str());
   else
-    rep.error("failed to find par: JETdensity", 0);
+    spdlog::error("{}: {}", "failed to find par: JETdensity", 0);
 
   if ((a = rp.find_parameter("JETpressure")) != "")
     jpar.jetstate[PG] = atof(a.c_str());
   else
-    rep.error("failed to find par: JETpressure", 0);
+    spdlog::error("{}: {}", "failed to find par: JETpressure", 0);
 
   if ((a = rp.find_parameter("JETvelocity")) != "")
     jpar.jetstate[VX] = atof(a.c_str());
   else
-    rep.error("failed to find par: JETvelocity", 0);
+    spdlog::error("{}: {}", "failed to find par: JETvelocity", 0);
   jpar.jetstate[VY] = 0.0;
   jpar.jetstate[VZ] = 0.0;
 
@@ -1293,7 +1313,7 @@ int SimParams::read_jet_params(class JetParams &jpar  ///< jet parameters class.
     if ((a = rp.find_parameter(temp.str())) != "")
       jpar.jetstate[ftr + v] = atof(a.c_str());
     else
-      rep.error("param not found in pfile", temp.str());
+      spdlog::error("{}: {}", "param not found in pfile", temp.str());
   }
   for (int v = ftr + ntracer; v < MAX_NVAR; v++)
     jpar.jetstate[v] = 0.0;

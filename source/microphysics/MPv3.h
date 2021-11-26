@@ -85,7 +85,10 @@
 #include "hydrogen_photoion.h"
 #include "hydrogen_recomb_Hummer94.h"
 #include "microphysics_base.h"
+#include <sim_params.h>
 #include <vector>
+
+#include <spdlog/spdlog.h>
 
 /// this is the max change in x or E which is integrated with Euler integration.
 /// A larger change will be integrated with backward-differencing and Newton
@@ -211,7 +214,7 @@ public:
       double *  ///< return optical depth through cell in this variable.
   )
   {
-    cout << "MPv3::TimeUpdate_RTsinglesrc() is not implemented!\n";
+    spdlog::info("MPv3::TimeUpdate_RTsinglesrc() is not implemented!");
     return 1;
   }
 
@@ -311,7 +314,7 @@ public:
                      ///< (negative means use pressure)
   )
   {
-    cout << "MPv3::Init_ionfractions() is not implemented! Write me!\n";
+    spdlog::info("MPv3::Init_ionfractions() is not implemented! Write me!");
     return 1;
   }
 
@@ -533,7 +536,7 @@ public:
       CVMatrix         ///< Jacobian matrix
   )
   {
-    cout << "Jacobian not implemented in MPv3!\n";
+    spdlog::info("Jacobian not implemented in MPv3!");
     return 1;
   }
 

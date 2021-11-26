@@ -257,8 +257,8 @@ public:
   /// physical units.
   ///
   virtual double distance(
-      const double *,  ///< position 1 (physical)
-      const double *   ///< position 2 (physical)
+      const std::array<double, MAX_DIM> &,  ///< position 1 (physical)
+      const std::array<double, MAX_DIM> &   ///< position 2 (physical)
       ) = 0;
 
   ///
@@ -299,8 +299,8 @@ public:
   /// integer units (but obviously the answer is not an integer).
   ///
   virtual double idistance(
-      const int *,  ///< position 1 (integer)
-      const int *   ///< position 2 (integer)
+      const std::array<int, MAX_DIM> &,  ///< position 1 (integer)
+      const std::array<int, MAX_DIM> &   ///< position 2 (integer)
       ) = 0;
 
   ///

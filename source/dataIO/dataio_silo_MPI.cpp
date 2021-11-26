@@ -54,7 +54,12 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -78,7 +83,7 @@ dataio_silo_pllel::dataio_silo_pllel(
     mpiPM(p)
 {
 #ifndef NDEBUG
-  cout << "Setting up parallel Silo I/O class.\n";
+  spdlog::info("Setting up parallel Silo I/O class.");
 #endif
   numfiles = -1;
   return;
@@ -90,7 +95,7 @@ dataio_silo_pllel::dataio_silo_pllel(
 dataio_silo_pllel::~dataio_silo_pllel()
 {
 #ifndef NDEBUG
-  cout << "Deleting parallel Silo I/O class.\n";
+  spdlog::info("Deleting parallel Silo I/O class.");
 #endif
   return;
 }
@@ -106,13 +111,13 @@ int dataio_silo_pllel::ReadHeader(
   int err  = 0;
   silofile = infile;
 #ifndef NDEBUG
-  cout << "Rank: " << mpiPM->get_myrank();
-  cout << "\tReading Header from file: " << silofile << "\n";
+  spdlog::debug(
+      "Rank: {}\tReading Header from file: {}", mpiPM->get_myrank(), silofile);
 #endif
 
   if (!file_exists(silofile)) {
-    rep.error(
-        "dataio_silo_pllel::ReadHeader() File not found, \
+    spdlog::error(
+        "{}: {}", "dataio_silo_pllel::ReadHeader() File not found, \
                myrank follows",
         mpiPM->get_myrank());
   }
@@ -123,7 +128,7 @@ int dataio_silo_pllel::ReadHeader(
   err            = mpiPM->silo_pllel_init(
       num_files, "READ", file_id, &group_rank, &myrank_group);
   if (err) {
-    rep.error("mpiPM->silo_pllel_init() returned err", err);
+    spdlog::error("{}: {}", "mpiPM->silo_pllel_init() returned err", err);
   }
 
   //
@@ -133,7 +138,8 @@ int dataio_silo_pllel::ReadHeader(
   string mydir = "/header";
   err = mpiPM->silo_pllel_wait_for_file(file_id, silofile, mydir, db_ptr);
   if (err || !(*db_ptr)) {
-    rep.error("mpiPM->silo_pllel_wait_for_file() returned err", err);
+    spdlog::error(
+        "{}: {}", "mpiPM->silo_pllel_wait_for_file() returned err", err);
   }
 
   //
@@ -143,8 +149,8 @@ int dataio_silo_pllel::ReadHeader(
   err               = read_simulation_parameters(SimPM);
   dataio_silo::ndim = SimPM.ndim;
   if (err) {
-    rep.error(
-        "dataio_silo_MPI::ReadHeader() error reading header \
+    spdlog::error(
+        "{}: {}", "dataio_silo_MPI::ReadHeader() error reading header \
                from silo file",
         err);
   }
@@ -154,7 +160,7 @@ int dataio_silo_pllel::ReadHeader(
     numfiles = 1;
     err      = 0;
 #ifndef NDEBUG
-    cout << "Warning didn't read NUM_FILES from silo file.\n";
+    spdlog::warn("Warning didn't read NUM_FILES from silo file.");
 #endif
   }
 
@@ -162,14 +168,17 @@ int dataio_silo_pllel::ReadHeader(
   // Finished Local work; hand off baton and wait!
   //
   err = mpiPM->silo_pllel_finish_with_file(file_id, db_ptr);
-  if (err) rep.error("mpiPM->silo_pllel_finish_with_file() returned err", err);
+  if (err)
+    spdlog::error(
+        "{}: {}", "mpiPM->silo_pllel_finish_with_file() returned err", err);
 
   SimPM.levels.resize(SimPM.grid_nlevels);
   mpiPM = &SimPM.levels[0].sub_domain;
 
 #ifndef NDEBUG
-  cout << "Rank: " << mpiPM->get_myrank();
-  cout << "\tFINISHED reading Header from file: " << silofile << "\n";
+  spdlog::debug(
+      "Rank: {}\tFINISHED reading Header from file: {}", mpiPM->get_myrank(),
+      silofile);
 #endif
   return err;
 }
@@ -184,25 +193,31 @@ int dataio_silo_pllel::ReadData(
 )
 {
   dataio_silo::gp = cg[0];
-  if (!gp) rep.error("dataio_silo_pllel::ReadData() null pointer to grid!", gp);
+  if (!gp)
+    spdlog::error(
+        "{}: {}", "dataio_silo_pllel::ReadData() null pointer to grid!",
+        fmt::ptr(gp));
 
   int err = 0;
 #ifndef NDEBUG
-  cout << "\n----Rank: " << mpiPM->get_myrank();
-  cout << "\tReading Data from files: " << infile;
+  spdlog::debug(
+      "\n----Rank: {}\tReading Data from files: {}", mpiPM->get_myrank(),
+      infile);
 #endif
 
   // set grid properties for quadmesh
   if (!have_setup_gridinfo) {
     err = setup_grid_properties(gp, SimPM);
-    rep.errorTest(
-        "dataio_silo_pllel::ReadData() error setting up grid_props", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}",
+          "dataio_silo_pllel::ReadData() error setting up grid_props", 0, err);
   }
 
   // check numfiles was read from header
   if (numfiles < 0)
-    rep.error(
-        "Failed to get numfiles from header! but error not detected!",
+    spdlog::error(
+        "{}: {}", "Failed to get numfiles from header! but error not detected!",
         numfiles);
   //  cout <<"\tnumfiles="<<numfiles<<" and nproc="<<mpiPM->nproc<<"\n";
 
@@ -213,7 +228,8 @@ int dataio_silo_pllel::ReadData(
   string file_id = "read_data";
   err            = mpiPM->silo_pllel_init(
       numfiles, "READ", file_id, &group_rank, &myrank_ingroup);
-  if (err) rep.error("mpiPM->silo_pllel_init() returned err", err);
+  if (err)
+    spdlog::error("{}: {}", "mpiPM->silo_pllel_init() returned err", err);
 
   // Choose correct filename based on numfiles.
   // Also choose correct directory name, assuming that nproc is the same as
@@ -226,8 +242,9 @@ int dataio_silo_pllel::ReadData(
   temp.str("");
   string::size_type pos = infile.find("0000");
   if (pos == string::npos) {
-    cout << "didn't fine 0000 in file, so assuming reading a single file.\n";
-    // rep.error("not a parallel i/o filename!",infile);
+    spdlog::debug(
+        "didn't fine 0000 in file, so assuming reading a single file");
+    // spdlog::error("{}: {}", "not a parallel i/o filename!",infile);
   }
   else {
     temp.str("");
@@ -235,7 +252,7 @@ int dataio_silo_pllel::ReadData(
     temp << group_rank;
     infile.replace(pos, 4, temp.str());
 #ifndef NDEBUG
-    cout << "\tNew infile: " << infile << "\n";
+    spdlog::debug("\tNew infile: {}", infile);
 #endif
     temp.str("");
   }
@@ -249,7 +266,7 @@ int dataio_silo_pllel::ReadData(
   string mydir;
   set_dir_in_file(mydir, mpiPM->get_myrank(), myrank_ingroup, 0);
   if (SimPM.grid_nlevels > 0)
-    rep.error("dataio silo MPI levels", SimPM.grid_nlevels);
+    spdlog::error("{}: {}", "dataio silo MPI levels", SimPM.grid_nlevels);
   // temp.str("");
   // temp << "level_"; temp.width(4); temp << mpiPM->get_myrank() <<
   // "_domain_"; temp.width(4); temp<<myrank_ingroup; mydir = temp.str();
@@ -258,7 +275,8 @@ int dataio_silo_pllel::ReadData(
   *db_ptr = 0;
   err     = mpiPM->silo_pllel_wait_for_file(file_id, silofile, mydir, db_ptr);
   if (err || !(*db_ptr))
-    rep.error("mpiPM->silo_pllel_wait_for_file() returned err", err);
+    spdlog::error(
+        "{}: {}", "mpiPM->silo_pllel_wait_for_file() returned err", err);
 
   if (silo_filetype == DB_HDF5) {
     // char *compress = DBGetCompression();
@@ -278,21 +296,24 @@ int dataio_silo_pllel::ReadData(
   temp << mpiPM->get_myrank();
   string meshname = temp.str();
   DBquadmesh *qm  = DBGetQuadmesh(*db_ptr, meshname.c_str());
-  if (!qm) rep.error("failed to find quadmesh named as follows", meshname);
+  if (!qm)
+    spdlog::error(
+        "{}: {}", "failed to find quadmesh named as follows", meshname);
   int n;
   //
   // first check dimensions.
   //
-  if ((n = qm->ndims) != ndim) rep.error("bad dimensionality in qmesh", n);
+  if ((n = qm->ndims) != ndim)
+    spdlog::error("{}: {}", "bad dimensionality in qmesh", n);
   //
   // check number of cells.
   //
   int nn = 1;
   for (int i = 0; i < ndim; i++)
-    nn *= mpiPM->get_directional_Ncells()[i] + 1;
+    nn *= mpiPM->get_directional_Ncells(i) + 1;
   if ((n = qm->nnodes) != nn) {
-    cerr << "nnodes=" << n << " and ncell=" << mpiPM->get_Ncell() << "\n";
-    rep.error("bad number of nodes", n - mpiPM->get_Ncell());
+    spdlog::error("nnodes={} and ncell={}", n, mpiPM->get_Ncell());
+    spdlog::error("{}: {}", "bad number of nodes", n - mpiPM->get_Ncell());
   }
   //
   // ---------- check grid nodes are where we expect ----------
@@ -301,13 +322,9 @@ int dataio_silo_pllel::ReadData(
   // delete data arrays, reset datatype, and re-create data arrays.
   //
   if (qm->datatype != silo_dtype) {
-    cout << "HMMM: file has datatype " << qm->datatype;
-    cout << " but I am trying to read datatype " << silo_dtype << "\n";
-    cout << "    DB_INT=16, DB_SHORT=17, DB_LONG=18, DB_FLOAT=19, ";
-    cout << "DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\n";
-    cout << "ReadData() quadmesh has type=" << qm->datatype;
-    cout << " but expecting type=" << silo_dtype << "\n";
-    cout << "\t... resetting datatype for this file.\n";
+    spdlog::debug(
+        "HMMM: file has datatype {} but I am trying to read datatype {}\n    DB_INT=16, DB_SHORT=17, DB_LONG=18, DB_FLOAT=19, DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\nReadData() quadmesh has type={} but expecting type={}\n\t... resetting datatype for this file",
+        qm->datatype, silo_dtype, qm->datatype, silo_dtype);
     delete_data_arrays();
     silo_dtype = qm->datatype;
     create_data_arrays(SimPM);
@@ -323,24 +340,29 @@ int dataio_silo_pllel::ReadData(
     //
     float *nx = reinterpret_cast<float *>(nodex);
     if (!pconst.equalD(nx[0], meshcoords[XX][0])) {
-      cout << "I think x[0]=" << nx[0];
-      cout << ", silo file says x[0]=" << meshcoords[XX][0] << "\n";
-      rep.error("XX mesh not at right place...", nx[0] - meshcoords[XX][0]);
+      spdlog::debug(
+          "I think x[0]={}, silo file says x[0]={}", nx[0], meshcoords[XX][0]);
+      spdlog::error(
+          "{}: {}", "XX mesh not at right place...", nx[0] - meshcoords[XX][0]);
     }
     if (ndim > 1) {
       nx = reinterpret_cast<float *>(nodey);
       if (!pconst.equalD(nx[0], meshcoords[YY][0])) {
-        cout << "nodey = " << nx[0] << " and coords[y]= " << meshcoords[YY][0]
-             << "\n";
-        rep.error("YY mesh not at right place...", nx[0] - meshcoords[YY][0]);
+        spdlog::debug(
+            "nodey = {} and coords[y]= {}\n", nx[0], meshcoords[YY][0]);
+        spdlog::error(
+            "{}: {}", "YY mesh not at right place...",
+            nx[0] - meshcoords[YY][0]);
       }
     }
     if (ndim > 2) {
       nx = reinterpret_cast<float *>(nodez);
       if (!pconst.equalD(nx[0], meshcoords[ZZ][0])) {
-        cout << "nodez = " << nx[0] << " and coords[z]= " << meshcoords[ZZ][0]
-             << "\n";
-        rep.error("ZZ mesh not at right place...", nx[0] - meshcoords[ZZ][0]);
+        spdlog::debug(
+            "nodez = {} and coords[z]= {}\n", nx[0], meshcoords[ZZ][0]);
+        spdlog::error(
+            "{}: {}", "ZZ mesh not at right place...",
+            nx[0] - meshcoords[ZZ][0]);
       }
     }
   }
@@ -354,22 +376,27 @@ int dataio_silo_pllel::ReadData(
     //
     double *nx = reinterpret_cast<double *>(nodex);
     if (!pconst.equalD(nx[0], meshcoords[XX][0])) {
-      rep.error("XX mesh not at right place...", nx[0] - meshcoords[XX][0]);
+      spdlog::error(
+          "{}: {}", "XX mesh not at right place...", nx[0] - meshcoords[XX][0]);
     }
     if (ndim > 1) {
       nx = reinterpret_cast<double *>(nodey);
       if (!pconst.equalD(nx[0], meshcoords[YY][0])) {
-        cout << "nodey = " << nx[0] << " and coords[y]= " << meshcoords[YY][0]
-             << "\n";
-        rep.error("YY mesh not at right place...", nx[0] - meshcoords[YY][0]);
+        spdlog::debug(
+            "nodey = {} and coords[y]= {}\n", nx[0], meshcoords[YY][0]);
+        spdlog::error(
+            "{}: {}", "YY mesh not at right place...",
+            nx[0] - meshcoords[YY][0]);
       }
     }
     if (ndim > 2) {
       nx = reinterpret_cast<double *>(nodez);
       if (!pconst.equalD(nx[0], meshcoords[ZZ][0])) {
-        cout << "nodez = " << nx[0] << " and coords[z]= " << meshcoords[ZZ][0]
-             << "\n";
-        rep.error("ZZ mesh not at right place...", nx[0] - meshcoords[ZZ][0]);
+        spdlog::debug(
+            "nodez = {} and coords[z]= {}\n", nx[0], meshcoords[ZZ][0]);
+        spdlog::error(
+            "{}: {}", "ZZ mesh not at right place...",
+            nx[0] - meshcoords[ZZ][0]);
       }
     }
   }
@@ -379,13 +406,15 @@ int dataio_silo_pllel::ReadData(
   // now read each variable in turn from the mesh
   //
   err = set_readvars(SimPM);
-  if (err) rep.error("failed to set readvars in ReadData", err);
+  if (err) spdlog::error("{}: {}", "failed to set readvars in ReadData", err);
   for (std::vector<string>::iterator i = readvars.begin(); i != readvars.end();
        ++i) {
     err =
         read_variable2grid(SimPM, *db_ptr, meshname, (*i), mpiPM->get_Ncell());
     if (err)
-      rep.error("dataio_silo_pllel::ReadData() error reading variable", (*i));
+      spdlog::error(
+          "{}: {}", "dataio_silo_pllel::ReadData() error reading variable",
+          (*i));
   }
   // Now assign Ph to be equal to P for each cell.
   cell *cpt = gp->FirstPt();
@@ -398,13 +427,15 @@ int dataio_silo_pllel::ReadData(
   // Finished Local work; hand off baton and wait!
   //
   err = mpiPM->silo_pllel_finish_with_file(file_id, db_ptr);
-  if (err) rep.error("mpiPM->silo_pllel_finish_with_file() returned err", err);
+  if (err)
+    spdlog::error(
+        "{}: {}", "mpiPM->silo_pllel_finish_with_file() returned err", err);
   mpiPM->barrier("dataio_silo_pllel__ReadData");
 
 #ifndef NDEBUG
-  cout << "----Rank: " << mpiPM->get_myrank();
-  cout << "\tFINISHED reading Data from file: " << silofile << "\n"
-       << "\n";
+  spdlog::debug(
+      "----Rank: {}\tFINISHED reading Data from file: {}", mpiPM->get_myrank(),
+      silofile);
 #endif
   return err;
 }
@@ -423,7 +454,9 @@ int dataio_silo_pllel::OutputData(
   // loop over grid refinement levels, save one file per level
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
 
-    if (!cg[l]) rep.error("dataio_silo::OutputData() null pointer!", cg[l]);
+    if (!cg[l])
+      spdlog::error(
+          "{}: {}", "dataio_silo::OutputData() null pointer!", fmt::ptr(cg[l]));
     dataio_silo::gp = cg[l];
     mpiPM           = &(SimPM.levels[l].sub_domain);
 
@@ -442,7 +475,8 @@ int dataio_silo_pllel::OutputData(
     }
 
     err = SaveLevelData(fbase, cg[l], SimPM, file_counter);
-    rep.errorTest("saveleveldata", 0, err);
+    if (0 != err)
+      spdlog::error("{}: Expected {} but got {}", "saveleveldata", 0, err);
   }
   return err;
 }
@@ -459,7 +493,10 @@ int dataio_silo_pllel::SaveLevelData(
 {
   int err         = 0;
   dataio_silo::gp = cg;
-  if (!gp) rep.error("dataio_silo_pllel::SaveLevelData() null grid!", gp);
+  if (!gp)
+    spdlog::error(
+        "{}: {}", "dataio_silo_pllel::SaveLevelData() null grid!",
+        fmt::ptr(gp));
 
   int level = 0;
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
@@ -468,8 +505,9 @@ int dataio_silo_pllel::SaveLevelData(
   }
 
 #ifndef NDEBUG
-  cout << "\n----dataio_silo_pllel::SaveLevelData() Writing data to ";
-  cout << "filebase: " << outfilebase << "\n";
+  spdlog::info(
+      "----dataio_silo_pllel::SaveLevelData() Writing data to filebase: {}",
+      outfilebase);
 #endif
 
   // First initialise the I/O.
@@ -477,7 +515,7 @@ int dataio_silo_pllel::SaveLevelData(
     DBSetCompression("METHOD=GZIP LEVEL=1");
     DBSetFriendlyHDF5Names(1);
 #ifndef NDEBUG
-    cout << " *** setting compression.\n";
+    spdlog::info(" *** setting compression.");
 #endif
   }
 
@@ -497,31 +535,32 @@ int dataio_silo_pllel::SaveLevelData(
     numfiles = mpiPM->get_nproc();
 
 #ifndef NDEBUG
-  cout << "----dataio_silo_pllel::SaveLevelData() running pmpio_init\n";
+  spdlog::info("----dataio_silo_pllel::SaveLevelData() running pmpio_init");
 #endif
 
   int group_rank = 0, myrank_ingroup = 0;
   string file_id = "write_data";
   err            = mpiPM->silo_pllel_init(
       numfiles, "WRITE", file_id, &group_rank, &myrank_ingroup);
-  if (err) rep.error("mpiPM->silo_pllel_init() returned err", err);
+  if (err)
+    spdlog::error("{}: {}", "mpiPM->silo_pllel_init() returned err", err);
 
 #ifndef NDEBUG
-  cout << "myrank: " << mpiPM->get_myrank() << "\tnumfiles: ";
-  cout << numfiles << "\tmy_group: ";
-  cout << group_rank << "\tmy_index_in_group: " << myrank_ingroup << "\n";
+  spdlog::debug(
+      "myrank: {}\tnumfiles: {}\tmy_group: {}\tmy_index_in_group: {}",
+      mpiPM->get_myrank(), numfiles, group_rank, myrank_ingroup);
 #endif  // NDEBUG
 
   //
   // Choose output filename:
   //
 #ifndef NDEBUG
-  cout << "setting strings... outfilebase=" << outfilebase << "\n";
+  spdlog::debug("setting strings... outfilebase={}", outfilebase);
 #endif  // NDEBUG
 
   choose_pllel_filename(outfilebase, group_rank, file_counter, silofile);
 #ifndef NDEBUG
-  cout << "string for outfile set...\n";
+  spdlog::info("string for outfile set...");
 #endif  // NDEBUG
 
   //
@@ -539,28 +578,33 @@ int dataio_silo_pllel::SaveLevelData(
   // temp << myrank_ingroup;
   // mydir = temp.str();
   // temp.str("");
-  if (mydir.size() + 1 >= strlength) rep.error("string too large", mydir);
+  if (mydir.size() + 1 >= strlength)
+    spdlog::error("{}: {}", "string too large", mydir);
 
   err = 0;
   // set grid properties for quadmesh
 #ifndef NDEBUG
-  cout << "----dataio_silo_pllel::SaveLevelData() grid properties\n";
+  spdlog::info("----dataio_silo_pllel::SaveLevelData() grid properties");
 #endif
   err = setup_grid_properties(gp, SimPM);
-  if (err) rep.error("dataio_silo_pllel::SaveLevelData() grid_props", err);
+  if (err)
+    spdlog::error(
+        "{}: {}", "dataio_silo_pllel::SaveLevelData() grid_props", err);
 #ifndef NDEBUG
-  cout << "----dataio_silo_pllel::SaveLevelData() grid props done\n";
+  spdlog::info("----dataio_silo_pllel::SaveLevelData() grid props done");
 #endif
 
   if (!have_setup_writevars) {
     // set what data to write to the mesh.
 #ifndef NDEBUG
-    cout << "----dataio_silo_pllel::SaveLevelData() write variables\n";
+    spdlog::info("----dataio_silo_pllel::SaveLevelData() write variables");
 #endif
     err = setup_write_variables(SimPM);
-    if (err) rep.error("dataio_silo_pllel::SaveLevelData() write-vars", err);
+    if (err)
+      spdlog::error(
+          "{}: {}", "dataio_silo_pllel::SaveLevelData() write-vars", err);
 #ifndef NDEBUG
-    cout << "----dataio_silo_pllel::SaveLevelData() write vars done\n";
+    spdlog::info("----dataio_silo_pllel::SaveLevelData() write vars done");
 #endif
   }
 
@@ -580,7 +624,7 @@ int dataio_silo_pllel::SaveLevelData(
   // Wait for my turn to write to the file.
   //
 #ifndef NDEBUG
-  cout << "----dataio_silo_pllel::SaveLevelData() waiting for baton\n";
+  spdlog::info("----dataio_silo_pllel::SaveLevelData() waiting for baton");
 #endif
   /*
    * TODO: non-root processes call this to pass required data to rank 0 when it
@@ -594,7 +638,8 @@ int dataio_silo_pllel::SaveLevelData(
   *db_ptr = 0;
   err     = mpiPM->silo_pllel_wait_for_file(file_id, silofile, mydir, db_ptr);
   if (err || !(*db_ptr))
-    rep.error("mpiPM->silo_pllel_wait_for_file() returned err", err);
+    spdlog::error(
+        "{}: {}", "mpiPM->silo_pllel_wait_for_file() returned err", err);
 
     //
     // Have got the baton, now, so the file is mine to write to.
@@ -603,54 +648,56 @@ int dataio_silo_pllel::SaveLevelData(
     // Generate Mesh in file.
     //
 #ifndef NDEBUG
-  cout << "----dataio_silo_pllel::SaveLevelData() generating quadmesh" << endl;
+  spdlog::info("----dataio_silo_pllel::SaveLevelData() generating quadmesh");
 #endif
   string meshname;
   mesh_name(mpiPM->get_myrank(), meshname);
   err = generate_quadmesh(*db_ptr, meshname, SimPM);
-  if (err) rep.error("dataio_silo_pllel::SaveLevelData() quadmesh", err);
+  if (err)
+    spdlog::error("{}: {}", "dataio_silo_pllel::SaveLevelData() quadmesh", err);
 #ifndef NDEBUG
-  cout << "----dataio_silo_pllel::SaveLevelData() quadmesh generated" << endl;
+  spdlog::info("----dataio_silo_pllel::SaveLevelData() quadmesh generated");
 #endif
 
   //
   // now write each variable in turn to the mesh
   //
 #ifndef NDEBUG
-  cout << "----dataio_silo_pllel::SaveLevelData() create data arrays" << endl;
+  spdlog::debug("----dataio_silo_pllel::SaveLevelData() create data arrays");
 #endif
 
   create_data_arrays(SimPM);
 
 #ifndef NDEBUG
-  cout << "----dataio_silo_pllel::SaveLevelData() arrays created" << endl;
+  spdlog::debug("----dataio_silo_pllel::SaveLevelData() arrays created");
 #endif
 
   for (std::vector<string>::iterator i = varnames.begin(); i != varnames.end();
        ++i) {
 #ifndef NDEBUG
-    cout << "\twriting variable " << (*i) << " to file " << silofile << ""
-         << endl;
+    spdlog::debug("\twriting variable {} to file {}", (*i), silofile);
 #endif
 
     err = write_variable2mesh(SimPM, *db_ptr, meshname, (*i));
 
 #ifndef NDEBUG
-    cout << "\t\tvariable " << (*i) << " written." << endl;
+    spdlog::debug("\t\tvariable {} written.", (*i));
 #endif
 
     if (err)
-      rep.error("dataio_silo_pllel::SaveLevelData() writing variable", (*i));
+      spdlog::error(
+          "{}: {}", "dataio_silo_pllel::SaveLevelData() writing variable",
+          (*i));
   }
 
 #ifndef NDEBUG
-  cout << "----dataio_silo_pllel::SaveLevelData() deleting arrays" << endl;
+  spdlog::debug("----dataio_silo_pllel::SaveLevelData() deleting arrays");
 #endif
 
   delete_data_arrays();
 
 #ifndef NDEBUG
-  cout << "----dataio_silo_pllel::SaveLevelData() arrays deleted" << endl;
+  spdlog::debug("----dataio_silo_pllel::SaveLevelData() arrays deleted");
 #endif
 
   // ONLY DO THIS IF I AM ROOT PROCESSOR *IN EACH GROUP*
@@ -686,7 +733,8 @@ int dataio_silo_pllel::SaveLevelData(
         *db_ptr, "level_xmax", &(SimPM.levels[level].Xmax), dim1, 1, DB_DOUBLE);
     //    err = write_header(*db_ptr);
     err = write_simulation_parameters(SimPM);
-    if (err) rep.error("dataio_silo_pllel::SaveLevelData() header", err);
+    if (err)
+      spdlog::error("{}: {}", "dataio_silo_pllel::SaveLevelData() header", err);
 
     DBSetDir(*db_ptr, "/");
     DBSetDir(*db_ptr, datadir);
@@ -703,7 +751,7 @@ int dataio_silo_pllel::SaveLevelData(
 
     //    cout <<"Writing multimesh data to file...\n";
     // err = write_multimesh(*db_ptr, gp, mm_name, mma_name);
-    // if (err) rep.error("Failed to write multimesh Object",err);
+    // if (err) spdlog::error("{}: {}", "Failed to write multimesh Object",err);
     char datadir[strlength];
     int err = DBGetDir(*db_ptr, datadir);
     DBSetDir(*db_ptr, "/");
@@ -751,7 +799,7 @@ int dataio_silo_pllel::SaveLevelData(
     else if (SimPM.coord_sys == COORD_SPH)
       csys = DB_QUAD_RECT;
     else
-      rep.error("bad coord system", SimPM.coord_sys);
+      spdlog::error("{}: {}", "bad coord system", SimPM.coord_sys);
     for (int i = 0; i < nmesh; i++) {
       meshtypes[i] = csys;
       temp.str("");
@@ -776,7 +824,8 @@ int dataio_silo_pllel::SaveLevelData(
       temp << "/" << tfn.c_str();
       // temp <<"/unigrid"; temp.width(4); temp<<i;
       if (temp.str().length() > strlength - 1)
-        rep.error("directory name too long!!!", temp.str().length());
+        spdlog::error(
+            "{}: {}", "directory name too long!!!", temp.str().length());
       strcpy(mm_names[i], temp.str().c_str());
     }
 
@@ -803,9 +852,11 @@ int dataio_silo_pllel::SaveLevelData(
     // write the multimesh
     err = DBPutMultimesh(
         *db_ptr, mm_name.c_str(), nmesh, mm_names, meshtypes, mm_opts);
-    if (err) rep.error("dataio_silo_pllel::SaveLevelData()multimesh", err);
+    if (err)
+      spdlog::error(
+          "{}: {}", "dataio_silo_pllel::SaveLevelData()multimesh", err);
 #ifndef NDEBUG
-    cout << "----dataio_silo_pllel::SaveLevelData() quadmesh written" << endl;
+    spdlog::debug("----dataio_silo_pllel::SaveLevelData() quadmesh written");
 #endif
     DBClearOptlist(mm_opts);
 
@@ -844,7 +895,8 @@ int dataio_silo_pllel::SaveLevelData(
         temp << tfn.c_str();
         temp << "/" << vname;
         if (temp.str().length() > strlength)
-          rep.error("multivar name too long!!!", temp.str().length());
+          spdlog::error(
+              "{}: {}", "multivar name too long!!!", temp.str().length());
         strcpy(mm_names[ii], temp.str().c_str());
       }
 
@@ -863,7 +915,9 @@ int dataio_silo_pllel::SaveLevelData(
 
       err = DBPutMultivar(
           *db_ptr, vname.c_str(), nmesh, mm_names, meshtypes, mm_opts);
-      if (err) rep.error("dataio_silo_pllel::SaveLevelData() variable", (*i));
+      if (err)
+        spdlog::error(
+            "{}: {}", "dataio_silo_pllel::SaveLevelData() variable", (*i));
       DBClearOptlist(mm_opts);
     }
 
@@ -888,7 +942,9 @@ int dataio_silo_pllel::SaveLevelData(
     //
     if (mpiPM->get_nproc() > 1) {
       err = write_multimeshadj(SimPM, *db_ptr, gp, mm_name, mma_name);
-      if (err) rep.error("Failed to write multimesh Adjacency Object", err);
+      if (err)
+        spdlog::error(
+            "{}: {}", "Failed to write multimesh Adjacency Object", err);
     }
   }  // if root processor of whole simulation
 
@@ -896,16 +952,17 @@ int dataio_silo_pllel::SaveLevelData(
   // Finished Local work; hand off baton and wait!
   //
   err = mpiPM->silo_pllel_finish_with_file(file_id, db_ptr);
-  if (err) rep.error("mpiPM->silo_pllel_finish_with_file() returned err", err);
+  if (err)
+    spdlog::error(
+        "{}: {}", "mpiPM->silo_pllel_finish_with_file() returned err", err);
   mpiPM->barrier("dataio_silo_pllel__SaveLevelData");
 
   //   cout <<"Got past barrier... finished outputting silo data.\n\n";
 
 #ifndef NDEBUG
-  cout << "----dataio_silo_pllel::SaveLevelData() Finished writing data to "
-          "file: "
-       << silofile << "\n"
-       << endl;
+  spdlog::debug(
+      "----dataio_silo_pllel::SaveLevelData() Finished writing data to file: {}",
+      silofile);
 #endif
   return err;
 }
@@ -933,7 +990,8 @@ int dataio_silo_pllel::choose_pllel_filename(
   temp << "silo";
   outfile.clear();
   outfile = temp.str();
-  if (outfile.size() + 1 >= strlength) rep.error("string too large", outfile);
+  if (outfile.size() + 1 >= strlength)
+    spdlog::error("{}: {}", "string too large", outfile);
   temp.str("");
   return 0;
 }
@@ -948,7 +1006,10 @@ int dataio_silo_pllel::setup_grid_properties(
 {
   // set grid parameters
   // This version is for the local domain of the current processor.
-  if (!grid) rep.error("dataio_silo::setup_grid_properties() null ptr", grid);
+  if (!grid)
+    spdlog::error(
+        "{}: {}", "dataio_silo::setup_grid_properties() null ptr",
+        fmt::ptr(grid));
   double dx               = grid->DX();
   dataio_silo::ndim       = SimPM.ndim;
   dataio_silo::vec_length = SimPM.eqnNDim;
@@ -1091,7 +1152,7 @@ int dataio_silo_pllel::setup_grid_properties(
   else if (SimPM.coord_sys == COORD_SPH)
     silo_coordsys = DB_SPHERICAL;
   else
-    rep.error("bad coord system", SimPM.coord_sys);
+    spdlog::error("{}: {}", "bad coord system", SimPM.coord_sys);
   DBAddOption(GridOpts, DBOPT_COORDSYS, &silo_coordsys);
   DBAddOption(GridOpts, DBOPT_DTIME, &SimPM.simtime);
   DBAddOption(GridOpts, DBOPT_CYCLE, &SimPM.timestep);
@@ -1255,7 +1316,7 @@ int dataio_silo_pllel::write_multimeshadj(
   }
 
 #ifndef NDEBUG
-  cout << "Writing multimesh adjacency object into Silo file." << std::endl;
+  spdlog::info("Writing multimesh adjacency object into Silo file.");
 #endif
 
   //
@@ -1303,7 +1364,8 @@ int dataio_silo_pllel::write_multimeshadj(
       dom2 = ngb[off1 + i];
       off2 = Sk[dom2];
       if (off2 > Stot)
-        rep.error("Counting error in loop to find back array", off2 - Stot);
+        spdlog::error(
+            "{}: {}", "Counting error in loop to find back array", off2 - Stot);
 
       for (int s = 0; s < Nngb[dom2]; s++) {
         if (ngb[off2 + s] == v) back[off1 + i] = s;
@@ -1325,8 +1387,9 @@ int dataio_silo_pllel::write_multimeshadj(
     for (int i = 0; i < Nngb[v]; i++) {
       off1 = Sk[v] + i;
       if (off1 > Stot)
-        rep.error(
-            "Counting error in loop over neighbours for mesh v", off1 - Stot);
+        spdlog::error(
+            "{}: {}", "Counting error in loop over neighbours for mesh v",
+            off1 - Stot);
       //
       // Local nodelist is the same for all of v's nodelists.
       //
@@ -1368,12 +1431,12 @@ int dataio_silo_pllel::write_multimeshadj(
         nodelist[off1][7] = offsets[XX] + directional_Ncells[XX];
       }
       else {
-        cout << "i= " << i << " v=" << v << "  ix " << my_ix[XX] << "  "
-             << ngb_ix[XX] << "  " << nx[XX] << "\n";
-        rep.printVec("my_ix", my_ix, 3);
-        rep.printVec("ngb_ix", ngb_ix, 3);
-        rep.error("domains don't touch (X-dir)!", my_ix[XX] - ngb_ix[XX]);
-        cout << std::endl;
+        spdlog::debug(
+            "i= {} v={}  ix {}  {}  {}", i, v, my_ix[XX], ngb_ix[XX], nx[XX]);
+        spdlog::debug("my_ix : {}", my_ix);
+        spdlog::debug("ngb_ix : {}", ngb_ix);
+        spdlog::error(
+            "{}: {}", "domains don't touch (X-dir)!", my_ix[XX] - ngb_ix[XX]);
       }
 
       //
@@ -1394,7 +1457,8 @@ int dataio_silo_pllel::write_multimeshadj(
           nodelist[off1][9] = offsets[YY] + directional_Ncells[YY];
         }
         else
-          rep.error("domains don't touch! (Y-dir)", my_ix[YY] - ngb_ix[YY]);
+          spdlog::error(
+              "{}: {}", "domains don't touch! (Y-dir)", my_ix[YY] - ngb_ix[YY]);
       }  // at least 2D
 
       //
@@ -1415,7 +1479,8 @@ int dataio_silo_pllel::write_multimeshadj(
           nodelist[off1][11] = offsets[ZZ] + directional_Ncells[ZZ];
         }
         else
-          rep.error("domains don't touch! (Z-dir)", my_ix[ZZ] - ngb_ix[ZZ]);
+          spdlog::error(
+              "{}: {}", "domains don't touch! (Z-dir)", my_ix[ZZ] - ngb_ix[ZZ]);
       }  // 3D
 
       //
@@ -1455,7 +1520,9 @@ int dataio_silo_pllel::write_multimeshadj(
   err = DBPutMultimeshadj(
       dbfile, mma_name.c_str(), nmesh, meshtypes, Nngb, ngb, back, nnodes,
       nodelist, 0, 0, mma_opts);
-  if (err) rep.error("dataio_silo_pllel::OutputData() multimesh info", err);
+  if (err)
+    spdlog::error(
+        "{}: {}", "dataio_silo_pllel::OutputData() multimesh info", err);
 
   DBClearOptlist(mma_opts);
   DBFreeOptlist(mma_opts);
@@ -1475,7 +1542,7 @@ int dataio_silo_pllel::write_multimeshadj(
     nodelist[s] = mem.myfree(nodelist[s]);
   }
 #ifndef NDEBUG
-  cout << "Finished writing mulitmesh adjacency info.\n";
+  spdlog::info("Finished writing mulitmesh adjacency info.");
 #endif
 
   return 0;

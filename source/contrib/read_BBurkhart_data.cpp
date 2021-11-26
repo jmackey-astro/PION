@@ -15,7 +15,7 @@
 #include "defines/testing_flags.h"
 
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
 
 #include "constants.h"
 #include "coord_sys/VectorOps.h"
@@ -44,10 +44,11 @@ int IC_read_BBurkhart_data::setup_data(
 )
 {
   ICsetup_base::gg = ggg;
-  if (!gg) rep.error("null pointer to grid!", ggg);
+  if (!gg) spdlog::error("{}: {}", "null pointer to grid!", fmt::ptr(ggg));
 
   ICsetup_base::rp = rrp;
-  if (!rp) rep.error("null pointer to ReadParams", rp);
+  if (!rp) spdlog::error("{}: {}", "null pointer to ReadParams", fmt::ptr(rp));
+  ;
 
   string seek, str;
 
@@ -56,7 +57,7 @@ int IC_read_BBurkhart_data::setup_data(
   //
   seek = "BB_filename_RO";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   File_RO = str;
 
   //
@@ -72,34 +73,34 @@ int IC_read_BBurkhart_data::setup_data(
 
   seek = "BB_filename_VX";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   File_VX = str;
 
   seek = "BB_filename_VY";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   File_VY = str;
 
   seek = "BB_filename_VZ";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   File_VZ = str;
 
   if (SimPM.eqntype == EQMHD || SimPM.eqntype == EQGLM
       || SimPM.eqntype == EQFCD) {
     seek = "BB_filename_BX";
     str  = rp->find_parameter(seek);
-    if (str == "") rep.error("didn't find parameter", seek);
+    if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
     File_BX = str;
 
     seek = "BB_filename_BY";
     str  = rp->find_parameter(seek);
-    if (str == "") rep.error("didn't find parameter", seek);
+    if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
     File_BY = str;
 
     seek = "BB_filename_BZ";
     str  = rp->find_parameter(seek);
-    if (str == "") rep.error("didn't find parameter", seek);
+    if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
     File_BZ = str;
   }
   else {
@@ -142,7 +143,7 @@ int IC_read_BBurkhart_data::setup_data(
   seek = "BB_code_PDratio";
   str  = rp->find_parameter(seek);
   if (str == "")
-    rep.error("No pressure/density ratio", "BB_code_PDratio");
+    spdlog::error("{}: {}", "No pressure/density ratio", "BB_code_PDratio");
   else
     CodePDratio = atof(str.c_str());
   cout << "Pressure/density ratio = " << CodePDratio << "\n";
@@ -150,21 +151,21 @@ int IC_read_BBurkhart_data::setup_data(
   seek = "BB_cgs_density";
   str  = rp->find_parameter(seek);
   if (str == "")
-    rep.error("No ism density", "BB_cgs_density");
+    spdlog::error("{}: {}", "No ism density", "BB_cgs_density");
   else
     ISMdensity = atof(str.c_str());
 
   seek = "BB_cgs_temperature";
   str  = rp->find_parameter(seek);
   if (str == "")
-    rep.error("No ism temperature", "BB_cgs_temperature");
+    spdlog::error("{}: {}", "No ism temperature", "BB_cgs_temperature");
   else
     Tism = atof(str.c_str());
 
   seek = "BB_cgs_mass_per_particle";
   str  = rp->find_parameter(seek);
   if (str == "")
-    rep.error("No mass_per_particle", "BB_cgs_mass_per_particle");
+    spdlog::error("{}: {}", "No mass_per_particle", "BB_cgs_mass_per_particle");
   else
     mass_per_particle = atof(str.c_str());
 
@@ -283,7 +284,7 @@ int IC_read_BBurkhart_data::setup_data(
         break;
 
       default:
-        rep.error("Bad variable", v);
+        spdlog::error("{}: {}", "Bad variable", v);
         break;
     }
 
@@ -310,11 +311,11 @@ int IC_read_BBurkhart_data::setup_data(
         } while ((c = ggg->NextPt(c)) != 0);
       }
       else {
-        rep.error("Unhandled variable with no source file", v);
+        spdlog::error("{}: {}", "Unhandled variable with no source file", v);
       }
     }
     else {
-      read_file(infile, v, scaling, offset, ggg);
+      read_file(infile, v, scaling, offset, fmt::ptr(ggg));
     }
   }
 
@@ -373,7 +374,7 @@ void IC_read_BBurkhart_data::read_file(
   err = fits_open_file(&ff, infile.c_str(), READONLY, &status);
   if (status) {
     fits_report_error(stderr, status);
-    rep.error("open fits file", err);
+    spdlog::error("{}: {}", "open fits file", err);
   }
 
   int ndim = g->Ndim();
@@ -407,7 +408,7 @@ void IC_read_BBurkhart_data::read_file(
 
   err = fio->read_fits_image_to_data(
       ff, HDU_NAME, ndim, l_xmin, g_xmin, pix_size, NG, ncell, TDOUBLE, &data);
-  if (err) rep.error("Failed to read fits subset", err);
+  if (err) spdlog::error("{}: {}", "Failed to read fits subset", err);
 
   cell *c      = g->FirstPt();
   size_t count = 0;

@@ -41,7 +41,7 @@
 
 #include <cmath>
 #include <fitsio.h>
-#include <iostream>
+
 #include <silo.h>
 #include <sstream>
 using namespace std;
@@ -52,7 +52,7 @@ using namespace std;
 #include "sim_params.h"
 #include "tools/interpolate.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
 #include "tools/timer.h"
 
 #include "dataIO/dataio_fits.h"
@@ -120,7 +120,7 @@ int main(int argc, char **argv)
     cout << "level:        level in NG hierarchy of file(s) for analysis.\n";
     cout << "skip:         will skip this number of input files each loop. ";
     cout << "(0 means it will calculate every file)\n";
-    rep.error("Bad number of args", argc);
+    spdlog::error("{}: {}", "Bad number of args", argc);
   }
 
   //
@@ -169,15 +169,16 @@ int main(int argc, char **argv)
   else if (optype == "2" || optype == "silo" || optype == "SILO") {
     op_filetype = OP_SILO;
     cout << "\t\toutputting data to silo files.\n";
-    rep.error(
-        "don't know how to output silo files yet... fix me please!", "sorry");
+    spdlog::error(
+        "{}: {}", "don't know how to output silo files yet... fix me please!",
+        "sorry");
   }
   else if (optype == "3" || optype == "vtk" || optype == "VTK") {
     op_filetype = OP_VTK;
     cout << "\t\toutputting data to vtk files.\n";
   }
   else
-    rep.error("What sort of output is this?", optype);
+    spdlog::error("{}: {}", "What sort of output is this?", optype);
 
   //
   // If we write a single output file for all steps or not.
@@ -208,7 +209,7 @@ int main(int argc, char **argv)
   //
   list<string> files;
   err += dataio.get_files_in_dir(input_path, input_file, &files);
-  if (err) rep.error("failed to get list of files", err);
+  if (err) spdlog::error("{}: {}", "failed to get list of files", err);
   for (list<string>::iterator s = files.begin(); s != files.end(); s++) {
     // If file is not a .silo file, then remove it from the list.
     if ((*s).find(".silo") == string::npos) {
@@ -220,7 +221,8 @@ int main(int argc, char **argv)
     }
   }
   int nfiles = static_cast<int>(files.size());
-  if (nfiles < 1) rep.error("Need at least one file, but got none", nfiles);
+  if (nfiles < 1)
+    spdlog::error("{}: {}", "Need at least one file, but got none", nfiles);
 
   cout << "--------------- Got list of Files ---------------------\n";
   cout << "-------------------------------------------------------\n";
@@ -244,9 +246,10 @@ int main(int argc, char **argv)
   string first_file = temp.str();
   temp.str("");
   err = dataio.ReadHeader(first_file, SimPM);
-  if (err) rep.error("Didn't read header", err);
+  if (err) spdlog::error("{}: {}", "Didn't read header", err);
 
-  if (lev >= SimPM.grid_nlevels) rep.error("Level doesn't exist", lev);
+  if (lev >= SimPM.grid_nlevels)
+    spdlog::error("{}: {}", "Level doesn't exist", lev);
   SimPM.levels.resize(SimPM.grid_nlevels);
   class setup_grid_NG_MPI *SimSetup = 0;
   SimSetup                          = new setup_grid_NG_MPI();
@@ -285,7 +288,7 @@ int main(int argc, char **argv)
   g.resize(1);
   SimSetup->setup_grid(g, SimPM);
   class GridBaseClass *grid = g[0];
-  if (!grid) rep.error("Grid setup failed", grid);
+  if (!grid) spdlog::error("{}: {}", "Grid setup failed", grid);
   SimPM.dx    = grid->DX();
   double delr = grid->DX();
   // ----------------------------------------------------------------
@@ -295,7 +298,8 @@ int main(int argc, char **argv)
   // This code needs 2d data to project...
   //
   if (SimPM.ndim != 2 || SimPM.coord_sys != COORD_CYL) {
-    rep.error("projection needs 2D axisymmetric data", SimPM.ndim);
+    spdlog::error(
+        "{}: {}", "projection needs 2D axisymmetric data", SimPM.ndim);
   }
 
   //
@@ -303,7 +307,7 @@ int main(int argc, char **argv)
   //
   err += SimSetup->setup_microphysics(SimPM);
   // err += setup_raytracing();
-  if (err) rep.error("Setup of microphysics and raytracing", err);
+  if (err) spdlog::error("{}: {}", "Setup of microphysics and raytracing", err);
 
   //
   // Setup X-ray emission tables.
@@ -412,7 +416,7 @@ int main(int argc, char **argv)
         im_name[im] = "AA_NII_ll6584";
         break;
       default:
-        rep.error("Bad image count", im);
+        spdlog::error("{}: {}", "Bad image count", im);
         break;
     }
   }
@@ -458,7 +462,7 @@ int main(int argc, char **argv)
     // Read header to get timestep info.
     //
     err = dataio.ReadHeader(infile, SimPM);
-    if (err) rep.error("Didn't read header", err);
+    if (err) spdlog::error("{}: {}", "Didn't read header", err);
     SimPM.grid_nlevels     = 1;
     SimPM.levels[0].parent = 0;
     SimPM.levels[0].child  = 0;
@@ -488,7 +492,9 @@ int main(int argc, char **argv)
     // Read data (this reader can read serial or parallel data.
     //
     err = dataio.ReadData(infile, g, SimPM);
-    rep.errorTest("(main) Failed to read data", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "(main) Failed to read data", 0, err);
 
     // cout <<"--------------- Finished Reading Data  ----------------\n";
     // cout <<"-------------------------------------------------------\n";
@@ -590,7 +596,8 @@ int main(int argc, char **argv)
         iy++;
       } while ((cy = grid->NextPt(cy, RPcyl)) != 0 && cy->isgd);
 
-      if (iy != N_R) rep.error("Bad logic for radial grid size", iy - N_R);
+      if (iy != N_R)
+        spdlog::error("{}: {}", "Bad logic for radial grid size", iy - N_R);
 
       //
       // Now for this radial column of data, we set the value for
@@ -665,7 +672,7 @@ int main(int argc, char **argv)
     this_outfile = imio.get_output_filename(
         outfile, multi_opfiles, op_filetype, SimPM.timestep);
     err = imio.open_image_file(this_outfile, op_filetype, &filehandle);
-    if (err) rep.error("failed to open output file", err);
+    if (err) spdlog::error("{}: {}", "failed to open output file", err);
     //
     // Write N images, here it is one for each variable.
     //
@@ -679,10 +686,10 @@ int main(int argc, char **argv)
       err = imio.write_image_to_file(
           filehandle, op_filetype, img_array[outputs], num_pix, 2, npix,
           im_name[outputs], Xmin, im_dx, SimPM.simtime, SimPM.timestep);
-      if (err) rep.error("Failed to write image to file", err);
+      if (err) spdlog::error("{}: {}", "Failed to write image to file", err);
     }
     err = imio.close_image_file(filehandle);
-    if (err) rep.error("failed to close output file", err);
+    if (err) spdlog::error("{}: {}", "failed to close output file", err);
 
 
   }  // Loop over all files.

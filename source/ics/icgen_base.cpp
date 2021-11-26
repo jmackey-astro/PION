@@ -13,8 +13,13 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
 #include "tools/timer.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -118,8 +123,8 @@ void setup_ics_type(
   }
 
   else
-    rep.error("BAD IC identifier", ics);
-  if (!*ic) rep.error("failed to init", ics);
+    spdlog::error("{}: {}", "BAD IC identifier", ics);
+  if (!*ic) spdlog::error("{}: {}", "failed to init", ics);
 
   return;
 }
@@ -134,9 +139,15 @@ int ICsetup_base::equilibrate_MP(
     class SimParams &SimPM)
 {
 
-  if (!mp || !gg || !rp) rep.error("microphysics or grid not initialised.", mp);
-  rep.printVec("Init left  vec", gg->FirstPt()->P, SimPM.nvar);
-  rep.printVec("Init right vec", gg->LastPt()->P, SimPM.nvar);
+  if (!mp || !gg || !rp)
+    spdlog::error(
+        "{}: {}", "microphysics or grid not initialised.", fmt::ptr(mp));
+  spdlog::debug(
+      "Init left  vec : {}",
+      std::vector<double>(gg->FirstPt()->P, gg->FirstPt()->P + SimPM.nvar));
+  spdlog::debug(
+      "Init right vec : {}",
+      std::vector<double>(gg->LastPt()->P, gg->LastPt()->P + SimPM.nvar));
 
   string seek = "InitIons";
   string s    = rp->find_parameter(seek);
@@ -151,16 +162,18 @@ int ICsetup_base::equilibrate_MP(
       // to update anything, so we skip it
       //
       if (c->isbd) {
-#ifndef NDEBUG
-        cout << "skipping cell " << c->id << " in equilibrate_MP() c->isbd.\n";
-#endif
+        spdlog::debug("skipping cell {} in equilibrate_MP() c->isbd", c->id);
       }
       else {
         mp->Init_ionfractions(c->P, SimPM.gamma, -1);
       }
     } while ((c = gg->NextPt(c)) != 0);
-    rep.printVec("init left  vec", gg->FirstPt()->P, SimPM.nvar);
-    rep.printVec("init right vec", gg->LastPt()->P, SimPM.nvar);
+    spdlog::debug(
+        "init left  vec : {}",
+        std::vector<double>(gg->FirstPt()->P, gg->FirstPt()->P + SimPM.nvar));
+    spdlog::debug(
+        "init right vec : {}",
+        std::vector<double>(gg->LastPt()->P, gg->LastPt()->P + SimPM.nvar));
 
     // now do a long time integration to get to equilibrium.
     c           = gg->FirstPt();
@@ -168,20 +181,22 @@ int ICsetup_base::equilibrate_MP(
     double tint = sqrt(SimPM.gamma * p[PG] / p[RO]);
     tint        = 50. * gg->DX()
            / tint;  // gives us 50 times the dynamical time for a cell.
-    cout << "time to step by=" << tint << "\n";
+    spdlog::debug("time to step by={}", tint);
     double tt = 0.;
     c         = gg->FirstPt();
     do {
       if (!c->isbd) {
         for (int i = 0; i < 50; i++) {
           mp->TimeUpdateMP(c->P, c->P, tint, SimPM.gamma, 0, &tt);
-          // rep.printVec("Final left
-          // vec",gg->FirstPt()->P,SimPM.nvar); cout <<"t="<<tt<<"\n";
         }
       }
     } while ((c = gg->NextPt(c)) != 0);
-    rep.printVec("Final left  vec", gg->FirstPt()->P, SimPM.nvar);
-    rep.printVec("Final right vec", gg->LastPt()->P, SimPM.nvar);
+    spdlog::debug(
+        "Final left  vec : {}",
+        std::vector<double>(gg->FirstPt()->P, gg->FirstPt()->P + SimPM.nvar));
+    spdlog::debug(
+        "Final right vec : {}",
+        std::vector<double>(gg->LastPt()->P, gg->LastPt()->P + SimPM.nvar));
     c = gg->FirstPt();
     do {
       if (!c->isbd) {
@@ -190,8 +205,12 @@ int ICsetup_base::equilibrate_MP(
         }
       }
     } while ((c = gg->NextPt(c)) != 0);
-    rep.printVec("Final left  vec", gg->FirstPt()->P, SimPM.nvar);
-    rep.printVec("Final right vec", gg->LastPt()->P, SimPM.nvar);
+    spdlog::debug(
+        "Final left  vec : {}",
+        std::vector<double>(gg->FirstPt()->P, gg->FirstPt()->P + SimPM.nvar));
+    spdlog::debug(
+        "Final right vec : {}",
+        std::vector<double>(gg->LastPt()->P, gg->LastPt()->P + SimPM.nvar));
   }
   else if (s == "NO" || s == "N" || s == "n" || s == "no") {
     // initial values should be read from paramfile.
@@ -201,10 +220,10 @@ int ICsetup_base::equilibrate_MP(
       ostringstream t;
       t << vb << i;
       string var = t.str();
-      cout << "var: " << var << "\n";
+      spdlog::debug("var: {}", var);
       s = rp->find_parameter(var);
       if (s == "")
-        rep.error("Don't know what to set tracer to.", s);
+        spdlog::error("{}: {}", "Don't know what to set tracer to.", s);
       else {
         double tr = atof(s.c_str());
         c         = gg->FirstPt();
@@ -213,14 +232,18 @@ int ICsetup_base::equilibrate_MP(
         } while ((c = gg->NextPt(c)) != 0);
       }
     }
-    rep.printVec("Final left  vec", gg->FirstPt()->P, SimPM.nvar);
-    rep.printVec("Final right vec", gg->LastPt()->P, SimPM.nvar);
+    spdlog::debug(
+        "Final left  vec : {}",
+        std::vector<double>(gg->FirstPt()->P, gg->FirstPt()->P + SimPM.nvar));
+    spdlog::debug(
+        "Final right vec : {}",
+        std::vector<double>(gg->LastPt()->P, gg->LastPt()->P + SimPM.nvar));
   }
   else if (s == "LEAVE") {
     // do nothing! hopefully a subroutine has set them already.
   }
   else
-    rep.error("Bad InitIons specifier:", s);
+    spdlog::error("{}: {}", "Bad InitIons specifier:", s);
 
   return 0;
 }
@@ -242,8 +265,8 @@ int ICsetup_base::AddNoise2Data(
   long int ct = 0;
   switch (n) {
     case 1:
-      cout << "\tAdding random noise to pressure at fractional level of "
-           << frac << "\n";
+      spdlog::debug(
+          "\tAdding random noise to pressure at fractional level of {}", frac);
       cpt = grid->FirstPt();
       do {
         if (!cpt->isbd) {
@@ -254,11 +277,11 @@ int ICsetup_base::AddNoise2Data(
 #ifdef PARALLEL
       avg = sub_domain->global_operation_double("SUM", avg);
 #endif
-      cout << "avg = " << avg << "\t ct= " << ct;
+      spdlog::debug("avg = {}\t ct = {}", avg, ct);
       avg /= static_cast<double>(SimPM.Ncell);
       avg *= frac;  // avg is now a fraction 'frac' of the mean pressure
                     // on the grid.
-      cout << "avg = " << avg << "\n";
+      spdlog::debug("avg = {}", avg);
       cpt = grid->FirstPt();
       do {
 #ifdef SERIAL
@@ -277,15 +300,9 @@ int ICsetup_base::AddNoise2Data(
           // be a full-domain boundary.  If the neigbour doesn't
           // exist, ngbproc(dir)<0.
           //
-          // cout <<"Edge?: cpt="<<cpt->id<<", isedge="<<cpt->isedge;
-          // cout <<"  true_edge="<<true_edge<<"\n";
           // x-dir
           if (cpt->isedge % 3 == 1) {  // XN boundary
-            // cout <<"got XN true boundary: cpt="<<cpt->id<<",
-            // isedge="<<cpt->isedge<<" ";
             if (sub_domain->get_neighbour_rank(XN) < 0) true_edge = true;
-            // cout <<" ngb="<<sub_domain->get_neighbour_rank(XN)<<",
-            // true_edge="<<true_edge<<"\n";
           }
           else if (cpt->isedge % 3 == 2) {  // XP boundary
             if (sub_domain->get_neighbour_rank(XP) < 0) true_edge = true;
@@ -293,11 +310,7 @@ int ICsetup_base::AddNoise2Data(
           // y-dir
           if (SimPM.ndim > 1) {
             if ((cpt->isedge % 9) / 3 == 1) {  // YN boundary
-              // cout <<"got YN true boundary: cpt="<<cpt->id<<",
-              // isedge="<<cpt->isedge<<" ";
               if (sub_domain->get_neighbour_rank(YN) < 0) true_edge = true;
-              // cout <<" ngb="<<sub_domain->get_neighbour_rank(YN)<<",
-              // true_edge="<<true_edge<<"\n";
             }
             else if ((cpt->isedge % 9) / 3 == 2) {  // YP boundary
               if (sub_domain->get_neighbour_rank(YP) < 0) true_edge = true;
@@ -312,21 +325,19 @@ int ICsetup_base::AddNoise2Data(
               if (sub_domain->get_neighbour_rank(ZP) < 0) true_edge = true;
             }
           }
-          // cout <<"true_edge="<<true_edge<<"\n";
         }
         if (true_edge == false && !cpt->isbd)
 #endif
         {  // Don't want to alter any edge cells.
-          // cout <<"PG before : "<<cpt->P[PG];
           cpt->P[PG] += avg * (static_cast<double>(rand()) / RAND_MAX - 0.5);
-          // cout <<"\tPG after : "<<cpt->P[PG]<<"\n";
         }
       } while ((cpt = grid->NextPt(cpt)) != 0);
       break;
 
     case 2:
-      cout << "Adding adiabatic random noise to cells at fractional level of "
-           << frac << "\n";
+      spdlog::debug(
+          "Adding adiabatic random noise to cells at fractional level of {}",
+          frac);
       cpt = grid->FirstPt();
       do {
 #ifdef SERIAL
@@ -345,15 +356,9 @@ int ICsetup_base::AddNoise2Data(
           // be a full-domain boundary.  If the neigbour doesn't
           // exist, ngbproc(dir)<0.
           //
-          // cout <<"Edge?: cpt="<<cpt->id<<", isedge="<<cpt->isedge;
-          // cout <<"  true_edge="<<true_edge<<"\n";
           // x-dir
           if (cpt->isedge % 3 == 1) {  // XN boundary
-            // cout <<"got XN true boundary: cpt="<<cpt->id<<",
-            // isedge="<<cpt->isedge<<" ";
             if (sub_domain->get_neighbour_rank(XN) < 0) true_edge = true;
-            // cout <<" ngb="<<sub_domain->get_neighbour_rank(XN)<<",
-            // true_edge="<<true_edge<<"\n";
           }
           else if (cpt->isedge % 3 == 2) {  // XP boundary
             if (sub_domain->get_neighbour_rank(XP) < 0) true_edge = true;
@@ -361,11 +366,7 @@ int ICsetup_base::AddNoise2Data(
           // y-dir
           if (SimPM.ndim > 1) {
             if ((cpt->isedge % 9) / 3 == 1) {  // YN boundary
-              // cout <<"got YN true boundary: cpt="<<cpt->id<<",
-              // isedge="<<cpt->isedge<<" ";
               if (sub_domain->get_neighbour_rank(YN) < 0) true_edge = true;
-              // cout <<" ngb="<<sub_domain->get_neighbour_rank(YN)<<",
-              // true_edge="<<true_edge<<"\n";
             }
             else if ((cpt->isedge % 9) / 3 == 2) {  // YP boundary
               if (sub_domain->get_neighbour_rank(YP) < 0) true_edge = true;
@@ -380,7 +381,6 @@ int ICsetup_base::AddNoise2Data(
               if (sub_domain->get_neighbour_rank(ZP) < 0) true_edge = true;
             }
           }
-          // cout <<"true_edge="<<true_edge<<"\n";
         }
         if (true_edge == false && !cpt->isbd)
 #endif
@@ -388,7 +388,6 @@ int ICsetup_base::AddNoise2Data(
 
           double temp;
           // if(cpt->isedge==0) {    // Don't want to alter any edge
-          // cells. cout <<"PG before : "<<cpt->P[PG];
           //
           // final pressure = initial pressure * (1 +/- frac)
           // rho = pressure^(1/gamma)
@@ -396,17 +395,17 @@ int ICsetup_base::AddNoise2Data(
           temp = 2. * frac * (static_cast<double>(rand()) / RAND_MAX - 0.5);
           cpt->P[PG] *= 1 + temp;
           cpt->P[RO] *= exp(log(1 + temp) / SimPM.gamma);
-          // cout <<"\tPG after : "<<cpt->P[PG]<<"\n";
           //}
         }
       } while ((cpt = grid->NextPt(cpt)) != 0);
       break;
 
     case 3:
-      cout << "Adding adiabatic wave to cells at fractional level of " << frac
-           << "\n";
+      spdlog::debug(
+          "Adding adiabatic wave to cells at fractional level of {}", frac);
 #ifdef PARALLEL
-      rep.error("adiabatic wave noise not implemented in parallel", 3);
+      spdlog::error(
+          "{}: {}", "adiabatic wave noise not implemented in parallel", 3);
 #endif
       // First get average pressure value.
       cpt = grid->FirstPt();
@@ -414,7 +413,7 @@ int ICsetup_base::AddNoise2Data(
         if (!cpt->isedge && !cpt->isbd) avg += cpt->P[PG];
         ct++;
       } while ((cpt = grid->NextPt(cpt)) != 0);
-      cout << "avg = " << avg << "\t ct= " << ct << "\n";
+      spdlog::debug("avg = {}\t ct = {}", avg, ct);
       avg /= static_cast<double>(ct);
       // Now add wave to preshock state.
       cpt = grid->FirstPt();
@@ -422,13 +421,11 @@ int ICsetup_base::AddNoise2Data(
         double temp;
         if (cpt->isedge == 0 && !cpt->isbd
             && cpt->P[PG] < avg) {  // Don't want to alter any edge cells.
-          // cout <<"PG before : "<<cpt->P[PG];
           temp = frac
                  * sin(2. * M_PI * (CI.get_dpos(cpt, YY) / SimPM.Range[YY])
                        * (SimPM.NG[YY] / 50));
           cpt->P[PG] *= 1 + temp;
           cpt->P[RO] *= exp(log(1 + temp) / SimPM.gamma);
-          // cout <<"\tPG after : "<<cpt->P[PG]<<"\n";
         }
       } while ((cpt = grid->NextPt(cpt)) != 0);
       break;
@@ -437,8 +434,9 @@ int ICsetup_base::AddNoise2Data(
       // Isothermal perturbation.
       //
     case 4:
-      cout << "Adding isothermal random noise to cells at fractional level of "
-           << frac << "\n";
+      spdlog::debug(
+          "Adding isothermal random noise to cells at fractional level of {}",
+          frac);
       cpt = grid->FirstPt();
       do {
 #ifdef SERIAL
@@ -457,15 +455,9 @@ int ICsetup_base::AddNoise2Data(
           // be a full-domain boundary.  If the neigbour doesn't
           // exist, ngbproc(dir)<0.
           //
-          // cout <<"Edge?: cpt="<<cpt->id<<", isedge="<<cpt->isedge;
-          // cout <<"  true_edge="<<true_edge<<"\n";
           // x-dir
           if (cpt->isedge % 3 == 1) {  // XN boundary
-            // cout <<"got XN true boundary: cpt="<<cpt->id<<",
-            // isedge="<<cpt->isedge<<" ";
             if (sub_domain->get_neighbour_rank(XN) < 0) true_edge = true;
-            // cout <<" ngb="<<sub_domain->get_neighbour_rank(XN)<<",
-            // true_edge="<<true_edge<<"\n";
           }
           else if (cpt->isedge % 3 == 2) {  // XP boundary
             if (sub_domain->get_neighbour_rank(XP) < 0) true_edge = true;
@@ -473,11 +465,7 @@ int ICsetup_base::AddNoise2Data(
           // y-dir
           if (SimPM.ndim > 1) {
             if ((cpt->isedge % 9) / 3 == 1) {  // YN boundary
-              // cout <<"got YN true boundary: cpt="<<cpt->id<<",
-              // isedge="<<cpt->isedge<<" ";
               if (sub_domain->get_neighbour_rank(YN) < 0) true_edge = true;
-              // cout <<" ngb="<<sub_domain->get_neighbour_rank(YN)<<",
-              // true_edge="<<true_edge<<"\n";
             }
             else if ((cpt->isedge % 9) / 3 == 2) {  // YP boundary
               if (sub_domain->get_neighbour_rank(YP) < 0) true_edge = true;
@@ -492,7 +480,6 @@ int ICsetup_base::AddNoise2Data(
               if (sub_domain->get_neighbour_rank(ZP) < 0) true_edge = true;
             }
           }
-          // cout <<"true_edge="<<true_edge<<"\n";
         }
         if (true_edge == false && !cpt->isbd)
 #endif
@@ -506,14 +493,13 @@ int ICsetup_base::AddNoise2Data(
           temp = 2.0 * frac * (static_cast<double>(rand()) / RAND_MAX - 0.5);
           cpt->P[PG] *= 1.0 + temp;
           cpt->P[RO] *= 1.0 + temp;
-          // cout <<"\tPG after : "<<cpt->P[PG]<<"\n";
         }
       } while ((cpt = grid->NextPt(cpt)) != 0);
       break;
 
     default:
-      cerr << "\t Error, don't know what type of noise corresponds to " << n
-           << "...\n";
+      spdlog::error(
+          "\t Error, don't know what type of noise corresponds to {}...", n);
       return (1);
   }
   return (0);

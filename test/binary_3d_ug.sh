@@ -31,7 +31,7 @@ script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 
 EPOCH_FILE=${script_dir}/data/3DTest_ug_new_0000.00007040.silo
 ${mpi} ../pion-ug \
- ${EPOCH_FILE} outfile=3DTest_ug_new redirect=pionlog-3d-ug omp-nthreads=${nt} \
+ ${EPOCH_FILE} outfile=3DTest_ug_new omp-nthreads=${nt} \
  || exit 1
 
 REF_FILE=3DTest_ug_new_0000.00008704.silo

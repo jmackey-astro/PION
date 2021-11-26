@@ -5,6 +5,8 @@
 /// Modifications :\n
 /// - 2018.08.08 JM: moved code.
 
+#include <spdlog/spdlog.h>
+
 #include "boundaries/fixed_boundaries.h"
 #include "tools/mem_manage.h"
 using namespace std;
@@ -18,11 +20,11 @@ int fixed_bc::BC_assign_FIXED(
     boundary_data *b)
 {
 #ifndef NDEBUG
-  cout << " setup_fixed_grid::BC_assign_FIXED starting\n";
+  spdlog::info(" setup_fixed_grid::BC_assign_FIXED starting");
 #endif
   enum direction ondir = b->ondir;
   if (b->data.empty()) {
-    rep.error("BC_assign_FIXED: empty boundary data", b->itype);
+    spdlog::error("{}: {}", "BC_assign_FIXED: empty boundary data", b->itype);
   }
   if (!b->refval) {
     b->refval = mem.myalloc(b->refval, par.nvar);
@@ -37,7 +39,7 @@ int fixed_bc::BC_assign_FIXED(
   // reach an on-grid cell by moving in the on-grid direction.
   //
 #ifndef NDEBUG
-  cout << "Finding first on-grid cell, size=" << b->data.size() << ".\n";
+  spdlog::debug("Finding first on-grid cell, size={}", b->data.size());
 #endif
   do {
     (*bpt)->isdomain = false;
@@ -47,13 +49,13 @@ int fixed_bc::BC_assign_FIXED(
       temp = grid->NextPt(temp, ondir);
     }
   } while (!temp->isgd);
-  if (!temp) rep.error("Got lost assigning FIXED bcs.", temp->id);
+  if (!temp) spdlog::error("{}: {}", "Got lost assigning FIXED bcs.", temp->id);
 
     //
     // Now set reference value to be the on-grid value.
     //
 #ifndef NDEBUG
-  cout << "Setting reference value.\n";
+  spdlog::debug("Setting reference value");
 #endif
   for (int v = 0; v < par.nvar; v++)
     b->refval[v] = temp->P[v];
@@ -73,7 +75,8 @@ int fixed_bc::BC_assign_FIXED(
   } while (bpt != b->data.end());
 
   if (ct != b->data.size()) {
-    rep.error("BC_assign_FIXED: missed some cells!", ct - b->data.size());
+    spdlog::error(
+        "{}: {}", "BC_assign_FIXED: missed some cells!", ct - b->data.size());
   }
 
   return 0;

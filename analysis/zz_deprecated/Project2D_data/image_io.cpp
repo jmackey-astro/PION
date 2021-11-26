@@ -52,7 +52,7 @@ string image_io::get_output_filename(
   else if (op_filetype == 3)
     temp << ".vtk";
   else
-    rep.error("bad op_filetype", op_filetype);
+    spdlog::error("{}: {}", "bad op_filetype", op_filetype);
   string this_outfile = temp.str();
   filehandle          = this_outfile;
   return this_outfile;
@@ -83,12 +83,14 @@ int image_io::open_image_file(
       // Text File
       //
       if (outf.is_open())
-        rep.error(
+        spdlog::error(
+            "{}: {}",
             "Output text file is open! Close file before opening a new one!",
             1);
       outf.open(this_outfile.c_str());
       if (!outf.is_open())
-        rep.error("Failed to open text file for writing", this_outfile);
+        spdlog::error(
+            "{}: {}", "Failed to open text file for writing", this_outfile);
       outf << "# projection code.\n#\n";
       break;
 
@@ -97,7 +99,9 @@ int image_io::open_image_file(
       // fits file
       //
       if (ff)
-        rep.error("fits file is open! close it before opening a new one!", 1);
+        spdlog::error(
+            "{}: {}", "fits file is open! close it before opening a new one!",
+            1);
       fitsfile = this_outfile;
       if (file_exists(fitsfile)) {
         cout << "\tfits file exists: " << fitsfile << " ...overwriting!\n";
@@ -107,7 +111,8 @@ int image_io::open_image_file(
         fitsfile = temp.str();
       }
       fits_create_file(&ff, fitsfile.c_str(), &status);
-      if (status) rep.error("Creating new file went bad.\n", status);
+      if (status)
+        spdlog::error("{}: {}", "Creating new file went bad.\n", status);
       cout << "***** Created fits file: " << fitsfile << ", file pointer=" << ff
            << endl;
       break;
@@ -116,13 +121,16 @@ int image_io::open_image_file(
       //
       // VTK File, open using standard files.
       //
-      if (fvtk) rep.error("Output VTK file pointer is not null!", fvtk);
+      if (fvtk)
+        spdlog::error("{}: {}", "Output VTK file pointer is not null!", fvtk);
       fvtk = fopen(this_outfile.c_str(), "wb");
-      if (!fvtk) rep.error("error opening VTK file", this_outfile);
+      if (!fvtk)
+        spdlog::error("{}: {}", "error opening VTK file", this_outfile);
       break;
 
     default:
-      rep.error("Bad op_filetype in open_image_file", op_filetype);
+      spdlog::error(
+          "{}: {}", "Bad op_filetype in open_image_file", op_filetype);
   }
 
   return 0;
@@ -140,7 +148,8 @@ int image_io::close_image_file(const string f)
   //
   // Check that f is equal to filehandle
   //
-  if (f != filehandle) rep.error("bad file handle in close_image_file()", f);
+  if (f != filehandle)
+    spdlog::error("{}: {}", "bad file handle in close_image_file()", f);
 
   int err = 0, status = 0;
   //
@@ -193,7 +202,7 @@ int image_io::write_image_to_file(
   //
   // Check that f is equal to filehandle
   //
-  if (f != filehandle) rep.error("bad file handle", f);
+  if (f != filehandle) spdlog::error("{}: {}", "bad file handle", f);
   double min[im_dim];
   for (int v = 0; v < im_dim; v++)
     min[v] = 0.0;
@@ -202,7 +211,8 @@ int image_io::write_image_to_file(
   switch (op_filetype) {
 
     case 0:
-      if (!outf.is_open()) rep.error("can't write image to unopened file.", f);
+      if (!outf.is_open())
+        spdlog::error("{}: {}", "can't write image to unopened file.", f);
       outf << "****************** image name: " << name
            << "***********************\n";
       outf << "numpix=" << num_pix << "\tndim=" << im_dim << endl;
@@ -216,7 +226,8 @@ int image_io::write_image_to_file(
 
     case 1:
       if (!ff)
-        rep.error(
+        spdlog::error(
+            "{}: {}",
             "Don't call write_image_to_file() without having an open file!!!",
             ff);
       cout << "WRITING IMAGE TO FITS FILE: " << f << endl;
@@ -227,7 +238,9 @@ int image_io::write_image_to_file(
 
     case 3:
       if (!fvtk) {
-        rep.error("image_io::write_image_to_file() vtk file not open", fvtk);
+        spdlog::error(
+            "{}: {}", "image_io::write_image_to_file() vtk file not open",
+            fvtk);
       }
       //
       // write header if needed.
@@ -312,7 +325,8 @@ int image_io::write_image_to_file(
 
 
     default:
-      rep.error("Bad op_filetype to write_image_to_file()", op_filetype);
+      spdlog::error(
+          "{}: {}", "Bad op_filetype to write_image_to_file()", op_filetype);
   }
   return 0;
 }

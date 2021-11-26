@@ -33,8 +33,13 @@
 
 #include "cell_interface.h"
 #include "constants.h"
+#include "raytracing/rad_src_data.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 using namespace std;
 
 #ifdef COUNT_ENERGETICS
@@ -58,7 +63,6 @@ cell_interface::cell_interface()
   dxo2         = -HUGEVALUE;
   ndim         = -1;
   nvar         = -1;
-  xmin         = 0;
   //
   // NG grid parameters
   //
@@ -68,7 +72,6 @@ cell_interface::cell_interface()
   n_dx.resize(1);
 
   if (sizeof(pion_flt) == sizeof(double)) {
-    // cout <<"int_converter = 1+EPS\n";
     int_converter = ONE_PLUS_EPS;
   }
   else {
@@ -112,8 +115,6 @@ cell_interface::cell_interface()
 
 cell_interface::~cell_interface()
 {
-  if (xmin) delete[] xmin;
-  xmin = 0;
   if (using_RT > 0) {
     NTau  = mem.myfree(NTau);
     iTau  = mem.myfree(iTau);
@@ -182,15 +183,11 @@ void cell_interface::set_nvar(const int nv)
 
 
 
-void cell_interface::set_xmin(const double *xm)
+void cell_interface::set_xmin(const std::array<double, MAX_DIM> &xm)
 {
-  if (!xmin) {
-    xmin = new double[ndim];
-  }
   for (int v = 0; v < ndim; v++) {
     xmin[v] = xm[v];
   }
-  return;
 }
 
 
@@ -212,9 +209,7 @@ void cell_interface::setup_extra_data(
     const int gp_flag               ///< Flag for |grad(P)|.
 )
 {
-#ifndef NDEBUG
-  cout << "\ncell_interface::setup_extra_data():\n";
-#endif
+  spdlog::info("cell_interface::setup_extra_data()");
   //
   // Set up a 1D array for all of the extra data that a cell needs,
   // and set indices to access the required elements.
@@ -268,9 +263,7 @@ void cell_interface::setup_extra_data(
       idS[s] = N_extra_data;
       N_extra_data++;
     }  // loop over radiation sources.
-#ifndef NDEBUG
-    cout << "\t\t Adding RT: N=" << N_extra_data << "\n";
-#endif
+    spdlog::debug("Adding RT: N={}", N_extra_data);
   }
 
   //
@@ -279,15 +272,15 @@ void cell_interface::setup_extra_data(
   if (hc_flag) {
     using_Hcorr = hc_flag;
     if (hc_flag > MAX_DIM)
-      rep.error("Can't ask for more than MAX_DIM H-corr variables", hc_flag);
+      spdlog::error(
+          "{}: {}", "Can't ask for more than MAX_DIM H-corr variables",
+          hc_flag);
 
     for (int v = 0; v < hc_flag; v++) {
       iHcorr[v] = N_extra_data;
       N_extra_data += 1;
     }
-#ifndef NDEBUG
-    cout << "\t\t Adding HCORR: N=" << N_extra_data << "\n";
-#endif
+    spdlog::debug("Adding HCORR: N={}", N_extra_data);
   }
 
   //
@@ -297,9 +290,7 @@ void cell_interface::setup_extra_data(
     using_DivV = dv_flag;
     iDivV      = N_extra_data;
     N_extra_data += 1;
-#ifndef NDEBUG
-    cout << "\t\t Adding DIVV: N=" << N_extra_data << "\n";
-#endif
+    spdlog::debug("Adding DIVV: N={}", N_extra_data);
   }
 
   //
@@ -309,16 +300,11 @@ void cell_interface::setup_extra_data(
     using_GradP = dv_flag;
     iGradP      = N_extra_data;
     N_extra_data += 1;
-#ifndef NDEBUG
-    cout << "\t\t Adding GRADP: N=" << N_extra_data << "\n";
-#endif
+    spdlog::debug("Adding GRADP: N={}", N_extra_data);
   }
 
   have_setup_extra_data = true;
-#ifndef NDEBUG
-  cout << "\n";
-#endif
-  return;
+  spdlog::info("cell_interface::setup_extra_data() finished");
 }
 
 
@@ -345,7 +331,8 @@ bool cell_interface::query_minimal_cells()
 int cell_interface::get_Nel()
 {
   if (!have_setup_extra_data)
-    rep.error("Setup extra data before calling get_Nel", using_RT);
+    spdlog::error(
+        "{}: {}", "Setup extra data before calling get_Nel", using_RT);
   int n = 0;
   n += nvar;  // P
   if (!minimal_cell) n += 2 * nvar;
@@ -411,10 +398,11 @@ size_t cell_interface::set_cell_pointers(
 )
 {
   if (!have_setup_extra_data)
-    rep.error("Setup extra data before calling new_cell", using_RT);
-  if (dxo2 < 0.0) rep.error("Cell Interface: set dx", dxo2);
-  if (ndim < 0) rep.error("Cell Interface: set ndim", ndim);
-  if (nvar < 0) rep.error("Cell Interface: set nvar", nvar);
+    spdlog::error(
+        "{}: {}", "Setup extra data before calling new_cell", using_RT);
+  if (dxo2 < 0.0) spdlog::error("{}: {}", "Cell Interface: set dx", dxo2);
+  if (ndim < 0) spdlog::error("{}: {}", "Cell Interface: set ndim", ndim);
+  if (nvar < 0) spdlog::error("{}: {}", "Cell Interface: set nvar", nvar);
   int offset = 0;
 
   c->ngb                   = mem.myalloc(c->ngb, 2 * MAX_DIM);
@@ -448,7 +436,6 @@ size_t cell_interface::set_cell_pointers(
   // analysis code.
   //
   if (minimal_cell) {
-    // cout <<"Minimal cells!\n";
     c->Ph = 0;
     c->dU = 0;
   }
@@ -471,7 +458,6 @@ size_t cell_interface::set_cell_pointers(
   for (int i = 0; i < ndim; i++)
     c->F[i] = 0;
 
-  // cout <<"Nxd="<<N_extra_data<<"\n";
   if (N_extra_data >= 1) {
     c->extra_data             = &(d[ix]);
     cell_interface::offset_xd = offset;
@@ -494,15 +480,16 @@ size_t cell_interface::set_cell_pointers(
 cell *cell_interface::new_cell()
 {
   if (!have_setup_extra_data)
-    rep.error("Setup extra data before calling new_cell", using_RT);
+    spdlog::error(
+        "{}: {}", "Setup extra data before calling new_cell", using_RT);
 
   //
   // If this is the first cell we are assigning, make sure we have set
   // dx/2 and the xmin pointer correctly.
   //
-  if (dxo2 < 0.0) rep.error("Cell Interface: set dx", dxo2);
-  if (ndim < 0) rep.error("Cell Interface: set ndim", ndim);
-  if (nvar < 0) rep.error("Cell Interface: set nvar", nvar);
+  if (dxo2 < 0.0) spdlog::error("{}: {}", "Cell Interface: set dx", dxo2);
+  if (ndim < 0) spdlog::error("{}: {}", "Cell Interface: set ndim", ndim);
+  if (nvar < 0) spdlog::error("{}: {}", "Cell Interface: set nvar", nvar);
 
   cell *c = 0;
   c       = mem.myalloc(c, 1);
@@ -540,7 +527,6 @@ cell *cell_interface::new_cell()
   // analysis code.
   //
   if (minimal_cell) {
-    // cout <<"Minimal cells!\n";
     c->Ph = 0;
     c->dU = 0;
   }
@@ -554,7 +540,6 @@ cell *cell_interface::new_cell()
   for (int i = 0; i < ndim; i++)
     c->F[i] = 0;
 
-  // cout <<"Nxd="<<N_extra_data<<"\n";
   if (N_extra_data >= 1) {
     c->extra_data = mem.myalloc(c->extra_data, N_extra_data);
     for (short unsigned int v = 0; v < N_extra_data; v++)
@@ -599,8 +584,8 @@ void cell_interface::delete_cell(cell *c)
 
 void cell_interface::set_pos(
     cell *c,  ///< pointer to cell
-    const double
-        *p_in  ///< double array of size ndim, containing cell position.
+    const std::array<double, MAX_DIM>
+        &p_in  ///< double array of size ndim, containing cell position.
 )
 {
   //
@@ -610,7 +595,7 @@ void cell_interface::set_pos(
     c->pos[v] = static_cast<int>(int_converter * ((p_in[v] - xmin[v]) / dxo2));
   }
 #ifdef DEBUG
-  rep.printVec("int-pos from double", c->pos, ndim);
+  spdlog::debug("int-pos from double : {}", c->pos);
 #endif
   return;
 }
@@ -623,8 +608,9 @@ void cell_interface::set_pos(
 
 
 void cell_interface::set_pos(
-    cell *c,         ///< pointer to cell
-    const int *p_in  ///< integer array of size ndim, containing cell position.
+    cell *c,  ///< pointer to cell
+    const std::array<int, MAX_DIM>
+        &p_in  ///< integer array of size ndim, containing cell position.
 )
 {
   //
@@ -647,8 +633,8 @@ void cell_interface::set_pos(
 
 
 void cell_interface::get_dpos(
-    const cell *c,  ///< pointer to cell
-    double *p_out   ///< array to write position into.
+    const cell *c,                      ///< pointer to cell
+    std::array<double, MAX_DIM> &p_out  ///< array to write position into.
 )
 {
   for (int v = 0; v < ndim; v++)
@@ -711,25 +697,20 @@ int cell_interface::get_ipos(
 
 
 void cell_interface::get_ipos_vec(
-    const double *p_in,  ///< physical position (input)
-    int *p_out           ///< integer position (output)
+    const std::array<double, MAX_DIM> &p_in,  ///< physical position (input)
+    std::array<int, MAX_DIM> &p_out           ///< integer position (output)
 )
 {
   if (dxo2 < 0.0)
-    rep.error("set up grid before trying to get integer positions!!!", dxo2);
+    spdlog::error(
+        "{}: {}", "set up grid before trying to get integer positions!!!",
+        dxo2);
   for (int v = 0; v < ndim; v++) {
     if (fabs(p_in[v]) > VERY_LARGE_VALUE)
       p_out[v] = -1234567;
     else
       p_out[v] = static_cast<int>(int_converter * ((p_in[v] - xmin[v]) / dxo2));
-    // cout <<"p_in[v]="<<p_in[v]<<",
-    // (p_in[v]-xmin[v])="<<(p_in[v]-xmin[v]); cout <<",
-    // (p_in[v]-xmin[v])/dxo2="<<(p_in[v]-xmin[v])/dxo2; cout <<",
-    // (1+e)*((p_in[v]-xmin[v])/dxo2)="<<int_converter*((p_in[v]-xmin[v])/dxo2)
-    // <<"\n";
   }
-  // rep.printVec("p_out",p_out,ndim);
-  return;
 }
 
 
@@ -740,19 +721,20 @@ void cell_interface::get_ipos_vec(
 
 
 void cell_interface::get_ipos_as_double(
-    const double *p_in,  ///< physical position (input)
-    double *p_out        ///< integer position (output)
+    const std::array<double, MAX_DIM> &p_in,  ///< physical position (input)
+    std::array<double, MAX_DIM> &p_out        ///< integer position (output)
 )
 {
   if (dxo2 < 0.0)
-    rep.error("set up grid before trying to get integer positions!!!", dxo2);
+    spdlog::error(
+        "{}: {}", "set up grid before trying to get integer positions!!!",
+        dxo2);
   for (int v = 0; v < ndim; v++) {
     if (fabs(p_in[v]) > VERY_LARGE_VALUE)
       p_out[v] = -VERY_LARGE_VALUE;
     else
       p_out[v] = (p_in[v] - xmin[v]) / dxo2;
   }
-  return;
 }
 
 
@@ -763,13 +745,12 @@ void cell_interface::get_ipos_as_double(
 
 
 void cell_interface::get_dpos_vec(
-    const int *p_in,  ///< integer position (input)
-    double *p_out     ///< physical position (output)
+    const std::array<int, MAX_DIM> &p_in,  ///< integer position (input)
+    std::array<double, MAX_DIM> &p_out     ///< physical position (output)
 )
 {
   for (int v = 0; v < ndim; v++)
     p_out[v] = xmin[v] + (p_in[v]) * dxo2;
-  return;
 }
 
 
@@ -820,56 +801,51 @@ void cell_interface::copy_cell(const cell *c1, cell *c2)
 void cell_interface::print_cell(const cell *c)
 {
   if (c == 0) {
-    cout << "Null Pointer!\n";
+    spdlog::warn("Null Pointer!");
     return;
   }
-  cout << std::dec << "cell:\t id = " << c->id << "\n";
-  cout << "\tcell pointer= " << c << "\n";
-  cout << "\tisedge:" << c->isedge << "\tisbd:" << c->isbd
-       << "\tisgd:" << c->isgd << "\n";
-  cout << "\tisdomain:" << c->isdomain;
-  cout << "\tisleaf:" << c->isleaf;
-  cout << "\ttimestep: " << c->timestep << "\n";
-  cout << "\trt:" << c->rt << "\n";
-  cout << "\tnpt: " << c->npt;
+  spdlog::debug(
+      "cell:\t id = {}\n"
+      "\tisedge: {}\n"
+      "\tisbd: {}\n"
+      "\tisgd: {}\n"
+      "\tisdomain: {}\n"
+      "\tisleaf: {}\n"
+      "\ttimestep: {}\n"
+      "\trt: {}\n",
+      c->id, c->isedge, c->isbd, c->isgd, c->isdomain, c->isleaf, c->timestep,
+      c->rt);
   if (c->npt != 0)
-    cout << "\tnpt[id]: " << c->npt->id << "\n";
+    spdlog::debug("\tnpt[id]: {}", c->npt->id);
   else
-    cout << "\tnpt is not addressed (last point?).\n";
-  cout << "\tnpt_all: " << c->npt_all;
+    spdlog::debug("\tnpt is not addressed (last point?)");
   if (c->npt_all != 0)
-    cout << "\tnpt_all[id]: " << c->npt_all->id << "\n";
+    spdlog::debug("\tnpt_all[id]: {}", c->npt_all->id);
   else
-    cout << "\tnpt_all is not addressed (last point?).\n";
+    spdlog::warn("\tnpt_all is not addressed (last point?)");
   if (N_extra_data > 0) {
-    cout << "\t";
-    rep.printVec("extra_data[]", c->extra_data, N_extra_data);
+    spdlog::debug(
+        "extra_data[] : {}",
+        std::vector<double>(c->extra_data, c->extra_data + N_extra_data));
   }
-  cout << "\t";
-  rep.printVec("pos[]", c->pos, ndim);
-  cout << "\t";
-  double p[ndim];
+  spdlog::debug("pos[] : {}", std::vector<double>(c->pos, c->pos + ndim));
+  std::array<double, MAX_DIM> p;
   get_dpos(c, p);
-  rep.printVec("dpos[]", p, ndim);
-  cout << "\t";
-  rep.printVec("P[]  ", c->P, nvar);
+  spdlog::debug("dpos[] : {}", p);
+  spdlog::debug("P[]   : {}", std::vector<double>(c->P, c->P + nvar));
   if (!minimal_cell) {
-    cout << "\t";
-    rep.printVec("Ph[] ", c->Ph, nvar);
-    cout << "\t";
-    rep.printVec("dU[] ", c->dU, nvar);
+    spdlog::debug("Ph[]  : {}", std::vector<double>(c->Ph, c->Ph + nvar));
+    spdlog::debug("dU[]  : {}", std::vector<double>(c->dU, c->dU + nvar));
   }
   for (int i = 0; i < ndim; i++) {
     if (c->F[i]) {
-      cout << "\t i=" << i << ", ";
-      rep.printVec("F[i] ", c->F[i], nvar);
+      spdlog::debug("F[i]  : {}", std::vector<double>(c->F[i], c->F[i] + nvar));
     }
   }
-  cout << "\t";
-  rep.printVec("ngb[]", c->ngb, 2 * ndim);
-  cout << "\t";
-  rep.printVec("isbd_ref[]", c->isbd_ref, 2 * ndim);
-  return;
+  // TODO spdlog::debug("ngb[] : {}", std::vector<cell *>(c->ngb, c->ngb + 2 *
+  // ndim));
+  spdlog::debug(
+      "isbd_ref[] : {}", std::vector<int>(c->isbd_ref, c->isbd_ref + 2 * ndim));
 }
 
 
@@ -915,8 +891,6 @@ void cell_interface::set_nlevels(
 
   cell_diameter = n_dx[n - 1];
   dxo2          = n_dxo2[n - 1];  // refers to the finest grid now.
-
-  return;
 }
 
 

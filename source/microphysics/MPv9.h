@@ -24,6 +24,8 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
+#include <spdlog/spdlog.h>
+
 #include "cooling_SD93_cie.h"
 #include "cvode_integrator.h"
 #include "hydrogen_mp.h"
@@ -31,7 +33,6 @@
 #include "hydrogen_recomb_Hummer94.h"
 #include "microphysics_base.h"
 #include <cstring>
-#include <iostream>
 #include <set>
 #include <sstream>
 #include <vector>
@@ -122,7 +123,7 @@ public:
       double *  ///< return optical depth through cell in this variable.
   )
   {
-    cout << "MPv10::TimeUpdate_RTsinglesrc() not implemented\n";
+    spdlog::info("MPv10::TimeUpdate_RTsinglesrc() not implemented");
     return 1;
   }
 
@@ -144,7 +145,7 @@ public:
       double *       ///< any returned data (final temperature?).
   )
   {
-    cout << "MPv10::TimeUpdateMP_RTnew() not implemented\n";
+    spdlog::info("MPv10::TimeUpdateMP_RTnew() not implemented");
     return 1;
   }
 
@@ -209,7 +210,7 @@ public:
       const double   ///< optional gas temperature to end up at.
   )
   {
-    cout << "MPv10::Init_ionfractions() not implemented\n";
+    spdlog::info("MPv10::Init_ionfractions() not implemented");
     return 1;
   }
 
@@ -234,7 +235,7 @@ public:
       const double  ///< EOS gamma.
   )
   {
-    cout << "MPv10::total_cooling_rate() not implemented\n";
+    spdlog::info("MPv10::total_cooling_rate() not implemented");
     return 1;
   }
 
@@ -248,7 +249,7 @@ public:
       const double       ///< EOS gamma (optional)
   )
   {
-    cout << "MPv10::get_recombination_rate() not implemented\n";
+    spdlog::info("MPv10::get_recombination_rate() not implemented");
     return 1;
   }
 
@@ -448,7 +449,7 @@ public:
       CVMatrix         ///< Jacobian matrix
   )
   {
-    cout << "Jacobian not implemented in MPv10!\n";
+    spdlog::info("Jacobian not implemented in MPv10!");
     return 1;
   }
 

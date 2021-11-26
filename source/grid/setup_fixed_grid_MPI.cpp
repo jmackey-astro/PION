@@ -17,7 +17,10 @@
 #include "defines/testing_flags.h"
 
 #include "tools/command_line_interface.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
 
 #include "grid/uniform_grid_pllel.h"
 #include "raytracing/raytracer_SC.h"
@@ -35,7 +38,6 @@
 #include "dataIO/dataio_fits_MPI.h"
 #endif  // if FITS
 
-#include <iostream>
 using namespace std;
 
 #ifdef PARALLEL
@@ -45,9 +47,7 @@ using namespace std;
 
 setup_fixed_grid_pllel::setup_fixed_grid_pllel()
 {
-#ifndef NDEBUG
-  cout << "setup_fixed_grid_pllel constructor.\n";
-#endif
+  spdlog::info("setup_fixed_grid_pllel constructor");
 }
 
 // ##################################################################
@@ -55,9 +55,7 @@ setup_fixed_grid_pllel::setup_fixed_grid_pllel()
 
 setup_fixed_grid_pllel::~setup_fixed_grid_pllel()
 {
-#ifndef NDEBUG
-  cout << "setup_fixed_grid_pllel destructor.\n";
-#endif
+  spdlog::info("setup_fixed_grid_pllel destructor");
 }
 
 // ##################################################################
@@ -68,10 +66,8 @@ int setup_fixed_grid_pllel::setup_grid(
     class SimParams &SimPM             ///< simulation parameters
 )
 {
-#ifndef NDEBUG
-  cout << "setup_fixed_grid_pllel: setting up parallel grid.\n";
-#endif
-  cout << "(pion mpi) setting up grid\n";
+  spdlog::info("setup_fixed_grid_pllel: setting up parallel grid");
+
   class GridBaseClass **grid   = &g[0];
   class Sub_domain *sub_domain = &(SimPM.levels[0].sub_domain);
 
@@ -79,15 +75,14 @@ int setup_fixed_grid_pllel::setup_grid(
     SimPM.gridType = 1;
   }
   if (SimPM.ndim < 1 || SimPM.ndim > 3)
-    rep.error("Only know 1D,2D,3D methods!", SimPM.ndim);
+    spdlog::error("{}: {}", "Only know 1D,2D,3D methods!", SimPM.ndim);
 
-    //
-    // Nbc is the depth of the boundary layer.
-    //
-#ifndef NDEBUG
-  cout << "Setting number of boundary cells == spatial OOA: ";
-  cout << SimPM.spOOA << "\n";
-#endif  // NDEBUG
+  //
+  // Nbc is the depth of the boundary layer.
+  //
+  spdlog::debug(
+      "Setting number of boundary cells == spatial OO: {}", SimPM.spOOA);
+
   if (SimPM.spOOA == OA2) {
     SimPM.Nbc    = 2;
     SimPM.Nbc_DD = 2;
@@ -97,8 +92,8 @@ int setup_fixed_grid_pllel::setup_grid(
     SimPM.Nbc_DD = 1;
   }
   else
-    rep.error(
-        "Spatial order of accuracy unhandled by boundary conditions!",
+    spdlog::error(
+        "{}: {}", "Spatial order of accuracy unhandled by boundary conditions!",
         SimPM.spOOA);
 
   // Force Nbc=1 if using Lax-Friedrichs flux.
@@ -126,9 +121,7 @@ int setup_fixed_grid_pllel::setup_grid(
   //
   // Now set up the parallel uniform grid.
   //
-#ifndef NDEBUG
-  cout << "(setup_fixed_grid_pllel::setup_grid) Setting up grid...\n";
-#endif
+  spdlog::info("(setup_fixed_grid_pllel::setup_grid) Setting up grid..");
 
   if (SimPM.coord_sys == COORD_CRT) {
     *grid = new UniformGridParallel(
@@ -152,19 +145,18 @@ int setup_fixed_grid_pllel::setup_grid(
         SimPM.Xmin, SimPM.Xmax);
   }
   else {
-    rep.error("Bad Geometry in setup_grid()", SimPM.coord_sys);
+    spdlog::error("{}: {}", "Bad Geometry in setup_grid()", SimPM.coord_sys);
   }
 
   if (*grid == 0)
-    rep.error(
-        "(setup_fixed_grid_pllel::setup_grid) Couldn't assign data!", *grid);
+    spdlog::error(
+        "{}: {}", "(setup_fixed_grid_pllel::setup_grid) Couldn't assign data!",
+        fmt::ptr(*grid));
 
+  spdlog::info("(setup_fixed_grid_pllel::setup_grid) Done");
+  spdlog::debug("grid DX = {0}", (*grid)->DX());
 #ifndef NDEBUG
-  cout << "(setup_fixed_grid_pllel::setup_grid) Done. ";
-  cout << "grid=" << *grid << ", and";
-  cout << "\t DX = " << (*grid)->DX() << "\n";
   dp.grid = (*grid);
-  cout << "DX = " << (*grid)->DX() << "\n";
 #endif
 
   return (0);
@@ -185,9 +177,11 @@ int setup_fixed_grid_pllel::setup_raytracing(
   if (!SimPM.EP.raytracing) {
     return 0;
   }
-  cout << "(pion-mpi)  Setting up raytracing on level\n";
+  spdlog::info("(pion-mpi)  Setting up raytracing on leve");
 
-  if (!MP) rep.error("can't do raytracing without microphysics", MP);
+  if (!MP)
+    spdlog::error(
+        "{}: {}", "can't do raytracing without microphysics", fmt::ptr(MP));
   grid->RT = 0;
   //
   // If the ionising source is at infinity then set up the simpler parallel
@@ -223,7 +217,9 @@ int setup_fixed_grid_pllel::setup_raytracing(
     //
     grid->RT = new raytracer_USC_infinity(
         grid, MP, SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ftr);
-    if (!grid->RT) rep.error("init pllel-rays raytracer error", grid->RT);
+    if (!grid->RT)
+      spdlog::error(
+          "{}: {}", "init pllel-rays raytracer error", fmt::ptr(grid->RT));
   }
   else {
     //
@@ -232,7 +228,8 @@ int setup_fixed_grid_pllel::setup_raytracing(
     grid->RT = new raytracer_USC_pllel(
         grid, MP, &SimPM, &(SimPM.levels[0].sub_domain), SimPM.ndim,
         SimPM.coord_sys, SimPM.nvar, SimPM.ftr, SimPM.RS.Nsources);
-    if (!grid->RT) rep.error("init raytracer error 2", grid->RT);
+    if (!grid->RT)
+      spdlog::error("{}: {}", "init raytracer error 2", fmt::ptr(grid->RT));
   }
 
   //
@@ -255,10 +252,7 @@ int setup_fixed_grid_pllel::setup_raytracing(
       // point sources.
       //
       int s = grid->RT->Add_Source(&(SimPM.RS.sources[isrc]));
-#ifdef RT_TESTING
-      cout << "Adding IONISING or UV single-source with id: ";
-      cout << s << "\n";
-#endif
+      spdlog::debug("Adding IONISING or UV single-source with id: {}", s);
       if (SimPM.RS.sources[isrc].effect == RT_EFFECT_PION_MONO
           || SimPM.RS.sources[isrc].effect == RT_EFFECT_MFION)
         ion_count++;
@@ -270,25 +264,24 @@ int setup_fixed_grid_pllel::setup_raytracing(
       // is assumed to be an intensity not a flux, so it is multiplied by
       // a solid angle appropriate to its location in order to get a flux.
       int s = grid->RT->Add_Source(&(SimPM.RS.sources[isrc]));
-#ifdef RT_TESTING
-      cout << "Adding DIFFUSE radiation source with id: ";
-      cout << s << "\n";
-#endif
+
+      spdlog::debug("Adding DIFFUSE radiation source with id: {}", s);
+
       uv_count++;
       dif_count++;
     }  // if diffuse source
   }    // loop over sources
   if (ion_count > 1) {
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "Can only have one ionising source for currently implemented method",
         ion_count);
   }
-#ifdef RT_TESTING
-  cout << "Added " << ion_count << " ionising and " << uv_count
-       << " non-ionising";
-  cout << " radiation sources, of which " << dif_count
-       << " are diffuse radiation.\n";
-#endif
+
+  spdlog::debug(
+      "Added {} ionising and {} non-ionising radiation sources, of which {} are diffuse radiation",
+      ion_count, uv_count, dif_count);
+
   grid->RT->Print_SourceList();
 
   //
@@ -334,24 +327,27 @@ int setup_fixed_grid_pllel::boundary_conditions(
 )
 {
   // For uniform fixed cartesian grid.
-#ifndef NDEBUG
-  cout << "Setting up BCs in Grid with Nbc=" << par.Nbc << "\n";
-#endif
+  spdlog::debug("Setting up BCs in Grid with Nbc={}", par.Nbc);
+
   //
   // Choose what BCs to set up based on BC strings.
   //
   int err = setup_boundary_structs(par, grid[0], 0);
-  rep.errorTest("sfg::boundary_conditions::sb_structs", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "sfg::boundary_conditions::sb_structs", 0,
+        err);
 
   //
   // Ask grid to set up data for external boundaries.
   //
   err = grid[0]->SetupBCs(par);
-  rep.errorTest("sfg::boundary_conditions::SetupBCs", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "sfg::boundary_conditions::SetupBCs", 0,
+        err);
 
-#ifndef NDEBUG
-  cout << "(setup_fixed_grid::boundary_conditions) Done.\n";
-#endif
+  spdlog::info("(setup_fixed_grid::boundary_conditions) Done");
   return 0;
 }
 
@@ -365,15 +361,13 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
 )
 {
   string fname = "setup_fixed_grid_pllel::setup_boundary_structs";
-#ifndef NDEBUG
-  cout << "PLLEL: Set BC types...\n";
-#endif
+  spdlog::info("PLLEL: Set BC types..");
   //
   // call serial version of setBCtypes, to set up the boundaries
   //
   int err = setup_fixed_grid::setup_boundary_structs(par, grid, l);
   if (err) {
-    rep.error("sfg_pllel::setup_boundary_structs:: serial", err);
+    spdlog::error("{}: {}", "sfg_pllel::setup_boundary_structs:: serial", err);
   }
 
   //
@@ -400,13 +394,11 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
     }
   }
 
-#ifndef NDEBUG
-  cout << "PLLEL: BC types and data set up.\n";
-  for (int i = 0; i < 2 * par.ndim; i++) {
-    cout << "Neighbouring processor in dir " << i << " = "
-         << par.levels[0].sub_domain.get_neighbour_rank(i) << "\n";
-  }
-#endif
+  spdlog::info("PLLEL: BC types and data set up");
+  spdlog::debug(
+      "Neighbouring processors: {}",
+      par.levels[0].sub_domain.get_neighbour_ranks());
+
   return (0);
 }
 
@@ -424,7 +416,7 @@ void setup_fixed_grid_pllel::setup_dataio_class(
   switch (typeOfFile) {
 
     case 1:  // Start From ASCII Parameterfile.
-      rep.error("No text file for parallel I/O!", typeOfFile);
+      spdlog::error("{}: {}", "No text file for parallel I/O!", typeOfFile);
       break;
 
 #ifdef FITS
@@ -440,7 +432,8 @@ void setup_fixed_grid_pllel::setup_dataio_class(
       break;
 #endif  // if SILO
     default:
-      rep.error("sim_control::Init unhandled filetype", typeOfFile);
+      spdlog::error(
+          "{}: {}", "sim_control::Init unhandled filetype", typeOfFile);
   }
   return;
 }

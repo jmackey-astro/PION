@@ -7,6 +7,11 @@
 
 #include "boundaries/jet_boundaries.h"
 #include "tools/mem_manage.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 using namespace std;
 
 //#define SOFTJET
@@ -21,10 +26,11 @@ int jet_bc::BC_assign_JETBC(
     boundary_data *b)
 {
   if (!JP.jetic) {
-    rep.error("BC_assign_JETBC: not a jet simulation!", JP.jetic);
+    spdlog::error("{}: {}", "BC_assign_JETBC: not a jet simulation!", JP.jetic);
   }
   if (b->dir != NO) {
-    rep.error("BC_assign_JETBC: boundary is not an internal one!", b->dir);
+    spdlog::error(
+        "{}: {}", "BC_assign_JETBC: boundary is not an internal one!", b->dir);
   }
   cell *c    = grid->FirstPt();
   cell *temp = 0, *cy = 0;
@@ -37,7 +43,7 @@ int jet_bc::BC_assign_JETBC(
   //
   double jr = JP.jetradius * grid->DX();
 #ifndef NDEBUG
-  cout << "jetrad=" << JP.jetradius << " dx=" << grid->DX() << "\n";
+  spdlog::debug("jetrad={} dx={}", JP.jetradius, grid->DX());
 #endif  // NDEBUG
 
   //
@@ -50,7 +56,9 @@ int jet_bc::BC_assign_JETBC(
   if (par.eqntype == EQEUL || par.eqntype == EQEUL_ISO
       || par.eqntype == EQEUL_EINT || par.eqntype == EQMHD
       || par.eqntype == EQGLM || par.eqntype == EQFCD) {
-    rep.printVec("JetState", JP.jetstate, MAX_NVAR);
+    spdlog::debug(
+        "JetState : {}",
+        std::vector<double>(JP.jetstate, JP.jetstate + MAX_NVAR));
     b->refval[RO] = JP.jetstate[RO];
     b->refval[PG] = JP.jetstate[PG];
     b->refval[VX] = JP.jetstate[VX];
@@ -59,7 +67,7 @@ int jet_bc::BC_assign_JETBC(
     maxnv         = 5;
   }
   else {
-    rep.error("BC_assign_JETBC: bad equation type", par.eqntype);
+    spdlog::error("{}: {}", "BC_assign_JETBC: bad equation type", par.eqntype);
   }
 
   if (par.eqntype == EQMHD || par.eqntype == EQGLM || par.eqntype == EQFCD) {
@@ -71,7 +79,8 @@ int jet_bc::BC_assign_JETBC(
       b->refval[BZ] = JP.jetstate[BY];
     }
     else {
-      rep.error("Need to code B-field within jet for 3D", par.ndim);
+      spdlog::error(
+          "{}: {}", "Need to code B-field within jet for 3D", par.ndim);
     }
     maxnv = 8;
   }
@@ -86,7 +95,7 @@ int jet_bc::BC_assign_JETBC(
   }
 
   if (!b->data.empty()) {
-    rep.error("BC_assign_JETBC: boundary data exists!", b->itype);
+    spdlog::error("{}: {}", "BC_assign_JETBC: boundary data exists!", b->itype);
   }
 
   //
@@ -152,15 +161,17 @@ int jet_bc::BC_assign_JETBC(
           b->data.push_back(temp);
           ctot++;
           if (temp->isgd) {
-            rep.error("Looking for Boundary cells! setupjet", temp);
+            spdlog::error(
+                "{}: {}", "Looking for Boundary cells! setupjet",
+                fmt::ptr(temp));
           }
         }
         ct++;
       } while ((c = grid->NextPt(c, YP)) && ct < JP.jetradius);
       if (ct != JP.jetradius) {
-        rep.error("Not enough cells for jet", ct);
+        spdlog::error("{}: {}", "Not enough cells for jet", ct);
       }
-      cout << "Got " << ctot << " Cells in total for jet boundary.\n";
+      spdlog::debug("Got {} Cells in total for jet boundary", ctot);
     }  // 2D Axial Symmetry
 
     //
@@ -200,7 +211,9 @@ int jet_bc::BC_assign_JETBC(
               b->data.push_back(temp);
               ctot++;
               if (temp->isgd) {
-                rep.error("Looking for Boundary cells! setupjet", temp);
+                spdlog::error(
+                    "{}: {}", "Looking for Boundary cells! setupjet",
+                    fmt::ptr(temp));
               }
             }
           }                                     // if within jet radius
@@ -210,7 +223,8 @@ int jet_bc::BC_assign_JETBC(
     }                                           // 3D Cartesian
 
     else {
-      rep.error("Only know how to set up jet in 2Dcyl or 3Dcart", par.ndim);
+      spdlog::error(
+          "{}: {}", "Only know how to set up jet in 2Dcyl or 3Dcart", par.ndim);
     }
 
   }  // jetic==1
@@ -251,7 +265,7 @@ int jet_bc::BC_update_JETBC(
           + CI.get_dpos(*c, ZZ) * CI.get_dpos(*c, ZZ));
     }
     else
-      rep.error("Jet BC, but not 2d or 3d!!!", par.ndim);
+      spdlog::error("{}: {}", "Jet BC, but not 2d or 3d!!!", par.ndim);
     (*c)->P[VX]  = b->refval[VX] * min(1., 4 - 4.0 * dist / jr);
     (*c)->Ph[VX] = (*c)->P[VX];
 #endif  // SOFTJET

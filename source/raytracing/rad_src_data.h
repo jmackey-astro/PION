@@ -11,6 +11,7 @@
 #ifndef RAD_SRC_DATA_H
 #define RAD_SRC_DATA_H
 
+#include <array>
 #include <defines/functionality_flags.h>
 #include <defines/testing_flags.h>
 #include <sim_constants.h>
@@ -24,7 +25,7 @@
 /// Radiation source struct.
 ///
 struct rad_src_info {
-  double pos[MAX_DIM];  ///< src position (physical units).
+  std::array<double, MAX_DIM> pos;  ///< src position (physical units).
   double strength;  ///< src strength (photons/sec, or ergs/sec for multifreq.)
   double Rstar;     ///< stellar radius in solar radii (for multifreq.
                     ///< photoionisation).
@@ -110,9 +111,10 @@ struct rad_source {
   ///
   struct rad_src_info *s;
 
-  class cell *sc;     ///< nearest cell to source.
-  bool src_on_grid;   ///< true if source is at a grid cell.
-  int ipos[MAX_DIM];  ///< source position in integer form (grid units, dx=2).
+  class cell *sc;    ///< nearest cell to source.
+  bool src_on_grid;  ///< true if source is at a grid cell.
+  std::array<int, MAX_DIM>
+      ipos;  ///< source position in integer form (grid units, dx=2).
 
   ///
   /// This struct is used by the code to pass cell and source data

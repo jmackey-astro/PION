@@ -33,6 +33,8 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+#include <spdlog/spdlog.h>
+
 #ifdef LEGACY_CODE
 
 #include "cooling.h"
@@ -238,7 +240,7 @@ public:
       const double  ///< EOS gamma.
   )
   {
-    cout << "Don't call timescales for old MP class!\n";
+    spdlog::info("Don't call timescales for old MP class!");
     return 1.0e99;
   }
 
@@ -252,7 +254,7 @@ public:
       const double       ///< EOS gamma (optional)
   )
   {
-    cout << "MPv0::get_recombination_rate: not written!\n";
+    spdlog::info("MPv0::get_recombination_rate: not written!");
     return 1.0e99;
   }
 

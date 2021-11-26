@@ -19,7 +19,11 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <fstream>
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -118,7 +122,7 @@ Hummer94_Hrecomb::Hummer94_Hrecomb() : kB(1.381e-16)
 
 #ifndef NDEBUG
   ofstream outf("hummer_recomb.txt");
-  if (!outf.is_open()) rep.error("couldn't open outfile", 1);
+  if (!outf.is_open()) spdlog::error("{}: {}", "couldn't open outfile", 1);
   outf << "Hummer Recombination and Cooling Curve Data: Temperature(K) ";
   outf << "Rate(cm^3/s) CoolB(erg.cm^3/s) Total-Cool[B+FF](erg.cm^3/s)\n";
   outf << "# Cols: T  alpha_B*sqrt(T)  beta_B*sqrt(T)  beta_B^tot*sqrt(T)";
@@ -271,7 +275,7 @@ int main()
 
   class Hummer94_Hrecomb rec;
 
-  cout << "rate=" << rec.Hii_rad_recomb_cooling(1.0e7);
+  spdlog::debug("rate={}", rec.Hii_rad_recomb_cooling(1.0e7));
 
   class cooling_function_SD93CIE c1;
   c1.setup_SD93_cie_MetalFree();

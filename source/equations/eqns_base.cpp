@@ -22,7 +22,9 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
 
 #include "eqns_base.h"
 using namespace std;
@@ -38,7 +40,8 @@ eqns_base::eqns_base(const int n  ///< Number of Variables in State Vector
   // We assume at least 5 variables in the state vector -- density, pressure,
   // and a 3d velocity
   //
-  if (eq_nvar < 5) rep.error("Bad eq_nvar; must be >=5!", eq_nvar);
+  if (eq_nvar < 5)
+    spdlog::error("{}: {}", "Bad eq_nvar; must be >=5!", eq_nvar);
 
   //
   // These are constants regardless of what way we are looking
@@ -72,21 +75,9 @@ eqns_base::eqns_base(const int n  ///< Number of Variables in State Vector
   //
   // Allocate memory for reference vector:
   //
-  eq_refvec = mem.myalloc(eq_refvec, eq_nvar);
-  for (int v = 0; v < eq_nvar; v++)
-    eq_refvec[v] = 0.0;
+  eq_refvec.resize(eq_nvar, 0.0);
 
   mp = 0;
-  return;
-}
-
-// ##################################################################
-// ##################################################################
-
-eqns_base::~eqns_base()
-{
-  eq_refvec = mem.myfree(eq_refvec);
-  return;
 }
 
 // ##################################################################
@@ -153,7 +144,7 @@ void eqns_base::SetDirection(const enum axes d)
       eqBBZ     = BBY;
       break;
     default:
-      rep.error("bad direction in eqns_base::SetDirection", d);
+      spdlog::error("{}: {}", "bad direction in eqns_base::SetDirection", d);
       break;
   }
   return;
@@ -169,7 +160,7 @@ void eqns_base::SetDirection(const enum axes d)
 void eqns_base::SetMicrophysics(class microphysics_base *ptr)
 {
 #ifdef TESTING
-  cout << "eqns_base::SetSolver() Setting microphysics pointer.\n";
+  spdlog::info("eqns_base::SetSolver() Setting microphysics pointer");
 #endif
   eqns_base::mp = ptr;
 }
@@ -214,7 +205,8 @@ void eqns_base::rotate(
   for (int i = 0; i < eq_nvar; i++)
     temp[i] = vec[i];
   int offset = (static_cast<int>(finaldir - initdir + 3)) % 3;
-  //  if(offset!=1 && offset!=2) rep.error("rotate function broken.",offset);
+  //  if(offset!=1 && offset!=2) spdlog::error("{}: {}", "rotate function
+  //  broken.",offset);
 
   //
   // Only two options, a positive permutation of indices, or a

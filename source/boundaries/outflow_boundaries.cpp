@@ -25,7 +25,7 @@ int outflow_bc::BC_assign_OUTFLOW(
   enum direction ondir = b->ondir;
 
   if (b->data.empty()) {
-    rep.error("BC_assign_OUTFLOW: empty boundary data", b->itype);
+    spdlog::error("{}: {}", "BC_assign_OUTFLOW: empty boundary data", b->itype);
   }
   list<cell *>::iterator bpt = b->data.begin();
   cell *temp                 = 0;
@@ -76,7 +76,9 @@ int outflow_bc::BC_assign_OUTFLOW(
 #ifdef GLM_NEGATIVE_BOUNDARY
     if (par.eqntype == EQGLM) {
       if (par.ndim == 1) {
-        rep.error("Psi outflow boundary condition doesn't work for 1D!", 99);
+        spdlog::error(
+            "{}: {}", "Psi outflow boundary condition doesn't work for 1D!",
+            99);
       }
       // get to nth cell on grid.
       for (int v = (*bpt)->isedge + 1; v < 0; v++)
@@ -90,7 +92,8 @@ int outflow_bc::BC_assign_OUTFLOW(
   } while (bpt != b->data.end());
 
   if (ct != b->data.size()) {
-    rep.error("BC_assign_OUTFLOW: missed some cells!", ct - b->data.size());
+    spdlog::error(
+        "{}: {}", "BC_assign_OUTFLOW: missed some cells!", ct - b->data.size());
   }
   return 0;
 }

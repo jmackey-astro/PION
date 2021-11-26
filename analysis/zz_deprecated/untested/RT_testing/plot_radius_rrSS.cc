@@ -68,7 +68,7 @@ int main(int argc, char **argv)
     cerr << "Error: must call with 5 arguments...\n";
     cerr
         << "plot_radius: <executable> <Outfile-base> <Infile-base> <First-File-Num> <File-Num-Freq> <x(HII) var>\n";
-    rep.error("Bad number of Args", argc);
+    spdlog::error("{}: {}", "Bad number of Args", argc);
   }
   string outfilebase = argv[1];
   string infilebase  = argv[2];
@@ -76,7 +76,7 @@ int main(int argc, char **argv)
   int opfreq         = atoi(argv[4]);
   int var            = atoi(argv[5]);
   if (isnan(startct) || isnan(opfreq) || opfreq == 0)
-    rep.error("Bad ints in args", opfreq);
+    spdlog::error("{}: {}", "Bad ints in args", opfreq);
 
   cout << "\n\nreading from first file " << infilebase << "." << startct
        << ".fits\n";
@@ -98,20 +98,23 @@ int main(int argc, char **argv)
 
   int err = 0;
   if (!fs.file_exists(infile))
-    rep.error("########################First file not found!", infile);
+    spdlog::error(
+        "{}: {}", "########################First file not found!", infile);
   err = dataio.ReadHeader(infile);
-  if (err) rep.error("read header went bad", err);
+  if (err) spdlog::error("{}: {}", "read header went bad", err);
 
   // check dimensionality is ok.
   if (SimPM.ndim != 1 && SimPM.ndim != 2 && SimPM.ndim != 3)
-    rep.error("need 1D/2D/3D sim for stromgen test", SimPM.ndim);
+    spdlog::error("{}: {}", "need 1D/2D/3D sim for stromgen test", SimPM.ndim);
   // Now the header should contain the sim dimensionality, number of vars,
   // size of box, so we can use these to set up the grid.
   cout << "(UniformFV::setup_grid) Setting up grid...\n";
   grid = new UniformGrid(
-      SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
+      SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin.data(), SimPM.Xmax,
+      SimPM.NG);
   if (grid == 0)
-    rep.error("(IntUniformFV::setup_grid) Couldn't assign data!", grid);
+    spdlog::error(
+        "{}: {}", "(IntUniformFV::setup_grid) Couldn't assign data!", grid);
   cout << "(setup_grid) Done. g=" << grid << " and dx=" << grid->DX() << "\n";
 
 
@@ -120,7 +123,8 @@ int main(int argc, char **argv)
   // time until there are no more files to analyse (note the last one might get
   // left out).
 
-  if (RSP.nsources != 1) rep.error("need exactly one source...", RSP.nsources);
+  if (RSP.nsources != 1)
+    spdlog::error("{}: {}", "need exactly one source...", RSP.nsources);
 
   double srcpos[SimPM.ndim];
   // ofstream of2("time.txt");
@@ -134,7 +138,8 @@ int main(int argc, char **argv)
   if (fs.file_exists(outfile))
     cout << "WARNING:: file exists, I am overwriting a text file.\n";
   ofstream outf(outfile.c_str());
-  if (!outf.is_open()) rep.error("couldn't open outfile", outfile);
+  if (!outf.is_open())
+    spdlog::error("{}: {}", "couldn't open outfile", outfile);
   cout << "writing to file " << outfile << endl;
   outf.setf(ios_base::scientific);
   outf.precision(6);
@@ -146,7 +151,7 @@ int main(int argc, char **argv)
   double *dist = 0, *ifrac = 0;
   dist  = new double[SimPM.Ncell];
   ifrac = new double[SimPM.Ncell];
-  if (!dist || !ifrac) rep.error("mem. alloc. dist/ifrac", dist);
+  if (!dist || !ifrac) spdlog::error("{}: {}", "mem. alloc. dist/ifrac", dist);
   double fit_radius, analytic_radius;
 
   // loop over all files.
@@ -155,7 +160,7 @@ int main(int argc, char **argv)
     // read data onto grid.
     err += dataio.ReadHeader(infile);
     err += dataio.ReadData(infile);
-    if (err) rep.error("read data went bad for file", err);
+    if (err) spdlog::error("{}: {}", "read data went bad for file", err);
 
     cout << "read data, now putting distance/ifrac into arrays.\n";
     // allocate arrays for distance and ion-fraction.
@@ -186,7 +191,8 @@ int main(int argc, char **argv)
       nions += c->P[RO] / GS.m_p() * c->P[var]
                * cvol;  // num. ions in cell (for pure Hydrogen).
       i++;
-      if (i > SimPM.Ncell) rep.error("bad ncell", SimPM.Ncell - i);
+      if (i > SimPM.Ncell)
+        spdlog::error("{}: {}", "bad ncell", SimPM.Ncell - i);
     } while ((c = grid->NextPt(c)) != 0);
 
     // now fit a radius to the data
@@ -217,7 +223,7 @@ int main(int argc, char **argv)
     outfitsfile = temp.str();
     // comment this out if we don't want to output new fits files!!!
     // err += dataio.OutputData(outfitsfile);
-    if (err) rep.error("failed to overplot radius", err);
+    if (err) spdlog::error("{}: {}", "failed to overplot radius", err);
 
     // increment filename
     count += opfreq;
@@ -260,7 +266,8 @@ int angle_data(
   temp << outfilebase << "_angle.txt";
   string outfile = temp.str();
   ofstream outf(outfile.c_str());
-  if (!outf.is_open()) rep.error("couldn't open outfile", outfile);
+  if (!outf.is_open())
+    spdlog::error("{}: {}", "couldn't open outfile", outfile);
   cout << "writing to file " << outfile << endl;
   outf.setf(ios_base::scientific);
   outf.precision(6);
@@ -307,8 +314,10 @@ int angle_data(
   Nt     = new int[180];
   tmax   = new double[180];
   tmin   = new double[180];
-  if (!rphi || !rtheta || !Np || !Nt) rep.error("mem. alloc. angle", phi);
-  if (!tmax || !tmin || !pmax || !pmin) rep.error("mem. alloc. 2 angle", tmax);
+  if (!rphi || !rtheta || !Np || !Nt)
+    spdlog::error("{}: {}", "mem. alloc. angle", phi);
+  if (!tmax || !tmin || !pmax || !pmin)
+    spdlog::error("{}: {}", "mem. alloc. 2 angle", tmax);
 
   for (i = 0; i < 360; i++) {
     rphi[i] = pmax[i] = 0.0;
@@ -331,7 +340,7 @@ int angle_data(
       if (x[YY] < RSP.position[0][YY]) phi += 180.;
       if (isnan(phi)) phi = 0.0;
       angle = static_cast<int>(phi);  // integer part of phi, so [0,359]
-      if (angle < 0 || angle > 359) rep.error("Casting", phi);
+      if (angle < 0 || angle > 359) spdlog::error("{}: {}", "Casting", phi);
       rphi[angle] += dist[i];
       Np[angle] += 1;
       pmax[angle] = max(pmax[angle], dist[i]);
@@ -345,7 +354,7 @@ int angle_data(
         if (theta == 180.0) theta -= 1.e-10;
         if (isnan(theta)) theta = 0.0;
         angle = static_cast<int>(theta);  // integer part of phi, so [0,179]
-        if (angle < 0 || angle > 179) rep.error("Casting", theta);
+        if (angle < 0 || angle > 179) spdlog::error("{}: {}", "Casting", theta);
         rtheta[angle] += dist[i];
         Nt[angle] += 1;
         tmax[angle] = max(tmax[angle], dist[i]);
@@ -369,7 +378,7 @@ int angle_data(
   temp << outfilebase << "_phi.txt";
   outfile = temp.str();
   ofstream of2(outfile.c_str());
-  if (!of2.is_open()) rep.error("couldn't open outfile", outfile);
+  if (!of2.is_open()) spdlog::error("{}: {}", "couldn't open outfile", outfile);
   cout << "writing to file " << outfile << endl;
   of2.setf(ios_base::scientific);
   of2.precision(6);
@@ -387,7 +396,8 @@ int angle_data(
     temp << outfilebase << "_theta.txt";
     outfile = temp.str();
     ofstream of3(outfile.c_str());
-    if (!of3.is_open()) rep.error("couldn't open outfile", outfile);
+    if (!of3.is_open())
+      spdlog::error("{}: {}", "couldn't open outfile", outfile);
     cout << "writing to file " << outfile << endl;
     of3.setf(ios_base::scientific);
     of3.precision(6);
@@ -443,7 +453,9 @@ int get_theoretical_radius(double *a  ///< variable to put radius in.
     rad = pow(0.75 * rad, 1. / 3.);
   }
   else
-    rep.error("Bad ndim/coords combo in get_theoretical_radius()", SimPM.ndim);
+    spdlog::error(
+        "{}: {}", "Bad ndim/coords combo in get_theoretical_radius()",
+        SimPM.ndim);
   /*
   // assume constant density!
   double rad = RSP.strength[0]*SimPM.simtime*GS.m_p()/M_PI/c->P[RO];
@@ -454,7 +466,7 @@ int get_theoretical_radius(double *a  ///< variable to put radius in.
      (SimPM.coord_sys==COORD_CRT && SimPM.ndim==3)) {
     rad = pow(0.75*rad, 1./3.);
   }
-  else rep.error("Bad ndim/coords combo in
+  else spdlog::error("{}: {}", "Bad ndim/coords combo in
   get_theoretical_radius()",SimPM.ndim);
   */
   /*
@@ -464,7 +476,8 @@ int get_theoretical_radius(double *a  ///< variable to put radius in.
   if (SimPM.coord_sys==COORD_CRT && SimPM.ndim==2) {
     rad = r0*sqrt(exp(RSP.strength[0]*SimPM.simtime/M_PI/n0/r0/r0)-1.0);
   }
-  else rep.error("only 2d radial profiles calculated!",SimPM.ndim);
+  else spdlog::error("{}: {}", "only 2d radial profiles
+  calculated!",SimPM.ndim);
   */
 
   *a = rad;

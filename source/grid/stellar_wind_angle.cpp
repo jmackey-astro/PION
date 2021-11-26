@@ -15,7 +15,10 @@
 #include "defines/testing_flags.h"
 #include "tools/interpolate.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -28,7 +31,6 @@
 #include "constants.h"
 #include <cmath>
 #include <cstdio>
-#include <iostream>
 #include <vector>
 using namespace std;
 
@@ -56,8 +58,7 @@ stellar_wind_angle::stellar_wind_angle(
   // Constants for wind functions
   stellar_wind_angle::c_gamma = 0.35;
   stellar_wind_angle::c_xi    = xi;
-  // cout <<"stellar_wind_angle::c_xi    = "<<c_xi<<"\n";
-  stellar_wind_angle::c_beta = -1.0;
+  stellar_wind_angle::c_beta  = -1.0;
 
   // Number of points in theta, omega and Teff vectors
   stellar_wind_angle::npts_theta = 25;
@@ -80,10 +81,6 @@ stellar_wind_angle::~stellar_wind_angle() {}
 // Generate interpolating tables for wind density function
 void stellar_wind_angle::setup_tables()
 {
-  // cout << "###############################" << "\n";
-  // cout << "Setting up interpolating tables" << "\n";
-  // cout << "###############################" << "\n";
-
   // Min, mid and max values of theta - 5pts between min and mid, 20pts
   // between mid and max
   double theta_min = 0.1;
@@ -102,8 +99,6 @@ void stellar_wind_angle::setup_tables()
           * (pconst.pi() / 180.0);
   }
 
-  // cout << "- Theta vector generated" << "\n";
-
   //
   // Set up omega vector
   //
@@ -121,8 +116,6 @@ void stellar_wind_angle::setup_tables()
   // 1
   for (int j = 0; j < npts_omega; j++)
     omega_vec[j] = 1 - pconst.pow_fast(10, log_mu_vec[j]);
-
-  // cout << "- Omega vector generated" << "\n";
 
   //
   // Set up Teff vector
@@ -151,8 +144,6 @@ void stellar_wind_angle::setup_tables()
     if (i == 21) Teff_vec[i] = T7;
   }
 
-  // cout << "- Teff vector generated" << "\n";
-
   //
   // Write delta table
   //
@@ -167,15 +158,14 @@ void stellar_wind_angle::setup_tables()
       delta_vec[i][j] = fn_delta(omega_vec[i], Teff_vec[j]);
 #ifndef NDEBUG
       if (!isfinite(delta_vec[i][j])) {
-        cout << "infinite delta!!! " << i << "  " << j << "  " << omega_vec[i]
-             << "  " << Teff_vec[j] << delta_vec[i][j] << "\n";
-        rep.error("bug", delta_vec[i][j]);
+        spdlog::debug(
+            "infinite delta!!! {} {} {} {} {}", i, j, omega_vec[i], Teff_vec[j],
+            delta_vec[i][j]);
+        spdlog::error("{}: {}", "bug", delta_vec[i][j]);
       }
 #endif
     }
   }
-
-  // cout << "- Delta table generated" << "\n";
 
   //
   // Write alpha table
@@ -198,10 +188,6 @@ void stellar_wind_angle::setup_tables()
       }
     }
   }
-
-  // cout << "- Alpha table generated" << "\n" << "\n";
-  // cout << "Finished interpolating tables setup" << "\n";
-  // cout << "###############################" << "\n" << "\n";
 
   return;
 }
@@ -409,18 +395,11 @@ double stellar_wind_angle::fn_density_interp(
 
 #ifndef NDEBUG
   if (!isfinite(result)) {
-    cout << delta_interp << "  " << alpha_interp << "  " << result;
-    cout << "  " << fn_v_inf(omega, v_inf, theta) << "  ";
-    cout << omega << "\n";
-    cout << "  " << mdot;
-    cout << "  " << alpha_interp;
-    cout << "  " << delta_interp;
-    cout << "  " << pconst.pow_fast(1.0 - omega * sin(theta), c_xi);
-    cout << "  " << pconst.pow_fast(radius, 2.0);
-    cout << "  " << fn_v_inf(omega, v_inf, theta);
-    cout << "  " << radius;
-    cout << "  "
-         << "\n";
+    spdlog::debug(
+        "{} {} {} {} {}\n{} {} {} {} {} {} {}", delta_interp, alpha_interp,
+        result, fn_v_inf(omega, v_inf, theta), omega, mdot, alpha_interp,
+        delta_interp, pconst.pow_fast(1.0 - omega * sin(theta), c_xi),
+        pconst.pow_fast(radius, 2.0), fn_v_inf(omega, v_inf, theta), radius);
   }
 #endif
   return result;
@@ -448,10 +427,8 @@ void stellar_wind_angle::set_wind_cell_reference_state(
     set_rho   = false;
   }
 
-  double pp[ndim];
+  std::array<double, MAX_DIM> pp;
   CI.get_dpos(wc->c, pp);
-  // rep.printVec("cell pos", pp, ndim);
-  // cout <<"dist="<<wc->dist<<"\n";
 
   //
   // 3D geometry: either 3D-cartesian, 2D-axisymmetry, or 1D-spherical.
@@ -502,7 +479,8 @@ void stellar_wind_angle::set_wind_cell_reference_state(
       z = grid->difference_vertex2cell(WS->dpos, c, ZZ);
       break;
     default:
-      rep.error("bad ndim in set_wind_cell_reference_state", ndim);
+      spdlog::error(
+          "{}: {}", "bad ndim in set_wind_cell_reference_state", ndim);
       break;
   }
 
@@ -542,7 +520,8 @@ void stellar_wind_angle::set_wind_cell_reference_state(
       break;
 
     default:
-      rep.error("bad ndim in set_wind_cell_reference_state", ndim);
+      spdlog::error(
+          "{}: {}", "bad ndim in set_wind_cell_reference_state", ndim);
       break;
   }
 
@@ -560,7 +539,7 @@ void stellar_wind_angle::set_wind_cell_reference_state(
 
     switch (ndim) {
       case 1:
-        rep.error("1D spherical but MHD?", ndim);
+        spdlog::error("{}: {}", "1D spherical but MHD?", ndim);
         break;
       case 2:
         // split monopole
@@ -602,7 +581,8 @@ void stellar_wind_angle::set_wind_cell_reference_state(
         break;
 
       default:
-        rep.error("bad ndim in set_wind_cell_reference_state", ndim);
+        spdlog::error(
+            "{}: {}", "bad ndim in set_wind_cell_reference_state", ndim);
         break;
     }
   }
@@ -645,14 +625,13 @@ void stellar_wind_angle::set_wind_cell_reference_state(
 #endif  // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 
 #ifndef NDEBUG
-  cout << "\n";
-  rep.printVec("wc->p", wc->p, nvar);
+  spdlog::debug("wc->p : {}", std::vector<double>(wc->p, wc->p + ndim));
 #endif
 #ifdef TEST_INF
   for (int v = 0; v < nvar; v++) {
     if (!isfinite(wc->p[v])) {
-      cerr << "NAN in wind source " << v << " " << wc->p[v] << "\n";
-      rep.error("NAN in wind source", wc->p[v]);
+      spdlog::error("NAN in wind source {} {}", v, wc->p[v]);
+      spdlog::error("{}: {}", "NAN in wind source", wc->p[v]);
     }
   }
 #endif
@@ -689,15 +668,15 @@ int stellar_wind_angle::add_evolving_source(
 )
 {
   if (type != WINDTYPE_ANGLE) {
-    rep.error("Bad wind type for evolving stellar wind (rotating star)!", type);
+    spdlog::error(
+        "{}: {}", "Bad wind type for evolving stellar wind (rotating star)!",
+        type);
   }
   //
   // First we will read the file, and see when the source should
   // switch on in the simulation (it may not be needed for a while).
   //
-#ifndef NDEBUG
-  cout << "\t\tsw-evo: adding source from file " << infile << "\n";
-#endif
+  spdlog::debug("\t\tsw-evo: adding source from file {}", infile);
 
   //
   // Some properties of the wind source are specific to this module,
@@ -708,7 +687,7 @@ int stellar_wind_angle::add_evolving_source(
   struct evolving_wind_data *temp = 0;
   temp                            = mem.myalloc(temp, 1);
   int err                         = read_evolution_file(infile, temp);
-  if (err) rep.error("couldn't read wind evolution file", infile);
+  if (err) spdlog::error("{}: {}", "couldn't read wind evolution file", infile);
 
   // assign data for v_esc from v_crit.
   for (int i = 0; i < temp->Npt; i++)
@@ -720,11 +699,12 @@ int stellar_wind_angle::add_evolving_source(
   temp->tfinish       = temp->time_evo[temp->Npt - 1];
   temp->update_freq   = update_freq / t_scalefactor;
   temp->t_next_update = max(temp->tstart, t_now);
-#ifndef NDEBUG
-  cout << "\t\t tstart=" << temp->tstart;
-  cout << ", next update=" << temp->t_next_update;
-  cout << ", and tfinish=" << temp->tfinish << "\n";
-#endif
+
+  spdlog::debug(
+      "\t\t tstart={} "
+      ", next update={}"
+      ", and tfinish={}",
+      temp->tstart, temp->t_next_update, temp->tfinish);
 
   //
   // Optional time offset between simulation time and evolutionary
@@ -733,7 +713,6 @@ int stellar_wind_angle::add_evolving_source(
   for (int i = 0; i < temp->Npt; i++) {
     temp->time_evo[i] += time_offset;
     temp->time_evo[i] /= t_scalefactor;
-    // cout <<"t="<<temp->time_evo[i]<<"\n";
   }
   //
   // Decide if the wind src is active yet.  If it is, then
@@ -770,14 +749,15 @@ int stellar_wind_angle::add_evolving_source(
     interpolate.root_find_linear_vec(temp->time_evo, temp->X_Z_evo, t_now, xz);
     interpolate.root_find_linear_vec(temp->time_evo, temp->X_D_evo, t_now, xd);
 
-#ifndef NDEBUG
-    cout << "Source is Active\n";
-#endif
+    spdlog::info("Source is Activ");
   }
   else {
-    cout << "WARNING: Source is not yet active: tnow=" << t_now;
-    cout << ", tstart=";
-    cout << temp->tstart << ". Setting wind source to INACTIVE.\n";
+    spdlog::warn(
+        "Source is not yet active: tnow={}"
+        ", tstart={}"
+        ". Setting wind source to INACTIVE",
+        t_now, temp->tstart);
+
     temp->is_active = false;
     mdot            = -100.0;
     vinf            = -100.0;
@@ -842,17 +822,19 @@ int stellar_wind_angle::add_rotating_source(
   ws->type               = type;
   switch (type) {
     case WINDTYPE_ANGLE:
-      cout << "\tAdding rotating wind source as id=" << ws->id << "\n";
+      spdlog::debug("\tAdding rotating wind source as id={}", ws->id);
       break;
     default:
-      rep.error("What type of source is this?  add a new type?", type);
+      spdlog::error(
+          "{}: {}", "What type of source is this?  add a new type?", type);
       break;
   }
 
   for (int v = 0; v < ndim; v++)
     ws->dpos[v] = pos[v];
 #ifndef NDEBUG
-  rep.printVec("ws->dpos", ws->dpos, ndim);
+  spdlog::debug(
+      "ws->dpos : {}", std::vector<double>(ws->dpos, ws->dpos + ndim));
 #endif
 
   for (int v = ndim; v < MAX_DIM; v++)
@@ -879,9 +861,7 @@ int stellar_wind_angle::add_rotating_source(
   ws->tracers = mem.myalloc(ws->tracers, ntracer);
   for (int v = 0; v < ntracer; v++) {
     ws->tracers[v] = trv[v];
-#ifndef NDEBUG
-    cout << "ws->tracers[v] = " << ws->tracers[v] << "\n";
-#endif
+    spdlog::debug("ws->tracers[v] = {}", ws->tracers[v]);
   }
 
   // if using microphysics, find H+ tracer variable, if it exists.
@@ -896,29 +876,33 @@ int stellar_wind_angle::add_rotating_source(
 
   ws->cells_added = false;
   if (!ws->wcells.empty())
-    rep.error("wind_source: wcells not empty!", ws->wcells.size());
+    spdlog::error(
+        "{}: {}", "wind_source: wcells not empty!", ws->wcells.size());
 
   //
   // Make sure the source position is compatible with the geometry:
   //
   if (coordsys == COORD_SPH) {
     if (!pconst.equalD(ws->dpos[Rsph], 0.0))
-      rep.error("Spherical symmetry but source not at origin!", ws->dpos[Rsph]);
+      spdlog::error(
+          "{}: {}", "Spherical symmetry but source not at origin!",
+          ws->dpos[Rsph]);
   }
   if (coordsys == COORD_CYL && ndim == 2) {
     //
     // Axisymmetry
     //
     if (!pconst.equalD(ws->dpos[Rcyl], 0.0))
-      rep.error("Axisymmetry but source not at R=0!", ws->dpos[Rcyl]);
+      spdlog::error(
+          "{}: {}", "Axisymmetry but source not at R=0!", ws->dpos[Rcyl]);
   }
 
   wlist.push_back(ws);
   nsrc++;
-#ifndef NDEBUG
-  cout << "\tAdded wind source id=" << nsrc - 1 << " to list of ";
-  cout << nsrc << " elements.\n";
-#endif  // NDEBUG
+
+  spdlog::debug(
+      "\tAdded wind source id={} to list of {} elements", nsrc - 1, nsrc);
+
   return ws->id;
 }
 
@@ -936,14 +920,17 @@ void stellar_wind_angle::update_source(
   // needs activating then we set that.
   //
   if (!wd->is_active) {
-    cout << "stellar_wind_angle::update_source() activating source id=";
-    cout << wd->ws->id << " at Simulation time t=" << t_now << "\n";
-    rep.printVec("Source position", wd->ws->dpos, ndim);
+    spdlog::debug(
+        "stellar_wind_angle::update_source() activating source id={}"
+        " at Simulation time t={}",
+        wd->ws->id, t_now);
+    spdlog::debug("Source position : {}", wd->ws->dpos);
     wd->is_active = true;
   }
 
   if (t_now < wd->tstart) {
-    rep.error("Requested updating inactive source", wd->tstart - t_now);
+    spdlog::error(
+        "{}: {}", "Requested updating inactive source", wd->tstart - t_now);
   }
 
   wd->t_next_update = t_now;  // (We update every timestep now)

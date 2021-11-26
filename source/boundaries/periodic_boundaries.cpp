@@ -19,7 +19,8 @@ int periodic_bc::BC_assign_PERIODIC(
 {
   enum direction ondir = b->ondir;
   if (b->data.empty())
-    rep.error("BC_assign_PERIODIC: empty boundary data", b->itype);
+    spdlog::error(
+        "{}: {}", "BC_assign_PERIODIC: empty boundary data", b->itype);
 
   // loop through all cells in boundary, and make the cell's "npt"
   // pointer point to the corresponding cell wrapped around on the
@@ -53,7 +54,9 @@ int periodic_bc::BC_assign_PERIODIC(
   } while (bpt != b->data.end());
 
   if (ct != b->data.size())
-    rep.error("BC_assign_PERIODIC: missed some cells!", ct - b->data.size());
+    spdlog::error(
+        "{}: {}", "BC_assign_PERIODIC: missed some cells!",
+        ct - b->data.size());
   return 0;
 }
 

@@ -21,7 +21,8 @@ int reflecting_bc::BC_assign_REFLECTING(
   enum direction ondir  = b->ondir;
 
   if (b->data.empty()) {
-    rep.error("BC_assign_REFLECTING: empty boundary data", b->itype);
+    spdlog::error(
+        "{}: {}", "BC_assign_REFLECTING: empty boundary data", b->itype);
   }
   //
   // set reference state so that it is mostly zeros but has some +/-1
@@ -49,7 +50,7 @@ int reflecting_bc::BC_assign_REFLECTING(
         b->refval[VZ] = -1.0;
         break;
       default:
-        rep.error("BAD DIRECTION REFLECTING", offdir);
+        spdlog::error("{}: {}", "BAD DIRECTION REFLECTING", offdir);
         break;
     }  // Set Normal velocity direction.
 
@@ -71,7 +72,7 @@ int reflecting_bc::BC_assign_REFLECTING(
           b->refval[BZ] = -1.0;
           break;
         default:
-          rep.error("BAD DIRECTION REFLECTING", offdir);
+          spdlog::error("{}: {}", "BAD DIRECTION REFLECTING", offdir);
           break;
       }  // Set normal b-field direction.
     }    // Setting up reference value.
@@ -92,7 +93,7 @@ int reflecting_bc::BC_assign_REFLECTING(
       temp = grid->NextPt(temp, ondir);
     }
     if (!temp) {
-      rep.error("Got lost assigning reflecting bcs.", temp->id);
+      spdlog::error("{}: {}", "Got lost assigning reflecting bcs.", temp->id);
     }
     for (int v = 0; v < par.nvar; v++)
       (*bpt)->P[v] = temp->P[v] * b->refval[v];
@@ -109,7 +110,9 @@ int reflecting_bc::BC_assign_REFLECTING(
   } while (bpt != b->data.end());
 
   if (ct != b->data.size()) {
-    rep.error("BC_assign_REFLECTING: missed some cells!", ct - b->data.size());
+    spdlog::error(
+        "{}: {}", "BC_assign_REFLECTING: missed some cells!",
+        ct - b->data.size());
   }
   return 0;
 }

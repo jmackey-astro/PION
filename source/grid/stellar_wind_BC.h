@@ -31,7 +31,7 @@
 
 #include "sim_constants.h"
 #include "sim_params.h"
-#include "tools/reporting.h"
+
 
 // Defines for type of wind:
 #define WINDTYPE_CONSTANT 0  // spherically symmetric, constant in time
@@ -160,7 +160,7 @@ public:
       const double     ///< Orbital period (years)
   )
   {
-    rep.error("Don't call add_evolving_source from here.", 99);
+    spdlog::error("{}: {}", "Don't call add_evolving_source from here.", 99);
     return 99;
   }
 
@@ -185,7 +185,7 @@ public:
              const double*/
   )
   {
-    rep.error("Don't call add_rotating_source from here.", 99);
+    spdlog::error("{}: {}", "Don't call add_rotating_source from here.", 99);
     return 99;
   }
 

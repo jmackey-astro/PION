@@ -12,11 +12,13 @@
 ///
 
 #include <fstream>
-#include <iostream>
+
 #include <sstream>
 using namespace std;
 
 #include "readparams.h"
+
+#include <spdlog/spdlog.h>
 
 // Reading parameters from parameterfile
 
@@ -33,8 +35,7 @@ int ReadParams::read_paramfile(const string &infile)
   ifstream paramfile;
   paramfile.open(infile.c_str());
   if (!paramfile.is_open()) {
-    cerr << "Error opening file " << infile << " for writing.  Quitting..."
-         << "\n";
+    spdlog::error("Error opening file {} for writing.  Quitting...", infile);
     return (1);
   }
   string line;
@@ -65,7 +66,7 @@ int ReadParams::read_paramfile(const string &infile)
 
     // cout << line<<"\t"<<iparam<<"\n";
     // if (iparam>=arraylength)
-    // rep.error("too many parameters",iparam);
+    // spdlog::error("{}: {}", "too many parameters",iparam);
     // fileline >> params[iparam][0] >> params[iparam][1];
     // iparam++;
   }
@@ -77,7 +78,7 @@ void ReadParams::write_out_parameters()
 {
   for (vector<struct parameter>::iterator i = params.begin(); i != params.end();
        ++i)
-    cout << (*i).name << "\t" << (*i).val << "\n";
+    spdlog::debug("{}\t{}", (*i).name, (*i).val);
 
   // for (int iparam=0; iparam<arraylength; iparam++)
   //    cout << params[iparam][0] << "\t" << params[iparam][1] << "\n";
@@ -91,9 +92,9 @@ string ReadParams::find_parameter(const string &p)
   while (i != params.end() && (*i).name != p)
     ++i;
   if (i == params.end()) {
-    cerr << "\tWarning: findparameter: couldn't find parameter: " << p
-         << " in file. Returning empty string."
-         << "\n";
+    spdlog::warn(
+        "findparameter: couldn't find parameter: {} in file. Returning empty string.",
+        p);
     return ("");
   }
   else

@@ -7,7 +7,7 @@
 ///
 
 #include <cmath>
-#include <iostream>
+
 #include <sstream>
 #include <vector>
 
@@ -15,7 +15,7 @@
 #include "defines/testing_flags.h"
 #include "tools/interpolate.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
 
 
 #include "xray_emission.h"
@@ -99,7 +99,7 @@ int Xray_emission::setup_xray_tables_priv(
       // We have found a line of data, so read it into variables.
       istringstream iss(line);
       iss >> lt >> temp >> temp >> l1 >> l2 >> l3 >> l4;
-#ifdef TESTING
+#ifndef NDEBUG
       cout << lt << "  " << l1 << "  " << l2 << "  " << l3 << "  " << l4
            << "\n";
 #endif

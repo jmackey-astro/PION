@@ -36,7 +36,10 @@
 #include "defines/testing_flags.h"
 #include "tools/interpolate.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -369,21 +372,21 @@ void hydrogen_photoion::Setup_photoionisation_rate_table(
   // calculated from 4Pi*R^2 sigma*T^4
   //
   // cout <<Tstar<<"  "<<Rstar<<"  "<<Lstar<<"\n";
-  if (Tstar < 1000.0) rep.error("T<1000K.  Object is not a star!", Tstar);
+  if (Tstar < 1000.0)
+    spdlog::error("{}: {}", "T<1000K.  Object is not a star!", Tstar);
   double L = pconst.StefanBoltzmannConst() * pow(Tstar, 4.0) * 4.0 * M_PI
              * Rstar * Rstar;
   if (fabs(1.0 - L / Lstar) > 0.05 && !pconst.equalD(Lstar, 1.0)) {
-    cout << "\tLuminosities don't match! Lstar=" << Lstar;
-    cout << " and Stefan-Bolt. law gives L=" << L;
-    cout << "\t:Setup_photoionisation_rate_table: Ignoring Lstar and using "
-            "4.Pi.R^2.sigma.T^4.\n";
+    spdlog::debug(
+        "\tLuminosities don't match! Lstar={} and Stefan-Bolt. law gives L={}\t:Setup_photoionisation_rate_table: Ignoring Lstar and using 4.Pi.R^2.sigma.T^4.\n",
+        Lstar, L);
     // cerr <<": NOTE Rstar given will be scaled to give the requested
     // Lstar\n";
     //
     // If L>Lstar, then we want to multiply the radius by sqrt(Lstar/L)<1
     // to decrease the radius and give the requested Luminosity.
     // Maybe we should just bug out?
-    // rep.error("Lstar,Rstar,Tstar are inconsistent",Lstar/L);
+    // spdlog::error("{}: {}", "Lstar,Rstar,Tstar are inconsistent",Lstar/L);
     // L=sqrt(Lstar/L); // Radius can be multiplied by this below.
   }
   // else {
@@ -392,12 +395,12 @@ void hydrogen_photoion::Setup_photoionisation_rate_table(
 
 #ifndef NDEBUG
   if (Nspl < 75) {
-    cerr << "Setup_photoionisation_rate_table() using Nspl<75 is less "
-            "accurate\n";
+    spdlog::error(
+        "Setup_photoionisation_rate_table() using Nspl<75 is less accurate");
   }
   if (Nsub < 800) {
-    cerr << "Setup_photoionisation_rate_table() using Nsub<800 is less "
-            "accurate\n";
+    spdlog::error(
+        "Setup_photoionisation_rate_table() using Nsub<800 is less accurate");
   }
 #endif  // NDEBUG
 

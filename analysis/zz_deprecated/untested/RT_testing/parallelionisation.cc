@@ -50,7 +50,7 @@ int main(int argc, char **argv)
     cerr << "Error: must call with 5 arguments...\n";
     cerr
         << "parallelionisation: <executable> <Outfile-base> <Infile-base> <First-File-Num> <File-Num-Freq> <x(HII) var>\n";
-    rep.error("Bad number of Args", argc);
+    spdlog::error("{}: {}", "Bad number of Args", argc);
   }
   string outfilebase = argv[1];
   string infilebase  = argv[2];
@@ -58,7 +58,7 @@ int main(int argc, char **argv)
   int opfreq         = atoi(argv[4]);
   int var            = atoi(argv[5]);
   if (isnan(startct) || isnan(opfreq) || opfreq == 0)
-    rep.error("Bad ints in args", opfreq);
+    spdlog::error("{}: {}", "Bad ints in args", opfreq);
 
   cout << "\n\nreading from first file " << infilebase << "." << startct
        << ".fits\n";
@@ -78,30 +78,35 @@ int main(int argc, char **argv)
 
   int err = 0;
   if (!fs.file_exists(infile))
-    rep.error("########################First file not found!", infile);
+    spdlog::error(
+        "{}: {}", "########################First file not found!", infile);
   err = dataio.ReadHeader(infile);
-  if (err) rep.error("read header went bad", err);
+  if (err) spdlog::error("{}: {}", "read header went bad", err);
 
   // check dimensionality is ok.
   if (SimPM.ndim != 1 && SimPM.ndim != 2 && SimPM.ndim != 3)
-    rep.error("need 1D/2D/3D sim for parallelrays test", SimPM.ndim);
+    spdlog::error(
+        "{}: {}", "need 1D/2D/3D sim for parallelrays test", SimPM.ndim);
   // Now the header should contain the sim dimensionality, number of vars,
   // size of box, so we can use these to set up the grid.
   cout << "(UniformFV::setup_grid) Setting up grid...\n";
   grid = new UniformGrid(
-      SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
+      SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin.data(), SimPM.Xmax,
+      SimPM.NG);
   if (grid == 0)
-    rep.error("(IntUniformFV::setup_grid) Couldn't assign data!", grid);
+    spdlog::error(
+        "{}: {}", "(IntUniformFV::setup_grid) Couldn't assign data!", grid);
   cout << "(setup_grid) Done. g=" << grid << " and dx=" << grid->DX() << "\n";
   err += dataio.ReadData(infile);
-  if (err) rep.error("Read initial data", err);
+  if (err) spdlog::error("{}: {}", "Read initial data", err);
 
   int count = startct;
   // Need to loop this over all timesteps, incrementing 'start' by 'step' each
   // time until there are no more files to analyse (note the last one might get
   // left out).
 
-  if (RSP.nsources != 1) rep.error("need exactly one source...", RSP.nsources);
+  if (RSP.nsources != 1)
+    spdlog::error("{}: {}", "need exactly one source...", RSP.nsources);
 
   double srcpos[SimPM.ndim];
   // ofstream of2("time.txt");
@@ -115,7 +120,8 @@ int main(int argc, char **argv)
   if (fs.file_exists(outfile))
     cout << "WARNING:: file exists, I am overwriting a text file.\n";
   ofstream outf(outfile.c_str());
-  if (!outf.is_open()) rep.error("couldn't open outfile", outfile);
+  if (!outf.is_open())
+    spdlog::error("{}: {}", "couldn't open outfile", outfile);
   cout << "writing to file " << outfile << endl;
   outf.setf(ios_base::scientific);
   outf.precision(2);
@@ -140,7 +146,7 @@ int main(int argc, char **argv)
   double *dist = 0, *ifrac = 0;
   dist  = new double[SimPM.NG[XX]];
   ifrac = new double[SimPM.NG[XX]];
-  if (!dist || !ifrac) rep.error("mem. alloc. dist/ifrac", dist);
+  if (!dist || !ifrac) spdlog::error("{}: {}", "mem. alloc. dist/ifrac", dist);
 
   // increment filename
   count += opfreq;
@@ -148,7 +154,7 @@ int main(int argc, char **argv)
   temp << infilebase << "." << count << ".fits";
   infile = temp.str();
   if (!fs.file_exists(infile))
-    rep.error("Can't find second file to open", infile);
+    spdlog::error("{}: {}", "Can't find second file to open", infile);
 
   // loop over all files.
   do {
@@ -156,7 +162,7 @@ int main(int argc, char **argv)
     // read data onto grid.
     err += dataio.ReadHeader(infile);
     err += dataio.ReadData(infile);
-    if (err) rep.error("read data went bad for file", err);
+    if (err) spdlog::error("{}: {}", "read data went bad for file", err);
 
     if (SimPM.ndim == 2) {
       // get first point, and for each point calculate distance to source (at
@@ -174,7 +180,8 @@ int main(int argc, char **argv)
         // if (SimPM.simtime==0.0 && grid->NextPt(startpt,YN)==0)
         // for (int v=0;v<SimPM.NG[XX];v++) cout <<"  "<<dist[v]<<endl;
         // cout <<"got "<<i<<"cells\n";
-        if (i > SimPM.NG[XX]) rep.error("too many cells in x-dir!", i);
+        if (i > SimPM.NG[XX])
+          spdlog::error("{}: {}", "too many cells in x-dir!", i);
         // now fit a position to the data
         // pass in (npt, dist, ifrac, a_min, a_max, &a_fit, &rchisq, &err2)
         double afit = 0.0, acalc = 0.0, rchisq = 0.0, rchisq2 = 0.0;
@@ -196,7 +203,8 @@ int main(int argc, char **argv)
         ifrac[i] = c->P[var];
         i++;
       } while ((c = grid->NextPt(c, XP)) != 0);
-      if (i > SimPM.NG[XX]) rep.error("too many cells in x-dir!", i);
+      if (i > SimPM.NG[XX])
+        spdlog::error("{}: {}", "too many cells in x-dir!", i);
       // now fit a position to the data
       // pass in (npt, dist, ifrac, a_min, a_max, &a_fit, &rchisq, &err2)
       double afit = 0.0, acalc = 0.0, rchisq = 0.0, rchisq2 = 0.0;

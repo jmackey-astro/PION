@@ -6,12 +6,16 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
 
 #include "dataIO/file_status.h"
+
+#include <fstream>
 
 using namespace std;
 
@@ -53,7 +57,7 @@ int file_status::acquire_lock(string fname)
     nanosleep(&waittime, 0);
     //    cout <<"file_status:\t File locked... waiting\n";
   }
-  if (file_lock(fname)) rep.error("Failed to lock file", 1);
+  if (file_lock(fname)) spdlog::error("{}: {}", "Failed to lock file", 1);
   return (0);
 }
 int file_status::release_lock(string fname)
@@ -81,12 +85,12 @@ void file_status::file_unlock(string fname)
   fname += "_lock";
   ifstream inf(fname.c_str());
   if (!inf) {
-    cout << "file_status:\t File is not locked!\n";
+    spdlog::error("file_status:\t File is not locked!");
     return;
   }
   inf.close();
   if (remove(fname.c_str()) != 0)
-    rep.error("Error deleting lock file", remove(fname.c_str()));
+    spdlog::error("{}: {}", "Error deleting lock file", remove(fname.c_str()));
   else
     //    cout<<"file_status:\t Unlocked file.\n";
     return;
@@ -100,11 +104,11 @@ int file_status::get_dir_listing(
     list<string> *files  ///< list to put filenames in.
 )
 {
-  cout << "get_dir_listing() reading directory: " << dir << "\n";
+  spdlog::debug("get_dir_listing() reading directory: {}", dir);
   DIR *dp             = 0;
   struct dirent *dirp = 0;
   if ((dp = opendir(dir.c_str())) == 0) {
-    cout << "Error(" << errno << ") opening " << dir << "\n";
+    spdlog::debug("Error({}) opening {}", errno, dir);
     return errno;
   }
 
@@ -114,8 +118,7 @@ int file_status::get_dir_listing(
     // cout <<"\tget_dir_listing() file: "<<string(dirp->d_name)<<"\n";
   }
   closedir(dp);
-  cout << "get_dir_listing() done."
-       << "\n";
+  spdlog::info("get_dir_listing() done");
   return 0;
 }
 
@@ -129,24 +132,24 @@ int file_status::get_files_in_dir(
     list<string> *files  ///< list to put filenames in.
 )
 {
-  cout << "get_files_in_dir(): starting.\n";
+  spdlog::info("get_files_in_dir(): starting");
   int err = 0;
   if (!files->empty())
-    cout << "WARNING: list of files is not empty, adding to end of list.\n";
+    spdlog::warn("list of files is not empty, adding to end of list");
 
   //
   // get directory listing
   //
   err += get_dir_listing(dir, files);
-  cout << "get_files_in_dir(): got dir listing with " << files->size()
-       << " elements.\n";
+  spdlog::debug(
+      "get_files_in_dir(): got dir listing with {} elements", files->size());
 
   //
   // remove elements that don't begin with a given substring
   //
   if (!str.empty()) {
-    cout << "get_files_in_dir(): looking for substring in filenames: " << str
-         << "\n";
+    spdlog::debug(
+        "get_files_in_dir(): looking for substring in filenames: {}", str);
     list<string>::iterator i = files->begin();
     if (i != files->end()) {  // check that dir listing is not empty...
       do {
@@ -169,13 +172,13 @@ int file_status::get_files_in_dir(
     }
   }
   else
-    cout << "get_files_in_dir(): No substring, so not removing any elements. "
-            "returning...\n";
+    spdlog::info(
+        "get_files_in_dir(): No substring, so not removing any elements. returning...");
 
   //
   // sort remaining elements.
   //
   files->sort();
-  cout << "get_files_in_dir(): done.\n";
+  spdlog::info("get_files_in_dir(): done");
   return err;
 }

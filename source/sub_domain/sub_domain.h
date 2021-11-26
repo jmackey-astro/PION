@@ -16,7 +16,7 @@
 #include <constants.h>
 #include <defines/functionality_flags.h>
 #include <defines/testing_flags.h>
-#include <iostream>
+
 #include <list>
 #include <mpi.h>
 #include <sim_constants.h>
@@ -37,9 +37,9 @@
 
 /// struct to hold rank of child grids and Xmin/Xmax arrays.
 struct cgrid {
-  double Xmin[MAX_DIM];  ///< Xmin of the child grid.
-  double Xmax[MAX_DIM];  ///< Xmax of the child grid.
-  int rank;              ///< rank of process that holds child grid.
+  std::array<double, MAX_DIM> Xmin;  ///< Xmin of the child grid.
+  std::array<double, MAX_DIM> Xmax;  ///< Xmax of the child grid.
+  int rank;                          ///< rank of process that holds child grid.
 };
 
 // ##################################################################
@@ -290,7 +290,10 @@ public:
 
   /// returns the number of real grid-zones in each direction, on this
   /// processor's domain.
-  const int *get_directional_Ncells() const { return directional_Ncells; }
+  const std::array<int, MAX_DIM> get_directional_Ncells() const
+  {
+    return directional_Ncells;
+  }
 
   /// returns the number of real grid-zones in a given direction, on this
   /// processor's domain.
@@ -303,13 +306,13 @@ public:
   int get_Ncell() const { return Ncell; }
 
   ///< get min value of x,y,z in Processor's domain.
-  const double *get_Xmin() const { return Xmin; }
+  const std::array<double, MAX_DIM> get_Xmin() const { return Xmin; }
 
   ///< get min value of x,y, or z in Processor's domain.
   double get_Xmin(const int i) const { return Xmin[i]; }
 
   ///< get max value of x,y,z in Processor's domain.
-  const double *get_Xmax() const { return Xmax; }
+  const std::array<double, MAX_DIM> get_Xmax() const { return Xmax; }
 
   ///< get max value of x,y, or z in Processor's domain.
   double get_Xmax(const int i) const { return Xmax[i]; }
@@ -363,10 +366,10 @@ private:
   int myrank;  ///< Which processor am I?
 
   /// this proc's position in the block of domains (zero offset)
-  int coordinates[MAX_DIM];
+  std::array<int, MAX_DIM> coordinates;
 
   ///< size of block of domains in each direction. (one block = one unit).
-  int num_subdomains[MAX_DIM];
+  std::array<int, MAX_DIM> num_subdomains;
 
   /// booleans for whether a dimension has pbc
   std::vector<int> periodic;
@@ -376,17 +379,19 @@ private:
 
   /// Number of real grid-zones in each direction, on this
   /// processor's domain.
-  int directional_Ncells[MAX_DIM];
+  std::array<int, MAX_DIM> directional_Ncells;
 
   /// Total number of real grid zones in this processor's domain.
   int Ncell;
 
   /// number of zones from this proc's 1st zone to the sim's 1st zone
-  int offsets[MAX_DIM];
-  double Xmin[MAX_DIM];   ///< Min value of x,y,z in Processor's domain.
-  double Xmax[MAX_DIM];   ///< Max value of x,y,z in Processor's domain.
-  double range[MAX_DIM];  ///< Size of Processor's domain in
-                          ///< x,y,z-direction.
+  std::array<int, MAX_DIM> offsets;
+  std::array<double, MAX_DIM>
+      Xmin;  ///< Min value of x,y,z in Processor's domain.
+  std::array<double, MAX_DIM>
+      Xmax;  ///< Max value of x,y,z in Processor's domain.
+  std::array<double, MAX_DIM> range;  ///< Size of Processor's domain in
+                                      ///< x,y,z-direction.
 
   std::vector<int> neighbour_ranks;  ///< list with processor rank of neighbours
                                      ///< in each direction.

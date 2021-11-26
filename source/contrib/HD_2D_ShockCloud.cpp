@@ -34,10 +34,11 @@ int IC_HD_2D_ShockCloud::setup_data(
   int err = 0;
 
   ICsetup_base::gg = ggg;
-  if (!gg) rep.error("null pointer to grid!", ggg);
+  if (!gg) spdlog::error("{}: {}", "null pointer to grid!", fmt::ptr(ggg));
 
   ICsetup_base::rp = rrp;
-  if (!rp) rep.error("null pointer to ReadParams", rp);
+  if (!rp) spdlog::error("{}: {}", "null pointer to ReadParams", fmt::ptr(rp));
+  ;
 
   string seek, str;
 
@@ -54,27 +55,27 @@ int IC_HD_2D_ShockCloud::setup_data(
 
   seek = "HD_SC2D_Rmin";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   Rmin = atof(str.c_str()) * GS.parsec();
 
   seek = "HD_SC2D_Rmax";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   Rmax = atof(str.c_str()) * GS.parsec();
 
   seek = "HD_SC2D_Rclump";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   Rclump = atof(str.c_str()) * GS.parsec();
 
   seek = "HD_SC2D_Rshock";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   Rshock = atof(str.c_str()) * GS.parsec();
 
   seek = "HD_SC2D_DRclump";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   DRclump = atof(str.c_str()) * GS.parsec();
 
   //
@@ -82,17 +83,22 @@ int IC_HD_2D_ShockCloud::setup_data(
   // also do some other paranoid checks.
   //
   if (Rclump - Rshock < 2.0 * DRclump)
-    rep.error("Shock is too close to clump!", (Rclump - Rshock) / (DRclump));
-  if (Rclump < Rshock) rep.error("Clump is behind shock", Rclump - Rshock);
-  if (Rshock < Rmin) rep.error("Shock is at smaller radius than Rmin", Rmin);
-  if (Rclump > Rmax) rep.error("Clump is at larger radius than Rmax", Rmax);
+    spdlog::error(
+        "{}: {}", "Shock is too close to clump!",
+        (Rclump - Rshock) / (DRclump));
+  if (Rclump < Rshock)
+    spdlog::error("{}: {}", "Clump is behind shock", Rclump - Rshock);
+  if (Rshock < Rmin)
+    spdlog::error("{}: {}", "Shock is at smaller radius than Rmin", Rmin);
+  if (Rclump > Rmax)
+    spdlog::error("{}: {}", "Clump is at larger radius than Rmax", Rmax);
 
   //
   // Now read data from the input file.
   //
   seek = "HD_SC2D_InputFile";
   str  = rp->find_parameter(seek);
-  if (str == "") rep.error("didn't find parameter", seek);
+  if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   string inputfile = str;
 
   //
@@ -106,7 +112,7 @@ int IC_HD_2D_ShockCloud::setup_data(
   ifstream infile;
   infile.open(inputfile.c_str());
   if (!infile.is_open()) {
-    cerr << "Error opening file.\n";
+      spdlog::error(""spdlog::error("Error opening file");
     return 1;
   }
   double r, x[SimPM.nvar];
@@ -150,7 +156,8 @@ int IC_HD_2D_ShockCloud::setup_data(
     for (int v = 0; v < SimPM.nvar; v++)
       data[v].erase(data[v].begin());
   }
-  if (radius.size() == 2) rep.error("Need radii greater than Rmin", Rmin);
+  if (radius.size() == 2)
+    spdlog::error("{}: {}", "Need radii greater than Rmin", Rmin);
 
   size_t sz = radius.size();
   while (radius[sz - 2] > Rmax && sz > 2) {
@@ -160,7 +167,8 @@ int IC_HD_2D_ShockCloud::setup_data(
     sz = radius.size();
   }
   if (radius.size() == 2)
-    rep.error("Need interior data, sampling not fine enough.", Rmax);
+    spdlog::error(
+        "{}: {}", "Need interior data, sampling not fine enough.", Rmax);
 
   //
   // Reset radii so that origin is at the clump centre.
@@ -174,13 +182,15 @@ int IC_HD_2D_ShockCloud::setup_data(
   // Make sure Simulation range is compatible with Rmin/Rmax
   //
   if (!GS.equalD(SimPM.Range[Zcyl], Rmax - Rmin))
-    rep.error("Sim range doesn't match Rmax-Rmin", SimPM.Range[Zcyl]);
+    spdlog::error(
+        "{}: {}", "Sim range doesn't match Rmax-Rmin", SimPM.Range[Zcyl]);
   if (!GS.equalD(SimPM.Xmin[Zcyl], Rmin - Rclump))
-    rep.error("Sim Rmin doesn't match Rmin", SimPM.Xmin[Zcyl]);
+    spdlog::error("{}: {}", "Sim Rmin doesn't match Rmin", SimPM.Xmin[Zcyl]);
   if (!GS.equalD(SimPM.Xmax[Zcyl], Rmax - Rclump))
-    rep.error("Sim Rmax doesn't match Rmax", SimPM.Xmax[Zcyl]);
+    spdlog::error("{}: {}", "Sim Rmax doesn't match Rmax", SimPM.Xmax[Zcyl]);
   if (SimPM.coord_sys != COORD_CYL)
-    rep.error("Wrong coordinate system, use cylindrical!", SimPM.coord_sys);
+    spdlog::error(
+        "{}: {}", "Wrong coordinate system, use cylindrical!", SimPM.coord_sys);
 
   //
   // Now write the data to the grid...  this is a bit complicated!
@@ -191,7 +201,7 @@ int IC_HD_2D_ShockCloud::setup_data(
   //  spherical clump with properties at that value of r.
   //
   cell *c = ggg->FirstPt();
-  double dpos[SimPM.ndim], data_vals[SimPM.nvar];
+  std::array<double, SimPM.ndim> dpos, data_vals;
   do {
     CI.get_dpos(c, dpos);
     get_data_vals(dpos, Rshock - Rclump, radius, data, SimPM.nvar, data_vals);
@@ -212,12 +222,12 @@ int IC_HD_2D_ShockCloud::setup_data(
 // ##################################################################
 
 void IC_HD_2D_ShockCloud::get_data_vals(
-    double *dpos,                   ///< Cell centre
-    const double Rshock,            ///< Shock position (negative number).
-    vector<double> &radius,         ///< radius vector
-    vector<vector<double> > &data,  ///< arrays of variable data.
-    const int nvar,                 ///< number of variables.
-    double *out                     ///< array for output data values at pos.
+    std::array<double, MAX_DIM> &dpos,  ///< Cell centre
+    const double Rshock,                ///< Shock position (negative number).
+    vector<double> &radius,             ///< radius vector
+    vector<vector<double> > &data,      ///< arrays of variable data.
+    const int nvar,                     ///< number of variables.
+    double *out  ///< array for output data values at pos.
 )
 {
   //
@@ -267,7 +277,7 @@ void IC_HD_2D_ShockCloud::get_data_vals(
   }
   imin = imax - 1;
   if (imin < 0 || imax > (static_cast<int>(radius.size()) - 1))
-    rep.error("shock position out of range.", imax);
+    spdlog::error("{}: {}", "shock position out of range.", imax);
   //
   // Now linearly interpolate to get the correct value.
   //

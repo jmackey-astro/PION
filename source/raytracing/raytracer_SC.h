@@ -363,14 +363,15 @@ protected:
 
   ///\brief Find the source cell, or if the source is off the grid, find the
   /// nearest cell to the source.
-  class cell *find_source_cell(double *  ///< position of source.
+  class cell *find_source_cell(
+      std::array<double, MAX_DIM> &  ///< position of source.
   );
 
   ///\brief Set the source position to be the centre of a cell, even if off
   /// grid.
   void centre_source_on_cell(
-      double *,  ///< position of source.
-      enum axes  ///< axis to find source along.
+      std::array<double, MAX_DIM> &,  ///< position of source.
+      enum axes                       ///< axis to find source along.
   );
 
   /// This will return a pointer to the source cell, or the on-grid

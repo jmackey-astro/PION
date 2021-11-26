@@ -33,7 +33,10 @@
 #ifndef EXCLUDE_HD_MODULE
 
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -53,7 +56,7 @@ MPv9::MPv9(
     kB(GS.kB()),
     m_p(GS.m_p()), nv_prim(nv)
 {
-  cout << "Welcome to MPv9: the low metallicity chemistry solver!\n";
+  spdlog::info("Welcome to MPv9: the low metallicity chemistry solver");
   //
   // Note this is only called once at the start of the simulation so there is
   // no need to be efficient.
@@ -80,7 +83,7 @@ MPv9::MPv9(
   // Harpreet's module function.  This leaves open the option to have
   // extra passive tracers for other purposes.
   //
-  cout << "\t\tSetting up Tracer Variables.";
+  spdlog::info("\t\tSetting up Tracer Variable");
   get_problem_size(&Yvector_length, &Nspecies);
   Nspecies = Yvector_length - 1;
 
@@ -94,7 +97,7 @@ MPv9::MPv9(
   MPv9::Eint           = -1.0;  // internal energy per unit volume.
   MPv9::Column_density = -1.0;  // mass column density, int(rho*dx)
   MPv9::col_data_set   = false;
-  cout << " Nspecies = " << Nspecies << ", Vec-len=" << Yvector_length << "\n";
+  spdlog::debug(" Nspecies = {}, Vec-len={}", Nspecies, Yvector_length);
 
 //#define TEST_KVECTOR
 #ifdef TEST_KVECTOR
@@ -107,14 +110,14 @@ MPv9::MPv9(
   calculate_X(Yi, X);
   double T_now = 1.0e3;
   ofstream outf("Kvector.txt");
-  if (!outf.is_open()) rep.error("couldn't open outfile", 1);
-  outf << "## Temperature(K) K[0] K[1] ... \n";
+  if (!outf.is_open()) spdlog::error("{}: {}", "couldn't open outfile", 1);
+  spdlog::info("## Temperature(K) K[0] K[1] ... ");
   outf.setf(ios_base::scientific);
   outf.precision(3);
   do {
     // calculate_T(Yi,X,P[0],T_now);
     calculate_K(K, flux, T_now, flux);
-    cout << "current temperature is " << T_now;
+    spdlog::debug("current temperature is {}", T_now);
     outf << T_now << " ";
     for (int v = 0; v < 56; v++)
       outf << K[v] << " ";
@@ -122,13 +125,13 @@ MPv9::MPv9(
     T_now *= 1.1;
   } while (T_now < 1.0e7);
   outf.close();
-  rep.error("Bugging out", 2);
+  spdlog::error("{}: {}", "Bugging out", 2);
 #endif  // TEST_KVECTOR
 
   //
   // All done
   //
-  cout << "MPv9: set up finished. Returning.\n";
+  spdlog::info("MPv9: set up finished. Returning");
   return;
 }
 
@@ -151,7 +154,7 @@ double MPv9::Temperature(
 )
 {
 #ifdef THREADS
-  rep.error("MPv9::Temperature() not thread-safe!", 1);
+  spdlog::error("{}: {}", "MPv9::Temperature() not thread-safe!", 1);
 #endif
   //
   // put data from p_in into local vectors.
@@ -192,21 +195,22 @@ int MPv9::Set_Temp(
       density, col, P);
   calculate_X(Yi, X);
   calculate_T(Yi, X, P[0], T_now);
-  cout << "current temperature is " << T_now;
+  spdlog::debug("current temperature is {}", T_now);
   //
   // Now multiply current internal energy by ratio of current to required
   // temperatures.  E = (g-1)*n*k*Ti*(Tf/Ti)
   //
-  cout << ", corr. to E_int=" << Yi[Yvector_length - 1];
+  spdlog::debug(", corr. to E_int={}", Yi[Yvector_length - 1]);
   Yi[Yvector_length - 1] *= T_required / T_now;
-  cout << ", resetting to E_int=" << Yi[Yvector_length - 1];
-  cout << " which corresponds to T=" << T_required;
+  spdlog::debug(
+      ", resetting to E_int={} which corresponds to T={}",
+      Yi[Yvector_length - 1], T_required);
   //
   // Now convert back to primitive variables (this uses Yf as the source
   // of microphysics quantities, so first copy Yi to Yf).
   //
   Yf = Yi;
-  cout << "; Yf[E]=" << Yf[Yvector_length - 1] << "\n";
+  spdlog::debug("; Yf[E]={}", Yf[Yvector_length - 1]);
   convert_local2prim(p_in, p_in, gamma);
   return 0;
 }
@@ -221,11 +225,12 @@ int MPv9::convert_prim2local(const double *p_in, const double gam)
 
 #ifdef MP_DEBUG
   if (p_in[PG] <= 0. || !isfinite(p_in[PG])) {
-    cout << "neg.pres. input to MP: e=" << Eint << endl;
-    rep.error("Negative/infinite pressure input to RT solver!", p_in[PG]);
+    spdlog::debug("neg.pres. input to MP: e={}", Eint);
+    spdlog::error(
+        "{}: {}", "Negative/infinite pressure input to RT solver!", p_in[PG]);
   }
   if (density <= 0.0) {
-    rep.error("Negative density input to microphysics!", density);
+    spdlog::error("{}: {}", "Negative density input to microphysics!", density);
   }
 #endif  // MP_DEBUG
 
@@ -237,7 +242,7 @@ int MPv9::convert_prim2local(const double *p_in, const double gam)
     Yi[v] = p_in[SimPM.ftr + v];
 #ifdef MP_DEBUG
     if (!isfinite(Yi[v])) {
-      rep.error("INF/NAN input to microphysics Yi", v);
+      spdlog::error("{}: {}", "INF/NAN input to microphysics Yi", v);
     }
 #endif  // MP_DEBUG
   }
@@ -263,7 +268,7 @@ int MPv9::convert_local2prim(
   p_out[PG] = Yf[Yvector_length - 1] * (gam - 1.0);
 #ifdef MP_DEBUG
   if (!isfinite(p_out[PG])) {
-    rep.error("INF/NAN output from microphysics Eint", p_out[PG]);
+    spdlog::error("{}: {}", "INF/NAN output from microphysics Eint", p_out[PG]);
   }
 #endif  // MP_DEBUG
 
@@ -274,7 +279,7 @@ int MPv9::convert_local2prim(
     p_out[SimPM.ftr + v] = Yf[v];
 #ifdef MP_DEBUG
     if (!isfinite(Yf[v])) {
-      rep.error("INF/NAN output from microphysics Yf", v);
+      spdlog::error("{}: {}", "INF/NAN output from microphysics Yf", v);
     }
 #endif  // MP_DEBUG
   }
@@ -311,7 +316,7 @@ int MPv9::TimeUpdateMP(
   calculate_X(Yi, X);
   calculate_T(Yi, X, P[0], *ttt);
   if (*ttt < SimPM.EP.MinTemperature) {
-    cout << "Input temperature to MP is too low!  T_in=" << *ttt << "\n";
+    spdlog::debug("Input temperature to MP is too low!  T_in={}", *ttt);
   }
   //
   // NDEBUG !!!
@@ -385,13 +390,15 @@ int MPv9::TimeUpdateMP_RTnew(
   //
 #ifdef MP_DEBUG
   if (heating_srcs.size() != static_cast<unsigned int>(N_heating_srcs)) {
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "Update: N_heating_srcs doesn't match vector size in Harpreet's "
         "MP integrator",
         heating_srcs.size());
   }
   if (ionising_srcs.size() != static_cast<unsigned int>(N_ionising_srcs)) {
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "Update: N_ionising_srcs doesn't match vector size in Harpreet's "
         "MP integrator",
         ionising_srcs.size());
@@ -476,10 +483,12 @@ void MPv9::get_column_densities(
       // We have at most one ionising source:
       //
       if (N_ionising_srcs > 1)
-        rep.error("MP_LOWZ, too many ionising srcs.", N_ionising_srcs);
+        spdlog::error(
+            "{}: {}", "MP_LOWZ, too many ionising srcs.", N_ionising_srcs);
       if (N_ionising_srcs == 1) {
         ion_src_index = 0;
-        if (!have_pt_src) rep.error("Need UVH src with PION src, MP_LOWZ", 0);
+        if (!have_pt_src)
+          spdlog::error("{}: {}", "Need UVH src with PION src, MP_LOWZ", 0);
       }
       //
       // And dissociating source.  This is packaged with UV heating
@@ -563,13 +572,15 @@ int MPv9::TimeUpdate_RTsinglesrc(
 )
 {
   if (!ep.phot_ionisation)
-    rep.error("RT requested, but phot_ionisation not set!", ep.phot_ionisation);
+    spdlog::error(
+        "{}: {}", "RT requested, but phot_ionisation not set!",
+        ep.phot_ionisation);
 
   //
   // This is more complicated, and should only be called by the ray-tracer.
   // See MP_Hydrogen to see how to code it!
   //
-  rep.error("Don't call me!!!", 999);
+  spdlog::error("{}: {}", "Don't call me!!!", 999);
   return 1;
 }
 
@@ -595,9 +606,10 @@ double MPv9::timescales(
 #ifdef MP_DEBUG
   // cout <<"hd_step_size dt="<<mintime<<"\n";
   if (!isfinite(mintime))
-    rep.error(
-        "mp_lowz::timescales() hd_step_size dt returned NAN/INF", mintime);
-  if (mintime < 1000.0) cout << "small mintime! mintime=" << mintime << "\n";
+    spdlog::error(
+        "{}: {}", "mp_lowz::timescales() hd_step_size dt returned NAN/INF",
+        mintime);
+  if (mintime < 1000.0) spdlog::debug("small mintime! mintime={}", mintime);
 #endif  // MP_DEBUG
 
   return mintime;
@@ -637,13 +649,15 @@ double MPv9::timescales_RT(
   //
 #ifdef MP_DEBUG
   if (heating_srcs.size() != static_cast<unsigned int>(N_heating_srcs)) {
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "Timescales: N_heating_srcs doesn't match vector size in "
         "Harpreet's MP integrator",
         heating_srcs.size());
   }
   if (ionising_srcs.size() != static_cast<unsigned int>(N_ionising_srcs)) {
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "Timescales: N_ionising_srcs doesn't match vector size in "
         "Harpreet's MP integrator",
         ionising_srcs.size());
@@ -671,7 +685,9 @@ double MPv9::timescales_RT(
   mintime        = hd_step_size(Yi, density, cols);
 
   if (mintime <= 0.0) {
-    rep.error("Harpreet's timescales function. negative chem time.", mintime);
+    spdlog::error(
+        "{}: {}", "Harpreet's timescales function. negative chem time.",
+        mintime);
   }
 
   return mintime;
@@ -691,11 +707,11 @@ int MPv9::Init_ionfractions(
   // We should have Nspecies tracers, so put them in a vector.
   //
   Y_init(Yi);
-  cout << "Yi = [";
+  spdlog::debug("Yi = [");
   for (int v = 0; v < Nspecies; v++) {
-    cout << Yi[v] << ", ";
+    spdlog::debug("{}, ", Yi[v]);
   }
-  cout << "]\n";
+  spdlog::debug("]");
 
   for (int v = 0; v < Nspecies; v++) {
     p[SimPM.ftr + v] = Yi[v];

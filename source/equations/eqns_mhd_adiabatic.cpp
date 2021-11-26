@@ -27,7 +27,6 @@
 #include "constants.h"
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-#include "tools/reporting.h"
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -35,7 +34,10 @@
 
 #include "eqns_mhd_adiabatic.h"
 #include "microphysics/microphysics_base.h"
-#include <iostream>
+
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 using namespace std;
 
 /*******************************************************************/
@@ -47,20 +49,20 @@ using namespace std;
 eqns_mhd_ideal::eqns_mhd_ideal(int nv) : eqns_base(nv)
 {
 #ifdef FUNCTION_ID
-  cout << "eqns_mhd_ideal::eqns_mhd_ideal ...starting.\n";
+  spdlog::info("eqns_mhd_ideal::eqns_mhd_ideal ...starting");
 #endif  // FUNCTION_ID
 
 #ifndef NDEBUG
-  cout << "(eqns_mhd_ideal::eqns_mhd_ideal) Setting up Ideal MHD Equations "
-          "class.\n";
+  spdlog::info(
+      "(eqns_mhd_ideal::eqns_mhd_ideal) Setting up Ideal MHD Equations class");
 #endif
   if (eq_nvar < 8) {
-    cerr << "\tError!! Class expects (at least) 8 MHD variables.\n";
+    spdlog::error("\tError!! Class expects (at least) 8 MHD variables");
     exit(1);
   }
 
 #ifdef FUNCTION_ID
-  cout << "eqns_mhd_ideal::eqns_mhd_ideal ...returning.\n";
+  spdlog::info("eqns_mhd_ideal::eqns_mhd_ideal ...returning.");
 #endif  // FUNCTION_ID
 }
 
@@ -70,8 +72,8 @@ eqns_mhd_ideal::eqns_mhd_ideal(int nv) : eqns_base(nv)
 eqns_mhd_ideal::~eqns_mhd_ideal()
 {
 #ifndef NDEBUG
-  cout << "(eqns_mhd_ideal::~eqns_mhd_ideal) Deleting  Ideal MHD Equations "
-          "class.\n";
+  spdlog::info(
+      "(eqns_mhd_ideal::~eqns_mhd_ideal) Deleting  Ideal MHD Equations class");
 #endif
 }
 
@@ -147,16 +149,16 @@ int eqns_mhd_ideal::check_pressure(
   //
   int err = 0;
   if (p[eqRO] <= 0.0) {
-    rep.printVec("u", u, eq_nvar);
-    rep.printVec("p", p, eq_nvar);
-    rep.error("Negative Density! Bugging out", p[eqRO]);
+    spdlog::debug("u : {}", std::vector<pion_flt>(u, u + eq_nvar));
+    spdlog::debug("p : {}", std::vector<pion_flt>(p, p + eq_nvar));
+    spdlog::error("{}: {}", "Negative Density! Bugging out", p[eqRO]);
     if (ct_rho < 1000) {
       ct_rho++;
-      cout << "(eqns_mhd_ideal::check_pressure) negative density!  ";
-      rep.printVec("u", u, eq_nvar);
-      rep.printVec("p", p, eq_nvar);
+      spdlog::debug("(eqns_mhd_ideal::check_pressure) negative density!");
+      spdlog::debug("u : {}", std::vector<pion_flt>(u, u + eq_nvar));
+      spdlog::debug("p : {}", std::vector<pion_flt>(p, p + eq_nvar));
 #ifndef NDEBUG
-      cout << "NEG.DENS.CELL:";
+      spdlog::debug("NEG.DENS.CELL:");
       CI.print_cell(dp.c);
 #endif
     }
@@ -214,8 +216,11 @@ int eqns_mhd_ideal::check_pressure(
   if (p[eqPG] <= 0.) {
     if (ct_pg < 1000) {
       ct_pg++;
-      cout << "(eqns_mhd_ideal::check_pressure) -ve p_g=" << p[eqPG];
-      cout << ", correcting, count=" << ct_pg << "\n";
+      spdlog::debug(
+          ""
+              << "(eqns_mhd_ideal::check_pressure) -ve p_g=, correcting, count={}"
+                     [eqPG],
+          ct_pg);
     }
     p[eqPG] = eq_refvec[eqPG] * 1.0e-6;
     err += 1;
@@ -389,7 +394,7 @@ void eqns_mhd_ideal::rotate(
     v[eqBZ] = vec[eqBY];
   }
   else
-    rep.error("rotate function broken.", offset);
+    spdlog::error("{}: {}", "rotate function broken.", offset);
   for (int i = 0; i < eq_nvar; i++)
     vec[i] = v[i];
 }
@@ -496,12 +501,12 @@ void eqns_mhd_ideal::SetAvgState(
   if (angle > 10. * MACHINEACCURACY) {
     angle = M_PI / 2. - asin(eq_refvec[eqBY] / sqrt(angle));
     if (eq_refvec[eqBX] < 0) angle = -angle;
-    rotateXY(eq_refvec, angle);
-    refvel = cfast(eq_refvec, eq_gamma);  // Fast speed
-    rotateXY(eq_refvec, -angle);
+    rotateXY(&eq_refvec[0], angle);
+    refvel = cfast(&eq_refvec[0], eq_gamma);  // Fast speed
+    rotateXY(&eq_refvec[0], -angle);
   }
   else
-    refvel = maxspeed(eq_refvec, eq_gamma);
+    refvel = maxspeed(&eq_refvec[0], eq_gamma);
 
   refB = sqrt(
       eq_refvec[eqBX] * eq_refvec[eqBX] + eq_refvec[eqBY] * eq_refvec[eqBY]
@@ -514,9 +519,8 @@ void eqns_mhd_ideal::SetAvgState(
   eq_refvec[eqBX] = eq_refvec[eqBY] = eq_refvec[eqBZ] = refB;
 
 #ifndef NDEBUG
-  rep.printVec("eq_refvec", eq_refvec, eq_nvar);
+  spdlog::debug("eq_refvec : {}", eq_refvec);
 #endif
-  return;
 }
 
 // ##################################################################

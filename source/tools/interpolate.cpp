@@ -17,8 +17,10 @@
 
 #include "constants.h"
 #include "tools/interpolate.h"
-#include "tools/reporting.h"
-#include <iostream>
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
 
 #ifndef INTEL
 #include <cmath>  // Header file from gcc
@@ -86,7 +88,8 @@ void interpolate_arrays::splint(
     const double x,
     double *y)
 {
-  if (id >= static_cast<int>(slist.size())) rep.error("bad splint request", id);
+  if (id >= static_cast<int>(slist.size()))
+    spdlog::error("{}: {}", "bad splint request", id);
   using boost::math::interpolators::makima;
   class makima<vector<double> > data = *(slist[id]);
   *y                                 = data(x);
@@ -129,7 +132,8 @@ void interpolate_arrays::splint_vec(
     const double x,
     double *y)
 {
-  if (id >= static_cast<int>(slist.size())) rep.error("bad splint request", id);
+  if (id >= static_cast<int>(slist.size()))
+    spdlog::error("{}: {}", "bad splint request", id);
   using boost::math::interpolators::makima;
   class makima<vector<double> > data = *(slist[id]);
   *y                                 = data(x);
@@ -278,7 +282,6 @@ void interpolate_arrays::root_find_bilinear(
       ihi = imid;
     count++;
   } while (ihi - ilo > 1);
-  cout.precision(6);
 
   count = 0;
   do {
@@ -291,13 +294,13 @@ void interpolate_arrays::root_find_bilinear(
   } while (jhi - jlo > 1);
 
   if (ihi - ilo != 1) {
-    cerr << "root_find_bilinear: Couldn't bracket root i: ";
-    cerr << ihi << ", " << ilo << "\n";
+    spdlog::error(
+        "root_find_bilinear: Couldn't bracket root i: {}, {}", ihi, ilo);
   }
 
   if (jhi - jlo != 1) {
-    cerr << "root_find_bilinear: Couldn't bracket root j: ";
-    cerr << jhi << ", " << jlo << "\n";
+    spdlog::error(
+        "root_find_bilinear: Couldn't bracket root j: {}, {}", jhi, jlo);
   }
 
   //
@@ -366,7 +369,6 @@ double interpolate_arrays::root_find_bilinear_vec(
       ihi = imid;
     count++;
   } while (ihi - ilo > 1);
-  cout.precision(6);
   // cout <<"count="<<count<<", ihi="<<ihi<<" and ilo="<<ilo<<", x[ihi]=";
   // cout <<x[ihi]<<" and x[ilo]="<<x[ilo]<<" and xreq="<<xreq[0];
 
@@ -383,13 +385,13 @@ double interpolate_arrays::root_find_bilinear_vec(
   // cout <<y[jhi]<<" and y[jlo]="<<y[jlo]<<" and yreq="<<xreq[1]<<"\n";
 
   if (ihi - ilo != 1) {
-    cerr << "root_find_bilinear: Couldn't bracket root i: ";
-    cerr << ihi << ", " << ilo << "\n";
+    spdlog::error(
+        "root_find_bilinear: Couldn't bracket root i: {}, {}", ihi, ilo);
   }
 
   if (jhi - jlo != 1) {
-    cerr << "root_find_bilinear: Couldn't bracket root j: ";
-    cerr << jhi << ", " << jlo << "\n";
+    spdlog::error(
+        "root_find_bilinear: Couldn't bracket root j: {}, {}", jhi, jlo);
   }
 
   //
@@ -463,21 +465,19 @@ double interpolate_arrays::root_find_trilinear_vec(
   z0 = z_vec[z_index - 1], z1 = z_vec[z_index];
 
   if (x_index <= 0 || x_index >= vec_size[0]) {
-    cout << "x out of range: x_index=" << x_index << ", " << vec_size[0];
-    cout << "\n";
-    rep.printVec<double>("xvec", x_vec);
-    cout << "x=" << x << "\n";
-    rep.error("Bug", 1);
+    spdlog::debug("x out of range: x_index={}, {}", x_index, vec_size[0]);
+    spdlog::debug("xvec : {}", x_vec);
+    spdlog::debug("x={}", x);
+    spdlog::error("{}: {}", "Bug", 1);
   }
   if (y_index <= 0 || y_index >= vec_size[1]) {
-    cout << "y out of range: y_index=" << y_index << ", y=" << y << ", ";
-    cout << vec_size[1] << "\n";
-    rep.error("Bug", 2);
+    spdlog::debug(
+        "y out of range: y_index={}, y={}, {}", y_index, y, vec_size[1]);
+    spdlog::error("{}: {}", "Bug", 2);
   }
   if (z_index <= 0 || z_index >= vec_size[2]) {
-    cout << "z out of range: z_index=" << z_index << ", " << vec_size[2];
-    cout << "\n";
-    rep.error("Bug", 3);
+    spdlog::debug("z out of range: z_index={}, {}", z_index, vec_size[2]);
+    spdlog::error("{}: {}", "Bug", 3);
   }
 
   // Calculate delta x, delta y and delta z terms for trilinear

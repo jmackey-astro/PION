@@ -69,7 +69,7 @@
 ///
 //#define SUBTRACT_MEAN
 
-#include <iostream>
+
 #include <silo.h>
 #include <sstream>
 using namespace std;
@@ -79,8 +79,13 @@ using namespace std;
 #include "constants.h"
 #include "sim_params.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
 #include "tools/timer.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+#include <spdlog/sinks/rotating_file_sink.h>
 
 #include "dataIO/dataio_base.h"
 #include "dataIO/dataio_silo.h"
@@ -121,8 +126,8 @@ void reset_radiation_sources(class SimParams &SimPM);
 #ifdef RESET_DOMAIN
 void reset_domain(class Sub_domain *sub_domain)
 {
-  rep.printVec("Old Xmin", SimPM.Xmin, SimPM.ndim);
-  rep.printVec("Old Xmax", SimPM.Xmax, SimPM.ndim);
+  spdlog::debug("Old Xmin : {}", SimPM.Xmin);
+  spdlog::debug("Old Xmax : {}", SimPM.Xmax);
   for (int v = 0; v < SimPM.ndim; v++) {
     // SimPM.Xmin[v] = -309.686272e18;  // for BT3_v070_r2p5, to give 768^3 grid
     // SimPM.Xmin[v] = -278.085632e18;  // for BT3_v[020/030]_r2p5, to give
@@ -133,11 +138,10 @@ void reset_domain(class Sub_domain *sub_domain)
         / SimPM.Range[v]);
     SimPM.Range[v] = SimPM.Xmax[v] - SimPM.Xmin[v];
   }
-  rep.printVec("New Xmin", SimPM.Xmin, SimPM.ndim);
-  rep.printVec("New Xmax", SimPM.Xmax, SimPM.ndim);
+  spdlog::debug("New Xmin : {}", SimPM.Xmin);
+  spdlog::debug("New Xmax : {}", SimPM.Xmax);
   SimPM.grid_nlevels = 1;
   sub_domain->decomposeDomain(SimPM.ndim, SimPM.levels[0]);
-  return;
 }
 #endif
 
@@ -149,6 +153,25 @@ void reset_domain(class Sub_domain *sub_domain)
 int main(int argc, char **argv)
 {
   int err = 0;
+
+  auto max_logfile_size = 1048576 * 5;
+  auto max_logfiles     = 3;
+#ifdef PARALLEL
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "projection_pre_mpi", "projection.log", max_logfile_size, max_logfiles));
+#else
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "projection", "projection.log", max_logfile_size, max_logfiles));
+#endif /* PARALLEL */
+
+#ifdef NDEBUG
+  spdlog::set_level(spdlog::level::err);
+  spdlog::flush_on(spdlog::level::err);
+#else
+  spdlog::set_level(spdlog::level::trace);
+  spdlog::flush_on(spdlog::level::trace);
+#endif
+
   //
   // Initialise the sub_domain class with myrank and nproc.
   //
@@ -157,7 +180,13 @@ int main(int argc, char **argv)
   int myrank = SimPM.levels[0].sub_domain.get_myrank();
   int nproc  = SimPM.levels[0].sub_domain.get_nproc();
 
-  cout << "Projection3D: myrank=" << myrank << ", nproc=" << nproc << "\n";
+#ifdef PARALLEL
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "projection_process_" + to_string(myrank), "projection.log",
+      max_logfile_size, max_logfiles));
+#endif /* PARALLEL */
+
+  spdlog::info("Projection3D: myrank={}, nproc={}", myrank, nproc);
 
   //*******************************************************************
   //*******************************************************************
@@ -165,56 +194,16 @@ int main(int argc, char **argv)
   // Get input files and an output file.
   //
   if (argc < 11) {
-    cout << "Use as follows:\n";
-    cout << "projection: <projection> <input-path> <input-silo-file-base>\n";
-    cout << "\t\t <output-file> <op-file-type> <multi-opfiles> \n";
-    cout << "\t\t <normalvec> <fixed_dir> <theta> <what2integrate> ";
-    cout << " <skip>";
-    cout << " +[optional velocity args] \n";
-    cout << "******************************************\n";
-    cout << "input path:   path to input files.\n";
-    cout << "input file:   base filename of sequence of filesn.\n";
-    cout << "output file:  filename for output file(s).\n";
-    cout << "op-file-type: integer. 0=text, 1=fits, 3=vtk.\n";
-    cout
-        << "muti-opfiles: integer. 0=only one output file. 1=one output file per step.\n";
-    cout
-        << "normal-vec:   string direction for LOS viewing normal to calculate angle from: XN,XP,YN,YP,ZN,ZP.\n";
-    cout
-        << "fixed-dir:    string direction for axis which we rotate view around (XN,XP mean same thing).\n";
-    cout
-        << "theta:        angle (DEGREES, in [-89,89]) which LOS makes with normal-vec (staying perp. to fixed dir).\n";
-    cout
-        << "what2integrate: integer: 0=density, 1=neutral num.density, 2=los velocity, 3=VX, 4=Halpha\n";
-    cout
-        << "                         5=StokesQ,6=StokesU, 7=All-scalars, 8=|B|(LOS), 9=|B|(perp)\n";
-    cout << "skip:         will skip this number of input files each loop. ";
-    cout << "(0 means it will calculate every file)\n";
-    cout << "OPTIONAL VELOCITY ARGS:\n";
-    cout << "Nbins:        integer number of bins in velocity profile.\n";
-    cout
-        << "v_min:        minimum velocity to measure (in same units as output files!)\n";
-    cout
-        << "v_max:        maximum velocity to measure (in same units as output files!)\n";
-    cout
-        << "smooth:       integer =1 for constant broadening, =2 for doppler broadening by temperature.\n";
-    cout
-        << "smoooth-val:  float for the velocity by which to smooth, if constant broadening (FWHM)\n";
-    rep.error("Bad number of args", argc);
+    spdlog::error("{}: {}", "Bad number of args", argc);
+    spdlog::error(
+        "Use as follows:\nprojection: <projection> <input-path> <input-silo-file-base>\n\t\t <output-file> <op-file-type> <multi-opfiles> \n\t\t <normalvec> <fixed_dir> <theta> <what2integrate>  <skip> +[optional velocity args] \n******************************************\ninput path:   path to input files.\ninput file:   base filename of sequence of filesn.\noutput file:  filename for output file(s).\nop-file-type: integer. 0=text, 1=fits, 3=vtk.\nmuti-opfiles: integer. 0=only one output file. 1=one output file per step.\nnormal-vec:   string direction for LOS viewing normal to calculate angle from: XN,XP,YN,YP,ZN,ZP.\nfixed-dir:    string direction for axis which we rotate view around (XN,XP mean same thing).\ntheta:        angle (DEGREES, in [-89,89]) which LOS makes with normal-vec (staying perp. to fixed dir).\nwhat2integrate: integer: 0=density, 1=neutral num.density, 2=los velocity, 3=VX, 4=Halpha\n                         5=StokesQ,6=StokesU, 7=All-scalars, 8=|B|(LOS), 9=|B|(perp)\nskip:         will skip this number of input files each loop. (0 means it will calculate every file)\nOPTIONAL VELOCITY ARGS:\nNbins:        integer number of bins in velocity profile.\nv_min:        minimum velocity to measure (in same units as output files!)\nv_max:        maximum velocity to measure (in same units as output files!)\nsmooth:       integer =1 for constant broadening, =2 for doppler broadening by temperature.\nsmoooth-val:  float for the velocity by which to smooth, if constant broadening (FWHM)\n");
   }
 
 
-  cout << "argv[0] = command = " << argv[0] << "\n";
-  cout << "argv[1] = input path = " << argv[1] << "\n";
-  cout << "argv[2] = input file = " << argv[2] << "\n";
-  cout << "argv[3] = image file = " << argv[3] << "\n";
-  cout << "argv[4] = image filetype = " << argv[4] << "  (3=vtk)\n";
-  cout << "argv[5] = multi_opfiles = " << argv[5] << "\n";
-  cout << "argv[6] = Normal dir = " << argv[6] << "\n";
-  cout << "argv[7] = Perpendicular dir = " << argv[7] << "\n";
-  cout << "argv[8] = Angle to normal = " << argv[8] << "\n";
-  cout << "argv[9] = what-to-integrate = " << argv[9] << "\n";
-  cout << "argv[10] = skip = " << argv[10] << "\n";
+  spdlog::info(
+      "argv[0] = command = {}\nargv[1] = input path = {}\nargv[2] = input file = {}\nargv[3] = image file = {}\nargv[4] = image filetype = {}  (3=vtk)\nargv[5] = multi_opfiles = {}\nargv[6] = Normal dir = {}\nargv[7] = Perpendicular dir = {}\nargv[8] = Angle to normal = {}\nargv[9] = what-to-integrate = {}\nargv[10] = skip = {}\n",
+      argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7],
+      argv[8], argv[9], argv[10]);
   /*
     cout <<"argv[] =  = "<< argv[] <<"\n";
   */
@@ -223,48 +212,41 @@ int main(int argc, char **argv)
   string input_file = argv[2];
   string outfile    = argv[3];
 
-  ostringstream redir;
-  redir.str("");
-  redir << outfile << "_msg_";
-  // rep.redirect(redir.str());
-  rep.kill_stdout_from_other_procs(0);
-
   //
   // start a timer, so I can see how long each step takes.
   //
   clk.start_timer("mainloop");
   double mltsf = 0.0;
   mltsf        = clk.time_so_far("mainloop");
-  cout << "*-*-*-* Starting code,\t total time so far = " << mltsf
-       << " secs or " << mltsf / 3600.0 << " hours. *-*-*-*\n";
-  cout.flush();
-
+  spdlog::info(
+      "*-*-*-* Starting code,\t total time so far = {} secs or {} hours. *-*-*-*",
+      mltsf, mltsf / 3600.0);
 
   int op_filetype = atoi(argv[4]);
   switch (op_filetype) {
     case 0:
-      cout << "\t\twriting data to text file.\n";
+      spdlog::info("\t\twriting data to text file");
       break;
     case 1:
-      cout << "\t\twriting data to fits files.\n";
+      spdlog::info("\t\twriting data to fits files");
       break;
     case 3:
-      cout << "\t\twriting data to VTK files.\n";
+      spdlog::info("\t\twriting data to VTK files");
       break;
     default:
-      rep.error("Bad outfile format", op_filetype);
+      spdlog::error("{}: {}", "Bad outfile format", op_filetype);
   }
 
   int multi_opfiles = atoi(argv[5]);
   switch (multi_opfiles) {
     case 0:
-      cout << "\t\twriting all timesteps in a single file.\n";
+      spdlog::info("\t\twriting all timesteps in a single file");
       break;
     case 1:
-      cout << "\t\twriting timesteps in different files.\n";
+      spdlog::info("\t\twriting timesteps in different files");
       break;
     default:
-      rep.error("Bad multi-files value", multi_opfiles);
+      spdlog::error("{}: {}", "Bad multi-files value", multi_opfiles);
   }
 
   //
@@ -285,7 +267,7 @@ int main(int argc, char **argv)
   else if (n == "ZP")
     normal = ZP;
   else
-    rep.error("Bad normal direction", n);
+    spdlog::error("{}: {}", "Bad normal direction", n);
   //
   // Perpendicular direction, around which to rotate the view.
   //
@@ -304,14 +286,15 @@ int main(int argc, char **argv)
   else if (n == "ZP")
     perpdir = ZP;
   else
-    rep.error("Bad perp direction", n);
+    spdlog::error("{}: {}", "Bad perp direction", n);
   //
   // Angle to normal direction, and perp. to perp. direction.
   //
   int th = atoi(argv[8]);
   if (th < -89 || th > 89 || isnan(th) || isinf(th))
-    rep.error(
-        "Input angle is not on [-89,89]. please input a valid angle.", th);
+    spdlog::error(
+        "{}: {}", "Input angle is not on [-89,89]. please input a valid angle.",
+        th);
   bool zero_angle;
   if (th == 0)
     zero_angle = true;
@@ -321,7 +304,8 @@ int main(int argc, char **argv)
 
   th = atoi(argv[9]);
   if (th < 0 || isnan(th) || isinf(th))
-    rep.error("Input what-to-integrate is not in [0,1,2,3,4,7,8,9]", th);
+    spdlog::error(
+        "{}: {}", "Input what-to-integrate is not in [0,1,2,3,4,7,8,9]", th);
   int what_to_integrate = th;
   // 0=density, 1=neutral density, 2=LOS velocity, 3=VX, 4=emission,
   // 7=all_scalars, [5,6]=stokesQU, [8,9]=|B|(LOS,PERP)
@@ -342,17 +326,17 @@ int main(int argc, char **argv)
 
   if (what_to_integrate == I_VEL_LOS || what_to_integrate == I_VX) {
     if (argc < 13)
-      rep.error("Need at least 13 args for velocity profiling", argc);
+      spdlog::error(
+          "{}: {}", "Need at least 13 args for velocity profiling", argc);
     Nbins      = atoi(argv[11]);
     v_min      = atof(argv[12]);
     v_max      = atof(argv[13]);
     smooth     = atoi(argv[14]);
     broadening = atof(argv[15]);
     bin_size   = (v_max - v_min) / Nbins;
-    cout << "Velocity info: max=" << v_max << ", min=" << v_min
-         << ", binsize=" << bin_size;
-    cout << ", Nb=" << Nbins << ", smooth=" << smooth << ", broaden by "
-         << broadening << " cm/s\n";
+    spdlog::debug(
+        "Velocity info: max={}, min={}, binsize={}, Nb={}, smooth={}, broaden by {} cm/s",
+        v_max, v_min, bin_size, Nbins, smooth, broadening);
     vps.v_min      = v_min;
     vps.v_max      = v_max;
     vps.smooth     = smooth;
@@ -362,8 +346,8 @@ int main(int argc, char **argv)
   //*******************************************************************
   // Get input files, read header, setup grid
   //*******************************************************************
-  cout << "-------------------------------------------------------\n";
-  cout << "--------------- Getting List of Files to read ---------\n";
+  spdlog::info(
+      "-------------------------------------------------------\n--------------- Getting List of Files to read ---------");
 
   //
   // set up dataio_utility class
@@ -376,19 +360,19 @@ int main(int argc, char **argv)
   //
   list<string> files;
   err += dataio.get_files_in_dir(input_path, input_file, &files);
-  if (err) rep.error("failed to get list of files", err);
+  if (err) spdlog::error("{}: {}", "failed to get list of files", err);
   //
   // Remove non-SILO files from list
   //
   for (list<string>::iterator s = files.begin(); s != files.end(); s++) {
     // If file is not a .silo file, then remove it from the list.
     if ((*s).find(".silo") == string::npos) {
-      cout << "removing file " << *s << " from list.\n";
+      spdlog::debug("removing file {} from list", *s);
       files.erase(s);
       s = files.begin();
     }
     else {
-      cout << "files: " << *s << endl;
+      spdlog::debug("files: {}", *s);
     }
   }
   //
@@ -397,15 +381,15 @@ int main(int argc, char **argv)
   list<string>::iterator ff = files.begin();
 
   unsigned int nfiles = files.size();
-  if (nfiles < 1) rep.error("Need at least one file, but got none", nfiles);
+  if (nfiles < 1)
+    spdlog::error("{}: {}", "Need at least one file, but got none", nfiles);
 
   mltsf = clk.time_so_far("mainloop");
-  cout << "*-*-*-* Files read,\t total time so far = " << mltsf << " secs or "
-       << mltsf / 3600.0 << " hours. *-*-*-*\n";
-  cout.flush();
-  cout << "--------------- Got list of Files ---------------------\n";
-  cout << "-------------------------------------------------------\n";
-  cout << "--------------- Setting up Grid -----------------------\n";
+  spdlog::debug(
+      "*-*-*-* Files read,\t total time so far = {} secs or {} hours. *-*-*-*\n",
+      mltsf, mltsf / 3600.0);
+  spdlog::info(
+      "--------------- Got list of Files ---------------------\n-------------------------------------------------------\n--------------- Setting up Grid -----------------------");
 
   //
   // Set low-memory cells
@@ -420,7 +404,7 @@ int main(int argc, char **argv)
   string first_file = temp.str();
   temp.str("");
   err = dataio.ReadHeader(first_file, SimPM);
-  if (err) rep.error("Didn't read header", err);
+  if (err) spdlog::error("{}: {}", "Didn't read header", err);
 
     //
     // ------------------------------------------------------------------------
@@ -451,7 +435,7 @@ int main(int argc, char **argv)
   // have to re-do the domain decomposition because we only split
   // the domain on one axis.
   enum axes perpaxis = static_cast<axes>(static_cast<int>(perpdir) / 2);
-  cout << "*** perpendicular axis = " << perpaxis << "\n";
+  spdlog::debug("*** perpendicular axis = {}", perpaxis);
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     SimPM.levels[l].sub_domain.decomposeDomain(
         perpaxis, SimPM.ndim, SimPM.levels[l]);
@@ -459,15 +443,15 @@ int main(int argc, char **argv)
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     SimPM.levels[l].sub_domain.set_NG_hierarchy(SimPM, l);
   }
-  if (err) rep.error("main: failed to decompose domain!", err);
+  if (err) spdlog::error("{}: {}", "main: failed to decompose domain!", err);
   // setup grids
   vector<class GridBaseClass *> G;
   G.resize(SimPM.grid_nlevels);
   SimSetup->setup_grid(G, SimPM);
   class GridBaseClass *grid = G[0];
-  if (!grid) rep.error("Grid setup failed", grid);
+  if (!grid) spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid));
   SimPM.dx = grid->DX();
-  cout << "\t\tg=" << grid << "\tDX = " << grid->DX() << endl;
+  spdlog::debug("\t\tg={}\tDX = {}", fmt::ptr(grid), grid->DX());
 
   //
   // May need to setup extra data in each cell for ray-tracing optical
@@ -480,7 +464,8 @@ int main(int argc, char **argv)
   reset_radiation_sources(SimPM);
 
   // This code needs 3d data to project...
-  if (SimPM.ndim != 3) rep.error("projection needs 3D data", SimPM.ndim);
+  if (SimPM.ndim != 3)
+    spdlog::error("{}: {}", "projection needs 3D data", SimPM.ndim);
 
   //
   // If doing MHD we may want to project the field components, but
@@ -492,28 +477,27 @@ int main(int argc, char **argv)
   else if (SIMeqns == EQMHD || SIMeqns == EQGLM || SIMeqns == EQFCD)
     SIMeqns = 2;
   else
-    rep.error("Bad equations", SIMeqns);
+    spdlog::error("{}: {}", "Bad equations", SIMeqns);
 
   //
   // Now setup microphysics and raytracing classes
   //
   err += SimSetup->setup_microphysics(SimPM);
   // err += setup_raytracing();
-  if (err) rep.error("Setup of microphysics and raytracing", err);
+  if (err) spdlog::error("{}: {}", "Setup of microphysics and raytracing", err);
   class microphysics_base *MP = SimSetup->get_mp_ptr();
 
   // Assign boundary conditions to boundary points.
   // err = SimSetup->boundary_conditions(grid);
-  // if (err) rep.error("boundary_conditions setup",err);
+  // if (err) spdlog::error("{}: {}", "boundary_conditions setup",err);
 
   mltsf = clk.time_so_far("mainloop");
-  cout << "*-*-*-* Grid setup,\t total time so far = " << mltsf << " secs or "
-       << mltsf / 3600.0 << " hours. *-*-*-*\n";
-  cout.flush();
+  spdlog::debug(
+      "*-*-*-* Grid setup,\t total time so far = {} secs or {} hours. *-*-*-*\n",
+      mltsf, mltsf / 3600.0);
 
-  cout << "--------------- Finished Setting up Grid --------------\n";
-  cout << "-------------------------------------------------------\n";
-  cout << "--------------- Starting Image Setup ------------------\n";
+  spdlog::info(
+      "--------------- Finished Setting up Grid --------------\n-------------------------------------------------------\n--------------- Starting Image Setup ------------------");
 
 
   //*******************************************************************
@@ -521,7 +505,8 @@ int main(int argc, char **argv)
   //*******************************************************************
   // struct image_props image;
   // image.set_image_properties(map_dim, normal, perpdir, theta, zero_angle,
-  // Npix_max, 			     SimPM.Xmin, SimPM.Xmax, SimPM.Range, grid->DX());
+  // Npix_max, 			     SimPM.Xmin.data(), SimPM.Xmax, SimPM.Range,
+  // grid->DX());
 
   class image *IMG[SimPM.grid_nlevels];
   for (size_t v = 0; v < SimPM.grid_nlevels; v++) {
@@ -529,11 +514,11 @@ int main(int argc, char **argv)
     IMG[v]->SetMicrophysics(MP);
   }
 
-  int npix[3] = {-1, -1, -1}, num_pixels = 0;
+  std::array<int, 3> npix = {-1, -1, -1};
+  int num_pixels          = 0;
   IMG[0]->get_npix(npix);  // all levels are topologically the same.
   num_pixels = npix[0] * npix[1];
-  cout << "npix = [" << npix[0] << ", " << npix[1]
-       << "] and total=" << num_pixels << "\n";
+  spdlog::debug("npix = [{}, {}] and total={}", npix[0], npix[1], num_pixels);
 
   // If getting velocity profiles, velocity is the third image dim.
   npix[2] = Nbins;
@@ -542,30 +527,27 @@ int main(int argc, char **argv)
 
   // setup rays for each level
   for (size_t v = 0; v < SimPM.grid_nlevels; v++) {
-    cout << "<----- LEVEL " << v << ": setting up rays        ----->\n";
-    cout << "<----- Setting cell positions in Image ----->\n";
-    cout.flush();
+    spdlog::debug(
+        "<----- LEVEL {}: setting up rays        ----->\n<----- Setting cell positions in Image ----->\n",
+        v);
     IMG[v]->set_cell_positions_in_image();
     mltsf = clk.time_so_far("mainloop");
-    cout << "*-*-*-* ... ,\t total time so far = " << mltsf;
-    cout << " secs or " << mltsf / 3600.0 << " hours. *-*-*-*\n";
-    cout.flush();
-    cout << "<----- Adding cells to pixels...       ----->\n";
-    cout.flush();
+    spdlog::debug(
+        "*-*-*-* ... ,\t total time so far = {} secs or {} hours. *-*-*-*",
+        mltsf, mltsf / 3600.0);
+    spdlog::info("<----- Adding cells to pixels...       ----->");
     IMG[v]->add_cells_to_pixels();
     mltsf = clk.time_so_far("mainloop");
-    cout << "*-*-*-* ... ,\t total time so far = " << mltsf;
-    cout << " secs or " << mltsf / 3600.0 << " hours. *-*-*-*\n";
-    cout.flush();
-    cout << "<----- Adding Integration points to px ----->\n";
-    cout.flush();
+    spdlog::debug(
+        "*-*-*-* ... ,\t total time so far = {} secs or {} hours. *-*-*-*\n",
+        mltsf, mltsf / 3600.0);
+    spdlog::info("<----- Adding Integration points to px ----->");
     IMG[v]->add_integration_pts_to_pixels();
     mltsf = clk.time_so_far("mainloop");
-    cout << "*-*-*-* ... ,\t total time so far = " << mltsf;
-    cout << " secs or " << mltsf / 3600.0 << " hours. *-*-*-*\n";
-    cout.flush();
-    cout << "<----- Finished setting up pixels      ----->\n";
-    cout.flush();
+    spdlog::debug(
+        "*-*-*-* ... ,\t total time so far = {} secs or {} hours. *-*-*-*\n",
+        mltsf, mltsf / 3600.0);
+    spdlog::info("<----- Finished setting up pixels      ----->");
   }
 
   //
@@ -677,7 +659,8 @@ int main(int argc, char **argv)
 #endif  // SUBTRACT_MEAN
       break;
     default:
-      rep.error("bad what-to-integrate integer...", what_to_integrate);
+      spdlog::error(
+          "{}: {}", "bad what-to-integrate integer...", what_to_integrate);
   }
 
   //
@@ -691,7 +674,7 @@ int main(int argc, char **argv)
   string this_outfile("");
 
   // set up master image vectors for each level and each variable.
-  cout << "allocating imgmaster array... ";
+  spdlog::info("allocating imgmaster array... ");
   vector<vector<double *> > imgmaster;
   imgmaster.resize(n_images);
   for (int im = 0; im < n_images; im++) {
@@ -700,13 +683,11 @@ int main(int argc, char **argv)
       imgmaster[im][lv] = mem.myalloc(imgmaster[im][lv], nels);
     }
   }
-  cout << "done!\n";
+  spdlog::info("done!");
 
 
-  cout << "--------------- Finished Image Setup/Coordinates ------\n";
-  cout << "-------------------------------------------------------\n";
-  cout << "--------------- Starting Loop over all input files ----\n";
-  cout << "-------------------------------------------------------\n";
+  spdlog::info(
+      "--------------- Finished Image Setup/Coordinates ------\n-------------------------------------------------------\n--------------- Starting Loop over all input files ----\n-------------------------------------------------------");
 
   //*******************************************************************
   // loop over all files:
@@ -715,10 +696,11 @@ int main(int argc, char **argv)
 
   for (ifile = 0; ifile < static_cast<unsigned int>(nfiles);
        ifile += 1 + skip) {
-    cout << "--------------- Starting Next Loop: ifile=" << ifile << "------\n";
-#ifdef TESTING
-    cout << "-------------------------------------------------------\n";
-    cout << "--------------- Reading Simulation data to grid -------\n";
+    spdlog::debug(
+        "--------------- Starting Next Loop: ifile={}------\n", ifile);
+#ifndef NDEBUG
+    spdlog::info(
+        "-------------------------------------------------------\n--------------- Reading Simulation data to grid -------");
 #endif
     //*******************
     //* Read Input Data *
@@ -739,20 +721,21 @@ int main(int argc, char **argv)
 #ifdef RESET_DOMAIN
     reset_domain(&(SimPM.levels[0].sub_domain));
 #endif
-    if (err) rep.error("Didn't read header", err);
+    if (err) spdlog::error("{}: {}", "Didn't read header", err);
 
-    cout << "############ SIMULATION TIME: " << SimPM.simtime / 3.156e7;
-    cout << " yrs for step=" << ifile << "   ############\n";
-    cout.flush();
+    spdlog::info(
+        "############ SIMULATION TIME: {} yrs for step={}   ############\n",
+        SimPM.simtime / 3.156e7, ifile);
 
     // Read data (this reader can read serial or parallel data.
     err = dataio.ReadData(infile, G, SimPM);
-    rep.errorTest("(main) Failed to read data", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "(main) Failed to read data", 0, err);
 
-#ifdef TESTING
-    cout << "--------------- Finished Reading Data  ----------------\n";
-    cout << "-------------------------------------------------------\n";
-    cout << "--------------- Starting Data Analysis ----------------\n";
+#ifndef NDEBUG
+    spdlog::info(
+        "--------------- Finished Reading Data  ----------------\n-------------------------------------------------------\n--------------- Starting Data Analysis ----------------");
 #endif
     //********************
     //* Analyse the Data *
@@ -771,7 +754,7 @@ int main(int argc, char **argv)
     //
     // Initialize image arrays to zero
     //
-    cout << "setting images to zero.\n";
+    spdlog::info("setting images to zero");
     for (int im = 0; im < n_images; im++) {
       for (int lv = 0; lv < SimPM.grid_nlevels; lv++) {
         for (int v = 0; v < nels; v++)
@@ -781,7 +764,7 @@ int main(int argc, char **argv)
 
     // Loop over levels to save images for each level
     for (size_t lv = 0; lv < SimPM.grid_nlevels; lv++) {
-      cout << "analysis for level " << lv << " starting \n";
+      spdlog::debug("analysis for level {} starting", lv);
       grid = G[lv];
       // cout <<"grid pointer="<<grid<<"\n";
 
@@ -811,7 +794,8 @@ int main(int argc, char **argv)
           break;
 
         default:
-          rep.error("bad what-to-integrate integer...", what_to_integrate);
+          spdlog::error(
+              "{}: {}", "bad what-to-integrate integer...", what_to_integrate);
       }
       // cout <<"set image to zero...\n";
 
@@ -824,10 +808,9 @@ int main(int argc, char **argv)
 
       // loop over images.
       for (int outputs = 0; outputs < n_images; outputs++) {
-#ifdef TESTING
-        cout << "starting image " << outputs << " calculation.\n";
-        cout.flush();
-#endif  // TESTING
+#ifndef NDEBUG
+        spdlog::debug("starting image {} calculation", outputs);
+#endif  // NDEBUG
         im       = img_array[outputs];
         w2i      = what2int[outputs];
         tot_mass = 0.0;
@@ -842,11 +825,9 @@ int main(int argc, char **argv)
           IMG[lv]->calculate_pixel(px, &vps, w2i, SimPM, im, &tot_mass);
         }
         tsf = clk.time_so_far("makeimage");
-#ifdef TESTING
-        cout << "\t time = " << tsf << " secs."
-             << "\n";
-        cout.flush();
-#endif  // TESTING
+#ifndef NDEBUG
+        spdlog::debug("\t time = {} secs.", tsf);
+#endif  // NDEBUG
         clk.stop_timer("makeimage");
 
         // ------------------------------------------------------------
@@ -877,7 +858,7 @@ int main(int argc, char **argv)
                 BC_RTtag,
                 COMM_DOUBLEDATA  ///< type of data we want.
             );
-            if (err) rep.error("look for cell data failed", err);
+            if (err) spdlog::error("{}: {}", "look for cell data failed", err);
 
             //
             // Receive data into buffer.
@@ -887,9 +868,10 @@ int main(int argc, char **argv)
             err = SimPM.levels[0].sub_domain.receive_double_data(
                 from_rank, recv_tag, recv_id, ct, &(im[ct * from_rank]));
             if (err) {
-              cout << from_rank << "\t" << recv_tag << "\t" << recv_id;
-              cout << "\t" << ct << "\t" << irank << "\n";
-              rep.error("Receive image getdata failed", err);
+              spdlog::debug(
+                  "{}\t{}\t{}\t{}\t{}", from_rank, recv_tag, recv_id, ct,
+                  irank);
+              spdlog::error("{}: {}", "Receive image getdata failed", err);
             }
 
             //
@@ -903,7 +885,7 @@ int main(int argc, char **argv)
           //
           // send data to rank 0
           //
-          cout << "RANK " << myrank << ": SENDING DATA\n";
+          spdlog::info("RANK {}: SENDING DATA", myrank);
           string id;
           // cout <<"sending "<<nels<<" to rank 0.\n";
           // cout.flush();
@@ -914,10 +896,11 @@ int main(int argc, char **argv)
               id,       ///< identifier for send, for tracking delivery later.
               BC_RTtag  ///< comm_tag, to say what kind of send this is.
           );
-          if (err) rep.error("Send image failed.", err);
+          if (err) spdlog::error("{}: {}", "Send image failed.", err);
 
           err = SimPM.levels[0].sub_domain.wait_for_send_to_finish(id);
-          if (err) rep.error("wait for send to finish failed", err);
+          if (err)
+            spdlog::error("{}: {}", "wait for send to finish failed", err);
         }  // if myrank !=0
         // ------------------------------------------------------------
         // ------------------------------------------------------------
@@ -1071,10 +1054,9 @@ int main(int argc, char **argv)
 
     }  // loop over levels.
 
-#ifdef TESTING
-    cout << "--------------- Finished Analysing this step ----------\n";
-    cout << "-------------------------------------------------------\n";
-    cout << "--------------- Writing image and getting next Im-file \n";
+#ifndef NDEBUG
+    spdlog::info(
+        "--------------- Finished Analysing this step ----------\n-------------------------------------------------------\n--------------- Writing image and getting next Im-file");
 #endif
 
     // double posIMG[3], posSIM[3];
@@ -1090,8 +1072,8 @@ int main(int argc, char **argv)
     // for multiple cores.
     //
     grid = G[0];
-    double im_xmin[3], o2[3];
-    pion_flt origin[3];
+    std::array<double, MAX_DIM> im_xmin, o2;
+    std::array<pion_flt, 3> origin;
     for (int v = 0; v < 3; v++) {
       im_xmin[v] = 0.0;  // posSIM[v] - (posIMG[v]+0.5)*grid->DX();
       origin[v]  = 0.0;
@@ -1103,20 +1085,20 @@ int main(int argc, char **argv)
     IMG[0]->get_image_Dpos(origin, origin);
     for (int v = 0; v < 3; v++)
       im_xmin[v] = -origin[v] * grid->DX();
-#ifdef TESTING
-    rep.printVec("sim origin in units of dx", origin, 3);
-#endif  // TESTING
+#ifndef NDEBUG
+    spdlog::debug("sim origin in units of dx : {}", origin);
+#endif  // NDEBUG
 
-    grid            = G[SimPM.grid_nlevels - 1];
-    double im_dx[3] = {grid->DX(), grid->DX(), grid->DX()};
+    grid                        = G[SimPM.grid_nlevels - 1];
+    std::array<double, 3> im_dx = {grid->DX(), grid->DX(), grid->DX()};
     if (what_to_integrate == I_VEL_LOS || what_to_integrate == I_VX) {
       im_xmin[2] = v_min;
       im_dx[2]   = bin_size;
     }
-#ifdef TESTING
-    rep.printVec("IMG XMIN:", im_xmin, 3);
-    rep.printVec("IMG DX:  ", im_dx, 3);
-#endif  // TESTING
+#ifndef NDEBUG
+    spdlog::debug("IMG XMIN: : {}", im_xmin);
+    spdlog::debug("IMG DX:   : {}", im_dx);
+#endif  // NDEBUG
 
 
     //**********************
@@ -1130,7 +1112,7 @@ int main(int argc, char **argv)
       this_outfile = imio.get_output_filename(
           outfile, multi_opfiles, op_filetype, SimPM.timestep);
       err = imio.open_image_file(this_outfile, op_filetype, &filehandle);
-      if (err) rep.error("failed to open output file", err);
+      if (err) spdlog::error("{}: {}", "failed to open output file", err);
 
       string *im_name = mem.myalloc(im_name, n_images);
       ostringstream t;
@@ -1221,14 +1203,15 @@ int main(int argc, char **argv)
                 im_name[im] = "Proj_ROTNMEASURE";
                 break;
               default:
-                rep.error("Bad image count", im);
+                spdlog::error("{}: {}", "Bad image count", im);
                 break;
             }
           }
           break;
 
         default:
-          rep.error("bad what-to-integrate integer...", what_to_integrate);
+          spdlog::error(
+              "{}: {}", "bad what-to-integrate integer...", what_to_integrate);
       }
 
       //
@@ -1253,12 +1236,11 @@ int main(int argc, char **argv)
       for (int outputs = 0; outputs < n_images; outputs++) {
         // Make a global image by summing results from all levels.
         im = imgmaster[outputs][0];
-#ifdef TESTING
-        cout << "ipx=" << ipx << ", npix= [" << rank0_npix[0] << ", ";
-        cout << rank0_npix[1] << "], \n";
-        cout << "big-img pix= [" << gnpix[0] << ", " << gnpix[1];
-        cout << "], tot=" << gnumpix << "\n";
-#endif  // TESTING
+#ifndef NDEBUG
+        spdlog::debug(
+            "ipx={}, npix= [{}, {}], \nbig-img pix= [{}, {}], tot={}", ipx,
+            rank0_npix[0], rank0_npix[1], gnpix[0], gnpix[1], gnumpix);
+#endif  // NDEBUG
         // level 0 first: populate the grid.
         for (int j = 0; j < rank0_npix[1]; j++) {
           for (int i = 0; i < rank0_npix[0]; i++) {
@@ -1273,26 +1255,26 @@ int main(int argc, char **argv)
         }
         int sz = ipx;
         for (int lv = 1; lv < SimPM.grid_nlevels; lv++) {
-#ifdef TESTING
-          cout << "populating level " << lv << " data onto image.\n";
-#endif  // TESTING
+#ifndef NDEBUG
+          spdlog::debug("populating level {} data onto image", lv);
+#endif  // NDEBUG
         // find lower-left corner of nested grid.
           grid = G[lv];
           sz /= 2;
           double lv_xmin[3];
-          int corner[3];
+          std::array<int, 3> corner;
           im = imgmaster[outputs][lv];
           for (int v = 0; v < 3; v++)
             origin[v] = o2[v];
           IMG[lv]->get_image_Dpos(origin, origin);
           for (int v = 0; v < 3; v++)
             lv_xmin[v] = -origin[v] * grid->DX();
-#ifdef TESTING
-          rep.printVec("sim origin in units of dx", origin, 3);
-          rep.printVec("level origin in units of dx", origin, 3);
-          rep.printVec("sim xmin", im_xmin, 3);
-          rep.printVec("level xmin", lv_xmin, 3);
-#endif  // TESTING
+#ifndef NDEBUG
+          spdlog::debug("sim origin in units of dx : {}", origin);
+          spdlog::debug("level origin in units of dx : {}", origin);
+          spdlog::debug("sim xmin : {}", im_xmin);
+          spdlog::debug("level xmin : {}", lv_xmin);
+#endif  // NDEBUG
           for (int v = 0; v < 3; v++) {
             corner[v] = static_cast<int>(round(
                 (lv_xmin[v] - im_xmin[v]) * sz * ONE_PLUS_EPS / grid->DX()));
@@ -1301,9 +1283,9 @@ int main(int argc, char **argv)
             // cout<<(lv_xmin[v]-im_xmin[v])*sz*ONE_PLUS_EPS/grid->DX() <<" , ";
           }
           // cout <<"\n";
-#ifdef TESTING
-          rep.printVec("corner for level", corner, 3);
-#endif  // TESTING
+#ifndef NDEBUG
+          spdlog::debug("corner for level : {}", corner);
+#endif  // NDEBUG
           for (int j = 0; j < rank0_npix[1]; j++) {
             for (int i = 0; i < rank0_npix[0]; i++) {
               for (int ky = 0; ky < sz; ky++) {
@@ -1329,20 +1311,23 @@ int main(int argc, char **argv)
             err = imio.write_image_to_file(
                 filehandle, op_filetype, global_image,
                 static_cast<long int>(gnumpix), 2, gnpix, im_name[outputs],
-                im_xmin, im_dx, SimPM.simtime, SimPM.timestep);
+                im_xmin.data(), im_dx.data(), SimPM.simtime, SimPM.timestep);
             break;
           case I_VEL_LOS:
           case I_VX:
-            rep.error("Code no longer works for PPV datacubes", 1);
+            spdlog::error(
+                "{}: {}", "Code no longer works for PPV datacubes", 1);
             err = imio.write_image_to_file(
                 filehandle, op_filetype, im, rank0_num_pixels * Nbins, 3,
-                rank0_npix, im_name[outputs], im_xmin, im_dx, SimPM.simtime,
-                SimPM.timestep);
+                rank0_npix, im_name[outputs], im_xmin.data(), im_dx.data(),
+                SimPM.simtime, SimPM.timestep);
             break;
           default:
-            rep.error("bad what-to-integrate integer...", what_to_integrate);
+            spdlog::error(
+                "{}: {}", "bad what-to-integrate integer...",
+                what_to_integrate);
         }
-        if (err) rep.error("Failed to write image to file", err);
+        if (err) spdlog::error("{}: {}", "Failed to write image to file", err);
       }  // loop over images
       global_image = mem.myfree(global_image);
 
@@ -1364,7 +1349,8 @@ int main(int argc, char **argv)
       //                                  im_xmin, im_dx,
       //                                  SimPM.simtime, SimPM.timestep
       //                                  );
-      //  if (err) rep.error("Failed to write 2nd image to file",err);
+      //  if (err) spdlog::error("{}: {}", "Failed to write 2nd image to
+      //  file",err);
       //}
 
 
@@ -1373,15 +1359,15 @@ int main(int argc, char **argv)
       //*********************************************
       if (multi_opfiles) {
         err = imio.close_image_file(filehandle);
-        if (err) rep.error("failed to close output file", err);
+        if (err) spdlog::error("{}: {}", "failed to close output file", err);
       }
       im_name = mem.myfree(im_name);
     }  // if myrank==0
 
     mltsf = clk.time_so_far("mainloop");
-    cout << "*-*-*-* Loop: " << ifile << ",\t total time so far = " << mltsf
-         << " secs or " << mltsf / 3600.0 << " hours. *-*-*-*\n";
-    cout.flush();
+    spdlog::debug(
+        "*-*-*-* Loop: {},\t total time so far = {} secs or {} hours. *-*-*-*",
+        ifile, mltsf, mltsf / 3600.0);
 
   }  // Loop over all files.
 
@@ -1390,12 +1376,11 @@ int main(int argc, char **argv)
   //
   if (!multi_opfiles) {
     err = imio.close_image_file(filehandle);
-    if (err) rep.error("failed to close output file", err);
+    if (err) spdlog::error("{}: {}", "failed to close output file", err);
   }
 
-  cout << "--------------- Finised Analysing all Files -----------\n";
-  cout << "-------------------------------------------------------\n";
-  cout << "--------------- Clearing up and Exiting ---------------\n";
+  spdlog::info(
+      "--------------- Finised Analysing all Files -----------\n-------------------------------------------------------\n--------------- Clearing up and Exiting ---------------");
 
   if (n_images < 2 && im) im = mem.myfree(im);
   if (im1) im1 = mem.myfree(im1);

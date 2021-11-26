@@ -15,7 +15,9 @@
 
 #include "sim_control/sim_init.h"
 #include "tools/command_line_interface.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
 
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_SC.h"
@@ -32,6 +34,7 @@
 #endif  // if FITS
 
 #include <climits>
+#include <sstream>
 using namespace std;
 
 // ##################################################################
@@ -40,7 +43,7 @@ using namespace std;
 sim_init::sim_init()
 {
 #ifndef NDEBUG
-  cout << "(sim_init::Constructor)\n";
+  spdlog::info("(sim_init::Constructor)");
 #endif
   SimPM.checkpoint_freq = INT_MAX;
   max_walltime          = 1.0e100;
@@ -53,7 +56,7 @@ sim_init::sim_init()
 sim_init::~sim_init()
 {
 #ifndef NDEBUG
-  cout << "(sim_init::Destructor)\n";
+  spdlog::info("(sim_init::Destructor)");
 #endif
   if (dataio) {
     delete dataio;
@@ -80,9 +83,9 @@ double sim_init::get_max_walltime()
 void sim_init::set_max_walltime(double t  ///< New Max. runtime in seconds.
 )
 {
-  cout << "\tResetting max. walltime from " << max_walltime;
+  spdlog::debug("\tResetting max. walltime from {}", max_walltime);
   max_walltime = t;
-  cout << " to new value: " << max_walltime << "\n";
+  spdlog::debug(" to new value: {}", max_walltime);
 }
 
 // ##################################################################
@@ -94,72 +97,13 @@ void sim_init::set_max_walltime(double t  ///< New Max. runtime in seconds.
 //
 void sim_init::print_command_line_options(int argc, char **argv)
 {
-  cout << "PION: You ran:\n";
+  spdlog::info("PION: You ran:");
+  std::stringstream invocation;
   for (int v = 0; v < argc; v++)
-    cout << "  " << argv[v];
-  cout << "\n      ************************         \n";
-  cout << argv[0] << ": must call with at least 1 argument...\n";
-  cout << " <main> <icfile> [optional args]\n";
-  cout << "Parameters:\n";
-  cout << "<icfile> \n";
-  cout << "\tCan be an ASCII parameter-file for 1D and 2D shocktubes.\n";
-  cout << "\tOtherwise should be a restart-file in FITS or Silo format.\n";
-  cout << "\n";
-  cout
-      << "[optional args] are in the format <name>=<value> with no spaces.\n\n";
-
-  cout << "\n*********** DATA I/O OPTIONS ************\n";
-  cout << "\t redirect=string : filename with path to redirect stdout/stderr "
-          "to\n";
-  cout << "\t op_criterion=N  : 0=output every I steps, 1=output every D time "
-          "units.\n";
-  cout << "\t opfreq=N        : Save snapshot every Nth timestep  (if "
-          "op_criterion=0).\n";
-  cout << "\t opfreq_time=D   : Save snapshot every Dth time unit (if "
-          "op_criterion=1).\n";
-  cout << "\t finishtime=D    : set time to finish simulation, in code time "
-          "units.\n";
-  cout << "\t optype=S        : Specify type of output file,";
-  cout << " [1,text]=TEXT,[2,fits]=FITS,[4,both]=FITS+TEXT,[5,silo]=SILO,[6]="
-          "SILO+TEXT.\n";
-  cout << "\t outfile=NAME    : Replacement snapshot filename, with path.\n";
-
-  cout << "\n*********** PHYSICS/Grid OPTIONS *************\n";
-  cout << "\t ooa=N         : modify order of accuracy (either 1 or 2).\n";
-  cout << "\t AVtype=N      : modify type of artificial viscosity:";
-  cout << " 0=none, 1=Falle,Komissarov,Joarder(1998), 3=Sanders et "
-          "al.(1998)[H-correction], 4=both 1+3.\n";
-  cout << "\t EtaVisc=D     : modify viscosity parameter to the given double "
-          "precision value.\n";
-  cout << "\t cfl=D         : change the CFL no. for the simulation, in range "
-          "(0,1).\n";
-  cout << "\t cooling=N     : cooling=0 for no cooling, >0 for different "
-          "prescriptions.\n";
-
-  cout << "\t solver=N      :\n";
-  cout << "\t\t 0 = Lax-Friedrichs Flux\n";
-  cout << "\t\t 1 = Linear Riemann Solver : HD/MHD";
-  cout << " (Falle, Komissarov, Joarder, 1998),\n";
-  cout << "\t\t 2 = Exact Riemann Solver  : HD (Hirsch (199X), Toro, 1999)\n";
-  cout << "\t\t 3 = Hybrid Riemann Solver (1+2)         : HD \n";
-  cout << "\t\t 4 = Roe Conserved Variables flux solver : HD/MHD";
-  cout << " (e.g. Toro, 1999, Stone, Gardiner et al. 2008)\n";
-  cout << "\t\t 5 = Roe Primitive Variables flux solver : HD";
-  cout << " (e.g. Stone, Gardiner et al. 2008)\n";
-  cout << "\t\t 6 = Flux vector splitting : HD only (van Leer, 1982) \n";
-  cout << "\t\t 7 = HLLD solver : MHD only \n";
-  cout << "\t\t 8 = HLL  solver : HD/MHD \n";
-
-  cout << "\n*********** PARALLEL CODE ONLY *************\n";
-  cout << "\t maxwalltime=D : change the max. runtime to D in hours.\n";
-  cout << "\n";
-  cout << "\n*********** NESTED GRID CODE ONLY *************\n";
-  cout << "\t nlevels=N     : modify number of levels in NG grid.\n";
-  cout << "\t wind_radius_N=D : change radius of boundary for wind source N to "
-          "value D (in cm)\n";
-  cout << "\n";
-  cout << "     *********************************************\n\n";
-  return;
+    invocation << argv[v] << " ";
+  spdlog::debug(
+      "{}\n      ************************         \n{}: must call with at least 1 argument...\n <main> <icfile> [optional args]\nParameters:\n<icfile> \n\tCan be an ASCII parameter-file for 1D and 2D shocktubes.\n\tOtherwise should be a restart-file in FITS or Silo format.\n\n[optional args] are in the format <name>=<value> with no spaces.\n\n\n*********** DATA I/O OPTIONS ************\n\t op_criterion=N  : 0=output every I steps, 1=output every D time units.\n\t opfreq=N        : Save snapshot every Nth timestep  (if op_criterion=0).\n\t opfreq_time=D   : Save snapshot every Dth time unit (if op_criterion=1).\n\t finishtime=D    : set time to finish simulation, in code time units.\n\t optype=S        : Specify type of output file, [1,text]=TEXT,[2,fits]=FITS,[4,both]=FITS+TEXT,[5,silo]=SILO,[6]=SILO+TEXT.\n\t outfile=NAME    : Replacement snapshot filename, with path.\n\n*********** PHYSICS/Grid OPTIONS *************\n\t ooa=N         : modify order of accuracy (either 1 or 2).\n\t AVtype=N      : modify type of artificial viscosity: 0=none, 1=Falle,Komissarov,Joarder(1998), 3=Sanders et al.(1998)[H-correction], 4=both 1+3.\n\t EtaVisc=D     : modify viscosity parameter to the given double precision value.\n\t cfl=D         : change the CFL no. for the simulation, in range (0,1).\n\t cooling=N     : cooling=0 for no cooling, >0 for different prescriptions.\t solver=N      :\n\t\t 0 = Lax-Friedrichs Flux\n\t\t 1 = Linear Riemann Solver : HD/MHD (Falle, Komissarov, Joarder, 1998),\n\t\t 2 = Exact Riemann Solver  : HD (Hirsch (199X), Toro, 1999)\n\t\t 3 = Hybrid Riemann Solver (1+2)         : HD \n\t\t 4 = Roe Conserved Variables flux solver : HD/MHD (e.g. Toro, 1999, Stone, Gardiner et al. 2008)\n\t\t 5 = Roe Primitive Variables flux solver : HD (e.g. Stone, Gardiner et al. 2008)\n\t\t 6 = Flux vector splitting : HD only (van Leer, 1982) \n\t\t 7 = HLLD solver : MHD only \n\t\t 8 = HLL  solver : HD/MHD \n\n*********** PARALLEL CODE ONLY *************\n\t maxwalltime=D : change the max. runtime to D in hours.\n\n\n*********** NESTED GRID CODE ONLY *************\n\t nlevels=N     : modify number of levels in NG grid.\n\t wind_radius_N=D : change radius of boundary for wind source N to value D (in cm)\n\n     *********************************************\n\n",
+      invocation.get(), argv[0]);
 }
 
 
@@ -178,33 +122,44 @@ int sim_init::Init(
         &grid  ///< address of vector of grid pointers.
 )
 {
-  cout << "(pion)  Initialising"
-       << "\n";
+  spdlog::info("(pion)  Initialising");
   int err = 0;
 
 #ifdef SERIAL
   SimPM.typeofip = typeOfFile;
   setup_dataio_class(SimPM, typeOfFile);
   err = dataio->ReadHeader(infile, SimPM);
-  rep.errorTest("(INIT::get_parameters) err!=0 Something went wrong", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "(INIT::get_parameters) err!=0 Something went wrong", 0, err);
 #endif  // SERIAL
 
   // Now see if any commandline args override the Parameters from the file.
   err = override_params(narg, args);
-  rep.errorTest("(INIT::override_params) err!=0 Something went wrong", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "(INIT::override_params) err!=0 Something went wrong", 0, err);
 
   // Now set up the grid structure.
   grid.resize(1);
   err      = setup_grid(grid, SimPM);
   SimPM.dx = grid[0]->DX();
-  rep.errorTest("(INIT::setup_grid) err!=0 Something went wrong", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "(INIT::setup_grid) err!=0 Something went wrong", 0, err);
 
   //
   // All grid parameters are now set, so I can set up the appropriate
   // equations/solver class.
   //
   err = set_equations(SimPM);
-  rep.errorTest("(INIT::set_equations) err!=0 Fix me!", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(INIT::set_equations) err!=0 Fix me!", 0,
+        err);
 #ifdef PION_OMP
   #pragma omp parallel
   {
@@ -218,7 +173,10 @@ int sim_init::Init(
   // Now setup Microphysics, if needed.
   //
   err = setup_microphysics(SimPM);
-  rep.errorTest("(INIT::setup_microphysics) err!=0", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(INIT::setup_microphysics) err!=0", 0,
+        err);
 #ifdef PION_OMP
   #pragma omp parallel
   {
@@ -232,8 +190,10 @@ int sim_init::Init(
   // Now assign data to the grid, either from file, or via some function.
   //
   err = dataio->ReadData(infile, grid, SimPM);
-  rep.errorTest(
-      "(INIT::assign_initial_data) err!=0 Something went wrong", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "(INIT::assign_initial_data) err!=0 Something went wrong", 0, err);
 
   //
   // Set Ph[] = P[], and then implement the boundary conditions.
@@ -250,7 +210,7 @@ int sim_init::Init(
   //
   if (SimPM.eqntype == EQGLM && SimPM.timestep == 0) {
 #ifndef NDEBUG
-    cout << "Initial state, zero-ing glm variable.\n";
+    spdlog::info("Initial state, zero-ing glm variable.");
 #endif
     c = grid[0]->FirstPt();
     do {
@@ -262,9 +222,15 @@ int sim_init::Init(
   // Assign boundary conditions to boundary points.
   //
   err = boundary_conditions(SimPM, grid);
-  rep.errorTest("(INIT::boundary_conditions) err!=0", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(INIT::boundary_conditions) err!=0", 0,
+        err);
   err = assign_boundary_data(SimPM, 0, grid[0], MP);
-  rep.errorTest("(INIT::assign_boundary_data) err!=0", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(INIT::assign_boundary_data) err!=0", 0,
+        err);
 
   //
   // Setup Raytracing on each grid, if needed.
@@ -272,7 +238,10 @@ int sim_init::Init(
   err += setup_raytracing(SimPM, grid[0]);
   err += setup_evolving_RT_sources(SimPM);
   err += update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
-  rep.errorTest("Failed to setup raytracer and/or microphysics", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "Failed to setup raytracer and/or microphysics", 0, err);
 
   //
   // If testing the code, this calculates the momentum and energy on the
@@ -286,14 +255,16 @@ int sim_init::Init(
   err += TimeUpdateExternalBCs(
       SimPM, 0, grid[0], spatial_solver, SimPM.simtime, SimPM.tmOOA,
       SimPM.tmOOA);
-  if (err) rep.error("first_order_update: error from bounday update", err);
+  if (err)
+    spdlog::error(
+        "{}: {}", "first_order_update: error from bounday update", err);
 
   //
   // If using opfreq_time, set the next output time correctly.
   //
   if (SimPM.op_criterion == 1) {
     if (SimPM.opfreq_time < TINYVALUE)
-      rep.error("opfreq_time not set right!", SimPM.opfreq_time);
+      spdlog::error("{}: {}", "opfreq_time not set right!", SimPM.opfreq_time);
     SimPM.next_optime = SimPM.simtime + SimPM.opfreq_time;
     double tmp        = ((SimPM.simtime / SimPM.opfreq_time)
                   - floor(SimPM.simtime / SimPM.opfreq_time))
@@ -315,7 +286,8 @@ int sim_init::Init(
       textio = 0;
     }
     setup_dataio_class(SimPM, SimPM.typeofop);
-    if (!dataio) rep.error("INIT:: dataio initialisation", SimPM.typeofop);
+    if (!dataio)
+      spdlog::error("{}: {}", "INIT:: dataio initialisation", SimPM.typeofop);
   }
   dataio->SetSolver(spatial_solver);
   dataio->SetMicrophysics(MP);
@@ -326,11 +298,13 @@ int sim_init::Init(
 
 #ifdef SERIAL
   if (SimPM.timestep == 0) {
-    cout << "(INIT) Writing initial data.\n";
+    spdlog::info("(INIT) Writing initial data.");
     err = output_data(grid);
-    if (err) rep.error("Failed to write file!", "maybe dir does not exist?");
+    if (err)
+      spdlog::error(
+          "{}: {}", "Failed to write file!", "maybe dir does not exist?");
   }
-  cout << "-------------------------------------------------------\n";
+  spdlog::info("-------------------------------------------------------");
 #endif  // SERIAL
 
 #ifndef NDEBUG
@@ -352,7 +326,7 @@ int sim_init::Init(
 int sim_init::override_params(int narg, string *args)
 {
 
-  cout << "(pion)  Overriding parameters if requested...\n";
+  spdlog::info("(pion)  Overriding parameters if requested...");
 
   // Find command line params and change them
   for (int i = 2; i < narg; i++) {
@@ -362,91 +336,91 @@ int sim_init::override_params(int narg, string *args)
       int tmp     = SimPM.spOOA;
       SimPM.spOOA = atoi((args[i].substr(4)).c_str());
       SimPM.tmOOA = SimPM.spOOA;
-      cout << "\tOVERRIDE PARAMS: Resetting OOA from ooa=" << tmp;
-      cout << " to command-line value = " << SimPM.spOOA << "\n";
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: Resetting OOA from ooa={} to command-line value = {}",
+          tmp, SimPM.spOOA);
     }
 
     else if (args[i].find("nlevels=") != string::npos) {
       // Assign number of grid levels;  string is 'nlevels=N', where N>=1.
       int tmp            = SimPM.grid_nlevels;
       SimPM.grid_nlevels = atoi((args[i].substr(8)).c_str());
-      cout << "\tOVERRIDE PARAMS: Resetting nlevels from nlevels=" << tmp;
-      cout << " to command-line value = " << SimPM.grid_nlevels << "\n";
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: Resetting nlevels from nlevels={} to command-line value = {}",
+          tmp, SimPM.grid_nlevels);
     }
 
     else if (args[i].find("AVtype=") != string::npos) {
-      cout << "\tOVERRIDE PARAMS: old AV=" << SimPM.artviscosity
-           << " ... overriding!\n";
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: old AV={} ... overriding!\n", SimPM.artviscosity);
       // Assign art.viscosity parameter. String is 'artvisc=I' with I in
       // [0,N].
       int v = atoi((args[i].substr(7)).c_str());
       if (v == 0) {
-        cout << "\t\tNot using artificial viscosity.\n";
+        spdlog::info("\t\tNot using artificial viscosity.");
         SimPM.artviscosity = 0;
         SimPM.etav         = 0.;
       }
       else if (v == 1) {
-        cout
-            << "\t\tUsing Falle, Komissarov, Joarder (1998) AV prescription.\n";
+        spdlog::info(
+            "\t\tUsing Falle, Komissarov, Joarder (1998) AV prescription.");
         SimPM.artviscosity = AV_FKJ98_1D;  // ==1
         SimPM.etav         = 0.1;
       }
       else if (v == 2) {
-        rep.error("divv viscosity not working, use AVtype=1 or 3", v);
-        cout << "\t\tUsing Colella and Woodward (1984) AV prescription "
-                "(Lapidus).\n";
-        cout << "\t\t****** WARNING, THIS NEEDS TESTING, EXPERIMENTAL CODE!! "
-                "****\n";
+        spdlog::error(
+            "{}: {}", "divv viscosity not working, use AVtype=1 or 3", v);
+        spdlog::info(
+            "\t\tUsing Colella and Woodward (1984) AV prescription (Lapidus).\t\t****** WARNING, THIS NEEDS TESTING, EXPERIMENTAL CODE )****");
         SimPM.artviscosity = AV_LAPIDUS;  // ==2 (NEEDS TESTING!!!)
         SimPM.etav         = 0.1;
       }
       else if (v == 3) {
-        cout << "\t\tUsing the H-correction of Sanders et al. "
-                "(1998,JCP,145,511).\n";
+        spdlog::info(
+            "\t\tUsing the H-correction of Sanders et al. (1998,JCP,145,511).");
         SimPM.artviscosity = AV_HCORRECTION;
         SimPM.etav = 0.1;  // This parameter is redundant for the H-correction.
       }
       else if (v == 4) {
-        cout << "\t\tUsing the H-correction of Sanders et al. "
-                "(1998,JCP,145,511)\n";
-        cout << "\t\twith the 1D viscosity of Falle, Komissarov, Joarder "
-                "(1998)\n";
+        spdlog::info(
+            "\t\tUsing the H-correction of Sanders et al. (1998,JCP,145,511)\t\twith the 1D viscosity of Falle, Komissarov, Joarder (1998)");
         SimPM.artviscosity = AV_HCORR_FKJ98;  // ==4 (NEEDS TESTING!!!)
         SimPM.etav         = 0.1;
       }
       else if (v == AV_VonNeuRicht) {
-        rep.error("von Neumann & Richtmeyer viscosity not working", v);
+        spdlog::error(
+            "{}: {}", "von Neumann & Richtmeyer viscosity not working", v);
         // AV_VonNeuRicht==5
-        cout
-            << "\t\tUsing Multi-D von Neumann & Richtmeyer (1950) viscosity.\n";
-        cout
-            << "\t\tSee Tscharnuter & Winkler (1979), Stone & Norman (1992).\n";
-        cout << "\t\tWARNING -- THIS ONLY WORKS WITH EQNTYPE==9(EQEUL_EINT).\n";
+        spdlog::info(
+            "\t\tUsing Multi-D von Neumann & Richtmeyer (1950) viscosity.\t\tSee Tscharnuter & Winkler (1979), Stone & Norman (1992).\n\t\tWARNING -- THIS ONLY WORKS WITH EQNTYPE==9(EQEUL_EINT).\n");
         SimPM.artviscosity = AV_VonNeuRicht;
         SimPM.etav         = 1.0;
       }
       else {
-        cout << "\t\tDIDN'T UNDERSTAND AV=" << v
-             << ", SETTING TO FALLE et al (1998).\n";
+        spdlog::debug(
+            "\t\tDIDN'T UNDERSTAND AV={}, SETTING TO FALLE et al (1998).\n", v);
         SimPM.artviscosity = 1;
         SimPM.etav         = 0.1;
-        rep.error("Bad viscosity flag from command-line", v);
+        spdlog::error("{}: {}", "Bad viscosity flag from command-line", v);
       }
-      cout << "\tOVERRIDE PARAMS: setting AV = " << SimPM.artviscosity;
-      cout << " and eta = " << SimPM.etav << "\n";
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: setting AV = {} and eta = {}", SimPM.artviscosity,
+          SimPM.etav);
     }
 
     else if (args[i].find("EtaVisc=") != string::npos) {
-      cout << "\tOVERRIDE PARAMS: old and eta=" << SimPM.etav
-           << " ... overriding!\n";
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: old and eta={} ... overriding!\n", SimPM.etav);
       // Assign art.viscosity parameter. String is 'artvisc=D' with D in
       // [0,N].
       double visc = atof((args[i].substr(8)).c_str());
-      cout << "\tOVERRIDE PARAMS: Resetting eta_visc from ";
-      cout << SimPM.etav << " to " << visc << "\n";
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: Resetting eta_visc from {} to {}", SimPM.etav,
+          visc);
       if (visc < 0.0 || !isfinite(visc))
-        rep.error(
-            "Error: eta viscosity parameter outside allowed range!", visc);
+        spdlog::error(
+            "{}: {}", "Error: eta viscosity parameter outside allowed range!",
+            visc);
       SimPM.etav = visc;
     }
 
@@ -454,17 +428,18 @@ int sim_init::override_params(int narg, string *args)
       // Assign output frequency to new value. String is 'opfreq=N' with
       // N=[0..Nmax].
       int tmp = atoi((args[i].substr(7)).c_str());
-      cout << "\tOVERRIDE PARAMS: Resetting opfreq from " << SimPM.opfreq
-           << " to " << tmp << "\n";
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: Resetting opfreq from {} to {}", SimPM.opfreq,
+          tmp);
       SimPM.op_criterion = 0;
       SimPM.opfreq       = tmp;
     }
     else if (args[i].find("outfile=") != string::npos) {
       // Assign a new output file.  string is outfile=char[128max]
       string tmp = args[i].substr(8);
-      cout << "\tOVERRIDE PARAMS: Resetting output file from "
-           << SimPM.outFileBase << "\n";
-      cout << "\t\t\tto new name: " << tmp << ".xxx.ftype\n";
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: Resetting output file from {}\n\t\t\tto new name: {}.xxx.ftype\n",
+          SimPM.outFileBase, tmp);
       SimPM.outFileBase = tmp;
       tmp.clear();
     }
@@ -485,7 +460,7 @@ int sim_init::override_params(int narg, string *args)
       else if (SimPM.typeofop == 6)
         now = "silo+text";
       else
-        rep.error("What kind of output is this?", SimPM.typeofop);
+        spdlog::error("{}: {}", "What kind of output is this?", SimPM.typeofop);
 
       string chg = args[i].substr(7);
       int tmp    = -1;
@@ -503,9 +478,10 @@ int sim_init::override_params(int narg, string *args)
       else if (chg == "txtsilo" || (chg == "textsilo") || (chg == "6"))
         tmp = 6;
       else
-        rep.error("What kind of output do you want?", chg);
-      cout << "\tOVERRIDE PARAMS: Resetting output file type from " << now
-           << " to " << chg << "\n";
+        spdlog::error("{}: {}", "What kind of output do you want?", chg);
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: Resetting output file type from {} to {}", now,
+          chg);
       SimPM.typeofop = tmp;
     }
 
@@ -513,22 +489,19 @@ int sim_init::override_params(int narg, string *args)
       // assign new value to addnoise, double frac = fractional noise
       // level
       double tmp = atof((args[i].substr(6)).c_str());
-      cout << "\tOVERRIDE PARAMS: Resetting addnoise value from " << tmp
-           << " to " << SimPM.addnoise << "\n";
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: Resetting addnoise value from {} to {}", tmp,
+          SimPM.addnoise);
       SimPM.addnoise = tmp;
     }
 
     else if (args[i].find("finishtime=") != string::npos) {
       // assign new value to finishtime.
       double tmp = atof((args[i].substr(11)).c_str());
-      cout << "\tOVERRIDE PARAMS: Resetting finishtime value from "
-           << SimPM.finishtime << " to " << tmp << "\n";
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: Resetting finishtime value from {} to {}",
+          SimPM.finishtime, tmp);
       SimPM.finishtime = tmp;
-    }
-
-    else if (args[i].find("redirect=") != string::npos) {
-      // this is already handled by main
-      cout << "\tOVERRIDE PARAMS: already redirecting stdout, continuing...\n";
     }
 
     else if (args[i].find("maxwalltime=") != string::npos) {
@@ -543,126 +516,134 @@ int sim_init::override_params(int narg, string *args)
 
     else if (args[i].find("coordsys=") != string::npos) {
       // Change the coordinate system!
-      cout << "\tOVERRIDE PARAMS: Resetting the coordinate system from value="
-           << SimPM.coord_sys;
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: Resetting the coordinate system from value={}",
+          SimPM.coord_sys);
       string t = args[i].substr(9);
       if (t == "cartesian" || t == "cart" || t == "crt") {
-        cout << " to cartesian coords.\n";
+        spdlog::debug(" to cartesian coords.\n");
         SimPM.coord_sys = COORD_CRT;
       }
       else if (t == "cylindrical" || t == "cyl") {
-        cout << " to cylindrical coords.\n";
+        spdlog::debug(" to cylindrical coords.\n");
         SimPM.coord_sys = COORD_CYL;
       }
       else if (t == "spherical" || t == "sph") {
-        cout << " to spherical coords.\n";
+        spdlog::debug(" to spherical coords.\n");
         SimPM.coord_sys = COORD_SPH;
       }
       else
-        rep.error("don't know this coordinate system", t);
-      cout << "\t\t\tTHIS IS DANGEROUS!!! PROBABLY FATAL.\n";
+        spdlog::error("{}: {}", "don't know this coordinate system", t);
+      spdlog::warn("\t\t\tTHIS IS DANGEROUS!!! PROBABLY FATAL.\n");
     }
 
     else if (args[i].find("cfl=") != string::npos) {
       // Assign cfl no., where string is 'cfl=0.X'
-      cout << "\tOVERRIDE PARAMS: Resetting CFL from original value of "
-           << SimPM.CFL;
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: Resetting CFL from original value of {}",
+          SimPM.CFL);
       double c = atof((args[i].substr(4)).c_str());
       if (c < 0. || !isfinite(c))
-        rep.error("Bad CFL no.", c);
+        spdlog::error("{}: {}", "Bad CFL no.", c);
       else if (c > 1.)
-        cout << "\tWARNING: CFL no. >1, so results will be unstable!!!\n";
+        spdlog::warn("\tWARNING: CFL no. >1, so results will be unstable!!!");
       SimPM.CFL = c;
-      cout << " to command-line value = " << SimPM.CFL << "\n";
+      spdlog::debug(" to command-line value = {}", SimPM.CFL);
     }
 
     else if (args[i].find("gamma=") != string::npos) {
       // Assign new value to EOS gamma, where string is 'gamma=X.XXXXX'
-      cout << "\tOVERRIDE PARAMS: Resetting EOS gamma from original value of "
-           << SimPM.gamma;
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: Resetting EOS gamma from original value of {}",
+          SimPM.gamma);
       double c = atof((args[i].substr(6)).c_str());
       if (c <= 1.0 || !isfinite(c))
-        rep.error("Bad EOS gamma no.", c);
+        spdlog::error("{}: {}", "Bad EOS gamma no.", c);
       else if (c > 2.0)
-        cout << "\tWARNING: gamma >2 ?\n";
+        spdlog::warn("\tWARNING: gamma >2 ?");
       SimPM.gamma = c;
-      cout << " to command-line value = " << SimPM.gamma << "\n";
+      spdlog::debug(" to command-line value = {}", SimPM.gamma);
     }
 
     else if (args[i].find("cooling=") != string::npos) {
-      cout << "\tOVERRIDE PARAMS: resetting cooling";
+      spdlog::debug("\tOVERRIDE PARAMS: resetting cooling");
       int c = atoi((args[i].substr(8)).c_str());
-      if (c < 0 || c > 100) rep.error("Bad cooling flag (only 0-11 allowed", c);
-      cout << " flag from " << SimPM.EP.cooling;
+      if (c < 0 || c > 100)
+        spdlog::error("{}: {}", "Bad cooling flag (only 0-11 allowed", c);
+      spdlog::debug(" flag from {}", SimPM.EP.cooling);
       SimPM.EP.cooling = c;
-      cout << " to " << SimPM.EP.cooling << "\n";
+      spdlog::debug(" to {}", SimPM.EP.cooling);
     }
 
     else if (args[i].find("dynamics=") != string::npos) {
-      cout << "\tOVERRIDE PARAMS: resetting dynamics";
+      spdlog::debug("\tOVERRIDE PARAMS: resetting dynamics");
       int c = atoi((args[i].substr(9)).c_str());
-      if (c < 0 || c > 1) rep.error("Bad dynamics flag (only 0,1, allowed", c);
-      cout << " flag from " << SimPM.EP.dynamics;
+      if (c < 0 || c > 1)
+        spdlog::error("{}: {}", "Bad dynamics flag (only 0,1, allowed", c);
+      spdlog::debug(" flag from {}", SimPM.EP.dynamics);
       SimPM.EP.dynamics = c;
-      cout << " to " << SimPM.EP.dynamics << "\n";
+      spdlog::debug(" to {}", SimPM.EP.dynamics);
     }
 
     else if (args[i].find("raytracing=") != string::npos) {
-      cout << "\tOVERRIDE PARAMS: resetting raytracing";
+      spdlog::debug("\tOVERRIDE PARAMS: resetting raytracing");
       int c = atoi((args[i].substr(11)).c_str());
       if (c < 0 || c > 1)
-        rep.error("Bad raytracing flag (only 0,1, allowed", c);
-      cout << " flag from " << SimPM.EP.raytracing;
+        spdlog::error("{}: {}", "Bad raytracing flag (only 0,1, allowed", c);
+      spdlog::debug(" flag from {}", SimPM.EP.raytracing);
       SimPM.EP.raytracing = c;
-      cout << " to " << SimPM.EP.raytracing << "\n";
+      spdlog::debug(" to {}", SimPM.EP.raytracing);
     }
 
     else if (args[i].find("chemistry=") != string::npos) {
-      cout << "\tOVERRIDE PARAMS: resetting chemistry";
+      spdlog::debug("\tOVERRIDE PARAMS: resetting chemistry");
       int c = atoi((args[i].substr(10)).c_str());
-      if (c < 0 || c > 1) rep.error("Bad chemistry flag (only 0,1, allowed", c);
-      cout << " flag from " << SimPM.EP.chemistry;
+      if (c < 0 || c > 1)
+        spdlog::error("{}: {}", "Bad chemistry flag (only 0,1, allowed", c);
+      spdlog::debug(" flag from {}", SimPM.EP.chemistry);
       SimPM.EP.chemistry = c;
-      cout << " to " << SimPM.EP.chemistry << "\n";
+      spdlog::debug(" to {}", SimPM.EP.chemistry);
     }
 
     else if (args[i].find("microphysics=") != string::npos) {
-      cout << "\tOVERRIDE PARAMS: resetting microphysics";
+      spdlog::debug("\tOVERRIDE PARAMS: resetting microphysics");
       string t = (args[i].substr(13));
-      cout << " flag from " << SimPM.chem_code;
+      spdlog::debug(" flag from {}", SimPM.chem_code);
       SimPM.chem_code = t;
-      cout << " to " << SimPM.chem_code << "\n";
+      spdlog::debug(" to {}", SimPM.chem_code);
     }
 
     else if (args[i].find("solver=") != string::npos) {
-      cout << "\tOVERRIDE PARAMS: resetting solver: ";
-      cout << "0=LF,1=RSlin,2=RSexact,3=RShybrid,4=RSroe,5=RSroePV,6=FVS,7="
-              "HLLD,8=HLL:";
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: resetting solver: 0=LF,1=RSlin,2=RSexact,3=RShybrid,4=RSroe,5=RSroePV,6=FVS,7=HLLD,8=HLL:");
       int c = atoi((args[i].substr(7)).c_str());
       if (c < 0 || c > 8)
-        rep.error("Bad solver flag (only 0,1,2,3,4,5,6,7,8 allowed", c);
-      cout << " solver from " << SimPM.solverType;
+        spdlog::error(
+            "{}: {}", "Bad solver flag (only 0,1,2,3,4,5,6,7,8 allowed", c);
+      spdlog::debug(" solver from {}", SimPM.solverType);
       SimPM.solverType = c;
-      cout << " to " << SimPM.solverType << "\n";
+      spdlog::debug(" to {}", SimPM.solverType);
     }
 
     else if (args[i].find("op_criterion=") != string::npos) {
-      cout << "\tOVERRIDE PARAMS: resetting op_criterion from "
-           << SimPM.op_criterion << " to ";
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: resetting op_criterion from {} to ",
+          SimPM.op_criterion);
       int c = atoi((args[i].substr(13)).c_str());
-      if (c < 0 || c > 1) rep.error("Bad op_criterion flag:", c);
+      if (c < 0 || c > 1) spdlog::error("{}: {}", "Bad op_criterion flag:", c);
       SimPM.op_criterion = c;
-      cout << SimPM.op_criterion << "\n";
+      spdlog::debug("{}", SimPM.op_criterion);
     }
     else if (args[i].find("opfreq_time=") != string::npos) {
-      cout << "\tOVERRIDE PARAMS: resetting opfreq_time from ";
-      cout << SimPM.opfreq_time << " units [NOT YEARS!!!] to ";
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: resetting opfreq_time from {} units [NOT YEARS!!!] to ",
+          SimPM.opfreq_time);
       double c = atof((args[i].substr(12)).c_str());
-      if (c < 0.0 || c > 1.e50) rep.error("Bad opfreq_time flag:", c);
+      if (c < 0.0 || c > 1.e50)
+        spdlog::error("{}: {}", "Bad opfreq_time flag:", c);
       SimPM.op_criterion = 1;
       SimPM.opfreq_time  = c;
-      cout << SimPM.opfreq_time << " units."
-           << "\n";
+      spdlog::debug("{} units.", SimPM.opfreq_time);
       SimPM.next_optime = SimPM.simtime + SimPM.opfreq_time;
       if (SimPM.timestep > 0) {
         double tmp = ((SimPM.simtime / SimPM.opfreq_time)
@@ -673,77 +654,87 @@ int sim_init::override_params(int narg, string *args)
     }
 
     else if (args[i].find("min_timestep=") != string::npos) {
-      cout << "\tOVERRIDE PARAMS: resetting min_timestep from ";
-      cout << SimPM.min_timestep << " units [NOT YEARS!!!] to ";
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: resetting min_timestep from {} units [NOT YEARS!!!] to ",
+          SimPM.min_timestep);
       double c = atof((args[i].substr(13)).c_str());
-      if (c < 0.0 || c > 1.e50) rep.error("Bad min_timestep flag:", c);
+      if (c < 0.0 || c > 1.e50)
+        spdlog::error("{}: {}", "Bad min_timestep flag:", c);
       SimPM.min_timestep = c;
-      cout << SimPM.min_timestep << " units."
-           << "\n";
+      spdlog::debug("{} units.", SimPM.min_timestep);
     }
 
     else if (args[i].find("limit_timestep=") != string::npos) {
-      cout << "\tOVERRIDE PARAMS: limiting timestep: changing from ";
-      cout << SimPM.EP.MP_timestep_limit << " to ";
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: limiting timestep: changing from {} to ",
+          SimPM.EP.MP_timestep_limit);
       int c = atoi((args[i].substr(15)).c_str());
-      if (c < 0 || c > 5) rep.error("Bad MP_timestep_limit flag:", c);
+      if (c < 0 || c > 5)
+        spdlog::error("{}: {}", "Bad MP_timestep_limit flag:", c);
       SimPM.EP.MP_timestep_limit = c;
-      cout << SimPM.EP.MP_timestep_limit << "\n";
+      spdlog::debug("{}", SimPM.EP.MP_timestep_limit);
     }
 
     else if (args[i].find("checkpt_freq=") != string::npos) {
-      cout << "\tOVERRIDE PARAMS: checkpointing freq.: changing from ";
-      cout << SimPM.checkpoint_freq << " to ";
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: checkpointing freq.: changing from {} to ",
+          SimPM.checkpoint_freq);
       int c = atoi((args[i].substr(13)).c_str());
-      if (c < 0) rep.error("Bad checkpoint_freq flag:", c);
+      if (c < 0) spdlog::error("{}: {}", "Bad checkpoint_freq flag:", c);
       SimPM.checkpoint_freq = c;
-      cout << SimPM.checkpoint_freq << "\n";
+      spdlog::debug("{}", SimPM.checkpoint_freq);
     }
 
     else if (args[i].find("max_T=") != string::npos) {
-      cout << "\tOVERRIDE PARAMS: resetting MaxTemperature from ";
-      cout << SimPM.EP.MaxTemperature << " K to ";
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: resetting MaxTemperature from {} K to ",
+          SimPM.EP.MaxTemperature);
       double c = atof((args[i].substr(6)).c_str());
-      if (c < 0.0 || c > 1.e50) rep.error("Bad Max_T flag:", c);
+      if (c < 0.0 || c > 1.e50) spdlog::error("{}: {}", "Bad Max_T flag:", c);
       SimPM.EP.MaxTemperature = c;
-      cout << SimPM.EP.MaxTemperature << " K."
-           << "\n";
+      spdlog::debug("{} K.", SimPM.EP.MaxTemperature);
     }
 
     else if (args[i].find("wind_radius=") != string::npos) {
       if (SWP.Nsources < 1) {
-        rep.error("reset wind radius without a source", SWP.Nsources);
+        spdlog::error(
+            "{}: {}", "reset wind radius without a source", SWP.Nsources);
       }
       string q = (args[i].substr(11, 1));
       if (q == "=")
-        rep.error("must ID wind source, e.g. wind_radius_0", args[i]);
+        spdlog::error(
+            "{}: {}", "must ID wind source, e.g. wind_radius_0", args[i]);
       int src = atoi((args[i].substr(12)).c_str());
       if (src < 0 || src > 9 || !isfinite(src))
-        rep.error("expect format wind_radius_0=1.2e17", src);
+        spdlog::error("{}: {}", "expect format wind_radius_0=1.2e17", src);
       else if (static_cast<size_t>(src) >= SWP.params.size())
-        rep.error("change wind radius for source that doesn't exist", src);
-      cout << "\tOVERRIDE PARAMS: resetting radius of wind src " << src;
-      cout << " from ";
-      cout << SWP.params[src]->radius << " cm to ";
+        spdlog::error(
+            "{}: {}", "change wind radius for source that doesn't exist", src);
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: resetting radius of wind src {} from {} cm to ",
+          src, SWP.params[src]->radius);
       double c = atof((args[i].substr(14)).c_str());
-      if (c < 0.0 || c > 1.e50) rep.error("Bad radius flag:", c);
+      if (c < 0.0 || c > 1.e50) spdlog::error("{}: {}", "Bad radius flag:", c);
       SWP.params[src]->radius = c;
-      cout << SWP.params[src]->radius << " cm."
-           << "\n";
+      spdlog::debug("{} cm.", SWP.params[src]->radius);
     }
 
     else if (args[i].find("tc_strength=") != string::npos) {
-      cout << "\tOVERRIDE PARAMS: resetting EP.tc_strength from ";
-      cout << SimPM.EP.tc_strength << " to ";
+      spdlog::debug(
+          "\tOVERRIDE PARAMS: resetting EP.tc_strength from {} to ",
+          SimPM.EP.tc_strength);
       double c = atof((args[i].substr(12)).c_str());
-      if (c < 0.0 || c > 1.01) rep.error("Bad tc_strength flag:", c);
+      if (c < 0.0 || c > 1.01)
+        spdlog::error("{}: {}", "Bad tc_strength flag:", c);
       SimPM.EP.tc_strength = c;
-      cout << SimPM.EP.tc_strength << "\n";
+      spdlog::debug("{}", SimPM.EP.tc_strength);
     }
 
 
     else
-      rep.error("Don't recognise this optional argument, please fix.", args[i]);
+      spdlog::error(
+          "{}: {}", "Don't recognise this optional argument, please fix.",
+          args[i]);
   }
   return (0);
 }  // sim_init::override_params
@@ -776,7 +767,7 @@ int sim_init::output_data(vector<class GridBaseClass *>
   }
   long int checkpoint_id = 99999999;
   if ((SimPM.timestep != 0) && ((SimPM.timestep % checkpoint_freq) == 0)) {
-    cout << "Checkpointing...\n";
+    spdlog::info("Checkpointing...");
     if ((SimPM.timestep % (2 * checkpoint_freq)) == 0)
       checkpoint_id = 99999998;
     else
@@ -786,7 +777,7 @@ int sim_init::output_data(vector<class GridBaseClass *>
     if (textio)
       err += textio->OutputData(SimPM.outFileBase, grid, SimPM, checkpoint_id);
     if (err) {
-      cerr << "\t Error writing data for checkpointing.\n";
+      spdlog::error("\t Error writing data for checkpointing");
       return (1);
     }
   }
@@ -830,20 +821,20 @@ int sim_init::output_data(vector<class GridBaseClass *>
       SimPM.next_optime += SimPM.opfreq_time;
   }
   else
-    rep.error("op_criterion must be 0 or 1", SimPM.op_criterion);
+    spdlog::error("{}: {}", "op_criterion must be 0 or 1", SimPM.op_criterion);
 
   //
   // Since we got past all that, we are in a timestep that should be
   // saved, so go and do it...
   //
-  cout << "\tSaving data at step " << SimPM.timestep;
-  cout << " and sim-time " << SimPM.simtime << " to file ";
-  cout << SimPM.outFileBase << "\n";
+  spdlog::debug(
+      "\tSaving data at step {} and sim-time {} to file {}", SimPM.timestep,
+      SimPM.simtime, SimPM.outFileBase);
   err = dataio->OutputData(SimPM.outFileBase, grid, SimPM, SimPM.timestep);
   if (textio)
     err += textio->OutputData(SimPM.outFileBase, grid, SimPM, SimPM.timestep);
   if (err) {
-    cerr << "\t Error writing data.\n";
+    spdlog::error("\t Error writing data");
     return (1);
   }
   return (0);
@@ -874,11 +865,9 @@ int sim_init::initial_conserved_quantities(class GridBaseClass *grid)
       initMASS += u[RHO] * dv;
     }
   } while ((cpt = grid->NextPt(cpt)) != 0);
-  cout << "(sim_init::InitialconservedQuantities) [" << initERG << ", ";
-  cout << initMMX << ", ";
-  cout << initMMY << ", ";
-  cout << initMMZ << ", ";
-  cout << initMASS << "]\n";
+  spdlog::debug(
+      "(sim_init::InitialconservedQuantities) [{}, {}, {}, {}, {}]\n", initERG,
+      initMMX, initMMY, initMMZ, initMASS);
 #endif  // TEST_CONSERVATION
   return (0);
 }  // initial_conserved_quantities()
@@ -899,12 +888,13 @@ int sim_init::RT_all_sources(
   //
   for (int isrc = 0; isrc < par.RS.Nsources; isrc++) {
 #ifdef RT_TESTING
-    cout << "calc_raytracing_col_dens: SRC-ID: " << isrc << "\n";
+    spdlog::debug("calc_raytracing_col_dens: SRC-ID: {}", isrc);
 #endif
     err += grid->RT->RayTrace_Column_Density(isrc, 0.0, par.gamma);
     if (err) {
-      cout << "isrc=" << isrc << "\t";
-      rep.error("calc_raytracing_col_dens step in returned error", err);
+      spdlog::debug("isrc={}\t", isrc);
+      spdlog::error(
+          "{}: {}", "calc_raytracing_col_dens step in returned error", err);
     }  // if error
   }    // loop over sources
   return err;

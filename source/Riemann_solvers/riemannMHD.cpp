@@ -12,8 +12,8 @@
 ///  - 2008-03-03 Fixed a few minor bugs.
 ///  - 2009-10-24 New class structure so that it inherits from the MHD equations
 ///  class.
-///  - 2010-02-10 JM: Replaced exit() calls with rep.error() calls so parallel
-///  code exits cleanly.
+///  - 2010-02-10 JM: Replaced exit() calls with spdlog::error("{}: {}", ) calls
+///  so parallel code exits cleanly.
 ///
 /// This is a linear MHD Riemann Solver for the ideal MHD equations.
 /// It is a "Roe-type" solver (but using an arithmetic aveage instead
@@ -34,10 +34,12 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
 
 #include "riemannMHD.h"
-#include <iostream>
 using namespace std;
 //#define RS_TESTING ///< Comment this out if not testing the solver; will speed
 // things up.
@@ -74,9 +76,10 @@ riemann_MHD::riemann_MHD(
     eqns_mhd_ideal(nv)
 {
 #ifdef RS_TESTING
-  cout << "(riemann_MHD::riemann_MHD) Initialising Riemann Solver Class.\n";
+  spdlog::info("(riemann_MHD::riemann_MHD) Initialising Riemann Solver Class");
   if (eq_nvar < 8) {
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "\tProblem with MHD Riemann Solver... Nelements!=8.  Quitting!!!",
         eq_nvar);
   }
@@ -86,14 +89,14 @@ riemann_MHD::riemann_MHD(
   eq_gamma =
       g;  // gamma is passed to solve() function, which assigns it each time.
 
-  RS_evalue   = mem.myalloc(RS_evalue, RS_nvar);
-  RS_pdiff    = mem.myalloc(RS_pdiff, RS_nvar);
-  RS_strength = mem.myalloc(RS_strength, RS_nvar);
+  RS_evalue.resize(RS_nvar);
+  RS_pdiff.resize(RS_nvar);
+  RS_strength.resize(RS_nvar);
 
-  RS_left  = mem.myalloc(RS_left, eq_nvar);
-  RS_right = mem.myalloc(RS_right, eq_nvar);
-  RS_meanp = mem.myalloc(RS_meanp, eq_nvar);
-  RS_pstar = mem.myalloc(RS_pstar, eq_nvar);
+  RS_left.resize(eq_nvar);
+  RS_right.resize(eq_nvar);
+  RS_meanp.resize(eq_nvar);
+  RS_pstar.resize(eq_nvar);
 
   //
   // zero all the arrays
@@ -105,10 +108,7 @@ riemann_MHD::riemann_MHD(
   }
   for (int v = 0; v < eq_nvar; v++)
     eq_refvec[v] = RS_pstar[v] = RS_left[v] = RS_right[v] = RS_meanp[v] = 0.0;
-#ifdef RS_TESTING
-  cout << " Done."
-       << "\n";
-#endif
+  spdlog::info(" Done");
 
   onaxis = offaxis = 0;
   samestate        = 0;
@@ -121,9 +121,7 @@ riemann_MHD::riemann_MHD(
 
   SetAvgState(state, eq_gamma);
 
-#ifdef RS_TESTING
-  cout << "(riemann_MHD::riemann_MHD) Finished Setup.\n";
-#endif
+  spdlog::info("(riemann_MHD::riemann_MHD) Finished Setup");
 }
 
 // ##################################################################
@@ -132,22 +130,8 @@ riemann_MHD::riemann_MHD(
 // Destructor.
 riemann_MHD::~riemann_MHD()
 {
-#ifdef RS_TESTING
-  cout << "(riemann_MHD::riemann_MHD) Class Destructing!!!"
-       << "\n";
-  cout << "\t Failed Tests: OnAxis: " << onaxis << " and OffAxis: " << offaxis
-       << "\n";
-#endif  // NDEBUG
-  RS_evalue   = mem.myfree(RS_evalue);
-  RS_pdiff    = mem.myfree(RS_pdiff);
-  RS_strength = mem.myfree(RS_strength);
-
-  RS_left  = mem.myfree(RS_left);
-  RS_right = mem.myfree(RS_right);
-  RS_meanp = mem.myfree(RS_meanp);
-  RS_pstar = mem.myfree(RS_pstar);
-
-  //  cout << "(riemann_MHD::riemann_MHD) Destructed successfully." << "\n";
+  spdlog::info("(riemann_MHD::riemann_MHD) Class Destructing!!!");
+  spdlog::debug("\t Failed Tests: OnAxis: {} and OffAxis: {}", onaxis, offaxis);
 }
 
 // ##################################################################
@@ -177,7 +161,7 @@ int riemann_MHD::JMs_riemann_solve(
       // cout <<"\tMODE 1: All Linear Solves.\n";
       break;
     default:
-      rep.error("\tMODE i: Don't know what to do.", RS_mode);
+      spdlog::error("{}: {}", "\tMODE i: Don't know what to do.", RS_mode);
       break;
   }
   totalsolve++;
@@ -208,8 +192,10 @@ int riemann_MHD::JMs_riemann_solve(
   // cout <<"  and 0.5(l+r)="<<0.5*(l[RBX]+r[RBX])<<"\n";
   for (int i = 0; i < eq_nvar; i++) {
     if (!isfinite(RS_left[i]) || !isfinite(RS_right[i])) {
-      rep.printVec("MHD Left ", RS_left, eq_nvar);
-      rep.printVec("MHD Right", RS_right, eq_nvar);
+      spdlog::debug(
+          "MHD Left  : {}", std::vector<double>(RS_left, RS_left + eq_nvar));
+      spdlog::debug(
+          "MHD Right : {}", std::vector<double>(RS_right, RS_right + eq_nvar));
       return (-100);
     }
   }
@@ -238,23 +224,23 @@ int riemann_MHD::JMs_riemann_solve(
     //
     if (RS_pstar[RPG] < 0.) {
       RS_pstar[RPG] = eq_refvec[RPG] * BASEPG;  // BASEPG is 1.e-8
-      cerr << "(reimannMHD::solve) Negative pressure in INPUT STATES!.\n";
-      cerr << "pstar[] = [";
+      spdlog::error("(reimannMHD::solve) Negative pressure in INPUT STATES!.\n"
+                    "pstar[] = [");
       for (int v = 0; v < (eq_nvar - 1); v++)
-        cerr << RS_pstar[v] << ", ";
-      cout << RS_pstar[eq_nvar - 1] << " ]"
-           << "\n";
-      rep.error("Negative pressure in INPUT STATES", RS_pstar[RPG]);
+        spdlog::error("{}, ", RS_pstar[v]);
+      spdlog::error("{}]", RS_pstar[eq_nvar - 1]);
+      spdlog::error(
+          "{}: {}", "Negative pressure in INPUT STATES", RS_pstar[RPG]);
     }
     if (RS_pstar[RRO] < 0.) {
       RS_pstar[RRO] = eq_refvec[RRO] * BASEPG;  // BASEPG is 1.e-8
-      cerr << "(reimannMHD::solve) Negative density in INPUT STATES!.\n";
-      cerr << "pstar[] = [";
-      for (int v = 0; v < (eq_nvar - 1); v++)
-        cerr << RS_pstar[v] << ", ";
-      cout << RS_pstar[eq_nvar - 1] << " ]"
-           << "\n";
-      rep.error("Negative density in INPUT STATES", RS_pstar[RRO]);
+      spdlog::error "(reimannMHD::solve) Negative density in INPUT STATES!.\n";
+        "pstar[] = [");
+        for (int v = 0; v < (eq_nvar - 1); v++)
+          spdlog::error("{}, ", RS_pstar[v]);
+        spdlog::error("]", RS_pstar[eq_nvar - 1]);
+        spdlog::error(
+            "{}: {}", "Negative density in INPUT STATES", RS_pstar[RRO]);
     }
 #endif  // RS_TESTING
 
@@ -263,7 +249,7 @@ int riemann_MHD::JMs_riemann_solve(
     //
     // solver2codevars(RS_left); // don't care about this -- private data.
     // solver2codevars(RS_right);// don't care about this -- private data.
-    solver2codevars(RS_pstar);
+    solver2codevars(&RS_pstar[0]);
     for (int v = 0; v < eq_nvar; v++)
       ans[v] = RS_pstar[v];
     // cout <<"  SS  bx(out)="<<ans[eqBX]<<"\t";
@@ -281,7 +267,9 @@ int riemann_MHD::JMs_riemann_solve(
 
       err += get_sound_speeds();
       if (err != 0) {
-        rep.error("riemann_MHD::(get_sound_speeds) returned with error", err);
+        spdlog::error(
+            "{}: {}", "riemann_MHD::(get_sound_speeds) returned with error",
+            err);
       }
       //    cout <<"Speeds: (ch2,ca2,ct2,cs2,cf2): ("<<ch*ch
       //      << " ,"<<ca*ca<<" ,"<< bt*bt<< " ,"
@@ -291,8 +279,9 @@ int riemann_MHD::JMs_riemann_solve(
 
       err += RoeBalsara_evectors();
       if (err != 0) {
-        rep.error(
-            "riemann_MHD::(RoeBalsara_evectors) returned with error", err);
+        spdlog::error(
+            "{}: {}", "riemann_MHD::(RoeBalsara_evectors) returned with error",
+            err);
       }
 
 #ifdef RS_TESTING
@@ -302,15 +291,17 @@ int riemann_MHD::JMs_riemann_solve(
       //
       err += check_evectors();
       if (err != 0) {
-        cerr << "riemann_MHD::(check_evectors): ERROR code: " << err;
-        cerr << " Failing..."
-             << "\n";
-        cerr << "Speeds: (ch2,ca2,ct2,cs2,cf2): (" << ch * ch << " ," << ca * ca
-             << " ," << bt * bt << " ," << cs * cs << " ," << cf * cf << " )\n";
-        rep.printVec("Left state ", RS_left, eq_nvar);
-        rep.printVec("Right state", RS_right, eq_nvar);
-        rep.printVec("Pstar", RS_pstar, eq_nvar);
-        rep.error("riemann_MHD::(check_evectors)", err);
+        spdlog::error(
+            "riemann_MHD::(check_evectors): ERROR code: {} Failing...\nSpeeds: (ch2,ca2,ct2,cs2,cf2): ({} ,{} ,{} ,{} ,{} )\n",
+            err, ch * ch, ca * ca, bt * bt, cs * cs, cf * cf);
+        spdlog::error(
+            "Left state  : {}",
+            std::vector<double>(RS_left, RS_left + eq_nvar));
+        spdlog::error(
+            "Right state : {}",
+            std::vector<double>(RS_right, RS_right + eq_nvar));
+        spdlog::error("Pstar : {}", RS_pstar);
+        spdlog::error("{}: {}", "riemann_MHD::(check_evectors)", err);
       }
 #endif
 
@@ -318,7 +309,8 @@ int riemann_MHD::JMs_riemann_solve(
 
       err += get_pstar();
       if (err != 0) {
-        rep.error("riemann_MHD::(get_pstar)  returned with error", err);
+        spdlog::error(
+            "{}: {}", "riemann_MHD::(get_pstar)  returned with error", err);
       }
       //  cout << "(riemann_MHD::solve) Got P*..." << "\n";
       //  cout << "P* (Got Solution) rho: " << RS_pstar[RO];
@@ -351,28 +343,32 @@ int riemann_MHD::JMs_riemann_solve(
       break;  // END CASE MODE=1
 
     default:
-      cout << "MODE not known.  Only know 1.  Please enter a valid mode.\n";
-      rep.error("Bad solve mode in riemann_MHD", mode);
+      spdlog::info("MODE not known.  Only know 1.  Please enter a valid mode");
+      spdlog::error("{}: {}", "Bad solve mode in riemann_MHD", mode);
   }
 
 #ifdef RS_TESTING
   if ((!pconst.equalD(RS_pstar[RBZ], 0.0) && eq_dir == XX)
       || (!pconst.equalD(RS_pstar[RBY], 0.0) && eq_dir == YY)) {
-    cout << "*************** eqBBZ = " << eqBBZ << "  BBZ=" << BBZ;
-    cout << " **********************************\n";
-    rep.printVec("left : ", RS_left, eq_nvar);
-    rep.printVec("right: ", RS_right, eq_nvar);
-    rep.printVec("meanp: ", RS_meanp, eq_nvar);
-    rep.printVec("pstar: ", RS_pstar, eq_nvar);
+    spdlog::debug("*************** eqBBZ = {}  BBZ={}", eqBBZ, BBZ);
+    spdlog::debug(
+        "left :  : {}", std::vector<double>(RS_left, RS_left + eq_nvar));
+    spdlog::debug(
+        "right:  : {}", std::vector<double>(RS_right, RS_right + eq_nvar));
+    spdlog::debug(
+        "meanp:  : {}", std::vector<double>(RS_meanp, RS_meanp + eq_nvar));
+    spdlog::debug(
+        "pstar:  : {}", std::vector<double>(RS_pstar, RS_pstar + eq_nvar));
     // rep.printVec("flux : ",FS_flux ,eq_nvar);
-    rep.printVec("strength: ", RS_strength, RS_nvar);
-    rep.printVec("evalues : ", RS_evalue, RS_nvar);
-    rep.printVec("pdiff : ", RS_pdiff, RS_nvar);
-    cout.precision(8);
-    cout << "Bx=" << ansBX << "\t alphaf,s=" << alphaf << " " << alphas << "\n";
-    cout.precision(6);
+    spdlog::debug(
+        "strength:  : {}",
+        std::vector<double>(RS_strength, RS_strength + eq_nvar));
+    spdlog::debug(
+        "evalues :  : {}", std::vector<double>(RS_evalue, RS_evalue + eq_nvar));
+    spdlog::debug(
+        "pdiff :  : {}", std::vector<double>(RS_pdiff, RS_pdiff + eq_nvar));
+    spdlog::debug("Bx={}\t alphaf,s={} {}", ansBX, alphaf, alphas);
     check_evectors();
-    cout << "*************************************************\n\n";
   }
 #endif  // RS_TESTING
 
@@ -380,7 +376,7 @@ int riemann_MHD::JMs_riemann_solve(
   // Need to get pstar back into primitive var. form before returning
   // from solve.
   //
-  solver2codevars(RS_pstar);
+  solver2codevars(&RS_pstar[0]);
   for (int v = 0; v < eq_nvar; v++)
     ans[v] = RS_pstar[v];
     // cout <<"  bx(out)="<<ans[eqBX]<<"\t";
@@ -392,9 +388,12 @@ int riemann_MHD::JMs_riemann_solve(
   for (int i = 0; i < eq_nvar; i++) {
     if (!isfinite(RS_left[i]) || !isfinite(RS_right[i])
         || !isfinite(RS_pstar[i])) {
-      rep.printVec("MHD Left ", RS_left, eq_nvar);
-      rep.printVec("MHD Right", RS_right, eq_nvar);
-      rep.printVec("MHD Pstar", RS_pstar, eq_nvar);
+      spdlog::debug(
+          "MHD Left  : {}", std::vector<double>(RS_left, RS_left + eq_nvar));
+      spdlog::debug(
+          "MHD Right : {}", std::vector<double>(RS_right, RS_right + eq_nvar));
+      spdlog::debug(
+          "MHD Pstar : {}", std::vector<double>(RS_pstar, RS_pstar + eq_nvar));
       return (-100);
     }
   }
@@ -417,8 +416,8 @@ void riemann_MHD::assign_data(const pion_flt *l, const pion_flt *r)
 #ifdef RS_TESTING
   if (l[eqRO] < TINYVALUE || l[eqPG] < TINYVALUE || r[eqRO] < TINYVALUE
       || r[eqPG] < TINYVALUE)
-    rep.error(
-        "riemann_MHD::assign_data() Density/Pressure too small",
+    spdlog::error(
+        "{}: {}", "riemann_MHD::assign_data() Density/Pressure too small",
         min(r[eqRO], r[eqPG]));
 #endif  // RS_TESTING
 
@@ -430,8 +429,8 @@ void riemann_MHD::assign_data(const pion_flt *l, const pion_flt *r)
     RS_left[v]  = l[v];
     RS_right[v] = r[v];
   }
-  code2solvervars(RS_left);
-  code2solvervars(RS_right);
+  code2solvervars(&RS_left[0]);
+  code2solvervars(&RS_right[0]);
   return;
 }
 
@@ -506,9 +505,8 @@ void riemann_MHD::solver2codevars(pion_flt *statevec)
 void riemann_MHD::failerror(int err, string text)
 {
   if (err != 0) {
-    cerr << "riemann_MHD::(" << text << "): ERROR code: " << err;
-    cerr << " Exiting...\n";
-    rep.error(text, err);
+    spdlog::error("riemann_MHD::({}): ERROR code: {} Exiting...\n", text, err);
+    spdlog::error("{}: {}", text, err);
   }
 }
 
@@ -651,10 +649,9 @@ int riemann_MHD::get_sound_speeds()
    * precision}}\f$ then we bug out and complain.
    * */
   if ((ch / max(ca, bt)) < sqrt(smallB)) {
-    cerr << "(riemann_MHD::get_sound_speeds) hydro sound speed ";
-    cerr << "insignificantly small compared to magnetic speeds.";
-    cerr << "  Bugging out...\n";
-    cerr << "\t ch = " << ch << " and c_a = " << ca << ", c_t = " << bt << "\n";
+    spdlog::error(
+        "(riemann_MHD::get_sound_speeds) hydro sound speed insignificantly small compared to magnetic speeds. Bugging out...\n\t ch = {} and c_a = {}, c_t = {}",
+        ch, ca, bt);
     return (1);
   }
 
@@ -719,23 +716,24 @@ int riemann_MHD::get_sound_speeds()
     // We are near the triple degeneracy point, and haven't fixed things
     //  already (hopefully won't happen)..
     //
-    cout << "Near Triple degeneracy point! (and didn't realise it!)";
-    cout << " THINGS ARE PROBABLY GOING BAD...\n";
+    spdlog::warn("Near Triple degeneracy point! (and didn't realise it!)"
+                 " THINGS ARE PROBABLY GOING BAD...");
     alphaf = alphas = 1. / sqrt(2.);
-    rep.printVec("left  state", RS_left, eq_nvar);
-    rep.printVec("right state", RS_right, eq_nvar);
-    rep.printVec("Avg.  state", RS_meanp, eq_nvar);
-    rep.error("Bugging out for now...", 99);
+    spdlog::error("left  state : {}", RS_left);
+    spdlog::error("right state : {}", RS_right);
+    spdlog::error("Avg.  state : {}", RS_meanp);
+    spdlog::error("{}: {}", "Bugging out for now...", 99);
   }
 
   //
   // Check sound speeds are positive definite!
   //
   if ((cf <= 0.) || (cs < 0.) || (ca < 0.) || (ch <= 0.)) {
-    cerr << "(riemann_MHD::get_sound_speeds) Error... sound speeds are "
-            "negative.\n";
-    cout << "Speeds: (ch2,ca2,ct2,cs2,cf2): (" << ch * ch << " ," << ca * ca
-         << " ," << bt * bt << " ," << cs * cs << " ," << cf * cf << " )\n";
+    spdlog::error(
+        "(riemann_MHD::get_sound_speeds) Error... sound speeds are negative.\n");
+    spdlog::debug(
+        "Speeds: (ch2,ca2,ct2,cs2,cf2): ({}, {}, {}, {}, {})", ch * ch, ca * ca,
+        bt * bt, cs * cs, cf * cf);
     return (1);
   }
 
@@ -789,7 +787,7 @@ void riemann_MHD::calculate_wave_strengths()
 {
   riemann_MHD::getPdiff();
   for (waves i = FN; i <= FP; ++i) {
-    RS_strength[i] = dot_product(RS_leftevec[i], RS_pdiff, RS_nvar);
+    RS_strength[i] = dot_product(RS_leftevec[i], &RS_pdiff[0], RS_nvar);
     // cout  << "wavestrength[" << i << "]: " << RS_strength[i] << "\n";
   }
   //  rep.printVec("strenth",RS_strength,RS_nvar);
@@ -885,54 +883,33 @@ int riemann_MHD::get_pstar()
   }
 
 #ifdef RS_TESTING
-  cout.setf(ios_base::fixed, ios_base::floatfield);
-  //  cout.setf( ios_base::scientific, ios_base::right );
-  cout.precision(8);
   for (i = 0; i < RS_nvar; i++) {
-    // cout <<"RS_TESTING!\n";
     if (fabs(RS_pstar[i] - RS_pdiff[i])
             / (fabs(RS_pstar[i]) + fabs(RS_pdiff[i]) + SMALLVALUE)
         > 5.e-2) {
-      cout.width(10);
-      cout << "(riemann_MHD::get_pstar) left-ans[" << i << "] - right-ans[" << i
-           << "] = ";
-      cout.width(10);
-      cout << RS_pstar[i] - RS_pdiff[i] << "\n";
-      cout << "Evalues[] = [";
+      spdlog::debug(
+          "(riemann_MHD::get_pstar) left-ans[{0}] - right-ans[{0}] = {}\nEvalues[] = [",
+          i, i, RS_pstar[i] - RS_pdiff[i]);
       for (int j = 0; j < (RS_nvar - 1); j++)
-        cout << RS_evalue[j] << ", ";
-      cout << RS_evalue[RS_nvar - 1] << " ]\n";
-      cout << "left[]    = [";
+        spdlog::debug("{}, ", RS_evalue[j]);
+      spdlog::debug("{}]\nleft[]    = [", RS_evalue[RS_nvar - 1]);
       for (int j = 0; j < (RS_nvar - 1); j++)
-        cout << RS_left[j] << ", ";
-      cout << RS_left[RS_nvar - 1] << " ]"
-           << "\n";
-      cout << "right[]   = [";
+        spdlog::debug("{}, ", RS_left[j]);
+      spdlog::debug("{}]\nright[]   = [", RS_left[RS_nvar - 1]);
       for (int j = 0; j < (RS_nvar - 1); j++)
-        cout << RS_right[j] << ", ";
-      cout << RS_right[RS_nvar - 1] << " ]"
-           << "\n";
-      cout << "pstar_l[] = [";
+        spdlog::debug("{}, ", RS_right[j]);
+      spdlog::debug("{}]\npstar_l[] = [", RS_right[RS_nvar - 1]);
       for (int j = 0; j < (RS_nvar - 1); j++)
-        cout << RS_pstar[j] << ", ";
-      cout << RS_pstar[RS_nvar - 1] << " ]"
-           << "\n";
-      cout << "pstar_r[] = [";
+        spdlog::debug("{}, ", RS_pstar[j]);
+      spdlog::debug("{}]\npstar_r[] = [", RS_pstar[RS_nvar - 1]);
       for (int j = 0; j < (RS_nvar - 1); j++)
-        cout << RS_pdiff[j] << ", ";
-      cout << RS_pdiff[RS_nvar - 1] << " ]"
-           << "\n";
-      cout << "Bx = " << ansBX << "\t alphaf,s = " << alphaf << " " << alphas
-           << "\n";
-      cout.setf(ios_base::fmtflags(0), ios_base::floatfield);
-      cout.precision(6);
-      cout.width(0);
+        spdlog::debug("{}, ", RS_pdiff[j]);
+      spdlog::debug(
+          "{}]\nBx = {}\t alphaf,s = {} {}", RS_pdiff[RS_nvar - 1], ansBX,
+          alphaf, alphas);
       return (1);
     }
   }
-  cout.setf(ios_base::fmtflags(0), ios_base::floatfield);
-  cout.precision(6);
-  cout.width(0);
 #endif
 
   return (0);
@@ -1098,78 +1075,57 @@ int riemann_MHD::RoeBalsara_evectors()
 int riemann_MHD::check_evectors()
 {
   // Printing the eigenvectors to screen!
-  //   cout.setf( ios_base::scientific,ios_base::floatfield );
-  cout.setf(ios_base::fixed, ios_base::floatfield);
-  cout.precision(6);
   for (waves i = FN; i <= FP; ++i) {
-    cout << " leftevec[" << i << "] = [ ";
-    for (int j = 0; j < RS_nvar; j++) {
-      cout.width(9);
-      cout << RS_leftevec[i][j] << ", ";
+    spdlog::debug(" leftevec[{}] = [", i);
+    for (int j = 0; j < RS_nvar - 1; j++) {
+      spdlog::debug("{}, ", RS_leftevec[i][j]);
     }
-    cout << "]"
-         << "\n";
+    spdlog::debug("{}]", RS_leftevec[i][RS_nvar - 1]);
   }
   for (waves i = FN; i <= FP; ++i) {
-    cout << "rightevec[" << i << "] = [ ";
-    for (int j = 0; j < RS_nvar; j++) {
-      cout.width(9);
-      cout << RS_rightevec[i][j] << ", ";
+    spdlog::debug("rightevec[{}] = [", i);
+    for (int j = 0; j < RS_nvar - 1; j++) {
+      spdlog::debug("{}, ", RS_rightevec[i][j]);
     }
-    cout << "]"
-         << "\n";
+    spdlog::debug("{}]", RS_rightevec[i][RS_nvar - 1]);
   }
 
   // Print the dot products
   // On-axis dot products
-  cout.setf(ios_base::fixed, ios_base::floatfield);
-  cout.precision(16);
-  cout << "left[i].right[i] = [ ";
+  spdlog::debug("left[i].right[i] = [");
   for (waves i = FN; i <= FP; ++i) {
-    cout.width(11);
-    cout << dot_product(RS_leftevec[i], RS_rightevec[i], RS_nvar) << ", ";
+    spdlog::debug(
+        "{}, ", dot_product(RS_leftevec[i], RS_rightevec[i], RS_nvar));
   }
-  cout << "]"
-       << "\n"
-       << "\n";
+  spdlog::debug("]");
   // off-axis dot products.
   for (waves i = FN; i <= FP; ++i) {
-    cout << "left[" << i << "].right[j] = [ ";
+    spdlog::debug("left[{}].right[j] = [ ", i);
     for (waves j = FN; j <= FP; ++j) {
-      cout.width(11);
-      cout << dot_product(RS_leftevec[i], RS_rightevec[j], RS_nvar) << ", ";
+      spdlog::debug(
+          "{}, ", dot_product(RS_leftevec[i], RS_rightevec[j], RS_nvar));
     }
-    cout << "]"
-         << "\n";
+    spdlog::debug("]");
   }
-  cout << "\n";
-  for (waves i = FN; i <= FP; ++i) {
-    cout << "left[" << i << "].left[j] = [ ";
-    for (waves j = FN; j <= FP; ++j) {
-      cout.width(11);
-      cout << dot_product(RS_leftevec[i], RS_leftevec[j], RS_nvar) << ", ";
-      // cout << dot_product(RS_rightevec[i],RS_rightevec[j],RS_nvar) <<
-      // ", ";
-    }
-    cout << "]"
-         << "\n";
-  }
-  cout << "\n";
-  for (waves i = FN; i <= FP; ++i) {
-    cout << "right[" << i << "].right[j] = [ ";
-    for (waves j = FN; j <= FP; ++j) {
-      cout.width(11);
-      // cout << dot_product(RS_leftevec[i],RS_leftevec[j],RS_nvar) << ",
-      // ";
-      cout << dot_product(RS_rightevec[i], RS_rightevec[j], RS_nvar) << ", ";
-    }
-    cout << "]"
-         << "\n";
-  }
-  cout << "\n";
 
-  cout.setf(ios_base::scientific, ios_base::floatfield);
-  cout.precision(6);
+  for (waves i = FN; i <= FP; ++i) {
+    spdlog::debug("left[{}].left[j] = [ ", i);
+    for (waves j = FN; j <= FP; ++j) {
+      spdlog::debug(
+          "{}, ", dot_product(RS_leftevec[i], RS_leftevec[j], RS_nvar));
+    }
+    spdlog::debug("]");
+  }
+
+  for (waves i = FN; i <= FP; ++i) {
+    spdlog::debug("right[{}].right[j] = [ ", i);
+    for (waves j = FN; j <= FP; ++j) {
+      spdlog::debug(
+          "{}, ", dot_product(RS_rightevec[i], RS_rightevec[j], RS_nvar));
+    }
+    spdlog::debug("]");
+  }
+
   //
   // Check the dot products are what they should be
   // First the i=j products; should be 1.
@@ -1181,8 +1137,9 @@ int riemann_MHD::check_evectors()
     if ((test =
              fabs(dot_product(RS_leftevec[i], RS_rightevec[i], RS_nvar) - 1.))
         > errtol) {
-      cout << "evectors not properly normalised: ";
-      cout << "(l[" << i << "].r[" << i << "] -1) = " << test << "\n";
+      spdlog::debug(
+          "evectors not properly normalised: \n(l[{0}].r[{0}] -1) = {1}", i,
+          test);
       onaxis++;
       return (1);
     }
@@ -1192,16 +1149,15 @@ int riemann_MHD::check_evectors()
       if (j != i) {
         if ((test = fabs(dot_product(RS_leftevec[i], RS_rightevec[j], RS_nvar)))
             >= errtol) {
-          cout << "evectors not properly normalised: ";
-          cout << "left[" << i << "].right[" << j << "] = " << test << "\n";
+          spdlog::debug(
+              "evectors not properly normalised: left[{}].right[{}] = {}", i, j,
+              test);
           offaxis++;
           return (1);
         }
       }
     }
   }
-  cout.setf(ios_base::fmtflags(0), ios_base::floatfield);
-
   return (0);
 }
 

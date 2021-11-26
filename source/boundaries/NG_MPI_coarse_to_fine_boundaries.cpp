@@ -5,6 +5,10 @@
 /// Modifications :\n
 /// - 2018.09.06 JM: started writing code.
 
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 #include "boundaries/NG_MPI_coarse_to_fine_boundaries.h"
 #include "tools/mem_manage.h"
 #include <sstream>
@@ -32,10 +36,10 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
 
 #ifdef TEST_C2F
   if (nchild == 0) {
-    cout << "COARSE_TO_FINE_SEND: no children.\n";
+    spdlog::debug("COARSE_TO_FINE_SEND: no children");
   }
   else {
-    cout << "COARSE_TO_FINE_SEND: " << nchild << " child grids.\n";
+    spdlog::debug("COARSE_TO_FINE_SEND: {} child grids", nchild);
   }
 #endif
 
@@ -46,10 +50,10 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
   // then I need to send data if none of the l+1 domain intersects
   // my grid.  Otherwise another process can do it.
 
-  int cl_ixmin[MAX_DIM], cl_ixmax[MAX_DIM];
-  int fl_ixmin[MAX_DIM], fl_ixmax[MAX_DIM];
-  int cg_ixmin[MAX_DIM], cg_ixmax[MAX_DIM];
-  int fg_ixmin[MAX_DIM], fg_ixmax[MAX_DIM];
+  std::array<int, MAX_DIM> cl_ixmin, cl_ixmax;
+  std::array<int, MAX_DIM> fl_ixmin, fl_ixmax;
+  std::array<int, MAX_DIM> cg_ixmin, cg_ixmax;
+  std::array<int, MAX_DIM> fg_ixmin, fg_ixmax;
 
   CI.get_ipos_vec(par.levels[l].Xmin, cl_ixmin);
   CI.get_ipos_vec(par.levels[l].Xmax, cl_ixmax);
@@ -67,10 +71,9 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
       // if child is on my process, do nothing because child grid
       // can grab the data directly using serial C2F code.
 #ifdef TEST_C2F
-      cout << "C2F_SEND: child " << i << ", ";
-      cout << "my rank (" << sub_domain->get_myrank() << ") == child rank (";
-      cout << fg[i].rank << "), no need to set up ";
-      cout << "COARSE_TO_FINE_SEND\n";
+      spdlog::debug(
+          "C2F_SEND: child {}, my rank ({}) == child rank ({}), no need to set up COARSE_TO_FINE_SEND\n",
+          i, sub_domain->get_myrank(), fg[i].rank);
 #endif
     }
     else {
@@ -79,10 +82,9 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
       // we need to update.  Only external boundaries of the whole
       // domain are included.
 #ifdef TEST_C2F
-      cout << "C2F_SEND: child " << i << ", ";
-      cout << "my rank != child rank (" << sub_domain->get_myrank();
-      cout << ", " << fg[i].rank << ") running parallel ";
-      cout << "COARSE_TO_FINE_SEND\n";
+      spdlog::debug(
+          "C2F_SEND: child {}, my rank != child rank ({}, {}) running parallel COARSE_TO_FINE_SEND\n",
+          i, sub_domain->get_myrank(), fg[i].rank);
 #endif
       // get dimensions of child grid from struct
       CI.get_ipos_vec(fg[i].Xmin, fg_ixmin);
@@ -95,9 +97,9 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
         if ((fg_ixmin[d] == fl_ixmin[d]) && (fg_ixmin[d] > cl_ixmin[d])
             && (fg_ixmin[d] != cg_ixmin[d])) {
 #ifdef TEST_C2F
-          cout << "C2F_SEND: child " << i << ", dim " << d << " NEG DIR\n";
-          rep.printVec("localxmin", sub_domain->get_Xmin(), 3);
-          rep.printVec("Childxmin", fg[i].Xmin, 3);
+          spdlog::debug("C2F_SEND: child {}, dim {} NEG DIR", i, d);
+          spdlog::debug("localxmin : {}", sub_domain->get_Xmin());
+          spdlog::debug("Childxmin : {}", fg[i].Xmin);
 #endif
           struct c2f *bdata = new struct c2f;
           bdata->rank       = fg[i].rank;
@@ -109,8 +111,9 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
               par, grid, bdata, fg_ixmin, fg_ixmax, l + 1, fl_ixmin, fl_ixmax);
           b->NGsendC2F.push_back(bdata);
 #ifdef TEST_C2F
-          cout << "added " << bdata->c.size() << " cells to C2F send el ";
-          cout << b->NGsendC2F.size() - 1 << "\n";
+          spdlog::debug(
+              "added {} cells to C2F send el {}", bdata->c.size(),
+              b->NGsendC2F.size() - 1);
 #endif
         }
         // if child xmax == its level xmax, but < my level xmax,
@@ -118,7 +121,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
         if ((fg_ixmax[d] == fl_ixmax[d]) && (fg_ixmax[d] < cl_ixmax[d])
             && (fg_ixmax[d] != cg_ixmax[d])) {
 #ifdef TEST_C2F
-          cout << "C2F_SEND: child " << i << ", dim " << d << " POS DIR\n";
+          spdlog::debug("C2F_SEND: child {}, dim {} POS DIR", i, d);
 #endif
           struct c2f *bdata = new struct c2f;
           bdata->rank       = fg[i].rank;
@@ -130,8 +133,9 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
               par, grid, bdata, fg_ixmin, fg_ixmax, l + 1, fl_ixmin, fl_ixmax);
           b->NGsendC2F.push_back(bdata);
 #ifdef TEST_C2F
-          cout << "added " << bdata->c.size() << " cells to C2F send el ";
-          cout << b->NGsendC2F.size() - 1 << "\n";
+          spdlog::debug(
+              "added {} cells to C2F send el {}", bdata->c.size(),
+              b->NGsendC2F.size() - 1);
 #endif
         }
       }  // loop over dimensions
@@ -146,7 +150,9 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
     std::vector<std::vector<struct cgrid> > fgngb;
     sub_domain->get_level_lp1_ngb_info(fgngb);
     if (fgngb.size() != static_cast<size_t>(2 * par.ndim)) {
-      rep.error("l+1 neigbouring grids vector not set up right", fgngb.size());
+      spdlog::error(
+          "{}: {}", "l+1 neigbouring grids vector not set up right",
+          fgngb.size());
     }
     for (int d = 0; d < par.ndim; d++) {
       // negative direction
@@ -161,11 +167,9 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
               // grid can grab the data directly using serial C2F
               // code.
 #ifdef TEST_C2F
-              cout << "C2F_SEND: ngb " << f << ", dir=" << dir << ", ";
-              cout << "my rank (" << sub_domain->get_myrank();
-              cout << ") == child-ngb rank (";
-              cout << fgngb[dir][f].rank << "), no need to set up ";
-              cout << "COARSE_TO_FINE_SEND\n";
+              spdlog::debug(
+                  "C2F_SEND: ngb {}, dir={}, my rank ({}) == child-ngb rank ({}), no need to set up COARSE_TO_FINE_SEND\n",
+                  f, dir, sub_domain->get_myrank(), fgngb[dir][f].rank);
 #endif
             }
             else {
@@ -195,11 +199,9 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
               // grid can grab the data directly using serial C2F
               // code.
 #ifdef TEST_C2F
-              cout << "C2F_SEND: ngb " << f << ", dir=" << dir << ", ";
-              cout << "my rank (" << sub_domain->get_myrank();
-              cout << ") == child-ngb rank (";
-              cout << fgngb[dir][f].rank << "), no need to set up ";
-              cout << "COARSE_TO_FINE_SEND\n";
+              spdlog::debug(
+                  "C2F_SEND: ngb {}, dir={}, my rank ({}) == child-ngb rank ({}), no need to set up COARSE_TO_FINE_SEND\n",
+                  f, dir, sub_domain->get_myrank(), fgngb[dir][f].rank);
 #endif
             }
             else {
@@ -237,15 +239,14 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
 )
 {
 #ifdef TEST_C2F
-  cout << "MPI C2F SEND: starting from level " << l << " to level " << l + 1
-       << "... ";
+  spdlog::debug(
+      "MPI C2F SEND: starting from level {} to level {}... ", l, l + 1);
   if (b->NGsendC2F.size() == 0) {
-    cout << "empty send list, so just returning now.\n";
+    spdlog::warn("empty send list, so just returning now.");
     return 0;
   }
   else
-    cout << " send-list size = " << b->NGsendC2F.size();
-  cout << endl;
+    spdlog::debug(" send-list size = {}", b->NGsendC2F.size());
 #endif
 #ifdef TEST_C2F
   class Sub_domain *sub_domain = &(par.levels[l].sub_domain);
@@ -262,7 +263,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     return 0;
 #endif
 #ifdef TEST_C2F
-    cout << "MPI C2F SEND: odd step, interpolating data in time.\n";
+    spdlog::debug("MPI C2F SEND: odd step, interpolating data in time");
 #endif
     double U[par.nvar];
     for (unsigned int ib = 0; ib < b->NGsendC2F.size(); ib++) {
@@ -276,8 +277,8 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
 #ifdef TEST_INF
         for (int v = 0; v < par.nvar; v++) {
           if (!isfinite(c->Ph[v])) {
-            rep.printVec("NAN c->P ", c->P, par.nvar);
-            rep.printVec("NAN c->Ph", c->Ph, par.nvar);
+            spdlog::debug("NAN c->P  : {}", c->P);
+            spdlog::debug("NAN c->Ph : {}", c->Ph);
           }
         }
 #endif
@@ -286,7 +287,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
   }      // if not at a full step update
 
 #ifdef TEST_C2F
-  cout << "C2F SEND: " << l << " num send=" << b->NGsendC2F.size() << "\n";
+  spdlog::debug("C2F SEND: {} num send={}", l, b->NGsendC2F.size());
 #endif
 
   // loop over send boundaries, pack and send the data.
@@ -298,10 +299,9 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     size_t n_cell = b->NGsendC2F[ib]->c.size();
 
 #ifdef TEST_C2F
-    cout << "C2F SEND: " << sub_domain->get_myrank() << ", sending ";
-    cout << n_cell << " elements to process: ";
-    cout << b->NGsendC2F[ib]->rank << "\n";
-    cout.flush();
+    spdlog::debug(
+        "C2F SEND: {}, sending {} elements to process: {}",
+        sub_domain->get_myrank(), n_cell, b->NGsendC2F[ib]->rank);
 #endif
 
     size_t n_el = 0;
@@ -310,10 +310,10 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     else if (par.spOOA == OA2)
       n_el = n_cell * ((1 + par.ndim) * par.nvar + 1 + par.ndim);
     else
-      rep.error("bad spOOA in MPI C2F", par.spOOA);
+      spdlog::error("{}: {}", "bad spOOA in MPI C2F", par.spOOA);
     pion_flt *buf = new pion_flt[n_el];
-    double slope[par.nvar];
-    double cpos[par.ndim];
+    std::array<double, MAX_DIM> slope;
+    std::array<double, MAX_DIM> cpos;
 
     // loop over cells, add Ph[], cell-vol, slopes to send buffer
     size_t ibuf = 0;
@@ -337,7 +337,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
           // cout <<" idim="<<idim<<" calling setslope on cell ";
           // cout <<c->id<<", isbd="<<c->isbd<<",
           // isgd="<<c->isgd<<"\n";
-          solver->SetSlope(c, a, par.nvar, slope, OA2, grid);
+          solver->SetSlope(c, a, par.nvar, &slope[0], OA2, grid);
           for (int v = 0; v < par.nvar; v++)
             buf[ibuf + v] = slope[v];
           ibuf += par.nvar;
@@ -346,7 +346,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
 
     }  // loop over cells for this send boundary
 
-    if (ibuf != n_el) rep.error("C2F MPI SEND counting", ibuf);
+    if (ibuf != n_el) spdlog::error("{}: {}", "C2F MPI SEND counting", ibuf);
 
     //
     // Send data using a non-blocking MPI send
@@ -362,17 +362,15 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     //
     int comm_tag = BC_MPI_NGC2F_tag + 100 * b->NGsendC2F[ib]->dir + l + 1;
 #ifdef TEST_C2F
-    cout << "BC_update_COARSE_TO_FINE_SEND: l=" << l << ", Sending " << n_el;
-    cout << " doubles from proc " << sub_domain->get_myrank();
-    cout << " to child proc " << b->NGsendC2F[ib]->rank << ", id=" << comm_tag
-         << endl;
+    spdlog::debug(
+        "BC_update_COARSE_TO_FINE_SEND: l={}, Sending {} doubles from proc {} to child proc {}, id={}",
+        l, n_el, sub_domain->get_myrank(), b->NGsendC2F[ib]->rank, comm_tag);
 #endif
     err += par.levels[l].sub_domain.send_double_data(
         b->NGsendC2F[ib]->rank, n_el, buf, id, comm_tag);
-    if (err) rep.error("Send_C2F send_data failed.", err);
+    if (err) spdlog::error("{}: {}", "Send_C2F send_data failed.", err);
 #ifdef TEST_C2F
-    cout << "BC_update_COARSE_TO_FINE_SEND: returned with id=" << id;
-    cout << endl;
+    spdlog::debug("BC_update_COARSE_TO_FINE_SEND: returned with id={}", id);
 #endif
     // store ID to clear the send later (and delete the MPI temp data)
     par.levels[l].sub_domain.NG_C2F_send_list.push_back(id);
@@ -392,15 +390,13 @@ void NG_MPI_coarse_to_fine_bc::BC_COARSE_TO_FINE_SEND_clear_sends(
   }
   for (unsigned int ib = 0; ib < sub_domain.NG_C2F_send_list.size(); ib++) {
 #ifdef TEST_C2F
-    cout << "C2F_send: clearing send # " << ib + 1 << " of ";
-    cout << sub_domain.NG_C2F_send_list.size() << ", id=";
-    cout << sub_domain.NG_C2F_send_list[ib] << "...";
-    cout.flush();
+    spdlog::debug(
+        "C2F_send: clearing send # {} of {}, id={}...", ib + 1,
+        sub_domain.NG_C2F_send_list.size(), sub_domain.NG_C2F_send_list[ib]);
 #endif
     sub_domain.wait_for_send_to_finish(sub_domain.NG_C2F_send_list[ib]);
 #ifdef TEST_C2F
-    cout << " ... done!\n";
-    cout.flush();
+    spdlog::debug(" ... done!");
 #endif
   }
   sub_domain.NG_C2F_send_list.clear();
@@ -424,10 +420,10 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
   class Sub_domain *sub_domain = &(par.levels[l].sub_domain);
   class GridBaseClass *grid    = par.levels[l].grid;
 
-  int cl_ixmin[MAX_DIM], cl_ixmax[MAX_DIM];
-  int fl_ixmin[MAX_DIM], fl_ixmax[MAX_DIM];
-  int cg_ixmin[MAX_DIM], cg_ixmax[MAX_DIM];
-  int fg_ixmin[MAX_DIM], fg_ixmax[MAX_DIM];
+  std::array<int, MAX_DIM> cl_ixmin, cl_ixmax;
+  std::array<int, MAX_DIM> fl_ixmin, fl_ixmax;
+  std::array<int, MAX_DIM> cg_ixmin, cg_ixmax;
+  std::array<int, MAX_DIM> fg_ixmin, fg_ixmax;
 
   CI.get_ipos_vec(par.levels[l - 1].Xmin, cl_ixmin);
   CI.get_ipos_vec(par.levels[l - 1].Xmax, cl_ixmax);
@@ -467,17 +463,19 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
       if (cg_ixmax[ZZ] == fg_ixmax[ZZ]) send2pg = false;
       break;
     default:
-      rep.error("bad direction", b->dir);
+      spdlog::error("{}: {}", "bad direction", b->dir);
   }
   if (!send2pg) {
     // must need to receive from neighbour of parent grid
-    if (pgngb[b->dir].rank < 0) rep.error("ngb of parent is null", b->dir);
+    if (pgngb[b->dir].rank < 0)
+      spdlog::error("{}: {}", "ngb of parent is null", b->dir);
     CI.get_ipos_vec(pgngb[b->dir].Xmin, cg_ixmin);
     CI.get_ipos_vec(pgngb[b->dir].Xmax, cg_ixmax);
     b->NGrecvC2F_parent = pgngb[b->dir].rank;
 #ifdef TEST_C2F
-    cout << "C2F MPI Recv, recv from rank" << b->NGrecvC2F_parent;
-    cout << ", in outward normal direction " << b->dir << "\n";
+    spdlog::debug(
+        "C2F MPI Recv, recv from rank{}, in outward normal direction {}",
+        b->NGrecvC2F_parent, b->dir);
 #endif
   }
   else {
@@ -486,19 +484,20 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
 
   if (sub_domain->get_myrank() == b->NGrecvC2F_parent) {
 #ifdef TEST_C2F
-    cout << "my rank == parent rank, setting up serial ";
-    cout << "COARSE_TO_FINE_RECV\n";
+    spdlog::debug(
+        "my rank == parent rank, setting up serial COARSE_TO_FINE_RECV");
 #endif
     int err = NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
         par, grid, b, par.levels[l].parent);
-    rep.errorTest("serial C2F BC setup", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "serial C2F BC setup", 0, err);
   }
   else {
 #ifdef TEST_C2F
-    cout << "my rank != parent rank, so will need MPI for ";
-    cout << "COARSE_TO_FINE_RECV";
-    cout << "me=" << sub_domain->get_myrank();
-    cout << ", parent=" << b->NGrecvC2F_parent << "\n";
+    spdlog::debug(
+        "my rank != parent rank, so will need MPI for COARSE_TO_FINE_RECVme={}, parent={}",
+        sub_domain->get_myrank(), b->NGrecvC2F_parent);
 #endif
 
     //
@@ -549,7 +548,8 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
           continue;
         }
         else
-          rep.error("error in 2d logic C2FR_setup", c->pos[YY] - row_y);
+          spdlog::error(
+              "{}: {}", "error in 2d logic C2FR_setup", c->pos[YY] - row_y);
       }  // loop over cells
     }    // if 2D
 
@@ -596,7 +596,8 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
           continue;
         }
         else
-          rep.error("error in 3d logic C2FR_setup", c->pos[YY] - row_y);
+          spdlog::error(
+              "{}: {}", "error in 3d logic C2FR_setup", c->pos[YY] - row_y);
       }  // loop over cells
     }    // if 3D
   }      // if parent is on other MPI process
@@ -619,8 +620,9 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
   if ((step + 2) % 2 != 0) return 0;
 #endif
 #ifdef TEST_C2F
-  cout << "C2F_MPI: receiving boundary data to level ";
-  cout << l << ", updating boundary dir = " << b->dir << endl;
+  spdlog::debug(
+      "C2F_MPI: receiving boundary data to level {}, updating boundary dir = {}",
+      l, b->dir);
 #endif
   int err                      = 0;
   class Sub_domain *sub_domain = &(par.levels[l].sub_domain);
@@ -628,17 +630,15 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
 
   if (sub_domain->get_myrank() == b->NGrecvC2F_parent) {
 #ifdef TEST_C2F
-    cout << "my rank == parent rank, calling serial ";
-    cout << "COARSE_TO_FINE" << endl;
+    spdlog::debug("my rank == parent rank, calling serial COARSE_TO_FINE");
 #endif
     NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(par, solver, l, b, step);
   }
   else {
 #ifdef TEST_C2F
-    cout << "my rank != parent rank, so updating ";
-    cout << "COARSE_TO_FINE_RECV: ";
-    cout << "me=" << sub_domain->get_myrank();
-    cout << ", parent=" << b->NGrecvC2F_parent << endl;
+    spdlog::debug(
+        "my rank != parent rank, so updating COARSE_TO_FINE_RECV: me={}, parent={}",
+        sub_domain->get_myrank(), b->NGrecvC2F_parent);
 #endif
 
     // receive data.
@@ -647,20 +647,16 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     int from_rank = -1;
     int comm_tag  = BC_MPI_NGC2F_tag + 100 * b->dir + l;
 #ifdef TEST_C2F
-    if (1 == 1) {
-      cout << "BC_update_COARSE_TO_FINE_RECV: looking for data tag ";
-      cout << comm_tag << endl;
-    }
+    spdlog::debug(
+        "BC_update_COARSE_TO_FINE_RECV: looking for data tag {}", comm_tag);
 #endif
     err = par.levels[l].sub_domain.look_for_data_to_receive(
         &from_rank, recv_id, &recv_tag, comm_tag, COMM_DOUBLEDATA);
-    if (err) rep.error("look for double data failed", err);
+    if (err) spdlog::error("{}: {}", "look for double data failed", err);
 #ifdef TEST_C2F
-    if (1 == 1) {
-      cout << "BC_update_COARSE_TO_FINE_RECV: found data from rank ";
-      cout << from_rank << ", with tag " << recv_tag << " and id ";
-      cout << recv_id << ".  Looked for comm_tag=" << comm_tag << endl;
-    }
+    spdlog::debug(
+        "BC_update_COARSE_TO_FINE_RECV: found data from rank {}, with tag {} and id {}.  Looked for comm_tag={}",
+        from_rank, recv_tag, recv_id, comm_tag);
 #endif
 
     // receive the data: nel is the number of coarse grid cells
@@ -673,13 +669,14 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     else if (par.spOOA == OA2)
       n_el = n_cell * ((1 + par.ndim) * par.nvar + 1 + par.ndim);
     else
-      rep.error("bad spOOA in MPI C2F", par.spOOA);
+      spdlog::error("{}: {}", "bad spOOA in MPI C2F", par.spOOA);
     pion_flt *buf = 0;
     buf           = mem.myalloc(buf, n_el);
 #ifdef TEST_C2F
     if (1 == 1) {
-      cout << "BC_update_COARSE_TO_FINE_RECV: get " << n_cell;
-      cout << " cells, and " << n_el << " doubles.\n";
+      spdlog::debug(
+          "BC_update_COARSE_TO_FINE_RECV: get {} cells, and {} doubles", n_cell,
+          n_el);
     }
 #endif
     //
@@ -688,7 +685,8 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     //
     err = par.levels[l].sub_domain.receive_double_data(
         from_rank, recv_tag, recv_id, n_el, buf);
-    if (err) rep.error("(BC_update_C2F_RECV) getdata failed", err);
+    if (err)
+      spdlog::error("{}: {}", "(BC_update_C2F_RECV) getdata failed", err);
 
     //
     // Get Ph and slopes from coarse cells, and interpolate into
@@ -765,8 +763,9 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
       }    // if 1D
       else if (par.ndim == 2) {
         double Ph[par.nvar];
-        double cpos[par.ndim], c_vol = 0.0;
-        int ipos[par.ndim];
+        std::array<double, MAX_DIM> cpos;
+        double c_vol = 0.0;
+        std::array<int, MAX_DIM> ipos;
         ipos[0] = 0;
         ipos[1] = 0;
         double sx[par.nvar], sy[par.nvar];
@@ -796,18 +795,19 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
           // rep.printVec("Ph",Ph,par.nvar);
           CI.get_ipos_vec(cpos, ipos);
           interpolate_coarse2fine2D(
-              par, grid, solver, Ph, ipos, c_vol, sx, sy, f[0], f[1], f[2],
-              f[3]);
+              par, grid, solver, Ph, ipos.data(), c_vol, sx, sy, f[0], f[1],
+              f[2], f[3]);
 
         }  // loop over coarse cells
       }    // if 2D
       else {
         double Ph[par.nvar];
-        double cpos[par.ndim], c_vol = 0.0;
+        std::array<double, MAX_DIM> cpos;
+        double c_vol = 0.0;
 #ifdef TEST_C2F
-        double cpos2[par.ndim];
+        std::array<double, MAX_DIM> cpos2;
 #endif
-        int ipos[par.ndim];
+        std::array<int, MAX_DIM> ipos;
         double sx[par.nvar], sy[par.nvar], sz[par.nvar];
         cell *fch[8];
         for (unsigned int ic = 0; ic < b->NGrecvC2F.size(); ic++) {
@@ -845,7 +845,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
           }
           CI.get_ipos_vec(cpos, ipos);
           interpolate_coarse2fine3D(
-              par, grid, solver, Ph, ipos, c_vol, sx, sy, sz, fch);
+              par, grid, solver, Ph, ipos.data(), c_vol, sx, sy, sz, fch);
         }  // loop over coarse cells
       }    // if 3D
     }      // if 2nd order accurate
@@ -855,8 +855,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
   }  // if parent proc is different to my proc.
 
 #ifdef TEST_C2F
-  cout << "NG_MPI_C2F_bc::BC_update_COARSE_TO_FINE_RECV() done\n";
-  cout.flush();
+  spdlog::info("NG_MPI_C2F_bc::BC_update_COARSE_TO_FINE_RECV() done");
 #endif
   return 0;
 }
@@ -865,14 +864,14 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
 // ##################################################################
 
 void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list(
-    class SimParams &par,       ///< pointer to simulation parameters
-    class GridBaseClass *grid,  ///< pointer to coarse-level grid
-    struct c2f *bdata,          ///< pointer to list of cells
-    int *ixmin,                 ///< child grid xmin (integer)
-    int *ixmax,                 ///< child grid xmax (integer)
-    const int lf,               ///< level of fine grid.
-    const int *fl_xmin,         ///< level xmin of fine grid.
-    const int *fl_xmax          ///< level xmax of fine grid.
+    class SimParams &par,             ///< pointer to simulation parameters
+    class GridBaseClass *grid,        ///< pointer to coarse-level grid
+    struct c2f *bdata,                ///< pointer to list of cells
+    std::array<int, MAX_DIM> &ixmin,  ///< child grid xmin (integer)
+    std::array<int, MAX_DIM> &ixmax,  ///< child grid xmax (integer)
+    const int lf,                     ///< level of fine grid.
+    const std::array<int, MAX_DIM> &fl_xmin,  ///< level xmin of fine grid.
+    const std::array<int, MAX_DIM> &fl_xmax   ///< level xmax of fine grid.
 )
 {
   // In XN,XP direction we add cells with faces that touch the fine-
@@ -882,25 +881,25 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list(
   //
   // easier to have a function for different grid dimensions.
 #ifdef TEST_C2F
-  cout << "Adding cells to C2F Send list: ";
+  spdlog::debug("Adding cells to C2F Send list: ");
 #endif
   if (par.ndim == 1) {
 #ifdef TEST_C2F
-    cout << "1D \n";
+    spdlog::debug("1D");
 #endif
     add_cells_to_C2F_send_list_1D(
         par, grid, bdata, ixmin, ixmax, lf, fl_xmin, fl_xmax);
   }
   else if (par.ndim == 2) {
 #ifdef TEST_C2F
-    cout << "2D \n";
+    spdlog::debug("2D");
 #endif
     add_cells_to_C2F_send_list_2D(
         par, grid, bdata, ixmin, ixmax, lf, fl_xmin, fl_xmax);
   }
   else {
 #ifdef TEST_C2F
-    cout << "3D \n";
+    spdlog::debug("3D");
 #endif
     add_cells_to_C2F_send_list_3D(
         par, grid, bdata, ixmin, ixmax, lf, fl_xmin, fl_xmax);
@@ -912,14 +911,14 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list(
 // ##################################################################
 
 void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_1D(
-    class SimParams &par,       ///< pointer to simulation parameters
-    class GridBaseClass *grid,  ///< pointer to coarse-level grid
-    struct c2f *bdata,          ///< pointer to list of cells
-    int *ixmin,                 ///< child grid xmin (integer)
-    int *ixmax,                 ///< child grid xmax (integer)
-    const int lf,               ///< level of fine grid.
-    const int *fl_xmin,         ///< level xmin of fine grid.
-    const int *fl_xmax          ///< level xmax of fine grid.
+    class SimParams &par,             ///< pointer to simulation parameters
+    class GridBaseClass *grid,        ///< pointer to coarse-level grid
+    struct c2f *bdata,                ///< pointer to list of cells
+    std::array<int, MAX_DIM> &ixmin,  ///< child grid xmin (integer)
+    std::array<int, MAX_DIM> &ixmax,  ///< child grid xmax (integer)
+    const int lf,                     ///< level of fine grid.
+    const std::array<int, MAX_DIM> &fl_xmin,  ///< level xmin of fine grid.
+    const std::array<int, MAX_DIM> &fl_xmax   ///< level xmax of fine grid.
 )
 {
   int bsize = grid->idx() * par.Nbc / 2;  // idx is >=2, Nbc is >=1.
@@ -938,7 +937,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_1D(
       break;
 
     default:
-      rep.error("bad direction in 1D C2F", bdata->dir);
+      spdlog::error("{}: {}", "bad direction in 1D C2F", bdata->dir);
   }
 
   cell *c = grid->FirstPt_All();
@@ -953,14 +952,14 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_1D(
 // ##################################################################
 
 void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
-    class SimParams &par,       ///< pointer to simulation parameters
-    class GridBaseClass *grid,  ///< pointer to coarse-level grid
-    struct c2f *bdata,          ///< pointer to list of cells
-    int *ixmin,                 ///< child grid xmin (integer)
-    int *ixmax,                 ///< child grid xmax (integer)
-    const int lf,               ///< level of fine grid.
-    const int *fl_xmin,         ///< level xmin of fine grid.
-    const int *fl_xmax          ///< level xmax of fine grid.
+    class SimParams &par,             ///< pointer to simulation parameters
+    class GridBaseClass *grid,        ///< pointer to coarse-level grid
+    struct c2f *bdata,                ///< pointer to list of cells
+    std::array<int, MAX_DIM> &ixmin,  ///< child grid xmin (integer)
+    std::array<int, MAX_DIM> &ixmax,  ///< child grid xmax (integer)
+    const int lf,                     ///< level of fine grid.
+    const std::array<int, MAX_DIM> &fl_xmin,  ///< level xmin of fine grid.
+    const std::array<int, MAX_DIM> &fl_xmax   ///< level xmax of fine grid.
 )
 {
   // depth of boundary region, in integer coordinates.
@@ -1011,7 +1010,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
       break;
 
     default:
-      rep.error("bad direction in 2D C2F", bdata->dir);
+      spdlog::error("{}: {}", "bad direction in 2D C2F", bdata->dir);
   }
 
   // cout <<"boundary: x in ["<<xn<<","<<xp<<"], y in["<<yn<<","<<yp<<"]\n";
@@ -1026,7 +1025,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
     }
   } while ((c = grid->NextPt_All(c)) != 0);
 #ifdef TEST_C2F
-  cout << "add_cells_to_C2F_send_list_2D: added " << ct << " cells.\n";
+  spdlog::debug("add_cells_to_C2F_send_list_2D: added {} cells", ct);
 #endif
 
   return;
@@ -1036,19 +1035,19 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
 // ##################################################################
 
 void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
-    class SimParams &par,       ///< pointer to simulation parameters
-    class GridBaseClass *grid,  ///< pointer to coarse-level grid
-    struct c2f *bdata,          ///< pointer to list of cells
-    int *ixmin,                 ///< child grid xmin (integer)
-    int *ixmax,                 ///< child grid xmax (integer)
-    const int lf,               ///< level of fine grid.
-    const int *fl_xmin,         ///< level xmin of fine grid.
-    const int *fl_xmax          ///< level xmax of fine grid.
+    class SimParams &par,             ///< pointer to simulation parameters
+    class GridBaseClass *grid,        ///< pointer to coarse-level grid
+    struct c2f *bdata,                ///< pointer to list of cells
+    std::array<int, MAX_DIM> &ixmin,  ///< child grid xmin (integer)
+    std::array<int, MAX_DIM> &ixmax,  ///< child grid xmax (integer)
+    const int lf,                     ///< level of fine grid.
+    const std::array<int, MAX_DIM> &fl_xmin,  ///< level xmin of fine grid.
+    const std::array<int, MAX_DIM> &fl_xmax   ///< level xmax of fine grid.
 )
 {
 #ifdef TEST_C2F
-  rep.printVec("C2F Setup Send: ixmin", ixmin, 3);
-  rep.printVec("C2F Setup Send: ixmax", ixmax, 3);
+  spdlog::debug("C2F Setup Send: ixmin : {}", ixmin);
+  spdlog::debug("C2F Setup Send: ixmax : {}", ixmax);
 #endif
 
   int bsize = grid->idx() * par.Nbc / 2;  // idx is >=2, Nbc is >=1.
@@ -1137,13 +1136,12 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
       break;
 
     default:
-      rep.error("bad direction in 3D C2F", bdata->dir);
+      spdlog::error("{}: {}", "bad direction in 3D C2F", bdata->dir);
   }
 
 #ifdef TEST_C2F
-  cout << "xn=" << xn << ", xp=" << xp << "\n";
-  cout << "yn=" << yn << ", yp=" << yp << "\n";
-  cout << "zn=" << zn << ", zp=" << zp << "\n";
+  spdlog::debug(
+      "xn={}, xp={}\nyn={}, yp={}\nzn={}, zp={}", xn, xp, yn, yp, zn, zp);
 #endif
 
   int ct  = 0;
@@ -1159,7 +1157,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
     }
   } while ((c = grid->NextPt_All(c)) != 0);
 #ifdef TEST_C2F
-  cout << "Added " << ct << " cells to c2f list\n";
+  spdlog::debug("Added {} cells to c2f list", ct);
 #endif
 
   return;

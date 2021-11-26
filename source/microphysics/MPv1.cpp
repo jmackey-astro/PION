@@ -62,7 +62,12 @@
 #include "constants.h"
 #include "tools/interpolate.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -92,13 +97,11 @@ MP_Hydrogen::MP_Hydrogen(
     m_p(pconst.m_p())
 #endif
 {
-  cout
-      << "Welcome to MP_Hydrogen: an easier place to work than MicroPhysics!\n";
+  spdlog::info(
+      "Welcome to MP_Hydrogen: an easier place to work than MicroPhysics!");
 
-#ifdef ISOTHERMAL_MP
-  cout << "***** USING ISOTHERMAL EOS WITH T=T_0(1-X) +T_1(X) !!!!!!!!!!!!!! "
-          "******\n";
-#endif  // ISOTHERMAL_MP
+  spdlog::info(
+      "***** USING ISOTHERMAL EOS WITH T=T_0(1-X) +T_1(X) !!!!!!!!!!!!!! ******");
 
   min_elecf = 1.e-12;  // minimum electron fraction (to seed reactions!).
   if (!EP->chemistry) {
@@ -107,19 +110,21 @@ MP_Hydrogen::MP_Hydrogen(
   //  cout <<"\t\tExtra Physics flags set.\n";
 
   if (!EP->cooling) {
-    cout << "\t\t cooling not needed.\n";
+    spdlog::info("\t\t cooling not needed.");
     cool = 0;
   }
   else {
     cool = 0;
     cool = new CoolingFn(EP->cooling);
-    if (!cool) rep.error("CoolingFn init", cool);
+    if (!cool) spdlog::error("{}: {}", "CoolingFn init", cool);
   }
   //  cout <<"\t\tCooling Function set up.\n";
 
   // Set up tracer variables.
-  cout << "\t\tSetting up Tracer Variables.  Assuming tracers are last "
-       << ntracer << " variables in state vec.\n";
+  spdlog::debug(
+      "\t\tSetting up Tracer Variables.  Assuming tracers are last {} variables in state vec",
+      ntracer);
+
   int ftr = nv_prim - ntracer;  // first tracer variable.
   string s;
   int len = ntracer;
@@ -134,7 +139,7 @@ MP_Hydrogen::MP_Hydrogen(
     nvl += 1;
   }
   Integrator_Base::Set_Nvar(nvl);
-  cout << "nvl = " << nvl << " and nv_prim=" << nv_prim << "\n";
+  spdlog::debug("nvl = {} and nv_prim={}", nvl, nv_prim);
 
   // Find ionisation fraction in tracer variable list.
   MP_Hydrogen::pv_Hp = -1;
@@ -147,7 +152,8 @@ MP_Hydrogen::MP_Hydrogen(
     }
   }
   if (pv_Hp < 0)
-    rep.error("No H ionisation fraction found in tracer list", tracers[0]);
+    spdlog::error(
+        "{}: {}", "No H ionisation fraction found in tracer list", tracers[0]);
 
   ion_pot = 13.59844 * 1.602e-12;
 
@@ -205,7 +211,7 @@ MP_Hydrogen::MP_Hydrogen(
   //
 #ifndef PARALLEL
   ofstream outf("hummer_recomb.txt");
-  if (!outf.is_open()) rep.error("couldn't open outfile", 1);
+  if (!outf.is_open()) spdlog::error("{}: {}", "couldn't open outfile", 1);
   outf << "Hummer Recombination and Cooling Curve Data: Temperature(K) "
           "Rate(cm^3/s) Cool(erg.cm^3/s)\n";
   outf.setf(ios_base::scientific);
@@ -296,8 +302,8 @@ double MP_Hydrogen::Temperature(
   // Check for negative pressure/density!  If either is found, return -1.0e99.
   //
   if (pv[RO] <= 0.0 || pv[PG] <= 0.0) {
-    cout << "MP_Hydrogen::Temperature() negative rho=" << pv[RO]
-         << " or p=" << pv[PG] << "\n";
+    spdlog::debug(
+        "MP_Hydrogen::Temperature() negative rho={} or p={}", pv[RO], pv[PG]);
     return -1.0e99;
   }
 
@@ -362,13 +368,13 @@ int MP_Hydrogen::convert_prim2local(
 #ifndef NDEBUG
     commandline.console("Mmmm... negative pressure input to MP! >");
 #endif  // testing
-    cout << "neg.pres. input to MP: e=" << p_local[lv_eint] << "\n";
-    rep.error("Negative pressure input to RT solver!", p_in[PG]);
+    spdlog::debug("neg.pres. input to MP: e={}", p_local[lv_eint]);
+    spdlog::error("{}: {}", "Negative pressure input to RT solver!", p_in[PG]);
   }
 #ifndef NDEBUG
   if (p_local[lv_eint] > 1.e-5) {
     // cout <<"cell with crazy temperature:"; CI.print_cell(dp.c);
-    // rep.error("goodbye",0);
+    // spdlog::error("{}: {}", "goodbye",0);
   }
 #endif  // testing
   p_local[lv_Hp] = p_in[pv_Hp];
@@ -376,16 +382,16 @@ int MP_Hydrogen::convert_prim2local(
 #ifndef NDEBUG
     // commandline.console("Mmmm... bad ion frac. input to MP! >");
 #endif  // testing
-        //    rep.warning("bad ion frac. input to
+        //    spdlog::warn("{}: Expected {} but got {}", "bad ion frac. input to
         //    MP_Hydrogen()",0.5,p_local[lv_Hp]);
-        // rep.error("bad ion frac. input to MP_Hydrogen()",p_local[lv_Hp]);
+        // spdlog::error("{}: {}", "bad ion frac. input to
+        // MP_Hydrogen()",p_local[lv_Hp]);
     if (p_local[lv_Hp] < 0.0)
       p_local[lv_Hp] = min_elecf;
     else if (p_local[lv_Hp] >= 1.0)
       p_local[lv_Hp] = 1.0 - SMALLVALUE;
     else
-      cout << "bad ion frac, but not bad enough!!! : " << p_local[lv_Hp]
-           << "\n";
+      spdlog::debug("bad ion frac, but not bad enough!!! : {}", p_local[lv_Hp]);
   }
   if (EP->phot_ionisation) {
     p_local[lv_dtau] = 0.0;
@@ -398,7 +404,7 @@ int MP_Hydrogen::convert_prim2local(
   //
   for (int v = 0; v < nvl; v++) {
     if (isnan(p_local[v]) || isinf(p_local[v]))
-      rep.error("INF/NAN input to microphysics", p_local[v]);
+      spdlog::error("{}: {}", "INF/NAN input to microphysics", p_local[v]);
   }
 
 #ifdef ISOTHERMAL_MP
@@ -435,9 +441,9 @@ int MP_Hydrogen::convert_local2prim(
   double t1 = p_local[lv_eint] / kB / (1.0 + p_local[lv_Hp]) / p_local[lv_nh];
   double t2 = 100.0 + 9900.0 * p_local[lv_Hp];
   if (fabs((t1 - t2) / (t1 + t2)) > 0.1 || t1 < 100.0 || t2 < 100.0) {
-    cout << "integration obtained T=" << t1;
-    cout << "\t Temperature should be T=" << t2
-         << "; resetting to what it should be.\n";
+    spdlog::debug(
+        "integration obtained T={}\t Temperature should be T={}; resetting to what it should be.",
+        t1, t2);
   }
   p_out[PG] = p_local[lv_nh] * (1.0 + p_local[lv_Hp]) * kB
               * (100.0 + 9900.0 * p_local[lv_Hp]);
@@ -450,8 +456,9 @@ int MP_Hydrogen::convert_local2prim(
 #ifndef NDEBUG
     commandline.console("Mmmm... negative pressure! >");
 #endif  // testing
-    cout << "neg.pres. e=" << p_local[lv_eint] << "\n";
-    rep.error("Negative pressure output from RT solver!", p_out[PG]);
+    spdlog::debug("neg.pres. e={}", p_local[lv_eint]);
+    spdlog::error(
+        "{}: {}", "Negative pressure output from RT solver!", p_out[PG]);
   }
   p_out[pv_Hp] = max(min_elecf, p_local[lv_Hp]);
   p_out[pv_Hp] = min(static_cast<pion_flt>(1.0), p_out[pv_Hp]);
@@ -465,7 +472,8 @@ int MP_Hydrogen::convert_local2prim(
   // pointer).
   //
   // for (int v=0;v<nv_prim;v++) {
-  //  if (isnan(p_out[v]) || isinf(p_out[v])) rep.error("INF/NAN",p_out[v]);
+  //  if (isnan(p_out[v]) || isinf(p_out[v])) spdlog::error("{}: {}",
+  //  "INF/NAN",p_out[v]);
   //}
 
   return 0;
@@ -506,40 +514,42 @@ int MP_Hydrogen::TimeUpdateMP(
   }
   else if (sw_int == 2) {
     // DANGEROUS!!!
-    cout << "Requesting single step RK4 integration for MP_Hydrogen!!!?\n";
+    spdlog::info("Requesting single step RK4 integration for MP_Hydrogen!!!?");
     err = Integrator_Base::Step_RK4(nvl, P, 0.0, dt, P);
   }
   else
-    rep.error("this integration method not known.", sw_int);
-  if (err) rep.error("integration failed.", err);
+    spdlog::error("{}: {}", "this integration method not known.", sw_int);
+  if (err) spdlog::error("{}: {}", "integration failed.", err);
     // rep.printVec("p_new",P,nvl);
 
 #define CHECK_IFRAC
 #ifdef CHECK_IFRAC
   if (P[lv_Hp] > 2.0) {
-    cout << "H+ has i-frac=" << P[lv_Hp]
-         << "  something went wrong, attempting to split the integral.\n";
-    rep.printVec("Perror", P, nvl);
+    spdlog::debug(
+        "H+ has i-frac={} something went wrong, attempting to split the integral.\n",
+        P[lv_Hp]);
+    spdlog::debug("Perror : {}", P);
     int nstep = 10;
     err +=
         convert_prim2local(p_in, P, gamma);  // reset P to the initial values.
-    rep.printVec("Pinit ", P, nvl);
+    spdlog::debug("Pinit  : {}", P);
     for (int el = 0; el < nstep; el++) {
       err += Integrator_Base::Int_Adaptive_RKCK(
           nvl, P, 0.0, dt / static_cast<double>(nstep), errtol, P, &tout);
       //      rep.printVec("P",P,nvl);
     }
-    rep.printVec("Pend  ", P, nvl);
+    spdlog::debug("Pend   : {}", P);
     if (err != 0 || P[lv_Hp] > 2.0) {
-      cout << "Tried to split integral, but still got errors: err=" << err
-           << ", i-frac=" << P[lv_Hp] << "\n";
-      rep.error("integration failed!", err);
+      spdlog::debug(
+          "Tried to split integral, but still got errors: err={}, i-frac={}",
+          err, P[lv_Hp]);
+      spdlog::error("{}: {}", "integration failed!", err);
     }
   }
 #endif  // CHECK_IFRAC
 
   if (P[lv_Hp] > 1.00001) {
-    cout << "H+ has i-frac=" << P[lv_Hp] << "  ...setting to 1.\n";
+    spdlog::warn("H+ has i-frac={}  ...setting to 1", P[lv_Hp]);
     P[lv_Hp] = 1.0;
   }
   // put updated state vector into p_out.
@@ -568,17 +578,16 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
     double *deltau  ///< return optical depth through cell in this variable.
 )
 {
-#ifdef RT_TESTING
   //
   // display inputs:
   //
-  cout << "gamma=" << g << ", sw_int=" << sw_int << ", phot_in=" << phot_in;
-  cout << ", ds=" << ds << ", tau2cell=" << tau2cell << "\n";
-#endif  // RT_TESTING
+  spdlog::debug(
+      "gamma={}, sw_int={}, phot_in={}, ds={}, tau2cell={}", g, sw_int, phot_in,
+      ds, tau2cell)
 
-  if (!EP->phot_ionisation)
-    rep.error(
-        "RT requested, but phot_ionisation not set!", EP->phot_ionisation);
+      if (!EP->phot_ionisation) spdlog::error(
+          "{}: {}", "RT requested, but phot_ionisation not set!",
+          EP->phot_ionisation);
   MP_Hydrogen::tau_cell = 0.0;
   MP_Hydrogen::photons_in =
       phot_in;  // units are photons/cm^3/s (/Hz if using frequency info).
@@ -602,7 +611,8 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
   MP_Hydrogen::path_length = ds;
   double temp              = 0.0;
   srand(124356);
-  if (!isfinite(photons_in)) rep.error("photons_in is NAN!", photons_in);
+  if (!isfinite(photons_in))
+    spdlog::error("{}: {}", "photons_in is NAN!", photons_in);
 
   //
   // SETTING FLUX TO ZERO IF IT IS *VERY* WEAK, TO SAVE COMPUTATION.
@@ -688,8 +698,9 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
           nvl, P, 0.0, hh, errtol, P2, &t_out);
     }
     else
-      rep.error("Only allowed to Adaptive_RKCK Integration here!", sw_int);
-    // if (err) rep.error("integration failed.",err);
+      spdlog::error(
+          "{}: {}", "Only allowed to Adaptive_RKCK Integration here!", sw_int);
+    // if (err) spdlog::error("{}: {}", "integration failed.",err);
     // if (irate>30) {cout <<"irate = "<<irate<<"
     // ";rep.printVec("p_new",P2,nvl);}
 
@@ -703,8 +714,8 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
     // integration with the MP_Hydrogen integrator:
     //
     if (err) {
-      cout << "base integrator failed, so continuing on and trying MPH "
-              "integrator.\n";
+      spdlog::error(
+          "base integrator failed, so continuing on and trying MPH integrator");
     }
     // if it overshot, reject step and go on to more detailed method below.
     if (P2[lv_Hp] > 1.0) {
@@ -729,16 +740,20 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
     }
     else {  // step worked.
       if (err) {
-        cout << "integrator gave code: err=" << err << "; t=" << t_out
-             << " and dt=" << t_final << "\n";
-        rep.error("Integration failed, but I didn't catch why! Fix me.", err);
+        spdlog::error(
+            "integrator gave code: err={}; t={} and dt={}", err, t_out,
+            t_final);
+        spdlog::error(
+            "{}: {}", "Integration failed, but I didn't catch why! Fix me.",
+            err);
       }
       for (int i = 0; i < nvl; i++)
         P[i] = P2[i];
       t_now += hh;
     }
     if (P[lv_eint] < 0.0 || isnan(P[lv_eint]))
-      rep.error("explicit integral gives negative energy!", P[lv_eint]);
+      spdlog::error(
+          "{}: {}", "explicit integral gives negative energy!", P[lv_eint]);
   }  // end of weak ionisation step.
 
   //
@@ -769,28 +784,31 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
       err += MP_Hydrogen::Int_Adaptive_RKCK(nvl, P, 0.0, hh, errtol, P, &t_out);
     }
     else
-      rep.error("Only allowed to Adaptive_RKCK Integration here!", sw_int);
-    if (err) rep.error("integration failed.", err);
+      spdlog::error(
+          "{}: {}", "Only allowed to Adaptive_RKCK Integration here!", sw_int);
+    if (err) spdlog::error("{}: {}", "integration failed.", err);
     // rep.printVec("p_new",P,nvl);
     if (P[lv_Hp] > 1.00001) {
-      cout << "H+ has i-frac=" << P[lv_Hp] << "  ...setting to 1.\n";
+      spdlog::warn("H+ has i-frac={}  ...setting to 1", P[lv_Hp]);
       //      P[lv_Hp] = 1.0;
 #ifndef NDEBUG
       commandline.console("Mmmm>");
 #endif
-      rep.error("FAILURE of method on every level! FIX ME!", P[lv_Hp]);
+      spdlog::error(
+          "{}: {}", "FAILURE of method on every level! FIX ME!", P[lv_Hp]);
     }
     if (!pconst.equalD(t_out, hh)) {
       // cout <<"integration overshot, so cut short! req: "<<hh<<" did:
       // "<<t_out<<"\n"; rep.printVec("p_new",P,nvl);
-      // commandline.console("interr Mmmm>"); rep.error("integration
-      // didn't go for specified time!",(t_out-hh)/(t_out+hh));
+      // commandline.console("interr Mmmm>"); spdlog::error("{}: {}",
+      // "integration didn't go for specified time!",(t_out-hh)/(t_out+hh));
       hh = t_out;
     }
     t_now += hh;
     if (P[lv_eint] < 0.0 || isnan(P[lv_eint]))
-      rep.error(
-          "explicit high-Irate integral gives negative energy!", P[lv_eint]);
+      spdlog::error(
+          "{}: {}", "explicit high-Irate integral gives negative energy!",
+          P[lv_eint]);
   }
 
   //
@@ -808,17 +826,18 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
     err += implicit_step(nvl, hh, P, P, errtol);
     t_now += hh;
     if (P[lv_eint] < 0.0 || isnan(P[lv_eint])) {
-      rep.printVec("P", P, nvl);
-      rep.error("Implicit integral gives negative energy!", P[lv_eint]);
+      spdlog::debug("P : {}", P);
+      spdlog::error(
+          "{}: {}", "Implicit integral gives negative energy!", P[lv_eint]);
     }
   }
 
   if (!pconst.equalD(t_now, t_final)) {
-    cout << "irate=" << irate
-         << " and integration didn't go for right timestep...\n";
-    cout << "dt=" << dt << "\tt_now=" << t_now << "\tt_final=" << t_final
-         << "\n";
-    rep.error("integration didn't go for right timestep!", t_now / t_final);
+    spdlog::debug(
+        "irate={} and integration didn't go for right timestep...\ndt={}\tt_now={}\tt_final={}",
+        irate, dt, t_now, t_final);
+    spdlog::error(
+        "{}: {}", "integration didn't go for right timestep!", t_now / t_final);
   }
 
   // put updated state vector into p_out.
@@ -843,8 +862,9 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
   }
   if (*deltau < 0.0) {
     if (*deltau < -1.e-14)
-      cout << "MP_Hydrogen: <tau> significantly negative: " << *deltau
-           << " setting to zero. tau_cell/dt-1=" << tau_cell / dt - 1.0 << "\n";
+      spdlog::debug(
+          "MP_Hydrogen: <tau> significantly negative: {} setting to zero. tau_cell/dt-1={}",
+          *deltau, tau_cell / dt - 1.0);
     *deltau = 0.0;
   }
 
@@ -875,11 +895,11 @@ int MP_Hydrogen::implicit_step(
   // cout <<"\t\t\timplicit step!\n";
   // rep.printVec("\t\tP implicit:",P,nvl);
 
-  if (nv != nvl) rep.error("variables wrong!", nv - nvl);
+  if (nv != nvl) spdlog::error("{}: {}", "variables wrong!", nv - nvl);
   for (int i = 0; i < nvl; i++) {
     if (isnan(P[i]) || isinf(P[i])) {
-      rep.printVec("\t\tP implicit:", P, nvl);
-      rep.error("\t\tnan passed to implicit step.", i);
+      spdlog::debug("\t\tP implicit: : {}", P);
+      spdlog::error("{}: {}", "\t\tnan passed to implicit step.", i);
     }
   }
 
@@ -945,16 +965,16 @@ int MP_Hydrogen::implicit_step(
           / p_now[lv_nh];  // Temperature.
 #ifndef NDEBUG
       if (dp.c->id == 17042) {
-        cout << "\t\t\ttemperature=" << T << " gamma=" << gamma << "\n";
-        rep.printVec("state:", p_now, 4);
-        rep.printVec("  old:", p_old, 4);
+        spdlog::debug("\t\t\ttemperature={} gamma={}", T, gamma);
+        spdlog::debug("state: : {}", p_now);
+        spdlog::debug("  old: : {}", p_old);
       }
 #endif
 
       if (T < 0.0 || isnan(T) || isinf(T)) {
 #ifndef NDEBUG
-        cout << "\t\t\ttemperature=" << T << " gamma=" << gamma << "\n";
-        rep.printVec("state:", p_now, 4);
+        spdlog::debug("\t\t\ttemperature={} gamma={}", T, gamma);
+        spdlog::debug("state: : {}", p_now);
         // CI.print_cell(dp.c);
 #endif
         for (int v = 0; v < nvl; v++) {
@@ -987,7 +1007,7 @@ int MP_Hydrogen::implicit_step(
                 / (1.0 - p_now[lv_Hp]);
         }
         else
-          rep.error("Why implicit if no phot_ionisation?", 10);
+          spdlog::error("{}: {}", "Why implicit if no phot_ionisation?", 10);
 
         if (EP->coll_ionisation) {
           B = coll_ion_rate(T) * p_now[lv_Hp]
@@ -1021,7 +1041,7 @@ int MP_Hydrogen::implicit_step(
         t_ion = 1.0 / (A + B + C);
         x_inf = (A + B) * t_ion;
 #ifdef MP_DEBUG
-        // if (isnan(t_ion) || isnan(x_inf)) rep.error("xinf,tion
+        // if (isnan(t_ion) || isnan(x_inf)) spdlog::error("{}: {}", "xinf,tion
         // failed",t_ion);
 #endif  // MP_DEBUG
 
@@ -1178,16 +1198,15 @@ int MP_Hydrogen::implicit_step(
   //  count += ct;
 
   if (ct >= max_ct) {
-    cout << "\timplicit_step() failed to converge to tol=" << etol << " in "
-         << ct << " steps.\n";
-    cout << "\timplicit_step() 1-x=" << 1.0 - P[lv_Hp] << " ";
-    rep.printVec("P", P, nvl);
-    cout << "\timplicit_step() 1-x=" << 1.0 - p_now[lv_Hp] << " ";
-    rep.printVec("Pnow", p_now, nvl);
-    cout << "\timplicit_step()";
-    rep.printVec("Pold", p_old, nvl);
-    cout << "\n\n";
-    rep.error("GG", 3);
+    spdlog::error(
+        "\timplicit_step() failed to converge to tol={} in {} steps\n\timplicit_step() 1-x={}",
+        etol, ct, 1.0 - P[lv_Hp]);
+    spdlog::debug("P : {}", P);
+    spdlog::error("\timplicit_step() 1-x={}", 1.0 - p_now[lv_Hp]);
+    spdlog::debug("Pnow : {}", p_now);
+    spdlog::error("\timplicit_step()");
+    spdlog::debug("Pold : {}", p_old);
+    spdlog::error("{}: {}", "GG", 3);
   }
   else
     ct = 0;
@@ -1222,15 +1241,19 @@ int MP_Hydrogen::Int_Adaptive_RKCK(
 {
   // cout <<"\t\t\tMP_Hydrogen explicit step!\n";
   if (nvl != nv) {
-    cerr << "Integrator_Base() nvar not equal to state vector length.\n";
+    spdlog::error("Integrator_Base() nvar not equal to state vector length");
     Set_Nvar(nv);
   }
-  if (etol < 0) rep.error("Int_Adaptive_RKCK() ErrTol is negative!", etol);
+  if (etol < 0)
+    spdlog::error("{}: {}", "Int_Adaptive_RKCK() ErrTol is negative!", etol);
   if (etol < MACHINEACCURACY)
-    rep.error(
-        "errtol beyond machine accuracy.  use more lenient value!\n", etol);
+    spdlog::error(
+        "{}: {}", "errtol beyond machine accuracy.  use more lenient value!\n",
+        etol);
   if (etol > 2)
-    rep.error("errtol is too large: relative accuracy required is >1!\n", etol);
+    spdlog::error(
+        "{}: {}", "errtol is too large: relative accuracy required is >1!\n",
+        etol);
   double t = t0;
 
   double p1[nvl];
@@ -1259,15 +1282,16 @@ int MP_Hydrogen::Int_Adaptive_RKCK(
     // tnew="<<t+hdid<<" to-go="<<*tf-t-hdid<<"\n";
     if (p2[lv_Hp] >= 0.999) {
       // reject step in this case.
-      cout << "rejecting step...\n";
+      spdlog::info("rejecting step...");
       h = hdid / 2.0;
     }
     else {
       // accept the step.
 #ifndef NDEBUG
       if (dp.c->id == 2773) {
-        cout << "\t\t*** energy before = " << p1[lv_eint]
-             << " and after step = " << p2[lv_eint] << "\n";
+        spdlog::debug(
+            "\t\t*** energy before = {} and after step = {}", p1[lv_eint],
+            p2[lv_eint]);
       }
 #endif
       // cout <<"before="<<t;
@@ -1289,15 +1313,15 @@ int MP_Hydrogen::Int_Adaptive_RKCK(
            && p1[lv_Hp] < i_crit);
 
   if (err || ct >= ctmax) {
-    cerr << "MP_HYDROGEN::Int_Adaptive_RKCK() errors encountered. nstep=" << ct
-         << "\n";
-    rep.printVec("p1", p1, nvl);
+    spdlog::error(
+        "MP_HYDROGEN::Int_Adaptive_RKCK() errors encountered. nstep={}", ct);
+    spdlog::debug("p1 : {}", p1);
     if (!err) err = ct;
 #ifndef NDEBUG
     commandline.console("bad luck! >");
 #endif
   }
-  if (ct > 0.75 * ctmax) cout << "ADAPTIVE INT: took " << ct << " steps!\n";
+  if (ct > 0.75 * ctmax) spdlog::debug("ADAPTIVE INT: took {} steps!", ct);
   for (int v = 0; v < nvl; v++)
     pf[v] = p1[v];
   *tf = t;
@@ -1314,7 +1338,7 @@ int MP_Hydrogen::dPdt(
     double *R         ///< Rate Vector to write to.
 )
 {
-  if (nv != nvl) rep.error("variables wrong!", nv - nvl);
+  if (nv != nvl) spdlog::error("{}: {}", "variables wrong!", nv - nvl);
 
   for (int i = 0; i < nvl; i++)
     R[i] = 0.0;
@@ -1368,7 +1392,7 @@ int MP_Hydrogen::dPdt(
                     * P[lv_nh];  // rate [erg/s]
 #ifndef NDEBUG
     if (dp.c->id == 2773) {
-      cout << "\t\t*** energy rate after  recomb   =" << R[lv_eint] << "\n";
+      spdlog::debug("\t\t*** energy rate after  recomb   ={}", R[lv_eint]);
     }
 #endif
 #endif  // HUMMER_RECOMB
@@ -1437,7 +1461,7 @@ int MP_Hydrogen::dPdt(
 
 #ifndef NDEBUG
     if (dp.c->id == 2773) {
-      cout << "\t\t*** energy gain/loss to cooling = " << -temp << "\n";
+      spdlog::debug("\t\t*** energy gain/loss to cooling = {}", -temp);
     }
 #endif
     R[lv_eint] -= temp;
@@ -1499,7 +1523,7 @@ int MP_Hydrogen::dPdt(
 
 #ifndef NDEBUG
   if (dp.c->id == 2773) {
-    rep.printVec("\t\ttt rate", R, nvl);
+    spdlog::debug("\t\ttt rate : {}", R);
   }
 #endif
 
@@ -1707,7 +1731,8 @@ double MP_Hydrogen::timescales(
 #endif
 
   if ((EP->phot_ionisation) && (f_photoion)) {
-    rep.error("Haven't coded for photo-ionisation time!!!", f_photoion);
+    spdlog::error(
+        "{}: {}", "Haven't coded for photo-ionisation time!!!", f_photoion);
   }
 
   return mintime;

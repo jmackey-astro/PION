@@ -18,7 +18,7 @@
 #include "constants.h"
 #include "sim_params.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
 #include "tools/timer.h"
 
 #include "sub_domain/sub_domain.h"
@@ -49,7 +49,7 @@
 #include "raytracing/raytracer_SC.h"
 
 #include <fitsio.h>
-#include <iostream>
+
 #include <silo.h>
 #include <sstream>
 using namespace std;
@@ -73,7 +73,7 @@ int main(int argc, char **argv)
   int myrank = SimPM.levels[0].sub_domain.get_myrank();
   int nproc  = SimPM.levels[0].sub_domain.get_nproc();
 
-  if (nproc > 1) rep.error("This is serial code", nproc);
+  if (nproc > 1) spdlog::error("{}: {}", "This is serial code", nproc);
 
   //
   // Get input files and an output file.
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
     cout << "var:         what to plot (currently just Halpha)\n";
     cout
         << "Nskip:       skip this number of files each iteration (0=all files)\n";
-    rep.error("Bad number of args", argc);
+    spdlog::error("{}: {}", "Bad number of args", argc);
   }
 
   string input_path = argv[1];
@@ -106,14 +106,6 @@ int main(int argc, char **argv)
 
   size_t Nskip = static_cast<size_t>(atoi(argv[6]));
 
-  //
-  // Redirect output to a text file if you want to:
-  //
-  ostringstream redir;
-  redir.str("");
-  redir << op_path << "/msg_" << outfile << "_rank" << myrank << "_";
-  // rep.redirect(redir.str());
-
   //*******************************************************************
   // Get input files, read header, setup grid
   //*******************************************************************
@@ -123,7 +115,7 @@ int main(int argc, char **argv)
       SimPM, "DOUBLE", &(SimPM.levels[0].sub_domain));
   list<string> files;
   err += dataio.get_files_in_dir(input_path, input_file, &files);
-  if (err) rep.error("failed to get list of files", err);
+  if (err) spdlog::error("{}: {}", "failed to get list of files", err);
   for (list<string>::iterator s = files.begin(); s != files.end(); s++) {
     if ((*s).find(".silo") == string::npos) {
       cout << "removing file " << *s << " from list.\n";
@@ -135,7 +127,8 @@ int main(int argc, char **argv)
     }
   }
   size_t nfiles = files.size();
-  if (nfiles < 1) rep.error("Need at least one file, but got none", nfiles);
+  if (nfiles < 1)
+    spdlog::error("{}: {}", "Need at least one file, but got none", nfiles);
   cout << "--------------- Got list of Files ---------------------\n";
   cout << "-------------------------------------------------------\n";
   cout << "--------------- Setting up Grid -----------------------\n";
@@ -147,7 +140,7 @@ int main(int argc, char **argv)
   string first_file = temp.str();
   temp.str("");
   err = dataio.ReadHeader(first_file, SimPM);
-  if (err) rep.error("Didn't read header", err);
+  if (err) spdlog::error("{}: {}", "Didn't read header", err);
 
 
   //
@@ -157,10 +150,12 @@ int main(int argc, char **argv)
   redir.str("");
   redir << op_path << "/data_" << outfile << ".txt";
   ofstream outf;
-  if (outf.is_open()) rep.error("Output text file is already open!", 1);
+  if (outf.is_open())
+    spdlog::error("{}: {}", "Output text file is already open!", 1);
   outf.open(redir.str().c_str());
   if (!outf.is_open())
-    rep.error("Failed to open text file for writing", redir.str());
+    spdlog::error(
+        "{}: {}", "Failed to open text file for writing", redir.str());
   outf.setf(ios_base::scientific);
   outf.precision(6);
   outf << "Text data for simulation " << input_file << "\n\n";
@@ -198,13 +193,13 @@ int main(int argc, char **argv)
   G.resize(SimPM.grid_nlevels);
   SimSetup->setup_grid(G, SimPM);
   class GridBaseClass *grid = G[0];
-  if (!grid) rep.error("Grid setup failed", grid);
+  if (!grid) spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid));
   SimPM.dx = grid->DX();
   cout << "\t\tg=" << grid << "\tDX = " << grid->DX() << endl;
 
   err += SimSetup->setup_microphysics(SimPM);
   // err += setup_raytracing();
-  if (err) rep.error("Setup of microphysics", err);
+  if (err) spdlog::error("{}: {}", "Setup of microphysics", err);
 
   cout << "--------------- Finished Setting up Grid --------------\n";
   cout << "-------------------------------------------------------\n";
@@ -247,12 +242,14 @@ int main(int argc, char **argv)
 
     // Read header to get timestep info.
     err = dataio.ReadHeader(infile, SimPM);
-    if (err) rep.error("Didn't read header", err);
+    if (err) spdlog::error("{}: {}", "Didn't read header", err);
     // cout.flush();
 
     // read data onto grid.
     err = dataio.ReadData(infile, G, SimPM);
-    rep.errorTest("(main) Failed to read data", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "(main) Failed to read data", 0, err);
 
     cout << "--------------- Finished Reading Data  ----------------\n";
     cout << "-------------------------------------------------------\n";
@@ -277,7 +274,7 @@ int main(int argc, char **argv)
         }
         else {
           T = ne = np = 0.0;
-          rep.error("need microphysics to get temperature", MP);
+          spdlog::error("{}: {}", "need microphysics to get temperature", MP);
         }
         c->P[RO] = ne * np * xray.Halpha_emissivity(T) * sky;  // erg/cm3/s
         c->P[PG] =

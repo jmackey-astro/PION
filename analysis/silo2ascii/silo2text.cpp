@@ -22,7 +22,7 @@
 #include "constants.h"
 #include "sim_params.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
 #include "tools/timer.h"
 
 #include "grid/setup_fixed_grid_MPI.h"
@@ -31,7 +31,7 @@
 
 #include <dirent.h>
 #include <errno.h>
-#include <iostream>
+
 #include <list>
 #include <sstream>
 using namespace std;
@@ -43,6 +43,9 @@ using namespace std;
 
 #include "microphysics/microphysics_base.h"
 
+#include <spdlog/sinks/rotating_file_sink.h>
+#include <spdlog/spdlog.h>
+
 #ifdef CODE_EXT_HHE
 #include "future/mpv9_HHe.h"
 #endif
@@ -50,6 +53,25 @@ using namespace std;
 int main(int argc, char **argv)
 {
   int err = 0;
+
+  auto max_logfile_size = 1048576 * 5;
+  auto max_logfiles     = 3;
+#ifdef PARALLEL
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "silo2text_pre_mpi", "silo2text.log", max_logfile_size, max_logfiles));
+#else
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "silo2text", "silo2text.log", max_logfile_size, max_logfiles));
+#endif /* PARALLEL */
+
+#ifdef NDEBUG
+  spdlog::set_level(spdlog::level::err);
+  spdlog::flush_on(spdlog::level::err);
+#else
+  spdlog::set_level(spdlog::level::trace);
+  spdlog::flush_on(spdlog::level::trace);
+#endif
+
   //
   // Also initialise the sub_domain class with myrank and nproc.
   //
@@ -63,28 +85,27 @@ int main(int argc, char **argv)
   int myrank = SimPM.levels[0].sub_domain.get_myrank();
   int nproc  = SimPM.levels[0].sub_domain.get_nproc();
 
-  cout << "Projection3D: myrank=" << myrank << ", nproc=" << nproc << "\n";
+#ifdef PARALLEL
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "silo2text", "silo2text_process" + to_string(myrank) + ".log",
+      max_logfile_size, max_logfiles));
+#endif /* PARALLEL */
+
+  spdlog::info("Projection3D: myrank={}, nproc={}", myrank, nproc);
 
   //
   // Get an input file and an output file.
   //
   if (argc != 5) {
-    cerr << "Error: must call as follows...\n";
-    cerr
-        << "silo2text: <silo2text> <source-dir> <file-base>  <output-file> <op-freq>\n";
-    cerr << "  op-freq: if this is e.g. 10, we only convert every";
-    cerr << " 10th input file to a text file.\n";
-    rep.error("Bad number of args", argc);
+    spdlog::error(
+        "Error: must call as follows...\nsilo2text: <silo2text> <source-dir> <file-base>  <output-file> <op-freq>\n  op-freq: if this is e.g. 10, we only convert every 10th input file to a text file");
+    spdlog::error("{}: {}", "Bad number of args", argc);
   }
   string fdir        = argv[1];
   string firstfile   = argv[2];
   string outfilebase = argv[3];
   string outfile;
   size_t op_freq = atoi(argv[4]);
-
-  string rts("msg_");
-  rts += outfilebase;
-  // rep.redirect(rts);
 
   //
   // set up dataio_utility class
@@ -96,19 +117,19 @@ int main(int argc, char **argv)
   //
   list<string> files;
   err += dataio.get_files_in_dir(fdir, firstfile, &files);
-  if (err) rep.error("failed to get list of files", err);
+  if (err) spdlog::error("{}: {}", "failed to get list of files", err);
   //
   // Remove non-SILO files from list
   //
   for (list<string>::iterator s = files.begin(); s != files.end(); s++) {
     // If file is not a .silo file, then remove it from the list.
     if ((*s).find(".silo") == string::npos) {
-      cout << "removing file " << *s << " from list.\n";
+      spdlog::debug("removing file {} from list", *s);
       files.erase(s);
       s = files.begin();
     }
     else {
-      cout << "files: " << *s << endl;
+      spdlog::debug("files: {}", *s);
     }
   }
   //
@@ -130,15 +151,15 @@ int main(int argc, char **argv)
 
     class file_status fstat;
     if (!fstat.file_exists(firstfile)) {
-      cout << "first file: " << firstfile << "\n";
-      rep.error("First file doesn't exist", firstfile);
+      spdlog::debug("first file: {}", firstfile);
+      spdlog::error("{}: {}", "First file doesn't exist", firstfile);
     }
 
     //
     // Read in first code header so i know how to setup grid.
     //
     err = dataio.ReadHeader(firstfile, SimPM);
-    if (err) rep.error("Didn't read header", err);
+    if (err) spdlog::error("{}: {}", "Didn't read header", err);
     SimPM.grid_nlevels     = 1;
     SimPM.levels[0].parent = 0;
     SimPM.levels[0].child  = 0;
@@ -157,7 +178,7 @@ int main(int argc, char **argv)
     SimPM.levels[0].multiplier = 1;
     err =
         SimPM.levels[0].sub_domain.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
-    if (err) rep.error("main: failed to decompose domain!", err);
+    if (err) spdlog::error("{}: {}", "main: failed to decompose domain!", err);
 
     // *****************************************************
     //
@@ -170,7 +191,8 @@ int main(int argc, char **argv)
       err += SimSetup->setup_microphysics(SimPM);
       // err += SimSetup->setup_raytracing(SimPM);
       err += SimSetup->set_equations(SimPM);
-      if (err) rep.error("Setup of microphysics and raytracing", err);
+      if (err)
+        spdlog::error("{}: {}", "Setup of microphysics and raytracing", err);
 
       //
       // May need to setup extra data in each cell for ray-tracing optical
@@ -183,8 +205,8 @@ int main(int argc, char **argv)
       G.resize(1);
       SimSetup->setup_grid(G, SimPM);
       grid = G[0];
-      if (!grid) rep.error("Grid setup failed", grid);
-      cout << "\t\tg=" << grid << "\tDX = " << grid->DX() << "\n";
+      if (!grid) spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid));
+      spdlog::debug("\t\tg={}\tDX = {}", fmt::ptr(grid), grid->DX());
     }  // first step, setup grid and microphysics.
     // *****************************************************
 
@@ -198,16 +220,17 @@ int main(int argc, char **argv)
     oo.width(8);
     oo << SimPM.timestep << ".txt";
     outfile = oo.str();
-    cout
-        << "\n**************************************************************************************\n";
-    cout << "fff=" << fff << "\tinput file: " << firstfile
-         << "\toutput file: " << outfile << "\n";
+    spdlog::info(
+        "\n**************************************************************************************\nfff={}\tinput file: {}\toutput file: {}",
+        fff, firstfile, outfile);
 
     //
     // Read data (this reader can read serial or parallel data.
     //
     err = dataio.ReadData(firstfile, G, SimPM);
-    rep.errorTest("(main) Failed to read data", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "(main) Failed to read data", 0, err);
     // ***************************************************************
     // ********* FINISHED FIRST FILE, MOVE ON TO OUTPUT FILE *********
     // ***************************************************************
@@ -215,7 +238,7 @@ int main(int argc, char **argv)
     class dataio_text textio(SimPM);
     err += textio.OutputData(outfilebase, G, SimPM, SimPM.timestep);
     if (err) {
-      cerr << "\t Error writing data.\n";
+      spdlog::error("\t Error writing data");
       return (1);
     }
 

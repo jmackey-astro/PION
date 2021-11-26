@@ -38,7 +38,11 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
 
 using namespace std;
 
@@ -52,9 +56,6 @@ Riemann_Roe_Hydro_CV::Riemann_Roe_Hydro_CV(
     eqns_base(nv),
     eqns_Euler(nv), rs_nvar(5)
 {
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::Riemann_Roe_Hydro_CV ...starting.\n";
-#endif  // FUNCTION_ID
   //
   // eq_gamma, eq_nvar are defined in eqns_base class
   //
@@ -84,10 +85,6 @@ Riemann_Roe_Hydro_CV::Riemann_Roe_Hydro_CV(
 
   RCV_v2_mean = 0.0;
   RCV_a_mean  = 0.0;
-
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::Riemann_Roe_Hydro_CV ...returning.\n";
-#endif  // FUNCTION_ID
 }
 
 // ##################################################################
@@ -95,10 +92,6 @@ Riemann_Roe_Hydro_CV::Riemann_Roe_Hydro_CV(
 
 Riemann_Roe_Hydro_CV::~Riemann_Roe_Hydro_CV()
 {
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::~Riemann_Roe_Hydro_CV ...starting.\n";
-#endif  // FUNCTION_ID
-
   RCV_meanp    = mem.myfree(RCV_meanp);
   RCV_ul       = mem.myfree(RCV_ul);
   RCV_ur       = mem.myfree(RCV_ur);
@@ -108,10 +101,6 @@ Riemann_Roe_Hydro_CV::~Riemann_Roe_Hydro_CV()
   for (int v = 0; v < rs_nvar; v++)
     RCV_evec[v] = mem.myfree(RCV_evec[v]);
   RCV_evec = mem.myfree(RCV_evec);
-
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::~Riemann_Roe_Hydro_CV ...returning.\n";
-#endif  // FUNCTION_ID
 }
 
 // ##################################################################
@@ -125,9 +114,6 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric(
     pion_flt *out_pstar,
     pion_flt *out_flux)
 {
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric ...starting.\n";
-#endif  // FUNCTION_ID
   //
   // Roe's linear flux solver, from Toro 11.2.2 pp.350-353.  This is
   // basically the same as the asymmetric one,
@@ -208,17 +194,16 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric(
   //  }
 
   if (fabs(out_flux[1]) > 1.0e50) {
-    cout << "Very big Energy Flux!\n";
-    rep.printVec("\tleft", left, 5);
-    rep.printVec("\tright", right, 5);
-    rep.printVec("\tRCV_meanp", RCV_meanp, 5);
-    cout << "\tRCV_a_mean=" << RCV_a_mean << ",  RCV_v2_mean=" << RCV_v2_mean
-         << "\n";
-    rep.printVec("\tRCV_eval", RCV_eval, 5);
-    rep.printVec("\tRCV_udiff", RCV_udiff, 5);
-    rep.printVec("\tRCV_strength", RCV_strength, 5);
-    rep.printVec("\tout_flux", out_flux, 5);
-    rep.printVec("\tout_pstar", out_pstar, 5);
+    spdlog::info("Very big Energy Flux!");
+    spdlog::debug("\tleft : {}", left);
+    spdlog::debug("\tright : {}", right);
+    spdlog::debug("\tRCV_meanp : {}", RCV_meanp);
+    spdlog::debug("\tRCV_a_mean={},  RCV_v2_mean={}", RCV_a_mean, RCV_v2_mean);
+    spdlog::debug("\tRCV_eval : {}", RCV_eval);
+    spdlog::debug("\tRCV_udiff : {}", RCV_udiff);
+    spdlog::debug("\tRCV_strength : {}", RCV_strength);
+    spdlog::debug("\tout_flux : {}", out_flux);
+    spdlog::debug("\tout_pstar : {}", out_pstar);
   }
 #endif  // DEBUG
 
@@ -228,9 +213,6 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric(
   // somewhere else (i.e. the calling function).
   //
 
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric ...returning.\n";
-#endif  // FUNCTION_ID
   return 0;
 }
 
@@ -263,9 +245,7 @@ int Riemann_Roe_Hydro_CV::test_left_right_equality(
           / (fabs(right[eqVZ]) + fabs(left[eqVZ]) + SMALLVALUE);
 
   if (diff < 1.e-6) {
-#ifdef RoeHYDRO_TESTING
-    cout << "same states...\n";
-#endif  // RoeHYDRO_TESTING
+    spdlog::info("same states...");
     return 1;
   }
 
@@ -278,9 +258,6 @@ int Riemann_Roe_Hydro_CV::test_left_right_equality(
 void Riemann_Roe_Hydro_CV::set_Roe_mean_state(
     const pion_flt *left, const pion_flt *right)
 {
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::set_Roe_mean_state ...starting.\n";
-#endif  // FUNCTION_ID
   //
   // (1) Get Roe-average values for vx,vy,vz,H,a
   // Toro eq. 11.60
@@ -306,11 +283,6 @@ void Riemann_Roe_Hydro_CV::set_Roe_mean_state(
   RCV_a_mean = sqrt(
       (eq_gamma - 1.0)
       * max(RCV_meanp[eqHH] - 0.5 * RCV_v2_mean, 1.0e-12 * RCV_v2_mean));
-
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::set_Roe_mean_state ...returning.\n";
-#endif  // FUNCTION_ID
-  return;
 }
 
 // ##################################################################
@@ -318,10 +290,6 @@ void Riemann_Roe_Hydro_CV::set_Roe_mean_state(
 
 void Riemann_Roe_Hydro_CV::set_eigenvalues()
 {
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::set_eigenvalues ...starting.\n";
-#endif  // FUNCTION_ID
-
   RCV_eval[0] = RCV_meanp[eqVX] - RCV_a_mean;
   RCV_eval[1] = RCV_eval[2] = RCV_eval[3] = RCV_meanp[eqVX];
   RCV_eval[4]                             = RCV_meanp[eqVX] + RCV_a_mean;
@@ -347,11 +315,6 @@ void Riemann_Roe_Hydro_CV::set_eigenvalues()
       RCV_eval[v] = max(RCV_eval[v], RCV_HC_etamax);
     }
   }
-
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::set_eigenvalues ...returning.\n";
-#endif  // FUNCTION_ID
-  return;
 }
 
 // ##################################################################
@@ -359,9 +322,6 @@ void Riemann_Roe_Hydro_CV::set_eigenvalues()
 
 void Riemann_Roe_Hydro_CV::set_eigenvectors()
 {
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::set_eigenvectors ...starting.\n";
-#endif  // FUNCTION_ID
   //
   // Eigenvectors (eq.11.59 Toro)
   //
@@ -396,11 +356,6 @@ void Riemann_Roe_Hydro_CV::set_eigenvectors()
   RCV_evec[4][eqMMZ] = RCV_meanp[eqVZ];
   RCV_evec[4][eqERG] = RCV_meanp[eqHH] + RCV_meanp[eqVX] * RCV_a_mean;
   ;
-
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::set_eigenvectors ...returning.\n";
-#endif  // FUNCTION_ID
-  return;
 }
 
 // ##################################################################
@@ -409,10 +364,6 @@ void Riemann_Roe_Hydro_CV::set_eigenvectors()
 void Riemann_Roe_Hydro_CV::set_ul_ur_udiff(
     const pion_flt *left, const pion_flt *right)
 {
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::set_ul_ur_udiff ...starting.\n";
-#endif  // FUNCTION_ID
-
   eqns_Euler::PtoU(left, RCV_ul, eq_gamma);
   eqns_Euler::PtoU(right, RCV_ur, eq_gamma);
   //
@@ -429,11 +380,6 @@ void Riemann_Roe_Hydro_CV::set_ul_ur_udiff(
   // rep.printVec("ul",RCV_ul,rs_nvar);
   // rep.printVec("ur",RCV_ur,rs_nvar);
   // rep.printVec("ud",RCV_udiff,rs_nvar);
-
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::set_ul_ur_udiff ...returning.\n";
-#endif  // FUNCTION_ID
-  return;
 }
 
 // ##################################################################
@@ -441,9 +387,6 @@ void Riemann_Roe_Hydro_CV::set_ul_ur_udiff(
 
 void Riemann_Roe_Hydro_CV::set_wave_strengths()
 {
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::set_wave_strengths ...starting.\n";
-#endif  // FUNCTION_ID
   //
   // calculate the wavestrengths according to Toro (1999,
   // eq.11.68/.69/.70).
@@ -466,11 +409,6 @@ void Riemann_Roe_Hydro_CV::set_wave_strengths()
                        - RCV_udiff[eqMMX] - RCV_a_mean * RCV_strength[1])
                     / RCV_a_mean;
   RCV_strength[4] = RCV_udiff[eqRHO] - RCV_strength[0] - RCV_strength[1];
-
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::set_wave_strengths ...returning.\n";
-#endif  // FUNCTION_ID
-  return;
 }
 
 // ##################################################################
@@ -478,9 +416,6 @@ void Riemann_Roe_Hydro_CV::set_wave_strengths()
 
 void Riemann_Roe_Hydro_CV::calculate_symmetric_flux(pion_flt *out_flux)
 {
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::calculate_symmetric_flux ...starting.\n";
-#endif  // FUNCTION_ID
   //
   // Now get the flux by stepping across waves We also get the starred
   // state in pstar[] using the mean state vector for pstar, since
@@ -519,11 +454,6 @@ void Riemann_Roe_Hydro_CV::calculate_symmetric_flux(pion_flt *out_flux)
   //
   for (int v = 0; v < rs_nvar; v++)
     out_flux[v] *= 0.5;
-
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::calculate_symmetric_flux ...returning.\n";
-#endif  // FUNCTION_ID
-  return;
 }
 
 // ##################################################################
@@ -531,9 +461,6 @@ void Riemann_Roe_Hydro_CV::calculate_symmetric_flux(pion_flt *out_flux)
 
 void Riemann_Roe_Hydro_CV::set_pstar_from_meanp(pion_flt *out_pstar)
 {
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::set_pstar_from_meanp ...starting.\n";
-#endif  // FUNCTION_ID
   //
   // We also get the starred state in pstar[] using the mean state
   // vector for pstar, since it has positive-definite pressure and
@@ -546,11 +473,6 @@ void Riemann_Roe_Hydro_CV::set_pstar_from_meanp(pion_flt *out_pstar)
   for (int v = 0; v < rs_nvar; v++)
     out_pstar[v] = RCV_meanp[v];
   out_pstar[eqPG] = RCV_meanp[eqRO] * RCV_a_mean * RCV_a_mean / eq_gamma;
-
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::set_pstar_from_meanp ...returning.\n";
-#endif  // FUNCTION_ID
-  return;
 }
 
 // ##################################################################
@@ -559,9 +481,6 @@ void Riemann_Roe_Hydro_CV::set_pstar_from_meanp(pion_flt *out_pstar)
 void Riemann_Roe_Hydro_CV::calculate_asymmetric_flux(
     const pion_flt *left, const pion_flt *right, pion_flt *out_flux)
 {
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::calculate_asymmetric_flux ...starting.\n";
-#endif  // FUNCTION_ID
   //
   // We need to step across one or more waves:
   // First get the left state flux:
@@ -619,36 +538,30 @@ void Riemann_Roe_Hydro_CV::calculate_asymmetric_flux(
             / (fabs(out_flux[v]) + fabs(ftemp[v]) + TINYVALUE)
   }
   if (diff > 1e-3) {
-    cout << "*** FLUX CALCULATION ERROR IN "
-            "flux_solver_hydro_adi::Roe_flux_solver(): diff = "
-         << diff << "\n";
-    rep.printVec("left  flux:", out_flux, 5);
-    rep.printVec("right flux:", ftemp, 5);
-    rep.printVec("e-values", RCV_eval, 5);
-    rep.printVec("strengths:", RCV_strength, 5);
-    rep.printVec(" left", left, 5);
-    rep.printVec("right", right, 5);
-    rep.printVec("meanp", RCV_meanp, 5);
-    rep.printVec("udiff", RCV_udiff, 5);
+    spdlog::debug(
+        "*** FLUX CALCULATION ERROR IN "
+        "flux_solver_hydro_adi::Roe_flux_solver(): diff = ",
+        diff);
+    spdlog::debug("left  flux: : {}", out_flux);
+    spdlog::debug("right flux: : {}", ftemp);
+    spdlog::debug("e-values : {}", RCV_eval);
+    spdlog::debug("strengths: : {}", RCV_strength);
+    spdlog::debug(" left : {}", left);
+    spdlog::debug("right : {}", right);
+    spdlog::debug("meanp : {}", RCV_meanp);
+    spdlog::debug("udiff : {}", RCV_udiff);
     for (int i = 0; i < 5; ++i) {
-      cout << "rightevec[" << i << "] = [ ";
-      for (int j = 0; j < 5; j++) {
-        cout.width(9);
-        cout << RCV_evec[i][j] << ", ";
+      spdlog::debug("rightevec[{}] = [{}", i, RCV_evec[i][0]);
+      for (int j = 1; j < 5; j++) {
+        spdlog::debug(", {}", RCV_evec[i][j]);
       }
-      cout << "]"
-           << "\n";
+      spdlog::debug("]");
     }
-    cout << "*** FLUX CALCULATION ERROR IN "
-            "flux_solver_hydro_adi::Roe_flux_solver()\n\n";
+    spdlog::info(
+        "*** FLUX CALCULATION ERROR IN flux_solver_hydro_adi::Roe_flux_solver()");
   }  // if large difference
 
 #endif  // RoeHYDRO_TESTING
-
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_Hydro_CV::acalculate_symmetric_flux ...returning.\n";
-#endif  // FUNCTION_ID
-  return;
 }
 
 // ##################################################################

@@ -33,7 +33,10 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -57,9 +60,7 @@ MPv7::MPv7(
     ) :
     MPv3(nd, csys, nv, ntr, tracers, ephys, rsrcs, g)
 {
-#ifndef NDEBUG
-  cout << "MPv7 constructor setting up.\n";
-#endif
+  spdlog::info("MPv7 constructor setting up.");
   //
   // Get the mean mass per H atom from the He and Z mass fractions.
   //
@@ -100,11 +101,9 @@ MPv7::MPv7(
   //
   Min_NeutralFrac = 1.0e-15;
   Max_NeutralFrac = 1.0 - 1.0e-15;
-#ifndef NDEBUG
-  cout << "MPv7: Y=" << EP->Helium_MassFrac;
-  cout << ", Z=" << EP->Metal_MassFrac << ", mmpH=" << mean_mass_per_H;
-  cout << ", NION=" << JM_NION << ", NELEC=" << JM_NELEC << "\n";
-#endif  // NDEBUG
+  spdlog::debug(
+      "MPv7: Y={}, Z={}, mmpH={}, NION={}, NELEC={}", EP->Helium_MassFrac,
+      EP->Metal_MassFrac, mean_mass_per_H, JM_NION, JM_NELEC);
   return;
 }
 
@@ -113,10 +112,7 @@ MPv7::MPv7(
 
 MPv7::~MPv7()
 {
-#ifndef NDEBUG
-  cout << "MPv7 destructor.\n";
-#endif
-  return;
+  spdlog::info("MPv7 destructor.");
 }
 
 // ##################################################################
@@ -148,10 +144,11 @@ int MPv7::convert_prim2local(
   //
   for (int v = 0; v < 2; v++) {
     if (!isfinite(p_local[v]))
-      rep.error("INF/NAN input to microphysics", p_local[v]);
+      spdlog::error("{}: {}", "INF/NAN input to microphysics", p_local[v]);
   }
   if (mpv_nH < 0.0 || !isfinite(mpv_nH))
-    rep.error("Bad density input to MPv7::convert_prim2local", mpv_nH);
+    spdlog::error(
+        "{}: {}", "Bad density input to MPv7::convert_prim2local", mpv_nH);
 #endif  // NDEBUG
 
   return 0;
@@ -194,10 +191,12 @@ int MPv7::convert_local2prim(
 #ifndef NDEBUG
   if (p_out[pv_Hp] < 0.0 || p_out[pv_Hp] > 1.0 * (1.0 + JM_RELTOL)
       || !isfinite(p_out[pv_Hp]))
-    rep.error(
-        "Bad output H+ value in MPv7::convert_local2prim", p_out[pv_Hp] - 1.0);
+    spdlog::error(
+        "{}: {}", "Bad output H+ value in MPv7::convert_local2prim",
+        p_out[pv_Hp] - 1.0);
   if (p_out[PG] < 0.0 || !isfinite(p_out[PG]))
-    rep.error("Bad output pressure in MPv7::convert_local2prim", p_out[PG]);
+    spdlog::error(
+        "{}: {}", "Bad output pressure in MPv7::convert_local2prim", p_out[PG]);
 #endif  // NDEBUG
 
   return 0;
@@ -351,7 +350,7 @@ int MPv7::ydot(
         break;
 
       default:
-        rep.error("Bad ion_src_type in dYdt()", ion_src_type);
+        spdlog::error("{}: {}", "Bad ion_src_type in dYdt()", ion_src_type);
         break;
     }  // switch
   }
@@ -389,9 +388,7 @@ double MPv7::get_recombination_rate(
     const double g       ///< EOS gamma (optional)
 )
 {
-#ifdef FUNCTION_ID
-  cout << "MPv7::get_recombination_rate()\n";
-#endif  // FUNCTION_ID
+  spdlog::info("MPv7::get_recombination_rate()");
   double rate = 0.0;
   double P[nvl];
   // First convert to local variables.
@@ -400,9 +397,7 @@ double MPv7::get_recombination_rate(
   rate = 2.7e-13 * mpv_nH * mpv_nH * (1.0 - P[lv_H0]) * (1.0 - P[lv_H0])
          * JM_NELEC;
 
-#ifdef FUNCTION_ID
-  cout << "MPv7::get_recombination_rate()\n";
-#endif  // FUNCTION_ID
+  spdlog::info("MPv7::get_recombination_rate()");
   return rate;
 }
 

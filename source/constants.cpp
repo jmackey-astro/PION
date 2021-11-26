@@ -10,8 +10,10 @@
 /// Modifications:
 /// - 2015.03.10 JM: added equalD() function.
 
+#include <spdlog/spdlog.h>
+
 #include "constants.h"
-#include <iostream>
+
 using namespace std;
 
 ///
@@ -43,8 +45,9 @@ bool constants::equalD(const double a, const double b)
   }
   if (fabs(a) + fabs(b) < TINYVALUE) {
 #ifdef DEBUG3
-    cout << "tiny numbers in equalD(a,b); a,b <1.e-100... a=";
-    cout << a << ", b=" << b << "; returning true.\n";
+    spdlog::debug(
+        "tiny numbers in equalD(a,b); a,b <1.e-100... a={}, b={}; returning true.\n",
+        a, b);
 #endif
     return (true);
   }

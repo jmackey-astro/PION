@@ -22,7 +22,10 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -46,9 +49,7 @@ MPv6::MPv6(
     ) :
     MPv3(nd, csys, nv, ntr, tracers, ephys, rsrcs, g)
 {
-#ifndef NDEBUG
-  cout << "MPv6 constructor setting up.\n";
-#endif
+  spdlog::info("MPv6 constructor setting up.");
   //
   // Here we set JM_NELEC and JM_NION to 1.0 because there is only H.
   //
@@ -60,11 +61,9 @@ MPv6::MPv6(
   METALLICITY         = 0.0;
   mean_mass_per_H     = m_p;
 
-#ifndef NDEBUG
-  cout << "MPv6: Y=" << EP->Helium_MassFrac;
-  cout << ", Z=" << EP->Metal_MassFrac << ", mmpH=" << mean_mass_per_H;
-  cout << ", NION=" << JM_NION << ", NELEC=" << JM_NELEC << "\n";
-#endif  // NDEBUG
+  spdlog::debug(
+      "MPv6: Y={}, Z={}, mmpH={}, NION={}, NELEC={}", EP->Helium_MassFrac,
+      EP->Metal_MassFrac, mean_mass_per_H, JM_NION, JM_NELEC);
   return;
 }
 
@@ -73,10 +72,7 @@ MPv6::MPv6(
 
 MPv6::~MPv6()
 {
-#ifndef NDEBUG
-  cout << "MPv6 destructor.\n";
-#endif
-  return;
+  spdlog::info("MPv6 destructor.");
 }
 
 // ##################################################################
@@ -90,12 +86,10 @@ int MPv6::ydot(
 )
 {
 
-#ifndef NDEBUG
-  cout << "MPv6::ydot(): Y=" << EP->Helium_MassFrac;
-  cout << ", Z=" << EP->Metal_MassFrac << ", mmpH=" << mean_mass_per_H;
-  cout << ", nH = " << mpv_nH;
-  cout << ", NION=" << JM_NION << ", NELEC=" << JM_NELEC << "\n";
-#endif  // NDEBUG
+  spdlog::debug(
+      "MPv6::ydot(): Y={}, Z={}, mmpH={}, nH = {}, NION={}, NELEC={}",
+      EP->Helium_MassFrac, EP->Metal_MassFrac, mean_mass_per_H, mpv_nH, JM_NION,
+      JM_NELEC);
 
   //
   // fixes min-neutral-fraction to Min_NeutralFrac
@@ -188,7 +182,7 @@ int MPv6::ydot(
         break;
 
       default:
-        rep.error("Bad ion_src_type in dYdt()", ion_src_type);
+        spdlog::error("{}: {}", "Bad ion_src_type in dYdt()", ion_src_type);
         break;
     }  // switch
   }

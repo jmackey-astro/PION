@@ -18,7 +18,7 @@
 #include "constants.h"
 #include "sim_params.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
 #include "tools/timer.h"
 
 #include "dataIO/dataio_fits.h"
@@ -83,7 +83,7 @@ int main(int argc, char **argv)
   list<string> files;
   string infile_zero = infilebase + "_0000";
   err += dataio.get_files_in_dir(input_path, infile_zero, &files);
-  if (err) rep.error("failed to get list of files", err);
+  if (err) spdlog::error("{}: {}", "failed to get list of files", err);
   //
   // Remove non-FITS files from list
   //
@@ -103,7 +103,8 @@ int main(int argc, char **argv)
   }
   size_t nfiles = files.size();
   size_t ifile  = 0;
-  if (nfiles < 1) rep.error("Need at least one file, but got none", nfiles);
+  if (nfiles < 1)
+    spdlog::error("{}: {}", "Need at least one file, but got none", nfiles);
 
   cout << "--------------- Got list of Files ---------------------\n";
   cout << "-------------------------------------------------------\n";
@@ -143,7 +144,7 @@ int main(int argc, char **argv)
     //
     sub_domain->set_myrank(0);
     err = dataio.ReadHeader(infile, SimPM);
-    if (err) rep.error("Didn't read header", err);
+    if (err) spdlog::error("{}: {}", "Didn't read header", err);
     sub_domain->decomposeDomain(SimPM.ndim, SimPM.levels[0]);
 
     //
@@ -248,10 +249,11 @@ int main(int argc, char **argv)
       temp << proc;
       infile = dataio.choose_filename(temp.str(), SimPM.timestep);
       // temp.str(""); temp <<outfilebase<<"."<<start<<".fits";
-      if (!fs.file_exists(infile)) rep.error("infile doesn't exist", infile);
+      if (!fs.file_exists(infile))
+        spdlog::error("{}: {}", "infile doesn't exist", infile);
 
       err = dataio.ReadHeader(infile, SimPM);
-      if (err) rep.error("Didn't read header", err);
+      if (err) spdlog::error("{}: {}", "Didn't read header", err);
       sub_domain->set_myrank(proc);
       sub_domain->decomposeDomain(SimPM.ndim, SimPM.levels[0]);
 
@@ -264,7 +266,7 @@ int main(int argc, char **argv)
       double *array = 0;
       cout << "sub_domain->LocalNcell = " << sub_domain->LocalNcell << "\n";
       array = new double[sub_domain->LocalNcell];
-      if (!array) rep.error("mem alloc", array);
+      if (!array) spdlog::error("{}: {}", "mem alloc", array);
 
       for (int im = 2; im <= num; im++) {  // hdu1 is header.
         ffmahd(ffin, im, 0, &status);
@@ -296,8 +298,8 @@ int main(int argc, char **argv)
         if (npix != sub_domain->LocalNcell) {
           cout << "ncell = " << sub_domain->LocalNcell << " and counted "
                << npix << " cells.\n";
-          rep.error(
-              "Pixel counting failed in Image Read",
+          spdlog::error(
+              "{}: {}", "Pixel counting failed in Image Read",
               npix - sub_domain->LocalNcell);
         }
         double nulval = -1.e99;
@@ -328,8 +330,8 @@ int main(int argc, char **argv)
         if (npix != sub_domain->LocalNcell) {
           cout << "ncell = " << sub_domain->LocalNcell << " and counted "
                << npix << " cells.\n";
-          rep.error(
-              "Pixel counting failed in Image Write",
+          spdlog::error(
+              "{}: {}", "Pixel counting failed in Image Write",
               npix - sub_domain->LocalNcell);
         }
         fits_write_subset(ffout, TDOUBLE, fpix, lpix, array, &status);

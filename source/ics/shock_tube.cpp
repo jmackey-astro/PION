@@ -15,7 +15,7 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -26,34 +26,19 @@
 #include "ics/icgen_base.h"
 #include <sstream>
 
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 // ##################################################################
 // ##################################################################
 
 IC_shocktube::IC_shocktube()
 {
-  preshock = postshock = 0;
-  gg                   = 0;
-  rp                   = 0;
+  gg   = 0;
+  rp   = 0;
   ndim = coords = eqns = -1;
   angleXY = angleXZ = 0;
   number            = -10;
-  return;
-}
-
-// ##################################################################
-// ##################################################################
-
-IC_shocktube::~IC_shocktube()
-{
-  if (preshock) {
-    delete[] preshock;
-    preshock = 0;
-  }
-  if (postshock) {
-    delete[] postshock;
-    postshock = 0;
-  }
-  return;
 }
 
 // ##################################################################
@@ -67,37 +52,31 @@ int IC_shocktube::setup_data(
   int err = 0;
 
   ICsetup_base::gg = ggg;
-  if (!gg) rep.error("null pointer to grid!", ggg);
+  if (!gg) spdlog::error("{}: {}", "null pointer to grid!", fmt::ptr(ggg));
 
   ICsetup_base::rp = rrp;
-  if (!rp) rep.error("null pointer to ReadParams", rp);
+  if (!rp) spdlog::error("{}: {}", "null pointer to ReadParams", fmt::ptr(rp));
 
   IC_shocktube::ndim = SimPM->ndim;
   if (ndim != 1 && ndim != 2 && ndim != 3)
-    rep.error("Shock-Tube problem must be 1d or 2d or 3d", ndim);
+    spdlog::error("{}: {}", "Shock-Tube problem must be 1d or 2d or 3d", ndim);
   IC_shocktube::coords = SimPM->coord_sys;
   if (coords != COORD_CRT && coords != COORD_CYL)
-    rep.error("Bad coord sys", coords);
+    spdlog::error("{}: {}", "Bad coord sys", coords);
   IC_shocktube::eqns = SimPM->eqntype;
   if (eqns == EQEUL)
     eqns = 1;
   else if (eqns == EQMHD || eqns == EQGLM || eqns == EQFCD)
     eqns = 2;
   else
-    rep.error("Bad equations", eqns);
+    spdlog::error("{}: {}", "Bad equations", eqns);
 
   // initialise pre and post shock vectors to zero.
-  IC_shocktube::preshock  = 0;
-  IC_shocktube::postshock = 0;
-  preshock                = new double[SimPM->nvar];
-  postshock               = new double[SimPM->nvar];
-  if (!preshock || !postshock)
-    rep.error("malloc pre/post shock vecs", preshock);
-  for (int v = 0; v < SimPM->nvar; v++)
-    preshock[v] = postshock[v] = 0.0;
+  preshock.resize(SimPM->nvar, 0);
+  postshock.resize(SimPM->nvar, 0);
 
-  cout << "Note that shocktube B-field values are in units where ";
-  cout << "magnetic pressure is 0.5*B^2, i.e. no sqrt(4pi).\n";
+  spdlog::info(
+      "Note that shocktube B-field values are in units where magnetic pressure is 0.5*B^2, i.e. no sqrt(4pi)");
 
   IC_shocktube::shockpos = 0.0;  // initial value
 
@@ -109,7 +88,7 @@ int IC_shocktube::setup_data(
   if (str == "") {
     seek = "RIEMANN";  // try this legacy shock tube flag...
     str  = rp->find_parameter(seek);
-    if (str == "") rep.error("didn't find parameter", seek);
+    if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
   }
   IC_shocktube::number = atoi(str.c_str());
 
@@ -119,7 +98,7 @@ int IC_shocktube::setup_data(
     IC_shocktube::shockpos = 0.0;
   else
     IC_shocktube::shockpos = atof(str.c_str());
-  cout << "shock pos:" << shockpos << endl;
+  spdlog::debug("shock pos:{}", shockpos);
 
   //
   // angle in XY plane (degrees) (angle normal makes with x-axis, projected
@@ -319,15 +298,15 @@ int IC_shocktube::setup_data(
     }
   }  // if number<=0, read in vectors
   else
-    err += get_riemann_ics(number, postshock, preshock, &shockpos);
-  if (err) rep.error("get_riemann_ics error", err);
-  cout << "shockpos: " << shockpos << endl;
+    err += get_riemann_ics(number, &postshock[0], &preshock[0], &shockpos);
+  if (err) spdlog::error("{}: {}", "get_riemann_ics error", err);
+  spdlog::debug("shockpos: {}", shockpos);
 
-  rep.printVec("preshock", preshock, SimPM->nvar);
-  rep.printVec("postshock", postshock, SimPM->nvar);
+  spdlog::debug("preshock : {}", preshock);
+  spdlog::debug("postshock : {}", postshock);
   // now we have left and right state vectors, and the shock position and
   // orientation.
-  err += assign_data(postshock, preshock, shockpos);
+  err += assign_data(&postshock[0], &preshock[0], shockpos);
   return err;
 }
 
@@ -341,7 +320,8 @@ int IC_shocktube::assign_data(
 )
 {
   int nvar = gg->Nvar();
-  if (ndim < 1 || ndim > 3) rep.error("Bad ndim in setupNDWave", ndim);
+  if (ndim < 1 || ndim > 3)
+    spdlog::error("{}: {}", "Bad ndim in setupNDWave", ndim);
 
   //
   // Cell data could be float or double, depending on pion_flt, so we
@@ -359,15 +339,14 @@ int IC_shocktube::assign_data(
   else if (eqns == 2)
     eqn = new class eqns_mhd_ideal(nvar);
   else
-    rep.error("Bad equations in assign_data()", eqns);
-  if (!eqn) rep.error("Bad equations in assign_data()", eqns);
+    spdlog::error("{}: {}", "Bad equations in assign_data()", eqns);
+  if (!eqn) spdlog::error("{}: {}", "Bad equations in assign_data()", eqns);
 
-  cout << "Setting up a " << ndim
-       << "-D simulation with a ShockTube problem.\n";
-  cout << "Initial shock position is at x=" << interface << " and angle is t="
-       << angleXY * 180.0 / M_PI << " degrees.\n";
-  rep.printVec("Left : ", left, nvar);
-  rep.printVec("Right: ", right, nvar);
+  spdlog::debug(
+      "Setting up a {}-D simulation with a ShockTube problem\nInitial shock position is at x={} and angle is t={} degrees",
+      ndim, interface, angleXY * 180.0 / M_PI);
+  spdlog::debug("Left :  : {}", std::vector<double>(left, left + nvar));
+  spdlog::debug("Right:  : {}", std::vector<double>(right, right + nvar));
 
   // preshock state vector.
   class cell *cpt = gg->FirstPt();
@@ -395,10 +374,12 @@ int IC_shocktube::assign_data(
     //
     eqn->rotateXY(left, angleXY);
     eqn->rotateXY(right, angleXY);
-    if (ndim == 3) rep.error("Please re-code me for 3D shock tubes!", ndim);
+    if (ndim == 3)
+      spdlog::error("{}: {}", "Please re-code me for 3D shock tubes!", ndim);
     double tt   = tan(angleXY);  // st=sin(angleXY), ct=cos(angleXY);
     double xmax = interface + (0.5 - SimPM->Xmin[YY]) * tt;
-    double dpos[ndim], x0;
+    std::array<double, MAX_DIM> dpos;
+    double x0;
     do {
       //
       // Get cell position, and position of discontinuity at this y-value.
@@ -413,7 +394,7 @@ int IC_shocktube::assign_data(
         // the total pressure dips and comes back up again, which seems
         // wrong.  P \propto B^2 which is why it happens, but it may be
         // a bad idea. else if ( (dpos[YY]-SimPM->dx/2.) <
-        // ymax*(1.-dpos[XX]/xmax) ) { cout <<"boundary point!\n";
+        // ymax*(1.-dpos[XX]/xmax) ) {
         // printCell(cpt);
         //  for (int v=0;v<SimPM->nvar;v++) cpt->P[v] = cpt->Ph[v] =
         //  (left[v]+right[v])/2.;
@@ -425,7 +406,7 @@ int IC_shocktube::assign_data(
 
     // Now enforce divB=0 if needed.
     /*    if (nvar>=8) {
-          cell *c=gg->FirstPt(); cout <<"Bx="<<c->P[BX]<<endl; do {
+          cell *c=gg->FirstPt();  do {
           CI.get_dpos(cpt,dpos);
           c->Ph[BX] =0.;
           c->Ph[BY] = c->P[BZ]*dpos[XX];
@@ -433,19 +414,18 @@ int IC_shocktube::assign_data(
           }  while( (c=gg->NextPt(c))!=0);
 
           double temp[3];
-          c=gg->FirstPt(); cout <<"Bx="<<c->P[BX]<<endl; do {
+          c=gg->FirstPt();  do {
           if (!c->isedge) {
           gg->VecCurl(c,2,1,temp);
-          cout <<"curl A=["<<temp[0]<<", "<<temp[1]<<", "<<temp[2]<<"
-       ]"<<endl; c->P[BX] = temp[0]; c->P[BY] = temp[1]; c->P[BZ] = temp[2];
+        c->P[BX] = temp[0]; c->P[BY] = temp[1]; c->P[BZ] = temp[2];
           }
           }  while( (c=gg->NextPt(c))!=0);
-          c=gg->FirstPt(); cout <<"Bx="<<c->P[BX]<<endl;
+          c=gg->FirstPt();
           }
           * */
   }  // ndim==2,3
   else {
-    rep.error("bad ndim", ndim);
+    spdlog::error("{}: {}", "bad ndim", ndim);
   }
 
   //
@@ -453,13 +433,13 @@ int IC_shocktube::assign_data(
   // since it isn't a discontinuity.
   //
   if (IC_shocktube::number == 8) {
-    cout << "Alfven wave: switching to periodic boundaries.\n";
+    spdlog::info("Alfven wave: switching to periodic boundaries");
     if (ndim == 1) {
       SimPM->BC_XN   = "periodic";
       SimPM->BC_XP   = "periodic";
       SimPM->BC_Nint = 0;
-      double len = 0.3, dpos[ndim], amp = 1.0;
-
+      double len = 0.3, amp = 1.0;
+      std::array<double, MAX_DIM> dpos;
       cpt = gg->FirstPt();
       do {
         CI.get_dpos(cpt, dpos);
@@ -479,15 +459,15 @@ int IC_shocktube::assign_data(
       } while ((cpt = gg->NextPt(cpt)) != 0);
     }  // 1D
     else if (ndim == 2) {
-      // rep.error("AW test not set up in 2D yet.",ndim);
-      cout << "Alfven Wave test in 2D -- note not the same as 1D!!!\n";
+      // spdlog::error("{}: {}", "AW test not set up in 2D yet.",ndim);
+      spdlog::info("Alfven Wave test in 2D -- note not the same as 1D!!!");
       SimPM->BC_XN   = "periodic";
       SimPM->BC_XP   = "periodic";
       SimPM->BC_YN   = "periodic";
       SimPM->BC_YP   = "periodic";
       SimPM->BC_Nint = 0;
-      double theta = atan(2.0), dpos[ndim], amp = 0.1;
-
+      double theta = atan(2.0), amp = 0.1;
+      std::array<double, MAX_DIM> dpos;
       cpt = gg->FirstPt();
       do {
         CI.get_dpos(cpt, dpos);
@@ -510,7 +490,7 @@ int IC_shocktube::assign_data(
       } while ((cpt = gg->NextPt(cpt)) != 0);
     }  // 2D
     else
-      rep.error("AW test not set up in 3D yet.", ndim);
+      spdlog::error("{}: {}", "AW test not set up in 3D yet.", ndim);
   }
 
   delete eqn;
@@ -604,7 +584,7 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
       break;
     case 5:
       /** case 5: Toro's test no.5 on p.225 of his book.\n*/
-      cout << "Setting up Toro5 shock tube problem\n";
+      spdlog::info("Setting up Toro5 shock tube problem");
       l[RO] = 1.;
       l[PG] = 1000.;
       l[VX] = -19.59745;
@@ -647,8 +627,8 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     case 7:
       /** case 7: Sam Falle's test 'BW', the Brio and Wu problem.\n */
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       l[RO] = 1.;
@@ -672,8 +652,8 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
       /// rotation between left and right states later -- this is not a
       /// discontinuity.
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       l[RO] = l[PG] = 1.;
@@ -693,8 +673,8 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     case 9:
       /** case 9: Sam Falle's test 'FS', a fast shock.\n*/
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       // l[RO]=3.; l[PG]=49./3.; l[VX]=1.0-sqrt(3.0); l[VY]=-4./3.;
@@ -724,8 +704,8 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     case 10:
       /** case 10: Sam Falle's test 'SS', a slow shock.\n*/
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       l[RO] = 1.368;
@@ -748,8 +728,8 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     case 11:
       /** case 11: Sam Falle's test 'FR', a fast rarefaction.\n*/
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       l[RO] = 1.;
@@ -772,8 +752,8 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     case 12:
       /** case 12: Sam Falle's test 'SR', a slow rarefaction.\n*/
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       l[RO] = 1.;
@@ -796,8 +776,8 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     case 13:
       /** case 13: Sam Falle's test 'OFS', an oblique fast shock.\n*/
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       l[RO] = 1.;
@@ -831,12 +811,12 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     case 15:
       /** case 15: Ryu and Jones test 1a.\n*/
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM->gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem");
       l[RO] = 1.;
       l[VX] = 10.;
       l[VY] = l[VZ] = 0.;
@@ -854,12 +834,12 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     case 16:
       /** case 16: Ryu and Jones test 1b.\n*/
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM->gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem");
       l[RO] = 1.;
       l[VX] = l[VY] = l[VZ] = 0.;
       l[BX]                 = 3. / sqrt(4 * M_PI);
@@ -877,12 +857,12 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     case 17:
       /** case 17: Ryu and Jones test 2a.\n*/
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM->gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem");
       l[RO] = 1.08;
       l[VX] = 1.2;
       l[VY] = 0.01;
@@ -902,12 +882,12 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     case 18:
       /** case 18: Ryu and Jones test 2b.\n*/
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM->gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem");
       l[RO] = 1.;
       l[VX] = l[VY] = l[VZ] = 0.;
       l[BX]                 = 3. / sqrt(4. * M_PI);
@@ -927,12 +907,12 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     case 19:
       /** case 19: Ryu and Jones test 3a.\n*/
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM->gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem");
       l[RO] = 0.1;
       l[VX] = 50.;
       l[VY] = l[VZ] = 0.;
@@ -951,12 +931,12 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     case 20:
       /** case 20: Ryu and Jones test 3b.\n*/
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM->gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem");
       l[RO] = 1.;
       l[VX] = -1.;
       l[VY] = l[VZ] = 0.;
@@ -976,12 +956,12 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     case 21:
       /** case 21: Ryu and Jones test 4a.\n*/
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM->gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem");
       l[RO] = 1.;
       l[VX] = l[VY] = l[VZ] = 0.;
       l[BX]                 = 1.;
@@ -999,12 +979,12 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     case 22:
       /** case 22: Ryu and Jones test 4b.\n*/
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM->gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem");
       l[RO] = 0.4;
       l[VX] = -0.66991;
       l[VY] = 0.98263;
@@ -1024,12 +1004,12 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     case 23:
       /** case 23: Ryu and Jones test 4c.\n*/
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM->gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem");
       l[RO] = 0.65;
       l[VX] = 0.667;
       l[VY] = -0.257;
@@ -1051,12 +1031,12 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     case 24:
       /** case 24: Ryu and Jones test 4d.\n*/
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM->gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem");
       l[RO] = 1.;
       l[VX] = l[VY] = l[VZ] = 0.;
       l[BX]                 = 0.7;
@@ -1075,12 +1055,12 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     case 25:
       /** case 25: Ryu and Jones test 5a.\n*/
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM->gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem");
       l[RO] = 1.;
       l[VX] = l[VY] = l[VZ] = 0.;
       l[BX]                 = 0.75;
@@ -1098,12 +1078,12 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     case 26:
       /** case 26: Ryu and Jones test 5b.\n*/
       if (eqns != 2) {
-        cerr << "(IC_shocktube::get_riemann_ics) Not using MHD but asking for "
-                "MHD test problem. Exiting.\n";
+        spdlog::error(
+            "(IC_shocktube::get_riemann_ics) Not using MHD but asking for MHD test problem. Exiting");
         return (1);
       }
       SimPM->gamma = 5. / 3.;
-      cout << "\t Forcing gamma=5/3 for test problem.\n";
+      spdlog::info("\t Forcing gamma=5/3 for test problem");
       l[RO] = 1.;
       l[VX] = l[VY] = l[VZ] = 0.;
       l[BX]                 = 1.3;
@@ -1119,7 +1099,7 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
       *xm                   = 0.5;
       break;
     default:
-      cout << "Error: only know 26 tests, but sw!={1,..,26}" << endl;
+      spdlog::error("Error: only know 26 tests, but sw!={1,..,26}");
       return (1);
   }
   // tracers: not much use for these dimensionless problems.
@@ -1128,7 +1108,7 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
     r[SimPM->ftr + t] = -1.0;
   }
 
-  cout << "(IC_shocktube::get_riemann_ics) Got test number: " << sw << endl;
+  spdlog::debug("(IC_shocktube::get_riemann_ics) Got test number: {}", sw);
   return (0);
 }
 

@@ -36,6 +36,8 @@
 #include "defines/testing_flags.h"
 #ifdef LEGACY_CODE
 
+#include <spdlog/spdlog.h>
+
 #include "cooling.h"
 #include "integrator.h"
 #include "microphysics_base.h"
@@ -134,7 +136,7 @@ public:
       double *  ///< final temperature (not strictly needed).
   )
   {
-    cout << "MP_Hydrogem::TimeUpdateMP_RTnew: I don't do anything!\n";
+    spdlog::info("MP_Hydrogem::TimeUpdateMP_RTnew: I don't do anything");
     return 0;
   }
 
@@ -196,7 +198,7 @@ public:
       const double  ///< EOS gamma.
   )
   {
-    cout << "Don't call timescales for old MP class!\n";
+    spdlog::info("Don't call timescales for old MP class");
     return 1.0e99;
   }
 
@@ -210,7 +212,7 @@ public:
       const double       ///< EOS gamma (optional)
   )
   {
-    cout << "MPv1::get_recombination_rate: not written!\n";
+    spdlog::info("MPv1::get_recombination_rate: not written!");
     return 1.0e99;
   }
 

@@ -43,11 +43,9 @@
 #include "constants.h"
 #include "sim_constants.h"
 
-#include <vector>
+#include <spdlog/spdlog.h>
 
-#ifdef RT_TESTING
-#include <iostream>
-#endif
+#include <vector>
 
 class cell_interface;
 
@@ -199,7 +197,7 @@ public:
   ///
   /// Set the global Xmin of the grid.
   ///
-  void set_xmin(const double *);
+  void set_xmin(const std::array<double, MAX_DIM> &);
 
   ///
   /// Return physical size of one internal unit
@@ -210,8 +208,9 @@ public:
   /// Set cell position by passing in a double precision vector.
   ///
   void set_pos(
-      cell *,         ///< pointer to cell
-      const double *  ///< double array of size ndim, cell position.
+      cell *,  ///< pointer to cell
+      const std::array<double, MAX_DIM>
+          &  ///< double array of size ndim, cell position.
   );
 
   ///
@@ -219,16 +218,17 @@ public:
   /// SimPM.Xmin[] and with a cell width equal to 2 units.
   ///
   void set_pos(
-      cell *,      ///< pointer to cell
-      const int *  ///< int array of size ndim, cell integer position.
+      cell *,  ///< pointer to cell
+      const std::array<int, MAX_DIM>
+          &  ///< int array of size ndim, cell integer position.
   );
 
   ///
   /// Returns double precision position of cell centre (cgs).
   ///
   void get_dpos(
-      const cell *,  ///< pointer to cell
-      double *       ///< array to write position into.
+      const cell *,                  ///< pointer to cell
+      std::array<double, MAX_DIM> &  ///< array to write position into.
   );
 
   ///
@@ -245,16 +245,16 @@ public:
   /// position.
   ///
   void get_ipos_vec(
-      const double *,  ///< physical position (input)
-      int *            ///< integer position (output)
+      const std::array<double, MAX_DIM> &,  ///< physical position (input)
+      std::array<int, MAX_DIM> &            ///< integer position (output)
   );
 
   ///
   /// Converts from an integer position to a double precision pos.
   ///
   void get_dpos_vec(
-      const int *,  ///< integer position  (input)
-      double *      ///< physical position (output)
+      const std::array<int, MAX_DIM> &,  ///< integer position  (input)
+      std::array<double, MAX_DIM> &      ///< physical position (output)
   );
 
   ///
@@ -279,8 +279,9 @@ public:
   /// equivalent value in internal (integer) units.
   ///
   void get_ipos_as_double(
-      const double *,  ///< physical position (input)
-      double *  ///< floating pt. position in integer position units (output)
+      const std::array<double, MAX_DIM> &,  ///< physical position (input)
+      std::array<double, MAX_DIM>
+          &  ///< floating pt. position in integer position units (output)
   );
 
   // ##################################################################
@@ -320,7 +321,6 @@ public:
     for (short unsigned int v = 0; v < NTau[s]; v++) {
       tau[v] = c->extra_data[iTau[s] + v];
     }
-    return;
   }
 
   // ##################################################################
@@ -338,7 +338,6 @@ public:
     for (short unsigned int v = 0; v < NTau[s]; v++) {
       c->extra_data[iTau[s] + v] = tau[v];
     }
-    return;
   }
 
   // ##################################################################
@@ -356,7 +355,6 @@ public:
     for (short unsigned int v = 0; v < NTau[s]; v++) {
       dtau[v] = c->extra_data[iDTau[s] + v];
     }
-    return;
   }
 
   // ##################################################################
@@ -374,7 +372,6 @@ public:
     for (short unsigned int v = 0; v < NTau[s]; v++) {
       c->extra_data[iDTau[s] + v] = dtau[v];
     }
-    return;
   }
 
   // ##################################################################
@@ -391,13 +388,11 @@ public:
   {
 #ifdef RT_TESTING
     if (iVsh[s] < 0) {
-      std::cerr << "source " << s << ": ";
-      std::cerr << "Source has no Vhsell variable: " << iVsh[s] << "\n";
+      spdlog::error("source {}: Source has no Vhsell variable: {}", s, iVsh[s]);
       return;
     }
 #endif  // RT_TESTING
     c->extra_data[iVsh[s]] = Vs;
-    return;
   }
 
   // ##################################################################
@@ -413,8 +408,7 @@ public:
   {
 #ifdef RT_TESTING
     if (iVsh[s] < 0) {
-      std::cerr << "source " << s << ": ";
-      std::cerr << "Source has no Vhsell variable: " << iVsh[s] << "\n";
+      spdlog::error("source {}: Source has no Vhsell variable: {}", s, iVsh[s]);
       return -1.0e99;
     }
 #endif  // RT_TESTING
@@ -434,13 +428,11 @@ public:
   {
 #ifdef RT_TESTING
     if (idS[s] < 0) {
-      std::cerr << "source " << s << ": ";
-      std::cerr << "Source has no deltaS variable" << idS[s] << "\n";
+      spdlog::error("source {}: Source has no deltaS variable{}", s, idS[s]);
       return;
     }
 #endif  // RT_TESTING
     c->extra_data[idS[s]] = deltaS;
-    return;
   }
 
   // ##################################################################
@@ -456,8 +448,7 @@ public:
   {
 #ifdef RT_TESTING
     if (idS[s] < 0) {
-      std::cerr << "source " << s << ": ";
-      std::cerr << "Source has no deltaS variable" << idS[s] << "\n";
+      spdlog::error("source {}: Source has no deltaS variable{}", s, idS[s]);
       return -1.0e99;
     }
 #endif  // RT_TESTING
@@ -539,11 +530,11 @@ private:
   double dxo2;        ///< Half a cell width.
   int ndim;           ///< dimensionality of grid.
   int nvar;           ///< number of variables in state vector.
-  double *xmin;       ///< The global Xmin of the domain, for counting integer
-                      ///< positions from.
-  double int_converter;     ///< 1+EPS.
-  int cell_size_int_units;  ///< size of a cell in integer units (==2)
-  double cell_diameter;     ///< diameter of cell.
+  std::array<double, MAX_DIM> xmin;  ///< The global Xmin of the domain, for
+                                     ///< counting integer positions from.
+  double int_converter;              ///< 1+EPS.
+  int cell_size_int_units;           ///< size of a cell in integer units (==2)
+  double cell_diameter;              ///< diameter of cell.
 
   bool have_setup_extra_data;   ///< Flag checked when creating a cell!
   short unsigned int using_RT;  ///< Flag: 0=not doing RT, 1=doing RT.

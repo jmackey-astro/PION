@@ -35,7 +35,11 @@
 #include "defines/testing_flags.h"
 #include "solver_eqn_hydro_adi.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 using namespace std;
 
 // *********************************
@@ -60,11 +64,9 @@ FV_solver_Hydro_Euler::FV_solver_Hydro_Euler(
     Riemann_Roe_Hydro_PV(nv, gam), Riemann_Roe_Hydro_CV(nv, gam),
     HLL_hydro(nv, gam), VectorOps_Cart(nd)
 {
-#ifndef NDEBUG
-  cout << "FV_solver_Hydro_Euler::FV_solver_Hydro_Euler() constructor.\n";
-  cout << "FV_solver_Hydro_Euler::FV_solver_Hydro_Euler() gamma = " << eq_gamma
-       << "\n";
-#endif
+  spdlog::info("FV_solver_Hydro_Euler::FV_solver_Hydro_Euler() constructor");
+  spdlog::debug(
+      "FV_solver_Hydro_Euler::FV_solver_Hydro_Euler() gamma = {}", eq_gamma);
   counter = 1;
   return;
 }
@@ -74,9 +76,7 @@ FV_solver_Hydro_Euler::FV_solver_Hydro_Euler(
 
 FV_solver_Hydro_Euler::~FV_solver_Hydro_Euler()
 {
-#ifndef NDEBUG
-  cout << "FV_solver_Hydro_Euler::~FV_solver_Hydro_Euler() destructor.\n";
-#endif
+  spdlog::info("FV_solver_Hydro_Euler::~FV_solver_Hydro_Euler() destructor");
   return;
 }
 
@@ -97,27 +97,24 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     const double g          ///< Gas constant gamma.
 )
 {
-#ifdef FUNCTION_ID
-  cout << "FV_solver_Hydro_Euler::inviscid_flux ...starting.\n";
-#endif  // FUNCTION_ID
-
 #ifdef TEST_INF
   //
   // Check input density and pressure are 'reasonably large'
   //
   if (Pl[eqRO] < TINYVALUE || Pl[eqPG] < TINYVALUE || Pr[eqRO] < TINYVALUE
       || Pr[eqPG] < TINYVALUE) {
-    rep.printVec("left ", Pl, eq_nvar);
-    rep.printVec("right", Pr, eq_nvar);
-    rep.error(
+    spdlog::error("left  : {}", Pl);
+    spdlog::error("right : {}", Pr);
+    spdlog::error(
+        "{}: {}",
         "FV_solver_Hydro_Euler::calculate_flux() Density/Pressure too small",
         Pr[eqPG]);
   }
 
   for (int v = 0; v < eq_nvar; v++)
-    if (!isfinite(Pl[v])) rep.error("flux hydro Pl", v);
+    if (!isfinite(Pl[v])) spdlog::error("{}: {}", "flux hydro Pl", v);
   for (int v = 0; v < eq_nvar; v++)
-    if (!isfinite(Pr[v])) rep.error("flux hydro Pr", v);
+    if (!isfinite(Pr[v])) spdlog::error("{}: {}", "flux hydro Pr", v);
 #endif
 
   int err = 0;
@@ -189,7 +186,8 @@ int FV_solver_Hydro_Euler::inviscid_flux(
   }
 
   else {
-    rep.error("what sort of flux solver do you mean???", solve_flag);
+    spdlog::error(
+        "{}: {}", "what sort of flux solver do you mean???", solve_flag);
   }
 
   return err;
@@ -369,21 +367,21 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
   }
 
   if (u1[RHO] < 0.0) {
-    cout << "celladvancetime, negative density. rho=" << u1[RHO] << "\n";
+    spdlog::debug("celladvancetime, negative density. rho={}", u1[RHO]);
     CI.print_cell(c);
   }
 
   int err;
   if ((err = UtoP(u1, Pf, MinTemp, eq_gamma)) != 0) {
 #ifndef NDEBUG
-    cout << "(FV_solver_Hydro_Euler::CellAdvanceTime) UtoP complained";
-    cout << " (maybe about negative pressure...) fixing\n";
-    rep.printVec("pin", Pin, eq_nvar);
-    rep.printVec("dU ", dU, eq_nvar);
-    rep.printVec("u1 ", u1, eq_nvar);
+    spdlog::error("(FV_solver_Hydro_Euler::CellAdvanceTime) UtoP complained"
+                  " (maybe about negative pressure...) fixing");
+    spdlog::debug("pin : {}", std::vector<double>(Pin, Pin + eq_nvar));
+    spdlog::debug("dU  : {}", std::vector<double>(dU, dU + eq_nvar));
+    spdlog::debug("u1  : {}", std::vector<double>(u1, u1 + eq_nvar));
     PtoU(Pin, u1, eq_gamma);
-    rep.printVec("Uin", u1, eq_nvar);
-    rep.printVec("Pf ", Pf, eq_nvar);
+    spdlog::debug("Uin : {}", std::vector<double>(u1, u1 + eq_nvar));
+    spdlog::debug("Pf  : {}", std::vector<double>(Pf, Pf + eq_nvar));
 #endif
   }
 
@@ -394,10 +392,11 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
 #ifdef TEST_INF
   for (int v = 0; v < eq_nvar; v++) {
     if (!isfinite(Pf[v])) {
-      cout << "NAN/INF in FV_solver_Hydro_Euler::CellAdvanceTime";
-      cout << ": var=" << v << ", val=" << Pf[v] << "\n";
+      spdlog::debug(
+          "NAN/INF in FV_solver_Hydro_Euler::CellAdvanceTime: var={}, val={}",
+          v, Pf[v]);
       CI.print_cell(c);
-      rep.error("NAN hydro cell update", v);
+      spdlog::error("{}: {}", "NAN hydro cell update", v);
     }
   }
 #endif
@@ -455,9 +454,8 @@ double FV_solver_Hydro_Euler::CellTimeStep(
 
 #ifdef TEST_INF
   if (!isfinite(l_dt) || l_dt <= 0.0) {
-    cout << "cell has invalid timestep\n";
+    spdlog::error("cell has invalid timestep");
     CI.print_cell(c);
-    cout.flush();
   }
 #endif
   return l_dt;
@@ -491,8 +489,8 @@ cyl_FV_solver_Hydro_Euler::cyl_FV_solver_Hydro_Euler(
     VectorOps_Cyl(nd)
 {
   if (nd != 2)
-    rep.error(
-        "Cylindrical coordinates only implemented for \
+    spdlog::error(
+        "{}: {}", "Cylindrical coordinates only implemented for \
                         2d axial symmetry so far.  Sort it out!",
         nd);
   return;
@@ -527,7 +525,8 @@ void cyl_FV_solver_Hydro_Euler::geometric_source(
             / CI.get_dpos(c, Rcyl);
         break;
       default:
-        rep.error("Bad OOA in cyl_IdealMHD_RS::dU, only know 1st,2nd", OA);
+        spdlog::error(
+            "{}: {}", "Bad OOA in cyl_IdealMHD_RS::dU, only know 1st,2nd", OA);
     }
   }
 
@@ -562,8 +561,8 @@ sph_FV_solver_Hydro_Euler::sph_FV_solver_Hydro_Euler(
     VectorOps_Cyl(nd), VectorOps_Sph(nd)
 {
   if (nd != 1)
-    rep.error(
-        "Spherical coordinates only implemented for 1D \
+    spdlog::error(
+        "{}: {}", "Spherical coordinates only implemented for 1D \
                         spherical symmetry so far.  Sort it out!",
         nd);
   return;
@@ -601,7 +600,8 @@ void sph_FV_solver_Hydro_Euler::geometric_source(
         break;
       //
       default:
-        rep.error("Bad OOA in sph_hydro_RS::dU, only know 1st,2nd", OA);
+        spdlog::error(
+            "{}: {}", "Bad OOA in sph_hydro_RS::dU, only know 1st,2nd", OA);
     }
   }
 

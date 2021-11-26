@@ -11,6 +11,11 @@
 #include "grid/stellar_wind_latdep.h"
 #include "sim_params.h"
 #include "tools/mem_manage.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 using namespace std;
 
 // ##################################################################
@@ -34,24 +39,26 @@ int stellar_wind_bc::BC_assign_STWIND(
   // Check that we have an internal boundary struct, and that we have
   // a stellar wind source to set up.
   //
-  if (b->dir != NO) rep.error("STWIND not external boundary!", b->dir);
+  if (b->dir != NO)
+    spdlog::error("{}: {}", "STWIND not external boundary!", b->dir);
 #ifndef NDEBUG
-  cout << "Assigning data to STWIND boundary. Nsrc=";
-  cout << SWP.Nsources << "\n";
+  spdlog::debug("Assigning data to STWIND boundary. Nsrc={}", SWP.Nsources);
 #endif
   if (SWP.Nsources < 1) {
-    rep.error("BC_assign_STWIND() No Sources!", SWP.Nsources);
+    spdlog::error("{}: {}", "BC_assign_STWIND() No Sources!", SWP.Nsources);
   }
 
   //
   // Setup reference state vector and initialise to zero.
   //
   if (b->refval) {
-    rep.error("Initialised STWIND boundary refval", b->refval);
+    spdlog::error(
+        "{}: {}", "Initialised STWIND boundary refval", fmt::ptr(b->refval));
   }
   b->refval = mem.myalloc(b->refval, par.nvar);
   if (!b->data.empty()) {
-    rep.error("BC_assign_STWIND: Not empty boundary data", b->itype);
+    spdlog::error(
+        "{}: {}", "BC_assign_STWIND: Not empty boundary data", b->itype);
   }
   for (int v = 0; v < par.nvar; v++)
     b->refval[v] = 0.0;
@@ -86,7 +93,10 @@ int stellar_wind_bc::BC_assign_STWIND(
     if (isw == 0)
       xi = SWP.params[isw]->xi;
     else {
-      rep.errorTest("wind xi values don't match", xi, SWP.params[isw]->xi);
+      if (xi != SWP.params[isw]->xi)
+        spdlog::error(
+            "{}: Expected {} but got {}", "wind xi values don't match", xi,
+            SWP.params[isw]->xi);
     }
   }
 
@@ -94,7 +104,7 @@ int stellar_wind_bc::BC_assign_STWIND(
     // cout <<"\n----------- SETTING UP STELLAR WIND CLASS ----------\n";
     if (wtype == 0) {
 #ifndef NDEBUG
-      cout << "Setting up stellar_wind class\n";
+      spdlog::info("Setting up stellar_wind class");
 #endif
       grid->Wind = new stellar_wind(
           par.ndim, par.nvar, par.ntracer, par.ftr, par.tracers, par.coord_sys,
@@ -102,7 +112,7 @@ int stellar_wind_bc::BC_assign_STWIND(
     }
     else if (wtype == 1) {
 #ifndef NDEBUG
-      cout << "Setting up stellar_wind_evolution class\n";
+      spdlog::info("Setting up stellar_wind_evolution class");
 #endif
       grid->Wind = new stellar_wind_evolution(
           par.ndim, par.nvar, par.ntracer, par.ftr, par.tracers, par.coord_sys,
@@ -111,7 +121,7 @@ int stellar_wind_bc::BC_assign_STWIND(
     }
     else if (wtype == 2) {
 #ifndef NDEBUG
-      cout << "Setting up stellar_wind_angle class\n";
+      spdlog::info("Setting up stellar_wind_angle class");
 #endif
       grid->Wind = new stellar_wind_angle(
           par.ndim, par.nvar, par.ntracer, par.ftr, par.tracers, par.coord_sys,
@@ -120,7 +130,7 @@ int stellar_wind_bc::BC_assign_STWIND(
     }
     else if (wtype == 3) {
 #ifndef NDEBUG
-      cout << "Setting up stellar_wind_angle class\n";
+      spdlog::info("Setting up stellar_wind_angle class");
 #endif
       grid->Wind = new stellar_wind_latdep(
           par.ndim, par.nvar, par.ntracer, par.ftr, par.tracers, par.coord_sys,
@@ -136,7 +146,7 @@ int stellar_wind_bc::BC_assign_STWIND(
   //
   for (int isw = 0; isw < Ns; isw++) {
 #ifndef NDEBUG
-    cout << "\tBC_assign_STWIND: Adding source " << isw << "\n";
+    spdlog::debug("\tBC_assign_STWIND: Adding source {}", isw);
 #endif
     if (SWP.params[isw]->type == WINDTYPE_CONSTANT) {
       //
@@ -151,8 +161,9 @@ int stellar_wind_bc::BC_assign_STWIND(
           SWP.params[isw]->ecentricity, SWP.params[isw]->PeriastronX,
           SWP.params[isw]->PeriastronY, SWP.params[isw]->OrbPeriod);
 #ifndef NDEBUG
-      cout << "add_source call: " << SWP.params[isw]->PeriastronX << ","
-           << SWP.params[isw]->PeriastronY << "\n";
+      spdlog::debug(
+          "add_source call: {},{}", SWP.params[isw]->PeriastronX,
+          SWP.params[isw]->PeriastronY);
 #endif
     }
     else {
@@ -171,7 +182,7 @@ int stellar_wind_bc::BC_assign_STWIND(
           SWP.params[isw]->ecentricity, SWP.params[isw]->PeriastronX,
           SWP.params[isw]->PeriastronY, SWP.params[isw]->OrbPeriod);
     }
-    if (err) rep.error("Error adding wind source", isw);
+    if (err) spdlog::error("{}: {}", "Error adding wind source", isw);
   }
 
   //
@@ -181,8 +192,7 @@ int stellar_wind_bc::BC_assign_STWIND(
 
   for (int id = 0; id < Ns; id++) {
 #ifndef NDEBUG
-    cout << "\tBC_assign_STWIND: Adding cells to source ";
-    cout << id << "\n";
+    spdlog::debug("\tBC_assign_STWIND: Adding cells to source {}", id);
 #endif
     BC_assign_STWIND_add_cells2src(par, grid, id);
   }
@@ -192,8 +202,8 @@ int stellar_wind_bc::BC_assign_STWIND(
   //
   err += BC_update_STWIND(par, grid, par.simtime, b, 0, 0);
 #ifndef NDEBUG
-  cout << "\tFinished setting up wind parameters\n";
-  cout << "------ DONE SETTING UP STELLAR WIND CLASS ----------\n\n";
+  spdlog::info(
+      "\tFinished setting up wind parameters\n------ DONE SETTING UP STELLAR WIND CLASS ----------\n");
 #endif
   return err;
 }
@@ -223,14 +233,14 @@ int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
   grid->Wind->get_src_drad(id, &srcrad);
 
 #ifndef NDEBUG
-  cout << "*** srcrad=" << srcrad << "\n";
-  rep.printVec("src", srcpos, par.ndim);
+  spdlog::debug("*** srcrad={}", srcrad);
+  spdlog::debug("src : {}", srcpos);
 #endif
 
   cell *c = grid->FirstPt_All();
   do {
 #ifndef NDEBUG
-    cout << "cell: " << grid->distance_vertex2cell(srcpos, c) << "\n";
+    spdlog::debug("cell: {}", grid->distance_vertex2cell(srcpos, c));
 #endif
     if (grid->distance_vertex2cell(srcpos, c) <= srcrad) {
       ncell++;
@@ -241,8 +251,9 @@ int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
   err += grid->Wind->set_num_cells(id, ncell);
 
 #ifndef NDEBUG
-  cout << "BC_assign_STWIND_add_cells2src: Added " << ncell;
-  cout << " cells to wind boundary for WS " << id << "\n";
+  spdlog::debug(
+      "BC_assign_STWIND_add_cells2src: Added {} cells to wind boundary for WS {}",
+      ncell, id);
 #endif
   return err;
 }
@@ -283,20 +294,20 @@ int stellar_wind_bc::BC_update_STWIND(
     // execute only if orbit exsists == orbital_period!=0
     if (orbital_period > 1.0e-8) {
 #ifndef NDEBUG
-      cout << "   >>> orbital period <<< " << orbital_period
-           << ", simtime=" << simtime << "\n";
+      spdlog::debug(
+          "   >>> orbital period <<< {}, simtime={}", orbital_period, simtime);
 #endif
       grid->Wind->get_src_posn(id, srcpos);
       grid->Wind->get_src_drad(id, &srcrad);
 #ifndef NDEBUG
-      cout << "current pos, size = [" << srcpos[0] << "," << srcpos[1] << "]  "
-           << srcrad << "\n";
+      spdlog::debug(
+          "current pos, size = [{},{}]  {}", srcpos[0], srcpos[1], srcrad);
 #endif
       cell *c = grid->FirstPt_All();
       // loop over all cells
       do {
 #ifndef NDEBUG
-        cout << "cell: " << grid->distance_vertex2cell(srcpos, c) << "\n";
+        spdlog::debug("cell: {}", grid->distance_vertex2cell(srcpos, c));
 #endif
         if (grid->distance_vertex2cell(srcpos, c) <= srcrad) {
           // ncell--;
@@ -323,7 +334,7 @@ int stellar_wind_bc::BC_update_STWIND(
         sin_a = sin(-1.0 * acos(cos_a));
       }
 #ifndef NDEBUG
-      cout << "cos_a,sin_a = " << cos_a << ", " << sin_a << "\n";
+      spdlog::debug("cos_a,sin_a = {}, {}", cos_a, sin_a);
 #endif
       // Get elipse parameters
       a = sqrt(
@@ -350,8 +361,8 @@ int stellar_wind_bc::BC_update_STWIND(
       grid->Wind->get_src_drad(id, &srcrad);
       BC_assign_STWIND_add_cells2src(par, grid, id);
 #ifndef NDEBUG
-      cout << "new pos, size = [" << srcpos[0] << "," << srcpos[1] << "]  "
-           << srcrad << "\n";
+      spdlog::debug(
+          "new pos, size = [{},{}]  {}", srcpos[0], srcpos[1], srcrad);
 #endif
       // End of source loop
     }
@@ -362,12 +373,12 @@ int stellar_wind_bc::BC_update_STWIND(
   // so we just call the set_cell_values() function.
   //
 #ifndef NDEBUG
-  cout << "stellar_wind_bc: updating wind boundary\n";
+  spdlog::info("stellar_wind_bc: updating wind boundary");
 #endif
   // int err=0;
   for (int id = 0; id < grid->Wind->Nsources(); id++) {
 #ifndef NDEBUG
-    cout << "stellar_wind_bc: updating wind boundary for id=" << id << "\n";
+    spdlog::debug("stellar_wind_bc: updating wind boundary for id={}", id);
 #endif
     err += grid->Wind->set_cell_values(grid, id, simtime);
   }

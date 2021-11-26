@@ -9,8 +9,8 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
-#include <iostream>
+
+
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -19,7 +19,7 @@
 #include "equations/eqns_mhd_adiabatic.h"
 #include "microphysics/microphysics_base.h"
 #include <cmath>
-#include <iostream>
+
 using namespace std;
 
 // ##################################################################
@@ -35,9 +35,10 @@ HLLD_MHD::HLLD_MHD(
     eqns_mhd_ideal(nv)
 {
 #ifndef NDEBUG
-  cout << "(HLLD_MHD::HLLD_MHD) Initialising HLL Multi-State Solver Class.\n";
+  spdlog::info(
+      "(HLLD_MHD::HLLD_MHD) Initialising HLL Multi-State Solver Class");
   if (eq_nvar < 8) {
-    rep.error("#elements!=8, QUIT.", eq_nvar);
+    spdlog::error("{}: {}", "#elements!=8, QUIT.", eq_nvar);
   }
 #endif
   // do I need those?
@@ -66,10 +67,7 @@ HLLD_MHD::HLLD_MHD(
   HD_FLss = mem.myalloc(HD_FLss, HD_nvar);  // F**
   HD_FRss = mem.myalloc(HD_FRss, HD_nvar);
 
-#ifndef NDEBUG
-  cout << "(HLLD_MHD::HLLD_MHD) All set.\n";
-#endif
-  return;
+  spdlog::info("(HLLD_MHD::HLLD_MHD) All set");
 }
 
 // ##################################################################
@@ -79,10 +77,7 @@ HLLD_MHD::HLLD_MHD(
 HLLD_MHD::~HLLD_MHD()
 {
 
-#ifndef NDEBUG
-  cout << "(riemann_MHD::riemann_MHD) Commencing Destruction."
-       << "\n";
-#endif
+  spdlog::info("(riemann_MHD::riemann_MHD) Commencing Destruction");
 
   HD_lambda = mem.myfree(HD_lambda);  // wave speeds (one entropy, two Alfvén)
 
@@ -104,11 +99,7 @@ HLLD_MHD::~HLLD_MHD()
   HD_FLss = mem.myfree(HD_FLss);  // F**
   HD_FRss = mem.myfree(HD_FRss);
 
-#ifndef NDEBUG
-  cout << "(riemann_MHD::riemann_MHD) Mission Accomplished."
-       << "\n";
-#endif
-  return;
+  spdlog::info("(riemann_MHD::riemann_MHD) Mission Accomplished");
 }
 
 // ##################################################################

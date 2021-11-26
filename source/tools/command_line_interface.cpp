@@ -13,7 +13,12 @@
 #include <defines/testing_flags.h>
 #include <grid/cell_interface.h>
 #include <tools/command_line_interface.h>
-#include <tools/reporting.h>
+
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 using namespace std;
 
 #ifndef NDEBUG
@@ -47,10 +52,9 @@ CommandLineInterface::~CommandLineInterface()
 
 void CommandLineInterface::auto_console(char *prompt)
 {
-  cout << "\n Welcome to the AUTOPILOT command line\n";
-  cout << "****************************************\n";
-  cout << prompt << "\n";
-  cout << "going to first point\n";
+  spdlog::info(
+      "Welcome to the AUTOPILOT command line\n****************************************\n{}\ngoing to first point",
+      prompt);
   fpt();
   print_cell();
   end_of_col("YP");
@@ -64,9 +68,8 @@ void CommandLineInterface::auto_console(char *prompt)
   next_point("XP");
   print_cell();
 
-  cout << "\n LEAVING the AUTOPILOT command line\n";
-  cout << "****************************************\n";
-  return;
+  spdlog::info(
+      "\n LEAVING the AUTOPILOT command line\n****************************************");
 }
 
 void CommandLineInterface::console(std::string p)
@@ -147,13 +150,13 @@ int CommandLineInterface::execute(char *com)
   else if (!strncmp(com, "print_flux", 10)) {
     string s = com;
     s        = s.substr(11, 2);
-    cout << s << "\n";
+    spdlog::debug("{}", s);
     print_flux(atoi(s.c_str()));
   }
   else if (!strncmp(com, "next_point", 10)) {
     string s = com;
     s        = s.substr(11, 2);
-    cout << s << "\n";
+    spdlog::debug("{}", s);
     next_point(s);
   }
   else if (!strncmp(com, "fpt", 3))
@@ -163,7 +166,7 @@ int CommandLineInterface::execute(char *com)
   else if (!strncmp(com, "end_of_col", 10)) {
     string s = com;
     s        = s.substr(11, 2);
-    cout << s << "\n";
+    spdlog::debug("{}", s);
     end_of_col(s);
   }
   else if (!strncmp(com, "help", 4)) {
@@ -171,14 +174,8 @@ int CommandLineInterface::execute(char *com)
     fprintf(stderr, "           cmd1 - demo cmd\n");
     fprintf(stderr, "           cmd2 - demo cmd with args\n");
     fprintf(stderr, "         bigcmd - no particular reason for this\n");
-    cerr << "print_cell - prints info about the current cell.\n";
-    cerr << "print_flux - If in dynamics solver, prints intercell fluxes.\n";
-    cerr << "next_point - move from current cell to next one, in a direction "
-            "(XY,XN,etc.)\n";
-    cerr << "fpt() - moves dp.c to the first point.\n";
-    cerr << "lpt() - moves dp.c to the last point.\n";
-    cerr << "end_of_col(string) - moves dp.c to the edge of the grid in "
-            "direction (XN,XP,ZN,ZP,YN,YP).\n";
+    spdlog::error(
+        "print_cell - prints info about the current cell.\nprint_flux - If in dynamics solver, prints intercell fluxes.\nnext_point - move from current cell to next one, in a direction (XY,XN,etc.)\nfpt() - moves dp.c to the first point.\nlpt() - moves dp.c to the last point.\nend_of_col(string) - moves dp.c to the edge of the grid in direction (XN,XP,ZN,ZP,YN,YP).\n");
     fprintf(stderr, "           help - prints this list\n");
     fprintf(stderr, "  q, quit, exit - end the program\n");
     fprintf(stderr, "\n leading \"!\" sends cmd to shell\n\n");
@@ -194,7 +191,7 @@ int CommandLineInterface::execute(char *com)
       || (!strncmp(com, "exit", 4))) {
     write_history(".cmddemo_CLI.hist");
     history_truncate_file(".cmddemo_CLI.hist", 50);
-    rep.error("Quitting at user request", com);
+    spdlog::error("{}: {}", "Quitting at user request", com);
   }
   //   else if  (!strncmp(com,"shutdown",8)) system("halt -p"); Steph wouldn't
   //   like this...
@@ -211,16 +208,16 @@ int CommandLineInterface::execute(char *com)
 void CommandLineInterface::cmd1()
 {
   fprintf(stderr, " This is command 1\n");
-  double x[MAX_DIM];
+  std::array<double, MAX_DIM> x;
   CI.get_dpos(dp.c, x);
-  rep.printVec("position", x, 2);
+  spdlog::debug("position : {}", x);
 }
 
 void CommandLineInterface::cmd2(char *args)
 {
   fprintf(stderr, " This is command 2, args: \"%s\"\n", args);
-  rep.printVec("P ", dp.c->P, 5);
-  rep.printVec("Ph", dp.c->P, 5);
+  spdlog::debug("P  : {}", std::vector<double>(dp.c->P, dp.c->P + 5));
+  spdlog::debug("Ph : {}", std::vector<double>(dp.c->P, dp.c->P + 5));
 }
 
 void CommandLineInterface::bigcmd()
@@ -231,8 +228,6 @@ void CommandLineInterface::bigcmd()
 void CommandLineInterface::print_cell()
 {
   CI.print_cell(dp.c);
-  cout << "\n";
-  return;
 }
 
 void CommandLineInterface::next_point(string s)
@@ -241,26 +236,24 @@ void CommandLineInterface::next_point(string s)
   if (dir == NO) return;
 
   if (!(dp.c->ngb[dir])) {
-    cout << "no neighbour in direction " << s << "; try again.\n";
+    spdlog::warn("no neighbour in direction {}; try again", s);
     return;
   }
   else {
-    cout << "moving from cell " << dp.c->id;
+    spdlog::debug("moving from cell {}", dp.c->id);
     dp.c = dp.c->ngb[dir];
-    cout << " to cell " << dp.c->id << "\n";
+    spdlog::debug(" to cell {}", dp.c->id);
   }
-  return;
 }
 
 void CommandLineInterface::print_flux(
     const int nvar  ///< Length of state vectors
 )
 {
-  rep.printVec("left ", dp.vec2, nvar);
-  rep.printVec("right", dp.vec3, nvar);
-  rep.printVec("pstar", dp.vec1, nvar);
-  rep.printVec("flux ", dp.vec4, nvar);
-  return;
+  spdlog::debug("left  : {}", dp.vec2);
+  spdlog::debug("right : {}", dp.vec3);
+  spdlog::debug("pstar : {}", dp.vec1);
+  spdlog::debug("flux  : {}", dp.vec4);
 }
 
 void CommandLineInterface::fpt()
@@ -278,7 +271,7 @@ void CommandLineInterface::lpt()
 void CommandLineInterface::end_of_col(const string s)
 {
   if (!(dp.c)) {
-    cout << "dp.c is null pointer! can't get to end of column.\n";
+    spdlog::warn("dp.c is null pointer! can't get to end of column");
     return;
   }
   enum direction dir = parse_dir(s);
@@ -289,8 +282,7 @@ void CommandLineInterface::end_of_col(const string s)
     dp.c = dp.grid->NextPt(dp.c, dir);
     ct++;
   }
-  cout << "moved " << ct << " cells in direction " << s << "\n";
-  return;
+  spdlog::debug("moved {} cells in direction {}", ct, s);
 }
 
 enum direction CommandLineInterface::parse_dir(const string s)
@@ -309,7 +301,7 @@ enum direction CommandLineInterface::parse_dir(const string s)
   else if (s == "ZN")
     dir = ZN;
   else {
-    cout << "bad direction string: " << s << ", try again.\n";
+    spdlog::warn("bad direction string: {}, try again", s);
   }
   return dir;
 }

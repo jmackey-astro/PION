@@ -8,7 +8,10 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -57,8 +60,8 @@ void DataIOBase::set_params(
   // make sure list is empty:
   //
   if (!params.empty()) {
-    cerr << "WARNING! params list not empty. CLEARING IT, BUT THIS SHOULDN'T "
-            "HAPPEN!\n";
+    spdlog::error(
+        "WARNING! params list not empty. CLEARING IT, BUT THIS SHOULDN'T HAPPEN!");
     params.clear();
   }
 
@@ -79,7 +82,7 @@ void DataIOBase::set_params(
   p            = p002;
   p->critical  = true;
   params.push_back(p);
-  pm_idimarr *p003 = new pm_idimarr("NGrid", SimPM.NG);
+  pm_idimarr *p003 = new pm_idimarr("NGrid", SimPM.NG.data());
   p                = p003;
   p->critical      = true;
   params.push_back(p);
@@ -87,11 +90,11 @@ void DataIOBase::set_params(
   p             = p004;
   p->critical   = true;
   params.push_back(p);
-  pm_ddimarr *p005 = new pm_ddimarr("Xmin", SimPM.Xmin);
+  pm_ddimarr *p005 = new pm_ddimarr("Xmin", SimPM.Xmin.data());
   p                = p005;
   p->critical      = true;
   params.push_back(p);
-  pm_ddimarr *p006 = new pm_ddimarr("Xmax", SimPM.Xmax);
+  pm_ddimarr *p006 = new pm_ddimarr("Xmax", SimPM.Xmax.data());
   p                = p006;
   p->critical      = true;
   params.push_back(p);
@@ -481,7 +484,9 @@ int DataIOBase::read_simulation_parameters(
 )
 {
   if (params.empty())
-    rep.error("Parameter list is empty -- make sure it populates itself!!", 0);
+    spdlog::error(
+        "{}: {}", "Parameter list is empty -- make sure it populates itself!!",
+        0);
 
   //
   // loop over all parameters.
@@ -494,7 +499,7 @@ int DataIOBase::read_simulation_parameters(
     err = read_header_param(p);
     if (err) {
       if (p->critical) {
-        rep.error("Error reading parameter", p->name);
+        spdlog::error("{}: {}", "Error reading parameter", p->name);
       }
       else {
         // cout <<"parameter "<<p->name<<" not found. setting to default
@@ -527,7 +532,7 @@ int DataIOBase::read_simulation_parameters(
     // rep.printVec("par",par,6);
     for (i = 0; i < 2 * SimPM.ndim; i++) {
       if ((pos = SimPM.BC_STRING.find(d[i])) == string::npos)
-        rep.error("Couldn't find boundary condition for ", d[i]);
+        spdlog::error("{}: {}", "Couldn't find boundary condition for ", d[i]);
       else {
         temp = SimPM.BC_STRING.substr(pos + 2, 3);
         if (temp == "per")
@@ -549,7 +554,7 @@ int DataIOBase::read_simulation_parameters(
         else if (temp == "sb1")
           *par[i] = "SB1";
         else
-          rep.error("Unrecognised BC type", SimPM.BC_STRING);
+          spdlog::error("{}: {}", "Unrecognised BC type", SimPM.BC_STRING);
       }
     }  // loop over external boundaries
     // cout <<SimPM.BC_XN <<"  "<<SimPM.BC_XP <<"  ";
@@ -568,7 +573,8 @@ int DataIOBase::read_simulation_parameters(
     for (i = 2 * SimPM.ndim; i < len; i++) {
       // cout <<"i="<<i<<", len="<<len<<"\n";
       if ((pos = SimPM.BC_STRING.find("IN", i * 6)) == string::npos) {
-        rep.error("internal boundary condition not found", SimPM.BC_STRING);
+        spdlog::error(
+            "{}: {}", "internal boundary condition not found", SimPM.BC_STRING);
       }
       else {
         temp = SimPM.BC_STRING.substr(pos + 2, 3);
@@ -583,7 +589,7 @@ int DataIOBase::read_simulation_parameters(
         else if (temp == "wnd")
           SimPM.BC_INT[i - 2 * SimPM.ndim] = "stellar-wind";
         else
-          rep.error("Unrecognised INT BC type", SimPM.BC_STRING);
+          spdlog::error("{}: {}", "Unrecognised INT BC type", SimPM.BC_STRING);
       }
     }  // loop over internal boundaries
 
@@ -592,7 +598,8 @@ int DataIOBase::read_simulation_parameters(
   else {
     // New boundary conditions format
     if (!have_setup_bc_pm) set_bc_pm_params(SimPM);
-    if (bc_pm.empty()) rep.error("Boundary parameter list is empty!!", 0);
+    if (bc_pm.empty())
+      spdlog::error("{}: {}", "Boundary parameter list is empty!!", 0);
     //
     // now read them:
     //
@@ -602,7 +609,7 @@ int DataIOBase::read_simulation_parameters(
       p   = (*iter);
       err = read_header_param(p);
       // cout <<"boundary list "<<ct<<", parameter "<<p->name<<"\n";
-      if (err) rep.error("Error reading parameter", p->name);
+      if (err) spdlog::error("{}: {}", "Error reading parameter", p->name);
       ct++;
     }
   }
@@ -628,7 +635,7 @@ int DataIOBase::read_simulation_parameters(
     SimPM.chem_code = SimPM.TRTYPE.substr(0, 6);
     int len         = (SimPM.TRTYPE.length() + 5) / 6 - 1;
     if (len != SimPM.ntracer)
-      rep.error("bad tracer string (LEGACY)", SimPM.TRTYPE);
+      spdlog::error("{}: {}", "bad tracer string (LEGACY)", SimPM.TRTYPE);
     for (int i = 0; i < len; i++) {
       SimPM.tracers[i] = SimPM.TRTYPE.substr(6 * (i + 1), 6);
       // cout <<"tracer["<<i<<"] = "<<SimPM.tracers[i] <<"\n";
@@ -641,7 +648,7 @@ int DataIOBase::read_simulation_parameters(
          ++iter) {
       p   = (*iter);
       err = read_header_param(p);
-      if (err) rep.error("Error reading parameter", p->name);
+      if (err) spdlog::error("{}: {}", "Error reading parameter", p->name);
     }
   }
 
@@ -658,7 +665,8 @@ int DataIOBase::read_simulation_parameters(
   if (JP.jetic) {
     if (!have_setup_jet_pm) set_jet_pm_params();
     if (jet_pm.empty())
-      rep.error(
+      spdlog::error(
+          "{}: {}",
           "Jet parameter list is empty -- make sure it populates itself!!", 0);
     //
     // now read them:
@@ -667,7 +675,7 @@ int DataIOBase::read_simulation_parameters(
          ++iter) {
       p   = (*iter);
       err = read_header_param(p);
-      if (err) rep.error("Error reading parameter", p->name);
+      if (err) spdlog::error("{}: {}", "Error reading parameter", p->name);
     }
   }
 
@@ -690,7 +698,8 @@ int DataIOBase::read_simulation_parameters(
       set_rt_src_params(SimPM);
     }
     if (rt_src.empty()) {
-      rep.error(
+      spdlog::error(
+          "{}: {}",
           "RT-src parameter list is empty -- make sure it populates itself!!",
           0);
     }
@@ -705,7 +714,7 @@ int DataIOBase::read_simulation_parameters(
       p   = (*iter);
       err = read_header_param(p);
       if (err && p->critical) {
-        rep.error("Error reading parameter", p->name);
+        spdlog::error("{}: {}", "Error reading parameter", p->name);
       }
     }
 
@@ -716,13 +725,15 @@ int DataIOBase::read_simulation_parameters(
     for (int i = 0; i < SimPM.RS.Nsources; i++) {
       SimPM.RS.sources.at(i).id = i;
       if (SimPM.RS.sources.at(i).type < 0) {
-        rep.error("Failed to get source type for source id", i);
+        spdlog::error("{}: {}", "Failed to get source type for source id", i);
       }
       if (SimPM.RS.sources.at(i).at_infinity < 0) {
-        rep.error("Failed to get source_at_infty for source id", i);
+        spdlog::error(
+            "{}: {}", "Failed to get source_at_infty for source id", i);
       }
       if (SimPM.RS.sources.at(i).pos[XX] < -9.0e200) {
-        rep.error("Failed to get source position for source id", i);
+        spdlog::error(
+            "{}: {}", "Failed to get source position for source id", i);
       }
       if (SimPM.RS.sources.at(i).EvoFile == "NOFILE") {
         // cout <<"\t|+|+|+|+|+| Non-evolving radiation source "<<i<<"
@@ -733,11 +744,12 @@ int DataIOBase::read_simulation_parameters(
         // detected = "; cout <<SimPM.RS.sources.at(i).EvoFile<<"\n";
       }
       if (SimPM.RS.sources.at(i).opacity_var + SimPM.ftr >= SimPM.nvar) {
-        rep.error(
+        spdlog::error(
+            "{}: {}",
             "Opacity var for source is off end of array (ftr offset!)", i);
       }
       if (SimPM.RS.sources.at(i).NTau < 1) {
-        rep.error("Failed to set source NTau for source id", i);
+        spdlog::error("{}: {}", "Failed to set source NTau for source id", i);
       }
     }
 
@@ -750,7 +762,8 @@ int DataIOBase::read_simulation_parameters(
   if (SWP.Nsources > 0) {
     if (!have_setup_windsrc) set_windsrc_params();
     if (windsrc.empty())
-      rep.error(
+      spdlog::error(
+          "{}: {}",
           "wind-src parameter list is empty -- make sure it populates itself!!",
           0);
     //
@@ -781,121 +794,141 @@ int DataIOBase::read_simulation_parameters(
       nm.str("");
       nm << "WIND_" << isw << "_posn";
       if ((*iter)->name.compare(nm.str()) != 0)
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(posn));
       (*iter)->set_ptr(static_cast<void *>(wind->dpos));
       err = read_header_param(*iter);
-      if (err) rep.error("Error reading parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error reading parameter", (*iter)->name);
       ++iter;
       // cout<<nm<<"\n";
 
       nm.str("");
       nm << "WIND_" << isw << "_rad_";
       if ((*iter)->name.compare(nm.str()) != 0)
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(&rad));
       (*iter)->set_ptr(static_cast<void *>(&wind->radius));
       err = read_header_param(*iter);
-      if (err) rep.error("Error reading parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error reading parameter", (*iter)->name);
       ++iter;
       // cout<<nm<<"\n";
 
       nm.str("");
       nm << "WIND_" << isw << "_Mdot";
       if ((*iter)->name.compare(nm.str()) != 0)
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(&Mdot));
       (*iter)->set_ptr(static_cast<void *>(&wind->Mdot));
       err = read_header_param(*iter);
-      if (err) rep.error("Error reading parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error reading parameter", (*iter)->name);
       ++iter;
       // cout<<nm<<"\n";
 
       nm.str("");
       nm << "WIND_" << isw << "_Vinf";
       if ((*iter)->name.compare(nm.str()) != 0)
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(&Vinf));
       (*iter)->set_ptr(static_cast<void *>(&wind->Vinf));
       err = read_header_param(*iter);
-      if (err) rep.error("Error reading parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error reading parameter", (*iter)->name);
       ++iter;
       // cout<<nm<<"\n";
 
       nm.str("");
       nm << "WIND_" << isw << "_Vrot";
       if ((*iter)->name.compare(nm.str()) != 0)
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(&Vinf));
       (*iter)->set_ptr(static_cast<void *>(&wind->Vrot));
       err = read_header_param(*iter);
-      if (err) rep.error("Error reading parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error reading parameter", (*iter)->name);
       ++iter;
       // cout<<nm.str()<<" = "<<wind->Vrot<<"\n";
 
       nm.str("");
       nm << "WIND_" << isw << "_Tw__";
       if ((*iter)->name.compare(nm.str()) != 0)
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(&Tw));
       (*iter)->set_ptr(static_cast<void *>(&wind->Tstar));
       err = read_header_param(*iter);
-      if (err) rep.error("Error reading parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error reading parameter", (*iter)->name);
       ++iter;
       // cout<<nm<<"\n";
 
       nm.str("");
       nm << "WIND_" << isw << "_Rstr";
       if ((*iter)->name.compare(nm.str()) != 0)
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(&Rstar));
       (*iter)->set_ptr(static_cast<void *>(&wind->Rstar));
       err = read_header_param(*iter);
-      if (err) rep.error("Error reading parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error reading parameter", (*iter)->name);
       ++iter;
       // cout<<nm<<"\n";
 
       nm.str("");
       nm << "WIND_" << isw << "_Bstr";
       if ((*iter)->name.compare(nm.str()) != 0)
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(&Rstar));
       (*iter)->set_ptr(static_cast<void *>(&wind->Bstar));
       err = read_header_param(*iter);
-      if (err) rep.error("Error reading parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error reading parameter", (*iter)->name);
       ++iter;
       // cout<<nm<<"\n";
 
       nm.str("");
       nm << "WIND_" << isw << "_type";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&wind->type));
       err = read_header_param(*iter);
-      if (err) rep.error("Error reading parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error reading parameter", (*iter)->name);
       ++iter;
       // cout<<nm.str()<<" = "<<wind->type<<"\n";
 
       nm.str("");
       nm << "WIND_" << isw << "_trcr";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       //(*iter)->set_ptr(static_cast<void *>(trcr));
       (*iter)->set_ptr(static_cast<void *>(wind->tr));
       err = read_header_param(*iter);
-      if (err) rep.error("Error reading parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error reading parameter", (*iter)->name);
       //
       // zero extra variables to avoid uninitialised data...
       // tracers are stored in the first ntracer values of array.
@@ -912,12 +945,14 @@ int DataIOBase::read_simulation_parameters(
       nm.str("");
       nm << "WIND_" << isw << "_evofile";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&wind->evolving_wind_file));
       err = read_header_param(*iter);
-      if (err) rep.error("Error reading parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error reading parameter", (*iter)->name);
       ++iter;
       // cout<<nm.str()<<" = "<<wind->evolving_wind_file<<"\n";
 
@@ -928,15 +963,16 @@ int DataIOBase::read_simulation_parameters(
       nm.str("");
       nm << "WIND_" << isw << "_enhance_mdot";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&wind->enhance_mdot));
       err = read_header_param(*iter);
       if (err) {
-        cout << "failed to find WIND_" << isw
-             << "_enhance_mdot parameter, setting to 0.\n";
-        // rep.error("Error reading parameter",(*iter)->name);
+        spdlog::debug(
+            "failed to find WIND_{}_enhance_mdot parameter, setting to 0", isw);
+        // spdlog::error("{}: {}", "Error reading parameter",(*iter)->name);
       }
       ++iter;
       // cout<<nm.str()<<" = "<<wind->enhance_mdot<<"\n";
@@ -950,16 +986,17 @@ int DataIOBase::read_simulation_parameters(
       nm.str("");
       nm << "WIND_" << isw << "_xi";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&wind->xi));
       err = read_header_param(*iter);
       if (err) {
-        cout << "failed to find WIND_" << isw
-             << "_xi parameter, setting to -0.43.\n";
+        spdlog::debug(
+            "failed to find WIND_{}_xi parameter, setting to -0.43", isw);
         wind->xi = -0.43;
-        // rep.error("Error reading parameter",(*iter)->name);
+        // spdlog::error("{}: {}", "Error reading parameter",(*iter)->name);
       }
       ++iter;
       // cout<<nm.str()<<" = "<<wind->xi<<"\n";
@@ -967,38 +1004,44 @@ int DataIOBase::read_simulation_parameters(
       nm.str("");
       nm << "WIND_" << isw << "_t_offset";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&wind->time_offset));
       err = read_header_param(*iter);
-      if (err) rep.error("Error reading parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error reading parameter", (*iter)->name);
       ++iter;
       // cout<<nm.str()<<" = "<<wind->time_offset<<"\n";
 
       nm.str("");
       nm << "WIND_" << isw << "_updatefreq";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&wind->update_freq));
       err = read_header_param(*iter);
-      if (err) rep.error("Error reading parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error reading parameter", (*iter)->name);
       ++iter;
       // cout<<nm.str()<<" = "<<wind->update_freq<<"\n";
 
       nm.str("");
       nm << "WIND_" << isw << "_t_scalefac";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&wind->t_scalefactor));
       err = read_header_param(*iter);
       if (err) {
-        cout << "Error reading parameter " << (*iter)->name;
-        cout << " setting to default value of 1.0.\n";
+        spdlog::debug(
+            "Error reading parameter {} setting to default value of 1.0",
+            (*iter)->name);
         wind->t_scalefactor = 1.0;
         err                 = 0;
       }
@@ -1008,14 +1051,16 @@ int DataIOBase::read_simulation_parameters(
       nm.str("");
       nm << "WIND_" << isw << "_ecentricity_fac";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&wind->ecentricity));
       err = read_header_param(*iter);
       if (err) {
-        cout << "Error reading parameter " << (*iter)->name;
-        cout << " setting to default value of 1.0.\n";
+        spdlog::debug(
+            "Error reading parameter {} setting to default value of 1.0",
+            (*iter)->name);
         wind->ecentricity = 1.0;
         err               = 0;
       }
@@ -1025,14 +1070,16 @@ int DataIOBase::read_simulation_parameters(
       nm.str("");
       nm << "WIND_" << isw << "_orbital_period";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&wind->OrbPeriod));
       err = read_header_param(*iter);
       if (err) {
-        cout << "Error reading parameter " << (*iter)->name;
-        cout << " setting to default value of 0.0.\n";
+        spdlog::debug(
+            "Error reading parameter {} setting to default value of 0.0",
+            (*iter)->name);
         wind->OrbPeriod = 0.0;
         err             = 0;
       }
@@ -1042,14 +1089,16 @@ int DataIOBase::read_simulation_parameters(
       nm.str("");
       nm << "WIND_" << isw << "_periastron_vec_x";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&wind->PeriastronX));
       err = read_header_param(*iter);
       if (err) {
-        cout << "Error reading parameter " << (*iter)->name;
-        cout << " setting to default value of 0.0.\n";
+        spdlog::debug(
+            "Error reading parameter {} setting to default value of 0.0",
+            (*iter)->name);
         wind->PeriastronX = 0.0;
         err               = 0;
       }
@@ -1058,14 +1107,16 @@ int DataIOBase::read_simulation_parameters(
       nm.str("");
       nm << "WIND_" << isw << "_periastron_vec_y";
       if ((*iter)->name.compare(nm.str()) != 0)
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(posn));
       (*iter)->set_ptr(static_cast<void *>(&wind->PeriastronY));
       err = read_header_param(*iter);
       if (err) {
-        cout << "Error reading parameter " << (*iter)->name;
-        cout << " setting to default value of 0.0.\n";
+        spdlog::debug(
+            "Error reading parameter {} setting to default value of 0.0",
+            (*iter)->name);
         wind->PeriastronY = 0.0;
         err               = 0;
       }
@@ -1089,13 +1140,15 @@ int DataIOBase::read_simulation_parameters(
     // Check we got all the sources:
     //
     // if (SWP.Nsources != SW.Nsources())
-    //   rep.error("Got the wrong number of stellar wind sources!",
+    //   spdlog::error("{}: {}", "Got the wrong number of stellar wind
+    //   sources!",
     //     SWP.Nsources-SW.Nsources());
     if (SWP.Nsources != static_cast<int>(SWP.params.size())) {
-      cout << "Num wind srcs=" << SWP.Nsources
-           << ", SWP.params.size()=" << SWP.params.size() << "\n";
-      rep.error(
-          "Got the wrong number of stellar wind sources!",
+      spdlog::debug(
+          "Num wind srcs={}, SWP.params.size()={}", SWP.Nsources,
+          SWP.params.size());
+      spdlog::error(
+          "{}: {}", "Got the wrong number of stellar wind sources!",
           SWP.Nsources - static_cast<int>(SWP.params.size()));
     }
   }  // read WIND data.
@@ -1120,7 +1173,9 @@ void DataIOBase::set_tracer_params(
 )
 {
   if (have_setup_tracers) {
-    rep.error("Trying to setup tracer parameters twice!", have_setup_tracers);
+    spdlog::error(
+        "{}: {}", "Trying to setup tracer parameters twice!",
+        have_setup_tracers);
   }
   if (SimPM.ntracer == 0) {
     // cout <<"\t *** No tracers to set up\n";
@@ -1167,10 +1222,11 @@ void DataIOBase::set_windsrc_params()
   // Sanity checks!
   //
   if (have_setup_windsrc || !windsrc.empty() || !SWP.Nsources) {
-    cout << "FLAG: " << have_setup_windsrc;
-    cout << " EMPTY?: " << windsrc.empty();
-    cout << " Wind-SIM?: " << SWP.Nsources << "\n";
-    rep.error("WARNING! why set wind parameters?!", have_setup_windsrc);
+    spdlog::debug(
+        "FLAG: {} EMPTY?: {} Wind-SIM?: {}", have_setup_windsrc,
+        windsrc.empty(), SWP.Nsources);
+    spdlog::error(
+        "{}: {}", "WARNING! why set wind parameters?!", have_setup_windsrc);
   }
 
   //
@@ -1353,10 +1409,11 @@ void DataIOBase::set_rt_src_params(
   // Sanity checks!
   //
   if (have_setup_rt_src || !rt_src.empty() || !SimPM.RS.Nsources) {
-    cout << "FLAG: " << have_setup_rt_src;
-    cout << " EMPTY?: " << rt_src.empty();
-    cout << " RT-SIM?: " << SimPM.RS.Nsources << "\n";
-    rep.error("WARNING! why set RT parameters?!", have_setup_rt_src);
+    spdlog::debug(
+        "FLAG: {} EMPTY?: {} RT-SIM?: {}", have_setup_rt_src, rt_src.empty(),
+        SimPM.RS.Nsources);
+    spdlog::error(
+        "{}: {}", "WARNING! why set RT parameters?!", have_setup_rt_src);
   }
 
   //
@@ -1367,8 +1424,9 @@ void DataIOBase::set_rt_src_params(
   //
   if (SimPM.RS.sources.empty()) {
 #ifdef RT_TESTING
-    cout << " DataIOBase::set_rt_src_params() setting up SimPM.RS.sources: ";
-    cout << SimPM.RS.sources.size() << "  " << SimPM.RS.Nsources << "\n";
+    spdlog::debug(
+        " DataIOBase::set_rt_src_params() setting up SimPM.RS.sources: {}  {}",
+        SimPM.RS.sources.size(), SimPM.RS.Nsources);
 #endif
     for (int n = 0; n < SimPM.RS.Nsources; n++) {
       struct rad_src_info temp;
@@ -1389,14 +1447,15 @@ void DataIOBase::set_rt_src_params(
 
       SimPM.RS.sources.push_back(temp);
       if (SimPM.RS.sources.size() != static_cast<unsigned int>(n + 1)) {
-        rep.error(
+        spdlog::error(
+            "{}: {}",
             "Radiation source list size error, DataIOBase::set_rt_src_params",
             n);
       }
     }
   }
   if (SimPM.RS.sources.size() != static_cast<unsigned int>(SimPM.RS.Nsources)) {
-    rep.error("wrong no. of srcs.", SimPM.RS.sources.size());
+    spdlog::error("{}: {}", "wrong no. of srcs.", SimPM.RS.sources.size());
   }
 
   //
@@ -1404,7 +1463,7 @@ void DataIOBase::set_rt_src_params(
   // for each
   //
 #ifdef RT_TESTING
-  cout << "DataIOBase::set_rt_src_params() Nsrc=" << SimPM.RS.Nsources << "\n";
+  spdlog::debug("DataIOBase::set_rt_src_params() Nsrc={}", SimPM.RS.Nsources);
 #endif  // RT_TESTING
   for (int n = 0; n < SimPM.RS.Nsources; n++) {
     ostringstream temp2;
@@ -1452,9 +1511,10 @@ void DataIOBase::set_rt_src_params(
 
 // ADD SOURCE_EFFECT VARIABLE
 #ifdef RT_TESTING
-    cout << "Adding Source Effect Variables\n";
+    spdlog::info("Adding Source Effect Variables");
 #endif
-    pm_ddimarr *rtpos = new pm_ddimarr(temp2.str(), (SimPM.RS.sources[n].pos));
+    pm_ddimarr *rtpos =
+        new pm_ddimarr(temp2.str(), SimPM.RS.sources[n].pos.data());
     rt_src.push_back(rtpos);
     pm_double *rtstr =
         new pm_double(temp3.str(), &(SimPM.RS.sources[n].strength));
@@ -1508,10 +1568,11 @@ void DataIOBase::set_rt_src_params(
 void DataIOBase::set_jet_pm_params()
 {
   if (have_setup_jet_pm || !jet_pm.empty() || !JP.jetic) {
-    cout << "FLAG: " << have_setup_jet_pm;
-    cout << " EMPTY?: " << jet_pm.empty();
-    cout << " JET-SIM?: " << JP.jetic << "\n";
-    rep.error("WARNING! why set jet parameters?!", have_setup_jet_pm);
+    spdlog::debug(
+        "FLAG: {} EMPTY?: {} JET-SIM?: {}", have_setup_jet_pm, jet_pm.empty(),
+        JP.jetic);
+    spdlog::error(
+        "{}: {}", "WARNING! why set jet parameters?!", have_setup_jet_pm);
   }
 
   pm_int *p051 = new pm_int("JetRadius", &JP.jetradius);
@@ -1536,10 +1597,8 @@ void DataIOBase::set_bc_pm_params(
 {
   // cout <<"setting up BC parameters\n";
   if (have_setup_bc_pm || !bc_pm.empty()) {
-    cout << "BCs FLAG: " << have_setup_bc_pm;
-    cout << " EMPTY?: " << bc_pm.empty();
-    cout << "\n";
-    rep.error("set bc parameters twice?!", have_setup_bc_pm);
+    spdlog::debug("BCs FLAG: {} EMPTY?: {}\n", have_setup_bc_pm, bc_pm.empty());
+    spdlog::error("{}: {}", "set bc parameters twice?!", have_setup_bc_pm);
   }
 
   pm_string *p007 = new pm_string("BC_XN", &SimPM.BC_XN);
@@ -1589,7 +1648,9 @@ int DataIOBase::write_simulation_parameters(
 )
 {
   if (params.empty())
-    rep.error("Parameter list is empty -- make sure it populates itself!!", 0);
+    spdlog::error(
+        "{}: {}", "Parameter list is empty -- make sure it populates itself!!",
+        0);
 
   //
   // loop over all *normal* parameters, writing one-by-one.
@@ -1600,14 +1661,15 @@ int DataIOBase::write_simulation_parameters(
        ++iter) {
     p   = (*iter);
     err = write_header_param(p);
-    if (err) rep.error("Error writing parameter", (*iter)->name);
+    if (err) spdlog::error("{}: {}", "Error writing parameter", (*iter)->name);
   }
 
   //
   // Write Boundary string parameters
   //
   if (!have_setup_bc_pm) set_bc_pm_params(SimPM);
-  if (bc_pm.empty()) rep.error("bc_pm empty, Need boundaries!", "Huh?");
+  if (bc_pm.empty())
+    spdlog::error("{}: {}", "bc_pm empty, Need boundaries!", "Huh?");
   //
   // now write them:
   //
@@ -1616,7 +1678,7 @@ int DataIOBase::write_simulation_parameters(
     p = (*iter);
     // cout <<p->name<<"    "; p->show_val(); cout <<"\n";
     err = write_header_param(p);
-    if (err) rep.error("Error writing BC parameter", p->name);
+    if (err) spdlog::error("{}: {}", "Error writing BC parameter", p->name);
   }
 
   //
@@ -1629,7 +1691,7 @@ int DataIOBase::write_simulation_parameters(
     p = (*iter);
     // cout <<"tracer val: "; p->show_val(); cout <<"\n";
     err = write_header_param(p);
-    if (err) rep.error("Error writing tracer parameter", p->name);
+    if (err) spdlog::error("{}: {}", "Error writing tracer parameter", p->name);
   }
 
   //
@@ -1641,7 +1703,7 @@ int DataIOBase::write_simulation_parameters(
          ++iter) {
       p   = (*iter);
       err = write_header_param(p);
-      if (err) rep.error("Error writing Jet parameter", p->name);
+      if (err) spdlog::error("{}: {}", "Error writing Jet parameter", p->name);
     }
   }
 
@@ -1650,15 +1712,16 @@ int DataIOBase::write_simulation_parameters(
   //
   if (SimPM.RS.Nsources > 0) {
 #ifndef NDEBUG
-    cout << "WRITING Radiation Source PARAMETERS, Nsrc=" << SimPM.RS.Nsources
-         << "\n";
+    spdlog::debug(
+        "WRITING Radiation Source PARAMETERS, Nsrc={}", SimPM.RS.Nsources);
 #endif
     //
     // Check we have rt_src parameters
     //
     if (!have_setup_rt_src) set_rt_src_params(SimPM);
     if (rt_src.empty()) {
-      rep.error("rt_src list empty, but running RT sim!?", "HMMM");
+      spdlog::error(
+          "{}: {}", "rt_src list empty, but running RT sim!?", "HMMM");
     }
     //
     // Data should be already set up and ready to go.
@@ -1668,7 +1731,9 @@ int DataIOBase::write_simulation_parameters(
          ++iter) {
       p   = (*iter);
       err = write_header_param(p);
-      if (err) rep.error("Error writing Radiation source parameter", p->name);
+      if (err)
+        spdlog::error(
+            "{}: {}", "Error writing Radiation source parameter", p->name);
     }
   }  // write RT data.
 
@@ -1681,8 +1746,8 @@ int DataIOBase::write_simulation_parameters(
     //
     if (!have_setup_windsrc) set_windsrc_params();
     if (windsrc.empty())
-      rep.error(
-          "windsrc list empty, but we are apparently ouputting \
+      spdlog::error(
+          "{}: {}", "windsrc list empty, but we are apparently ouputting \
                  a wind sim!?",
           "HMMM");
 
@@ -1704,130 +1769,150 @@ int DataIOBase::write_simulation_parameters(
       nm.str("");
       nm << "WIND_" << isw << "_posn";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       // SW.get_src_posn(isw,xd);
       //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(SWP.params[isw]->dpos));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing WIND parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error writing WIND parameter", (*iter)->name);
       ++iter;
 
       nm.str("");
       nm << "WIND_" << isw << "_rad_";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->radius));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing WIND parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error writing WIND parameter", (*iter)->name);
       ++iter;
 
       nm.str("");
       nm << "WIND_" << isw << "_Mdot";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       // SW.get_src_Mdot(isw,xd);
       //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Mdot));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing WIND parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error writing WIND parameter", (*iter)->name);
       ++iter;
 
       nm.str("");
       nm << "WIND_" << isw << "_Vinf";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       // SW.get_src_Vinf(isw,xd);
       //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Vinf));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing WIND parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error writing WIND parameter", (*iter)->name);
       ++iter;
 
       nm.str("");
       nm << "WIND_" << isw << "_Vrot";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       // SW.get_src_Vinf(isw,xd);
       //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Vrot));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing WIND parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error writing WIND parameter", (*iter)->name);
       ++iter;
 
       nm.str("");
       nm << "WIND_" << isw << "_Tw__";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       // SW.get_src_Tw(isw,xd);
       //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Tstar));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing WIND parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error writing WIND parameter", (*iter)->name);
       ++iter;
 
       nm.str("");
       nm << "WIND_" << isw << "_Rstr";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       // SW.get_src_Rstar(isw,xd);
       //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Rstar));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing WIND parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error writing WIND parameter", (*iter)->name);
       ++iter;
 
       nm.str("");
       nm << "WIND_" << isw << "_Bstr";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       // SW.get_src_Rstar(isw,xd);
       //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Bstar));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing WIND parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error writing WIND parameter", (*iter)->name);
       ++iter;
 
       nm.str("");
       nm << "WIND_" << isw << "_type";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       // SW.get_src_type(isw,xi);
       //(*iter)->set_ptr(static_cast<void *>(xi));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->type));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing WIND parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error writing WIND parameter", (*iter)->name);
       ++iter;
 
       nm.str("");
       nm << "WIND_" << isw << "_trcr";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(SWP.params[isw]->tr));
       for (int v = SimPM.ntracer; v < MAX_NVAR; v++) {
         SWP.params[isw]->tr[v] = 0.0;
       }
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing wIND parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error writing wIND parameter", (*iter)->name);
       ++iter;
       //
       // New stuff for evolving winds: data-file, time-offset,
@@ -1836,98 +1921,113 @@ int DataIOBase::write_simulation_parameters(
       nm.str("");
       nm << "WIND_" << isw << "_evofile";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(
           static_cast<void *>(&SWP.params[isw]->evolving_wind_file));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error writing parameter", (*iter)->name);
       ++iter;
       // cout<<nm<<" = "<<wind->evolving_wind_file<<"\n";
 
       nm.str("");
       nm << "WIND_" << isw << "_enhance_mdot";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->enhance_mdot));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error writing parameter", (*iter)->name);
       ++iter;
       // cout<<nm<<" = "<<wind->enhance_mdot<<"\n";
 
       nm.str("");
       nm << "WIND_" << isw << "_xi";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->xi));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error writing parameter", (*iter)->name);
       ++iter;
       // cout<<nm<<" = "<<wind->xi<<"\n";
 
       nm.str("");
       nm << "WIND_" << isw << "_t_offset";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->time_offset));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error writing parameter", (*iter)->name);
       ++iter;
       // cout<<nm<<" = "<<wind->time_offset<<"\n";
 
       nm.str("");
       nm << "WIND_" << isw << "_updatefreq";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->update_freq));
       err = write_header_param(*iter);
-      if (err) rep.error("Error reading parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error reading parameter", (*iter)->name);
       ++iter;
       // cout<<nm<<" = "<<wind->update_freq<<"\n";
 
       nm.str("");
       nm << "WIND_" << isw << "_t_scalefac";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->t_scalefactor));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error writing parameter", (*iter)->name);
       ++iter;
       // cout<<nm<<" = "<<wind->t_scalefactor<<"\n";
       // Test for moving source
       nm.str("");
       nm << "WIND_" << isw << "_ecentricity_fac";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->ecentricity));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error writing parameter", (*iter)->name);
       ++iter;
       // cout<<nm.str()<<" = "<<wind->ecentricity<<"\n";
 
       nm.str("");
       nm << "WIND_" << isw << "_orbital_period";
       if ((*iter)->name.compare(nm.str()) != 0) {
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->OrbPeriod));
       err = write_header_param(*iter);
       if (err) {
-        cout << "Error writing parameter " << (*iter)->name;
+        spdlog::error("Error writing parameter {}", (*iter)->name);
       }
       // cout<<nm.str()<<" = "<<wind->OrbPeriod<<"\n";
       iter++;
@@ -1935,23 +2035,27 @@ int DataIOBase::write_simulation_parameters(
       nm.str("");
       nm << "WIND_" << isw << "_periastron_vec_x";
       if ((*iter)->name.compare(nm.str()) != 0)
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(posn));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->PeriastronX));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error writing parameter", (*iter)->name);
       ++iter;
 
       nm.str("");
       nm << "WIND_" << isw << "_periastron_vec_y";
       if ((*iter)->name.compare(nm.str()) != 0)
-        rep.error(
-            "Stellar wind parameters not ordered as expected!", (*iter)->name);
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(posn));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->PeriastronY));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing parameter", (*iter)->name);
+      if (err)
+        spdlog::error("{}: {}", "Error writing parameter", (*iter)->name);
       ++iter;
 
     }  // loop over sources
@@ -1974,98 +2078,114 @@ int DataIOBase::check_header_parameters(
   // This is where we check that nvar,ndim,ntracer,outfile, etc. are all set
   // to something sensible.
   if (SimPM.simtime < 0) {
-    rep.warning(
+    spdlog::warn(
+        "{}: Expected {} but got {}",
         "(Dataio::check_header_parameters) simtime not set, setting to "
         "zero. THIS MAY BE A BIG ERROR",
         1., SimPM.simtime);
     SimPM.simtime = 0.;
   }
   if (SimPM.starttime < 0) {
-    rep.warning(
+    spdlog::warn(
+        "{}: Expected {} but got {}",
         "(Dataio::check_header_parameters) startime <0, PROBABLY AN ERROR!", 0.,
         SimPM.starttime);
     SimPM.starttime = 0.;
   }
   if (SimPM.finishtime <= 0) {
-    rep.warning(
+    spdlog::warn(
+        "{}: Expected {} but got {}",
         "(Dataio::check_header_parameters) finishtime not set.", 1.,
         SimPM.finishtime);
     SimPM.finishtime = -1.;
   }
   if (SimPM.timestep < 0) {
-    rep.warning(
+    spdlog::warn(
+        "{}: Expected {} but got {}",
         "(Dataio::check_header_parameters) timestep <0, PROBABLY AN ERROR!", 1,
         SimPM.timestep);
     SimPM.timestep = 0;
   }
   if (SimPM.NG[0] < 0)
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "(Dataio::check_header_parameters) NG[0]<0 -- must not have read "
         "from file",
         SimPM.NG[0]);
   if (SimPM.ndim > 1)
     if (SimPM.NG[1] < 0)
-      rep.error(
+      spdlog::error(
+          "{}: {}",
           "(Dataio::check_header_parameters) NG[1]<0 -- must not have "
           "read from file",
           SimPM.NG[1]);
   if (SimPM.ndim > 2)
     if (SimPM.NG[2] < 0)
-      rep.error(
+      spdlog::error(
+          "{}: {}",
           "(Dataio::check_header_parameters) NG[2]<0 -- must not have "
           "read from file",
           SimPM.NG[2]);
 
   if (SimPM.Ncell < 0)
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "(Dataio::check_header_parameters) Ncell<0 -- Error reading from file",
         SimPM.Ncell);
 
   if (SimPM.Xmin[0] < -1.e50)
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "(Dataio::check_header_parameters) Xmin[0]<0 -- Error reading "
         "from file",
         SimPM.Xmin[0]);
   if (SimPM.ndim > 1)
     if (SimPM.Xmin[1] < -1e50)
-      rep.error(
+      spdlog::error(
+          "{}: {}",
           "(Dataio::check_header_parameters) Xmin[1]<0 -- must not have "
           "read from file",
           SimPM.Xmin[1]);
   if (SimPM.ndim > 2)
     if (SimPM.Xmin[2] < -1e50)
-      rep.error(
+      spdlog::error(
+          "{}: {}",
           "(Dataio::check_header_parameters) Xmin[2]<0 -- must not have "
           "read from file",
           SimPM.Xmin[2]);
 
   if (SimPM.Xmax[0] <= SimPM.Xmin[0])
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "(Dataio::check_header_parameters) Xmax[0]<0 -- Error reading "
         "from file",
         SimPM.Xmax[0]);
   if (SimPM.ndim > 1)
     if (SimPM.Xmax[1] <= SimPM.Xmin[1])
-      rep.error(
+      spdlog::error(
+          "{}: {}",
           "(Dataio::check_header_parameters) Xmax[1]<0 -- must not have "
           "read from file",
           SimPM.Xmax[1]);
   if (SimPM.ndim > 2)
     if (SimPM.Xmax[2] <= SimPM.Xmin[2])
-      rep.error(
+      spdlog::error(
+          "{}: {}",
           "(Dataio::check_header_parameters) Xmax[2]<0 -- must not have "
           "read from file",
           SimPM.Xmax[2]);
 
   if (SimPM.spOOA != OA1 && SimPM.spOOA != OA2) {
-    rep.warning(
+    spdlog::warn(
+        "{}: Expected {} but got {}",
         "(Dataio::check_header_parameters) Order of Accuracy not set "
         "from file. Default to second order",
         2, SimPM.spOOA);
     SimPM.spOOA = OA2;
   }
   if (SimPM.tmOOA != OA1 && SimPM.tmOOA != OA2) {
-    rep.warning(
+    spdlog::warn(
+        "{}: Expected {} but got {}",
         "(Dataio::check_header_parameters) Order of Accuracy not set "
         "from file. Default to second order",
         2, SimPM.tmOOA);
@@ -2076,34 +2196,40 @@ int DataIOBase::check_header_parameters(
   //  tmOOA:
   //  "<<SimPM.tmOOA<<"\n";
   if (SimPM.gamma < 0)
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "(Dataio::check_header_parameters) gamma<0 -- must not have read "
         "it from file",
         SimPM.gamma);
   if (SimPM.CFL < 0)
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "(Dataio::check_header_parameters) CFL<0   -- must not have read "
         "it from file",
         SimPM.CFL);
   if (SimPM.artviscosity < 0)
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "(Dataio::check_header_parameters) artviscosity<0 -- must not "
         "have read from file",
         SimPM.artviscosity);
   if (SimPM.etav < 0 && SimPM.artviscosity > 0)
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "(Dataio::check_header_parameters) etav<0 -- must not have read "
         "from file",
         SimPM.etav);
   else if (SimPM.etav < 0 && SimPM.artviscosity < 0) {
-    rep.warning(
+    spdlog::warn(
+        "{}: Expected {} but got {}",
         "(Dataio::check_header_parameters) etav<0 but art.visc. not "
         "enabled so it's ok.",
         static_cast<double>(SimPM.artviscosity), SimPM.etav);
     SimPM.etav = 0.15;
   }
   if (SimPM.typeofop < 0) {
-    rep.warning(
+    spdlog::warn(
+        "{}: Expected {} but got {}",
         "(Dataio::check_header_parameters) type of output file not "
         "set, setting to Fits",
         2, SimPM.typeofop);
@@ -2111,14 +2237,16 @@ int DataIOBase::check_header_parameters(
   }
 
   if (SimPM.opfreq < 0) {
-    rep.warning(
+    spdlog::warn(
+        "{}: Expected {} but got {}",
         "(Dataio::check_header_parameters) Output frequency not set.  "
         "Setting to 50",
         100, SimPM.opfreq);
     SimPM.opfreq = 50;
   }
   if (SimPM.outFileBase == "") {
-    rep.warning(
+    spdlog::warn(
+        "{}: Expected {} but got {}",
         "(Dataio::check_header_parameters) output file base not set, "
         "setting to ./noname",
         1, 1);
@@ -2133,28 +2261,29 @@ int DataIOBase::check_header_parameters(
   SimPM.dt      = 0.;
 
   if (SimPM.EP.dynamics != 1) {
-    cout << "WARNING: DYNAMICS SWITCHED OFF!!! *****************************\n";
+    spdlog::warn(
+        "WARNING: DYNAMICS SWITCHED OFF!!! *****************************");
   }
 
   //
   // Check that Helium_MassFrac and H_MassFrac are set.
   //
   if (SimPM.EP.H_MassFrac < 0.001 || SimPM.EP.H_MassFrac > 1.0) {
-    cout << "Warning: H_MassFrac = " << SimPM.EP.H_MassFrac << ", ";
-    cout << "resetting to 0.7154\n";
+    spdlog::warn("H_MassFrac = {}, resetting to 0.7154", SimPM.EP.H_MassFrac);
     SimPM.EP.H_MassFrac = 0.7154;
   }
   if ((SimPM.EP.H_MassFrac + SimPM.EP.Helium_MassFrac) > 1.1
       || (SimPM.EP.H_MassFrac + SimPM.EP.Helium_MassFrac) < 0.9) {
-    cout << "Warning: H_MassFrac  = " << SimPM.EP.H_MassFrac << "\n";
-    cout << "Warning: He_MassFrac = " << SimPM.EP.H_MassFrac << "\n";
-    cout << "resetting to 0.7154 and 0.2846, respectively.\n";
+    spdlog::warn(
+        "H_MassFrac  = {}\nWarning: He_MassFrac = {}resetting to 0.7154 and 0.2846, respectively",
+        SimPM.EP.H_MassFrac, SimPM.EP.H_MassFrac);
     SimPM.EP.H_MassFrac      = 0.7154;
     SimPM.EP.Helium_MassFrac = 0.2846;
   }
   if (SimPM.EP.Metal_MassFrac < 0.0 || SimPM.EP.Metal_MassFrac > 1.0) {
-    cout << "Warning: SimPM.EP.Metal_MassFrac = ";
-    cout << SimPM.EP.Metal_MassFrac << " !! resetting to 0.0142.\n";
+    spdlog::warn(
+        "SimPM.EP.Metal_MassFrac = {} !! resetting to 0.0142",
+        SimPM.EP.Metal_MassFrac);
     SimPM.EP.Metal_MassFrac = 0.0142;
   }
 

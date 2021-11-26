@@ -147,13 +147,13 @@ protected:
   /// work!
   ///
   void get_quadmesh_integer_extents(
-      DBfile *,               ///< pointer to silo file.
-      class GridBaseClass *,  ///< pointer to data.
-      class SimParams &,      ///< pointer to simulation parameters
-      const string,           ///< directory of mesh
-      const string,           ///< name of mesh
-      int *,                  ///< integer Xmin for mesh (output)
-      int *                   ///< integer Xmax for mesh (output)
+      DBfile *,                    ///< pointer to silo file.
+      class GridBaseClass *,       ///< pointer to data.
+      class SimParams &,           ///< pointer to simulation parameters
+      const string,                ///< directory of mesh
+      const string,                ///< name of mesh
+      std::array<int, MAX_DIM> &,  ///< integer Xmin for mesh (output)
+      std::array<int, MAX_DIM> &   ///< integer Xmax for mesh (output)
   );
 
   ///

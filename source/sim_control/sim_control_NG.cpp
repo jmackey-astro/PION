@@ -17,8 +17,10 @@
 
 #include "constants.h"
 #include "tools/command_line_interface.h"
-#include "tools/reporting.h"
+
 #include "tools/timer.h"
+
+#include <spdlog/spdlog.h>
 
 #include "sim_control/sim_control_NG.h"
 
@@ -32,7 +34,7 @@ using namespace std;
 sim_control_NG::sim_control_NG()
 {
 #ifndef NDEBUG
-  cout << "(sim_control_NG::Constructor)\n";
+  spdlog::info("(sim_control_NG::Constructor)");
 #endif
 }
 
@@ -42,7 +44,7 @@ sim_control_NG::sim_control_NG()
 sim_control_NG::~sim_control_NG()
 {
 #ifndef NDEBUG
-  cout << "(sim_control_NG::Destructor)\n";
+  spdlog::info("(sim_control_NG::Destructor)");
 #endif
 }
 
@@ -59,19 +61,24 @@ int sim_control_NG::Init(
 )
 {
 #ifndef NDEBUG
-  cout << "(sim_control_NG::Init) Initialising grid"
-       << "\n";
+  spdlog::info("(sim_control_NG::Init) Initialising grid");
 #endif
   int err = 0;
 
   SimPM.typeofip = typeOfFile;
   setup_dataio_class(SimPM, typeOfFile);
   err = dataio->ReadHeader(infile, SimPM);
-  rep.errorTest("(NG_INIT::get_parameters) error", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(NG_INIT::get_parameters) error", 0,
+        err);
 
   // Check for commandline args that override the file parameters.
   err = override_params(narg, args);
-  rep.errorTest("(NG_INIT::override_params) error", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(NG_INIT::override_params) error", 0,
+        err);
 
   //
   // Set up the Xmin/Xmax/Range/dx of each level in the NG grid
@@ -80,23 +87,32 @@ int sim_control_NG::Init(
   grid.resize(SimPM.grid_nlevels);
   err      = setup_grid(grid, SimPM);
   SimPM.dx = grid[0]->DX();
-  rep.errorTest("(INIT::setup_grid) Something went wrong", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(INIT::setup_grid) Something went wrong",
+        0, err);
 
   // All grid parameters are now set, so set up the appropriate
   // equations/solver class.
   // ----------------------------------------------------------------
   err = set_equations(SimPM);
-  rep.errorTest("(NG_INIT::set_equations)", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(NG_INIT::set_equations)", 0, err);
   spatial_solver->SetEOS(SimPM.gamma);
 
   // ----------------------------------------------------------------
   err = setup_microphysics(SimPM);
-  rep.errorTest("(NG_INIT::setup_microphysics)", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(NG_INIT::setup_microphysics)", 0, err);
 
   // assign data to the grid from snapshot file.
   // ----------------------------------------------------------------
   err = dataio->ReadData(infile, grid, SimPM);
-  rep.errorTest("(NG_INIT::assign_initial_data)", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(NG_INIT::assign_initial_data)", 0, err);
 
   // For each grid in the NG grid, set Ph[] = P[],
   // and then implement the boundary conditions on the grid and
@@ -112,7 +128,7 @@ int sim_control_NG::Init(
 
     if (SimPM.eqntype == EQGLM && SimPM.timestep == 0) {
 #ifndef NDEBUG
-      cout << "Initial state, zero-ing glm variable.\n";
+      spdlog::info("Initial state, zero-ing glm variable");
 #endif
       c = grid[l]->FirstPt();
       do {
@@ -124,43 +140,57 @@ int sim_control_NG::Init(
   // Assign boundary conditions to boundary points.
   // ----------------------------------------------------------------
   err = boundary_conditions(SimPM, grid);
-  rep.errorTest("(NG_INIT::boundary_conditions) err!=0", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "(NG_INIT::boundary_conditions) err!=0",
+        0, err);
 
   // Setup Raytracing on each grid, if needed.
   // ----------------------------------------------------------------
   err += setup_raytracing(SimPM, grid);
-  rep.errorTest("Failed to setup raytracer", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "Failed to setup raytracer", 0, err);
   //  cout <<"Setting up RT sources\n";
 
   // ----------------------------------------------------------------
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     err = assign_boundary_data(SimPM, l, grid[l], MP);
-    rep.errorTest("NG_INIT::assign_boundary_data", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "NG_INIT::assign_boundary_data", 0,
+          err);
   }
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
 #ifndef NDEBUG
-    cout << "updating external boundaries for level " << l << "\n";
+    spdlog::debug("updating external boundaries for level {}", l);
 #endif
     err += TimeUpdateExternalBCs(
         SimPM, l, grid[l], spatial_solver, SimPM.simtime, SimPM.tmOOA,
         SimPM.tmOOA);
   }
-  rep.errorTest("NG_INIT: error from bounday update", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "NG_INIT: error from bounday update", 0,
+        err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
 #ifndef NDEBUG
-    cout << "updating internal boundaries for level " << l << "\n";
+    spdlog::debug("updating internal boundaries for level {}", l);
 #endif
     err += TimeUpdateInternalBCs(
         SimPM, l, grid[l], spatial_solver, SimPM.simtime, SimPM.tmOOA,
         SimPM.tmOOA);
   }
-  rep.errorTest("NG_INIT: error from bounday update", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "NG_INIT: error from bounday update", 0,
+        err);
   // ----------------------------------------------------------------
 
   //
@@ -174,7 +204,9 @@ int sim_control_NG::Init(
   //
   if (SimPM.op_criterion == 1) {
     if (SimPM.opfreq_time < TINYVALUE)
-      rep.error("opfreq_time not set right and is needed!", SimPM.opfreq_time);
+      spdlog::error(
+          "{}: {}", "opfreq_time not set right and is needed!",
+          SimPM.opfreq_time);
     SimPM.next_optime = SimPM.simtime + SimPM.opfreq_time;
     double tmp        = ((SimPM.simtime / SimPM.opfreq_time)
                   - floor(SimPM.simtime / SimPM.opfreq_time))
@@ -196,7 +228,9 @@ int sim_control_NG::Init(
       textio = 0;
     }
     setup_dataio_class(SimPM, SimPM.typeofop);
-    if (!dataio) rep.error("NG_INIT:: dataio initialisation", SimPM.typeofop);
+    if (!dataio)
+      spdlog::error(
+          "{}: {}", "NG_INIT:: dataio initialisation", SimPM.typeofop);
   }
   dataio->SetSolver(spatial_solver);
   dataio->SetMicrophysics(MP);
@@ -252,11 +286,9 @@ int sim_control_NG::initial_conserved_quantities(
     } while ((c = grid[l]->NextPt(c)) != 0);
   }
 
-  cout << "(conserved quantities) [" << initERG << ", ";
-  cout << initMMX << ", ";
-  cout << initMMY << ", ";
-  cout << initMMZ << ", ";
-  cout << initMASS << "]\n";
+  spdlog::debug(
+      "(conserved quantities) [{}, {}, {}, {}, {}]\n", initERG, initMMX,
+      initMMY, initMMZ, initMASS);
 
 #endif  // TEST_CONSERVATION
   return (0);
@@ -269,9 +301,8 @@ int sim_control_NG::Time_Int(
     vector<class GridBaseClass *> &grid  ///< vector of grids
 )
 {
-  cout << "-------------------------------------------------------\n";
-  cout << "(sim_control_NG::Time_Int) STARTING TIME INTEGRATION\n";
-  cout << "-------------------------------------------------------\n";
+  spdlog::info(
+      "-------------------------------------------------------\n(sim_control_NG::Time_Int) STARTING TIME INTEGRATION\n-------------------------------------------------------\n");
   int err         = 0;
   SimPM.maxtime   = false;
   bool first_step = true;
@@ -292,15 +323,19 @@ int sim_control_NG::Time_Int(
   // boundaries to populate the column densities correctly.
   // Even if there is not RT, this updates the boundaries.
   err = RT_all_sources_levels(SimPM);
-  rep.errorTest("sim_control_NG: RT_all_sources_levels", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "sim_control_NG: RT_all_sources_levels",
+        0, err);
   // cout <<"raytracing all levels... finished\n";
   if (SimPM.timestep == 0) {
     // cout << "(step=0) Writing initial data.\n";
     err = output_data(grid);
-    rep.errorTest("Failed to write file... path?", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "Failed to write file... path?", 0,
+          err);
   }
-
-  cout << "-------------------------------------------------------\n";
 
   while (SimPM.maxtime == false) {
 
@@ -318,8 +353,8 @@ int sim_control_NG::Time_Int(
 
     for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
 #ifdef TEST_INT
-      cout << "Calculate timestep, level " << l << ", dx=";
-      cout << SimPM.levels[l].dx << "\n";
+      spdlog::debug(
+          "Calculate timestep, level {}, dx={}", l, SimPM.levels[l].dx);
 #endif
       if (!restart && !first_step) {
         SimPM.last_dt = SimPM.levels[l].last_dt;
@@ -329,12 +364,13 @@ int sim_control_NG::Time_Int(
       }
 
       err += calculate_timestep(SimPM, grid[l], l);
-      rep.errorTest("TIME_INT::calc_timestep()", 0, err);
+      if (0 != err)
+        spdlog::error(
+            "{}: Expected {} but got {}", "TIME_INT::calc_timestep()", 0, err);
 
       mindt = std::min(mindt, SimPM.dt / scale);
 #ifdef TEST_INT
-      cout << "level " << l << " got dt=" << SimPM.dt << " and ";
-      cout << SimPM.dt / scale << "\n";
+      spdlog::debug("level {} got dt={} and {}", l, SimPM.dt, SimPM.dt / scale);
 #endif
       SimPM.levels[l].dt = SimPM.dt;
       scale *= 2;
@@ -345,8 +381,8 @@ int sim_control_NG::Time_Int(
       SimPM.levels[l].dt = mindt * scale;
       scale *= 2;
 #ifdef TEST_INT
-      cout << "new dt=" << SimPM.levels[l].dt << ", t=";
-      cout << SimPM.levels[l].simtime << "\n";
+      spdlog::debug(
+          "new dt={}, t={}", SimPM.levels[l].dt, SimPM.levels[l].simtime);
 #endif
     }
     if (first_step) {
@@ -368,38 +404,39 @@ int sim_control_NG::Time_Int(
 
 #if !defined(CHECK_MAGP)
 #if !defined(BLAST_WAVE_CHECK)
-    cout << "New time: " << SimPM.simtime;
-    cout << "\t dt=" << SimPM.levels[SimPM.grid_nlevels - 1].dt;
-    cout << "\t steps: " << SimPM.timestep;
-    cout << "\t level-0 steps=" << SimPM.levels[0].step;
+    spdlog::debug(
+        "New time: {}\t dt={}\t steps: {}\t level-0 steps={}", SimPM.simtime,
+        SimPM.levels[SimPM.grid_nlevels - 1].dt, SimPM.timestep,
+        SimPM.levels[0].step);
     tsf = clk.time_so_far("time_int");
-    cout << "\t runtime: " << tsf << " s"
-         << "\n";
+    spdlog::debug("\t runtime: {} s", tsf);
 #endif
 #endif
 
     err += check_energy_cons(grid);
 
     err += output_data(grid);
-    rep.errorTest("TIME_INT::output_data()", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "TIME_INT::output_data()", 0, err);
     err += check_eosim();
-    rep.errorTest("TIME_INT::check_eosim()", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "TIME_INT::check_eosim()", 0, err);
   }
 
-  cout << "(sim_control_NG::Time_Int) TIME_INT FINISHED.";
-  cout << " MOVING ON TO FINALISE SIM.\n";
+  spdlog::info(
+      "(sim_control_NG::Time_Int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM.\n");
 
   tsf = clk.time_so_far("time_int");
-  cout << "TOTALS: Nsteps: " << SimPM.timestep << " wall-time: ";
-  cout << tsf << " time/step: ";
-  cout << tsf / static_cast<double>(SimPM.timestep) << "\n";
-  cout << "STEPS: " << SimPM.timestep;
-  cout.setf(ios_base::scientific);
-  cout.precision(6);
-  cout << "\t" << tsf << "\t" << tsf / static_cast<double>(SimPM.timestep);
-  cout << "\t" << static_cast<double>(SimPM.timestep * SimPM.Ncell) / tsf;
-  cout << "\n";
-  cout << "-------------------------------------------------------\n";
+  spdlog::debug(
+      "TOTALS: Nsteps: {} wall-time: {} time/step: {}\nSTEPS: {}\t{}\t{}\t{}\n-------------------------------------------------------\n",
+      SimPM.timestep, tsf, tsf / static_cast<double>(SimPM.timestep),
+      SimPM.timestep, tsf, tsf / static_cast<double>(SimPM.timestep),
+      static_cast<double>(SimPM.timestep * SimPM.Ncell) / tsf);
+
+  // cout.setf(ios_base::scientific);
+  // cout.precision(6);
 
   return (0);
 }
@@ -434,8 +471,7 @@ void sim_control_NG::calculate_magnetic_pressure(
   }
 
   if (init_magp < 0) init_magp = magp;
-  cout << SimPM.simtime << "\t" << magp / init_magp << "\t" << magp << "\n";
-  return;
+  spdlog::debug("{}\t{}\t{}", SimPM.simtime, magp / init_magp, magp);
 }
 #endif  // CHECK_MAGP
 
@@ -464,7 +500,7 @@ void sim_control_NG::calculate_blastwave_radius(
     if (shock_found) continue;
     cell *c = grid->LastPt();
     if (fabs(c->P[VX]) >= 1.0e4) {
-      cout << "level " << l << " does not contain shock.\n";
+      spdlog::debug("level {} does not contain shock.", l);
     }
     else {
       do {
@@ -478,9 +514,8 @@ void sim_control_NG::calculate_blastwave_radius(
     }
   }
   if (pconst.equalD(old_pos, 0.0)) old_pos = shockpos;
-  cout << SimPM.simtime << "\t" << shockpos;
+  spdlog::debug("{}\t{}", SimPM.simtime, shockpos);
   // cout <<"\t"<<(shockpos-old_pos)/(SimPM.dt+TINYVALUE);
-  cout << "\n";
   old_pos = shockpos;
   return;
 }
@@ -494,18 +529,20 @@ int sim_control_NG::Finalise(vector<class GridBaseClass *>
 )
 {
   int err = 0;
-  cout << "------------------------------------------------------------\n";
-  cout << "(sim_control::Finalise) FINALISING SIMULATION."
-       << "\n";
+  spdlog::info(
+      "------------------------------------------------------------\n(sim_control::Finalise) FINALISING SIMULATION.");
   err += check_energy_cons(grid);
   err += output_data(grid);
-  rep.errorTest("(FINALISE::output_data) Something went wrong", 0, err);
-  cout << "\tSimTime = " << SimPM.simtime
-       << "   #timesteps = " << SimPM.timestep << "\n";
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "(FINALISE::output_data) Something went wrong", 0, err);
+  spdlog::debug(
+      "\tSimTime = {}   #timesteps = {}", SimPM.simtime, SimPM.timestep);
 #ifndef NDEBUG
-  cout << "(sim_control::Finalise) DONE.\n";
+  spdlog::info("(sim_control::Finalise) DONE.");
 #endif
-  cout << "------------------------------------------------------------\n";
+  spdlog::info("------------------------------------------------------------");
   return (0);
 }
 
@@ -518,7 +555,7 @@ double sim_control_NG::advance_time(
 )
 {
 #ifndef NDEBUG
-  cout << "advance_time, level=" << l << ", starting.\n";
+  spdlog::debug("advance_time, level={}, starting.\n", l);
 #endif
 
   double step = 0.0;
@@ -541,7 +578,7 @@ double sim_control_NG::advance_step_OA1(const int l  ///< level to advance.
 )
 {
 #ifndef NDEBUG
-  cout << "advance_step_OA1, level=" << l << ", starting.\n";
+  spdlog::debug("advance_step_OA1, level={}, starting.", l);
 #endif
   int err = 0;
   // double dt2_fine=0.0; // timestep for two finer level steps.
@@ -549,7 +586,10 @@ double sim_control_NG::advance_step_OA1(const int l  ///< level to advance.
   class GridBaseClass *grid = SimPM.levels[l].grid;
 
   err = update_evolving_RT_sources(SimPM, SimPM.levels[l].simtime, grid->RT);
-  rep.errorTest("NG TIME_INT::update_RT_sources error", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "NG TIME_INT::update_RT_sources error", 0,
+        err);
 
   // --------------------------------------------------------
   err += TimeUpdateExternalBCs(
@@ -578,7 +618,10 @@ double sim_control_NG::advance_step_OA1(const int l  ///< level to advance.
 #endif
   err += calc_microphysics_dU(SimPM.levels[l].dt, grid);
   err += calc_dynamics_dU(SimPM.levels[l].dt, OA1, grid);
-  rep.errorTest("scn::advance_step_OA1: calc_x_dU", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "scn::advance_step_OA1: calc_x_dU", 0,
+        err);
   if (l > 0) save_fine_fluxes(SimPM, l);
   if (l < SimPM.grid_nlevels - 1) save_coarse_fluxes(SimPM, l);
   // --------------------------------------------------------
@@ -607,11 +650,17 @@ double sim_control_NG::advance_step_OA1(const int l  ///< level to advance.
 #ifndef SKIP_BC89_FLUX
   if (l < SimPM.grid_nlevels - 1) {
     err += recv_BC89_fluxes_F2C(spatial_solver, SimPM, l, OA1, OA1);
-    rep.errorTest("scn::advance_step_OA1: recv_BC89_flux", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "scn::advance_step_OA1: recv_BC89_flux",
+          0, err);
   }
 #endif
   err += grid_update_state_vector(SimPM.levels[l].dt, OA1, OA1, grid);
-  rep.errorTest("scn::advance_step_OA1: state-vec update", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "scn::advance_step_OA1: state-vec update",
+        0, err);
   // --------------------------------------------------------
 
   // --------------------------------------------------------
@@ -636,15 +685,18 @@ double sim_control_NG::advance_step_OA1(const int l  ///< level to advance.
   // --------------------------------------------------------
   if (grid->RT) {
     err += do_ongrid_raytracing(SimPM, grid, l);
-    rep.errorTest("NG-MPI::advance_step_OA1: calc_rt_cols()", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}",
+          "NG-MPI::advance_step_OA1: calc_rt_cols()", 0, err);
   }
   // --------------------------------------------------------
 
 #ifndef NDEBUG
-  cout << "advance_step_OA1, level=" << l << ", returning. t=";
-  cout << SimPM.levels[l].simtime << ", step=" << SimPM.levels[l].step;
-  cout << ", next dt=" << SimPM.levels[l].dt << " next time=";
-  cout << SimPM.levels[l].simtime + SimPM.levels[l].dt << "\n";
+  spdlog::debug(
+      "advance_step_OA1, level={}, returning. t={}, step={}, next dt={} next time={}",
+      l, SimPM.levels[l].simtime, SimPM.levels[l].step, SimPM.levels[l].dt,
+      SimPM.levels[l].simtime + SimPM.levels[l].dt);
 #endif
   return dt2_this + SimPM.levels[l].dt;
 }
@@ -656,9 +708,9 @@ double sim_control_NG::advance_step_OA2(const int l  ///< level to advance.
 )
 {
 #ifdef TEST_INT
-  cout << "advance_step_OA2, level=" << l << ", starting. ";
-  cout << SimPM.levels[l].simtime << ", step=";
-  cout << SimPM.levels[l].step << "\n";
+  spdlog::debug(
+      "advance_step_OA2, level={}, starting. {}, step={}", l,
+      SimPM.levels[l].simtime, SimPM.levels[l].step);
 #endif
   int err = 0;
   // double dt2_fine=0.0; // timestep for two finer level steps.
@@ -667,7 +719,10 @@ double sim_control_NG::advance_step_OA2(const int l  ///< level to advance.
   class GridBaseClass *grid = SimPM.levels[l].grid;
 
   err = update_evolving_RT_sources(SimPM, SimPM.levels[l].simtime, grid->RT);
-  rep.errorTest("NG TIME_INT::update_RT_sources error", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "NG TIME_INT::update_RT_sources error", 0,
+        err);
 
   // --------------------------------------------------------
   err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver, ctime, OA2, OA2);
@@ -688,10 +743,16 @@ double sim_control_NG::advance_step_OA2(const int l  ///< level to advance.
   spatial_solver->Setdt(dt_now);
   err += calc_microphysics_dU(dt_now, grid);
   err += calc_dynamics_dU(dt_now, OA1, grid);
-  rep.errorTest("scn::advance_step_OA2: calc_x_dU OA1", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "scn::advance_step_OA2: calc_x_dU OA1", 0,
+        err);
 
   err += grid_update_state_vector(dt_now, OA1, OA2, grid);
-  rep.errorTest("scn::advance_step_OA2: update OA1", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "scn::advance_step_OA2: update OA1", 0,
+        err);
   // --------------------------------------------------------
 
   // --------------------------------------------------------
@@ -700,7 +761,10 @@ double sim_control_NG::advance_step_OA2(const int l  ///< level to advance.
       SimPM, l, grid, spatial_solver, ctime + dt_now, OA1, OA2);
   err += TimeUpdateExternalBCs(
       SimPM, l, grid, spatial_solver, ctime + dt_now, OA1, OA2);
-  rep.errorTest("scn::advance_step_OA2: bounday update OA1", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "scn::advance_step_OA2: bounday update OA1", 0, err);
   // --------------------------------------------------------
 
   // --------------------------------------------------------
@@ -716,10 +780,16 @@ double sim_control_NG::advance_step_OA2(const int l  ///< level to advance.
   }
 #endif
   err += do_ongrid_raytracing(SimPM, grid, l);
-  rep.errorTest("scn::advance_time: calc_rt_cols() OA2", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "scn::advance_time: calc_rt_cols() OA2",
+        0, err);
   err += calc_microphysics_dU(dt_now, grid);
   err += calc_dynamics_dU(dt_now, OA2, grid);
-  rep.errorTest("scn::advance_step_OA2: calc_x_dU OA2", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "scn::advance_step_OA2: calc_x_dU OA2", 0,
+        err);
   // save fluxes at level boundaries
   if (l > 0) save_fine_fluxes(SimPM, l);
   if (l < SimPM.grid_nlevels - 1) save_coarse_fluxes(SimPM, l);
@@ -738,7 +808,7 @@ double sim_control_NG::advance_step_OA2(const int l  ///< level to advance.
   // First correct fluxes
   //
 #ifdef TEST_INT
-  cout << "l=" << l << " full step, grid_update_state_vector\n";
+  spdlog::debug("l={} full step, grid_update_state_vector", l);
 #endif
 #ifdef PION_OMP
   #pragma omp parallel
@@ -751,11 +821,17 @@ double sim_control_NG::advance_step_OA2(const int l  ///< level to advance.
 #ifndef SKIP_BC89_FLUX
   if (l < SimPM.grid_nlevels - 1) {
     err += recv_BC89_fluxes_F2C(spatial_solver, SimPM, l, OA2, OA2);
-    rep.errorTest("scn::advance_step_OA1: recv_BC89_flux", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "scn::advance_step_OA1: recv_BC89_flux",
+          0, err);
   }
 #endif
   err += grid_update_state_vector(dt_now, OA2, OA2, grid);
-  rep.errorTest("scn::advance_step_OA2: update OA2", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "scn::advance_step_OA2: update OA2", 0,
+        err);
   // --------------------------------------------------------
 
   // --------------------------------------------------------
@@ -780,13 +856,16 @@ double sim_control_NG::advance_step_OA2(const int l  ///< level to advance.
   // Do raytracing for next step, to send with F2C BCs.
   // --------------------------------------------------------
   err += do_ongrid_raytracing(SimPM, grid, l);
-  rep.errorTest("NG-MPI::advance_step_OA2: raytracing()", 0, err);
-  // --------------------------------------------------------
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}", "NG-MPI::advance_step_OA2: raytracing()",
+        0, err);
+    // --------------------------------------------------------
 
 #ifdef TEST_INT
-  cout << "advance_step_OA2, level=" << l << ", returning. t=";
-  cout << SimPM.levels[l].simtime << ", step=";
-  cout << SimPM.levels[l].step << "\n";
+  spdlog::debug(
+      "advance_step_OA2, level={}, returning. t={}, step={}", l,
+      SimPM.levels[l].simtime, SimPM.levels[l].step);
 #endif
   return dt2_this + SimPM.levels[l].dt;
 }
@@ -824,17 +903,11 @@ int sim_control_NG::check_energy_cons(vector<class GridBaseClass *> &grid)
     } while ((c = grid[l]->NextPt(c)) != 0);
   }
 
-  cout << "(conserved quantities) [" << nowERG << ", ";
-  cout << nowMMX << ", ";
-  cout << nowMMY << ", ";
-  cout << nowMMZ << ", ";
-  cout << nowMASS << "]\n";
-  cout << "(relative error      ) [";
-  cout << (nowERG - initERG) / (initERG) << ", ";
-  cout << (nowMMX - initMMX) / (totmom) << ", ";
-  cout << (nowMMY - initMMY) / (totmom) << ", ";
-  cout << (nowMMZ - initMMZ) / (totmom) << ", ";
-  cout << (nowMASS - initMASS) / initMASS << "]\n";
+  spdlog::debug(
+      "(conserved quantities) [{}, {}, {}, {}, {}]\n(relative error      ) [{}, {}, {}, {}, {}]",
+      nowERG, nowMMX, nowMMY, nowMMZ, nowMASS, (nowERG - initERG) / (initERG),
+      (nowMMX - initMMX) / (totmom), (nowMMY - initMMY) / (totmom),
+      (nowMMZ - initMMZ) / (totmom), (nowMASS - initMASS) / initMASS);
 
 #endif  // TEST_CONSERVATION
   return (0);
@@ -858,12 +931,12 @@ int sim_control_NG::do_ongrid_raytracing(
   for (int isrc = 0; isrc < par.RS.Nsources; isrc++) {
     if (!SimPM.RS.sources[isrc].ongrid) continue;
 #ifdef RT_TESTING
-    cout << "calc_raytracing_col_dens: SRC-ID: " << isrc << "\n";
+    spdlog::debug("calc_raytracing_col_dens: SRC-ID: {}", isrc);
 #endif
     err += grid->RT->RayTrace_Column_Density(isrc, 0.0, par.gamma);
     if (err) {
-      cout << "isrc=" << isrc << "\t";
-      rep.error("ongrid RT: RT return", err);
+      spdlog::debug("isrc={}\t", isrc);
+      spdlog::error("{}: {}", "ongrid RT: RT return", err);
     }  // if error
   }    // loop over sources
   return err;
@@ -889,12 +962,12 @@ int sim_control_NG::do_offgrid_raytracing(
       continue;
     }
 #ifdef RT_TESTING
-    cout << "calc_raytracing_col_dens: SRC-ID: " << isrc << "\n";
+    spdlog::debug("calc_raytracing_col_dens: SRC-ID: {}", isrc);
 #endif
     err += grid->RT->RayTrace_Column_Density(isrc, 0.0, par.gamma);
     if (err) {
-      cout << "isrc=" << isrc << "\t";
-      rep.error("offgrid RT: RT return", err);
+      spdlog::debug("isrc={}\t", isrc);
+      spdlog::error("{}: {}", "offgrid RT: RT return", err);
     }  // if error
   }    // loop over sources
   return err;
@@ -934,37 +1007,49 @@ int sim_control_NG::RT_all_sources_levels(
   // update internal boundaries and then all sources (fine first)
   for (int l = par.grid_nlevels - 1; l >= 0; l--) {
 #ifdef TEST_INT
-    cout << "updating internal boundaries for level " << l << "\n";
+    spdlog::debug("updating internal boundaries for level {}", l);
 #endif
     grid = par.levels[l].grid;
     // F2C gets data from child grid onto this grid.
     err = TimeUpdateInternalBCs(
         par, l, grid, spatial_solver, par.simtime, par.tmOOA, par.tmOOA);
-    rep.errorTest("NG RT_all_sources_levels: pass 2 BC-int", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}",
+          "NG RT_all_sources_levels: pass 2 BC-int", 0, err);
 #ifdef TEST_INT
-    cout << "doing raytracing for level " << l << "\n";
+    spdlog::debug("doing raytracing for level {}", l);
 #endif
     err = do_ongrid_raytracing(par, grid, l);
     // err = do_offgrid_raytracing(par,grid,l);
-    rep.errorTest("NG RT_all_sources_levels: pass 2 RT", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "NG RT_all_sources_levels: pass 2 RT",
+          0, err);
 #ifdef TEST_INT
-    cout << "moving on to next level.\n";
+    spdlog::debug("moving on to next level.");
 #endif
   }
-  rep.errorTest("sim_control_NG: internal boundary update", 0, err);
+  if (0 != err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "sim_control_NG: internal boundary update", 0, err);
   // --------------------------------------------------------------
 
   // --------------------------------------------------------------
   // Update external boundaries.
   for (int l = 0; l < par.grid_nlevels; l++) {
 #ifdef TEST_INT
-    cout << "Pass 3: external boundaries for level " << l << "\n";
+    spdlog::debug("Pass 3: external boundaries for level {}", l);
 #endif
     grid = par.levels[l].grid;
     // C2F gets data from parent grid onto this grid.
     err = TimeUpdateExternalBCs(
         par, l, grid, spatial_solver, par.simtime, par.tmOOA, par.tmOOA);
-    rep.errorTest("NG RT_all_sources_levels: pass 3 BC-ext", 0, err);
+    if (0 != err)
+      spdlog::error(
+          "{}: Expected {} but got {}",
+          "NG RT_all_sources_levels: pass 3 BC-ext", 0, err);
   }
   // --------------------------------------------------------------
 

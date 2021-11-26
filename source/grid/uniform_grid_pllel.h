@@ -42,17 +42,19 @@ public:
   /// Constructor. Sets up a grid in the same way as the serial grid.
   ///
   UniformGridParallel(
-      int,             ///< ndim
-      int,             ///< nvar
-      int,             ///< equation type
-      int,             ///< number of boundary cells to use.
-      const double *,  ///< local xmin
-      const double *,  ///< local xmax
-      const int *,     ///< local number of grid zones
-      double *,        ///< array of min. x/y/z for level.
-      double *,        ///< array of max. x/y/z for level.
-      double *,        ///< array of min. x/y/z for full simulation.
-      double *         ///< array of max. x/y/z for full simulation.
+      int,  ///< ndim
+      int,  ///< nvar
+      int,  ///< equation type
+      int,  ///< number of boundary cells to use.
+      const std::array<double, MAX_DIM> &,  ///< local xmin
+      const std::array<double, MAX_DIM> &,  ///< local xmax
+      const std::array<int, MAX_DIM> &,     ///< local number of grid zones
+      std::array<double, MAX_DIM> &,        ///< array of min. x/y/z for level.
+      std::array<double, MAX_DIM> &,        ///< array of max. x/y/z for level.
+      std::array<double, MAX_DIM>
+          &,  ///< array of min. x/y/z for full simulation.
+      std::array<double, MAX_DIM>
+          &  ///< array of max. x/y/z for full simulation.
   );
 
   ///
@@ -88,13 +90,18 @@ public:
       int,  ///< nvar, length of state vectors.
       int,  ///< eqntype, which equations we are using (needed by BCs).
       int,  ///< number of boundary cells to use.
-      const double *,  ///< array of minimum values of x,y,z.
-      const double *,  ///< array of maximum values of x,y,z.
-      const int *,     ///< array of number of cells in x,y,z directions.
-      double *,        ///< array of min. x/y/z for level.
-      double *,        ///< array of max. x/y/z for level.
-      double *,        ///< array of min. x/y/z for full simulation.
-      double *         ///< array of max. x/y/z for full simulation.
+      const std::array<double, MAX_DIM>
+          &,  ///< array of minimum values of x,y,z.
+      const std::array<double, MAX_DIM>
+          &,  ///< array of maximum values of x,y,z.
+      const std::array<int, MAX_DIM>
+          &,  ///< array of number of cells in x,y,z directions.
+      std::array<double, MAX_DIM> &,  ///< array of min. x/y/z for level.
+      std::array<double, MAX_DIM> &,  ///< array of max. x/y/z for level.
+      std::array<double, MAX_DIM>
+          &,  ///< array of min. x/y/z for full simulation.
+      std::array<double, MAX_DIM>
+          &  ///< array of max. x/y/z for full simulation.
   );
 
   ///
@@ -136,13 +143,18 @@ public:
       int,  ///< nvar, length of state vectors.
       int,  ///< eqntype, which equations we are using (needed by BCs).
       int,  ///< number of boundary cells to use.
-      const double *,  ///< array of minimum values of x,y,z.
-      const double *,  ///< array of maximum values of x,y,z.
-      const int *,     ///< array of number of cells in x,y,z directions.
-      double *,        ///< array of min. x/y/z for level.
-      double *,        ///< array of max. x/y/z for level.
-      double *,        ///< array of min. x/y/z for full simulation.
-      double *         ///< array of max. x/y/z for full simulation.
+      const std::array<double, MAX_DIM>
+          &,  ///< array of minimum values of x,y,z.
+      const std::array<double, MAX_DIM>
+          &,  ///< array of maximum values of x,y,z.
+      const std::array<int, MAX_DIM>
+          &,  ///< array of number of cells in x,y,z directions.
+      std::array<double, MAX_DIM> &,  ///< array of min. x/y/z for level.
+      std::array<double, MAX_DIM> &,  ///< array of max. x/y/z for level.
+      std::array<double, MAX_DIM>
+          &,  ///< array of min. x/y/z for full simulation.
+      std::array<double, MAX_DIM>
+          &  ///< array of max. x/y/z for full simulation.
   );
 
   ///

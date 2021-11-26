@@ -5,6 +5,8 @@
 /// Modifications :\n
 /// - 2018.08.08 JM: moved code.
 
+#include <spdlog/spdlog.h>
+
 #include "boundaries/double_Mach_ref_boundaries.h"
 #include "tools/mem_manage.h"
 using namespace std;
@@ -18,11 +20,11 @@ int double_Mach_ref_bc::BC_assign_DMACH(
     boundary_data *b)
 {
 #ifndef NDEBUG
-  cout << "Setting up DMACH boundary... starting.\n";
+  spdlog::info("Setting up DMACH boundary... starting.");
 #endif  // NDEBUG
 
   if (b->data.empty()) {
-    rep.error("BC_assign_DMACH: empty boundary data", b->itype);
+    spdlog::error("{}: {}", "BC_assign_DMACH: empty boundary data", b->itype);
   }
   //
   // Set reference value to be downstream values.
@@ -81,10 +83,11 @@ int double_Mach_ref_bc::BC_assign_DMACH(
   } while (bpt != b->data.end());
 
   if (ct != b->data.size()) {
-    rep.error("BC_assign_: missed some cells!", ct - b->data.size());
+    spdlog::error(
+        "{}: {}", "BC_assign_: missed some cells!", ct - b->data.size());
   }
 #ifndef NDEBUG
-  cout << "Setting up DMACH boundary... finished.\n";
+  spdlog::info("Setting up DMACH boundary... finished.");
 #endif  // NDEBUG
   return 0;
 }
@@ -98,16 +101,17 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
     boundary_data *b)
 {
 #ifndef NDEBUG
-  cout << "Setting up DMACH2 boundary... starting.\n";
+  spdlog::info("Setting up DMACH2 boundary... starting.");
 #endif  // NDEBUG
 
   if (b->dir != NO) {
-    rep.error("DMACH2 not internal boundary!", b->dir);
+    spdlog::error("{}: {}", "DMACH2 not internal boundary!", b->dir);
   }
-  cout << "DMACH2 boundary, from x=0 to x=1/6 at y=0, fixed bd.\n";
+  spdlog::info("DMACH2 boundary, from x=0 to x=1/6 at y=0, fixed bd.");
   if (b->refval) {
-    rep.error(
-        "Already initialised memory in DMACH2 boundary refval", b->refval);
+    spdlog::error(
+        "{}: {}", "Already initialised memory in DMACH2 boundary refval",
+        fmt::ptr(b->refval));
   }
   b->refval = mem.myalloc(b->refval, par.nvar);
 
@@ -124,7 +128,8 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
   // x<=1/6
   //
   if (!b->data.empty()) {
-    rep.error("BC_assign_DMACH2: Not empty boundary data", b->itype);
+    spdlog::error(
+        "{}: {}", "BC_assign_DMACH2: Not empty boundary data", b->itype);
   }
   cell *c = grid->FirstPt();
   //
@@ -132,7 +137,7 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
   // is also YN boundary of full domain:
   //
   if (c->pos[YY] > grid->idx()) {
-    cout << "domain is not at YN boundary, returning.\n";
+    spdlog::info("domain is not at YN boundary, returning.");
     return 0;
   }
   cell *temp = 0;
@@ -151,14 +156,16 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
           temp->Ph[v] = b->refval[v];
         b->data.push_back(temp);
         if (temp->isgd) {
-          rep.error("BC_assign_DMACH2: Looking for Boundary cells!", temp);
+          spdlog::error(
+              "{}: {}", "BC_assign_DMACH2: Looking for Boundary cells!",
+              fmt::ptr(temp));
         }
       }
     }
   } while ((c = grid->NextPt(c, XP)) && (CI.get_dpos(c, XX) <= 1. / 6.));
 
 #ifndef NDEBUG
-  cout << "Setting up DMACH2 boundary... finished.\n";
+  spdlog::info("Setting up DMACH2 boundary... finished.");
 #endif  // NDEBUG
   return 0;
 }

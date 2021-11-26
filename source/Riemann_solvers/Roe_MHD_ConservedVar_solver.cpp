@@ -27,7 +27,11 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
 
 using namespace std;
 
@@ -47,9 +51,6 @@ Riemann_Roe_MHD_CV::Riemann_Roe_MHD_CV(
     eqns_base(nv),
     eqns_mhd_ideal(nv)
 {
-#ifdef FUNCTION_ID
-  cout << "::Riemann_Roe_MHD_CV ...starting.\n";
-#endif  // FUNCTION_ID
   //
   // eq_gamma, eq_nvar are defined in eqns_base class
   //
@@ -80,11 +81,6 @@ Riemann_Roe_MHD_CV::Riemann_Roe_MHD_CV(
   // Set the enthalpy index to replace pressure.
   //
   eqHH = eqPG;
-
-#ifdef FUNCTION_ID
-  cout << "::Riemann_Roe_MHD_CV ...returning.\n";
-#endif  // FUNCTION_ID
-  return;
 }
 
 // ##################################################################
@@ -92,10 +88,6 @@ Riemann_Roe_MHD_CV::Riemann_Roe_MHD_CV(
 
 Riemann_Roe_MHD_CV::~Riemann_Roe_MHD_CV()
 {
-#ifdef FUNCTION_ID
-  cout << "::~Riemann_Roe_MHD_CV ...starting.\n";
-#endif  // FUNCTION_ID
-
   //
   // Free Memory:
   //
@@ -109,11 +101,6 @@ Riemann_Roe_MHD_CV::~Riemann_Roe_MHD_CV()
   Roe_UR          = mem.myfree(Roe_UR);
   Roe_udiff       = mem.myfree(Roe_udiff);
   Roe_pdiff       = mem.myfree(Roe_pdiff);
-
-#ifdef FUNCTION_ID
-  cout << "::~Riemann_Roe_MHD_CV ...returning.\n";
-#endif  // FUNCTION_ID
-  return;
 }
 
 // ##################################################################
@@ -141,9 +128,7 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_onesided(
     diff += fabs(right[i] - left[i]) / (fabs(eq_refvec[i]) + TINYVALUE);
 
   if (diff < 1.e-6) {
-#ifdef RoeMHD_TESTING
-    cout << "same states...\n";
-#endif
+    spdlog::info("same states...");
     for (int v = 0; v < eq_nvar; v++)
       out_pstar[v] = 0.5 * (left[v] + right[v]);
     eqns_mhd_ideal::PtoFlux(left, out_flux, eq_gamma);
@@ -152,9 +137,9 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_onesided(
 
   int err = 0;
 #ifdef RoeMHD_TESTING
-  cout << "\t************\n";
-  rep.printVec(" left", left, 8);
-  rep.printVec("right", right, 8);
+  spdlog::info("\t************");
+  spdlog::debug(" left : {}", left);
+  spdlog::debug("right : {}", right);
 #endif
 
   eqns_mhd_ideal::PtoU(left, Roe_UL, eq_gamma);
@@ -209,15 +194,11 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_symmetric(
     pion_flt *out_pstar,
     pion_flt *out_flux)
 {
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_symmetric ...starting.\n";
-#endif  // FUNCTION_ID
-
   int err = 0;
 #ifdef RoeMHD_TESTING
-  cout << "\t************\n";
-  rep.printVec(" left", left, 8);
-  rep.printVec("right", right, 8);
+  spdlog::info("\t************");
+  spdlog::debug(" left : {}", left);
+  spdlog::debug("right : {}", right);
 #endif
 
   eq_gamma = g;
@@ -242,10 +223,6 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_symmetric(
   //
   set_pstar_from_meanp(out_pstar);
 
-#ifdef FUNCTION_ID
-  cout
-      << "Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_symmetric ...returning.\n";
-#endif  // FUNCTION_ID
   return err;
 }
 
@@ -278,10 +255,6 @@ double Riemann_Roe_MHD_CV::Enthalpy(
 ///
 void Riemann_Roe_MHD_CV::set_pstar_from_meanp(pion_flt *out_pstar)
 {
-#ifdef FUNCTION_ID
-  cout << "Riemann_Roe_MHD_CV::set_pstar_from_meanp ...starting.\n";
-#endif  // FUNCTION_ID
-
   for (int v = 0; v < eq_nvar; v++)
     out_pstar[v] = Roe_meanp[v];
   //
@@ -303,9 +276,8 @@ void Riemann_Roe_MHD_CV::set_pstar_from_meanp(pion_flt *out_pstar)
   out_pstar[eqPG] = out_pstar[eqRO] * Roe_a * Roe_a / eq_gamma;
 
 #ifdef FUNCTION_ID
-  cout << "Riemann_Roe_MHD_CV::set_pstar_from_meanp ...returning.\n";
+  spdlog::info("Riemann_Roe_MHD_CV::set_pstar_from_meanp ...returning");
 #endif  // FUNCTION_ID
-  return;
 }
 
 // ##################################################################
@@ -536,7 +508,7 @@ int Riemann_Roe_MHD_CV::Roe_get_eigenvalues(const pion_flt Hcorr_etamax)
   Roe_evalues[AP] = Roe_meanp[eqVX] + Roe_ca;
   Roe_evalues[FP] = Roe_meanp[eqVX] + Roe_cf;
 #ifdef RoeMHD_TESTING
-  rep.printVec("e-values", Roe_evalues, 7);
+  spdlog::debug("e-values : {}", Roe_evalues);
 #endif
 
   //
@@ -561,7 +533,7 @@ int Riemann_Roe_MHD_CV::Roe_get_eigenvalues(const pion_flt Hcorr_etamax)
     }
   }
 #ifdef RoeMHD_TESTING
-  rep.printVec("e-values after H-correction", Roe_evalues, 7);
+  spdlog::debug("e-values after H-correction : {}", Roe_evalues);
 #endif
 
   return 0;
@@ -636,7 +608,7 @@ int Riemann_Roe_MHD_CV::Roe_get_wavestrengths()
       (Roe_a * Roe_a - Roe_CGparamX) * Roe_pdiff[eqRO] - Roe_pdiff[eqPG];
 
 #ifdef RoeMHD_TESTING
-  rep.printVec("strengths:", Roe_strengths, 7);
+  spdlog::debug("strengths: : {}", Roe_strengths);
   // cout <<"str[FN] = "<<Roe_strengths[FN]<<"\n";
   // cout <<"str[AN] = "<<Roe_strengths[AN]<<"\n";
   // cout <<"str[SN] = "<<Roe_strengths[SN]<<"\n";
@@ -920,7 +892,7 @@ int Riemann_Roe_MHD_CV::Roe_get_flux_onesided(
     out_flux[eqBBX] = 0.0;  // by definition!
 
 #ifdef RoeMHD_TESTING
-    rep.printVec("left  flux:", out_flux, 8);
+    spdlog::debug("left  flux: : {}", out_flux);
 #endif
     // cout <<"0-7
     // ="<<eqRHO<<","<<eqERG<<","<<eqMMX<<","<<eqMMY<<","<<eqMMZ<<","<<eqBBX<<","<<eqBBY<<","<<eqBBZ<<"\n";
@@ -968,7 +940,7 @@ int Riemann_Roe_MHD_CV::Roe_get_flux_onesided(
     }
     ftemp[eqBBX] = 0.0;  // by definition!
                          //#ifdef RoeMHD_TESTING
-    rep.printVec("right flux:", ftemp, 8);
+    spdlog::debug("right flux: : {}", ftemp);
     //#endif
 
     double diff = 0.0;
@@ -979,28 +951,25 @@ int Riemann_Roe_MHD_CV::Roe_get_flux_onesided(
               / (fabs(out_flux[v]) + fabs(ftemp[v]) + TINYVALUE);
     }
     if (diff > 1e-3) {
-      cout << "*** FLUX CALCULATION ERROR IN "
-              "Riemann_Roe_MHD_CV::Roe_get_flux(): diff = "
-           << diff << "\n";
-      rep.printVec("left  flux:", out_flux, 8);
-      rep.printVec("right flux:", ftemp, 8);
-      rep.printVec("e-values", Roe_evalues, 7);
-      rep.printVec("strengths:", Roe_strengths, 7);
-      rep.printVec(" left", left, 8);
-      rep.printVec("right", right, 8);
-      rep.printVec("meanp", Roe_meanp, 8);
-      rep.printVec("pdiff", Roe_pdiff, 8);
-      rep.printVec("udiff", Roe_udiff, 8);
+      spdlog::error(
+          "*** FLUX CALCULATION ERROR IN Riemann_Roe_MHD_CV::Roe_get_flux(): diff = {}",
+          diff);
+      spdlog::error("left  flux: : {}", out_flux);
+      spdlog::error("right flux: : {}", ftemp);
+      spdlog::error("e-values : {}", Roe_evalues);
+      spdlog::error("strengths: : {}", Roe_strengths);
+      spdlog::error(" left : {}", left);
+      spdlog::error("right : {}", right);
+      spdlog::error("meanp : {}", Roe_meanp);
+      spdlog::error("pdiff : {}", Roe_pdiff);
+      spdlog::error("udiff : {}", Roe_udiff);
       for (int i = 0; i < 7; ++i) {
-        cout << "rightevec[" << i << "] = [ ";
+        spdlog::debug("rightevec[{}] = [ ", i);
         for (int j = 0; j < 7; j++) {
-          cout.width(9);
-          cout << Roe_right_evecs[i][j] << ", ";
+          spdlog::debug("{}, ", Roe_right_evecs[i][j]);
         }
-        cout << "]"
-             << "\n";
+        spdlog::debug("]");
       }
-      // cout <<"\t*************************************\n";
       return 1;
     }
 #ifdef MHD_ROE_USE_USTAR
@@ -1012,11 +981,11 @@ int Riemann_Roe_MHD_CV::Roe_get_flux_onesided(
       diff += (Ustar[v] - UstarR[v]) / eq_refvec[v];
     }
     if (diff > 1e-3) {
-      cout << "*** FLUX CALCULATION ERROR IN "
-              "Riemann_Roe_MHD_CV::Roe_get_flux(): diff = "
-           << diff << "\n";
-      rep.printVec(" left", Ustar, 8);
-      rep.printVec("right", UstarR, 8);
+      spdlog::error(
+          "*** FLUX CALCULATION ERROR IN Riemann_Roe_MHD_CV::Roe_get_flux(): diff = {}",
+          diff);
+      spdlog::error(" left : {}", Ustar);
+      spdlog::error("right : {}", UstarR);
     }
 #endif  // MHD_ROE_USE_USTAR
 #endif  // RoeMHD_TESTING
@@ -1036,25 +1005,25 @@ int Riemann_Roe_MHD_CV::Roe_get_flux_onesided(
     case 1:
       negPGct++;
       if (negPGct < 1000) {
-        cout << "Got negative pressure in Roe starred state! err=" << err
-             << "\n";
-        rep.printVec("U*L", Ustar, 8);
+        spdlog::error(
+            "Got negative pressure in Roe starred state! err={}", err);
+        spdlog::error("U*L : {}", Ustar);
 #ifdef RoeMHD_TESTING
-        rep.printVec("U*R", UstarR, 8);
+        spdlog::error("U*R : {}", UstarR);
 #endif  // RoeMHD_TESTING
-        rep.printVec("P* ", out_pstar, 8);
+        spdlog::error("P*  : {}", out_pstar);
       }
       break;
     case 2:
       negROct++;
       if (negROct < 1000) {
-        cout << "Got negative pressure in Roe starred state! err=" << err
-             << "\n";
-        rep.printVec("U*L", Ustar, 8);
+        spdlog::error(
+            "Got negative pressure in Roe starred state! err={}", err);
+        spdlog::error("U*L : {}", Ustar);
 #ifdef RoeMHD_TESTING
-        rep.printVec("U*R", UstarR, 8);
+        spdlog::error("U*R : {}", UstarR);
 #endif  // RoeMHD_TESTING
-        rep.printVec("P* ", out_pstar, 8);
+        spdlog::error("P*  : {}", out_pstar);
       }
       //
       // Use Roe-average density instead of starred state negative density
@@ -1062,7 +1031,7 @@ int Riemann_Roe_MHD_CV::Roe_get_flux_onesided(
       Ustar[eqRHO] = Roe_meanp[eqRO];
       break;
     default:
-      rep.error("unhandled return error code from UtoP()", err);
+      spdlog::error("{}: {}", "unhandled return error code from UtoP()", err);
       break;
   }
 
@@ -1080,7 +1049,7 @@ int Riemann_Roe_MHD_CV::calculate_symmetric_flux(
     const pion_flt *left, const pion_flt *right, pion_flt *out_flux)
 {
 #ifdef FUNCTION_ID
-  cout << "Riemann_Roe_MHD_CV::calculate_symmetric_flux ...starting.\n";
+  spdlog::info("Riemann_Roe_MHD_CV::calculate_symmetric_flux ...starting");
 #endif  // FUNCTION_ID
   //
   // Get the flux by stepping across waves:
@@ -1127,7 +1096,7 @@ int Riemann_Roe_MHD_CV::calculate_symmetric_flux(
     out_flux[v] *= 0.5;
 
 #ifdef FUNCTION_ID
-  cout << "Riemann_Roe_MHD_CV::calculate_symmetric_flux ...returning.\n";
+  spdlog::info("Riemann_Roe_MHD_CV::calculate_symmetric_flux ...returning");
 #endif  // FUNCTION_ID
 
   return 0;

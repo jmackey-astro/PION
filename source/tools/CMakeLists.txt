@@ -3,7 +3,6 @@ add_library(tools
   command_line_interface.cpp
   interpolate.cpp
   mem_manage.cpp
-  reporting.cpp
   timer.cpp
 )
 

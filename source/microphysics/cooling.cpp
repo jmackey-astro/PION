@@ -25,14 +25,17 @@
 #include "defines/testing_flags.h"
 #include "tools/interpolate.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+
+#include <spdlog/spdlog.h>
+
 #ifndef NDEBUG
 #include "grid/cell_interface.h"
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
 
 #include "microphysics/cooling.h"
-#include <iostream>
+
 using namespace std;
 
 #define GammaMinusOne 0.667
@@ -49,16 +52,13 @@ CoolingFn::CoolingFn(int flag)
 
 #ifdef FUNCTION_ID
   string fname = "CoolingFn::CoolingFn";
-  cout << "\t\tCooling Function Constructor."
-       << "\n";
+  spdlog::info("\t\tCooling Function Constructor)"
 #endif  // FUNCTION_ID
   if (flag == 1) {
     WhichFunction = 1;
-    cout << "\t\tFlag = " << flag
-         << " corresponding to Sutherland & Dopita (1993, ApJS, 88, 253) "
-            "cooling function\n";
-    cout << "\t\tfrom file pk6ff75.neq from "
-            "http://www.mso.anu.edu.au/~ralph/data/cool/\n";
+    spdlog::debug(
+        "\t\tFlag = {} corresponding to Sutherland & Dopita (1993, ApJS, 88, 253) cooling function\n\t\tfrom file pk6ff75.neq from http://www.mso.anu.edu.au/~ralph/data/cool/\n",
+        flag);
     Temp = 0;
     Lamb = 0;
     Nspl = 69;
@@ -91,13 +91,13 @@ CoolingFn::CoolingFn(int flag)
     MaxTemp = Temp[Nspl - 1];
 #ifdef LINSLP
     MinSlope = (Lamb[1] - Lamb[0]) / (Temp[1] - Temp[0]);
-    cout << "\t\tMinSlope (linear) = " << MinSlope << "\n";
+    spdlog::debug("\t\tMinSlope (linear) = {}", MinSlope);
 #endif
 #ifdef LOGSLP
     MinSlope = (temp2[67] - temp2[68]) / (temp1[67] - temp1[68]);
     //    MinSlope *=2.0;
     MinSlope = 4.0;
-    cout << "\t\tMinSlope (logarithmic) = " << MinSlope << "\n";
+    spdlog::debug("\t\tMinSlope (logarithmic) = {}", MinSlope);
 #endif
     // The two large values passed to spline tell it to use zero second
     // derivative boundary conditions for extrapolation beyond the range of
@@ -111,15 +111,9 @@ CoolingFn::CoolingFn(int flag)
     Temp          = 0;
     Lamb          = 0;
     ;
-    cout << "\t\tFlag = " << flag
-         << " corresponding to Koyami & Inutsuka (2002, ApJL, 564, L97) "
-            "cooling function\n";
-    cout << "\t\tThis is a double exponential fitting function, using their "
-            "equations 4 and 5.\n";
-    cout << "\t\tN.B. The KI02 equation had two typos: (1.148e5 instead of "
-            "1.184e5, and 14 instead of 1.4e-2)\n";
-    cout << "\t\tThese were corrected by Vasquez-Semadeni et al. 2007, ApJ, "
-            "657, 870.\n";
+    spdlog::debug(
+        "\t\tFlag = {} corresponding to Koyami & Inutsuka (2002, ApJL, 564, L97) cooling function\n\t\tThis is a double exponential fitting function, using their equations 4 and 5.\n\t\tN.B. The KI02 equation had two typos: (1.148e5 instead of 1.184e5, and 14 instead of 1.4e-2)\n\t\tThese were corrected by Vasquez-Semadeni et al. 2007, ApJ, 657, 870.\n",
+        flag);
     MinTemp = 5.0;
     MaxTemp = 5.0e8;
   }  // KI02 function
@@ -128,9 +122,9 @@ CoolingFn::CoolingFn(int flag)
     WhichFunction = 3;
     Temp          = 0;
     Lamb          = 0;
-    cout << "\t\tFlag = " << flag
-         << " corresponding to Dalgarno & McCray (1972, ARAA, 10,375) cooling "
-            "function\n";
+    spdlog::debug(
+        "\t\tFlag = {} corresponding to Dalgarno & McCray (1972, ARAA, 10,375) cooling function\n",
+        flag);
     Nspl = 31;
 
     Temp = mem.myalloc(Temp, Nspl);
@@ -152,20 +146,21 @@ CoolingFn::CoolingFn(int flag)
     MaxTemp = exp(log(10.0) * Temp[Nspl - 1]);
 #ifdef LINSLP
     MinSlope = (Lamb[1] - Lamb[0]) / (Temp[1] - Temp[0]);
-    cout << "\t\tMinSlope (linear) = " << MinSlope << "\n";
+    spdlog::debug("\t\tMinSlope (linear) = {}", MinSlope);
 #endif
 #ifdef LOGSLP
     // MinSlope = (temp2[67]-temp2[68])/(temp1[67]-temp1[68]);
     //    MinSlope *=2.0;
     MinSlope = 1.0;
-    cout << "\t\tMinSlope (logarithmic) = " << MinSlope << "\n";
+    spdlog::debug("\t\tMinSlope (logarithmic) = {}", MinSlope);
 #endif
     // The two large values passed to spline tell it to use zero second
     // derivative boundary conditions for extrapolation beyond the range of
     // the data.  It is dangerous to go beyond the range, but this boundary
     // condition means that extrapolation has a chance of being reasonable.
     spline(Temp, Lamb, Nspl, 0.0, 0.0, id);
-    rep.error(
+    spdlog::error(
+        "{}: {}",
         "Dalgarno and McCray cooling function is not usably coded -- get "
         "a better function",
         999);
@@ -173,11 +168,9 @@ CoolingFn::CoolingFn(int flag)
 
   else if (flag == 4) {
     WhichFunction = 4;
-    cout << "\t\tFlag = " << flag
-         << " corresponding to Sutherland & Dopita (1993, ApJS, 88, 253) CIE "
-            "cooling function\n";
-    cout << "\t\tfrom file m-00.cie from "
-            "http://www.mso.anu.edu.au/~ralph/data/cool/\n";
+    spdlog::debug(
+        "\t\tFlag = {} corresponding to Sutherland & Dopita (1993, ApJS, 88, 253) CIE cooling function\n\t\tfrom file m-00.cie from http://www.mso.anu.edu.au/~ralph/data/cool/\n",
+        flag);
     Temp = 0;
     Lamb = 0;
     Nspl = 91;
@@ -214,11 +207,11 @@ CoolingFn::CoolingFn(int flag)
     MaxTemp = Temp[Nspl - 1];
 #ifdef LINSLP
     MinSlope = (Lamb[1] - Lamb[0]) / (Temp[1] - Temp[0]);
-    cout << "\t\tMinSlope (linear) = " << MinSlope << "\n";
+    spdlog::debug("\t\tMinSlope (linear) = {}", MinSlope);
 #endif
 #ifdef LOGSLP
     MinSlope = (temp2[1] - temp2[0]) / (temp1[1] - temp1[0]);
-    cout << "\t\tMinSlope (logarithmic) = " << MinSlope << "\n";
+    spdlog::debug("\t\tMinSlope (logarithmic) = {}", MinSlope);
 #endif
     spline(Temp, Lamb, Nspl, 0.0, 0.0, id);
   }  // SD93 function (CIE)
@@ -226,15 +219,8 @@ CoolingFn::CoolingFn(int flag)
   else if (flag == 5) {
     // C2Ray -- free-free cooling and collisional excitation cooling due to
     // HI
-    cout << "\t\tC2RAY-like cooling due to free-free and HI coll.excitation.\n";
-    cout << "\t\t the recombination and ionisation cooling are in the "
-            "microphysics routine.\n";
-    cout << "\t\t I approx the ff cooling with 1.34e-11*sqrt(T_e)*ne*ni, good "
-            "for 10^3<T<10^4 or so.\n";
-    cout << "\t\t I ignore inverse compton cooling off the cmb, since i'm at "
-            "z=0.\n";
-    cout << "\t\t I use 7.5e-19*exp(-118348/T)/(1+sqrt(T/1.e5))*n_e*n_H0 as "
-            "the c.ex. cooling rate...\n";
+    spdlog::info(
+        "\t\tC2RAY-like cooling due to free-free and HI coll.excitation.\t\t the recombination and ionisation cooling are in the microphysics routine.\n\t\t I approx the ff cooling with 1.34e-11*sqrt(T_e)*ne*ni, good for 10^3<T<10^4 or so.\n\t\t I ignore inverse compton cooling off the cmb, since i'm at z=0.\n\t\t I use 7.5e-19*exp(-118348/T)/(1+sqrt(T/1.e5))*n_e*n_H0 as the c.ex. cooling rate...\n");
     MinTemp       = 0.000001;
     MaxTemp       = 1.e8;
     WhichFunction = 5;
@@ -265,7 +251,7 @@ CoolingFn::CoolingFn(int flag)
         MinSlope = 10.0;
         break;
       default:
-        rep.error("bad cooling flag", WhichFunction);
+        spdlog::error("{}: {}", "bad cooling flag", WhichFunction);
     }
     // cout <<" with log slope="<<MinSlope<<"\n\t\t and pivot at 8000K";
     // cout <<" with rate 1e-24 at 8000K.\n";
@@ -274,28 +260,27 @@ CoolingFn::CoolingFn(int flag)
   else if (
       flag == 11 || flag == 12 || flag == 13 || flag == 14 || flag == 15
       || flag == 16) {
-    cout
-        << "\t\tSD93-CIE function with power law contribution to account for\n";
-    cout << "\t\tforbidden line cooling in ionised gas.\n";
+    spdlog::debug(
+        "\t\tSD93-CIE function with power law contribution to account for\t\tforbidden line cooling in ionised gas.\n");
     if (flag == 12)
-      cout << "\t\tflag==" << flag
-           << ": Plus Exponential Cooling in neutral gas (TOY MODEL "
-              "n_H*t_c=1e6yrs)\n";
+      spdlog::debug(
+          "\t\tflag=={}: Plus Exponential Cooling in neutral gas (TOY MODEL n_H*t_c=1e6yrs)\n",
+          flag);
     if (flag == 13)
-      cout << "\t\tflag==" << flag
-           << ": Plus Exponential Cooling in neutral gas (TOY MODEL "
-              "n_H*t_c=1e7yrs)\n";
+      spdlog::debug(
+          "\t\tflag=={}: Plus Exponential Cooling in neutral gas (TOY MODEL n_H*t_c=1e7yrs)\n",
+          flag);
     if (flag == 14)
-      cout << "\t\tflag==" << flag
-           << ": Plus Exponential Cooling in neutral gas (TOY MODEL "
-              "t_c=1e3yrs)\n";
+      spdlog::debug(
+          "\t\tflag=={}: Plus Exponential Cooling in neutral gas (TOY MODEL t_c=1e3yrs)\n",
+          flag);
     if (flag == 15)
-      cout << "\t\tflag==" << flag
-           << ": Plus Exponential Cooling in neutral gas (TOY MODEL "
-              "t_c=1e4yrs)\n";
+      spdlog::debug(
+          "\t\tflag=={}: Plus Exponential Cooling in neutral gas (TOY MODEL t_c=1e4yrs)\n",
+          flag);
     if (flag == 16)
-      cout << "\t\tflag==" << flag
-           << ": Plus Henney et al (2009) cooling terms.\n";
+      spdlog::debug(
+          "\t\tflag=={}: Plus Henney et al (2009) cooling terms.\n", flag);
     WhichFunction = flag;
     Temp          = 0;
     Lamb          = 0;
@@ -332,18 +317,18 @@ CoolingFn::CoolingFn(int flag)
     MinTemp  = Temp[0];
     MaxTemp  = Temp[Nspl - 1];
     MinSlope = (temp2[1] - temp2[0]) / (temp1[1] - temp1[0]);
-    cout << "\t\tMinSlope (logarithmic) = " << MinSlope << "\n";
+    spdlog::debug("\t\tMinSlope (logarithmic) = {}", MinSlope);
     spline(Temp, Lamb, Nspl, 0.0, 0.0, id);
   }  // SD93-CIE-ForbiddenLine
 
   else
-    rep.error("Bad flag in CoolingFn Constructor", flag);
+    spdlog::error("{}: {}", "Bad flag in CoolingFn Constructor", flag);
 
   CoolingFn::spline_id = id;
 
 #ifdef COOL_TESTING
   ofstream outf("coolingcurve.txt");
-  if (!outf.is_open()) rep.error("couldn't open outfile", 1);
+  if (!outf.is_open()) spdlog::error("{}: {}", "couldn't open outfile", 1);
   outf << "Cooling Curve Data: Temperature(K) Rate(erg/cm^3/s) (n=1 per cc) "
           "ifracs: 1e-6, 1e-3, 0.1, 0.5, 0.99, 0.999999, and then the same for "
           "n=1e6/cc\n";
@@ -368,7 +353,7 @@ CoolingFn::CoolingFn(int flag)
   } while (t < 1.e7);
   outf.close();
 #endif  // COOL_TESTING
-  // rep.error("quitting",100);
+  // spdlog::error("{}: {}", "quitting",100);
   return;
 }
 
@@ -406,12 +391,12 @@ double CoolingFn::CoolingRate(
   //
   if (WhichFunction == 1 || WhichFunction == 4) {
     if (T > MaxTemp) {
-      cout << "Temp out of range!! Too large: T=" << T
-           << " and MAX.T=" << MaxTemp << "\n";
+      spdlog::debug(
+          "Temp out of range!! Too large: T={} and MAX.T={}", T, MaxTemp);
 #ifndef NDEBUG
       CI.print_cell(dp.c);
 #endif
-      cout << "Returning Lambda(MaxTemp) = Lambda(" << MaxTemp << ")\n";
+      spdlog::debug("Returning Lambda(MaxTemp) = Lambda({}", MaxTemp);
       splint(Temp, Lamb, spline_id, Nspl, MaxTemp, &rate);
     }
     else if (T <= 0.)
@@ -440,8 +425,8 @@ double CoolingFn::CoolingRate(
 
   else if (WhichFunction == 2) {
     if (T > MaxTemp) {
-      cout << "Warning: very large temperature!: T=" << T;
-      cout << " and MAX.T=" << MaxTemp << "\n";
+      spdlog::debug(
+          "Warning: very large temperature!: T={} and MAX.T={}", T, MaxTemp);
     }
     //
     // Koyama and Inutsuka: 2002, ApJL, 564, 97 (KI02)
@@ -466,21 +451,20 @@ double CoolingFn::CoolingRate(
     //
     rate -= nH * 2.0e-26;
 #ifndef NDEBUG
-    cout << "KI02 cooling: T=" << T << ", n=" << nH << ", rate=" << rate
-         << "\n";
+    spdlog::debug("KI02 cooling: T={}, n={}, rate={}", T, nH, rate);
 #endif
   }  // KI02 function.
 
   else if (WhichFunction == 3) {
-    cout
-        << "DALGARNO AND MCCRAY FUNCTION IS VERY DODGY -- BAD INTERPOLATION.\n";
+    spdlog::info(
+        "DALGARNO AND MCCRAY FUNCTION IS VERY DODGY -- BAD INTERPOLATION");
     if (T > MaxTemp) {
-      cout << "Temp out of range!! Too large: T=" << T
-           << " and MAX.T=" << MaxTemp << "\n";
+      spdlog::debug(
+          "Temp out of range!! Too large: T={} and MAX.T={}", T, MaxTemp);
 #ifndef NDEBUG
       CI.print_cell(dp.c);
 #endif
-      cout << "Returning Lambda(MaxTemp) = Lambda(" << MaxTemp << ")\n";
+      spdlog::debug("Returning Lambda(MaxTemp) = Lambda({}", MaxTemp);
       splint(Temp, Lamb, spline_id, Nspl, log10(MaxTemp), &rate);
       rate = exp(log(10.0) * rate);
     }
@@ -547,7 +531,8 @@ double CoolingFn::CoolingRate(
     // cout <<"\t\tT="<<T<<", ff rate="<<rate;
     // now excitation cooling for hydrogen only.
     //    if (xHp<0.1*SMALLVALUE || xHp>(1.0+SMALLVALUE)){
-    //      rep.error("ion fraction too small in cool->CoolingRate()",xHp);
+    //      spdlog::error("{}: {}", "ion fraction too small in
+    //      cool->CoolingRate()",xHp);
     // THIS MUST BE A CRAZY INTEGRATION ATTEMPT, SO RETURN A MASSIVE COOLING
     // RATE...
     //      rate += 1.0/TINYVALUE;
@@ -692,7 +677,8 @@ double CoolingFn::CoolingRate(
         t_h = 3.16e9;
         break;  // 1e4 yrs: Takes away dependency on density!
       default:
-        rep.error("Bad flag in toy model cooling!!!", WhichFunction);
+        spdlog::error(
+            "{}: {}", "Bad flag in toy model cooling!!!", WhichFunction);
     }
 
     //
@@ -826,7 +812,8 @@ double CoolingFn::CoolingRate(
   }  // SD93-CIE + Henney et al. (2009) model. (C16)
 
   else
-    rep.error("Which Function? CoolingFn::CoolingRate", WhichFunction);
+    spdlog::error(
+        "{}: {}", "Which Function? CoolingFn::CoolingRate", WhichFunction);
 
   // Now whichever function we use, it should have calculated 'rate', so we
   // can just return it.

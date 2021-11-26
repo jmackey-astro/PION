@@ -25,7 +25,10 @@
 
 #include "constants.h"
 #include "findroot.h"
-#include <iostream>
+
+
+#include <spdlog/spdlog.h>
+
 using namespace std;
 
 // ##################################################################
@@ -78,8 +81,7 @@ int findroot::FR_find_root(
   // Call the common solver, now that parameters are set properly.
   int err = findroot::solve_pos(x1, x2, ans);
   if (err != 0) {
-    cerr << "(findroot::solve_riemann) solve_pos exited abnormally"
-         << "\n";
+    spdlog::error("(findroot::solve_riemann) solve_pos exited abnormally");
     return (1);
   }
   //  cout << "(findroot::solve_riemann) Success: ans = " << *ans << "\n";
@@ -111,11 +113,10 @@ int findroot::solve_test(
   //
   int err = findroot::solve_pos(x1, x2, ans);
   if (err != 0) {
-    cerr << "(findroot::solve_test) exited abnormally, must be a bug!"
-         << "\n";
+    spdlog::error("(findroot::solve_test) exited abnormally, must be a bug!");
     return (1);
   }
-  cout << "(findroot::solve_test) Success: ans = " << *ans << "\n";
+  spdlog::debug("(findroot::solve_test) Success: ans = {}", *ans);
   return (0);
 }
 
@@ -139,8 +140,7 @@ int findroot::solve_pos(pion_flt x1, pion_flt x2, pion_flt *ans)
   //  cout << "(fr::solve) ans = " << *ans << "\n";
   int err = bracket_root_pos(&x1, &x2);
   if (err != 0) {
-    cerr << "(findroot::solve_pos) bracket exited abnormally"
-         << "\n";
+    spdlog::error("(findroot::solve_pos) bracket exited abnormally");
     *ans = -1.0;
     return (1);
   }
@@ -148,8 +148,8 @@ int findroot::solve_pos(pion_flt x1, pion_flt x2, pion_flt *ans)
   // err = find_root_bisection(&x1,&x2,errtol,ans);
   err = find_root_zbrent(x1, x2, errtol, ans);
   if (err != 0) {
-    cerr << "(findroot::solve_pos) couldn't find root in range [0, 1e10]"
-         << "\n";
+    spdlog::error(
+        "(findroot::solve_pos) couldn't find root in range [0, 1e10]");
     *ans = -1.0;
     return (1);
   }
@@ -196,8 +196,7 @@ int findroot::bracket_root_pm(pion_flt *x1, pion_flt *x2)
   // It works for functions of x=[-infty,infty].
   float factor = 0.2;
   if (*x1 == *x2) {
-    cerr << "(bracket) error -- x1,x2 are the same."
-         << "\n";
+    spdlog::error("(bracket) error -- x1,x2 are the same.");
     return (1);
   }
   if (*x1 > *x2) {
@@ -242,8 +241,7 @@ int findroot::bracket_root_pos(pion_flt *x1, pion_flt *x2)
   // to be modified to handle negative values of x.
   float factor = 1.6;
   if (*x1 == *x2) {
-    cerr << "(bracket) error -- x1,x2 are the same."
-         << "\n";
+    spdlog::error("(bracket) error -- x1,x2 are the same.");
     return (1);
   }
   if (*x1 > *x2) {
@@ -276,9 +274,9 @@ int findroot::bracket_root_pos(pion_flt *x1, pion_flt *x2)
     //    << *x2 << "\n";
     return (0);
   }
-  cerr << "(bracket) Error -- couldn't bracket root after 50 iterations.  "
-          "Failing (x1,x2)= "
-       << *x1 << ", " << *x2 << "\n";
+  spdlog::error(
+      "(bracket) Error -- couldn't bracket root after 50 iterations.  Failing (x1,x2)= {}, {}",
+      *x1, *x2);
   *x1 = *x2 = 0.;
   return (1);
 }
@@ -292,8 +290,7 @@ int findroot::find_root_bisection(
   // This is a simple bisection routine to find the root to an accuracy
   // of 'err'.  It is based on the NR bisection routine.
   if (*x1 > *x2) {
-    cerr << "(findroot) Error, must have x1<x2, ordered brackets!"
-         << "\n";
+    spdlog::error("(findroot) Error, must have x1<x2, ordered brackets!");
     return (1);
   }
   double f1   = FR_root_function(*x1);
@@ -314,8 +311,7 @@ int findroot::find_root_bisection(
       (fmid > 0) ? (*x1 = xmid) : (*x2 = xmid);
     xmid = (*x2 + *x1) / 2.0;
   }
-  cerr << "(findroot) Couldn't find root after 50 bisections, failing"
-       << "\n";
+  spdlog::error("(findroot) Couldn't find root after 50 bisections, failing");
   return (1);
 }
 
@@ -337,8 +333,7 @@ int findroot::find_root_zbrent(
   d = 0.;
   e = 0.;
   if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0)) {
-    cerr << "Root must be bracketed in zbrent"
-         << "\n";
+    spdlog::error("Root must be bracketed in zbrent");
     return (1);
   }
   fc = fb;
@@ -410,8 +405,7 @@ int findroot::find_root_zbrent(
       b += ((xm) >= 0.0 ? fabs(tol1) : -fabs(tol1));
     fb = FR_root_function(b);
   }
-  cerr << "Maximum number of iterations exceeded in zbrent"
-       << "\n";
+  spdlog::error("Maximum number of iterations exceeded in zbrent");
   return (1);
 }
 

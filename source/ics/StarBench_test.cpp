@@ -22,7 +22,11 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
+
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
 #endif  // NDEBUG
@@ -59,59 +63,57 @@ int IC_StarBench_Tests::setup_data(
   // to the list of parameters.
   //
   ICsetup_base::gg = ggg;
-  if (!gg) rep.error("null pointer to grid!", ggg);
+  if (!gg) spdlog::error("{}: {}", "null pointer to grid!", fmt::ptr(ggg));
 
   ICsetup_base::rp = rrp;
-  if (!rp) rep.error("null pointer to ReadParams", rp);
+  if (!rp) spdlog::error("{}: {}", "null pointer to ReadParams", fmt::ptr(rp));
+  ;
 
-  if (SimPM->eqntype != EQEUL) rep.error("Bad equations", SimPM->eqntype);
+  if (SimPM->eqntype != EQEUL)
+    spdlog::error("{}: {}", "Bad equations", SimPM->eqntype);
 
   int err    = 0;
   string ics = rp->find_parameter("ics");
   if (ics == "") {
-    rep.error("didn't get any ics to set up.", ics);
+    spdlog::error("{}: {}", "didn't get any ics to set up.", ics);
   }
   else if (
       ics == "StarBench_ContactDiscontinuity1"
       || ics == "StarBench_ContactDiscontinuity2"
       || ics == "StarBench_ContactDiscontinuity3"
       || ics == "StarBench_ContactDiscontinuity4") {
-    cout << "\t\tSetting up " << ics << " test.\n";
+    spdlog::debug("\t\tSetting up {} test", ics);
     err += setup_ContactDiscontinuity(rrp, ggg, ics);
   }
   else if (
       ics == "StarBench_IFI_testA" || ics == "StarBench_IFI_testB"
       || ics == "StarBench_IFI_testC") {
-    cout << "\t\tSetting up StarBench Planar ionisation front A.\n";
+    spdlog::info("\t\tSetting up StarBench Planar ionisation front A");
     err += setup_StarBench_IFI(rrp, ggg, ics);
   }
   else if (
       ics == "StarBench_IrrCloud_Uniform"
       || ics == "StarBench_IrrCloud_IsoSph") {
-    cout << "\t\tSetting up StarBench Irradiated Cloud test.\n";
+    spdlog::info("\t\tSetting up StarBench Irradiated Cloud test");
     err += setup_StarBench_IrrCl(rrp, ggg, ics);
   }
   else if (ics == "StarBench_TremblinCooling") {
-    cout << "\t\tSetting up StarBench Shadowing/Mixing/Cooling test.\n";
+    spdlog::info("\t\tSetting up StarBench Shadowing/Mixing/Cooling test");
     err += setup_StarBench_TremblinCooling(rrp, ggg, ics);
   }
   else if (ics == "StarBench_Cone") {
-    cout << "\t\tSetting up StarBench Cone test.\n";
+    spdlog::info("\t\tSetting up StarBench Cone test");
     err += setup_StarBench_Cone(rrp, ggg, ics);
   }
   else if (ics == "StarBench_IFI_V2") {
-    cout << "\t\tSetting up planar ionization front.\n";
+    spdlog::info("\t\tSetting up planar ionization front");
     err += setup_StarBench_planarIF(rrp, ggg, ics);
   }
 
-  // else if (ics=="") {
-  //  cout <<"\t\tSetting up .\n";
-  //  err += setup_(rrp,ggg);
-  //}
   else
-    rep.error("Don't know what Initial Condition is!", ics);
+    spdlog::error("{}: {}", "Don't know what Initial Condition is!", ics);
 
-  if (err) rep.error("Test setup returned error", err);
+  if (err) spdlog::error("{}: {}", "Test setup returned error", err);
 
   //
   // Add noise to data?  Smooth data?
@@ -123,10 +125,12 @@ int IC_StarBench_Tests::setup_data(
     noise = atof(ics.c_str());
   else
     noise = -1;
-  if (isnan(noise)) rep.error("noise parameter is not a number", noise);
+  if (isnan(noise))
+    spdlog::error("{}: {}", "noise parameter is not a number", noise);
   if (noise > 0) {
-    cout << "\t\tNOISE: Adding random adiabatic noise at fractional level = "
-         << noise << "\n";
+    spdlog::debug(
+        "\t\tNOISE: Adding random adiabatic noise at fractional level = {}",
+        noise);
     err += AddNoise2Data(gg, *SimPM, 2, noise);
   }
   ics = rp->find_parameter("smooth");
@@ -134,7 +138,8 @@ int IC_StarBench_Tests::setup_data(
     smooth = atoi(ics.c_str());
   else
     smooth = -1;
-  if (isnan(smooth)) rep.error("Smooth parameter not a number", smooth);
+  if (isnan(smooth))
+    spdlog::error("{}: {}", "Smooth parameter not a number", smooth);
   if (smooth > 0) err += SmoothData(smooth);
 
   return 0;
@@ -166,42 +171,44 @@ int IC_StarBench_Tests::setup_ContactDiscontinuity(
   // the test, and that we have a passive tracer.
   //
   if (test_id < 0) {
-    cerr << "bad test! " << test << "\n";
+    spdlog::error("bad test! {}", test);
     return 1;
   }
   if (test_id <= 2 && SimPM->ndim != 1) {
-    rep.error("ContactDiscontinuity1/2 is 1D test", SimPM->ndim);
+    spdlog::error("{}: {}", "ContactDiscontinuity1/2 is 1D test", SimPM->ndim);
   }
   if (test_id >= 3 && SimPM->ndim != 2) {
-    rep.error("ContactDiscontinuity3/4 is 2D test", SimPM->ndim);
+    spdlog::error("{}: {}", "ContactDiscontinuity3/4 is 2D test", SimPM->ndim);
   }
 
   if (SimPM->ntracer != 1) {
-    rep.error("Need exactly one colour tracer for CD tests", SimPM->ntracer);
+    spdlog::error(
+        "{}: {}", "Need exactly one colour tracer for CD tests",
+        SimPM->ntracer);
   }
 
   //
   // Get advection velocity from the parameterfile.
   //
   double Vel[SimPM->ndim];
-  cout << "** It is assumed all parameters are correctly set **\n";
+  spdlog::info("** It is assumed all parameters are correctly set **");
 
   string seek = rrp->find_parameter("StarBench_ContDisc_VX");
   if (seek == "")
-    rep.error("Need parameter StarBench_ContDisc_VX", 1);
+    spdlog::error("{}: {}", "Need parameter StarBench_ContDisc_VX", 1);
   else
     Vel[XX] = atof(seek.c_str());
 
   if (SimPM->ndim > 1) {
     string seek = rrp->find_parameter("StarBench_ContDisc_VY");
     if (seek == "")
-      rep.error("Need parameter StarBench_ContDisc_VY", 2);
+      spdlog::error("{}: {}", "Need parameter StarBench_ContDisc_VY", 2);
     else
       Vel[YY] = atof(seek.c_str());
   }
 
   cell *c = ggg->FirstPt();
-  double pos[SimPM->ndim];
+  std::array<double, MAX_DIM> pos;
 
   if (test_id == 1) {
     do {
@@ -321,19 +328,19 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
 
   string seek = rrp->find_parameter("StarBench_IFI_rho0");
   if (seek == "")
-    rep.error("Need parameter StarBench_IFI_rho0", 1);
+    spdlog::error("{}: {}", "Need parameter StarBench_IFI_rho0", 1);
   else
     rho0 = atof(seek.c_str());
 
   seek = rrp->find_parameter("StarBench_IFI_vel0");
   if (seek == "")
-    rep.error("Need parameter StarBench_IFI_vel0", 1);
+    spdlog::error("{}: {}", "Need parameter StarBench_IFI_vel0", 1);
   else
     vel0 = atof(seek.c_str());
 
   seek = rrp->find_parameter("StarBench_IFI_vel2");
   if (seek == "")
-    rep.error("Need parameter StarBench_IFI_vel2", 1);
+    spdlog::error("{}: {}", "Need parameter StarBench_IFI_vel2", 1);
   else
     vel2 = atof(seek.c_str());
 
@@ -379,7 +386,7 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   mp->Set_Temp(c->P, SimPM->EP.MaxTemperature, SimPM->gamma);
   c_i = sqrt(c->P[PG] / c->P[RO]);
 
-  cout << "c_n = " << c_n << ", c_i = " << c_i << "\n";
+  spdlog::debug("c_n = {}, c_i = {}", c_n, c_i);
   //
   // Still need to calculate v_up, v_sh, d_sh, d_dn
   // ----------------------------------------------------------------
@@ -413,9 +420,9 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   // v_shock = c_n^2/v_x - v_sh
   //
   v_up = pow(c_n, 2) / v_x - v_sh;
-  cout << "shock vel = " << v_up;
+  spdlog::debug("shock vel = {}", v_up);
   v_up = v_x - v_up;
-  cout << " : upstream vel = " << v_up << "\n";
+  spdlog::debug("upstream vel = {}", v_up);
   //
   // Still need to calculate d_dn
   // ----------------------------------------------------------------
@@ -424,9 +431,9 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   // Get d_dn from continuity
   d_dn = d_sh * v_sh / v_dn;
   // Now we have the parameters for the three regions.
-  cout << "\t v_0 = " << v_up << ", rho_0 = " << d_up << "\n";
-  cout << "\t v_1 = " << v_sh << ", rho_1 = " << d_sh << "\n";
-  cout << "\t v_2 = " << v_dn << ", rho_2 = " << d_dn << "\n";
+  spdlog::debug(
+      "\t v_0 = {}, rho_0 = {}\n\t v_1 = {}, rho_1 = {}\n\t v_2 = {}, rho_2 = {}",
+      v_up, d_up, v_sh, d_sh, v_dn, d_dn);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -448,14 +455,15 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   // Length to absorb all photons is the source strength * IF_pos
   //
   if (SimPM->RS.Nsources < 1) {
-    rep.error("Need Radiation Source for test!", SimPM->RS.Nsources);
+    spdlog::error(
+        "{}: {}", "Need Radiation Source for test!", SimPM->RS.Nsources);
   }
-  cout << "Recombination rate = " << IF_pos << " :  ";
+  spdlog::debug("Recombination rate = {}", IF_pos);
   IF_pos = SimPM->RS.sources[0].strength / IF_pos;
 
-  cout << "source ionizing flux = " << SimPM->RS.sources[0].strength;
-  cout << " :  "
-       << "length to absorb photons = " << IF_pos << "\n";
+  spdlog::debug(
+      "source ionizing flux = {} : length to absorb photons = {}",
+      SimPM->RS.sources[0].strength, IF_pos);
   //
   // Add in a fudge factor of 0.65 because the downstream region is
   // not constant density but increases towards the I-front.  So we
@@ -470,12 +478,12 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   seek       = rrp->find_parameter("StarBench_IFI_xIF");
   if (seek != "") {
     IF_pos = atof(seek.c_str());
-    cout << "Using given IF_pos=" << IF_pos << " cm.  Calculated value=" << tmp
-         << " cm\n";
+    spdlog::debug(
+        "Using given IF_pos={} cm.  Calculated value={} cm", IF_pos, tmp);
   }
   else {
-    cout << "No IF_pos specified.  Using calculated IF_pos=" << IF_pos
-         << " cm.\n";
+    spdlog::debug(
+        "No IF_pos specified.  Using calculated IF_pos={} cm", IF_pos);
   }
   // ----------------------------------------------------------------
 
@@ -485,14 +493,14 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   double shock_pos = 0.0;
   seek             = rrp->find_parameter("StarBench_IFI_shell_thickness");
   if (seek == "")
-    rep.error("Need parameter StarBench_IFI_shell_thickness", 1);
+    spdlog::error("{}: {}", "Need parameter StarBench_IFI_shell_thickness", 1);
   else
     shock_pos = atof(seek.c_str()) * ggg->DX() + IF_pos;
-  cout << "IF_pos = " << IF_pos << ", shock_pos=" << shock_pos << "\n";
+  spdlog::debug("IF_pos = {}, shock_pos={}", IF_pos, shock_pos);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
-  double pos[SimPM->ndim];
+  std::array<double, MAX_DIM> pos;
   do {
     CI.get_dpos(c, pos);
 
@@ -558,7 +566,7 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
     ptype = 0;
   }
   else {
-    rep.error("Need parameter StarBench_IFI_perturbation", seek);
+    spdlog::error("{}: {}", "Need parameter StarBench_IFI_perturbation", seek);
   }
   // ----------------------------------------------------------------
 
@@ -622,8 +630,6 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
         vfrac /= nsub;
 
       double f_up = 0.0, f_sh = 0.0, f_dn = 0.0, psub[SimPM->ndim];
-      // cout <<"dx="<<ggg->DX()<<", ";
-      // rep.printVec("pos",pos,SimPM->ndim);
       for (int iy = 0; iy < nsub; iy++) {
         for (int ix = 0; ix < nsub; ix++) {
           psub[XX] = pos[XX] - dxo2 + dxo4 * (ix + 0.5);
@@ -666,8 +672,6 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
             f_up += vfrac;
         }
       }
-      // cout <<"f_dn="<<f_dn<<", f_sh="<<f_sh<<", f_up="<<f_up<<"\n";
-
       c->P[RO] = d_dn * f_dn + d_sh * f_sh + d_up * f_up;
       c->P[PG] = 1.0e-10;  // set later in Set_Temp
       c->P[VX] = -v_dn * f_dn - v_sh * f_sh - v_up * f_up;
@@ -761,10 +765,10 @@ int IC_StarBench_Tests::setup_StarBench_IFI(
   else if (test == "StarBench_IFI_testC")
     id = 3;
   else
-    rep.error("Bad test name", test);
+    spdlog::error("{}: {}", "Bad test name", test);
 
   cell *c = ggg->FirstPt();
-  double pos[SimPM->ndim];
+  std::array<double, MAX_DIM> pos;
   do {
     // CI.get_dpos(c,pos);
 
@@ -808,10 +812,10 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
   else if (test == "StarBench_IrrCloud_IsoSph")
     id = 2;
   else
-    rep.error("Bad test name", test);
+    spdlog::error("{}: {}", "Bad test name", test);
 
   cell *c = ggg->FirstPt();
-  double pos[SimPM->ndim];
+  std::array<double, MAX_DIM> pos;
   //
   // Run through grid and set uniform initial conditions.
   //
@@ -829,7 +833,7 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
   // Now run through again and add the cloud.
   //
   if (id == 1) {
-    cout << "\t\tAdding uniform-density cloud.\n";
+    spdlog::info("\t\tAdding uniform-density cloud");
     //
     // add a uniform density cloud with radius 1pc, centred
     // at x=1.94 pc, y=z=0.  rho_cloud=1000*m_H
@@ -837,7 +841,7 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
     double radius = 3.086e18;
     double dist   = 0.0;
     double rho_cl = 1000.0 * pconst.m_H();
-    double cl_centre[SimPM->ndim];
+    std::array<double, MAX_DIM> cl_centre;
     cl_centre[XX] = 1.92 * 3.086e18;
     for (int v = 1; v < SimPM->ndim; v++)
       cl_centre[v] = 0.0;
@@ -851,7 +855,7 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
   }
 
   else if (id == 2) {
-    cout << "\t\tAdding cutoff-isothermal-sphere cloud.\n";
+    spdlog::info("\t\tAdding cutoff-isothermal-sphere cloud");
     //
     // Add a cutoff isothermal sphere cloud with central density of
     // rho_cloud=1000*m_H, and core radius r_c=0.5pc.
@@ -859,7 +863,7 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
     double r_core   = 0.5 * 3.086e18;
     double rho_cl   = 1000.0 * pconst.m_H();
     double rho_cell = 0.0;
-    double cl_centre[SimPM->ndim];
+    std::array<double, MAX_DIM> cl_centre;
     cl_centre[XX] = 1.92 * 3.086e18;
     for (int v = 1; v < SimPM->ndim; v++)
       cl_centre[v] = 0.0;
@@ -877,7 +881,7 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
     } while ((c = ggg->NextPt(c)) != 0);
   }
   else
-    rep.error("Bad test name", test);
+    spdlog::error("{}: {}", "Bad test name", test);
 
   return 0;
 }
@@ -896,11 +900,11 @@ int IC_StarBench_Tests::setup_StarBench_TremblinCooling(
   double density = 0.0;
   string seek    = rrp->find_parameter("StarBench_TremblinCooling_Rho");
   if (seek == "")
-    rep.error("Need parameter StarBench_TremblinCooling_Rho", 1);
+    spdlog::error("{}: {}", "Need parameter StarBench_TremblinCooling_Rho", 1);
   else
     density = atof(seek.c_str());
 
-  double dpos[SimPM->ndim];
+  std::array<double, MAX_DIM> dpos;
   cell *c = ggg->FirstPt();
   do {
     CI.get_dpos(c, dpos);
@@ -932,20 +936,21 @@ int IC_StarBench_Tests::setup_StarBench_Cone(
     string &test)
 {
 
-  double srcpos[SimPM->ndim];
+  std::array<double, MAX_DIM> srcpos;
   for (int v = 0; v < SimPM->ndim; v++) {
     srcpos[v] = SimPM->RS.sources[0].pos[v];
-    if (isnan(srcpos[v])) rep.error("Bad source position", srcpos[v]);
+    if (isnan(srcpos[v]))
+      spdlog::error("{}: {}", "Bad source position", srcpos[v]);
   }
-  rep.printVec("source position", srcpos, SimPM->ndim);
+  spdlog::debug("source position : {}", srcpos);
 
   // double density=0.0;
   // string seek = rrp->find_parameter("StarBench_Cone_Rho");
-  // if (seek=="") rep.error("Need parameter
+  // if (seek=="") spdlog::error("{}: {}", "Need parameter
   // StarBench_TremblinCooling_Rho",1); else density = atof(seek.c_str());
 
   cell *c = ggg->FirstPt();
-  double pos[SimPM->ndim];
+  std::array<double, MAX_DIM> pos;
   double dist         = 0.0;
   double r0           = 3.086e17;  // core radius of cloud.
   double radial_slope = 2.0;       // power law slope in rho for r>r0
@@ -960,7 +965,7 @@ int IC_StarBench_Tests::setup_StarBench_Cone(
     for (int v = 0; v < SimPM->ntracer; v++)
       c->P[SimPM->ftr + v] = 1.0e-12;
 
-    dist = ggg->distance_vertex2cell(srcpos, c);
+    dist = ggg->distance_vertex2cell(&srcpos[0], c);
     //
     // Following the Iliev et al 2009 test 6, we use rho=rho0(r0/r)^n if
     // r>r0 We also change the pressure so there is a constant temperature

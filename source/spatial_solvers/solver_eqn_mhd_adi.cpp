@@ -29,7 +29,10 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
+
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <spdlog/fmt/bundled/ranges.h>
 
 #include "solver_eqn_mhd_adi.h"
 using namespace std;
@@ -55,10 +58,8 @@ FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(
     riemann_MHD(nv, state, gam), Riemann_Roe_MHD_CV(nv, gam), HLLD_MHD(nv, gam),
     VectorOps_Cart(nd)
 {
-#ifndef NDEBUG
-  cout << "::FV_solver_mhd_ideal_adi() constructor.\n";
+  spdlog::info("::FV_solver_mhd_ideal_adi() constructor");
   // cout <<"::FV_solver_mhd_ideal_adi() gamma = "<<eq_gamma<<"\n";
-#endif
   max_speed = 0.0;
   negPGct = negROct = 0;
   return;
@@ -69,18 +70,8 @@ FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(
 
 FV_solver_mhd_ideal_adi::~FV_solver_mhd_ideal_adi()
 {
-#ifdef FUNCTION_ID
-  cout << "::~FV_solver_mhd_ideal_adi ...starting.\n";
-#endif  // FUNCTION_ID
-
-#ifndef NDEBUG
-  cout << "FV_solver_mhd_ideal_adi::~FV_solver_mhd_ideal_adi() destructor.\n";
-#endif
-
-#ifdef FUNCTION_ID
-  cout << "::~FV_solver_mhd_ideal_adi ...returning.\n";
-#endif  // FUNCTION_ID
-  return;
+  spdlog::info(
+      "FV_solver_mhd_ideal_adi::~FV_solver_mhd_ideal_adi() destructor");
 }
 
 // ##################################################################
@@ -104,9 +95,10 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
   // Check input density and pressure are 'reasonably large'
   if (Pl[eqRO] < TINYVALUE || Pl[eqPG] < TINYVALUE || Pr[eqRO] < TINYVALUE
       || Pr[eqPG] < TINYVALUE) {
-    rep.printVec("left ", Pl, eq_nvar);
-    rep.printVec("right", Pr, eq_nvar);
-    rep.error(
+    spdlog::debug("left  : {}", std::vector<double>(Pl, Pl + eq_nvar));
+    spdlog::debug("right : {}", std::vector<double>(Pr, Pr + eq_nvar));
+    spdlog::error(
+        "{}: {}",
         "FV_solver_mhd_ideal_adi::calculate_flux() Density/Pressure too small",
         Pl[eqRO]);
   }
@@ -139,7 +131,7 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
     //
     if (err) {
       // err=0;
-      cout << "ROE SOLVER FAILED -- TRYING FKJ98 SOLVER. err=" << err << "\n";
+      spdlog::debug("ROE SOLVER FAILED -- TRYING FKJ98 SOLVER. err={}", err);
       err = JMs_riemann_solve(Pl, Pr, pstar, 1, eq_gamma);
       PtoFlux(pstar, flux, eq_gamma);
     }
@@ -171,21 +163,26 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
       // HLLD solver -- Miyoshi and Kusano (2005) (m05)
       err += MHD_HLLD_flux_solver(Pl, Pr, eq_gamma, flux, ustar);
     }
-    rep.errorTest("HLL/HLLD Flux", 0, err);
+    if (0 != err)
+      spdlog::error("{}: Expected {} but got {}", "HLL/HLLD Flux", 0, err);
     err = UtoP(ustar, pstar, par.EP.MinTemperature, eq_gamma);
-    rep.errorTest("HLL/HLLD UtoP", 0, err);
+    if (0 != err)
+      spdlog::error("{}: Expected {} but got {}", "HLL/HLLD UtoP", 0, err);
   }
 
   // HLL solver, diffusive 2 wave solver (Migone et al. 2011 )
   else if (solve_flag == FLUX_RS_HLL) {
     err += MHD_HLL_flux_solver(Pl, Pr, eq_gamma, flux, ustar);
-    rep.errorTest("HLL Flux", 0, err);
+    if (0 != err)
+      spdlog::error("{}: Expected {} but got {}", "HLL Flux", 0, err);
     err = UtoP(ustar, pstar, par.EP.MinTemperature, eq_gamma);
-    rep.errorTest("HLL UtoP", 0, err);
+    if (0 != err)
+      spdlog::error("{}: Expected {} but got {}", "HLL UtoP", 0, err);
   }
 
   else {
-    rep.error("what sort of flux solver do you mean???", solve_flag);
+    spdlog::error(
+        "{}: {}", "what sort of flux solver do you mean???", solve_flag);
   }
 
   return err;
@@ -440,13 +437,13 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
     u1[v] += dU[v];
 
   if (u1[RHO] < 0.0) {
-    cout << "celladvancetime, negative density. rho=" << u1[RHO] << "\n";
+    spdlog::debug("celladvancetime, negative density. rho={}", u1[RHO]);
     CI.print_cell(c);
   }
 
   if (UtoP(u1, Pf, MinTemp, eq_gamma) != 0) {
-    cout << "(FV_solver_mhd_ideal_adi::CellAdvanceTime) UtoP ";
-    cout << "complained (maybe about negative pressure...) fixing\n";
+    spdlog::warn(
+        "(FV_solver_mhd_ideal_adi::CellAdvanceTime) UtoP complained (maybe about negative pressure...) fixing");
     PtoU(Pf, u2, eq_gamma);
     *dE += (u2[ERG] - u1[ERG]);
     UtoP(u2, Pf, MinTemp, eq_gamma);
@@ -475,10 +472,6 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
     const double dx  ///< Cell size dx.
 )
 {
-#ifdef FUNCTION_ID
-  cout << "FV_solver_mhd_ideal_adi::CellTimeStep ...starting.\n";
-#endif  // FUNCTION_ID
-
   //
   // Get Max velocity along a grid direction.
   //
@@ -528,14 +521,10 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
 
 #ifdef TEST_INF
   if (!isfinite(l_dt) || l_dt <= 0.0) {
-    cout << "cell has invalid timestep\n";
+    spdlog::info("cell has invalid timestep");
     CI.print_cell(c);
-    cout.flush();
   }
 #endif
-#ifdef FUNCTION_ID
-  cout << "FV_solver_mhd_ideal_adi::CellTimeStep ...returning.\n";
-#endif  // FUNCTION_ID
   return l_dt;
 }
 
@@ -596,9 +585,6 @@ double FV_solver_mhd_mixedGLM_adi::CellTimeStep(
     const double dx  ///< Cell size dx.
 )
 {
-#ifdef FUNCTION_ID
-  cout << "FV_solver_mhd_mixedGLM_adi::CellTimeStep ...starting.\n";
-#endif  // FUNCTION_ID
   double dt = FV_solver_mhd_ideal_adi::CellTimeStep(c, eq_gamma, dx);
   return dt;
 }
@@ -630,9 +616,10 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
   //
   if (Pl[eqRO] < TINYVALUE || Pl[eqPG] < TINYVALUE || Pr[eqRO] < TINYVALUE
       || Pr[eqPG] < TINYVALUE) {
-    rep.printVec("left ", Pl, eq_nvar);
-    rep.printVec("right", Pr, eq_nvar);
-    rep.error(
+    spdlog::debug("left  : {}", std::vector<double>(Pl, Pl + eq_nvar));
+    spdlog::debug("right : {}", std::vector<double>(Pr, Pr + eq_nvar));
+    spdlog::error(
+        "{}: {}",
         "FV_solver_mhd_mixedGLM_adi::calculate_flux() Density/Pressure "
         "too small",
         Pl[eqRO]);
@@ -790,17 +777,10 @@ int FV_solver_mhd_mixedGLM_adi::CellAdvanceTime(
     const double           // Cell timestep dt.
 )
 {
-#ifdef FUNCTION_ID
-  cout << "FV_solver_mhd_mixedGLM_adi::CellAdvanceTime ...starting.\n";
-#endif  // FUNCTION_ID
-
   int err = FV_solver_mhd_ideal_adi::CellAdvanceTime(
       c, Pin, dU, Pf, dE, 0, MinTemp, 0);
   GLMsource(&(Pf[eqSI]), FV_dt);
 
-#ifdef FUNCTION_ID
-  cout << "FV_solver_mhd_mixedGLM_adi::CellAdvanceTime ...returning.\n";
-#endif  // FUNCTION_ID
   return (err);
 }
 
@@ -814,18 +794,9 @@ int FV_solver_mhd_mixedGLM_adi::CellAdvanceTime(
 void FV_solver_mhd_mixedGLM_adi::PtoU(
     const pion_flt *p, pion_flt *u, const double g)
 {
-#ifdef FUNCTION_ID
-  cout << "FV_solver_mhd_mixedGLM_adi::PtoU ...starting.\n";
-#endif  // FUNCTION_ID
-
   eqns_mhd_mixedGLM::PtoU(p, u, g);
   for (int t = 0; t < FV_ntr; t++)
     u[eqTR[t]] = p[eqTR[t]] * p[eqRO];
-
-#ifdef FUNCTION_ID
-  cout << "FV_solver_mhd_mixedGLM_adi::PtoU ...returning.\n";
-#endif  // FUNCTION_ID
-  return;
 }
 
 // ##################################################################
@@ -837,17 +808,10 @@ int FV_solver_mhd_mixedGLM_adi::UtoP(
     const double MinTemp,  ///< Min Temperature allowed on grid.
     const double g)
 {
-#ifdef FUNCTION_ID
-  cout << "FV_solver_mhd_mixedGLM_adi::UtoP ...starting.\n";
-#endif  // FUNCTION_ID
-
   for (int t = 0; t < FV_ntr; t++)
     p[eqTR[t]] = u[eqTR[t]] / u[eqRO];
   int err = eqns_mhd_mixedGLM::UtoP(u, p, MinTemp, g);
 
-#ifdef FUNCTION_ID
-  cout << "FV_solver_mhd_mixedGLM_adi::UtoP ...returning.\n";
-#endif  // FUNCTION_ID
   return err;
 }
 
@@ -860,16 +824,7 @@ void FV_solver_mhd_mixedGLM_adi::Set_GLM_Speeds(
     const double cr     ///< GLM damping coefficient c_r
 )
 {
-#ifdef FUNCTION_ID
-  cout << "FV_solver_mhd_mixedGLM_adi::Set_GLM_Speeds ...starting.\n";
-#endif  // FUNCTION_ID
-
   GLMsetPsiSpeed(FV_cfl * delx / delt, cr);
-
-#ifdef FUNCTION_ID
-  cout << "FV_solver_mhd_mixedGLM_adi::Set_GLM_Speeds ...returning.\n";
-#endif  // FUNCTION_ID
-  return;
 }
 
 // ##################################################################
@@ -898,16 +853,7 @@ cyl_FV_solver_mhd_ideal_adi::cyl_FV_solver_mhd_ideal_adi(
     FV_solver_mhd_ideal_adi(nv, nd, cflno, gam, state, avcoeff, ntr),
     VectorOps_Cyl(nd)
 {
-#ifdef FUNCTION_ID
-  cout << "::cyl_FV_solver_mhd_ideal_adi ...starting.\n";
-#endif  // FUNCTION_ID
-
-  if (nd != 2) rep.error("Cylindrical coordinates only 2D", nd);
-
-#ifdef FUNCTION_ID
-  cout << "::cyl_FV_solver_mhd_ideal_adi ...returning.\n";
-#endif  // FUNCTION_ID
-  return;
+  if (nd != 2) spdlog::error("{}: {}", "Cylindrical coordinates only 2D", nd);
 }
 
 // ##################################################################
@@ -915,13 +861,7 @@ cyl_FV_solver_mhd_ideal_adi::cyl_FV_solver_mhd_ideal_adi(
 
 cyl_FV_solver_mhd_ideal_adi::~cyl_FV_solver_mhd_ideal_adi()
 {
-#ifdef FUNCTION_ID
-  cout << "::~cyl_FV_solver_mhd_ideal_adi ...starting.\n";
-#endif  // FUNCTION_ID
-
-#ifdef FUNCTION_ID
-  cout << "::~cyl_FV_solver_mhd_ideal_adi ...returning.\n";
-#endif  // FUNCTION_ID
+  spdlog::info("::~cyl_FV_solver_mhd_ideal_adi");
 }
 
 // ##################################################################
@@ -954,7 +894,8 @@ void cyl_FV_solver_mhd_ideal_adi::geometric_source(
             / CI.get_dpos(c, Rcyl);
         break;
       default:
-        rep.error("Bad OOA in cyl_IdealMHD_RS::dU, only know 1st,2nd", OA);
+        spdlog::error(
+            "{}: {}", "Bad OOA in cyl_IdealMHD_RS::dU, only know 1st,2nd", OA);
     }
   }
 
@@ -1024,10 +965,10 @@ int cyl_FV_solver_mhd_ideal_adi::MHDsource(
       }
       break;
     case Tcyl:
-      rep.error("3D cylindrical GLM-MHD Source", d);
+      spdlog::error("{}: {}", "3D cylindrical GLM-MHD Source", d);
       break;
     default:
-      rep.error("GLM-MHD Source bad direction", d);
+      spdlog::error("{}: {}", "GLM-MHD Source bad direction", d);
       break;
   }
 
@@ -1057,22 +998,14 @@ cyl_FV_solver_mhd_mixedGLM_adi::cyl_FV_solver_mhd_mixedGLM_adi(
     VectorOps_Cyl(nd),
     cyl_FV_solver_mhd_ideal_adi(nv, nd, cflno, gam, state, avcoeff, ntr)
 {
-#ifdef FUNCTION_ID
-  cout << "::cyl_FV_solver_mhd_mixedGLM_adi ...starting.\n";
-#endif  // FUNCTION_ID
-
   //  cout <<"cyl_FV_solver_mhd_mixedGLM_adi CONSTRUCTOR\n";
   //  cout <<"glmMHD Equations; Riemann Solver Method; Cylindrical
   //  Coordinates.\n";
   if (nd != 2)
-    rep.error(
-        "Cylindrical coordinates only implemented for \
+    spdlog::error(
+        "{}: {}", "Cylindrical coordinates only implemented for \
                         2d axial symmetry so far.  Sort it out!",
         nd);
-#ifdef FUNCTION_ID
-  cout << "::cyl_FV_solver_mhd_mixedGLM_adi ...returning.\n";
-#endif  // FUNCTION_ID
-  return;
 }
 
 // ##################################################################
@@ -1080,13 +1013,7 @@ cyl_FV_solver_mhd_mixedGLM_adi::cyl_FV_solver_mhd_mixedGLM_adi(
 
 cyl_FV_solver_mhd_mixedGLM_adi::~cyl_FV_solver_mhd_mixedGLM_adi()
 {
-#ifdef FUNCTION_ID
-  cout << "::~cyl_FV_solver_mhd_mixedGLM_adi ...starting.\n";
-#endif  // FUNCTION_ID
-
-#ifdef FUNCTION_ID
-  cout << "::~cyl_FV_solver_mhd_mixedGLM_adi ...returning.\n";
-#endif  // FUNCTION_ID
+  spdlog::info("::~cyl_FV_solver_mhd_mixedGLM_adi");
 }
 
 // ##################################################################
@@ -1131,7 +1058,8 @@ void cyl_FV_solver_mhd_mixedGLM_adi::geometric_source(
             / CI.get_dpos(c, Rcyl);
         break;
       default:
-        rep.error("Bad OOA in cyl_glmMHD::dU, only know 1st,2nd", OA);
+        spdlog::error(
+            "{}: {}", "Bad OOA in cyl_glmMHD::dU, only know 1st,2nd", OA);
     }
   }
 

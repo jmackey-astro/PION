@@ -9,8 +9,9 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
-#include "tools/reporting.h"
-#include <iostream>
+
+#include <spdlog/spdlog.h>
+
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -19,7 +20,7 @@
 #include "equations/eqns_hydro_adiabatic.h"
 #include "microphysics/microphysics_base.h"
 #include <cmath>
-#include <iostream>
+
 using namespace std;
 
 // ##################################################################
@@ -33,9 +34,9 @@ HLL_hydro::HLL_hydro(
     eqns_Euler(nv)
 {
 #ifndef NDEBUG
-  cout << "(HLL_hydro::HLL_hydro) Initialising HLL Solver Class.\n";
+  spdlog::info("(HLL_hydro::HLL_hydro) Initialising HLL Solver Class");
   if (eq_nvar < 5) {
-    rep.error("#elements!=5, QUIT.", eq_nvar);
+    spdlog::error("{}: {}", "#elements!=5, QUIT.", eq_nvar);
   }
 #endif
 
@@ -45,9 +46,7 @@ HLL_hydro::HLL_hydro(
   HD_FL     = mem.myalloc(HD_FL, eq_nvar);  // flux
   HD_FR     = mem.myalloc(HD_FR, eq_nvar);
 
-#ifndef NDEBUG
-  cout << "(HLL_hydro::HLL_hydro) All set.\n";
-#endif
+  spdlog::info("(HLL_hydro::HLL_hydro) All set");
   return;
 }
 
@@ -57,10 +56,7 @@ HLL_hydro::HLL_hydro(
 HLL_hydro::~HLL_hydro()
 {
 
-#ifndef NDEBUG
-  cout << "(HLL_hydro::HLL_hydro) Commencing Destruction."
-       << "\n";
-#endif
+  spdlog::info("(HLL_hydro::HLL_hydro) Commencing Destruction");
 
   HD_lambda = mem.myfree(HD_lambda);  // wave speeds (one entropy, two Alfvén)
   HD_UL     = mem.myfree(HD_UL);      // conserved
@@ -68,11 +64,7 @@ HLL_hydro::~HLL_hydro()
   HD_FL     = mem.myfree(HD_FL);  // flux
   HD_FR     = mem.myfree(HD_FR);
 
-#ifndef NDEBUG
-  cout << "(riemann_MHD::riemann_MHD) Mission Accomplished."
-       << "\n";
-#endif
-  return;
+  spdlog::info("(riemann_MHD::riemann_MHD) Mission Accomplished");
 }
 
 // ###################################################################
