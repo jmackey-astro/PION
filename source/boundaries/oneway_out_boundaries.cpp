@@ -44,10 +44,9 @@ int oneway_out_bc::BC_update_ONEWAY_OUT(
   // First get the normal velocity component, and whether the offdir is
   // positive or negative.
   //
-  enum direction offdir = b->dir;
-  enum primitive Vnorm  = RO;
-  int norm_sign         = 0;
-  switch (offdir) {
+  enum primitive Vnorm = RO;
+  int norm_sign        = 0;
+  switch (b->dir) {
     case XN:
     case XP:
       Vnorm = VX;
@@ -60,13 +59,16 @@ int oneway_out_bc::BC_update_ONEWAY_OUT(
     case ZP:
       Vnorm = VZ;
       break;
+    case NO:
+      spdlog::error("{}: {}", "bad dir", b->dir);
+      break;
     default:
-      spdlog::error("{}: {}", "bad dir", offdir);
+      spdlog::error("{}: {}", "bad dir", b->dir);
   }
   if (Vnorm == RO)
     spdlog::error("{}: {}", "Failed to set normal velocity component", Vnorm);
 
-  switch (offdir) {
+  switch (b->dir) {
     case XN:
     case YN:
     case ZN:
@@ -77,8 +79,11 @@ int oneway_out_bc::BC_update_ONEWAY_OUT(
     case ZP:
       norm_sign = 1;
       break;
+    case NO:
+      spdlog::error("{}: {}", "bad dir", b->dir);
+      break;
     default:
-      spdlog::error("{}: {}", "bad dir", offdir);
+      spdlog::error("{}: {}", "bad dir", b->dir);
   }
 
   //

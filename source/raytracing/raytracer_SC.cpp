@@ -388,7 +388,7 @@ void raytracer_USC_infinity::set_Vshell_for_source(struct rad_source *this_src)
   cell *c   = gridptr->FirstPt_All();
   do {
     err += cell_cols_1d(this_src, c, XN, Nc, &ds);
-    err += ProcessCell(c, Nc, ds, this_src, 0.0);
+    err += ProcessCell(c, Nc, ds, this_src);
     if (err != 0)
       spdlog::error("{}: Expected {} but got {}", "rt_inf:Vshell", err, 0);
   } while ((c = gridptr->NextPt_All(c)) != 0);
@@ -757,7 +757,7 @@ int raytracer_USC_infinity::trace_column_parallel(
     dp.c = c;
 #endif
     err += cell_cols_1d(source, c, oppdir, Nc, &ds);
-    err += ProcessCell(c, Nc, ds, source, delt);
+    err += ProcessCell(c, Nc, ds, source);
 
     if (c->Ph[PG] < 0.0 || !isfinite(c->Ph[PG]))
       spdlog::error(
@@ -819,11 +819,10 @@ int raytracer_USC_infinity::cell_cols_1d(
 // ##################################################################
 
 int raytracer_USC_infinity::ProcessCell(
-    cell *c,                   ///< Current cell.
-    double col2cell[],         ///< Column to cell (optical depth)
-    double ds,                 ///< Path length through cell.
-    const rad_source *source,  ///< pointer to source struct.
-    const double dt            ///< Timestep
+    cell *c,                  ///< Current cell.
+    double col2cell[],        ///< Column to cell (optical depth)
+    double ds,                ///< Path length through cell.
+    const rad_source *source  ///< pointer to source struct.
 )
 {
   double cell_col[MAX_TAU];
@@ -1299,7 +1298,7 @@ void raytracer_USC::set_Vshell_for_source(struct rad_source *this_src)
   cell *c   = gridptr->FirstPt_All();
   do {
     err += get_cell_columns(this_src, c, Nc, &ds);
-    err += ProcessCell(c, Nc, ds, this_src, 0.0);
+    err += ProcessCell(c, Nc, ds, this_src);
     if (err != 0)
       spdlog::error("{}: Expected {} but got {}", "rt_finite:Vshell", err, 0);
   } while ((c = gridptr->NextPt_All(c)) != 0);
@@ -1366,7 +1365,7 @@ int raytracer_USC::RayTrace_SingleSource(
   sc = source->sc;
 #endif
 
-  enum direction src_off_grid[ndim], src_at_infty[ndim];
+  std::vector<enum direction> src_off_grid(ndim), src_at_infty(ndim);
   for (int i = 0; i < ndim; i++)
     src_off_grid[i] = NO;
   for (int i = 0; i < ndim; i++)
@@ -1413,13 +1412,13 @@ int raytracer_USC::RayTrace_SingleSource(
   int ndirs = 1;
   for (int i = 0; i < ndim; i++)
     ndirs *= 2;
-  cell *startcell[ndirs];
+  std::vector<cell *> startcell(ndirs);
   for (int v = 0; v < ndirs; v++)
     startcell[v] = 0;
 #ifdef RT_TESTING
   cell *temp = sc;  // for testing.
 #endif              // RT_TESTING
-  set_startcells(source->sc, startcell, src_off_grid);
+  set_startcells(source->sc, startcell.data(), src_off_grid.data());
 #ifdef RT_TESTING
   if (sc != temp)
     spdlog::error(
@@ -1431,7 +1430,7 @@ int raytracer_USC::RayTrace_SingleSource(
 
   // Loop over all lines/quads/octs.
   for (int oct = 0; oct < ndirs; oct++) {
-    enum direction dirs[ndim];
+    std::vector<enum direction> dirs(ndim);
     cell *c = startcell[oct];
 #ifdef RT_TESTING
     spdlog::debug(
@@ -1951,7 +1950,7 @@ int raytracer_USC::trace_column(
       dp.c = c;
 #endif
       err += get_cell_columns(source, c, Nc, &ds);
-      err += ProcessCell(c, Nc, ds, source, delt);
+      err += ProcessCell(c, Nc, ds, source);
     } while ((c = gridptr->NextPt(c, dir)) != 0);
   }
   return err;

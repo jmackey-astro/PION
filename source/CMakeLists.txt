@@ -32,6 +32,11 @@ if(PION_OMP)
     target_link_libraries(global INTERFACE OpenMP::OpenMP_CXX)
 endif(PION_OMP)
 
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    include(../cmake/development_flags.cmake)
+    target_link_libraries(global INTERFACE development_flags)
+endif(CMAKE_BUILD_TYPE MATCHES Debug)
+
 if(PION_NESTED_GRID)
     add_executable(pion-ng main.cpp) 
     add_executable(icgen-ng main_icgen.cpp)

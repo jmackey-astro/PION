@@ -60,9 +60,8 @@ protected:
   /// (negative if error).
   ///
   double calc_microphysics_dt(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      const int               ///< level in NG grid (if applicable)
+      class SimParams &,     ///< pointer to simulation parameters
+      class GridBaseClass *  ///< pointer to grid.
   );
 
   ///

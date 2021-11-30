@@ -77,11 +77,10 @@ int raytracer_shielding::RayTrace_Column_Density(
 }
 
 int raytracer_shielding::ProcessCell(
-    class cell *c,             ///< Current cell.
-    double col2cell,           ///< Column to cell [N(H) per cm2].
-    double ds,                 ///< Path Length through cell (physical units!).
-    const rad_source *source,  ///< pointer to source struct.
-    const double dt            ///< Timestep
+    class cell *c,            ///< Current cell.
+    double col2cell,          ///< Column to cell [N(H) per cm2].
+    double ds,                ///< Path Length through cell (physical units!).
+    const rad_source *source  ///< pointer to source struct.
 )
 {
 

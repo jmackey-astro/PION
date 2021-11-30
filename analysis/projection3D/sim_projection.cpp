@@ -1364,12 +1364,11 @@ void image::calculate_pixel(
     // we do want a profile of it so it is more complicated than the density
     // above. Velocities are in km/s
     //
-    int vx          = VX;
-    int vz          = VZ;
-    int Nbins       = vps->npix[2];
-    double bin_size = (vps->v_max - vps->v_min) / Nbins;
-    double profile[Nbins];
-    double temp_profile[Nbins];
+    int vx    = VX;
+    int vz    = VZ;
+    int Nbins = vps->npix[2];
+    std::vector<double> profile(Nbins);
+    std::vector<double> temp_profile(Nbins);
     for (int v = 0; v < Nbins; v++)
       profile[v] = temp_profile[v] = 0.0;
     class point_velocity VELX(
@@ -1403,14 +1402,14 @@ void image::calculate_pixel(
     // temperature.
     //
     VELX.get_point_VX_profile(
-        &(px->int_pts.p[0]), temp_profile, SimPM.gamma, SimPM.ftr);
+        &(px->int_pts.p[0]), temp_profile.data(), SimPM.gamma, SimPM.ftr);
     for (int v = 0; v < Nbins; v++)
       profile[v] += temp_profile[v];
 
     for (int ii = 1; ii < (npt - 1); ii++) {
       wt = 6 - wt;
       VELX.get_point_VX_profile(
-          &(px->int_pts.p[ii]), temp_profile, SimPM.gamma, SimPM.ftr);
+          &(px->int_pts.p[ii]), temp_profile.data(), SimPM.gamma, SimPM.ftr);
       for (int v = 0; v < Nbins; v++)
         profile[v] += wt * temp_profile[v];
       // cout <<"prof: ";
@@ -1419,7 +1418,7 @@ void image::calculate_pixel(
     }
 
     VELX.get_point_VX_profile(
-        &(px->int_pts.p[npt - 1]), temp_profile, SimPM.gamma, SimPM.ftr);
+        &(px->int_pts.p[npt - 1]), temp_profile.data(), SimPM.gamma, SimPM.ftr);
     for (int v = 0; v < Nbins; v++)
       profile[v] += temp_profile[v];
 
@@ -1432,7 +1431,7 @@ void image::calculate_pixel(
     // point-by-point basis. if smooth==0, then nothing happens either.
     //
     if (vps->smooth == 1) {
-      VELX.smooth_profile_FFT(profile);
+      VELX.smooth_profile_FFT(profile.data());
     }
     //
     // Now put each bin in the image, where velocity is the third dimension in
@@ -1479,11 +1478,10 @@ void image::calculate_pixel(
     //
     // Velocities are in km/s
     //
-    int Nbins       = vps->npix[2];
-    double bin_size = (vps->v_max - vps->v_min) / Nbins;
+    int Nbins = vps->npix[2];
 
-    double profile[Nbins];
-    double temp_profile[Nbins];
+    std::vector<double> profile(Nbins);
+    std::vector<double> temp_profile(Nbins);
     for (int v = 0; v < Nbins; v++)
       profile[v] = temp_profile[v] = 0.0;
     // double vel=0.0, norm=0.0;
@@ -1521,20 +1519,20 @@ void image::calculate_pixel(
     // point's temperature.
     //
     VLOS.get_point_v_los_profile(
-        &(px->int_pts.p[0]), temp_profile, SimPM.gamma, SimPM.ftr);
+        &(px->int_pts.p[0]), temp_profile.data(), SimPM.gamma, SimPM.ftr);
     for (int v = 0; v < Nbins; v++)
       profile[v] += temp_profile[v];
 
     for (int ii = 1; ii < (npt - 1); ii++) {
       wt = 6 - wt;
       VLOS.get_point_v_los_profile(
-          &(px->int_pts.p[ii]), temp_profile, SimPM.gamma, SimPM.ftr);
+          &(px->int_pts.p[ii]), temp_profile.data(), SimPM.gamma, SimPM.ftr);
       for (int v = 0; v < Nbins; v++)
         profile[v] += wt * temp_profile[v];
     }
 
     VLOS.get_point_v_los_profile(
-        &(px->int_pts.p[npt - 1]), temp_profile, SimPM.gamma, SimPM.ftr);
+        &(px->int_pts.p[npt - 1]), temp_profile.data(), SimPM.gamma, SimPM.ftr);
     for (int v = 0; v < Nbins; v++)
       profile[v] += temp_profile[v];
 
@@ -1547,7 +1545,7 @@ void image::calculate_pixel(
     // point-by-point basis. if smooth==0, then nothing happens either.
     //
     if (vps->smooth == 1) {
-      VLOS.smooth_profile_FFT(profile);
+      VLOS.smooth_profile_FFT(profile.data());
     }
 
     //
@@ -1699,7 +1697,7 @@ void image::integrate_xray_emission(
 )
 {
   // we ignore absorption for now, just sum up the emission.
-  double alpha = 0.0, j = 0.0, dtau = 0.0;
+  double alpha = 0.0, j = 0.0;
   double hh = pix->int_pts.dx_phys;
   int wt    = 2;
   int npt   = pix->int_pts.npt;
@@ -1716,7 +1714,6 @@ void image::integrate_xray_emission(
   ans += j;
   ans *= hh / 3.0;
   tot_mass += ans;
-  return;
 }
 
 
@@ -1896,7 +1893,7 @@ void point_velocity::smooth_profile_FFT(
   // Put data into Cx. array, with zero padding.
   //
   // cout <<"v_Nbins="<<v_Nbins<<" and FT_Ng="<<FT_Ng<<endl;
-  double cxdata[2 * FT_Ng];
+  std::vector<double> cxdata(2 * FT_Ng);
   for (int v = 0; v < 2 * FT_Ng; v++)
     cxdata[v] = 0.0;
   for (int v = 0; v < v_Nbins; v++)
@@ -1905,7 +1902,7 @@ void point_velocity::smooth_profile_FFT(
   //
   // FT the data
   //
-  four1(cxdata, static_cast<unsigned long>(FT_Ng), 1);
+  four1(cxdata.data(), static_cast<unsigned long>(FT_Ng), 1);
   //
   // Multiply by FT of gaussian.
   // The FT is in frequency units f=k/(2PI)
@@ -1935,7 +1932,7 @@ void point_velocity::smooth_profile_FFT(
   //
   // IFT the data
   //
-  four1(cxdata, static_cast<unsigned long>(FT_Ng), -1);
+  four1(cxdata.data(), static_cast<unsigned long>(FT_Ng), -1);
 
   //
   // Move from Cx. array into original array, and add back mean.

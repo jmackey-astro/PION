@@ -128,7 +128,6 @@ int main(int argc, char **argv)
 
 #ifdef PARALLEL
   int myrank = sim_control->SimPM.levels[0].sub_domain.get_myrank();
-  int nproc  = sim_control->SimPM.levels[0].sub_domain.get_nproc();
   spdlog::set_default_logger(spdlog::rotating_logger_mt(
       "pion", "pion_process_" + to_string(myrank) + ".log", max_logfile_size,
       max_logfiles));

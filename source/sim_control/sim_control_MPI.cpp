@@ -127,9 +127,6 @@ int sim_control_pllel::Init(
 #endif
   int err = 0;
 
-  int myrank = SimPM.levels[0].sub_domain.get_myrank();
-  int nproc  = SimPM.levels[0].sub_domain.get_nproc();
-
   //
   // Setup dataI/O class and check if we read from a single file or
   // multiple files.  Should be a single file, but for FITS it might
@@ -528,7 +525,7 @@ int sim_control_pllel::calculate_timestep(
   //
   double t_dyn = 0.0, t_mp = 0.0;
   t_dyn = calc_dynamics_dt(par, grid);
-  t_mp  = calc_microphysics_dt(par, grid, l);
+  t_mp  = calc_microphysics_dt(par, grid);
 
 #ifndef NDEBUG
   spdlog::debug("calc_time: local t_dyn= {}", t_dyn);

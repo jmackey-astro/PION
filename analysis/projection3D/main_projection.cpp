@@ -508,8 +508,8 @@ int main(int argc, char **argv)
   // Npix_max, 			     SimPM.Xmin.data(), SimPM.Xmax, SimPM.Range,
   // grid->DX());
 
-  class image *IMG[SimPM.grid_nlevels];
-  for (size_t v = 0; v < SimPM.grid_nlevels; v++) {
+  std::vector<class image *> IMG(SimPM.grid_nlevels);
+  for (int v = 0; v < SimPM.grid_nlevels; v++) {
     IMG[v] = new class image(normal, angle, perpdir, G[v]);
     IMG[v]->SetMicrophysics(MP);
   }
@@ -526,7 +526,7 @@ int main(int argc, char **argv)
     vps.npix[ii] = npix[ii];
 
   // setup rays for each level
-  for (size_t v = 0; v < SimPM.grid_nlevels; v++) {
+  for (int v = 0; v < SimPM.grid_nlevels; v++) {
     spdlog::debug(
         "<----- LEVEL {}: setting up rays        ----->\n<----- Setting cell positions in Image ----->\n",
         v);
@@ -763,7 +763,7 @@ int main(int argc, char **argv)
     }
 
     // Loop over levels to save images for each level
-    for (size_t lv = 0; lv < SimPM.grid_nlevels; lv++) {
+    for (int lv = 0; lv < SimPM.grid_nlevels; lv++) {
       spdlog::debug("analysis for level {} starting", lv);
       grid = G[lv];
       // cout <<"grid pointer="<<grid<<"\n";
@@ -850,7 +850,6 @@ int main(int argc, char **argv)
             string recv_id;
             int recv_tag  = -1;
             int from_rank = -1;
-            int comm_tag  = irank;
             err           = SimPM.levels[0].sub_domain.look_for_data_to_receive(
                 &from_rank,  ///< rank of sender
                 recv_id,     ///< identifier for receive.
@@ -1114,7 +1113,8 @@ int main(int argc, char **argv)
       err = imio.open_image_file(this_outfile, op_filetype, &filehandle);
       if (err) spdlog::error("{}: {}", "failed to open output file", err);
 
-      string *im_name = mem.myalloc(im_name, n_images);
+      string *im_name = 0;
+      im_name         = mem.myalloc(im_name, n_images);
       ostringstream t;
       t.fill('0');
 
@@ -1140,7 +1140,7 @@ int main(int argc, char **argv)
           im_name[0] = t.str();
           break;
         case I_ALL_SCALARS:
-          for (size_t im = 0; im < n_images; im++) {
+          for (int im = 0; im < n_images; im++) {
             switch (im) {
               case PROJ_D:
                 im_name[im] = "Proj_SurfaceMass";
@@ -1229,7 +1229,8 @@ int main(int argc, char **argv)
           gnpix[i] *= 2;
       }
       // Add root grid.
-      double *global_image = mem.myalloc(global_image, gnumpix);
+      double *global_image = 0;
+      global_image         = mem.myalloc(global_image, gnumpix);
       //
       // Loop over all images.
       //

@@ -1421,7 +1421,6 @@ double stellar_wind_evolution::Mdot_Brott(
   double Tn    = 22.5e3;
   double Tp    = 27.1e3;
   double betaH = 2.6;  // wind velocity multiplier on hot side
-  double betaC = 1.3;  // wind velocity multiplier on cool side
   double md = 0.0, mdc = 0.0, mdh = 0.0;
   if (T > Tp) {
     md = Mdot_Vink_hot(L, M, T, Z, betaH);

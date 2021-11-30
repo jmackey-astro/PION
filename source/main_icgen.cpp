@@ -138,8 +138,7 @@ int main(int argc, char **argv)
 
   class SimParams SimPM(pfile);
 #ifdef PARALLEL
-  int r  = SimPM.levels[0].sub_domain.get_myrank();
-  int np = SimPM.levels[0].sub_domain.get_nproc();
+  int r = SimPM.levels[0].sub_domain.get_myrank();
 
   spdlog::set_default_logger(spdlog::rotating_logger_mt(
       "icgen", "icgen_process_" + to_string(r) + ".log", max_logfile_size,

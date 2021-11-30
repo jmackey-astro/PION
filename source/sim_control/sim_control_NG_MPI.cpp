@@ -71,12 +71,6 @@ int sim_control_NG_MPI::Init(
   spdlog::debug("(pion) Init: infile = {}", infile);
   int err = 0;
 
-  //
-  // Setup the Sub_domain class with rank and nproc.
-  //
-  int myrank = SimPM.levels[0].sub_domain.get_myrank();
-  int nproc  = SimPM.levels[0].sub_domain.get_nproc();
-
   // ----------------------------------------------------------------
   SimPM.typeofip = typeOfFile;
   setup_dataio_class(SimPM, typeOfFile);
@@ -140,13 +134,14 @@ int sim_control_NG_MPI::Init(
   // Set Ph[] = P[], and then implement the boundary conditions.
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     cell *c = grid[l]->FirstPt();
-    double u[SimPM.nvar];
+    std::vector<double> u(SimPM.nvar);
     // rep.printVec("First Point",c->P,SimPM.nvar);
     do {
       // make sure temperature of the gas is reasonable
       if (SimPM.timestep == 0) {
-        spatial_solver->PtoU(c->P, u, SimPM.gamma);
-        spatial_solver->UtoP(u, c->P, SimPM.EP.MinTemperature, SimPM.gamma);
+        spatial_solver->PtoU(c->P, u.data(), SimPM.gamma);
+        spatial_solver->UtoP(
+            u.data(), c->P, SimPM.EP.MinTemperature, SimPM.gamma);
       }
       // set Ph[]=P[]
       for (int v = 0; v < SimPM.nvar; v++)
@@ -595,7 +590,9 @@ int sim_control_NG_MPI::Time_Int(
           "{}: Expected {} but got {}", "MPI_NG TIME_INT::output_data()", 0,
           err);
 
+#ifdef TEST_CONSERVATION
     err += check_energy_cons(grid);
+#endif
 
     //
     // check if we are at time limit yet.
@@ -1362,14 +1359,13 @@ int sim_control_NG_MPI::initial_conserved_quantities(
 int sim_control_NG_MPI::check_energy_cons(vector<class GridBaseClass *> &grid)
 {
   // Energy, and Linear Momentum in x-direction.
-#ifdef TEST_CONSERVATION
-  pion_flt u[SimPM.nvar];
-  nowERG        = 0.;
-  nowMMX        = 0.;
-  nowMMY        = 0.;
-  nowMMZ        = 0.;
-  nowMASS       = 0.0;
-  double totmom = 0.0;
+  std::vector<pion_flt> u(SimPM.nvar);
+  double nowERG  = 0.;
+  double nowMMX  = 0.;
+  double nowMMY  = 0.;
+  double nowMMZ  = 0.;
+  double nowMASS = 0.0;
+  double totmom  = 0.0;
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     double dx     = SimPM.levels[l].dx;
     double dv     = 0.0;
@@ -1377,7 +1373,7 @@ int sim_control_NG_MPI::check_energy_cons(vector<class GridBaseClass *> &grid)
     do {
       if (c->isdomain && c->isleaf) {
         dv = spatial_solver->CellVolume(c, dx);
-        spatial_solver->PtoU(c->P, u, SimPM.gamma);
+        spatial_solver->PtoU(c->P, u.data(), SimPM.gamma);
         nowERG += u[ERG] * dv;
         nowMMX += u[MMX] * dv;
         nowMMY += u[MMY] * dv;
@@ -1404,14 +1400,13 @@ int sim_control_NG_MPI::check_energy_cons(vector<class GridBaseClass *> &grid)
   // cout <<" totmom="<<totmom<<" initMMX="<<initMMX;
   // cout <<", nowMMX="<<nowMMX<<"\n";
 
-  spdlog::debug(
-      "(conserved quantities) [{}, {}, {}, {}, {}]\n"
-      "(relative error      ) [{}, {}, {}, {}, {}]" nowERG,
-      nowMMX, nowMMY, nowMMZ, nowMASS, (nowERG - initERG) / (initERG),
-      (nowMMX - initMMX) / (totmom), (nowMMY - initMMY) / (totmom),
-      (nowMMZ - initMMZ) / (totmom), (nowMASS - initMASS) / initMASS);
+  // spdlog::debug(
+  //    "(conserved quantities) [{}, {}, {}, {}, {}]\n"
+  //    "(relative error      ) [{}, {}, {}, {}, {}]" nowERG,
+  //    nowMMX, nowMMY, nowMMZ, nowMASS, (nowERG - initERG) / (initERG),
+  //    (nowMMX - initMMX) / (totmom), (nowMMY - initMMY) / (totmom),
+  //    (nowMMZ - initMMZ) / (totmom), (nowMASS - initMASS) / initMASS);
 
-#endif  // TEST_CONSERVATION
   return (0);
 }
 

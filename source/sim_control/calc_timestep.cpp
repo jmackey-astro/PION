@@ -88,7 +88,7 @@ int calc_timestep::calculate_timestep(
   //
   double t_dyn = 0.0, t_mp = 0.0;
   t_dyn = calc_dynamics_dt(par, grid);
-  t_mp  = calc_microphysics_dt(par, grid, l);
+  t_mp  = calc_microphysics_dt(par, grid);
   // cout <<"l="<<l<<", \t t_dyn="<<t_dyn<<"and t_mp ="<<t_mp<<"\n";
 
 #ifndef NDEBUG
@@ -207,9 +207,9 @@ double calc_timestep::set_conduction_dt_and_Edot(
   // want more energy to leave than is already in it.  So we only count a cell
   // in the timestep limiting if Edot is negative.
   //
-  double dt = 1.0e200, gm1 = par.gamma - 1.0, tempdt = 0.0,
-         minP = par.RefVec[PG] * 1.0e-3;
-  cell *c     = grid->FirstPt_All();
+  double dt = 1.0e200, tempdt = 0.0;
+  // gm1 = par.gamma - 1.0, minP = par.RefVec[PG] * 1.0e-3;
+  cell *c = grid->FirstPt_All();
   do {
     // DIDN'T WORK -- CHECKERBOARDING!
     // if (c->dU[ERG]<0.0) tempdt = c->Ph[PG]/(gm1*(fabs(c->dU[ERG]
@@ -304,8 +304,7 @@ int calc_timestep::set_thermal_conduction_Edot(
 #else
     spatial_solver->SetDirection(axis[idim]);
 #endif  // PION_OMP
-    class cell *cpt    = grid->FirstPt_All();
-    class cell *marker = cpt;
+    class cell *cpt = grid->FirstPt_All();
 #ifdef TEST_INT
     spdlog::debug("Direction={}, i={}", axis[idim], idim);
     spdlog::debug("cpt : {}", cpt->pos);
@@ -333,10 +332,10 @@ int calc_timestep::set_thermal_conduction_Edot(
           cpt          = grid->get_cell_all(index[0], index[1], index[2]);
           cell *npt    = grid->NextPt(cpt, posdirs[idim]);
           cell *lpt    = 0;
-          double q_neg = 0.0, q_pos = 0.0, gradT = 0.0, Qclassical = 0.0,
-                 Qsaturated = 0.0, T = 0.0;
+          double q_neg = 0.0, q_pos = 0.0, gradT = 0.0, Qsaturated = 0.0,
+                 T     = 0.0;  //, Qclassical = 0.0;
           double dx    = grid->DX();
-          double kappa = 0.0, vc = 0.0, cn = 0.0;
+          double kappa = 0.0;  //, cn = 0.0, vc = 0.0
           if (npt == 0)
             spdlog::error("{}: {}", "Couldn't find two cells in column", 0);
           q_neg = 0.0;  // no flux coming in from non-existent boundary data.
@@ -605,9 +604,8 @@ double calc_timestep::calc_dynamics_dt(
 
 
 double calc_timestep::calc_microphysics_dt(
-    class SimParams &par,       ///< pointer to simulation parameters
-    class GridBaseClass *grid,  ///< pointer to grid.
-    const int l                 ///< level to advance (for NG grid)
+    class SimParams &par,      ///< pointer to simulation parameters
+    class GridBaseClass *grid  ///< pointer to grid.
 )
 {
   //

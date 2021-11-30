@@ -146,14 +146,14 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
     spdlog::info("C2F: odd step, interpolating coarse data in time.");
     int ct = 0;
 #endif
-    double U[par.nvar];
+    std::vector<double> U(par.nvar);
     for (f_iter = b->data.begin(); f_iter != b->data.end(); ++f_iter) {
       f = (*f_iter);
       c = f->npt;
-      solver->PtoU(c->P, U, par.gamma);
+      solver->PtoU(c->P, U.data(), par.gamma);
       for (int v = 0; v < par.nvar; v++)
         U[v] += 0.5 * c->dU[v];
-      solver->UtoP(U, c->Ph, par.EP.MinTemperature, par.gamma);
+      solver->UtoP(U.data(), c->Ph, par.EP.MinTemperature, par.gamma);
 #ifdef TEST_C2F
       ct++;
       // cout <<"updated cell "<<ct<<" of "<<b->data.size()<<"\n";
@@ -263,7 +263,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       par.spOOA == OA2
       // || par.spOOA == OA1
   ) {
-    pion_flt sx[par.nvar], sy[par.nvar], sz[par.nvar];
+    std::vector<pion_flt> sx(par.nvar), sy(par.nvar), sz(par.nvar);
     for (int v = 0; v < par.nvar; v++)
       sx[v] = 0.0;
     for (int v = 0; v < par.nvar; v++)
@@ -285,8 +285,9 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         // coarse cell properties:
         c     = f1->npt;
         c_vol = coarse->CellVolume(c, 0);
-        solver->SetSlope(c, XX, par.nvar, sx, OA2, coarse);
-        interpolate_coarse2fine1D(par, fine, solver, c->Ph, c_vol, sx, f1, f2);
+        solver->SetSlope(c, XX, par.nvar, sx.data(), OA2, coarse);
+        interpolate_coarse2fine1D(
+            par, fine, solver, c->Ph, c_vol, sx.data(), f1, f2);
       }
     }  // 1D
 
@@ -308,8 +309,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         cell *f1, *f2, *f3, *f4, *c;
         c     = (*f_iter)->npt;
         c_vol = coarse->CellVolume(c, 0);
-        solver->SetSlope(c, XX, par.nvar, sx, OA2, coarse);
-        solver->SetSlope(c, YY, par.nvar, sy, OA2, coarse);
+        solver->SetSlope(c, XX, par.nvar, sx.data(), OA2, coarse);
+        solver->SetSlope(c, YY, par.nvar, sy.data(), OA2, coarse);
         // for (int v=0;v<par.nvar;v++) sx[v] = 0.0;
         // for (int v=0;v<par.nvar;v++) sy[v] = 0.0;
         // only do this on every second row because we update 4
@@ -341,7 +342,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         f4 = fine->NextPt(f2, YP);
 
         interpolate_coarse2fine2D(
-            par, fine, solver, c->Ph, c->pos, c_vol, sx, sy, f1, f2, f3, f4);
+            par, fine, solver, c->Ph, c->pos, c_vol, sx.data(), sy.data(), f1,
+            f2, f3, f4);
 
       }  // loop over fine cells
     }    // 2D
@@ -372,9 +374,9 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         }
 
         c_vol = coarse->CellVolume(c, 0);
-        solver->SetSlope(c, XX, par.nvar, sx, OA2, coarse);
-        solver->SetSlope(c, YY, par.nvar, sy, OA2, coarse);
-        solver->SetSlope(c, ZZ, par.nvar, sz, OA2, coarse);
+        solver->SetSlope(c, XX, par.nvar, sx.data(), OA2, coarse);
+        solver->SetSlope(c, YY, par.nvar, sy.data(), OA2, coarse);
+        solver->SetSlope(c, ZZ, par.nvar, sz.data(), OA2, coarse);
 
         // get list of 8 fine cells.
         fch[0] = (*f_iter);
@@ -394,7 +396,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
 #endif
 
         interpolate_coarse2fine3D(
-            par, fine, solver, c->Ph, c->pos, c_vol, sx, sy, sz, fch);
+            par, fine, solver, c->Ph, c->pos, c_vol, sx.data(), sy.data(),
+            sz.data(), fch);
 
       }  // loop over fine cells
     }    // 3D
@@ -418,7 +421,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
     cell *f2                       ///< pointer to second fine cell (XP)
 )
 {
-  double fU[par.nvar], f1U[par.nvar], f2U[par.nvar], cU[par.nvar];
+  std::vector<double> fU(par.nvar), f1U(par.nvar), f2U(par.nvar), cU(par.nvar);
   double f_vol[2];
   double dx = fine->DX();  // dx
   //
@@ -441,14 +444,14 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
   // Now need to check mass/momentum/energy conservation between
   // coarse and fine levels (Berger & Colella, 1989)
   // sum energy of fine cells.
-  solver->PtoU(f1->Ph, f1U, par.gamma);
+  solver->PtoU(f1->Ph, f1U.data(), par.gamma);
   f_vol[0] = fine->CellVolume(f1, 0);
-  solver->PtoU(f2->Ph, f2U, par.gamma);
+  solver->PtoU(f2->Ph, f2U.data(), par.gamma);
   f_vol[1] = fine->CellVolume(f2, 0);
   for (int v = 0; v < par.nvar; v++)
     fU[v] = f1U[v] * f_vol[0] + f2U[v] * f_vol[1];
   // compare with coarse cell.
-  solver->PtoU(P, cU, par.gamma);
+  solver->PtoU(P, cU.data(), par.gamma);
   for (int v = 0; v < par.nvar; v++)
     cU[v] *= c_vol;
 #ifdef TEST_C2F
@@ -469,10 +472,10 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
     fU[v] = f1U[v] + f2U[v];
   spdlog::debug("1D fine 2 : {}", fU);
 #endif
-  solver->UtoP(f2U, f2->Ph, par.EP.MinTemperature, par.gamma);
+  solver->UtoP(f2U.data(), f2->Ph, par.EP.MinTemperature, par.gamma);
   for (int v = 0; v < par.nvar; v++)
     f2->P[v] = f2->Ph[v];
-  solver->UtoP(f1U, f1->Ph, par.EP.MinTemperature, par.gamma);
+  solver->UtoP(f1U.data(), f1->Ph, par.EP.MinTemperature, par.gamma);
   for (int v = 0; v < par.nvar; v++)
     f1->P[v] = f1->Ph[v];
 
@@ -495,8 +498,9 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
     cell **fch                     ///< pointer to array of 8 fine cells
 )
 {
-  double **fU = 0, Utot[par.nvar], cU[par.nvar];
-  fU          = mem.myalloc(fU, 8);
+  double **fU = 0;
+  std::vector<double> Utot(par.nvar), cU(par.nvar);
+  fU = mem.myalloc(fU, 8);
   for (int i = 0; i < 8; i++)
     fU[i] = mem.myalloc(fU[i], par.nvar);
   double dxo2 = 0.5 * fine->DX();  // dx
@@ -552,7 +556,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
       Utot[v] += fU[i][v] * f_vol[i];
   }
   // compare with coarse cell.
-  solver->PtoU(P, cU, par.gamma);
+  solver->PtoU(P, cU.data(), par.gamma);
   for (int v = 0; v < par.nvar; v++)
     cU[v] *= c_vol;
 
@@ -623,8 +627,8 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
     cell *f4                       ///< pointer to fourth fine cell (XP,YP)
 )
 {
-  double fU[par.nvar], f1U[par.nvar], f2U[par.nvar];
-  double f3U[par.nvar], f4U[par.nvar], cU[par.nvar];
+  std::vector<double> fU(par.nvar), f1U(par.nvar), f2U(par.nvar);
+  std::vector<double> f3U(par.nvar), f4U(par.nvar), cU(par.nvar);
   double dxo2 = 0.5 * fine->DX();  // dx
   double f_vol[4];
 
@@ -649,10 +653,10 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   // Need to check mass/momentum/energy conservation between
   // coarse and fine levels
   //
-  solver->PtoU(f1->P, f1U, par.gamma);
-  solver->PtoU(f2->P, f2U, par.gamma);
-  solver->PtoU(f3->P, f3U, par.gamma);
-  solver->PtoU(f4->P, f4U, par.gamma);
+  solver->PtoU(f1->P, f1U.data(), par.gamma);
+  solver->PtoU(f2->P, f2U.data(), par.gamma);
+  solver->PtoU(f3->P, f3U.data(), par.gamma);
+  solver->PtoU(f4->P, f4U.data(), par.gamma);
   f_vol[0] = fine->CellVolume(f1, 0);
   f_vol[1] = fine->CellVolume(f2, 0);
   f_vol[2] = fine->CellVolume(f3, 0);
@@ -662,7 +666,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
     fU[v] = f1U[v] * f_vol[0] + f3U[v] * f_vol[1] + f2U[v] * f_vol[2]
             + f4U[v] * f_vol[3];
   // compare with coarse cell.
-  solver->PtoU(P, cU, par.gamma);
+  solver->PtoU(P, cU.data(), par.gamma);
   for (int v = 0; v < par.nvar; v++)
     cU[v] *= c_vol;
 
@@ -692,16 +696,16 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
     f4U[v] += cU[v];
 
   // put scaled conserved variable vectors back into fine cells
-  solver->UtoP(f1U, f1->Ph, par.EP.MinTemperature, par.gamma);
+  solver->UtoP(f1U.data(), f1->Ph, par.EP.MinTemperature, par.gamma);
   for (int v = 0; v < par.nvar; v++)
     f1->P[v] = f1->Ph[v];
-  solver->UtoP(f2U, f2->Ph, par.EP.MinTemperature, par.gamma);
+  solver->UtoP(f2U.data(), f2->Ph, par.EP.MinTemperature, par.gamma);
   for (int v = 0; v < par.nvar; v++)
     f2->P[v] = f2->Ph[v];
-  solver->UtoP(f3U, f3->Ph, par.EP.MinTemperature, par.gamma);
+  solver->UtoP(f3U.data(), f3->Ph, par.EP.MinTemperature, par.gamma);
   for (int v = 0; v < par.nvar; v++)
     f3->P[v] = f3->Ph[v];
-  solver->UtoP(f4U, f4->Ph, par.EP.MinTemperature, par.gamma);
+  solver->UtoP(f4U.data(), f4->Ph, par.EP.MinTemperature, par.gamma);
   for (int v = 0; v < par.nvar; v++)
     f4->P[v] = f4->Ph[v];
 

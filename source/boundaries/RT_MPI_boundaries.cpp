@@ -247,8 +247,9 @@ int RT_MPI_bc::Receive_RT_Boundaries(
 #endif
   }
   else {
-    int r_dirs[n_recv];   // List of directions.
-    bool r_done[n_recv];  // Will set these to true as I receive them.
+    std::vector<int> r_dirs(n_recv);  // List of directions.
+    std::vector<bool> r_done(
+        n_recv);  // Will set these to true as I receive them.
 #ifdef RT_TESTING
     spdlog::debug("\tReceive_RT_Boundaries() src={}: to recv from: ", src_id);
 #endif
@@ -745,6 +746,12 @@ int RT_MPI_bc::setup_RT_infinite_src_BD(
     case ZP:
       tempR.dir = static_cast<int>(dir_ZP);
       break;
+    case NO:
+      spdlog::debug(
+          "\t No processor in receive direction d={}: proc={}", recv_dir,
+          recv_proc);
+      tempR.dir = -1;
+      break;
     default:
       spdlog::debug(
           "\t No processor in receive direction d={}: proc={}", recv_dir,
@@ -797,6 +804,14 @@ int RT_MPI_bc::setup_RT_infinite_src_BD(
       break;
     case ZP:
       tempS.dir = static_cast<int>(dir_ZP);
+      break;
+    case NO:
+#ifdef RT_TESTING
+      spdlog::debug(
+          "\t No processor in send direction d={}: proc={}", send_dir,
+          send_proc);
+#endif
+      tempS.dir = -1;
       break;
     default:
 #ifdef RT_TESTING
@@ -907,7 +922,7 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
   // cell vertex (which should be consistent across processors!), so
   // this should work fine.
   //
-  enum direction srcdir[par.ndim];
+  std::vector<enum direction> srcdir(par.ndim);
   std::array<double, MAX_DIM> srcpos;
   for (int v = 0; v < par.ndim; v++) {
     srcpos[v] = RS.pos[v];

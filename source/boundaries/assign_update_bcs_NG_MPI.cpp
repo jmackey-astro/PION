@@ -223,7 +223,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
   // ix[] is the position of this process in each direction of the
   // block of MPI processes.
   int nb = grid->BC_bd.size();
-  int map[nb];
+  std::vector<int> map(nb);
   int rank = par.levels[level].sub_domain.get_myrank();
   int ix[MAX_DIM];
   par.levels[level].sub_domain.get_domain_coordinates(rank, ix);

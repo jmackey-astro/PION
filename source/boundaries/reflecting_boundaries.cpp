@@ -17,9 +17,6 @@ int reflecting_bc::BC_assign_REFLECTING(
     class GridBaseClass *grid,  ///< pointer to grid.
     boundary_data *b)
 {
-  enum direction offdir = b->dir;
-  enum direction ondir  = b->ondir;
-
   if (b->data.empty()) {
     spdlog::error(
         "{}: {}", "BC_assign_REFLECTING: empty boundary data", b->itype);
@@ -36,7 +33,7 @@ int reflecting_bc::BC_assign_REFLECTING(
     //
     // velocity:
     //
-    switch (offdir) {
+    switch (b->dir) {
       case XN:
       case XP:
         b->refval[VX] = -1.0;
@@ -49,8 +46,11 @@ int reflecting_bc::BC_assign_REFLECTING(
       case ZP:
         b->refval[VZ] = -1.0;
         break;
+      case NO:
+        spdlog::error("{}: {}", "BAD DIRECTION REFLECTING", b->dir);
+        break;
       default:
-        spdlog::error("{}: {}", "BAD DIRECTION REFLECTING", offdir);
+        spdlog::error("{}: {}", "BAD DIRECTION REFLECTING", b->dir);
         break;
     }  // Set Normal velocity direction.
 
@@ -58,7 +58,7 @@ int reflecting_bc::BC_assign_REFLECTING(
     // B-field:
     //
     if (par.eqntype == EQMHD || par.eqntype == EQGLM || par.eqntype == EQFCD) {
-      switch (offdir) {
+      switch (b->dir) {
         case XN:
         case XP:
           b->refval[BX] = -1.0;
@@ -71,8 +71,11 @@ int reflecting_bc::BC_assign_REFLECTING(
         case ZP:
           b->refval[BZ] = -1.0;
           break;
+        case NO:
+          spdlog::error("{}: {}", "BAD DIRECTION REFLECTING", b->dir);
+          break;
         default:
-          spdlog::error("{}: {}", "BAD DIRECTION REFLECTING", offdir);
+          spdlog::error("{}: {}", "BAD DIRECTION REFLECTING", b->dir);
           break;
       }  // Set normal b-field direction.
     }    // Setting up reference value.
@@ -90,7 +93,7 @@ int reflecting_bc::BC_assign_REFLECTING(
   do {
     temp = (*bpt);
     for (int v = 0; v > (*bpt)->isedge; v--) {
-      temp = grid->NextPt(temp, ondir);
+      temp = grid->NextPt(temp, b->ondir);
     }
     if (!temp) {
       spdlog::error("{}: {}", "Got lost assigning reflecting bcs.", temp->id);

@@ -208,7 +208,7 @@ int image_io::write_image_to_file(
   // Check that f is equal to filehandle
   //
   if (f != filehandle) spdlog::error("{}: {}", "bad file handle", f);
-  double min[im_dim];
+  std::vector<double> min(im_dim);
   for (int v = 0; v < im_dim; v++)
     min[v] = 0.0;
   ostringstream ofn;
@@ -247,7 +247,7 @@ int image_io::write_image_to_file(
       spdlog::info("WRITING IMAGE TO FITS FILE: {}", f);
       utfits.create_fits_image(ff, name, im_dim, npix);
       utfits.write_fits_image(
-          ff, name, min, min, 1.0, im_dim, npix, num_pix, im);
+          ff, name, min.data(), min.data(), 1.0, im_dim, npix, num_pix, im);
       break;
 
     case 3:

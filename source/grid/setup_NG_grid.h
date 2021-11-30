@@ -54,6 +54,8 @@ public:
   /// Decide if I need to setup RT class and, if so, set up a
   /// raytracer associated with each grid.
   ///
+  using setup_fixed_grid::setup_raytracing; /* TODO: is this intended to be
+                                               brought here? */
   virtual int setup_raytracing(
       class SimParams &,               ///< simulation parameters
       vector<class GridBaseClass *> &  ///< grid pointers.

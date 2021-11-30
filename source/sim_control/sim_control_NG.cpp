@@ -413,7 +413,9 @@ int sim_control_NG::Time_Int(
 #endif
 #endif
 
+#ifdef TEST_CONSERVATION
     err += check_energy_cons(grid);
+#endif /* TEST_CONSERVATION */
 
     err += output_data(grid);
     if (0 != err)
@@ -531,7 +533,9 @@ int sim_control_NG::Finalise(vector<class GridBaseClass *>
   int err = 0;
   spdlog::info(
       "------------------------------------------------------------\n(sim_control::Finalise) FINALISING SIMULATION.");
+#ifdef TEST_CONSERVATION
   err += check_energy_cons(grid);
+#endif /* TEST_CONSERVATION */
   err += output_data(grid);
   if (0 != err)
     spdlog::error(
@@ -876,14 +880,13 @@ double sim_control_NG::advance_step_OA2(const int l  ///< level to advance.
 int sim_control_NG::check_energy_cons(vector<class GridBaseClass *> &grid)
 {
   // Energy, and Linear Momentum in x-direction.
-#ifdef TEST_CONSERVATION
-  pion_flt u[SimPM.nvar];
-  nowERG        = 0.;
-  nowMMX        = 0.;
-  nowMMY        = 0.;
-  nowMMZ        = 0.;
-  nowMASS       = 0.0;
-  double totmom = 0.0;
+  std::vector<pion_flt> u(SimPM.nvar);
+  double nowERG  = 0.;
+  double nowMMX  = 0.;
+  double nowMMY  = 0.;
+  double nowMMZ  = 0.;
+  double nowMASS = 0.0;
+  double totmom  = 0.0;
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     double dx     = SimPM.levels[l].dx;
     double dv     = 0.0;
@@ -891,7 +894,7 @@ int sim_control_NG::check_energy_cons(vector<class GridBaseClass *> &grid)
     do {
       if (!c->isbd && c->isgd) {
         dv = spatial_solver->CellVolume(c, dx);
-        spatial_solver->PtoU(c->P, u, SimPM.gamma);
+        spatial_solver->PtoU(c->P, u.data(), SimPM.gamma);
         nowERG += u[ERG] * dv;
         nowMMX += u[MMX] * dv;
         nowMMY += u[MMY] * dv;
@@ -903,13 +906,13 @@ int sim_control_NG::check_energy_cons(vector<class GridBaseClass *> &grid)
     } while ((c = grid[l]->NextPt(c)) != 0);
   }
 
-  spdlog::debug(
-      "(conserved quantities) [{}, {}, {}, {}, {}]\n(relative error      ) [{}, {}, {}, {}, {}]",
-      nowERG, nowMMX, nowMMY, nowMMZ, nowMASS, (nowERG - initERG) / (initERG),
-      (nowMMX - initMMX) / (totmom), (nowMMY - initMMY) / (totmom),
-      (nowMMZ - initMMZ) / (totmom), (nowMASS - initMASS) / initMASS);
+  // spdlog::debug(
+  //    "(conserved quantities) [{}, {}, {}, {}, {}]\n(relative error      )
+  //    [{}, {}, {}, {}, {}]", nowERG, nowMMX, nowMMY, nowMMZ, nowMASS, (nowERG
+  //    - initERG) / (initERG), (nowMMX - initMMX) / (totmom), (nowMMY -
+  //    initMMY) / (totmom), (nowMMZ - initMMZ) / (totmom), (nowMASS - initMASS)
+  //    / initMASS);
 
-#endif  // TEST_CONSERVATION
   return (0);
 }
 

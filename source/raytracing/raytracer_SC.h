@@ -252,11 +252,10 @@ protected:
   /// behaviour of this function is set by rs->update and rs->opacity_src.
   ///
   virtual int ProcessCell(
-      cell *,              ///< Current cell.
-      double[],            ///< Column to cell.
-      double,              ///< Path Length through cell.
-      const rad_source *,  ///< pointer to source struct.
-      const double         ///< Timestep
+      cell *,             ///< Current cell.
+      double[],           ///< Column to cell.
+      double,             ///< Path Length through cell.
+      const rad_source *  ///< pointer to source struct.
   );
 
   ///

@@ -361,9 +361,11 @@ int time_integrator::calc_RT_microphysics_dU(
 
   int err = 0;
   cell *c = grid->FirstPt_All();
-  pion_flt p[SimPM.nvar];  // temporary state vector for output state.
-  pion_flt ui[SimPM.nvar], uf[SimPM.nvar];  // conserved variable states.
-  double tt = 0.;  // temperature returned at end of microphysics step.
+  std::vector<pion_flt> p(
+      SimPM.nvar);  // temporary state vector for output state.
+  std::vector<pion_flt> ui(SimPM.nvar),
+      uf(SimPM.nvar);  // conserved variable states.
+  double tt = 0.;      // temperature returned at end of microphysics step.
   int index[3];
   // copies of the source data (one copy for each thread)
   // seems to be memory issues when using class member data.
@@ -440,12 +442,12 @@ int time_integrator::calc_RT_microphysics_dU(
 
             // 4th and 5th args are for ionising sources.
             err += MP->TimeUpdateMP_RTnew(
-                c->P, FVI_nheat, heating, FVI_nion, ionize, p, delt,
+                c->P, FVI_nheat, heating, FVI_nion, ionize, p.data(), delt,
                 SimPM.gamma, 0, &tt);
 
             // New state is p[], old state is c->P[].  Get dU from these.
-            spatial_solver->PtoU(c->P, ui, SimPM.gamma);
-            spatial_solver->PtoU(p, uf, SimPM.gamma);
+            spatial_solver->PtoU(c->P, ui.data(), SimPM.gamma);
+            spatial_solver->PtoU(p.data(), uf.data(), SimPM.gamma);
             for (int v = 0; v < SimPM.nvar; v++)
               c->dU[v] += uf[v] - ui[v];
 #ifdef TEST_INF
@@ -502,9 +504,11 @@ int time_integrator::calc_noRT_microphysics_dU(
   // so call a simple microphysics update.
   //
   cell *c = grid->FirstPt_All();
-  pion_flt p[SimPM.nvar];  // temporary state vector for output state.
-  pion_flt ui[SimPM.nvar], uf[SimPM.nvar];  // conserved variable states.
-  double tt = 0.;  // temperature returned at end of microphysics step.
+  std::vector<pion_flt> p(
+      SimPM.nvar);  // temporary state vector for output state.
+  std::vector<pion_flt> ui(SimPM.nvar),
+      uf(SimPM.nvar);  // conserved variable states.
+  double tt = 0.;      // temperature returned at end of microphysics step.
   int err   = 0;
   int index[3];
 #ifdef PION_OMP
@@ -533,14 +537,14 @@ int time_integrator::calc_noRT_microphysics_dU(
             // 0 = adaptive RK5 Cash-Karp method.
             // 1 = adaptive euler integration.
             // 2 = single step RK4 method (at your own risk!)
-            err += MP->TimeUpdateMP(c->P, p, delt, SimPM.gamma, 0, &tt);
+            err += MP->TimeUpdateMP(c->P, p.data(), delt, SimPM.gamma, 0, &tt);
             if (err)
               spdlog::error(
                   "{}: {}", "calc_noRT_microphysics_dU returned error: cell id",
                   c->id);
             // New state is p[], old state is c->P[].  Get dU from these.
-            spatial_solver->PtoU(c->P, ui, SimPM.gamma);
-            spatial_solver->PtoU(p, uf, SimPM.gamma);
+            spatial_solver->PtoU(c->P, ui.data(), SimPM.gamma);
+            spatial_solver->PtoU(p.data(), uf.data(), SimPM.gamma);
             for (int v = 0; v < SimPM.nvar; v++)
               c->dU[v] += uf[v] - ui[v];
           }                                        // if not boundary data.
@@ -723,8 +727,7 @@ int time_integrator::calc_Hcorrection(
     spatial_solver->SetDirection(axis[idim]);
 #endif  // PION_OMP
 
-    class cell *cpt    = grid->FirstPt_All();
-    class cell *marker = cpt;
+    class cell *cpt = grid->FirstPt_All();
 
 #ifdef TEST_INT
     spdlog::debug("Direction={}, i={}", axis[idim], idim);
@@ -757,7 +760,7 @@ int time_integrator::calc_Hcorrection(
           pion_flt *slope_cpt = 0, *slope_npt = 0, *temp = 0;
           slope_cpt = mem.myalloc(slope_cpt, SimPM.nvar);
           slope_npt = mem.myalloc(slope_npt, SimPM.nvar);
-          pion_flt edgeR[SimPM.nvar], edgeL[SimPM.nvar];
+          std::vector<pion_flt> edgeR(SimPM.nvar), edgeL(SimPM.nvar);
 
           // Set three cell pointers (2nd order slopes have a 3-point
           // stencil).
@@ -775,13 +778,15 @@ int time_integrator::calc_Hcorrection(
           // --------------------------------------------------------
           do {
             err += spatial_solver->SetEdgeState(
-                cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp, grid);
+                cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL.data(), csp,
+                grid);
             err += spatial_solver->SetSlope(
                 npt, axis[idim], SimPM.nvar, slope_npt, csp, grid);
             err += spatial_solver->SetEdgeState(
-                npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR, csp, grid);
+                npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR.data(), csp,
+                grid);
             spatial_solver->set_Hcorrection(
-                cpt, axis[idim], edgeL, edgeR, SimPM.gamma);
+                cpt, axis[idim], edgeL.data(), edgeR.data(), SimPM.gamma);
 
             cpt       = npt;
             npt       = n2pt;
@@ -792,13 +797,15 @@ int time_integrator::calc_Hcorrection(
 
           // last cell must be 1st order.
           err += spatial_solver->SetEdgeState(
-              cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp, grid);
+              cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL.data(), csp,
+              grid);
           for (int v = 0; v < SimPM.nvar; v++)
             slope_npt[v] = 0.;
           err += spatial_solver->SetEdgeState(
-              npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR, csp, grid);
+              npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR.data(), csp,
+              grid);
           spatial_solver->set_Hcorrection(
-              cpt, axis[idim], edgeL, edgeR, SimPM.gamma);
+              cpt, axis[idim], edgeL.data(), edgeR.data(), SimPM.gamma);
 
           // --------------------------------------------------------
           // Finished H-correction calculation for the column.
@@ -883,8 +890,7 @@ int time_integrator::set_dynamics_dU(
 #else
     spatial_solver->SetDirection(axis[i]);
 #endif  // PION_OMP
-    class cell *cpt    = grid->FirstPt_All();
-    class cell *marker = cpt;
+    class cell *cpt = grid->FirstPt_All();
 
 #ifdef TEST_INT
     spdlog::debug("Direction={}, i={}", axis[i], i);
@@ -895,11 +901,9 @@ int time_integrator::set_dynamics_dU(
     // loop over the number of cells in the line/plane of starting
     // cells.
     //
-    enum direction d1 = posdirs[(i + 1) % 3];
-    enum direction d2 = posdirs[(i + 2) % 3];
-    enum axes x1      = axis[(i + 1) % 3];
-    enum axes x2      = axis[(i + 2) % 3];
-    enum axes x3      = axis[i];
+    enum axes x1 = axis[(i + 1) % 3];
+    enum axes x2 = axis[(i + 2) % 3];
+    enum axes x3 = axis[i];
 
     //
     // loop over the two perpendicular axes, to trace out a plane of

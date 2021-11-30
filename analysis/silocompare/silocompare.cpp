@@ -81,8 +81,7 @@ int main(int argc, char **argv)
   //
   class SimParams SimPM;
 
-  int r  = SimPM.levels[0].sub_domain.get_myrank();
-  int np = SimPM.levels[0].sub_domain.get_nproc();
+  int r = SimPM.levels[0].sub_domain.get_myrank();
 
   //
   // Get an input file and an output file.
@@ -362,17 +361,17 @@ int main(int argc, char **argv)
     // write difference to output file.
     //
     c = grid->FirstPt();
-    double maxdiff[SimPM.nvar];
+    std::vector<double> maxdiff(SimPM.nvar);
     double temp;
-    double reldiff[SimPM.nvar];
-    double absdiff[SimPM.nvar];
+    std::vector<double> reldiff(SimPM.nvar);
+    std::vector<double> absdiff(SimPM.nvar);
     for (int v = 0; v < SimPM.nvar; v++)
       maxdiff[v] = 0.0;
     for (int v = 0; v < SimPM.nvar; v++)
       reldiff[v] = 0.0;
     for (int v = 0; v < SimPM.nvar; v++)
       absdiff[v] = 0.0;
-    int ipos[SimPM.ndim];
+    std::vector<int> ipos(SimPM.ndim);
 
     spdlog::debug("P : {}", std::vector<double>(c->P, c->P + SimPM.nvar));
     spdlog::debug("Ph : {}", std::vector<double>(c->Ph, c->Ph + SimPM.nvar));
@@ -383,7 +382,7 @@ int main(int argc, char **argv)
         // fabs(error)
         //
         do {
-          CI.get_ipos(c, ipos);
+          CI.get_ipos(c, ipos.data());
           for (int v = 0; v < SimPM.nvar; v++) {
             temp = std::max(maxdiff[v], fabs(c->P[v] - c->Ph[v]));
             if (temp > maxdiff[v]) {
@@ -413,7 +412,7 @@ int main(int argc, char **argv)
         // not abs(diff) in the image
         //
         do {
-          CI.get_ipos(c, ipos);
+          CI.get_ipos(c, ipos.data());
           for (int v = 0; v < SimPM.nvar; v++) {
             temp = std::max(maxdiff[v], fabs(c->P[v] - c->Ph[v]));
             if (temp > maxdiff[v]) {

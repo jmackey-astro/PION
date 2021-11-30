@@ -17,9 +17,6 @@ int axisymmetric_bc::BC_assign_AXISYMMETRIC(
     class GridBaseClass *grid,  ///< pointer to grid.
     boundary_data *b)
 {
-  enum direction offdir = b->dir;
-  enum direction ondir  = b->ondir;
-
   if (b->data.empty()) {
     spdlog::error(
         "{}: {}", "BC_assign_AXISYMMETRIC empty boundary data", b->itype);
@@ -65,7 +62,7 @@ int axisymmetric_bc::BC_assign_AXISYMMETRIC(
   do {
     temp = (*bpt);
     for (int v = 0; v > (*bpt)->isedge; v--) {
-      temp = grid->NextPt(temp, ondir);
+      temp = grid->NextPt(temp, b->ondir);
     }
     if (!temp) {
       spdlog::error("{}: {}", "Got lost assigning axisymmetric bcs.", temp->id);

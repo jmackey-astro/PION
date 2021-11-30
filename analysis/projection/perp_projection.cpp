@@ -56,13 +56,12 @@ int generate_perpendicular_image(
   // Loop over grid... Each z,R corresponds to a pixel.
   // Outer loop runs over z.
   //
-  cell *cz    = grid->FirstPt();
-  int iz      = 0;
-  int err     = 0;
-  double ttsf = 0.0;
+  cell *cz = grid->FirstPt();
+  int iz   = 0;
+  int err  = 0;
 
 #ifdef PROJ_OMP
-#pragma omp parallel for private(ttsf)
+#pragma omp parallel for
 #endif
   for (iz = 0; iz < npix[0]; iz++) {
     // cout <<"#+#+#+#+#+# New column, iz="<<iz<<"\n";

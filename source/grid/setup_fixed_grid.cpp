@@ -304,6 +304,7 @@ int setup_fixed_grid::setup_microphysics(
     case 0:
       if (SimPM.EP.MP_timestep_limit < 0 || SimPM.EP.MP_timestep_limit > 5)
         spdlog::error("{}: {}", "BAD dt LIMIT", SimPM.EP.MP_timestep_limit);
+      break;
     case 2:
     case 3:
     case 5:

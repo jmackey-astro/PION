@@ -260,7 +260,9 @@ int sim_control::Time_Int(
     spdlog::debug("\t runtime: {}s", tsf);
 #endif
 #endif
+#ifdef TEST_CONSERVATION
     err += check_energy_cons(grid[0]);
+#endif /* TEST_CONSERVATION */
 
     err += output_data(grid);
     if (err != 0) {
@@ -392,22 +394,21 @@ int sim_control::check_eosim()
 
 int sim_control::check_energy_cons(class GridBaseClass *grid)
 {
-#ifdef TEST_CONSERVATION
   // Energy, and Linear Momentum in x-direction.
-  pion_flt u[SimPM.nvar];
-  nowERG        = 0.;
-  nowMMX        = 0.;
-  nowMMY        = 0.;
-  nowMMZ        = 0.;
-  nowMASS       = 0.0;
-  double totmom = 0.0;
+  std::vector<pion_flt> u(SimPM.nvar);
+  double nowERG  = 0.;
+  double nowMMX  = 0.;
+  double nowMMY  = 0.;
+  double nowMMZ  = 0.;
+  double nowMASS = 0.0;
+  double totmom  = 0.0;
 
   class cell *cpt = grid->FirstPt();
   double dR       = grid->DX();
   double dv       = 0.0;
   do {
     dv = spatial_solver->CellVolume(cpt, dR);
-    spatial_solver->PtoU(cpt->P, u, SimPM.gamma);
+    spatial_solver->PtoU(cpt->P, u.data(), SimPM.gamma);
     nowERG += u[ERG] * dv;
     nowMMX += u[MMX] * dv;
     nowMMY += u[MMY] * dv;
@@ -418,13 +419,12 @@ int sim_control::check_energy_cons(class GridBaseClass *grid)
   spdlog::debug(
       "(conserved quantities) [{}, {}, {}, {}, {}]", nowERG, nowMMX, nowMMY,
       nowMMZ, nowMASS);
-  spdlog::debug(
-      "(relative error      ) [{}, {}, {}, {}, {}]",
-      (nowERG - initERG) / (initERG), (nowMMX - initMMX) / (totmom),
-      (nowMMY - initMMY) / (totmom), (nowMMZ - initMMZ) / (totmom),
-      (nowMASS - initMASS) / initMASS);
+  // spdlog::debug(
+  //    "(relative error      ) [{}, {}, {}, {}, {}]",
+  //    (nowERG - initERG) / (initERG), (nowMMX - initMMX) / (totmom),
+  //    (nowMMY - initMMY) / (totmom), (nowMMZ - initMMZ) / (totmom),
+  //    (nowMASS - initMASS) / initMASS);
 
-#endif  // TEST_CONSERVATION
   return (0);
 }
 
@@ -440,7 +440,9 @@ int sim_control::Finalise(vector<class GridBaseClass *>
 {
   int err = 0;
   spdlog::info("(sim_control::Finalise) FINALISING SIMULATION");
+#ifdef TEST_CONSERVATION
   err += check_energy_cons(grid[0]);
+#endif /* TEST_CONSERVATION */
   err += output_data(grid);
   if (0 != err)
     spdlog::error(

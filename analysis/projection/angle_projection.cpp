@@ -442,9 +442,8 @@ int generate_angle_image(
   // Loop over all pixels
   //
   spdlog::info("looping over pixels");
-  double ttsf = 0.0;
 #ifdef PROJ_OMP
-#pragma omp parallel for private(ttsf)
+#pragma omp parallel for
 #endif
   for (int i = 0; i < npix[0]; i++) {
     //

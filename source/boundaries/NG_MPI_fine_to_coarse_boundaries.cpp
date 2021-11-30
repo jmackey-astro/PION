@@ -137,12 +137,13 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   // data array.
   int v  = 0;
   int nv = par.nvar + F2C_Nxd;  // conserved vector and optical depths
-  double cd[nv];
+  std::vector<double> cd(nv);
   size_t ct = 0;
   for (v = 0; v < nel; v++) {
     for (int j = 0; j < nv; j++)
       cd[j] = 0.0;
-    average_cells(par, solver, grid, nc, b->avg[v].c, b->avg[v].cpos, cd);
+    average_cells(
+        par, solver, grid, nc, b->avg[v].c, b->avg[v].cpos, cd.data());
 #ifdef NG_F2C_POS
     for (int i = 0; i < par.ndim; i++)
       data[ct + i] = b->avg[v].cpos[i];
@@ -407,7 +408,8 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       size_t ct = nel * (par.nvar + F2C_Nxd);
 #endif
 
-      pion_flt *buf = mem.myalloc(buf, ct);
+      pion_flt *buf = 0;
+      buf           = mem.myalloc(buf, ct);
 #ifdef TEST_MPI_NG_F2C
       spdlog::debug("BC_update_FINE_TO_COARSE_RECV: get {} cells.\n", nel);
 #endif
@@ -426,7 +428,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
 #ifdef NG_F2C_POS
       std::array<pion_flt, MAX_DIM> pos;
 #endif
-      pion_flt prim[par.nvar];
+      std::vector<pion_flt> prim(par.nvar);
       size_t i_el = 0;
       for (c_iter = b->NGrecvF2C[i].begin(); c_iter != b->NGrecvF2C[i].end();
            ++c_iter) {
@@ -444,7 +446,8 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
         }
         i_el += par.ndim;
 #endif
-        solver->UtoP(&(buf[i_el]), prim, par.EP.MinTemperature, par.gamma);
+        solver->UtoP(
+            &(buf[i_el]), prim.data(), par.EP.MinTemperature, par.gamma);
         i_el += par.nvar;
 
 #ifdef TEST_INF

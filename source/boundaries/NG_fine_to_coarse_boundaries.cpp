@@ -194,7 +194,7 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
 
   // averaged data contains primitive vector plus column densities.
   int nv = par.nvar + F2C_Nxd;
-  double cd[nv];
+  std::vector<double> cd(nv);
   size_t i_el = 0;
   int nc      = b->avg[0].c.size();
 
@@ -204,7 +204,8 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
     for (int v = 0; v < nv; v++)
       cd[v] = 0.0;
 
-    average_cells(par, solver, fine, nc, b->avg[i_el].c, b->avg[i_el].cpos, cd);
+    average_cells(
+        par, solver, fine, nc, b->avg[i_el].c, b->avg[i_el].cpos, cd.data());
 
     // set coarse cell optical depths for any radiation sources by
     // taking values from array "cd" (see get_F2C_Tau() for ordering)
@@ -219,7 +220,7 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
 
     // set primitive variables in coarse cell based on interpolated
     // values stored in first nvar elements of "cd".
-    solver->UtoP(cd, c->Ph, par.EP.MinTemperature, par.gamma);
+    solver->UtoP(cd.data(), c->Ph, par.EP.MinTemperature, par.gamma);
 
     //
     // if full step then assign to c->P as well as c->Ph.
@@ -246,7 +247,7 @@ int NG_fine_to_coarse_bc::average_cells(
     double *cd  ///< [OUTPUT] averaged data (conserved var).
 )
 {
-  pion_flt u[par.nvar];
+  std::vector<pion_flt> u(par.nvar);
   //
   // loop through list, adding conserved var * cell-vol,
   // then divide by coarse cell vol.
@@ -270,7 +271,7 @@ int NG_fine_to_coarse_bc::average_cells(
 #endif
     // cout <<"cell "<<f->id<<" averaging. ";
     // get conserved vars for cell in fine grid, *cellvol.
-    solver->PtoU(f->Ph, u, par.gamma);
+    solver->PtoU(f->Ph, u.data(), par.gamma);
     vol = grid->CellVolume(f, 0);
     sum_vol += vol;
 

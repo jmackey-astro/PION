@@ -265,15 +265,15 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
 #ifdef TEST_C2F
     spdlog::debug("MPI C2F SEND: odd step, interpolating data in time");
 #endif
-    double U[par.nvar];
+    std::vector<double> U(par.nvar);
     for (unsigned int ib = 0; ib < b->NGsendC2F.size(); ib++) {
       for (unsigned int c_iter = 0; c_iter < b->NGsendC2F[ib]->c.size();
            c_iter++) {
         cell *c = b->NGsendC2F[ib]->c[c_iter];
-        solver->PtoU(c->P, U, par.gamma);
+        solver->PtoU(c->P, U.data(), par.gamma);
         for (int v = 0; v < par.nvar; v++)
           U[v] += 0.5 * c->dU[v];
-        solver->UtoP(U, c->Ph, par.EP.MinTemperature, par.gamma);
+        solver->UtoP(U.data(), c->Ph, par.EP.MinTemperature, par.gamma);
 #ifdef TEST_INF
         for (int v = 0; v < par.nvar; v++) {
           if (!isfinite(c->Ph[v])) {
@@ -462,8 +462,12 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
     case ZP:
       if (cg_ixmax[ZZ] == fg_ixmax[ZZ]) send2pg = false;
       break;
+    case NO:
+      spdlog::error("{}: {}", "bad direction", b->dir);
+      break;
     default:
       spdlog::error("{}: {}", "bad direction", b->dir);
+      break;
   }
   if (!send2pg) {
     // must need to receive from neighbour of parent grid
@@ -696,10 +700,10 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     if (par.spOOA == OA1) {
       // 1st order, so no averaging.  Fine cells have exactly the
       // same state as the coarse one.
-      double Ph[par.nvar];
-      double cpos[par.ndim];
+      std::vector<double> Ph(par.nvar);
+      std::vector<double> cpos(par.ndim);
 #ifdef TEST_C2F
-      double off[par.ndim];
+      std::vector<double> off(par.ndim);
 #endif
       // double c_vol=0.0;
       cell *c = 0;
@@ -735,9 +739,10 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
       // 2nd order needs a slope for each dimension, so split the
       // put different ndim in if/else statements.
       if (par.ndim == 1) {
-        double Ph[par.nvar];
-        double cpos[par.ndim], c_vol = 0.0;
-        double sx[par.nvar];
+        std::vector<double> Ph(par.nvar);
+        std::vector<double> cpos(par.ndim);
+        double c_vol = 0.0;
+        std::vector<double> sx(par.nvar);
         cell *f[2];
         for (unsigned int ic = 0; ic < b->NGrecvC2F.size(); ic++) {
           // read data for this coarse cell into arrays
@@ -758,17 +763,17 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
             f_iter++;
           }
           interpolate_coarse2fine1D(
-              par, grid, solver, Ph, c_vol, sx, f[0], f[1]);
+              par, grid, solver, Ph.data(), c_vol, sx.data(), f[0], f[1]);
         }  // loop over coarse cells
       }    // if 1D
       else if (par.ndim == 2) {
-        double Ph[par.nvar];
+        std::vector<double> Ph(par.nvar);
         std::array<double, MAX_DIM> cpos;
         double c_vol = 0.0;
         std::array<int, MAX_DIM> ipos;
         ipos[0] = 0;
         ipos[1] = 0;
-        double sx[par.nvar], sy[par.nvar];
+        std::vector<double> sx(par.nvar), sy(par.nvar);
         cell *f[4];
         for (unsigned int ic = 0; ic < b->NGrecvC2F.size(); ic++) {
           // read data for this coarse cell into arrays
@@ -795,20 +800,20 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
           // rep.printVec("Ph",Ph,par.nvar);
           CI.get_ipos_vec(cpos, ipos);
           interpolate_coarse2fine2D(
-              par, grid, solver, Ph, ipos.data(), c_vol, sx, sy, f[0], f[1],
-              f[2], f[3]);
+              par, grid, solver, Ph.data(), ipos.data(), c_vol, sx.data(),
+              sy.data(), f[0], f[1], f[2], f[3]);
 
         }  // loop over coarse cells
       }    // if 2D
       else {
-        double Ph[par.nvar];
+        std::vector<double> Ph(par.nvar);
         std::array<double, MAX_DIM> cpos;
         double c_vol = 0.0;
 #ifdef TEST_C2F
         std::array<double, MAX_DIM> cpos2;
 #endif
         std::array<int, MAX_DIM> ipos;
-        double sx[par.nvar], sy[par.nvar], sz[par.nvar];
+        std::vector<double> sx(par.nvar), sy(par.nvar), sz(par.nvar);
         cell *fch[8];
         for (unsigned int ic = 0; ic < b->NGrecvC2F.size(); ic++) {
           // read data for this coarse cell into arrays
@@ -845,7 +850,8 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
           }
           CI.get_ipos_vec(cpos, ipos);
           interpolate_coarse2fine3D(
-              par, grid, solver, Ph, ipos.data(), c_vol, sx, sy, sz, fch);
+              par, grid, solver, Ph.data(), ipos.data(), c_vol, sx.data(),
+              sy.data(), sz.data(), fch);
         }  // loop over coarse cells
       }    // if 3D
     }      // if 2nd order accurate

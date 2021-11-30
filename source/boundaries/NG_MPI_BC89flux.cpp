@@ -94,8 +94,10 @@ int NG_MPI_BC89flux::setup_flux_recv(
   // within l+1 level.  If there are no children, then at most one
   // face of my grid could be an outer face of the l+1 grid.
   if (nchild > 0) {
-    bool recv[nchild * 2 * par.ndim];   // whether to get data in this dir
-    size_t nel[nchild * 2 * par.ndim];  // number of interfaces in each dir
+    std::vector<bool> recv(
+        nchild * 2 * par.ndim);  // whether to get data in this dir
+    std::vector<size_t> nel(
+        nchild * 2 * par.ndim);  // number of interfaces in each dir
 
     for (int ic = 0; ic < nchild; ic++) {
       int off = ic * 2 * par.ndim;
@@ -620,7 +622,7 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
   int err = 0;
 
   // loop over all boundaries that we need to receive
-  double ftmp[par.nvar], utmp[par.nvar];
+  std::vector<double> ftmp(par.nvar), utmp(par.nvar);
   for (int v = 0; v < par.nvar; v++)
     ftmp[v] = 0.0;
   class GridBaseClass *grid    = par.levels[l].grid;
@@ -741,13 +743,13 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
       // re-calculate dU based on error in flux.
       if (fup->dir % 2 == 0) {
         spatial_solver->DivStateVectorComponent(
-            fi->c[0], grid, static_cast<axes>(fup->ax), par.nvar, ftmp,
-            fi->flux, utmp);
+            fi->c[0], grid, static_cast<axes>(fup->ax), par.nvar, ftmp.data(),
+            fi->flux, utmp.data());
       }
       else {
         spatial_solver->DivStateVectorComponent(
             fi->c[0], grid, static_cast<axes>(fup->ax), par.nvar, fi->flux,
-            ftmp, utmp);
+            ftmp.data(), utmp.data());
       }
 #ifdef TEST_BC89FLUX
       spdlog::debug("**********  Error : {}", utmp);

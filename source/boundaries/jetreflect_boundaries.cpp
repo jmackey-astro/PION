@@ -17,8 +17,6 @@ int jetreflect_bc::BC_assign_JETREFLECT(
     class GridBaseClass *grid,  ///< pointer to grid.
     boundary_data *b)
 {
-  enum direction offdir = b->dir;
-  enum direction ondir  = b->ondir;
   if (b->data.empty()) {
     spdlog::error("{}: {}", "BC_assign_: empty boundary data", b->itype);
   }
@@ -32,7 +30,7 @@ int jetreflect_bc::BC_assign_JETREFLECT(
   //
   // Set Normal velocity multiplier to -1 for reflection.
   //
-  switch (offdir) {
+  switch (b->dir) {
     case XN:
     case XP:
       b->refval[VX] = -1.0;
@@ -45,15 +43,18 @@ int jetreflect_bc::BC_assign_JETREFLECT(
     case ZP:
       b->refval[VZ] = -1.0;
       break;
+    case NO:
+      spdlog::error("{}: {}", "BAD DIRECTION", b->dir);
+      break;
     default:
-      spdlog::error("{}: {}", "BAD DIRECTION", offdir);
+      spdlog::error("{}: {}", "BAD DIRECTION", b->dir);
   }  // Set Normal velocity direction.
   //
   // Set tangential B-field multiplier to -1 for this boundary, to
   // allow a dipole to exist
   //
   if (par.eqntype == EQMHD || par.eqntype == EQGLM || par.eqntype == EQFCD) {
-    switch (offdir) {
+    switch (b->dir) {
       case XN:
       case XP:
         b->refval[BY] = b->refval[BZ] = -1.0;
@@ -66,8 +67,11 @@ int jetreflect_bc::BC_assign_JETREFLECT(
       case ZP:
         b->refval[BX] = b->refval[BY] = -1.0;
         break;
+      case NO:
+        spdlog::error("{}: {}", "BAD DIRECTION", b->dir);
+        break;
       default:
-        spdlog::error("{}: {}", "BAD DIRECTION", offdir);
+        spdlog::error("{}: {}", "BAD DIRECTION", b->dir);
     }  // Set normal b-field direction.
   }    // if B-field exists
 
@@ -82,7 +86,7 @@ int jetreflect_bc::BC_assign_JETREFLECT(
   do {
     temp = (*bpt);
     for (int v = 0; v > (*bpt)->isedge; v--) {
-      temp = grid->NextPt(temp, ondir);
+      temp = grid->NextPt(temp, b->ondir);
     }
     if (!temp) {
       spdlog::error(

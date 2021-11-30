@@ -106,8 +106,10 @@ int NG_BC89flux::setup_flux_recv(
   std::array<int, MAX_DIM> f_lxmin, f_lxmax;     // finer level
   std::array<int, MAX_DIM> cg_ixmin, cg_ixmax;   // coarser grid
 
-  bool recv[2 * par.ndim];   // whether to get data in this direction
-  size_t nel[2 * par.ndim];  // number of interfaces in each direction
+  std::vector<bool> recv(
+      2 * par.ndim);  // whether to get data in this direction
+  std::vector<size_t> nel(
+      2 * par.ndim);  // number of interfaces in each direction
   struct flux_interface *fi = 0;
   int idx                   = grid->idx();
 
@@ -242,8 +244,10 @@ int NG_BC89flux::setup_flux_send(
       nface;                                    // interface
   std::array<int, MAX_DIM> c_lxmin, c_lxmax;    // coarser grid
   std::array<int, MAX_DIM> fg_ixmin, fg_ixmax;  // finer grid
-  bool send[2 * par.ndim];   // whether to send data in this direction
-  size_t nel[2 * par.ndim];  // number of interfaces in each direction
+  std::vector<bool> send(
+      2 * par.ndim);  // whether to send data in this direction
+  std::vector<size_t> nel(
+      2 * par.ndim);  // number of interfaces in each direction
   struct flux_interface *fi = 0;
   int idx                   = grid->idx();
 
@@ -473,8 +477,18 @@ int NG_BC89flux::add_cells_to_face(
         perpdir  = XP;
         perpaxis = XX;
         break;
+      case ZN:
+        spdlog::error("{}: {}", "bad direction in add_cells_to_face 2D", d);
+        break;
+      case ZP:
+        spdlog::error("{}: {}", "bad direction in add_cells_to_face 2D", d);
+        break;
+      case NO:
+        spdlog::error("{}: {}", "bad direction in add_cells_to_face 2D", d);
+        break;
       default:
         spdlog::error("{}: {}", "bad direction in add_cells_to_face 2D", d);
+        break;
     }
 
       // loop over cells in interface:
@@ -600,6 +614,9 @@ int NG_BC89flux::add_cells_to_face(
         perpdir2  = YP;
         perpaxis1 = XX;
         perpaxis2 = YY;
+        break;
+      case NO:
+        spdlog::error("{}: {}", "bad direction in add_cells_to_face 2D", d);
         break;
       default:
         spdlog::error("{}: {}", "bad direction in add_cells_to_face 3D", d);
@@ -916,7 +933,7 @@ int NG_BC89flux::recv_BC89_flux_boundary(
 #endif
   struct flux_interface *fc = 0;
   struct flux_interface *ff = 0;
-  double ftmp[par.nvar], utmp[par.nvar];
+  std::vector<double> ftmp(par.nvar), utmp(par.nvar);
   for (int v = 0; v < par.nvar; v++)
     ftmp[v] = 0.0;
   for (int v = 0; v < par.nvar; v++)
@@ -956,11 +973,11 @@ int NG_BC89flux::recv_BC89_flux_boundary(
     // The other face of the cell is set to zero flux.
     if (d % 2 == 0) {
       spatial_solver->DivStateVectorComponent(
-          fc->c[0], grid, ax, par.nvar, ftmp, fc->flux, utmp);
+          fc->c[0], grid, ax, par.nvar, ftmp.data(), fc->flux, utmp.data());
     }
     else {
       spatial_solver->DivStateVectorComponent(
-          fc->c[0], grid, ax, par.nvar, fc->flux, ftmp, utmp);
+          fc->c[0], grid, ax, par.nvar, fc->flux, ftmp.data(), utmp.data());
     }
     for (int v = 0; v < par.nvar; v++)
       fc->c[0]->dU[v] += utmp[v];

@@ -74,11 +74,10 @@ void setup_image_array(
   npix[1]    = NG[Rcyl];
   numpix     = npix[0] * npix[1];
   *img_array = mem.myalloc(*img_array, NIMG);
-  for (int v = 0; v < NIMG; v++) {
+  for (size_t v = 0; v < NIMG; v++) {
     (*img_array)[v] =
         mem.myalloc((*img_array)[v], static_cast<long int>(numpix));
   }
-  return;
 }
 
 
@@ -118,7 +117,6 @@ int main(int argc, char **argv)
   class Sub_domain *sub_domain = &(SimPM.levels[0].sub_domain);
 
   int myrank = sub_domain->get_myrank();
-  int nproc  = sub_domain->get_nproc();
 
 #ifdef PARALLEL
   spdlog::set_default_logger(spdlog::rotating_logger_mt(
@@ -339,8 +337,8 @@ int main(int argc, char **argv)
   //
   // array of image names for output files.
   //
-  string im_name[n_images];
-  for (size_t im = 0; im < n_images; im++) {
+  std::vector<string> im_name(n_images);
+  for (int im = 0; im < n_images; im++) {
     switch (im) {
       case PROJ_D:
         im_name[im] = "Proj_SurfaceMass";
