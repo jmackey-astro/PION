@@ -4,7 +4,6 @@
 #
 # - 2012-2020: ongoing development to add options for new machines.
 # 
-
 mkdir include
 mkdir bin
 mkdir lib
@@ -24,25 +23,48 @@ COMPILE_SILO=yes
 COMPILE_SUNDIALS=yes
 COMPILE_FITS=yes
 
+
 export WGET='wget'
 
-source /usr/share/Modules/init/bash
-#module purge
-module load cmake3
-module load gcc
+#####################################################
+# Unset this to use gcc as compiler on kay.ichec.ie
+# Leaving KAY_INTEL=yes uses Intel compilers, should
+# give better performance
+KAY_INTEL=yes
+#####################################################
+
+case $HOSTNAME in
+  login[0-9].kay.ichec.ie)
+    echo "Compiling on KAY/ICHEC"
+    source /usr/share/Modules/init/bash
+    module purge
+    if [ "$KAY_INTEL" == "yes" ]
+    then
+      ######## intel ########
+      module load cmake3
+      module load openmpi/intel
+      export CC=icc
+      export CXX=icpc
+      export FC=ifort
+      ######## intel ########
+    else
+      ######### gcc #########
+      module load cmake3
+      module load gcc
+      ######### gcc #########
+    fi
     module load conda
     source activate
     module list
     MAKE_UNAME=KAY
     NCORES=8
-    export CC=icc
-    export CXX=icpc
-    export FC=ifort
     SHARED=NO
     . ./install_python_silo.sh
     COMPILE_SILO=yes
     COMPILE_SUNDIALS=yes
     COMPILE_FITS=no
+    ;;
+esac
 
 export NCORES
 CURDIR=`pwd`
@@ -51,14 +73,14 @@ CURDIR=`pwd`
 ##################################
 ##########     BOOST    ##########
 ##################################
-bash install_boost.sh
+. install_boost.sh
 
 ##################################
 ##########     SILO     ##########
 ##################################
 if [ "$COMPILE_SILO" == "yes" ]
 then
-  bash install_silo.sh
+  . install_silo.sh
 fi
 
 
@@ -67,7 +89,7 @@ fi
 ##################################
 if [ "$COMPILE_SUNDIALS" == "yes" ]
 then
-  bash install_sundials.sh
+  . install_sundials.sh
 fi
 
 ##################################

@@ -206,10 +206,13 @@ double stellar_wind_angle::integrand(
          * pconst.pow_fast(1.0 - omega * sin(theta), c_xi) * sin(theta);
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
-// Simpson's rule integration scheme
+
+
 double stellar_wind_angle::integrate_Simpson(
     const double min,    ///< lower limit
     const double max,    ///< upper limit
@@ -250,8 +253,12 @@ double stellar_wind_angle::integrate_Simpson(
   return ans;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 // Phi' function
 double stellar_wind_angle::fn_phi(
@@ -265,8 +272,12 @@ double stellar_wind_angle::fn_phi(
   return std::min(ans, 0.5 * pconst.pi() * ONE_MINUS_EPS);
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 // Alpha function
 double stellar_wind_angle::fn_alpha(
@@ -285,8 +296,12 @@ double stellar_wind_angle::fn_alpha(
       -1.0);
 }  // the cotan term will diverge here if theta = 0.0
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 // Delta function
 double stellar_wind_angle::fn_delta(
@@ -300,8 +315,12 @@ double stellar_wind_angle::fn_delta(
                -1.0);
 }  // 230 points determined to give sufficient accuracy
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 // Terminal wind velocity function
 double stellar_wind_angle::fn_v_inf(
@@ -316,8 +335,12 @@ double stellar_wind_angle::fn_v_inf(
       0.5e5, v_inf * pconst.pow_fast(1.0 - omega * sin(theta), c_gamma));
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 // Analytic wind density function
 double stellar_wind_angle::fn_density(
@@ -335,8 +358,12 @@ double stellar_wind_angle::fn_density(
             * fn_v_inf(omega, v_inf, theta));
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 // Interpolated wind density function
 double stellar_wind_angle::fn_density_interp(
@@ -405,8 +432,12 @@ double stellar_wind_angle::fn_density_interp(
   return result;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void stellar_wind_angle::set_wind_cell_reference_state(
     class GridBaseClass *grid,
@@ -420,8 +451,9 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   // values for the reference state of the cell.  Every timestep the
   // cell-values will be reset to this reference state.
   //
-  bool set_rho = true;
-  if (wc->dist < 0.75 * WS->radius && ndim > 1) {
+  bool set_rho                  = true;
+  struct stellarwind_params *WP = WS->pars;
+  if (wc->dist < 0.75 * WP->radius && ndim > 1) {
     wc->p[RO] = 1.0e-31;
     wc->p[PG] = 1.0e-31;
     set_rho   = false;
@@ -435,8 +467,8 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   //
   if (set_rho) {
     wc->p[RO] = fn_density_interp(
-        std::min(0.9999, WS->v_rot / WS->vcrit), WS->Vinf, WS->Mdot, wc->dist,
-        wc->theta, WS->Tw);
+        std::min(0.9999, WP->Vrot / WP->Vcrit), WP->Vinf, WP->Mdot, wc->dist,
+        wc->theta, WP->Tstar);
     //
     // Set pressure based on wind density/temperature at the stellar radius,
     // assuming adiabatic expansion outside Rstar, and that we don't care
@@ -447,36 +479,36 @@ void stellar_wind_angle::set_wind_cell_reference_state(
     //   p_star = rho_star.k.T_star/(mu.m_p)
     // So then p(r) = p_star (rho(r)/rho_star)^gamma
     //
-    wc->p[PG] = WS->Tw * pconst.kB() / pconst.m_p();  // taking mu = 1
+    wc->p[PG] = WP->Tstar * pconst.kB() / pconst.m_p();  // taking mu = 1
     wc->p[PG] *= pconst.pow_fast(
         fn_density_interp(
-            std::min(0.9999, WS->v_rot / WS->vcrit), WS->Vinf, WS->Mdot,
-            WS->Rstar, wc->theta, WS->Tw),
+            std::min(0.9999, WP->Vrot / WP->Vcrit), WP->Vinf, WP->Mdot,
+            WP->Rstar, wc->theta, WP->Tstar),
         1.0 - eos_gamma);
     wc->p[PG] *= pconst.pow_fast(wc->p[RO], eos_gamma);
   }
 
   // calculate terminal wind velocity
   double Vinf =
-      fn_v_inf(std::min(0.9999, WS->v_rot / WS->vcrit), WS->Vinf, wc->theta);
+      fn_v_inf(std::min(0.9999, WP->Vrot / WP->Vcrit), WP->Vinf, wc->theta);
 
   cell *c = wc->c;
   double x, y, z, xf, yf;
   switch (ndim) {
     case 1:
-      x = grid->difference_vertex2cell(WS->dpos, c, XX);
+      x = grid->difference_vertex2cell(WP->dpos, c, XX);
       y = 0.0;
       z = 0.0;
       break;
     case 2:
-      x = grid->difference_vertex2cell(WS->dpos, c, XX);
-      y = grid->difference_vertex2cell(WS->dpos, c, YY);
+      x = grid->difference_vertex2cell(WP->dpos, c, XX);
+      y = grid->difference_vertex2cell(WP->dpos, c, YY);
       z = 0.0;
       break;
     case 3:
-      x = grid->difference_vertex2cell(WS->dpos, c, XX);
-      y = grid->difference_vertex2cell(WS->dpos, c, YY);
-      z = grid->difference_vertex2cell(WS->dpos, c, ZZ);
+      x = grid->difference_vertex2cell(WP->dpos, c, XX);
+      y = grid->difference_vertex2cell(WP->dpos, c, YY);
+      z = grid->difference_vertex2cell(WP->dpos, c, ZZ);
       break;
     default:
       spdlog::error(
@@ -511,8 +543,8 @@ void stellar_wind_angle::set_wind_cell_reference_state(
 
       // add non-radial component to x/y-dir from rotation.
       // J is hardcoded to be parallel to z-axis
-      xf = -WS->v_rot * WS->Rstar * y / pconst.pow_fast(wc->dist, 2);
-      yf = WS->v_rot * WS->Rstar * x / pconst.pow_fast(wc->dist, 2);
+      xf = -WP->Vrot * WP->Rstar * y / pconst.pow_fast(wc->dist, 2);
+      yf = WP->Vrot * WP->Rstar * x / pconst.pow_fast(wc->dist, 2);
       wc->p[VX] += xf;
       wc->p[VY] += yf;
       xf /= Vinf * x / wc->dist;  // fraction of x-vel in non-radial dir.
@@ -524,6 +556,11 @@ void stellar_wind_angle::set_wind_cell_reference_state(
           "{}: {}", "bad ndim in set_wind_cell_reference_state", ndim);
       break;
   }
+  // include stellar space velocity if appropriate
+  if (WP->moving_star) {
+    for (int v = 0; v < ndim; v++)
+      wc->p[VX + v] += WP->velocity[v];
+  }
 
   // Magnetic field: cell-average values, i.e. values at the
   // centre-of-volume.
@@ -531,11 +568,11 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   // component.
   // TODO: for general J vector, what is rotational component.
   if (eqntype == EQMHD || eqntype == EQGLM) {
-    double B_s = WS->Bstar / sqrt(4.0 * M_PI);  // code units for B_surf
-    double D_s = WS->Rstar / wc->dist;          // 1/d in stellar radii
+    double B_s = WP->Bstar / sqrt(4.0 * M_PI);  // code units for B_surf
+    double D_s = WP->Rstar / wc->dist;          // 1/d in stellar radii
     double D_2 = D_s * D_s;                     // 1/d^2 in stellar radii
     // this multiplies the toroidal component:
-    double beta_B_sint = (WS->v_rot / Vinf) * B_s * D_s;
+    double beta_B_sint = (WP->Vrot / Vinf) * B_s * D_s;
 
     switch (ndim) {
       case 1:
@@ -595,17 +632,17 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   // y=1.0e-7 at T<tm, with linear interpolation.  //
   double tm = 1.0e4, tp = 1.5e4;
   if (WS->Hplus >= 0) {
-    if (WS->Tw > tp)
-      WS->tracers[WS->iHplus] = 1.0;
-    else if (WS->Tw < tm)
-      WS->tracers[WS->iHplus] = 1.0e-10;
+    if (WP->Tstar > tp)
+      WP->tr[WS->iHplus] = 1.0;
+    else if (WP->Tstar < tm)
+      WP->tr[WS->iHplus] = 1.0e-10;
     else
-      WS->tracers[WS->iHplus] =
-          1.0e-10 + (WS->Tw - tm) * (1.0 - 1.0e-10) / (tp - tm);
+      WP->tr[WS->iHplus] =
+          1.0e-10 + (WP->Tstar - tm) * (1.0 - 1.0e-10) / (tp - tm);
   }
   // update tracers
   for (int v = 0; v < ntracer; v++)
-    wc->p[ftr + v] = WS->tracers[v];
+    wc->p[ftr + v] = WP->tr[v];
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   //
@@ -639,44 +676,29 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 int stellar_wind_angle::add_evolving_source(
-    const double *pos,    ///< position (physical units).
-    const double rad,     ///< radius (physical units).
-    const int type,       ///< type (must be WINDTYPE_ANGLE).
-    pion_flt *trv,        ///< Any (constant) wind tracer values.
-    const string infile,  ///< file name to read data from.
-    const int enhance,    ///< enhance mdot based on rotation (0=no,1=yes).
-    const double Bstar,   ///< Surface B field (G)
-    const double
-        time_offset,     ///< time offset = [t(sim)-t(wind_file)] (seconds)
     const double t_now,  ///< current sim time, to see if src is active.
-    const double
-        update_freq,  ///< frequency to update wind properties (seconds).
-    const double
-        t_scalefactor,  ///< wind evolves this factor times faster than normal
-    const double ecentricity,  ///< relative eccentricity of the stellar orbit
-    const double PeriastronX,  /// Vector pointing from the inital location
-                               /// (dpos) to the center of gravity of the orbit;
-                               /// hard-coded to be in the x-y-plane
-    const double PeriastronY,  /// Vector pointing from the inital location
-                               /// (dpos) to the center of gravity of the orbit;
-                               /// hard-coded to be in the x-y-plane
-    const double OrbPeriod     /// Orbital period in years
+    struct stellarwind_params *pars  ///< pointer to wind parameters struct
 )
 {
-  if (type != WINDTYPE_ANGLE) {
+  if (pars->type != WINDTYPE_ANGLE) {
     spdlog::error(
         "{}: {}", "Bad wind type for evolving stellar wind (rotating star)!",
-        type);
+        pars->type);
   }
   //
   // First we will read the file, and see when the source should
   // switch on in the simulation (it may not be needed for a while).
   //
-  spdlog::debug("\t\tsw-evo: adding source from file {}", infile);
+  spdlog::debug(
+      "\t\tsw-evo: adding source from file {}", pars->evolving_wind_file);
 
   //
   // Some properties of the wind source are specific to this module,
@@ -686,18 +708,21 @@ int stellar_wind_angle::add_evolving_source(
   //
   struct evolving_wind_data *temp = 0;
   temp                            = mem.myalloc(temp, 1);
-  int err                         = read_evolution_file(infile, temp);
-  if (err) spdlog::error("{}: {}", "couldn't read wind evolution file", infile);
+  int err = read_evolution_file(pars->evolving_wind_file, temp);
+  if (err)
+    spdlog::error(
+        "{}: {}", "couldn't read wind evolution file",
+        pars->evolving_wind_file);
 
   // assign data for v_esc from v_crit.
   for (int i = 0; i < temp->Npt; i++)
     temp->vesc_evo.push_back(temp->vcrt_evo[i] * pconst.sqrt2());
 
   // set offsets and scaling for evolutionary time (all in seconds)
-  temp->offset        = time_offset / t_scalefactor;
+  temp->offset        = pars->time_offset / pars->t_scalefactor;
   temp->tstart        = temp->time_evo[0];
   temp->tfinish       = temp->time_evo[temp->Npt - 1];
-  temp->update_freq   = update_freq / t_scalefactor;
+  temp->update_freq   = pars->update_freq / pars->t_scalefactor;
   temp->t_next_update = max(temp->tstart, t_now);
 
   spdlog::debug(
@@ -711,15 +736,13 @@ int stellar_wind_angle::add_evolving_source(
   // time.  Also optional scaling.
   //
   for (int i = 0; i < temp->Npt; i++) {
-    temp->time_evo[i] += time_offset;
-    temp->time_evo[i] /= t_scalefactor;
+    temp->time_evo[i] += pars->time_offset;
+    temp->time_evo[i] /= pars->t_scalefactor;
   }
   //
   // Decide if the wind src is active yet.  If it is, then
   // set up a constant wind source for updating its properties.
   //
-  double mdot = 0.0, vinf = 0.0, Twind = 0.0, vrot = 0.0, rstar = 0.0,
-         vcrt = 0.0;
   double xh = 0.0, xhe = 0.0, xc = 0.0, xn = 0.0, xo = 0.0, xz = 0.0, xd = 0.0;
 
   if (((t_now + temp->update_freq) > temp->tstart
@@ -728,16 +751,17 @@ int stellar_wind_angle::add_evolving_source(
     temp->is_active = true;
     // Get the current values for wind properties.
     interpolate.root_find_linear_vec(
-        temp->time_evo, temp->Teff_evo, t_now, Twind);
+        temp->time_evo, temp->Teff_evo, t_now, pars->Tstar);
     interpolate.root_find_linear_vec(
-        temp->time_evo, temp->Mdot_evo, t_now, mdot);
+        temp->time_evo, temp->Mdot_evo, t_now, pars->Mdot);
     interpolate.root_find_linear_vec(
-        temp->time_evo, temp->vinf_evo, t_now, vinf);
+        temp->time_evo, temp->vinf_evo, t_now, pars->Vinf);
     interpolate.root_find_linear_vec(
-        temp->time_evo, temp->vrot_evo, t_now, vrot);
+        temp->time_evo, temp->vrot_evo, t_now, pars->Vrot);
     interpolate.root_find_linear_vec(
-        temp->time_evo, temp->vcrt_evo, t_now, vcrt);
-    interpolate.root_find_linear_vec(temp->time_evo, temp->R_evo, t_now, rstar);
+        temp->time_evo, temp->vcrt_evo, t_now, pars->Vcrit);
+    interpolate.root_find_linear_vec(
+        temp->time_evo, temp->R_evo, t_now, pars->Rstar);
 
     // get tracer values for elements.
     interpolate.root_find_linear_vec(temp->time_evo, temp->X_H_evo, t_now, xh);
@@ -759,109 +783,50 @@ int stellar_wind_angle::add_evolving_source(
         t_now, temp->tstart);
 
     temp->is_active = false;
-    mdot            = -100.0;
-    vinf            = -100.0;
-    vrot            = -100.0;
-    Twind           = -100.0;
   }
 
   // set tracer values for elements
   set_element_indices(temp);
-  if (temp->i_XH >= 0) trv[temp->i_XH] = xh;
-  if (temp->i_XHe >= 0) trv[temp->i_XHe] = xhe;
-  if (temp->i_XC >= 0) trv[temp->i_XC] = xc;
-  if (temp->i_XN >= 0) trv[temp->i_XN] = xn;
-  if (temp->i_XO >= 0) trv[temp->i_XO] = xo;
-  if (temp->i_XZ >= 0) trv[temp->i_XZ] = xz;
-  if (temp->i_XD >= 0) trv[temp->i_XD] = xd;
-
-  // Set B-field of star
-  // TODO: Decide how to set this better!  For now pick B=10G at
-  //       radius 10 R_sun, and scale with R^-2 for constant flux.
-  // One solution: just set it to a constant throughout evolution.
-  // double Bstar= 10.0*pconst.pow_fast(10.0*pconst.Rsun()/rstar,2.0);
+  if (temp->i_XH >= 0) pars->tr[temp->i_XH] = xh;
+  if (temp->i_XHe >= 0) pars->tr[temp->i_XHe] = xhe;
+  if (temp->i_XC >= 0) pars->tr[temp->i_XC] = xc;
+  if (temp->i_XN >= 0) pars->tr[temp->i_XN] = xn;
+  if (temp->i_XO >= 0) pars->tr[temp->i_XO] = xo;
+  if (temp->i_XZ >= 0) pars->tr[temp->i_XZ] = xz;
+  if (temp->i_XD >= 0) pars->tr[temp->i_XD] = xd;
 
   //
   // Now add source using rotating star version.
   //
-  add_rotating_source(
-      pos, rad, type, mdot, 0.0, vinf, vrot, vcrt, Twind, rstar, Bstar, trv,
-      ecentricity, PeriastronX, PeriastronY, OrbPeriod);
+  add_rotating_source(pars);
   temp->ws = wlist.back();
-
   wdata_evol.push_back(temp);
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 int stellar_wind_angle::add_rotating_source(
-    const double *pos,   ///< position (cm from grid origin)
-    const double rad,    ///< radius (cm)
-    const int type,      ///< type (2=lat-dep.)
-    const double mdot,   ///< Mdot (g/s)
-    const double,        ///< Md0, equiv. non-rotating star (g/s)
-    const double vinf,   ///< Vinf (cm/s)
-    const double vrot,   ///< Vrot (cm/s)
-    const double vcrit,  ///< Vcrit (cm/s)
-    const double Twind,  ///< Wind Temperature (p_g.m_p/(rho.k_b))
-    const double Rstar,  ///< radius of star (cm)
-    const double Bstar,  ///< Surface Magnetic field of star (Gauss).
-    pion_flt *trv,       ///< Tracer values of wind (if any)
-    const double ecentricity,
-    const double PeriastronX,  ///< periastronX vectror (cgs units).
-    const double PeriastronY,  ///< periastronY vectror (cgs units).
-    const double OrbPeriod     ///< Orbital period (years)
+    struct stellarwind_params *wp  ///< pointer to wind parameters struct
 )
 {
   struct wind_source *ws = 0;
   ws                     = mem.myalloc(ws, 1);
-  ws->id                 = wlist.size();
+  ws->pars               = wp;
   ws->ncell              = 0;
-  ws->type               = type;
-  switch (type) {
+  switch (wp->type) {
     case WINDTYPE_ANGLE:
-      spdlog::debug("\tAdding rotating wind source as id={}", ws->id);
+      spdlog::debug("\tAdding rotating wind source as id={}", wp->id);
       break;
     default:
       spdlog::error(
-          "{}: {}", "What type of source is this?  add a new type?", type);
+          "{}: {}", "What type of source is this?  add a new type?", wp->type);
       break;
-  }
-
-  for (int v = 0; v < ndim; v++)
-    ws->dpos[v] = pos[v];
-#ifndef NDEBUG
-  spdlog::debug(
-      "ws->dpos : {}", std::vector<double>(ws->dpos, ws->dpos + ndim));
-#endif
-
-  for (int v = ndim; v < MAX_DIM; v++)
-    ws->dpos[v] = VERY_LARGE_VALUE;
-
-  ws->radius = rad;
-
-  // all inputs in cgs units.
-  ws->Mdot  = mdot;
-  ws->Vinf  = vinf;
-  ws->v_rot = vrot;
-  ws->vcrit = vcrit;
-
-  ws->Tw    = std::min(Twind, Teff_vec.back());
-  ws->Rstar = Rstar;
-  ws->Bstar = Bstar;
-
-  ws->ecentricity = ecentricity;
-  ws->OrbPeriod   = OrbPeriod;
-  ws->PeriastronX = PeriastronX;
-  ws->PeriastronY = PeriastronY;
-
-  ws->tracers = 0;
-  ws->tracers = mem.myalloc(ws->tracers, ntracer);
-  for (int v = 0; v < ntracer; v++) {
-    ws->tracers[v] = trv[v];
-    spdlog::debug("ws->tracers[v] = {}", ws->tracers[v]);
   }
 
   // if using microphysics, find H+ tracer variable, if it exists.
@@ -883,18 +848,18 @@ int stellar_wind_angle::add_rotating_source(
   // Make sure the source position is compatible with the geometry:
   //
   if (coordsys == COORD_SPH) {
-    if (!pconst.equalD(ws->dpos[Rsph], 0.0))
+    if (!pconst.equalD(wp->dpos[Rsph], 0.0))
       spdlog::error(
           "{}: {}", "Spherical symmetry but source not at origin!",
-          ws->dpos[Rsph]);
+          wp->dpos[Rsph]);
   }
   if (coordsys == COORD_CYL && ndim == 2) {
     //
     // Axisymmetry
     //
-    if (!pconst.equalD(ws->dpos[Rcyl], 0.0))
+    if (!pconst.equalD(wp->dpos[Rcyl], 0.0))
       spdlog::error(
-          "{}: {}", "Axisymmetry but source not at R=0!", ws->dpos[Rcyl]);
+          "{}: {}", "Axisymmetry but source not at R=0!", wp->dpos[Rcyl]);
   }
 
   wlist.push_back(ws);
@@ -903,7 +868,7 @@ int stellar_wind_angle::add_rotating_source(
   spdlog::debug(
       "\tAdded wind source id={} to list of {} elements", nsrc - 1, nsrc);
 
-  return ws->id;
+  return wp->id;
 }
 
 // ##################################################################
@@ -919,12 +884,16 @@ void stellar_wind_angle::update_source(
   // We have a source that needs updating.  If it is not active, and
   // needs activating then we set that.
   //
+  struct stellarwind_params *wp = wd->ws->pars;
   if (!wd->is_active) {
+    array<double, MAX_DIM> wpos;
+    for (int v = 0; v < MAX_DIM; v++)
+      wpos[v] = wp->dpos[v];
     spdlog::debug(
         "stellar_wind_angle::update_source() activating source id={}"
         " at Simulation time t={}",
-        wd->ws->id, t_now);
-    spdlog::debug("Source position : {}", wd->ws->dpos);
+        wp->id, t_now);
+    spdlog::debug("Source position : {}", wpos);
     wd->is_active = true;
   }
 
@@ -951,12 +920,12 @@ void stellar_wind_angle::update_source(
   interpolate.root_find_linear_vec(wd->time_evo, wd->R_evo, t_now, rstar);
 
   // all in cgs units already.
-  wd->ws->Mdot  = mdot;
-  wd->ws->Vinf  = vinf;
-  wd->ws->v_rot = vrot;
-  wd->ws->vcrit = vcrit;
-  wd->ws->Tw    = std::min(Twind, Teff_vec.back());
-  wd->ws->Rstar = rstar;
+  wp->Mdot  = mdot;
+  wp->Vinf  = vinf;
+  wp->Vrot  = vrot;
+  wp->Vcrit = vcrit;
+  wp->Tstar = std::min(Twind, Teff_vec.back());
+  wp->Rstar = rstar;
 
   // get tracer values for elements.
   interpolate.root_find_linear_vec(wd->time_evo, wd->X_H_evo, t_now, xh);
@@ -967,13 +936,13 @@ void stellar_wind_angle::update_source(
   interpolate.root_find_linear_vec(wd->time_evo, wd->X_Z_evo, t_now, xz);
   interpolate.root_find_linear_vec(wd->time_evo, wd->X_D_evo, t_now, xd);
 
-  if (wd->i_XH >= 0) wd->ws->tracers[wd->i_XH] = xh;
-  if (wd->i_XHe >= 0) wd->ws->tracers[wd->i_XHe] = xhe;
-  if (wd->i_XC >= 0) wd->ws->tracers[wd->i_XC] = xc;
-  if (wd->i_XN >= 0) wd->ws->tracers[wd->i_XN] = xn;
-  if (wd->i_XO >= 0) wd->ws->tracers[wd->i_XO] = xo;
-  if (wd->i_XZ >= 0) wd->ws->tracers[wd->i_XZ] = xz;
-  if (wd->i_XD >= 0) wd->ws->tracers[wd->i_XD] = xd;
+  if (wd->i_XH >= 0) wp->tr[wd->i_XH] = xh;
+  if (wd->i_XHe >= 0) wp->tr[wd->i_XHe] = xhe;
+  if (wd->i_XC >= 0) wp->tr[wd->i_XC] = xc;
+  if (wd->i_XN >= 0) wp->tr[wd->i_XN] = xn;
+  if (wd->i_XO >= 0) wp->tr[wd->i_XO] = xo;
+  if (wd->i_XZ >= 0) wp->tr[wd->i_XZ] = xz;
+  if (wd->i_XD >= 0) wp->tr[wd->i_XD] = xd;
 
   // Set B-field of star
   // TODO: Decide how to set this better!  For now pick B=10G at

@@ -124,6 +124,10 @@ SimParams::SimParams()
   //  cout <<"done!\n";
 }
 
+// ##################################################################
+// ##################################################################
+
+
 SimParams::SimParams(const std::string pfile)
 {
   int err = read_gridparams(pfile);
@@ -132,6 +136,10 @@ SimParams::SimParams(const std::string pfile)
   maxtime = false;
   levels.resize(grid_nlevels);
 }
+
+// ##################################################################
+// ##################################################################
+
 
 SimParams::~SimParams()
 {
@@ -884,15 +892,13 @@ int SimParams::read_wind_sources()
     // cout <<"\tREADING WIND SOURCE "<<i<<"\n";
     string a;
     ostringstream temp;
-    double Mdot = 0.0, posn[MAX_DIM], Vinf = 0.0, Vrot = 0.0, Tw = 0.0,
-           Rstar = 0.0, Bstar = 0.0, trcr[MAX_NVAR], xi = 0.0, rad = 0.0;
-    int type = 0;
-    //
-    // new stuff for evolving winds:
-    //
+    double Mdot = 0.0, posn[MAX_DIM], vel[MAX_DIM], Vinf = 0.0, Vrot = 0.0,
+           Tw = 0.0, Rstar = 0.0, Bstar = 0.0, trcr[MAX_NVAR], xi = 0.0,
+           rad = 0.0;
+    int type   = 0;
     string evofile;
     int enhance_mdot = 0;
-    double time_offset, update_freq, time_scalefac, ecentricity, OrbPeriod,
+    double time_offset, update_freq, time_scalefac, eccentricity, OrbPeriod,
         PeriastronX, PeriastronY;
 
     for (int v = 0; v < ndim; v++) {
@@ -902,6 +908,17 @@ int SimParams::read_wind_sources()
         posn[v] = atof(a.c_str());
       else
         spdlog::error("{}: {}", "no src position in pfile", temp.str());
+    }
+    for (int v = ndim; v < MAX_DIM; v++)
+      posn[v] = 0.0;
+
+    for (int v = 0; v < ndim; v++) {
+      temp.str("");
+      temp << "WIND_" << i << "_velocity" << v;
+      if ((a = rp.find_parameter(temp.str())) != "")
+        vel[v] = atof(a.c_str());
+      else
+        spdlog::error("{}: {}", "no src velocity in pfile", temp.str());
     }
     for (int v = ndim; v < MAX_DIM; v++)
       posn[v] = 0.0;
@@ -924,21 +941,22 @@ int SimParams::read_wind_sources()
     temp.str("");
     temp << "WIND_" << i << "_mdot";
     if ((a = rp.find_parameter(temp.str())) != "")
-      Mdot = atof(a.c_str());
+      // convert to g/s from Msun/yr
+      Mdot = atof(a.c_str()) * pconst.Msun() / pconst.year();
     else
       spdlog::error("{}: {}", "param not found in pfile", temp.str());
 
     temp.str("");
     temp << "WIND_" << i << "_vinf";
     if ((a = rp.find_parameter(temp.str())) != "")
-      Vinf = atof(a.c_str());
+      Vinf = atof(a.c_str()) * 1.0e5;  // convert from km/s to cm/s
     else
       spdlog::error("{}: {}", "param not found in pfile", temp.str());
 
     temp.str("");
     temp << "WIND_" << i << "_vrot";
     if ((a = rp.find_parameter(temp.str())) != "")
-      Vrot = atof(a.c_str());
+      Vrot = atof(a.c_str()) * 1.0e5;  // convert from km/s to cm/s
     else
       spdlog::error("{}: {}", "param not found in pfile", temp.str());
 
@@ -998,7 +1016,7 @@ int SimParams::read_wind_sources()
     temp.str("");
     temp << "WIND_" << i << "_t_offset";
     if ((a = rp.find_parameter(temp.str())) != "") {
-      time_offset = atof(a.c_str());
+      time_offset = atof(a.c_str()) * pconst.year();
     }
     else {
       time_offset = -1.0e99;
@@ -1007,7 +1025,7 @@ int SimParams::read_wind_sources()
     temp.str("");
     temp << "WIND_" << i << "_updatefreq";
     if ((a = rp.find_parameter(temp.str())) != "") {
-      update_freq = atof(a.c_str());
+      update_freq = atof(a.c_str()) * pconst.year();
     }
     else {
       update_freq = -1.0e99;
@@ -1023,18 +1041,18 @@ int SimParams::read_wind_sources()
     }
 
     temp.str("");
-    temp << "WIND_" << i << "_ecentricity_fac";
+    temp << "WIND_" << i << "_eccentricity";
     if ((a = rp.find_parameter(temp.str())) != "") {
-      ecentricity = atof(a.c_str());
+      eccentricity = atof(a.c_str());
     }
     else {
-      ecentricity = 0.0;  // default value
+      eccentricity = 0.0;  // default value
     }
 
     temp.str("");
     temp << "WIND_" << i << "_orbital_period";
     if ((a = rp.find_parameter(temp.str())) != "") {
-      OrbPeriod = atof(a.c_str());
+      OrbPeriod = atof(a.c_str()) * pconst.year();  // convert to sec
     }
     else {
       OrbPeriod = 0.0;  // default value
@@ -1060,7 +1078,6 @@ int SimParams::read_wind_sources()
       PeriastronY = 0.0;
     }
 
-
     temp.str("");
     temp << "WIND_" << i << "_xi";
     if ((a = rp.find_parameter(temp.str())) != "") {
@@ -1069,6 +1086,21 @@ int SimParams::read_wind_sources()
     else {
       xi = -0.43;
     }  // default value from Bjorkman & Cassinelli (1993)
+
+    int moving_star = 0;
+    temp.str("");
+    temp << "WIND_" << i << "_moving_star";
+    if ((a = rp.find_parameter(temp.str())) != "") {
+      moving_star = atoi(a.c_str());
+    }
+
+    // stellar mass in solar masses
+    double mass = 0;
+    temp.str("");
+    temp << "WIND_" << i << "_mass";
+    if ((a = rp.find_parameter(temp.str())) != "") {
+      mass = atof(a.c_str()) * pconst.Msun();
+    }
 
     //
     // Now we should have got all the sources, so add the source to
@@ -1079,14 +1111,18 @@ int SimParams::read_wind_sources()
     wind->id                        = i;
     for (int v = 0; v < MAX_DIM; v++)
       wind->dpos[v] = posn[v];
-    wind->radius = rad;
-    wind->Mdot   = Mdot;
-    wind->Vinf   = Vinf;
-    wind->Vrot   = Vrot;
-    wind->Tstar  = Tw;
-    wind->Rstar  = Rstar;
-    wind->Bstar  = Bstar;
-    wind->type   = type;
+    for (int v = 0; v < MAX_DIM; v++)
+      wind->velocity[v] = vel[v];
+    wind->radius      = rad;
+    wind->Mass        = mass;
+    wind->Mdot        = Mdot;
+    wind->Vinf        = Vinf;
+    wind->Vrot        = Vrot;
+    wind->Tstar       = Tw;
+    wind->Rstar       = Rstar;
+    wind->Bstar       = Bstar;
+    wind->type        = type;
+    wind->moving_star = moving_star;
     for (int v = 0; v < MAX_NVAR; v++) {
       wind->tr[v] = trcr[v];
     }
@@ -1099,7 +1135,7 @@ int SimParams::read_wind_sources()
     wind->time_offset        = time_offset;
     wind->update_freq        = update_freq;
     wind->t_scalefactor      = time_scalefac;
-    wind->ecentricity        = ecentricity;
+    wind->eccentricity       = eccentricity;
     wind->OrbPeriod          = OrbPeriod;
     wind->PeriastronX        = PeriastronX;
     wind->PeriastronY        = PeriastronY;
@@ -1264,6 +1300,8 @@ int SimParams::read_units()
 // ##################################################################
 // ##################################################################
 
+
+
 int SimParams::read_jet_params(class JetParams &jpar  ///< jet parameters class.
 )
 {
@@ -1321,10 +1359,11 @@ int SimParams::read_jet_params(class JetParams &jpar  ///< jet parameters class.
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
-// ##################################################################
-// ##################################################################
+
 
 std::vector<int> SimParams::get_pbc_bools() const
 {
@@ -1353,3 +1392,6 @@ std::vector<int> SimParams::get_pbc_bools() const
   }
   return pbc;
 }
+
+// ##################################################################
+// ##################################################################

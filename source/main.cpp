@@ -128,6 +128,7 @@ int main(int argc, char **argv)
 
 #ifdef PARALLEL
   int myrank = sim_control->SimPM.levels[0].sub_domain.get_myrank();
+  int nproc  = sim_control->SimPM.levels[0].sub_domain.get_nproc();
   spdlog::set_default_logger(spdlog::rotating_logger_mt(
       "pion", "pion_process_" + to_string(myrank) + ".log", max_logfile_size,
       max_logfiles));
@@ -160,10 +161,13 @@ int main(int argc, char **argv)
       found_omp = true;
     }
   }
-  if (found_omp)
+  if (found_omp) {
     omp_set_num_threads(nth);
-  else
+  }
+  else {
     omp_set_num_threads(1);
+    nth = 1;
+  }
 #endif
 
 #ifdef PARALLEL
@@ -176,10 +180,19 @@ int main(int argc, char **argv)
 #else
   string parallelism = "SERIAL";
 #endif /* PARALLEL */
+#ifndef PARALLEL
+  int nproc = 1;
+#endif
+#ifndef PION_OMP
+  int nth = 1;
+#endif
 
+  spdlog::info("-------------------------------------------------------");
   spdlog::info(
-      "-------------------------------------------------------\n---------   pion {} {} v2.0  running   ---------------\n-------------------------------------------------------",
-      grid_type, parallelism);
+      "---------   pion {} {} v2.0  running   ---------------", grid_type,
+      parallelism);
+  spdlog::info(
+      "-------------- n-proc = {}, n-thread = {} --------------\n", nproc, nth);
 
   // Set what type of file to open: 1=parameterfile, 2/5=restartfile.
   int ft;
@@ -209,7 +222,7 @@ int main(int argc, char **argv)
   for (int i = 0; i < argc; i++) {
     if (args[i].find("maxwalltime=") != string::npos) {
       double tmp = atof((args[i].substr(12)).c_str());
-      if (isnan(tmp) || isinf(tmp) || tmp < 0.0)
+      if (!isfinite(tmp) || tmp < 0.0)
         spdlog::error(
             "{}: {}", "Don't recognise max walltime as a valid runtime!", tmp);
 

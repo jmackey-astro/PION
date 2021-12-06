@@ -1433,8 +1433,6 @@ int dataio_silo_pllel::write_multimeshadj(
       else {
         spdlog::debug(
             "i= {} v={}  ix {}  {}  {}", i, v, my_ix[XX], ngb_ix[XX], nx[XX]);
-        spdlog::debug("my_ix : {}", my_ix);
-        spdlog::debug("ngb_ix : {}", ngb_ix);
         spdlog::error(
             "{}: {}", "domains don't touch (X-dir)!", my_ix[XX] - ngb_ix[XX]);
       }

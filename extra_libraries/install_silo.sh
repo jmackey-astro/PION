@@ -27,13 +27,20 @@ export WGET='wget'
 case $HOSTNAME in
   login[0-9].kay.ichec.ie)
     echo "Compiling on KAY/ICHEC"
-    source /usr/share/Modules/init/bash
-    module purge
-    module load cmake3
-    module load gcc
-#module load cmake3/3.12.3
-#module load python py/intel
-#module load python numpy
+    #source /usr/share/Modules/init/bash
+    #module purge
+######### gcc #########
+#    module load cmake3
+#    module load gcc
+######### gcc #########
+######## intel ########
+    #module load cmake3
+    #module load intel
+    #module load gcc/8.2.0
+    #export CC=icc
+    #export CXX=icpc
+    #export FC=ifort
+######## intel ########
     HDF5=NO
     SHARED=YES
     module list
@@ -54,9 +61,9 @@ then
   echo "********************************"
 #################################
 # Change these for new versions:
-  FILE=silo-4.10.2-bsd.tgz
-  SRC_DIR=silo-4.10.2-bsd
-  REMOTE_URL=https://wci.llnl.gov/sites/wci/files/2021-01/silo-4.10.2-bsd.tgz
+  FILE=silo-4.11-bsd.tgz
+  SRC_DIR=silo-4.11-bsd
+  REMOTE_URL=https://wci.llnl.gov/sites/wci/files/2021-09/silo-4.11-bsd.tgz
 #################################
 
 
@@ -114,3 +121,4 @@ fi
 
 
 cd $CURDIR
+

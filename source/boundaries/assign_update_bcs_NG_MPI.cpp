@@ -384,6 +384,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateInternalBCs(
     class GridBaseClass *grid,     ///< pointer to grid.
     class FV_solver_base *solver,  ///< pointer to equations
     const double simtime,          ///< current simulation time
+    const double dt,               ///< timestep
     const int cstep,
     const int maxstep)
 {
@@ -398,7 +399,8 @@ int assign_update_bcs_NG_MPI::TimeUpdateInternalBCs(
     b = grid->BC_bd[i];
     switch (b->itype) {
       case STWIND:
-        err += BC_update_STWIND(par, grid, simtime, b, cstep, maxstep);
+        err +=
+            BC_update_STWIND(par, level, grid, simtime, dt, b, cstep, maxstep);
         break;
 
       case PERIODIC:

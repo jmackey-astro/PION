@@ -379,7 +379,7 @@ double CoolingFn::CoolingRate(
     const double FUV_flux,
     const double FUV_extinction)
 {
-  if (xHp > 1.0 || T <= 0.0 || isnan(T) || isinf(T)) {
+  if (xHp > 1.0 || T <= 0.0 || !isfinite(T)) {
     // cout <<"input ion fraction >1 in CoolingRate()... x="<<xHp<<"\n";
     return 0.0;
   }

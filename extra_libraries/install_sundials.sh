@@ -25,13 +25,6 @@ export WGET='wget'
 case $HOSTNAME in
   login[0-9].kay.ichec.ie)
     echo "Compiling on KAY/ICHEC"
-    source /usr/share/Modules/init/bash
-    module purge
-    module load cmake3
-    module load gcc
-#module load cmake3/3.12.3
-#module load python py/intel
-#module load python numpy
     module list
     ;;
 esac

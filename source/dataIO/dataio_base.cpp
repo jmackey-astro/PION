@@ -529,7 +529,6 @@ int DataIOBase::read_simulation_parameters(
     par[3] = &(SimPM.BC_YP);
     par[4] = &(SimPM.BC_ZN);
     par[5] = &(SimPM.BC_ZP);
-    // rep.printVec("par",par,6);
     for (i = 0; i < 2 * SimPM.ndim; i++) {
       if ((pos = SimPM.BC_STRING.find(d[i])) == string::npos)
         spdlog::error("{}: {}", "Couldn't find boundary condition for ", d[i]);
@@ -806,6 +805,33 @@ int DataIOBase::read_simulation_parameters(
       // cout<<nm<<"\n";
 
       nm.str("");
+      nm << "WIND_" << isw << "_velocity";
+      if ((*iter)->name.compare(nm.str()) != 0)
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
+      (*iter)->set_ptr(static_cast<void *>(wind->velocity));
+      err = read_header_param(*iter);
+      if (err)
+        spdlog::error("{}: {}", "Error reading parameter", (*iter)->name);
+      ++iter;
+      // cout<<nm<<"\n";
+
+      nm.str("");
+      nm << "WIND_" << isw << "_mass";
+      if ((*iter)->name.compare(nm.str()) != 0)
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
+      //(*iter)->set_ptr(static_cast<void *>(&rad));
+      (*iter)->set_ptr(static_cast<void *>(&wind->Mass));
+      err = read_header_param(*iter);
+      if (err)
+        spdlog::error("{}: {}", "Error reading parameter", (*iter)->name);
+      ++iter;
+      // cout<<nm<<"\n";
+
+      nm.str("");
       nm << "WIND_" << isw << "_rad_";
       if ((*iter)->name.compare(nm.str()) != 0)
         spdlog::error(
@@ -825,7 +851,6 @@ int DataIOBase::read_simulation_parameters(
         spdlog::error(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
-      //(*iter)->set_ptr(static_cast<void *>(&Mdot));
       (*iter)->set_ptr(static_cast<void *>(&wind->Mdot));
       err = read_header_param(*iter);
       if (err)
@@ -839,7 +864,6 @@ int DataIOBase::read_simulation_parameters(
         spdlog::error(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
-      //(*iter)->set_ptr(static_cast<void *>(&Vinf));
       (*iter)->set_ptr(static_cast<void *>(&wind->Vinf));
       err = read_header_param(*iter);
       if (err)
@@ -853,7 +877,6 @@ int DataIOBase::read_simulation_parameters(
         spdlog::error(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
-      //(*iter)->set_ptr(static_cast<void *>(&Vinf));
       (*iter)->set_ptr(static_cast<void *>(&wind->Vrot));
       err = read_header_param(*iter);
       if (err)
@@ -867,7 +890,6 @@ int DataIOBase::read_simulation_parameters(
         spdlog::error(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
-      //(*iter)->set_ptr(static_cast<void *>(&Tw));
       (*iter)->set_ptr(static_cast<void *>(&wind->Tstar));
       err = read_header_param(*iter);
       if (err)
@@ -881,7 +903,6 @@ int DataIOBase::read_simulation_parameters(
         spdlog::error(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
-      //(*iter)->set_ptr(static_cast<void *>(&Rstar));
       (*iter)->set_ptr(static_cast<void *>(&wind->Rstar));
       err = read_header_param(*iter);
       if (err)
@@ -895,7 +916,6 @@ int DataIOBase::read_simulation_parameters(
         spdlog::error(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
-      //(*iter)->set_ptr(static_cast<void *>(&Rstar));
       (*iter)->set_ptr(static_cast<void *>(&wind->Bstar));
       err = read_header_param(*iter);
       if (err)
@@ -924,7 +944,6 @@ int DataIOBase::read_simulation_parameters(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
       }
-      //(*iter)->set_ptr(static_cast<void *>(trcr));
       (*iter)->set_ptr(static_cast<void *>(wind->tr));
       err = read_header_param(*iter);
       if (err)
@@ -972,7 +991,6 @@ int DataIOBase::read_simulation_parameters(
       if (err) {
         spdlog::debug(
             "failed to find WIND_{}_enhance_mdot parameter, setting to 0", isw);
-        // spdlog::error("{}: {}", "Error reading parameter",(*iter)->name);
       }
       ++iter;
       // cout<<nm.str()<<" = "<<wind->enhance_mdot<<"\n";
@@ -1049,22 +1067,41 @@ int DataIOBase::read_simulation_parameters(
       // cout<<nm.str()<<" = "<<wind->t_scalefactor<<"\n";
       // Test for moving source
       nm.str("");
-      nm << "WIND_" << isw << "_ecentricity_fac";
+      nm << "WIND_" << isw << "_moving_star";
       if ((*iter)->name.compare(nm.str()) != 0) {
         spdlog::error(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
       }
-      (*iter)->set_ptr(static_cast<void *>(&wind->ecentricity));
+      (*iter)->set_ptr(static_cast<void *>(&wind->moving_star));
+      err = read_header_param(*iter);
+      if (err) {
+        spdlog::debug(
+            "Error reading parameter {} setting to default value of -1.",
+            (*iter)->name);
+        wind->moving_star = -1;
+        err               = 0;
+      }
+      // cout<<nm.str()<<" = "<<wind->moving_star<<"\n";
+      iter++;
+
+      nm.str("");
+      nm << "WIND_" << isw << "_eccentricity";
+      if ((*iter)->name.compare(nm.str()) != 0) {
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
+      }
+      (*iter)->set_ptr(static_cast<void *>(&wind->eccentricity));
       err = read_header_param(*iter);
       if (err) {
         spdlog::debug(
             "Error reading parameter {} setting to default value of 1.0",
             (*iter)->name);
-        wind->ecentricity = 1.0;
-        err               = 0;
+        wind->eccentricity = 1.0;
+        err                = 0;
       }
-      // cout<<nm.str()<<" = "<<wind->ecentricity<<"\n";
+      // cout<<nm.str()<<" = "<<wind->eccentricity<<"\n";
       iter++;
 
       nm.str("");
@@ -1110,7 +1147,6 @@ int DataIOBase::read_simulation_parameters(
         spdlog::error(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
-      //(*iter)->set_ptr(static_cast<void *>(posn));
       (*iter)->set_ptr(static_cast<void *>(&wind->PeriastronY));
       err = read_header_param(*iter);
       if (err) {
@@ -1122,16 +1158,21 @@ int DataIOBase::read_simulation_parameters(
       }
       ++iter;
 
-      //
+      nm.str("");
+      nm << "WIND_" << isw << "_velocity";
+      if ((*iter)->name.compare(nm.str()) != 0)
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
+      (*iter)->set_ptr(static_cast<void *>(wind->velocity));
+      err = read_header_param(*iter);
+      if (err)
+        spdlog::error("{}: {}", "Error reading parameter", (*iter)->name);
+      ++iter;
+      // cout<<nm<<"\n";
+
       // Now we should have got all the sources, so add the source to
       // the global list.
-      //
-      // NOTE THIS WIND STUCT DOESN'T GET FREED AT THE END OF THE
-      // SIMULATION, SO IT IS TECHNICALLY A MEMORY LEAK.  I CAN'T THINK OF
-      // A GOOD WAY TO GET RID OF IT THOUGH... IF I DELETE A DATAIO CLASS
-      // I DON'T WANT TO DELETE THE SWP DATA B/C SOMETIMES I'M NOT
-      // FINISHING THE SIMULATION.
-      //
       SWP.params.push_back(wind);
 
     }  // loop over sources
@@ -1236,6 +1277,12 @@ void DataIOBase::set_windsrc_params()
     ostringstream temp01;
     temp01.str("");
     temp01 << "WIND_" << n << "_posn";
+    ostringstream temp24;
+    temp24.str("");
+    temp24 << "WIND_" << n << "_velocity";
+    ostringstream temp23;
+    temp23.str("");
+    temp23 << "WIND_" << n << "_mass";
     ostringstream temp02;
     temp02.str("");
     temp02 << "WIND_" << n << "_rad_";
@@ -1284,9 +1331,12 @@ void DataIOBase::set_windsrc_params()
     ostringstream temp12;
     temp12.str("");
     temp12 << "WIND_" << n << "_t_scalefac";
+    ostringstream temp21;
+    temp21.str("");
+    temp21 << "WIND_" << n << "_moving_star";
     ostringstream temp17;
     temp17.str("");
-    temp17 << "WIND_" << n << "_ecentricity_fac";
+    temp17 << "WIND_" << n << "_eccentricity";
     ostringstream temp18;
     temp18.str("");
     temp18 << "WIND_" << n << "_orbital_period";
@@ -1296,10 +1346,21 @@ void DataIOBase::set_windsrc_params()
     ostringstream temp20;
     temp20.str("");
     temp20 << "WIND_" << n << "_periastron_vec_y";
+    ostringstream temp22;
+    temp22.str("");
+    temp22 << "WIND_" << n << "_velocity";
 
 
     pm_ddimarr *w001 = new pm_ddimarr(temp01.str());  // position of source (cm)
     windsrc.push_back(w001);
+
+    pm_ddimarr *w024 =
+        new pm_ddimarr(temp24.str());  // velocity of source (cm/s)
+    windsrc.push_back(w024);
+
+    pm_double *w023 = new pm_double(temp23.str());  // mass of star (Msun)
+    w023->critical  = false;
+    windsrc.push_back(w023);
 
     pm_double *w002 = new pm_double(temp02.str());  // radius of wind BC (cm)
     windsrc.push_back(w002);
@@ -1366,7 +1427,15 @@ void DataIOBase::set_windsrc_params()
     w012->set_default_val(static_cast<void *>(&dv));
     windsrc.push_back(w012);
 
-    // ecentricity (default must be 1, parameter must not be critical).
+    // is star moving?  1=yes, 0=no
+    pm_int *w021   = new pm_int(temp21.str());
+    w021->critical = false;
+    int *mv        = new int;
+    *mv            = 0;
+    w021->set_default_val(static_cast<void *>(mv));
+    windsrc.push_back(w021);
+
+    // eccentricity (default must be 1, parameter must not be critical).
     pm_double *w017 = new pm_double(temp17.str());
     w017->critical  = false;  // dv=1.0;
     // w017->set_default_val(static_cast<void *>(&dv));
@@ -1389,6 +1458,12 @@ void DataIOBase::set_windsrc_params()
     w020->critical  = false;  // dv=1.0;
     // w020->set_default_val(static_cast<void *>(&dv));
     windsrc.push_back(w020);
+
+    double vel[MAX_DIM] = {0.0, 0.0, 0.0};
+    pm_ddimarr *w022 = new pm_ddimarr(temp22.str());  // velocity of source (cm)
+    w022->critical   = false;
+    w022->set_default_val(static_cast<void *>(vel));
+    windsrc.push_back(w022);
   }
   have_setup_windsrc = true;
   return;
@@ -1773,9 +1848,34 @@ int DataIOBase::write_simulation_parameters(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
       }
-      // SW.get_src_posn(isw,xd);
       //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(SWP.params[isw]->dpos));
+      err = write_header_param(*iter);
+      if (err)
+        spdlog::error("{}: {}", "Error writing WIND parameter", (*iter)->name);
+      ++iter;
+
+      nm.str("");
+      nm << "WIND_" << isw << "_velocity";
+      if ((*iter)->name.compare(nm.str()) != 0)
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
+      (*iter)->set_ptr(static_cast<void *>(SWP.params[isw]->velocity));
+      err = write_header_param(*iter);
+      if (err)
+        spdlog::error("{}: {}", "Error writing WIND parameter", (*iter)->name);
+      ++iter;
+      // cout<<nm<<"\n";
+
+      nm.str("");
+      nm << "WIND_" << isw << "_mass";
+      if ((*iter)->name.compare(nm.str()) != 0) {
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
+      }
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Mass));
       err = write_header_param(*iter);
       if (err)
         spdlog::error("{}: {}", "Error writing WIND parameter", (*iter)->name);
@@ -1801,8 +1901,6 @@ int DataIOBase::write_simulation_parameters(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
       }
-      // SW.get_src_Mdot(isw,xd);
-      //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Mdot));
       err = write_header_param(*iter);
       if (err)
@@ -1816,8 +1914,6 @@ int DataIOBase::write_simulation_parameters(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
       }
-      // SW.get_src_Vinf(isw,xd);
-      //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Vinf));
       err = write_header_param(*iter);
       if (err)
@@ -1831,8 +1927,6 @@ int DataIOBase::write_simulation_parameters(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
       }
-      // SW.get_src_Vinf(isw,xd);
-      //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Vrot));
       err = write_header_param(*iter);
       if (err)
@@ -1846,8 +1940,6 @@ int DataIOBase::write_simulation_parameters(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
       }
-      // SW.get_src_Tw(isw,xd);
-      //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Tstar));
       err = write_header_param(*iter);
       if (err)
@@ -1861,8 +1953,6 @@ int DataIOBase::write_simulation_parameters(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
       }
-      // SW.get_src_Rstar(isw,xd);
-      //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Rstar));
       err = write_header_param(*iter);
       if (err)
@@ -1876,8 +1966,6 @@ int DataIOBase::write_simulation_parameters(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
       }
-      // SW.get_src_Rstar(isw,xd);
-      //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Bstar));
       err = write_header_param(*iter);
       if (err)
@@ -1891,8 +1979,6 @@ int DataIOBase::write_simulation_parameters(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
       }
-      // SW.get_src_type(isw,xi);
-      //(*iter)->set_ptr(static_cast<void *>(xi));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->type));
       err = write_header_param(*iter);
       if (err)
@@ -2002,20 +2088,35 @@ int DataIOBase::write_simulation_parameters(
         spdlog::error("{}: {}", "Error writing parameter", (*iter)->name);
       ++iter;
       // cout<<nm<<" = "<<wind->t_scalefactor<<"\n";
+
       // Test for moving source
       nm.str("");
-      nm << "WIND_" << isw << "_ecentricity_fac";
+      nm << "WIND_" << isw << "_moving_star";
       if ((*iter)->name.compare(nm.str()) != 0) {
         spdlog::error(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
       }
-      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->ecentricity));
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->moving_star));
       err = write_header_param(*iter);
       if (err)
         spdlog::error("{}: {}", "Error writing parameter", (*iter)->name);
       ++iter;
-      // cout<<nm.str()<<" = "<<wind->ecentricity<<"\n";
+      // cout<<nm.str()<<" = "<<wind->moving_star<<"\n";
+
+      nm.str("");
+      nm << "WIND_" << isw << "_eccentricity";
+      if ((*iter)->name.compare(nm.str()) != 0) {
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
+      }
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->eccentricity));
+      err = write_header_param(*iter);
+      if (err)
+        spdlog::error("{}: {}", "Error writing parameter", (*iter)->name);
+      ++iter;
+      // cout<<nm.str()<<" = "<<wind->eccentricity<<"\n";
 
       nm.str("");
       nm << "WIND_" << isw << "_orbital_period";
@@ -2058,6 +2159,18 @@ int DataIOBase::write_simulation_parameters(
         spdlog::error("{}: {}", "Error writing parameter", (*iter)->name);
       ++iter;
 
+      nm.str("");
+      nm << "WIND_" << isw << "_velocity";
+      if ((*iter)->name.compare(nm.str()) != 0) {
+        spdlog::error(
+            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            (*iter)->name);
+      }
+      (*iter)->set_ptr(static_cast<void *>(SWP.params[isw]->velocity));
+      err = write_header_param(*iter);
+      if (err)
+        spdlog::error("{}: {}", "Error writing WIND parameter", (*iter)->name);
+      ++iter;
     }  // loop over sources
   }    // write Stellar wind data.
 

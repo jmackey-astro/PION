@@ -31,6 +31,7 @@
 
 #include "sim_constants.h"
 #include "sim_params.h"
+#include <array>
 
 
 // Defines for type of wind:
@@ -62,32 +63,13 @@ struct wind_cell {
 /// set automatically to be in the freely expanding wind.
 ///
 struct wind_source {
-  int id,      ///< id of source.
-      ncell,   ///< number of cells in the artificially fixed region.
-      type,    ///< type of wind source (0=constant,1=evolving,2=lat-dep.).
+  struct stellarwind_params *pars;
+  int ncell,   ///< number of cells in the artificially fixed region.
       Hplus,   ///< index of H+ tracer variable, if present.
       iHplus;  ///< index of H+ tracer variable, offset from 1st tracer.
-  double dpos[MAX_DIM],  ///< physical position of source
-      radius,            ///< radius of fixed region (in cm).
-      Mdot,              ///< mass loss rate  (g/s)
-      Md0,               ///< Mdot equiv. non-rotating star (lat-dep.wind) (g/s)
-      Vinf,              ///< terminal wind velocity (cm/s)
-      v_rot,             ///< stellar rotational velocity (cm/s)
-      v_esc,             ///< wind escape velocity (cm/s)
-      vcrit,             ///< critical rotation velocity (cm/s)
-      Tw,                ///< wind temperature (K)
-      Rstar,             ///< radius of star (cm)
-      Bstar,        ///< magnetic field strength of split monopole at Rstar (G)
-      ecentricity,  ///< relative ecentricity of the stellar orbit
-      PeriastronX,  /// Vector pointing from the inital location (dpos) to the
-                    /// center of gravity of the orbit; hard-coded to be in the
-                    /// x-y-plane
-      PeriastronY,  /// Vector pointing from the inital location (dpos) to the
-                    /// center of gravity of the orbit; hard-coded to be in the
-                    /// x-y-plane
-      OrbPeriod,    /// Orbital period in years
-      dpos_init[MAX_DIM];  /// Initial position of the source
-  pion_flt *tracers;       ///< tracer values of wind.
+  double Md0,  ///< Mdot equiv. non-rotating star (lat-dep.wind) (g/s)
+      v_esc,   ///< wind escape velocity (cm/s)
+      dpos_init[MAX_DIM];  /// Initial position of the source (calculated)
   bool cells_added;        ///< false until we add all cells to the source list.
   std::vector<struct wind_cell *> wcells;
 };
@@ -122,42 +104,15 @@ public:
   /// This is for a spherically symmetric wind.
   ///
   int add_source(
-      const double *,  ///< position (cgs units)
-      const double,    ///< radius (cgs units)
-      const int,       ///< type (0=constant,1=evolving,2=lat-dep.)
-      const double,    ///< Mdot (Msun/yr)
-      const double,    ///< Vinf (km/s)
-      const double,    ///< Vrot (km/s)
-      const double,    ///< Surface Temperature (K)
-      const double,    ///< Stellar Radius (cm)
-      const double,    ///< Surface B field (G)
-      pion_flt *,      ///< Tracer values of wind (if any)
-      const double,    /// ecentricity
-      const double,    ///< periastronX vectror (cgs units).
-      const double,    ///< periastronY vectror (cgs units).
-      const double     ///< Orbital period (years)
+      struct stellarwind_params *  ///< pointer to wind parameters struct
   );
 
   ///
   /// This function is only used in a derived class.
   ///
   virtual int add_evolving_source(
-      const double *,  ///< position (cgs units).
-      const double,    ///< radius of boundary region (cgs units).
-      const int,       ///< type (1=evolving,2=lat-dep.).
-      pion_flt *,      ///< Any (constant) wind tracer values.
-      const string,    ///< file name to read data from.
-      const int,       ///< enhance mdot based on rotation (0=no,1=yes).
-      const double,    ///< Surface B field (G)
-      const double,    ///< time offset = [t(sim)-t(wind_file)]
-      const double,    ///< current time.
-      const double,    ///< frequency with which to update wind properties.
-      const double,    ///< time scale factor
-                       ///< (t(sim)=[t(evo_file)-offset]/scalefactor
-      const double,    ///< eccentricity
-      const double,    ///< periastronX vectror (cgs units).
-      const double,    ///< periastronY vectror (cgs units).
-      const double     ///< Orbital period (years)
+      const double,                ///< current time.
+      struct stellarwind_params *  ///< pointer to wind parameters struct
   )
   {
     spdlog::error("{}: {}", "Don't call add_evolving_source from here.", 99);
@@ -170,19 +125,7 @@ public:
   /// hydrogen gas, otherwise it will be modified accordingly.
   ///
   virtual int add_rotating_source(
-      const double *,  ///< position (cm from grid origin)
-      const double,    ///< radius of boundary region (cm)
-      const int,       ///< type (2=lat-dep.)
-      const double,    ///< Mdot (g/s)
-      const double,    ///< Md0, equiv. non-rotating star (g/s)
-      const double,    ///< Vesc (cm/s)
-      const double,    ///< Vrot (cm/s)
-      const double,    ///< Vcrit (cm/s)
-      const double,    ///< Wind Temperature at surface
-      const double,    ///< Stellar Radius (cm)
-      const double,    ///< Surface B field (G)
-      pion_flt *       /*,  ///< Tracer values of wind (if any)
-             const double*/
+      struct stellarwind_params *  ///< pointer to wind parameters struct
   )
   {
     spdlog::error("{}: {}", "Don't call add_rotating_source from here.", 99);
@@ -205,13 +148,12 @@ public:
   );
 
   ///
-  /// Remove a cell from the list of boundary cells.
+  /// Remove all cells from the list of boundary cells.
   /// Returns non-zero on error.
   ///
   int remove_cells(
       class GridBaseClass *,
-      const int,  ///< src id
-      cell *      ///< cell to add to list.
+      const int  ///< src id
   );
 
   ///
@@ -245,13 +187,14 @@ public:
   // --------------------------------------------------------------
 
   void get_src_posn(
-      const int,  ///< src id
-      double *    ///< position vector (output)
+      const int,                     ///< src id
+      std::array<double, MAX_DIM> &  ///< position vector (output)
   );
 
   void get_src_orbit(
       const int,  ///< src id
-      double *,   ///<
+      int *,      ///< is star moving? 1=yes, 0=no (output)
+      double *,   ///< eccentricity
       double *,
       double *,
       double *,
@@ -260,41 +203,6 @@ public:
   void set_src_posn(
       const int,  ///< src id
       double *    ///< position vector (output)
-  );
-
-  void get_src_drad(
-      const int,  ///< src id
-      double *    ///< radius (output) (physical units).
-  );
-
-  void get_src_Mdot(
-      const int,  ///< src id
-      double *    ///< mdot (output)
-  );
-
-  void get_src_Vinf(
-      const int,  ///< src id
-      double *    ///< Vinf (output)
-  );
-
-  void get_src_Tw(
-      const int,  ///< src id
-      double *    ///< Temperature (output)
-  );
-
-  void get_src_Rstar(
-      const int,  ///< src id
-      double *    ///< Stellar radius (output)
-  );
-
-  void get_src_trcr(
-      const int,  ///< src id
-      pion_flt *  ///< tracers (output)
-  );
-
-  void get_src_type(
-      const int,  ///< src id
-      int *       ///< type of wind (=0 for now) (output)
   );
 
   /// allows you to set a pointer to a microphysics class
@@ -420,24 +328,7 @@ public:
   /// This just wraps the stellar_wind version.
   ///
   int add_source(
-      const double *,  ///< position (physical units)
-      const double,    ///< radius (physical units)
-      const int,       ///< type (0=fixed,1=gradual-switch-on)
-      const double,    ///< Mdot (Msun/yr)
-      const double,    ///< Vinf (km/s)
-      const double,    ///< Vrot (km/s)
-      const double,    ///< Surface Temperature (K)
-      const double,    ///< Stellar Radius (cm)
-      const double,    ///< Surface B field (G)
-      pion_flt *,      ///< Tracer values of wind (if any)
-      const double,    ///< relative eccentricity of the stellar orbit
-      const double,  /// Vector pointing from the inital location (dpos) to the
-                     /// center of gravity of the orbit; hard-coded to be in the
-                     /// x-y-plane
-      const double,  /// Vector pointing from the inital location (dpos) to the
-                     /// center of gravity of the orbit; hard-coded to be in the
-                     /// x-y-plane
-      const double   /// Orbital period in years
+      struct stellarwind_params *  ///< pointer to wind parameters struct
   );
 
   ///
@@ -447,26 +338,8 @@ public:
   /// immediately).
   ///
   virtual int add_evolving_source(
-      const double *,  ///< position (physical units).
-      const double,    ///< radius (physical units).
-      const int,       ///< type (must be 3, for variable wind).
-      pion_flt *,      ///< Any (constant) wind tracer values.
-      const string,    ///< file name to read data from.
-      const int,       ///< enhance mdot based on rotation (0=no,1=yes).
-      const double,    ///< Surface B field (G)
-      const double,    ///< time offset = [t(sim)-t(wind_file)]
-      const double,    ///< current time.
-      const double,    ///< frequency with which to update wind properties.
-      const double,    ///< scale factor for time
-                       ///< (t(sim)=[t(evo_file)-offset]/scalefactor
-      const double,    ///< relative eccentricity of the stellar orbit
-      const double,  /// Vector pointing from the inital location (dpos) to the
-                     /// center of gravity of the orbit; hard-coded to be in the
-                     /// x-y-plane
-      const double,  /// Vector pointing from the inital location (dpos) to the
-                     /// center of gravity of the orbit; hard-coded to be in the
-                     /// x-y-plane
-      const double   /// Orbital period in years
+      const double t_now,          ///< current time.
+      struct stellarwind_params *  ///< pointer to wind parameters struct
   );
 
   ///

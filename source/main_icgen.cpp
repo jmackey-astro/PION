@@ -401,7 +401,8 @@ int main(int argc, char **argv)
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
     // cout <<"updating internal boundaries for level "<<l<<"\n";
     err += SimSetup->TimeUpdateInternalBCs(
-        SimPM, l, grid[l], solver, SimPM.simtime, SimPM.tmOOA, SimPM.tmOOA);
+        SimPM, l, grid[l], solver, SimPM.simtime, 0.0, SimPM.tmOOA,
+        SimPM.tmOOA);
   }
   if (0 != err)
     spdlog::error(

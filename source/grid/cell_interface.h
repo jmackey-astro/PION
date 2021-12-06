@@ -143,10 +143,10 @@ public:
 
   /// Add pointers to data in cell (instead of calling new_cell()).
   /// This function replaces new_cell().
-  size_t set_cell_pointers(
-      cell *,    ///< cell to add pointers to
-      double *,  ///< data array
-      size_t     ///< index of first free element in array
+  std::size_t set_cell_pointers(
+      cell *,      ///< cell to add pointers to
+      double *,    ///< data array
+      std::size_t  ///< index of first free element in array
   );
 
   /// return byte offset of array P[] in cell data

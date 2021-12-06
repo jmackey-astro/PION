@@ -36,17 +36,23 @@ nc=`nproc --all`
 case $HOSTNAME in
   login[0-9].kay.ichec.ie)
     echo "Compiling on KAY/ICHEC"
-    source /usr/share/Modules/init/bash
-    module load cmake3
-    module load intel/2018u4
+    #source /usr/share/Modules/init/bash
+######### gcc #########
+#    module load cmake3
+#    module load gcc
+######### gcc #########
+######## intel ########
+    #module load cmake3
+    #module load intel
+    #export CC=icc
+    #export CXX=icpc
+    #export FC=ifort
+######## intel ########
     module load conda
     source activate
     module list
     MAKE_UNAME=KAY
     NCORES=8
-    export CC=icc
-    export CXX=icpc
-    export FC=ifort
     SHARED=YES
     COMPILE_SILO=yes
     COMPILE_SUNDIALS=no
@@ -71,9 +77,9 @@ then
   echo "********************************"
 #################################
 # Change these for new versions:
-  FILE=silo-4.10.2-bsd.tar.gz
-  SRC_DIR=silo-4.10.2-bsd
-  REMOTE_URL=https://wci.llnl.gov/content/assets/docs/simulation/computer-codes/silo/silo-4.10.2/silo-4.10.2-bsd.tar.gz
+  FILE=silo-4.11-bsd.tgz
+  SRC_DIR=silo-4.11-bsd
+  REMOTE_URL=https://wci.llnl.gov/sites/wci/files/2021-09/silo-4.11-bsd.tgz
 #################################
 
 
@@ -129,7 +135,7 @@ then
   echo "********************************"
   echo "*** RUNNING MAKE ***"
   echo "********************************"
-  make -j$NCORES
+  make -j $NCORES
   echo "********************************"
   echo "*** INSTALLING SILO LIBRARY ***"
   echo "********************************"

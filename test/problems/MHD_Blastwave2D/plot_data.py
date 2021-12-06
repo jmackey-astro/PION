@@ -6,9 +6,9 @@ from matplotlib import ticker
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
-sys.path.append("/home/jm/active/projects/silo/test/lib")
+sys.path.append("/home/jmackey/code/pypion/silo/lib")
 import Silo
-sys.path.append("/home/jm/code/pypion/Library")
+sys.path.append("/home/jmackey/code/pypion/Library")
 import Plotting_Classes as ppion
 import glob
 
@@ -26,8 +26,8 @@ solver="HLLD_NG"
 f0=[]
 f1=[]
 if solver=="HLLD_NG":
-  f0=sorted(glob.glob("NG_B*_n256_level00_0000.*.silo"))
-  f1=sorted(glob.glob("NG_B*_n256_level01_0000.*.silo"))
+  f0=sorted(glob.glob("BW2d_StoneMHD_l2_B010_n256_level00_0000.*.silo"))
+  f1=sorted(glob.glob("BW2d_StoneMHD_l2_B010_n256_level01_0000.*.silo"))
 elif solver=="HLLD_UG":
   f0=sorted(glob.glob("UG_B*_n256_0000.*.silo"))
 else:

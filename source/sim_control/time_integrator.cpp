@@ -92,7 +92,8 @@ double time_integrator::advance_time(
 
     // Update boundary data to new state
     err += TimeUpdateInternalBCs(
-        SimPM, level, grid, spatial_solver, SimPM.simtime + SimPM.dt, OA1, OA1);
+        SimPM, level, grid, spatial_solver, SimPM.simtime + SimPM.dt, SimPM.dt,
+        OA1, OA1);
     err += TimeUpdateExternalBCs(
         SimPM, level, grid, spatial_solver, SimPM.simtime + SimPM.dt, OA1, OA1);
     if (err)
@@ -109,8 +110,8 @@ double time_integrator::advance_time(
 
     // Update boundary data to intermediate state
     err += TimeUpdateInternalBCs(
-        SimPM, level, grid, spatial_solver, SimPM.simtime + 0.5 * SimPM.dt, OA1,
-        OA2);
+        SimPM, level, grid, spatial_solver, SimPM.simtime + 0.5 * SimPM.dt,
+        0.5 * SimPM.dt, OA1, OA2);
     err += TimeUpdateExternalBCs(
         SimPM, level, grid, spatial_solver, SimPM.simtime + 0.5 * SimPM.dt, OA1,
         OA2);
@@ -125,8 +126,8 @@ double time_integrator::advance_time(
 
     // Update boundary data to new state.
     err += TimeUpdateInternalBCs(
-        SimPM, level, grid, spatial_solver, SimPM.simtime + 1.0 * SimPM.dt, OA2,
-        OA2);
+        SimPM, level, grid, spatial_solver, SimPM.simtime + 1.0 * SimPM.dt,
+        0.5 * SimPM.dt, OA2, OA2);
     err += TimeUpdateExternalBCs(
         SimPM, level, grid, spatial_solver, SimPM.simtime + 1.0 * SimPM.dt, OA2,
         OA2);
@@ -269,16 +270,33 @@ int time_integrator::calc_conduction_dU(
   int err = 0;
   // ----------------------------------------------------------------
   // cout <<"\ttime_integrator::calc_conduction_dU setting TC Edot\n";
-  if (step != OA1) err = set_thermal_conduction_Edot(SimPM, step, grid);
+  if (step != OA1) {
+    err = set_thermal_conduction_Edot(SimPM, step, grid);
+  }
   if (0 != err)
     spdlog::error(
         "{}: Expected {} but got {}",
         "calc_conduction_dU: set_thermal_conduction_Edot()", 0, err);
-  // We need to multiply dU[ERG] by dt to convert from Edot to Delta-E
-  class cell *c = grid->FirstPt();
-  do {
-    c->dU[ERG] *= delt;
-  } while ((c = grid->NextPt(c)) != 0);
+  enum axes x1 = XX;
+  enum axes x2 = YY;
+  enum axes x3 = ZZ;
+  int nx2      = grid->NG_All(x2);
+  int nx3      = grid->NG_All(x3);
+#ifdef PION_OMP
+  #pragma omp parallel for collapse(2)
+#endif
+  for (int ax3 = 0; ax3 < nx3; ax3++) {
+    for (int ax2 = 0; ax2 < nx2; ax2++) {
+      int index[3];
+      index[x1] = 0;
+      index[x2] = static_cast<int>(ax2);
+      index[x3] = static_cast<int>(ax3);
+      cell *cpt = grid->get_cell_all(index[0], index[1], index[2]);
+      do {
+        cpt->dU[ERG] *= delt;
+      } while ((cpt = grid->NextPt(cpt, XP)) != 0);
+    }
+  }
   // ----------------------------------------------------------------
   return err;
 }
@@ -367,6 +385,8 @@ int time_integrator::calc_RT_microphysics_dU(
       uf(SimPM.nvar);  // conserved variable states.
   double tt = 0.;      // temperature returned at end of microphysics step.
   int index[3];
+  int nx2 = grid->NG_All(YY);
+  int nx3 = grid->NG_All(ZZ);
   // copies of the source data (one copy for each thread)
   // seems to be memory issues when using class member data.
   vector<struct rt_source_data> heating;
@@ -379,8 +399,8 @@ int time_integrator::calc_RT_microphysics_dU(
 #endif
     // loop through cells in 1st y-z plane and calculate the MP update for the
     // x-column of cells associated with each starting cell.
-    for (int ax3 = 0; ax3 < grid->NG_All(ZZ); ax3++) {
-      for (int ax2 = 0; ax2 < grid->NG_All(YY); ax2++) {
+    for (int ax3 = 0; ax3 < nx3; ax3++) {
+      for (int ax2 = 0; ax2 < nx2; ax2++) {
         index[0] = 0;
         index[1] = ax2;
         index[2] = ax3;
@@ -388,7 +408,6 @@ int time_integrator::calc_RT_microphysics_dU(
         heating  = FVI_heating_srcs;
         ionize   = FVI_ionising_srcs;
         do {
-
           //
           // Check if cell is internal boundary data or not.  If it is
           // boundary data, then we don't want to update anything, so we skip it
@@ -420,25 +439,10 @@ int time_integrator::calc_RT_microphysics_dU(
               for (short unsigned int iC = 0; iC < ionize[v].NTau; iC++)
                 ionize[v].Column[iC] -= ionize[v].DelCol[iC];
               if (ionize[v].Column[0] < 0.0) {
-#ifdef RT_TESTING
-                spdlog::debug("dx={}", grid->DX());
-                CI.print_cell(c);
-                spdlog::error(
-                    "{}: {}", "time_int:calc_RT_microphysics_dU tau<0", 1);
-#endif
                 for (short unsigned int iC = 0; iC < ionize[v].NTau; iC++)
                   ionize[v].Column[iC] = max(0.0, ionize[v].Column[iC]);
               }
             }
-#ifdef RT_TESTING
-            for (int v = 3; v < FVI_nion; v++) {
-              spdlog::debug(
-                  "{}  {}  {}  {}  {}  {}  {}  {}  {}", v, ionize[v].Vshell,
-                  ionize[v].dS, ionize[v].strength[0], ionize[v].id,
-                  ionize[v].type, ionize[v].NTau, ionize[v].Column[0],
-                  ionize[v].DelCol[0]);
-            }
-#endif
 
             // 4th and 5th args are for ionising sources.
             err += MP->TimeUpdateMP_RTnew(
@@ -455,18 +459,6 @@ int time_integrator::calc_RT_microphysics_dU(
               if (!isfinite(c->P[v]) || !isfinite(p[v])
                   || !isfinite(c->dU[v])) {
                 spdlog::error("NAN/INF in calc_RT_microphysics_dU() ");
-                for (int s = 0; s < FVI_nion; s++) {
-                  for (short unsigned int iC = 0;
-                       iC < FVI_ionising_srcs[s].NTau; iC++) {
-                    spdlog::debug(
-                        "ion: Tau = {}, dTau = {}",
-                        FVI_ionising_srcs[s].Column[iC],
-                        FVI_ionising_srcs[s].DelCol[iC]);
-                  }
-                }
-                spdlog::debug("Pin  : {}", c->P);
-                spdlog::debug("Pout : {}", p);
-                spdlog::debug("dU : {}", c->dU);
                 CI.print_cell(c);
                 spdlog::error(
                     "{}: {}", "NAN/INF in calc_RT_microphysics_dU()", v);
@@ -509,15 +501,17 @@ int time_integrator::calc_noRT_microphysics_dU(
   std::vector<pion_flt> ui(SimPM.nvar),
       uf(SimPM.nvar);  // conserved variable states.
   double tt = 0.;      // temperature returned at end of microphysics step.
-  int err   = 0;
   int index[3];
+  int nx2 = grid->NG_All(YY);
+  int nx3 = grid->NG_All(ZZ);
 #ifdef PION_OMP
   #pragma omp parallel
   {
-    #pragma omp for collapse(2) private(c,index,p,ui,uf,tt,err)
+    #pragma omp for collapse(2) private(c,index,p,ui,uf,tt)
 #endif
-    for (int ax3 = 0; ax3 < grid->NG_All(ZZ); ax3++) {
-      for (int ax2 = 0; ax2 < grid->NG_All(YY); ax2++) {
+    for (int ax3 = 0; ax3 < nx3; ax3++) {
+      for (int ax2 = 0; ax2 < nx2; ax2++) {
+        int err  = 0;
         index[0] = 0;
         index[1] = ax2;
         index[2] = ax3;
@@ -538,10 +532,13 @@ int time_integrator::calc_noRT_microphysics_dU(
             // 1 = adaptive euler integration.
             // 2 = single step RK4 method (at your own risk!)
             err += MP->TimeUpdateMP(c->P, p.data(), delt, SimPM.gamma, 0, &tt);
-            if (err)
+            if (err) {
               spdlog::error(
                   "{}: {}", "calc_noRT_microphysics_dU returned error: cell id",
                   c->id);
+              CI.print_cell(c);
+              cout << "error code = " << err << "\n";
+            }
             // New state is p[], old state is c->P[].  Get dU from these.
             spatial_solver->PtoU(c->P, ui.data(), SimPM.gamma);
             spatial_solver->PtoU(p.data(), uf.data(), SimPM.gamma);
@@ -554,8 +551,10 @@ int time_integrator::calc_noRT_microphysics_dU(
 #ifdef PION_OMP
   }
 #endif
-  //    cout <<"calc_noRT_microphysics_dU() Updating MicroPhysics Done!\n";
-  return err;
+#ifndef NDEBUG
+  cout << "calc_noRT_microphysics_dU() Updating MicroPhysics Done!\n";
+#endif
+  return 0;
 }
 
 
@@ -657,13 +656,15 @@ int time_integrator::preprocess_data(
     indices[2] = VZ;
 
     int index[3];
+    int nx2 = grid->NG_All(YY);
+    int nx3 = grid->NG_All(ZZ);
 #ifdef PION_OMP
     #pragma omp parallel
     {
       #pragma omp for collapse(2) private(c,index)
 #endif
-      for (int ax3 = 0; ax3 < grid->NG_All(ZZ); ax3++) {
-        for (int ax2 = 0; ax2 < grid->NG_All(YY); ax2++) {
+      for (int ax3 = 0; ax3 < nx3; ax3++) {
+        for (int ax2 = 0; ax2 < nx2; ax2++) {
           index[0] = 0;
           index[1] = ax2;
           index[2] = ax3;
@@ -745,13 +746,15 @@ int time_integrator::calc_Hcorrection(
     // axis.  The plane can be a single cell
     // (in 1D) or a line (in 2D) or a plane (in 3D).
     int index[3];
+    int nx1 = grid->NG_All(x1);
+    int nx2 = grid->NG_All(x2);
 #ifdef PION_OMP
     #pragma omp parallel
     {
       #pragma omp for collapse(2) private(index,cpt)
 #endif
-      for (int ax2 = 0; ax2 < grid->NG_All(x2); ax2++) {
-        for (int ax1 = 0; ax1 < grid->NG_All(x1); ax1++) {
+      for (int ax2 = 0; ax2 < nx2; ax2++) {
+        for (int ax1 = 0; ax1 < nx1; ax1++) {
           index[x1] = static_cast<int>(ax1);
           index[x2] = static_cast<int>(ax2);
           index[x3] = 0;
@@ -905,21 +908,21 @@ int time_integrator::set_dynamics_dU(
     enum axes x2 = axis[(i + 2) % 3];
     enum axes x3 = axis[i];
 
-    //
     // loop over the two perpendicular axes, to trace out a plane of
     // starting cells for calculating fluxes along columns along this
     // axis.  Note that the NG_All() array is initialised so that
     // unused dimensions have NG=1, so the plane can be a single cell
     // (in 1D) or a line (in 2D) or a plane (in 3D).
-    //
     int index[3];
+    int nx1 = grid->NG_All(x1);
+    int nx2 = grid->NG_All(x2);
 #ifdef PION_OMP
     #pragma omp parallel
     {
       #pragma omp for collapse(2) private(index,cpt)
 #endif
-      for (int ax2 = 0; ax2 < grid->NG_All(x2); ax2++) {
-        for (int ax1 = 0; ax1 < grid->NG_All(x1); ax1++) {
+      for (int ax2 = 0; ax2 < nx2; ax2++) {
+        for (int ax1 = 0; ax1 < nx1; ax1++) {
           index[x1]    = static_cast<int>(ax1);
           index[x2]    = static_cast<int>(ax2);
           index[x3]    = 0;
@@ -1072,7 +1075,6 @@ int time_integrator::dynamics_dU_column(
         spdlog::debug("El : {}", edgeL);
         spdlog::debug("Er : {}", edgeR);
         spdlog::debug("dt:{}\tdx={}", dt, dx);
-        //  rep.printVec("dU",&cpt->dU[v],1);
         CI.print_cell(cpt);
         CI.print_cell(npt);
         spdlog::error("{}: {}", "nans!!!", 2);
@@ -1224,6 +1226,8 @@ int time_integrator::grid_update_state_vector(
   class cell *c = grid->FirstPt_All();
   int index[3];
   double T = 0.0;
+  int nx2  = grid->NG_All(YY);
+  int nx3  = grid->NG_All(ZZ);
 #ifdef PION_OMP
   #pragma omp parallel
   {
@@ -1231,8 +1235,8 @@ int time_integrator::grid_update_state_vector(
 #endif
     // loop through cells in 1st y-z plane and calculate the MP update for the
     // x-column of cells associated with each starting cell.
-    for (int ax3 = 0; ax3 < grid->NG_All(ZZ); ax3++) {
-      for (int ax2 = 0; ax2 < grid->NG_All(YY); ax2++) {
+    for (int ax3 = 0; ax3 < nx3; ax3++) {
+      for (int ax2 = 0; ax2 < nx2; ax2++) {
         index[0] = 0;
         index[1] = ax2;
         index[2] = ax3;

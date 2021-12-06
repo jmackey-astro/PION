@@ -1430,7 +1430,7 @@ void IC_photevap_multi_clumps::print_clump(struct clump *rc)
   spdlog::debug(
       "--clump overdensity:{}  mass/Msun:{}", rc->overdensity,
       rc->mass / pconst.Msun());
-  spdlog::debug("Centre : {}", rc->centre);
-  spdlog::debug("Radius : {}", rc->size);
-  spdlog::debug("Angles : {}", rc->ang);
+  // spdlog::debug("Centre : {}", rc->centre);
+  // spdlog::debug("Radius : {}", rc->size);
+  // spdlog::debug("Angles : {}", rc->ang);
 }

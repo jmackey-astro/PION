@@ -98,6 +98,13 @@ option(
     OFF
 )
 
+option(
+    PION_INTEL
+    "Build with Intel compilers and mathimf.h math library"
+
+    OFF
+)
+
 #  This is required on OSX so that the Boost code will compile successfully
 set(CMAKE_CXX_STANDARD 14)
 
@@ -131,6 +138,11 @@ if(NOT PION_SKIP_SOURCE)
     if(PION_OMP)
         add_definitions(-DPION_OMP)
     endif(PION_OMP)
+
+    if(PION_INTEL)
+        add_definitions(-DINTEL)
+    endif(PION_INTEL)
+
 
     #
     # Find dependant libraries
@@ -168,6 +180,7 @@ if(NOT PION_SKIP_SOURCE)
         find_package(READLINE REQUIRED)
         include_directories(${READLINE_INCLUDE_DIR})
     endif(CMAKE_BUILD_TYPE MATCHES "Debug")
+
     if (PION_OMP)
         find_package(OpenMP REQUIRED COMPONENTS CXX)
         include_directories(${OpenMP_CXX_INCLUDE_DIR})
@@ -216,6 +229,7 @@ message(STATUS "Build options:")
 message(STATUS "    CMAKE_BUILD_TYPE         = ${CMAKE_BUILD_TYPE}")
 message(STATUS "    PION_PARALLEL            = ${PION_PARALLEL}")
 message(STATUS "    PION_OMP                 = ${PION_OMP}")
+message(STATUS "    PION_INTEL               = ${PION_INTEL}")
 message(STATUS "    PION_USE_SILO            = ${PION_USE_SILO}")
 message(STATUS "    PION_USE_FITS            = ${PION_USE_FITS}")
 message(STATUS "    PION_NESTED_GRID         = ${PION_NESTED_GRID}")

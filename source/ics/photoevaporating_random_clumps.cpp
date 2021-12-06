@@ -949,19 +949,27 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel()
 }
 #endif  // PARALLEL
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void IC_photevap_random_clumps::print_clump(struct clump *rc)
 {
   spdlog::debug("--clump overdensity:{}  mass:{}", rc->overdensity, rc->mass);
-  spdlog::debug("Centre : {}", rc->centre);
-  spdlog::debug("Radius : {}", rc->size);
-  spdlog::debug("Angles : {}", rc->ang);
+  // spdlog::debug("Centre : {}", rc->centre);
+  // spdlog::debug("Radius : {}", rc->size);
+  // spdlog::debug("Angles : {}", rc->ang);
 }
+
+
 
 // ##################################################################
 // ##################################################################
+
+
 
 int IC_photevap_random_clumps::clumps_random_set_dens(class cell *c)
 {

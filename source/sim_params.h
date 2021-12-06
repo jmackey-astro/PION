@@ -15,6 +15,7 @@
 #ifndef SIM_PARAMS_H
 #define SIM_PARAMS_H
 
+#include <array>
 #include <string>
 #include <vector>
 
@@ -122,20 +123,24 @@ struct star {
 /// read this struct and set up the appropriate wind boundary.
 ///
 struct stellarwind_params {
-  int id;                ///< if we have multiple sources, this identifies them.
-  int type;              ///< what type of stellar wind?  see stellar_wind.h
-  double dpos[MAX_DIM];  ///< position of source (physical coords).
-  double Mdot;           ///< mass loss rate in solar masses per year.
-  double Vinf;           ///< wind terminal velocity in km/s.
-  double Vrot;           ///< wind rotational velocity in km/s.
-  double Rstar;          ///< Radius of star (cm).
-  double Bstar;          ///< Surface split-monopole magnetic field strength (G)
-  double Tstar;          ///< stellar temperature (sets pressure at r=Rstar).
-  double radius;         ///< Radius of boundary region (cm).
-  double time_offset;    ///< time offset between wind-data-file and sim-time
-                         ///< (YEARS!).
-  double update_freq;    ///< how often to update wind-data from file info
-                         ///< (YEARS!).
+  double dpos[MAX_DIM];      ///< position of source (input/stored cm).
+  double velocity[MAX_DIM];  ///< velocity vector of star (calculated)
+  // std::array<double,MAX_DIM> dpos;      ///< position of source (input/stored
+  // cm). std::array<double,MAX_DIM> velocity;  ///< velocity vector of star
+  // (calculated)
+  double Mdot;         ///< mass loss rate (input Msun/yr, stored g/s).
+  double Mass;         ///< Mass of star (input Msun, stored g).
+  double Vinf;         ///< wind terminal velocity (input km/s, stored cm/s)
+  double Vrot;         ///< wind rotational velocity (input km/s, stored cm/s)
+  double Vcrit;        ///< wind critical velocity (calculated cm/s)
+  double Rstar;        ///< Radius of star (input/stored cm).
+  double Bstar;        ///< Surface split-monopole magnetic field strength (G)
+  double Tstar;        ///< stellar temperature (sets pressure at r=Rstar, K).
+  double radius;       ///< Radius of boundary region (input cm, stored cm).
+  double time_offset;  ///< time offset between wind-data-file and sim-time
+                       ///< (input yr, stored s).
+  double update_freq;  ///< how often to update wind-data from file info
+                       ///< (input yr, stored s).
   /// Evolution of wind happens this factor faster than normal (for factor>1)
   /// Should probably only be used for Main Sequence evolution!
   double t_scalefactor;
@@ -144,14 +149,17 @@ struct stellarwind_params {
   /// (1-Omega*sin(theta))^xi.  Default is xi = -0.43.
   /// See e.g. Langer, Garcia-Segura & Mac Low (1999,ApJ,520,L49).
   double xi;
+  double eccentricity;    ///< eccentricity of the orbit
+  double OrbPeriod;       ///< orbital period (input in years, stored in s)
+  double PeriastronX;     ///< (x_com - x_star) at t=0 at periastron (cm)
+  double PeriastronY;     ///< (y_com - y_star) at t=0 at periastron (cm)
   pion_flt tr[MAX_NVAR];  ///< tracer values in wind at Rstar.
+  int id;            ///< if we have multiple sources, this identifies them.
+  int type;          ///< what type of stellar wind?  see stellar_wind.h
+  int moving_star;   ///< is the star moving? 1=yes, 0=no
+  int enhance_mdot;  ///< 0=no, 1=yes, for rapidly rotating stars.
   std::string
       evolving_wind_file;  ///< name of file containing evolving wind data.
-  int enhance_mdot;        ///< 0=no, 1=yes, for rapidly rotating stars.
-  double ecentricity;
-  double OrbPeriod;
-  double PeriastronX;
-  double PeriastronY;
 };
 
 struct stellarwind_list {

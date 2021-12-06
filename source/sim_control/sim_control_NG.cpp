@@ -184,7 +184,7 @@ int sim_control_NG::Init(
     spdlog::debug("updating internal boundaries for level {}", l);
 #endif
     err += TimeUpdateInternalBCs(
-        SimPM, l, grid[l], spatial_solver, SimPM.simtime, SimPM.tmOOA,
+        SimPM, l, grid[l], spatial_solver, SimPM.simtime, 0.0, SimPM.tmOOA,
         SimPM.tmOOA);
   }
   if (0 != err)
@@ -575,8 +575,12 @@ double sim_control_NG::advance_time(
   return step;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 double sim_control_NG::advance_step_OA1(const int l  ///< level to advance.
 )
@@ -681,7 +685,8 @@ double sim_control_NG::advance_step_OA1(const int l  ///< level to advance.
   // --------------------------------------------------------
   // update internal boundaries.
   err += TimeUpdateInternalBCs(
-      SimPM, l, grid, spatial_solver, SimPM.levels[l].simtime, OA1, OA1);
+      SimPM, l, grid, spatial_solver, SimPM.levels[l].simtime,
+      SimPM.levels[l].dt, OA1, OA1);
   // --------------------------------------------------------
 
   // --------------------------------------------------------
@@ -705,8 +710,12 @@ double sim_control_NG::advance_step_OA1(const int l  ///< level to advance.
   return dt2_this + SimPM.levels[l].dt;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 double sim_control_NG::advance_step_OA2(const int l  ///< level to advance.
 )
@@ -762,7 +771,7 @@ double sim_control_NG::advance_step_OA2(const int l  ///< level to advance.
   // --------------------------------------------------------
   // Update boundary data.
   err += TimeUpdateInternalBCs(
-      SimPM, l, grid, spatial_solver, ctime + dt_now, OA1, OA2);
+      SimPM, l, grid, spatial_solver, ctime + dt_now, dt_now, OA1, OA2);
   err += TimeUpdateExternalBCs(
       SimPM, l, grid, spatial_solver, ctime + dt_now, OA1, OA2);
   if (0 != err)
@@ -853,7 +862,8 @@ double sim_control_NG::advance_step_OA2(const int l  ///< level to advance.
   // update internal boundaries.
   //
   err += TimeUpdateInternalBCs(
-      SimPM, l, grid, spatial_solver, SimPM.levels[l].simtime, OA2, OA2);
+      SimPM, l, grid, spatial_solver, SimPM.levels[l].simtime, 0.5 * dt_now,
+      OA2, OA2);
   // --------------------------------------------------------
 
   // --------------------------------------------------------
@@ -1015,7 +1025,7 @@ int sim_control_NG::RT_all_sources_levels(
     grid = par.levels[l].grid;
     // F2C gets data from child grid onto this grid.
     err = TimeUpdateInternalBCs(
-        par, l, grid, spatial_solver, par.simtime, par.tmOOA, par.tmOOA);
+        par, l, grid, spatial_solver, par.simtime, 0.0, par.tmOOA, par.tmOOA);
     if (0 != err)
       spdlog::error(
           "{}: Expected {} but got {}",

@@ -65,20 +65,23 @@ public:
   );
 
 protected:
-  ///
   /// First-order-accurate time integration for a step on level l.
   /// Returns the sum of delta-t for the timestep just completed and
   /// the step to come.
-  ///
   double advance_step_OA1(const int  ///< level in NG grid.
   );
 
-  ///
   /// Second-order-accurate time integration for a step on level l.
   /// Returns the sum of delta-t for the timestep just completed and
   /// the step to come.
-  ///
   double advance_step_OA2(const int  ///< level in NG grid.
+  );
+
+  /// Run through all radiation sources and calculate column
+  /// densities through each grid for each one.  This exchanges data
+  /// between grid levels so that the rays traverse all levels.
+  virtual int RT_all_sources_levels(
+      class SimParams &  ///< simulation parameters
   );
 
   ///

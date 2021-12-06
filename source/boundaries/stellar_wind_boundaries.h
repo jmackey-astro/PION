@@ -14,6 +14,7 @@
 #include "boundaries/boundaries.h"
 #include "grid/grid_base_class.h"
 #include "sim_params.h"
+#include <fstream>
 
 ///
 /// Implements stellar_wind boundaries for a uniform grid.  This is
@@ -21,7 +22,12 @@
 /// grid/stellar_wind_BC.h to set cell properties on the grid.
 ///
 class stellar_wind_bc {
+public:
+  stellar_wind_bc();
+
 protected:
+  ofstream outf;
+
   ///
   /// Add internal stellar wind boundaries -- these are (possibly
   /// time-varying) winds defined by a mass-loss-rate and a terminal velocity.
@@ -44,8 +50,10 @@ protected:
   ///
   int BC_update_STWIND(
       class SimParams &,      ///< pointer to simulation parameters
+      const int,              ///< level in grid hierarchy
       class GridBaseClass *,  ///< pointer to grid.
       const double,           ///< current simulation time
+      const double,           ///< timestep
       boundary_data *,        ///< Boundary to update.
       const int,              ///< current fractional step being taken.
       const int               ///< final step.

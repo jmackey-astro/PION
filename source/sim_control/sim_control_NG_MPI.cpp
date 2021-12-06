@@ -135,7 +135,6 @@ int sim_control_NG_MPI::Init(
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     cell *c = grid[l]->FirstPt();
     std::vector<double> u(SimPM.nvar);
-    // rep.printVec("First Point",c->P,SimPM.nvar);
     do {
       // make sure temperature of the gas is reasonable
       if (SimPM.timestep == 0) {
@@ -256,7 +255,7 @@ int sim_control_NG_MPI::Init(
         "NG_MPI updating internal boundaries for level {0}\n@@@@@@@@@@@@  UPDATING INTERNAL BOUNDARIES FOR LEVEL {0}",
         l);
     err += TimeUpdateInternalBCs(
-        SimPM, l, grid[l], spatial_solver, SimPM.simtime, SimPM.tmOOA,
+        SimPM, l, grid[l], spatial_solver, SimPM.simtime, 0.0, SimPM.tmOOA,
         SimPM.tmOOA);
   }
   if (0 != err)
@@ -406,8 +405,8 @@ int sim_control_NG_MPI::Time_Int(
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
     spdlog::debug("updating internal boundaries for level {}", l);
     err += TimeUpdateInternalBCs(
-        SimPM, l, grid[l], spatial_solver, SimPM.levels[l].simtime, SimPM.tmOOA,
-        SimPM.tmOOA);
+        SimPM, l, grid[l], spatial_solver, SimPM.levels[l].simtime, 0.0,
+        SimPM.tmOOA, SimPM.tmOOA);
     spdlog::info("... done");
   }
   if (0 != err)
@@ -501,7 +500,7 @@ int sim_control_NG_MPI::Time_Int(
   // ----------------------------------------------------------------
 
   cout.setf(ios_base::scientific);
-  cout.precision(3);
+  cout.precision(7);
   while (SimPM.maxtime == false) {
     // --------------------------------------------------------------
     // Get timestep on each level
@@ -854,7 +853,8 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   // --------------------------------------------------------
   spdlog::debug("advance_step_OA1: l={} update internal BCS\n", l);
   err += TimeUpdateInternalBCs(
-      SimPM, l, grid, spatial_solver, SimPM.levels[l].simtime, OA1, OA1);
+      SimPM, l, grid, spatial_solver, SimPM.levels[l].simtime,
+      SimPM.levels[l].dt, OA1, OA1);
   //  - Recv F2C data from l+1
   if (!finest_level && f2cr >= 0) {
     spdlog::debug("advance_step_OA1: l={} F2C Receive", l);
@@ -1063,7 +1063,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   spdlog::debug("advance_step_OA2: l={} update boundaries", l);
 #endif
   err += TimeUpdateInternalBCs(
-      SimPM, l, grid, spatial_solver, ctime + dt_now, OA1, OA2);
+      SimPM, l, grid, spatial_solver, ctime + dt_now, dt_now, OA1, OA2);
   clk.pause_timer("ibc");
 
   clk.start_timer("f2c");
@@ -1220,7 +1220,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   spdlog::debug("advance_step_OA2: l={} update internal BCs", l);
 #endif
   err += TimeUpdateInternalBCs(
-      SimPM, l, grid, spatial_solver, ctime + dt_now, OA2, OA2);
+      SimPM, l, grid, spatial_solver, ctime + dt_now, 0.5 * dt_now, OA2, OA2);
   clk.pause_timer("ibc");
 
   //  - Recv F2C data from l+1
@@ -1316,7 +1316,6 @@ int sim_control_NG_MPI::initial_conserved_quantities(
     do {
       if (c->isdomain && c->isleaf) {
         // cout <<"*** LEVEL "<<l<<", cell is a leaf: "<<c->isdomain<<"
-        // "<<c->isleaf<<": "; rep.printVec("pos",c->pos,SimPM.ndim);
         dv = spatial_solver->CellVolume(c, dx);
         spatial_solver->PtoU(c->P, u, SimPM.gamma);
         initERG += u[ERG] * dv;
@@ -1408,6 +1407,111 @@ int sim_control_NG_MPI::check_energy_cons(vector<class GridBaseClass *> &grid)
   //    (nowMMZ - initMMZ) / (totmom), (nowMASS - initMASS) / initMASS);
 
   return (0);
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int sim_control_NG_MPI::RT_all_sources_levels(
+    class SimParams &par  ///< simulation parameters
+)
+{
+  /// Do this in 3 passes: 1st we go from coarse to fine, tracing the
+  /// off-grid sources.  This gets 1/2 of those rays right.
+  /// Then go from fine to coarse, tracing all sources and
+  /// updating column densities as we go.
+  /// Finally go from coarse to fine again, updating boundary data.
+  int err                   = 0;
+  class GridBaseClass *grid = 0;
+
+  // --------------------------------------------------------------
+  // Update off-grid sources and external boundaries.
+  // for (int l=0; l<par.grid_nlevels; l++) {
+#ifdef TEST_INT
+  // cout <<"updating external boundaries for level "<<l<<"\n";
+#endif
+  // grid = par.levels[l].grid;
+  // err = TimeUpdateExternalBCs(par, l, grid,
+  //          spatial_solver, par.simtime,par.tmOOA,par.tmOOA);
+  // rep.errorTest("NG RT_all_sources_levels: pass 1 BC-ext",0,err);
+  // err = do_offgrid_raytracing(par,grid,l);
+  // rep.errorTest("NG RT_all_sources_levels: pass 1 RT",0,err);
+  //}
+  // --------------------------------------------------------------
+
+  // --------------------------------------------------------------
+  // update internal boundaries and then all sources (fine first)
+  for (int l = par.grid_nlevels - 1; l >= 0; l--) {
+#ifdef TEST_INT
+    cout << "RT: Receiving data for level " << l << "\n";
+#endif
+    grid = par.levels[l].grid;
+    // receive column densities from finer grid
+    if (l < par.grid_nlevels - 1) {
+      for (size_t i = 0; i < grid->BC_bd.size(); i++) {
+        if (grid->BC_bd[i]->itype == FINE_TO_COARSE_RECV) {
+          err += BC_update_FINE_TO_COARSE_RECV(
+              par, spatial_solver, l, grid->BC_bd[i], 2, 2);
+        }
+      }
+#ifndef NDEBUG
+      spdlog::debug("CLEAR F2C send from {} to {}", l + 1, l);
+#endif
+      BC_FINE_TO_COARSE_SEND_clear_sends(par.levels[l + 1].sub_domain);
+    }
+
+#ifdef TEST_INT
+    cout << "Doing raytracing for level " << l << "\n";
+#endif
+    err = do_ongrid_raytracing(par, grid, l);
+    // err = do_offgrid_raytracing(par,grid,l);
+    if (err)
+      spdlog::error(
+          "{}: Expected {} but got {}", "NG RT_all_sources_levels: pass 2 RT",
+          0, err);
+
+    // send column densities to coarser grid
+    if (l > 0) {
+      for (size_t i = 0; i < grid->BC_bd.size(); i++) {
+        if (grid->BC_bd[i]->itype == FINE_TO_COARSE_SEND) {
+          err += BC_update_FINE_TO_COARSE_SEND(
+              par, spatial_solver, l, grid->BC_bd[i], 2, 2);
+        }
+      }
+    }
+
+#ifdef TEST_INT
+    cout << "moving on to next level.\n";
+#endif
+  }
+  if (err)
+    spdlog::error(
+        "{}: Expected {} but got {}",
+        "sim_control_NG: internal boundary update", 0, err);
+  // --------------------------------------------------------------
+
+  // --------------------------------------------------------------
+  // Update external boundaries.
+  for (int l = 0; l < par.grid_nlevels; l++) {
+#ifdef TEST_INT
+    cout << "Pass 3: external boundaries for level " << l << "\n";
+#endif
+    grid = par.levels[l].grid;
+    // C2F gets data from parent grid onto this grid.
+    err = TimeUpdateExternalBCs(
+        par, l, grid, spatial_solver, par.simtime, par.tmOOA, par.tmOOA);
+    if (err)
+      spdlog::error(
+          "{}: Expected {} but got {}",
+          "NG RT_all_sources_levels: pass 3 BC-ext", 0, err);
+  }
+  // --------------------------------------------------------------
+
+  return err;
 }
 
 // ##################################################################

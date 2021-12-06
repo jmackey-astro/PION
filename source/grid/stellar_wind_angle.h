@@ -46,22 +46,8 @@ public:
   /// starts immediately).
   ///
   virtual int add_evolving_source(
-      const double *,  ///< position (physical units).
-      const double,    ///< radius (physical units).
-      const int,       ///< type (must be WINDTYPE_ANGLE).
-      pion_flt *,      ///< Any (constant) wind tracer values.
-      const string,    ///< file name to read data from.
-      const int,       ///< enhance mdot based on rotation (0=no,1=yes).
-      const double,    ///< Surface B field (G)
-      const double,    ///< time offset = [t(sim)-t(wind_file)]
-      const double,    ///< current time.
-      const double,    ///< frequency with which to update wind properties.
-      const double,    ///< scale factor for time
-                       ///< (t(sim)=[t(evo_file)-offset]/scalefactor
-      const double,    ///< eccentricity
-      const double,    ///< periastronX vectror (cgs units).
-      const double,    ///< periastronY vectror (cgs units).
-      const double     ///< Orbital period (years)
+      const double,                ///< current time.
+      struct stellarwind_params *  ///< pointer to wind parameters struct
   );
 
   ///
@@ -74,22 +60,7 @@ public:
   ///   quantities are averaged over the surface (or surface layers!)
   ///
   virtual int add_rotating_source(
-      const double *,  ///< position (cm from grid origin)
-      const double,    ///< radius (cm)
-      const int,       ///< type (2=lat-dep.)
-      const double,    ///< Mdot (g/s)
-      const double,    ///< Md0, equiv. non-rotating star (g/s)
-      const double,    ///< Vinf (cm/s)
-      const double,    ///< Vrot (cm/s)
-      const double,    ///< Vcrit (cm/s)
-      const double,    ///< Wind Temperature (p_g.m_p/(rho.k_b))
-      const double,    ///< Radius of star (cm)
-      const double,    ///< Surface B-field (Gauss)
-      pion_flt *,      ///< Tracer values of wind (if any)
-      const double,    ///< eccentricity
-      const double,    ///< periastronX vectror (cgs units).
-      const double,    ///< periastronY vectror (cgs units).
-      const double     ///< Orbital period (years)
+      struct stellarwind_params *  ///< pointer to wind parameters struct
   );
 
   /// setup tables for interpolation.

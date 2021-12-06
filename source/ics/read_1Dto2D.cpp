@@ -9,6 +9,7 @@
 
 #include "coord_sys/VectorOps.h"
 #include "ics/icgen.h"
+#include <array>
 #include <fstream>
 #include <sstream>
 
@@ -94,7 +95,8 @@ int IC_read_1Dto2D::setup_data(
   // and assume spherical symmetry with properties at that value of r.
   //
   cell *c = ggg->FirstPt();
-  std::array<double, MAX_DIM> dpos, data_vals;
+  std::array<double, MAX_DIM> dpos;
+  std::array<double, MAX_NVAR> data_vals;
   for (int v = 0; v < SimPM->nvar; v++)
     data_vals[v] = 0.0;
   // 1D sims have no B field...

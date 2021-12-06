@@ -316,7 +316,7 @@ int sim_control_pllel::Init(
   initial_conserved_quantities(grid[0]);
 
   err += TimeUpdateInternalBCs(
-      SimPM, 0, grid[0], spatial_solver, SimPM.simtime, SimPM.tmOOA,
+      SimPM, 0, grid[0], spatial_solver, SimPM.simtime, 0.0, SimPM.tmOOA,
       SimPM.tmOOA);
   err += TimeUpdateExternalBCs(
       SimPM, 0, grid[0], spatial_solver, SimPM.simtime, SimPM.tmOOA,
