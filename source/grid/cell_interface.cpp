@@ -807,48 +807,42 @@ void cell_interface::print_cell(const cell *c)
     spdlog::warn("Null Pointer!");
     return;
   }
-  spdlog::debug(
-      "cell:\t id = {}\n"
-      "\tisedge: {}\n"
-      "\tisbd: {}\n"
-      "\tisgd: {}\n"
-      "\tisdomain: {}\n"
-      "\tisleaf: {}\n"
-      "\ttimestep: {}\n"
-      "\trt: {}\n",
+  spdlog::info(
+      "cell:\t id = {}\tisedge: {}\tisbd: {}\tisgd: {}\tisdomain: {}\tisleaf: {}\ttimestep: {}\trt: {}",
       c->id, c->isedge, c->isbd, c->isgd, c->isdomain, c->isleaf, c->timestep,
       c->rt);
   if (c->npt != 0)
-    spdlog::debug("\tnpt[id]: {}", c->npt->id);
+    spdlog::info("\tnpt[id]: {}", c->npt->id);
   else
-    spdlog::debug("\tnpt is not addressed (last point?)");
+    spdlog::info("\tnpt is not addressed (last point?)");
   if (c->npt_all != 0)
-    spdlog::debug("\tnpt_all[id]: {}", c->npt_all->id);
+    spdlog::info("\tnpt_all[id]: {}", c->npt_all->id);
   else
     spdlog::warn("\tnpt_all is not addressed (last point?)");
   if (N_extra_data > 0) {
-    spdlog::debug(
+    spdlog::info(
         "extra_data[] : {}",
         std::vector<double>(c->extra_data, c->extra_data + N_extra_data));
   }
-  spdlog::debug("pos[] : {}", std::vector<double>(c->pos, c->pos + ndim));
+  spdlog::info("pos[] : {}", std::vector<double>(c->pos, c->pos + ndim));
   std::array<double, MAX_DIM> p;
   get_dpos(c, p);
-  spdlog::debug("dpos[] : {}", p);
-  spdlog::debug("P[]   : {}", std::vector<double>(c->P, c->P + nvar));
+  spdlog::info("dpos[] : {}", p);
+  spdlog::info("P[]   : {}", std::vector<double>(c->P, c->P + nvar));
   if (!minimal_cell) {
-    spdlog::debug("Ph[]  : {}", std::vector<double>(c->Ph, c->Ph + nvar));
-    spdlog::debug("dU[]  : {}", std::vector<double>(c->dU, c->dU + nvar));
+    spdlog::info("Ph[]  : {}", std::vector<double>(c->Ph, c->Ph + nvar));
+    spdlog::info("dU[]  : {}", std::vector<double>(c->dU, c->dU + nvar));
   }
   for (int i = 0; i < ndim; i++) {
     if (c->F[i]) {
-      spdlog::debug("F[i]  : {}", std::vector<double>(c->F[i], c->F[i] + nvar));
+      spdlog::info("F[i]  : {}", std::vector<double>(c->F[i], c->F[i] + nvar));
     }
   }
-  // TODO spdlog::debug("ngb[] : {}", std::vector<cell *>(c->ngb, c->ngb + 2 *
+  // TODO spdlog::info("ngb[] : {}", std::vector<cell *>(c->ngb, c->ngb + 2 *
   // ndim));
-  spdlog::debug(
-      "isbd_ref[] : {}", std::vector<int>(c->isbd_ref, c->isbd_ref + 2 * ndim));
+  spdlog::info(
+      "isbd_ref[] : {}\n",
+      std::vector<int>(c->isbd_ref, c->isbd_ref + 2 * ndim));
 }
 
 

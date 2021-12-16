@@ -142,6 +142,11 @@ int main(int argc, char **argv)
   string *args = new string[argc];
   for (int i = 0; i < argc; ++i)
     args[i] = argv[i];
+#ifndef NDEBUG
+  for (int i = 0; i < argc; ++i) {
+    spdlog::info("args: i= {}, arg = {}", i, args[i]);
+  }
+#endif
   for (int i = 0; i < argc; ++i) {
     if (args[i].find("redirect=") != string::npos) {
       ostringstream path;

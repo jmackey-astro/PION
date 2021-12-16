@@ -529,10 +529,10 @@ int sim_control_pllel::calculate_timestep(
   double t_dyn = 0.0, t_mp = 0.0;
   t_dyn = calc_dynamics_dt(par, grid);
   t_mp  = calc_microphysics_dt(par, grid);
-
 #ifndef NDEBUG
-  spdlog::debug("calc_time: local t_dyn= {}", t_dyn);
+  spdlog::info("calc_time: local t_dyn= {}, t_mp= {}", t_dyn, t_mp);
 #endif
+
 
   //
   // Get global min over all grids on this level.
@@ -541,10 +541,13 @@ int sim_control_pllel::calculate_timestep(
   t_mp  = SimPM.levels[0].sub_domain.global_operation_double("MIN", t_mp);
 
 #ifndef NDEBUG
-  spdlog::debug(" , global t_dyn= {}", t_dyn);
+  spdlog::info("calc_time: global t_dyn= {}, t_mp= {}", t_dyn, t_mp);
+#endif
+
+#ifndef NDEBUG
   // Write step-limiting info every tenth timestep.
   if (t_mp < t_dyn && (par.timestep % 10) == 0)
-    spdlog::debug("Limiting timestep by MP: mp_t={}\thydro_t={}", t_mp, t_dyn);
+    spdlog::info("Limiting timestep by MP: mp_t={}\thydro_t={}", t_mp, t_dyn);
 #endif
 
   par.dt = min(t_dyn, t_mp);

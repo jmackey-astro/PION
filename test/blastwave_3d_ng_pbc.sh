@@ -36,7 +36,7 @@ ${mpi} ../icgen-ng \
 
 ${mpi} ../pion-ng \
   BW_NGcrt3Dpbc_NR032_level00_0000.00000000.silo \
-  outfile=BW_NGcrt3Dpbc_NR032_new omp-nthreads=${nt} \ 
+  outfile=BW_NGcrt3Dpbc_NR032_new omp-nthreads=${nt} \
   redirect=pion-3d-ng-pbc-bw || exit 1
 
 REF_FILE=BW_NGcrt3Dpbc_NR032_REF_level00_0000.00000608.silo

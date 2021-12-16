@@ -551,7 +551,7 @@ double calc_timestep::calc_dynamics_dt(
         }
         // loop over all cells in this x-column.
         do {
-          if (c->timestep && !c->isbd) {
+          if (c->timestep && !c->isbd && c->isdomain) {
             tempdt =
                 min(tempdt, spatial_solver->CellTimeStep(c, par.gamma, dx));
           }
@@ -706,10 +706,8 @@ double calc_timestep::get_mp_timescales_no_radiation(
 #ifndef NDEBUG
           dp.c = c;
 #endif
-          // Check if cell is boundary data or not (can only be an internal
-          // boundary, such as a stellar wind, since we are looping over cells
-          // which are grid data)  If it is boundary data then we skip it.
-          if (c->isbd || !c->isleaf) {
+          // If cell is boundary data then we skip it.
+          if (c->isbd || !c->isleaf || !c->isdomain) {
 #ifndef NDEBUG
             spdlog::debug(
                 "skipping cell {} in get_mp_timescales_no_radiation() c->isbd",
@@ -751,11 +749,8 @@ double calc_timestep::get_mp_timescales_no_radiation(
 #endif
 
 #ifndef RT_TEST_PROBS
-  //
   // If doing photo-ionisation, can underestimate 1st timestep because gas is
   // all neutral initially, but only for a few seconds!
-  // (DON'T WANT TO SET THIS FOR NON-DYNAMICS TEST PROBLEMS)
-  //
   if ((par.timestep < 3) && (par.EP.raytracing > 0)
       && (par.EP.phot_ionisation)) {
     //
@@ -864,7 +859,7 @@ double calc_timestep::get_mp_timescales_with_radiation(
           // boundary, such as a stellar wind, since we are looping over
           // cells which are grid data).  If it is boundary data then we
           // skip it.
-          if (c->isbd || !c->isleaf) {
+          if (c->isbd || !c->isleaf || !c->isdomain) {
 #ifndef NDEBUG
             spdlog::debug(
                 "skipping cell {} in get_mp_timescales_with_radiation() c->isbd.\n",
@@ -902,9 +897,7 @@ double calc_timestep::get_mp_timescales_with_radiation(
                   ionize[v].Column[iC] = max(0.0, ionize[v].Column[iC]);
               }
             }
-            //
-            // We assume we want to limit by all relevant timescales.
-            //
+            // We want to limit by all relevant timescales.
             t = MP->timescales_RT(
                 c->Ph, FVI_nheat, heating, FVI_nion, ionize, par.gamma);
 #ifndef NDEBUG
@@ -924,6 +917,7 @@ double calc_timestep::get_mp_timescales_with_radiation(
                   "{}: {}", "Negative timestep from microphysics with RT!", t);
               exit(1);
             }
+
             tempdt = min(tempdt, t);
             // cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<dt<<"\n";
           }  // if not boundary data.

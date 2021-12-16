@@ -880,17 +880,10 @@ int MPv3::convert_prim2local(
   //
   p_local[lv_H0] = max(Min_NeutralFrac, min(Max_NeutralFrac, p_local[lv_H0]));
 
-  //
-  // Check for negative pressure (note this shouldn't happen, so we output a
-  // warning) and set to 10K if we find it.
-  //
-  if (p_local[lv_eint] <= 0.0) {
-    spdlog::debug(
-        "MPv3::convert_prim2local: negative pressure input: p={}, setting to {}K",
-        p_local[lv_eint], EP->MinTemperature);
-    p_local[lv_eint] = get_ntot(mpv_nH, p_in[pv_Hp]) * k_B * EP->MinTemperature
-                       / (gamma_minus_one);
-  }
+  // Check for temperature too low.
+  p_local[lv_eint] =
+      max(p_local[lv_eint], get_ntot(mpv_nH, p_in[pv_Hp]) * k_B
+                                * EP->MinTemperature / (gamma_minus_one));
 
 #ifdef MPV3_DEBUG
   //
@@ -950,13 +943,13 @@ int MPv3::convert_local2prim(
   // possibly corrected x(H+) from p_out[]).
   //
   double T = get_temperature(mpv_nH, p_local[lv_eint], p_out[pv_Hp]);
-  if (T > 1.01 * EP->MaxTemperature) {
+  if (T > 1.001 * EP->MaxTemperature) {
     Set_Temp(p_out, EP->MaxTemperature, 0);
     spdlog::debug(
         "MPv3::convert_local2prim() HIGH temperature encountered. T={}, obtained from nH={}, eint={}, x={}...  limiting to T={}",
         T, mpv_nH, p_local[lv_eint], p_out[pv_Hp], EP->MaxTemperature);
   }
-  if (T < 0.99 * EP->MinTemperature) {
+  if (T < 0.999 * EP->MinTemperature) {
     Set_Temp(p_out, EP->MinTemperature, 0);
     spdlog::debug(
         "MPv3::convert_local2prim() LOW  temperature encountered. T={}, obtained from nH={}, eint={}, x={}...  limiting to T={}",

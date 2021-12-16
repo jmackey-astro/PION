@@ -37,7 +37,7 @@ ${mpi} ../icgen-ug \
 
 ${mpi} ../pion-ug \
   BW_UGcrt3Dpbc_NR032_0000.00000000.silo \
-  outfile=BW_UGcrt3Dpbc_NR032_new omp-nthreads=${nt} \ 
+  outfile=BW_UGcrt3Dpbc_NR032_new omp-nthreads=${nt} \
   redirect=pion-3d-ug-pbc || exit 1
 
 
