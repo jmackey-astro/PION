@@ -35,7 +35,11 @@
 #include "tools/mem_manage.h"
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -60,7 +64,7 @@ MPv7::MPv7(
     ) :
     MPv3(nd, csys, nv, ntr, tracers, ephys, rsrcs, g)
 {
-  spdlog::info("MPv7 constructor setting up.");
+  spdlog::debug("MPv7 constructor setting up.");
   //
   // Get the mean mass per H atom from the He and Z mass fractions.
   //
@@ -112,7 +116,7 @@ MPv7::MPv7(
 
 MPv7::~MPv7()
 {
-  spdlog::info("MPv7 destructor.");
+  spdlog::debug("MPv7 destructor.");
 }
 
 // ##################################################################
@@ -388,7 +392,7 @@ double MPv7::get_recombination_rate(
     const double g       ///< EOS gamma (optional)
 )
 {
-  spdlog::info("MPv7::get_recombination_rate()");
+  spdlog::debug("MPv7::get_recombination_rate()");
   double rate = 0.0;
   double P[nvl];
   // First convert to local variables.
@@ -397,7 +401,7 @@ double MPv7::get_recombination_rate(
   rate = 2.7e-13 * mpv_nH * mpv_nH * (1.0 - P[lv_H0]) * (1.0 - P[lv_H0])
          * JM_NELEC;
 
-  spdlog::info("MPv7::get_recombination_rate()");
+  spdlog::debug("MPv7::get_recombination_rate()");
   return rate;
 }
 

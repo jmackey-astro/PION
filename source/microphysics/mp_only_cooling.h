@@ -27,7 +27,11 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #include "microphysics/cooling.h"
 #include "microphysics/cooling_SD93_cie.h"

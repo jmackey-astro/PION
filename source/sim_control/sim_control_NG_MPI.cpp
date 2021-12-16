@@ -22,7 +22,11 @@
 
 #include "tools/timer.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #include "constants.h"
 
@@ -45,7 +49,7 @@ using namespace std;
 
 sim_control_NG_MPI::sim_control_NG_MPI()
 {
-  spdlog::info("sim_control_NG_MPI constructor");
+  spdlog::debug("sim_control_NG_MPI constructor");
 }
 
 // ##################################################################
@@ -53,7 +57,7 @@ sim_control_NG_MPI::sim_control_NG_MPI()
 
 sim_control_NG_MPI::~sim_control_NG_MPI()
 {
-  spdlog::info("sim_control_NG_MPI destructor");
+  spdlog::debug("sim_control_NG_MPI destructor");
 }
 
 // ##################################################################
@@ -407,7 +411,7 @@ int sim_control_NG_MPI::Time_Int(
     err += TimeUpdateInternalBCs(
         SimPM, l, grid[l], spatial_solver, SimPM.levels[l].simtime, 0.0,
         SimPM.tmOOA, SimPM.tmOOA);
-    spdlog::info("... done");
+    spdlog::debug("... done");
   }
   if (0 != err)
     spdlog::error(
@@ -557,7 +561,7 @@ int sim_control_NG_MPI::Time_Int(
     // --------------------------------------------------------------
 
     // --------------------------------------------------------------
-    spdlog::info("NG_MPI time_int: stepping forward in time");
+    spdlog::debug("NG_MPI time_int: stepping forward in time");
     // Use a recursive algorithm to update the coarsest level.  This
     // function also updates the next level twice, by calling itself
     // for the finer level, and so on.
@@ -565,21 +569,23 @@ int sim_control_NG_MPI::Time_Int(
     advance_time(0, grid[0]);
     SimPM.simtime = SimPM.levels[0].simtime;
     SimPM.levels[0].sub_domain.barrier("step");
-    spdlog::info("MPI time_int: finished timestep");
+    spdlog::debug("MPI time_int: finished timestep");
 
     if (SimPM.levels[0].sub_domain.get_myrank() == 0) {
-      spdlog::debug(
-          "New time: {}\tdt: {}\t steps: {}\tl0 steps: {}", SimPM.simtime,
-          SimPM.levels[SimPM.grid_nlevels - 1].dt, SimPM.timestep,
-          SimPM.timestep / static_cast<int>(pow(2, SimPM.grid_nlevels - 1)));
       tsf = clk.time_so_far("time_int");
+      spdlog::info(
+          "New time: {:12.6e}   dt: {:12.6e}   steps: {:8d}   l0 steps: {:6d}   runtime: {:12.2e} s",
+          SimPM.simtime, SimPM.levels[SimPM.grid_nlevels - 1].dt,
+          SimPM.timestep,
+          SimPM.timestep / static_cast<int>(pow(2, SimPM.grid_nlevels - 1)),
+          tsf);
       // cout <<"\tTimings: ";
       // for (auto i : timing) {
       //  //cout << i <<"  "<< clk.time_so_far_paused(i) <<"  ";
       //  cout << clk.time_so_far_paused(i) <<"  ";
       //}
       // cout <<"\n";
-      spdlog::debug("\t runtime: {}s", tsf);
+      // spdlog::debug("\t runtime: {}s", tsf);
     }
     // --------------------------------------------------------------
 
@@ -613,7 +619,7 @@ int sim_control_NG_MPI::Time_Int(
   spdlog::info(
       "sim_control_NG_MPI:: TIME_INT FINISHED.  MOVING ON TO FINALISE SIM");
   tsf = clk.time_so_far("time_int");
-  spdlog::debug(
+  spdlog::info(
       "TOTALS ###: Nsteps={}, sim-time={}, wall-time={}, time/step={}",
       SimPM.timestep, SimPM.simtime, tsf,
       tsf / static_cast<double>(SimPM.timestep));
@@ -628,25 +634,28 @@ int sim_control_NG_MPI::Time_Int(
     wait = clk.pause_timer(t2);
     clk.start_timer(t3);
     run = clk.pause_timer(t3);
-    spdlog::debug("TOTALS RT#: active={} idle={} total={}", run, wait, total);
+    spdlog::info("TOTALS RT#: active={} idle={} total={}", run, wait, total);
   }
-  cout << "#";
+  ostringstream tm;
+  tm << "#";
   for (auto i : timing) {
-    cout << setw(11) << i;
+    tm << setw(11) << i;
   }
-  cout << setw(11) << "sum";
-  cout << "\n   ";
+  tm << setw(11) << "sum";
+  spdlog::info(tm.str());
+  tm.str("");
   double t = 0.0;
-  cout.setf(ios_base::scientific);
-  cout.precision(3);
+  tm << "   ";
+  tm.setf(ios_base::scientific);
+  tm.precision(3);
   for (auto i : timing) {
     tsf = clk.time_so_far_paused(i);
     t += tsf;
-    cout << tsf << "  ";
+    tm << tsf << "  ";
   }
-  cout << t;
-  cout << "\n";
-  cout << "                *************************************\n\n";
+  tm << t;
+  spdlog::info(tm.str());
+  spdlog::info("                *************************************\n");
   return (0);
 }
 
@@ -662,7 +671,6 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
 {
   spdlog::debug("NG-MPI advance_step_OA1, level={}, starting", l);
   int err                   = 0;
-  double dt2_fine           = 0.0;  // timestep for two finer level steps.
   double dt2_this           = 0.0;  // two timesteps for this level.
   class GridBaseClass *grid = SimPM.levels[l].grid;
   bool finest_level         = (l < (SimPM.grid_nlevels - 1)) ? false : true;
@@ -749,7 +757,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   // --------------------------------------------------------
   if (!finest_level) {
     spdlog::debug("advance_step_OA1: l={} advance l+1 step 1", l);
-    dt2_fine = advance_step_OA1(l + 1);
+    advance_step_OA1(l + 1);
   }
   dt2_this = SimPM.levels[l].dt;
   // --------------------------------------------------------
@@ -796,7 +804,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   // --------------------------------------------------------
   if (!finest_level) {
     spdlog::debug("advance_step_OA1: l={} advance l+1 step 2", l);
-    dt2_fine = advance_step_OA1(l + 1);
+    advance_step_OA1(l + 1);
   }
   // --------------------------------------------------------
 
@@ -918,7 +926,6 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
 {
   spdlog::debug("NG-MPI advance_step_OA2, level={}, starting", l);
   int err                   = 0;
-  double dt2_fine           = 0.0;  // timestep for two finer level steps.
   double dt2_this           = 0.0;  // two timesteps for this level.
   double ctime              = SimPM.levels[l].simtime;  // current time
   class GridBaseClass *grid = SimPM.levels[l].grid;
@@ -1008,7 +1015,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   // --------------------------------------------------------
   if (!finest_level) {
     spdlog::debug("advance_step_OA2: l={} first fine step", l);
-    dt2_fine = advance_step_OA2(l + 1);
+    advance_step_OA2(l + 1);
   }
   dt2_this = SimPM.levels[l].dt;
   spdlog::debug("advance_step_OA2: l={} dt={}", l, dt2_this);
@@ -1154,7 +1161,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   // --------------------------------------------------------
   if (!finest_level) {
     spdlog::debug("advance_step_OA2: l={} second fine step", l);
-    dt2_fine = advance_step_OA2(l + 1);
+    advance_step_OA2(l + 1);
   }
   // --------------------------------------------------------
 
@@ -1274,15 +1281,13 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
 #endif
     }
     clk.pause_timer("bc89");
+    spdlog::debug("advance_step_OA2: l={} sent BC89 fluxes", l);
+
+    spdlog::debug("advance_step_OA2: l={} update F2C", l);
     clk.start_timer("f2c");
     err += BC_update_FINE_TO_COARSE_SEND(
         SimPM, spatial_solver, l, grid->BC_bd[f2cs], OA2, OA2);
     clk.pause_timer("f2c");
-    spdlog::debug("advance_step_OA2: l={} sent BC89 fluxes", l);
-
-    spdlog::debug("advance_step_OA2: l={} update F2C", l);
-    err += BC_update_FINE_TO_COARSE_SEND(
-        SimPM, spatial_solver, l, grid->BC_bd[f2cs], OA2, OA2);
     spdlog::debug("advance_step_OA2: l={} updated F2C", l);
   }
   // --------------------------------------------------------

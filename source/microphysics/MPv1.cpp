@@ -64,9 +64,12 @@
 #include "tools/mem_manage.h"
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -97,10 +100,10 @@ MP_Hydrogen::MP_Hydrogen(
     m_p(pconst.m_p())
 #endif
 {
-  spdlog::info(
+  spdlog::debug(
       "Welcome to MP_Hydrogen: an easier place to work than MicroPhysics!");
 
-  spdlog::info(
+  spdlog::debug(
       "***** USING ISOTHERMAL EOS WITH T=T_0(1-X) +T_1(X) !!!!!!!!!!!!!! ******");
 
   min_elecf = 1.e-12;  // minimum electron fraction (to seed reactions!).
@@ -110,7 +113,7 @@ MP_Hydrogen::MP_Hydrogen(
   //  cout <<"\t\tExtra Physics flags set.\n";
 
   if (!EP->cooling) {
-    spdlog::info("\t\t cooling not needed.");
+    spdlog::debug("\t\t cooling not needed.");
     cool = 0;
   }
   else {
@@ -514,7 +517,7 @@ int MP_Hydrogen::TimeUpdateMP(
   }
   else if (sw_int == 2) {
     // DANGEROUS!!!
-    spdlog::info("Requesting single step RK4 integration for MP_Hydrogen!!!?");
+    spdlog::debug("Requesting single step RK4 integration for MP_Hydrogen!!!?");
     err = Integrator_Base::Step_RK4(nvl, P, 0.0, dt, P);
   }
   else
@@ -1282,7 +1285,7 @@ int MP_Hydrogen::Int_Adaptive_RKCK(
     // tnew="<<t+hdid<<" to-go="<<*tf-t-hdid<<"\n";
     if (p2[lv_Hp] >= 0.999) {
       // reject step in this case.
-      spdlog::info("rejecting step...");
+      spdlog::debug("rejecting step...");
       h = hdid / 2.0;
     }
     else {

@@ -119,9 +119,12 @@
 
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -674,7 +677,7 @@ MPv2::MPv2(
     microphysics_base(nv, ntr, tracers, ephys, rsrcs),
     ndim(nd), eos_gamma(g), coord_sys(csys)
 {
-  spdlog::info("MPv2: new microphysics class");
+  spdlog::debug("MPv2: new microphysics class");
 
   //
   // Set up tracer variables (i.e. just find which one is H+).
@@ -877,7 +880,7 @@ MPv2::MPv2(
   //
 #endif  // MPV2_DEBUG
 
-  spdlog::info("MPv2: Constructor finished and returning");
+  spdlog::debug("MPv2: Constructor finished and returning");
 }
 
 // ##################################################################
@@ -972,7 +975,7 @@ int MPv2::TimeUpdate_RTsinglesrc(
     double *         ///< return optical depth through cell in this variable.
 )
 {
-  spdlog::info("MPv2::TimeUpdate_RTsinglesrc() is not implemented!");
+  spdlog::debug("MPv2::TimeUpdate_RTsinglesrc() is not implemented!");
   return 1;
 }
 
@@ -1116,7 +1119,7 @@ int MPv2::Init_ionfractions(
                    ///< at. (negative means use pressure)
 )
 {
-  spdlog::info("MPv2::Init_ionfractions() is not implemented! Write me!");
+  spdlog::debug("MPv2::Init_ionfractions() is not implemented! Write me!");
   return 1;
 }
 
@@ -1754,7 +1757,7 @@ double MPv2::get_recombination_rate(
     const double g         ///< EOS gamma (optional)
 )
 {
-  spdlog::info("MPv2::get_recombination_rate()");
+  spdlog::debug("MPv2::get_recombination_rate()");
   double rate = 0.0;
   double P[nvl];
   //
@@ -1768,7 +1771,7 @@ double MPv2::get_recombination_rate(
       Hii_rad_recomb_rate(get_temperature(mpv_nH, P[lv_eint], 1.0 - P[lv_H0]))
       * mpv_nH * mpv_nH * (1.0 - P[lv_H0]) * (1.0 - P[lv_H0]) * JM_NELEC;
 
-  spdlog::info("MPv2::get_recombination_rate()");
+  spdlog::debug("MPv2::get_recombination_rate()");
   return rate;
 }
 

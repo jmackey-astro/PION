@@ -9,7 +9,11 @@
 #include "constants.h"
 #include "inside_sphere.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 // ##################################################################
 // ##################################################################

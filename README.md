@@ -92,6 +92,7 @@ Option | Effect
 `-DSUNDIALS_DIR=...` | Instruct CMake to search the provided path for the Sundials library.
 `-DSILO_DIR=...` | Instruct CMake to search the provided path for the Silo library.
 `-DFITS_DIR=...` | Instruct CMake to search the provided path for the Fits library.
+`-Dspdlog_DIR=...` | Instruct CMake to search the provided path for the Spdlog library.
 `-DREADLINE_DIR=...` | Instruct CMake to search the provided path for the Readline library.
 `-DBOOST_ROOT=...` | Instruct CMake to search the provided path for the Boost library.
 

@@ -168,7 +168,11 @@
 
 #include "tools/timer.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #include <fstream>
 
@@ -187,7 +191,7 @@ sim_control::sim_control() {}
 
 sim_control::~sim_control()
 {
-  spdlog::info("(sim_control::Destructor)");
+  spdlog::debug("(sim_control::Destructor)");
 }
 
 // ##################################################################
@@ -253,11 +257,10 @@ int sim_control::Time_Int(
 
 #if !defined(CHECK_MAGP)
 #if !defined(BLAST_WAVE_CHECK)
-    spdlog::debug(
-        "New time: {}\t dt={}\t steps: {}", SimPM.simtime, SimPM.dt,
-        SimPM.timestep);
     tsf = clk.time_so_far("time_int");
-    spdlog::debug("\t runtime: {}s", tsf);
+    spdlog::info(
+        "New time: {:12.6e}   dt: {:12.6e}   steps: {:8d}   runtime: {:12.2e} s",
+        SimPM.simtime, SimPM.dt, SimPM.timestep, tsf);
 #endif
 #endif
 #ifdef TEST_CONSERVATION
@@ -277,15 +280,15 @@ int sim_control::Time_Int(
     }
   }
 
-  spdlog::info(
+  spdlog::debug(
       "(sim_control::Time_Int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM");
 
   tsf = clk.time_so_far("time_int");
-  spdlog::debug(
+  spdlog::info(
       "TOTALS ###: Nsteps: {} wall-time: {} time/step: {} STEPS: {}",
       SimPM.timestep, tsf, tsf / static_cast<double>(SimPM.timestep),
       SimPM.timestep);
-  spdlog::debug(
+  spdlog::info(
       "\t{}\t{}\t{}", tsf, tsf / static_cast<double>(SimPM.timestep),
       static_cast<double>(SimPM.timestep * SimPM.Ncell) / tsf);
 
@@ -448,7 +451,7 @@ int sim_control::Finalise(vector<class GridBaseClass *>
     spdlog::error(
         "{}: Expected {} but got {}",
         "(FINALISE::output_data) Something went wrong", 0, err);
-  spdlog::debug(
+  spdlog::info(
       "\tSimTime = {}   #timesteps = {}", SimPM.simtime, SimPM.timestep);
   spdlog::info("(sim_control::Finalise) DONE");
   return (0);

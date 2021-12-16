@@ -56,9 +56,12 @@
 #include "constants.h"
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -83,7 +86,7 @@ MPv0::MPv0(
     microphysics_base(nv, ntr, tracers, ephys, rsrcs),
     kB(pconst.kB()), m_p(pconst.m_p())
 {
-  spdlog::info("\t\tMPv0 constructor");
+  spdlog::debug("\t\tMPv0 constructor");
   spdlog::warning("WARNING: THIS CODE HAS NEVER BEEN USED IN PUBLICATIONS.\n"
                   "IT SHOULD BE CONSIDERED UNTESTED AND UNRELIABLE");
   set_atomic_data();  // sets atomic data arrays to right values.
@@ -105,7 +108,7 @@ MPv0::MPv0(
   //  cout <<"\t\tExtra Physics flags set.\n";
 
   if (!ep.cooling) {
-    spdlog::info("\t\t cooling not needed");
+    spdlog::debug("\t\t cooling not needed");
     cool = 0;
   }
   else {
@@ -362,7 +365,7 @@ MPv0::MPv0(
   // At the moment I assume that im1 should always be tracked, as I don't
   // explicitly include the neutral stage as a variable usually, but I do want
   // to track it.
-  spdlog::info("setting higher/lower stages");
+  spdlog::debug("setting higher/lower stages");
   for (int i = 0; i < nions; i++) {
     bool higherstage = false, lowerstage = false;
     for (int j = 0; j < nions; j++) {
@@ -387,7 +390,7 @@ MPv0::MPv0(
       ii[i]->iim1 = &ion_props[ii[i]->im1];
     }
   }
-  spdlog::info("setting higher/lower stages");
+  spdlog::debug("setting higher/lower stages");
 
   for (int i = 0; i < nions; i++)
     show_ion_struct(ii[i]);
@@ -515,7 +518,7 @@ int MPv0::Set_Eint(
 )
 {
   if (T <= 0) {
-    spdlog::info("negative temperature in Set_Eint()");
+    spdlog::debug("negative temperature in Set_Eint()");
     return 1;
   }
   P[lv_eint] = Get_nTot(P) * kB * T / (gamma - 1.);
@@ -1141,7 +1144,7 @@ double MPv0::phot_xsection(const struct ion_struct *ci)
   if (ci->i == H_1p)
     return 6.3e-18;  // in cm^2
   else {
-    spdlog::info("unknown photo-ionisation x-section");
+    spdlog::debug("unknown photo-ionisation x-section");
     return 0.0;
   }
 }
@@ -1736,7 +1739,7 @@ int MPv0::Init_ionfractions(
     T = Get_Temp(p_local);
   //  cout <<"Temp = "<<T<<"\n";
   if (nions <= 0) {
-    spdlog::info("no ions to init");
+    spdlog::debug("no ions to init");
     err += convert_local2prim(p_local, p_prim, p_prim, gamma);
     return err;
   }

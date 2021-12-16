@@ -16,9 +16,12 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -182,7 +185,7 @@ int time_integrator::first_order_update(
   //
   if (!FVI_need_column_densities_4dt && grid->RT) {
 #ifdef RT_TESTING
-    spdlog::info(" 1st order step doing RT ");
+    spdlog::debug(" 1st order step doing RT ");
 #endif
     err += RT_all_sources(SimPM, grid, 0);
     if (err)
@@ -321,8 +324,8 @@ int time_integrator::calc_microphysics_dU(
   //
   if (!MP) return 0;
 
-  spdlog::info("calc_microphysics_dU() Updating MicroPhysics");
 #ifndef NDEBUG
+  spdlog::debug("calc_microphysics_dU() Updating MicroPhysics");
   spdlog::debug("  RT-Nsrc={}", SimPM.RS.Nsources);
 #endif  // NDEBUG
   int err = 0;
@@ -332,7 +335,7 @@ int time_integrator::calc_microphysics_dU(
     // If no radiative transfer, then just do a simple MP update.
     //
 #ifdef RT_TESTING
-    spdlog::info("\t\t--- calling calc_noRT_microphysics_dU()");
+    spdlog::debug("\t\t--- calling calc_noRT_microphysics_dU()");
 #endif  // RT_TESTING
     err += calc_noRT_microphysics_dU(delt, grid);
   }
@@ -343,7 +346,7 @@ int time_integrator::calc_microphysics_dU(
     // update function with a bit more overhead.
     //
 #ifdef RT_TESTING
-    spdlog::info("\t\t--- calling calc_RT_microphysics_dU()");
+    spdlog::debug("\t\t--- calling calc_RT_microphysics_dU()");
 #endif  // RT_TESTING
     err += calc_RT_microphysics_dU(delt, grid);
   }
@@ -377,30 +380,27 @@ int time_integrator::calc_RT_microphysics_dU(
         SimPM.RS.Nsources);
 #endif  // RT_TESTING
 
-  int err = 0;
-  cell *c = grid->FirstPt_All();
-  std::vector<pion_flt> p(
-      SimPM.nvar);  // temporary state vector for output state.
-  std::vector<pion_flt> ui(SimPM.nvar),
-      uf(SimPM.nvar);  // conserved variable states.
-  double tt = 0.;      // temperature returned at end of microphysics step.
-  int index[3];
   int nx2 = grid->NG_All(YY);
   int nx3 = grid->NG_All(ZZ);
-  // copies of the source data (one copy for each thread)
-  // seems to be memory issues when using class member data.
-  vector<struct rt_source_data> heating;
-  vector<struct rt_source_data> ionize;
 
 #ifdef PION_OMP
   #pragma omp parallel
   {
-    #pragma omp for collapse(2) private(c,index,p,ui,uf,tt,heating,ionize,err)
+    #pragma omp for collapse(2)
 #endif
     // loop through cells in 1st y-z plane and calculate the MP update for the
     // x-column of cells associated with each starting cell.
     for (int ax3 = 0; ax3 < nx3; ax3++) {
       for (int ax2 = 0; ax2 < nx2; ax2++) {
+        vector<struct rt_source_data> heating;
+        vector<struct rt_source_data> ionize;
+        cell *c = 0;
+        std::vector<pion_flt> p(SimPM.nvar);
+        std::vector<pion_flt> ui(SimPM.nvar), uf(SimPM.nvar);
+        double tt = 0.0;
+        int err   = 0;
+        int index[3];
+
         index[0] = 0;
         index[1] = ax2;
         index[2] = ax3;
@@ -467,13 +467,17 @@ int time_integrator::calc_RT_microphysics_dU(
 #endif
           }                                        // if not boundary data.
         } while ((c = grid->NextPt(c, XP)) != 0);  // loop over x-column cells
-      }                                            // ax2
-    }                                              // ax3
+        if (err) {
+          spdlog::error("Errors in calc_RT_microphysics_dU() {} {}", ax2, ax3);
+          exit(1);
+        }
+      }  // ax2
+    }    // ax3
 #ifdef PION_OMP
   }
 #endif
   //    cout <<"calc_microphysics_dU() Updating MicroPhysics Done!\n";
-  return err;
+  return 0;
 }  // RT microphysics update.
 
 
@@ -489,7 +493,7 @@ int time_integrator::calc_noRT_microphysics_dU(
 )
 {
 #ifndef NDEBUG
-  spdlog::info("calc_noRT_microphysics_dU starting");
+  spdlog::debug("calc_noRT_microphysics_dU starting");
 #endif
   //
   // No radiation sources and no diffuse radiation optical depths,
@@ -579,9 +583,9 @@ int time_integrator::calc_dynamics_dU(
 
 #ifndef NDEBUG
   if (step == OA1)
-    spdlog::info("*****Updating dynamics: OA1");
+    spdlog::debug("*****Updating dynamics: OA1");
   else if (step == OA2)
-    spdlog::info("*****Updating dynamics: OA2");
+    spdlog::debug("*****Updating dynamics: OA2");
   else
     spdlog::error("{}: {}", "Bad ooa", step);
 #endif  // NDEBUG

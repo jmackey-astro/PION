@@ -56,9 +56,12 @@
 #include "tools/mem_manage.h"
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -1409,6 +1412,7 @@ int dataio_silo_pllel::write_multimeshadj(
       // block structure.
       //
       int my_ix[MAX_DIM], ngb_ix[MAX_DIM], nx[MAX_DIM];
+      // std::array<int,MAX_DIM> my_ix, ngb_ix, nx;
       for (int ii = 0; ii < MAX_DIM; ii++)
         my_ix[ii] = ngb_ix[ii] = nx[ii] = -1;
       mpiPM->get_domain_coordinates(v, my_ix);
@@ -1433,6 +1437,8 @@ int dataio_silo_pllel::write_multimeshadj(
       else {
         spdlog::debug(
             "i= {} v={}  ix {}  {}  {}", i, v, my_ix[XX], ngb_ix[XX], nx[XX]);
+        // spdlog::debug("my_ix : {}", my_ix);
+        // spdlog::debug("ngb_ix : {}", ngb_ix);
         spdlog::error(
             "{}: {}", "domains don't touch (X-dir)!", my_ix[XX] - ngb_ix[XX]);
       }

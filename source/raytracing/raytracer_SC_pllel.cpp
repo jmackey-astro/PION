@@ -49,7 +49,11 @@
 
 #include "tools/timer.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -77,7 +81,9 @@ raytracer_USC_pllel::raytracer_USC_pllel(
     ) :
     raytracer_USC(ggg, mmm, nd, csys, nv, ftr, Nsources)
 {
+#ifdef RT_TESTING
   spdlog::info("SC PARALLEL raytracer class constructor!");
+#endif
 
   par        = sp;
   sub_domain = mcmd;
@@ -86,7 +92,9 @@ raytracer_USC_pllel::raytracer_USC_pllel(
 
 raytracer_USC_pllel::~raytracer_USC_pllel()
 {
+#ifdef RT_TESTING
   spdlog::info("SC PARALLEL raytracer class destructor!");
+#endif
 }
 
 // ##################################################################
@@ -99,8 +107,10 @@ int raytracer_USC_pllel::Add_Source(struct rad_src_info *src  ///< source info.
   // First call serial version.  This finds the source, and centres
   // it on a cell vertex if needed.
   //
+#ifdef RT_TESTING
   spdlog::info("\n--BEGIN-----raytracer_USC_pllel::AddSource()------------\n"
                "\t**** PARALLEL Add_Source: calling serial version.\n");
+#endif
   if (src->at_infinity) {
     raytracer_USC_infinity::add_source_to_list(src);
   }
@@ -115,19 +125,24 @@ int raytracer_USC_pllel::Add_Source(struct rad_src_info *src  ///< source info.
   // to receive data from before processing this source, and which it
   // needs to send data to after processing.
   //
+#ifdef RT_TESTING
   spdlog::info("\t**** PARALLEL Add_Source: Setup extra RT boundaries");
+#endif
   int err = Setup_RT_Boundaries(*par, *sub_domain, gridptr, id, *src);
   if (err) spdlog::error("{}: {}", "Failed to setup RT Boundaries", err);
 
-  //
-  // Set Vshell for every cell on the grid.
-  //
+    //
+    // Set Vshell for every cell on the grid.
+    //
+#ifdef RT_TESTING
   spdlog::info("\t**** PARALLEL: setting Vshell for source");
-
+#endif
   set_Vshell_for_source(&SourceList.back());
 
+#ifdef RT_TESTING
   spdlog::info("\t**** PARALLEL Add_Source: all done..\n"
                "--END-----raytracer_USC_pllel::AddSource()------------\n");
+#endif
   return id;
 }
 
@@ -141,7 +156,9 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
 )
 {
   int err = 0;
+#ifdef RT_TESTING
   spdlog::debug("RT_MPI: Starting Raytracing for source: {}", s_id);
+#endif
 
   // Find source in list.
   struct rad_src_info *RS = 0;
@@ -155,7 +172,7 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   }
 
   string t1 = "totalRT", t2 = "waitingRT", t3 = "doingRT";  //, t4="tempRT";
-  double total = 0.0, wait = 0.0, run = 0.0;
+  // double total = 0.0, wait = 0.0, run = 0.0;
 
   clk.start_timer(t1);
   //
@@ -163,10 +180,14 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   //
   clk.start_timer(t2);
   // clk.start_timer(t4);
+#ifdef RT_TESTING
   spdlog::info("RT_MPI: receiving RT boundaries");
+#endif
   err += Receive_RT_Boundaries(*par, *sub_domain, gridptr, s_id, *RS);
 
+#ifdef RT_TESTING
   spdlog::info("RT_MPI: received RT boundaries");
+#endif
 
   clk.pause_timer(t2);
 
@@ -175,26 +196,34 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   //
   clk.start_timer(t3);
   // clk.start_timer(t4);
+#ifdef RT_TESTING
   spdlog::info("RT_MPI: calling serial raytrace function");
+#endif
 
   err += raytracer_USC::RayTrace_SingleSource(s_id, dt, g);
 
+#ifdef RT_TESTING
   spdlog::info("RT_MPI: serial raytrace done");
+#endif
 
-  run = clk.pause_timer(t3);
+  // run = clk.pause_timer(t3);
 
   //
   // Finally, send the new column densities to processors further from source.
   //
   clk.start_timer(t2);
   // clk.start_timer(t4);
+#ifdef RT_TESTING
   spdlog::info("RT_MPI: sending RT boundaries");
+#endif
 
   err += Send_RT_Boundaries(*par, *sub_domain, gridptr, s_id, *RS);
+#ifdef RT_TESTING
   spdlog::info("RT_MPI: sent RT boundaries");
+#endif
 
-  wait  = clk.pause_timer(t2);
-  total = clk.pause_timer(t1);
+  // wait  = clk.pause_timer(t2);
+  // total = clk.pause_timer(t1);
 
   return err;
 }

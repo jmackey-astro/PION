@@ -15,9 +15,12 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -286,14 +289,11 @@ int calc_timestep::set_thermal_conduction_Edot(
 
   // cout <<"\tT calculated, now calculating divQ.\n";
   //
-  enum direction posdirs[MAX_DIM], negdirs[MAX_DIM];
+  enum direction posdirs[MAX_DIM];
   enum axes axis[MAX_DIM];
   posdirs[0] = XP;
   posdirs[1] = YP;
   posdirs[2] = ZP;
-  negdirs[0] = XN;
-  negdirs[1] = YN;
-  negdirs[2] = ZN;
   axis[0]    = XX;
   axis[1]    = YY;
   axis[2]    = ZZ;
@@ -465,6 +465,7 @@ void calc_timestep::timestep_checking_and_limiting(
     temp << "Timestep too short! dt=" << par.dt
          << "  min-step=" << par.min_timestep;
     spdlog::error("{}: {}", temp.str(), par.dt);
+    exit(1);
   }
 
   //
@@ -479,9 +480,11 @@ void calc_timestep::timestep_checking_and_limiting(
   //
   if (par.op_criterion == 1) {
     par.dt = min(par.dt, par.next_optime - par.simtime);
-    if (par.dt <= 0.0)
+    if (par.dt <= 0.0) {
       spdlog::error(
           "{}: {}", "Went past output time without outputting!", par.dt);
+      exit(1);
+    }
   }
 
   //
@@ -489,9 +492,10 @@ void calc_timestep::timestep_checking_and_limiting(
   //
   par.dt = min(par.dt, par.finishtime - par.simtime);
   if (par.dt <= 0.0) {
-    spdlog::debug(
+    spdlog::error(
         "dt={}, finish={}, now={}", par.dt, par.finishtime, par.simtime);
     spdlog::error("{}: {}", "Negative timestep!", par.dt);
+    exit(1);
   }
 
   return;
@@ -572,7 +576,10 @@ double calc_timestep::calc_dynamics_dt(
           dt, 0.1 * par.CFL * grid->DX() / (SWP.params[v]->Vinf * 1.0e5));
   }
 
-  if (dt <= 0.0) spdlog::error("{}: {}", "Got zero timestep!!!", dt);
+  if (dt <= 0.0) {
+    spdlog::error("{}: {}", "Got zero timestep!!!", dt);
+    exit(1);
+  }
 #ifndef NDEBUG
   spdlog::debug("(calc_dynamics_dt)  min-dt={}", dt);
 #endif
@@ -624,9 +631,11 @@ double calc_timestep::calc_microphysics_dt(
     // cout <<"calc_timestep, getting column densities
     // rt="<<par.RS.Nsources<<".\n"; int err = RT_all_sources(par,grid,l);
     dt = get_mp_timescales_with_radiation(par, grid);
-    if (dt <= 0.0)
+    if (dt <= 0.0) {
       spdlog::error(
           "{}: {}", "get_mp_timescales_with_radiation() returned error", dt);
+      exit(1);
+    }
   }
   else {
     //
@@ -634,9 +643,11 @@ double calc_timestep::calc_microphysics_dt(
     //
     // cout <<" getting timestep with no radiation\n";
     dt = get_mp_timescales_no_radiation(par, grid);
-    if (dt <= 0.0)
+    if (dt <= 0.0) {
       spdlog::error(
           "{}: {}", "get_mp_timescales_no_radiation() returned error", dt);
+      exit(1);
+    }
   }
 
 #ifndef NDEBUG
@@ -726,6 +737,7 @@ double calc_timestep::get_mp_timescales_no_radiation(
                 spdlog::error(
                     "{}: {}", "Bad MP_timestep_limit",
                     par.EP.MP_timestep_limit);
+                exit(1);
             }
             tempdt = min(tempdt, t);
             // cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<dt<<"\n";
@@ -802,10 +814,12 @@ double calc_timestep::get_mp_timescales_with_radiation(
         "calc_timestep::get_mp_timescales_with_radiation() no MP-dt limiting");
     return -1.0;
   }
-  if (par.RS.Nsources == 0)
+  if (par.RS.Nsources == 0) {
     spdlog::error(
         "{}: {}",
         "calc_timestep::get_mp_timescales_with_radiation() no sources", 1);
+    exit(1);
+  }
 #endif  // NDEBUG
 
   //
@@ -882,6 +896,7 @@ double calc_timestep::get_mp_timescales_with_radiation(
                 CI.print_cell(c);
                 spdlog::error(
                     "{}: {}", "time_int:calc_RT_microphysics_dU tau<0", 1);
+                exit(1);
 #endif
                 for (short unsigned int iC = 0; iC < ionize[v].NTau; iC++)
                   ionize[v].Column[iC] = max(0.0, ionize[v].Column[iC]);
@@ -903,10 +918,11 @@ double calc_timestep::get_mp_timescales_with_radiation(
               spdlog::error(
                   "get_mp_timescales_with_radiation() negative timestep... c->id={}\tdt={}",
                   c->id, t);
-              spdlog::debug(
+              spdlog::error(
                   "Ph : {}", std::vector<double>(c->Ph, c->Ph + par.nvar));
               spdlog::error(
                   "{}: {}", "Negative timestep from microphysics with RT!", t);
+              exit(1);
             }
             tempdt = min(tempdt, t);
             // cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<dt<<"\n";

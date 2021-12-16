@@ -9,6 +9,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
             -Wall -Wextra -Wpedantic -pedantic
             -Wno-error=unknown-pragmas
             -Wno-error=unused-parameter
+            -Wno-error=unused-variable
             -Wswitch-enum
             -Wimplicit-fallthrough
             -Werror

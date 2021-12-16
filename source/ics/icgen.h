@@ -156,17 +156,17 @@ protected:
   int coords;  ///< coord sys used
   int eqns;    ///< set to 1 for euler eqns, 2 for mhd equations (including all
                ///< divB cleaning methods)
-  double shockpos,   ///< position of shock.
-      clrad,         ///< cloud radius.
-      cltr0,         ///< value of optional colour tracer for cloud (e.g.-1.0)
-      cltr1,         ///< value of optional tracer for cloud (e.g.-1.0)
-      *cloudcentre,  ///< centre of cloud.
-      gam,           ///< eos gamma.
-      dratio,        ///< density ratio rho(cloud)/rho(preshock)
-      pratio,        ///< pressure ratio p(cloud)/p(preshock)
-      Bratio,        ///< B-field ratio B(cloud)/B(preshock)
-      *preshock,     ///< preshock state vector.
-      *postshock;    ///< postshock state vector.
+  double shockpos,  ///< position of shock.
+      clrad,        ///< cloud radius.
+      cltr0,        ///< value of optional colour tracer for cloud (e.g.-1.0)
+      cltr1,        ///< value of optional tracer for cloud (e.g.-1.0)
+      gam,          ///< eos gamma.
+      dratio,       ///< density ratio rho(cloud)/rho(preshock)
+      pratio,       ///< pressure ratio p(cloud)/p(preshock)
+      Bratio,       ///< B-field ratio B(cloud)/B(preshock)
+      *preshock,    ///< preshock state vector.
+      *postshock;   ///< postshock state vector.
+  std::array<double, MAX_DIM> cloudcentre;  ///< centre of cloud.
   int setup_shockcloud();  ///< setup data now that we have all infor from file.
 };
 
@@ -309,7 +309,6 @@ protected:
                ///< divB cleaning methods)
   double clrad,      ///< cloud radius.
       *cltr,         ///< value of optional tracers for cloud.
-      *cloudcentre,  ///< centre of cloud.
       gam,           ///< eos gamma.
       dratio,        ///< density ratio rho(cloud)/rho(amb)
       pratio,        ///< pressure ratio p(cloud)/p(amb)
@@ -317,6 +316,7 @@ protected:
       radial_slope,  ///< power law density profile, if needed.
       core_radius,   ///< core-radius of ISM (so rho(0)!=infty)
       *ambient;      ///< ambient state vector.
+  std::array<double, MAX_DIM> cloudcentre;  ///< centre of cloud.
   int setup_pec();   ///< setup data now that we have all info from file.
   int setup_pec2();  ///< setup two PECs now that we have all info from file.
   int setup_radialprofile();     ///< setup data for a density profile out from

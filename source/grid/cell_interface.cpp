@@ -36,9 +36,12 @@
 #include "raytracing/rad_src_data.h"
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 using namespace std;
 
@@ -209,7 +212,7 @@ void cell_interface::setup_extra_data(
     const int gp_flag               ///< Flag for |grad(P)|.
 )
 {
-  spdlog::info("cell_interface::setup_extra_data()");
+  spdlog::debug("cell_interface::setup_extra_data()");
   //
   // Set up a 1D array for all of the extra data that a cell needs,
   // and set indices to access the required elements.
@@ -304,7 +307,7 @@ void cell_interface::setup_extra_data(
   }
 
   have_setup_extra_data = true;
-  spdlog::info("cell_interface::setup_extra_data() finished");
+  spdlog::debug("cell_interface::setup_extra_data() finished");
 }
 
 

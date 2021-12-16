@@ -35,7 +35,7 @@ HLLD_MHD::HLLD_MHD(
     eqns_mhd_ideal(nv)
 {
 #ifndef NDEBUG
-  spdlog::info(
+  spdlog::debug(
       "(HLLD_MHD::HLLD_MHD) Initialising HLL Multi-State Solver Class");
   if (eq_nvar < 8) {
     spdlog::error("{}: {}", "#elements!=8, QUIT.", eq_nvar);
@@ -67,7 +67,7 @@ HLLD_MHD::HLLD_MHD(
   HD_FLss = mem.myalloc(HD_FLss, HD_nvar);  // F**
   HD_FRss = mem.myalloc(HD_FRss, HD_nvar);
 
-  spdlog::info("(HLLD_MHD::HLLD_MHD) All set");
+  spdlog::debug("(HLLD_MHD::HLLD_MHD) All set");
 }
 
 // ##################################################################
@@ -77,7 +77,7 @@ HLLD_MHD::HLLD_MHD(
 HLLD_MHD::~HLLD_MHD()
 {
 
-  spdlog::info("(riemann_MHD::riemann_MHD) Commencing Destruction");
+  spdlog::debug("(riemann_MHD::riemann_MHD) Commencing Destruction");
 
   HD_lambda = mem.myfree(HD_lambda);  // wave speeds (one entropy, two Alfvén)
 
@@ -99,7 +99,7 @@ HLLD_MHD::~HLLD_MHD()
   HD_FLss = mem.myfree(HD_FLss);  // F**
   HD_FRss = mem.myfree(HD_FRss);
 
-  spdlog::info("(riemann_MHD::riemann_MHD) Mission Accomplished");
+  spdlog::debug("(riemann_MHD::riemann_MHD) Mission Accomplished");
 }
 
 // ##################################################################

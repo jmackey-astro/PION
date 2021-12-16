@@ -30,9 +30,12 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #include "solver_eqn_mhd_adi.h"
 using namespace std;
@@ -58,7 +61,7 @@ FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(
     riemann_MHD(nv, state, gam), Riemann_Roe_MHD_CV(nv, gam), HLLD_MHD(nv, gam),
     VectorOps_Cart(nd)
 {
-  spdlog::info("::FV_solver_mhd_ideal_adi() constructor");
+  spdlog::debug("::FV_solver_mhd_ideal_adi() constructor");
   // cout <<"::FV_solver_mhd_ideal_adi() gamma = "<<eq_gamma<<"\n";
   max_speed = 0.0;
   negPGct = negROct = 0;
@@ -70,7 +73,7 @@ FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(
 
 FV_solver_mhd_ideal_adi::~FV_solver_mhd_ideal_adi()
 {
-  spdlog::info(
+  spdlog::debug(
       "FV_solver_mhd_ideal_adi::~FV_solver_mhd_ideal_adi() destructor");
 }
 
@@ -521,7 +524,7 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
 
 #ifdef TEST_INF
   if (!isfinite(l_dt) || l_dt <= 0.0) {
-    spdlog::info("cell has invalid timestep");
+    spdlog::debug("cell has invalid timestep");
     CI.print_cell(c);
   }
 #endif
@@ -861,7 +864,7 @@ cyl_FV_solver_mhd_ideal_adi::cyl_FV_solver_mhd_ideal_adi(
 
 cyl_FV_solver_mhd_ideal_adi::~cyl_FV_solver_mhd_ideal_adi()
 {
-  spdlog::info("::~cyl_FV_solver_mhd_ideal_adi");
+  spdlog::debug("::~cyl_FV_solver_mhd_ideal_adi");
 }
 
 // ##################################################################
@@ -1013,7 +1016,7 @@ cyl_FV_solver_mhd_mixedGLM_adi::cyl_FV_solver_mhd_mixedGLM_adi(
 
 cyl_FV_solver_mhd_mixedGLM_adi::~cyl_FV_solver_mhd_mixedGLM_adi()
 {
-  spdlog::info("::~cyl_FV_solver_mhd_mixedGLM_adi");
+  spdlog::debug("::~cyl_FV_solver_mhd_mixedGLM_adi");
 }
 
 // ##################################################################

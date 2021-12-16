@@ -36,7 +36,7 @@ ${mpi} ../icgen-ng \
 ${mpi} ../pion-ng \
   BW_NGcrt3D_NR032_level00_0000.00000000.silo \
   outfile=BW_NGcrt3D_NR032_new omp-nthreads=${nt} \
-  || exit 1
+  redirect=pion-3d-ng-bw-hd || exit 1
 
 REF_FILE=BW_NGcrt3D_NR032_REF_level00_0000.00001020.silo
 NEW_FILE=`ls BW_NGcrt3D_NR032_new_level00_0000.*.silo | tail -n1`

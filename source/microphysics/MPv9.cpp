@@ -35,7 +35,11 @@
 #include "tools/mem_manage.h"
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -56,7 +60,7 @@ MPv9::MPv9(
     kB(GS.kB()),
     m_p(GS.m_p()), nv_prim(nv)
 {
-  spdlog::info("Welcome to MPv9: the low metallicity chemistry solver");
+  spdlog::debug("Welcome to MPv9: the low metallicity chemistry solver");
   //
   // Note this is only called once at the start of the simulation so there is
   // no need to be efficient.
@@ -83,7 +87,7 @@ MPv9::MPv9(
   // Harpreet's module function.  This leaves open the option to have
   // extra passive tracers for other purposes.
   //
-  spdlog::info("\t\tSetting up Tracer Variable");
+  spdlog::debug("\t\tSetting up Tracer Variable");
   get_problem_size(&Yvector_length, &Nspecies);
   Nspecies = Yvector_length - 1;
 
@@ -111,7 +115,7 @@ MPv9::MPv9(
   double T_now = 1.0e3;
   ofstream outf("Kvector.txt");
   if (!outf.is_open()) spdlog::error("{}: {}", "couldn't open outfile", 1);
-  spdlog::info("## Temperature(K) K[0] K[1] ... ");
+  spdlog::debug("## Temperature(K) K[0] K[1] ... ");
   outf.setf(ios_base::scientific);
   outf.precision(3);
   do {
@@ -131,7 +135,7 @@ MPv9::MPv9(
   //
   // All done
   //
-  spdlog::info("MPv9: set up finished. Returning");
+  spdlog::debug("MPv9: set up finished. Returning");
   return;
 }
 

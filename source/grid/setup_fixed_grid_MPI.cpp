@@ -18,9 +18,12 @@
 
 #include "tools/command_line_interface.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #include "grid/uniform_grid_pllel.h"
 #include "raytracing/raytracer_SC.h"
@@ -47,7 +50,7 @@ using namespace std;
 
 setup_fixed_grid_pllel::setup_fixed_grid_pllel()
 {
-  spdlog::info("setup_fixed_grid_pllel constructor");
+  spdlog::debug("setup_fixed_grid_pllel constructor");
 }
 
 // ##################################################################
@@ -55,7 +58,7 @@ setup_fixed_grid_pllel::setup_fixed_grid_pllel()
 
 setup_fixed_grid_pllel::~setup_fixed_grid_pllel()
 {
-  spdlog::info("setup_fixed_grid_pllel destructor");
+  spdlog::debug("setup_fixed_grid_pllel destructor");
 }
 
 // ##################################################################
@@ -66,7 +69,7 @@ int setup_fixed_grid_pllel::setup_grid(
     class SimParams &SimPM             ///< simulation parameters
 )
 {
-  spdlog::info("setup_fixed_grid_pllel: setting up parallel grid");
+  spdlog::debug("setup_fixed_grid_pllel: setting up parallel grid");
 
   class GridBaseClass **grid   = &g[0];
   class Sub_domain *sub_domain = &(SimPM.levels[0].sub_domain);
@@ -121,7 +124,7 @@ int setup_fixed_grid_pllel::setup_grid(
   //
   // Now set up the parallel uniform grid.
   //
-  spdlog::info("(setup_fixed_grid_pllel::setup_grid) Setting up grid..");
+  spdlog::debug("(setup_fixed_grid_pllel::setup_grid) Setting up grid..");
 
   if (SimPM.coord_sys == COORD_CRT) {
     *grid = new UniformGridParallel(
@@ -153,7 +156,7 @@ int setup_fixed_grid_pllel::setup_grid(
         "{}: {}", "(setup_fixed_grid_pllel::setup_grid) Couldn't assign data!",
         fmt::ptr(*grid));
 
-  spdlog::info("(setup_fixed_grid_pllel::setup_grid) Done");
+  spdlog::debug("(setup_fixed_grid_pllel::setup_grid) Done");
   spdlog::debug("grid DX = {0}", (*grid)->DX());
 #ifndef NDEBUG
   dp.grid = (*grid);
@@ -177,7 +180,7 @@ int setup_fixed_grid_pllel::setup_raytracing(
   if (!SimPM.EP.raytracing) {
     return 0;
   }
-  spdlog::info("(pion-mpi)  Setting up raytracing on leve");
+  spdlog::debug("(pion-mpi)  Setting up raytracing on leve");
 
   if (!MP)
     spdlog::error(
@@ -347,7 +350,7 @@ int setup_fixed_grid_pllel::boundary_conditions(
         "{}: Expected {} but got {}", "sfg::boundary_conditions::SetupBCs", 0,
         err);
 
-  spdlog::info("(setup_fixed_grid::boundary_conditions) Done");
+  spdlog::debug("(setup_fixed_grid::boundary_conditions) Done");
   return 0;
 }
 
@@ -361,7 +364,7 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
 )
 {
   string fname = "setup_fixed_grid_pllel::setup_boundary_structs";
-  spdlog::info("PLLEL: Set BC types..");
+  spdlog::debug("PLLEL: Set BC types..");
   //
   // call serial version of setBCtypes, to set up the boundaries
   //
@@ -394,7 +397,7 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
     }
   }
 
-  spdlog::info("PLLEL: BC types and data set up");
+  spdlog::debug("PLLEL: BC types and data set up");
   spdlog::debug(
       "Neighbouring processors: {}",
       par.levels[0].sub_domain.get_neighbour_ranks());

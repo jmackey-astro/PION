@@ -43,8 +43,12 @@ using namespace std;
 
 #include "microphysics/microphysics_base.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #ifdef CODE_EXT_HHE
 #include "future/mpv9_HHe.h"
@@ -65,7 +69,7 @@ int main(int argc, char **argv)
 #endif /* PARALLEL */
 
 #ifdef NDEBUG
-  spdlog::set_level(spdlog::level::err);
+  spdlog::set_level(spdlog::level::info);
   spdlog::flush_on(spdlog::level::err);
 #else
   spdlog::set_level(spdlog::level::trace);

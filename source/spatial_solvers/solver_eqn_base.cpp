@@ -57,10 +57,12 @@
 #include "solver_eqn_base.h"
 #include "tools/mem_manage.h"
 
-
-/* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <fmt/ranges.h>
 
 #ifdef PION_OMP
 #include <omp.h>
@@ -294,7 +296,7 @@ void FV_solver_base::set_interface_tracer_flux(
   if (FV_ntr > 0) {
 #ifdef TEST_INF
     if (!isfinite(flux[eqRHO])) {
-      spdlog::info("FV_solver_base::set_interface_tracer_flux");
+      spdlog::debug("FV_solver_base::set_interface_tracer_flux");
       spdlog::debug("inf flux : {}", flux);
     }
 #endif

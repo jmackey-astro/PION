@@ -29,9 +29,12 @@
 #include "tools/mem_manage.h"
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 using namespace std;
 
@@ -128,7 +131,7 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_onesided(
     diff += fabs(right[i] - left[i]) / (fabs(eq_refvec[i]) + TINYVALUE);
 
   if (diff < 1.e-6) {
-    spdlog::info("same states...");
+    spdlog::debug("same states...");
     for (int v = 0; v < eq_nvar; v++)
       out_pstar[v] = 0.5 * (left[v] + right[v]);
     eqns_mhd_ideal::PtoFlux(left, out_flux, eq_gamma);
@@ -137,7 +140,7 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_onesided(
 
   int err = 0;
 #ifdef RoeMHD_TESTING
-  spdlog::info("\t************");
+  spdlog::debug("\t************");
   spdlog::debug(" left : {}", left);
   spdlog::debug("right : {}", right);
 #endif
@@ -196,7 +199,7 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_symmetric(
 {
   int err = 0;
 #ifdef RoeMHD_TESTING
-  spdlog::info("\t************");
+  spdlog::debug("\t************");
   spdlog::debug(" left : {}", left);
   spdlog::debug("right : {}", right);
 #endif
@@ -276,7 +279,7 @@ void Riemann_Roe_MHD_CV::set_pstar_from_meanp(pion_flt *out_pstar)
   out_pstar[eqPG] = out_pstar[eqRO] * Roe_a * Roe_a / eq_gamma;
 
 #ifdef FUNCTION_ID
-  spdlog::info("Riemann_Roe_MHD_CV::set_pstar_from_meanp ...returning");
+  spdlog::debug("Riemann_Roe_MHD_CV::set_pstar_from_meanp ...returning");
 #endif  // FUNCTION_ID
 }
 
@@ -1049,7 +1052,7 @@ int Riemann_Roe_MHD_CV::calculate_symmetric_flux(
     const pion_flt *left, const pion_flt *right, pion_flt *out_flux)
 {
 #ifdef FUNCTION_ID
-  spdlog::info("Riemann_Roe_MHD_CV::calculate_symmetric_flux ...starting");
+  spdlog::debug("Riemann_Roe_MHD_CV::calculate_symmetric_flux ...starting");
 #endif  // FUNCTION_ID
   //
   // Get the flux by stepping across waves:
@@ -1096,7 +1099,7 @@ int Riemann_Roe_MHD_CV::calculate_symmetric_flux(
     out_flux[v] *= 0.5;
 
 #ifdef FUNCTION_ID
-  spdlog::info("Riemann_Roe_MHD_CV::calculate_symmetric_flux ...returning");
+  spdlog::debug("Riemann_Roe_MHD_CV::calculate_symmetric_flux ...returning");
 #endif  // FUNCTION_ID
 
   return 0;

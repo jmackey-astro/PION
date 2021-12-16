@@ -10,7 +10,11 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 
 #ifndef NDEBUG
@@ -33,12 +37,10 @@ HLL_hydro::HLL_hydro(
     eqns_base(nv),
     eqns_Euler(nv)
 {
-#ifndef NDEBUG
-  spdlog::info("(HLL_hydro::HLL_hydro) Initialising HLL Solver Class");
+  spdlog::debug("(HLL_hydro::HLL_hydro) Initialising HLL Solver Class");
   if (eq_nvar < 5) {
     spdlog::error("{}: {}", "#elements!=5, QUIT.", eq_nvar);
   }
-#endif
 
   HD_lambda = mem.myalloc(HD_lambda, 2);    // wave speeds (only 2 for HLL)
   HD_UL     = mem.myalloc(HD_UL, eq_nvar);  // conserved
@@ -46,7 +48,7 @@ HLL_hydro::HLL_hydro(
   HD_FL     = mem.myalloc(HD_FL, eq_nvar);  // flux
   HD_FR     = mem.myalloc(HD_FR, eq_nvar);
 
-  spdlog::info("(HLL_hydro::HLL_hydro) All set");
+  spdlog::debug("(HLL_hydro::HLL_hydro) All set");
   return;
 }
 
@@ -56,7 +58,7 @@ HLL_hydro::HLL_hydro(
 HLL_hydro::~HLL_hydro()
 {
 
-  spdlog::info("(HLL_hydro::HLL_hydro) Commencing Destruction");
+  spdlog::debug("(HLL_hydro::HLL_hydro) Commencing Destruction");
 
   HD_lambda = mem.myfree(HD_lambda);  // wave speeds (one entropy, two Alfvén)
   HD_UL     = mem.myfree(HD_UL);      // conserved
@@ -64,7 +66,7 @@ HLL_hydro::~HLL_hydro()
   HD_FL     = mem.myfree(HD_FL);  // flux
   HD_FR     = mem.myfree(HD_FR);
 
-  spdlog::info("(riemann_MHD::riemann_MHD) Mission Accomplished");
+  spdlog::debug("(riemann_MHD::riemann_MHD) Mission Accomplished");
 }
 
 // ###################################################################

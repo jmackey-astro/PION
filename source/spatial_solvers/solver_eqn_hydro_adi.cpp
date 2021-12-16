@@ -36,9 +36,12 @@
 #include "solver_eqn_hydro_adi.h"
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 using namespace std;
 
@@ -64,7 +67,7 @@ FV_solver_Hydro_Euler::FV_solver_Hydro_Euler(
     Riemann_Roe_Hydro_PV(nv, gam), Riemann_Roe_Hydro_CV(nv, gam),
     HLL_hydro(nv, gam), VectorOps_Cart(nd)
 {
-  spdlog::info("FV_solver_Hydro_Euler::FV_solver_Hydro_Euler() constructor");
+  spdlog::debug("FV_solver_Hydro_Euler::FV_solver_Hydro_Euler() constructor");
   spdlog::debug(
       "FV_solver_Hydro_Euler::FV_solver_Hydro_Euler() gamma = {}", eq_gamma);
   counter = 1;
@@ -76,7 +79,7 @@ FV_solver_Hydro_Euler::FV_solver_Hydro_Euler(
 
 FV_solver_Hydro_Euler::~FV_solver_Hydro_Euler()
 {
-  spdlog::info("FV_solver_Hydro_Euler::~FV_solver_Hydro_Euler() destructor");
+  spdlog::debug("FV_solver_Hydro_Euler::~FV_solver_Hydro_Euler() destructor");
   return;
 }
 

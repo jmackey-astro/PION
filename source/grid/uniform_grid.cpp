@@ -109,9 +109,12 @@
 #include "grid/uniform_grid.h"
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #include <fstream>
 using namespace std;
@@ -205,7 +208,7 @@ UniformGrid::UniformGrid(
   }
 
   spdlog::debug("MIN.MAX for x = {}\t{}", G_xmin[XX], G_xmax[XX]);
-  spdlog::info("Setting cell size..");
+  spdlog::debug("Setting cell size..");
 
   //
   // Checks grid dimensions and discretisation is reasonable,
@@ -232,12 +235,12 @@ UniformGrid::UniformGrid(
   // Now create the first cell, and then allocate data from there.
   // Safe to assume we have at least one cell...
   //
-  spdlog::info("... done. Initialising first cell...");
+  spdlog::debug("... done. Initialising first cell...");
 
   G_fpt_all     = CI.new_cell();
   G_fpt_all->id = 0;
 
-  spdlog::info(" done");
+  spdlog::debug(" done");
 
   if (G_fpt_all == 0) {
     spdlog::error(
@@ -247,7 +250,7 @@ UniformGrid::UniformGrid(
 
   // allocate memory for all cells, including boundary cells.
 
-  spdlog::info("allocating memory for grid");
+  spdlog::debug("allocating memory for grid");
 
   int err = allocate_grid_data();
   if (err != 0)
@@ -255,7 +258,7 @@ UniformGrid::UniformGrid(
 
   // assign grid structure on cells, setting positions and ngb
   // pointers.
-  spdlog::info("assigning pointers to neighbours");
+  spdlog::debug("assigning pointers to neighbours");
 
   err += assign_grid_structure();
   if (err != 0)
@@ -343,7 +346,7 @@ UniformGrid::UniformGrid(
   spdlog::debug("Cartesian grid: dr={}", G_dx);
   RT = 0;
 
-  spdlog::info("UniformGrid Constructor done");
+  spdlog::debug("UniformGrid Constructor done");
 }  // UniformGrid Constructor
 
 
@@ -392,7 +395,7 @@ UniformGrid::~UniformGrid()
 
   BC_deleteBoundaryData();
 
-  spdlog::info("UniformGrid Destructor:\tdone");
+  spdlog::debug("UniformGrid Destructor:\tdone");
 }  // Destructor
 
 
@@ -456,7 +459,7 @@ int UniformGrid::allocate_grid_data()
   c->npt_all = 0;
   G_lpt_all  = c;
 #endif  // NEWGRIDDATA
-  spdlog::info("Finished Allocating Data");
+  spdlog::debug("Finished Allocating Data");
   return 0;
 }  // allocate_grid_data
 
@@ -472,7 +475,7 @@ int UniformGrid::allocate_grid_data()
 
 int UniformGrid::assign_grid_structure()
 {
-  spdlog::info("AssignGridStructure");
+  spdlog::debug("AssignGridStructure");
 
   /// \section Structure
   /// There is a base grid, Nx,Ny,Nz elements, which is
@@ -823,7 +826,7 @@ int UniformGrid::set_cell_size()
   // Uniform Cartesian grid, with cells that have the same length in
   // each direction, so this is very easy...
   //
-  spdlog::info("Setting G_dx=constant for all cells");
+  spdlog::debug("Setting G_dx=constant for all cells");
 
   G_dx = G_range[0] / (G_ng[0]);
 
@@ -973,7 +976,7 @@ class cell *UniformGrid::PrevPt(const class cell *p, enum direction dir)
   ///
   enum direction opp = OppDir(dir);
   // This is going to be very inefficient...
-  spdlog::info(
+  spdlog::debug(
       "This function is very inefficient and probably shouldn't be used");
   return (p->ngb[opp]);
 }
@@ -1214,7 +1217,7 @@ void UniformGrid::BC_deleteBoundaryData(boundary_data *b)
 
   list<cell *>::iterator i = b->data.begin();
   if (b->data.empty()) {
-    spdlog::info("BC destructor: No boundary cells to delete");
+    spdlog::debug("BC destructor: No boundary cells to delete");
   }
   else {
     do {
@@ -1275,7 +1278,7 @@ void UniformGrid::BC_deleteBoundaryData(boundary_data *b)
 
 void UniformGrid::BC_deleteBoundaryData()
 {
-  spdlog::info("BC destructor: deleting Boundary data..");
+  spdlog::debug("BC destructor: deleting Boundary data..");
   struct boundary_data *b;
   for (unsigned int ibd = 0; ibd < BC_bd.size(); ibd++) {
     b = BC_bd[ibd];
@@ -1394,8 +1397,8 @@ double UniformGrid::idistance_cell2cell(
 // geometry).  Here both input and output are physical units.
 //
 double UniformGrid::distance_vertex2cell(
-    const double *v,  ///< vertex (physical)
-    const cell *c     ///< cell
+    const std::array<double, MAX_DIM> &v,  ///< vertex (physical)
+    const cell *c                          ///< cell
 )
 {
   double temp = 0.0;
@@ -1438,8 +1441,8 @@ double UniformGrid::difference_vertex2cell(
 // geometry).  Here both input and output are code-integer units.
 //
 double UniformGrid::idistance_vertex2cell(
-    const int *v,  ///< vertex (integer)
-    const cell *c  ///< cell
+    const std::array<int, MAX_DIM> &v,  ///< vertex (integer)
+    const cell *c                       ///< cell
 )
 {
   double temp = 0.0;
@@ -1569,7 +1572,7 @@ uniform_grid_cyl::uniform_grid_cyl(
 
 uniform_grid_cyl::~uniform_grid_cyl()
 {
-  spdlog::info("uniform_grid_cyl destructor. Present and correct");
+  spdlog::debug("uniform_grid_cyl destructor. Present and correct");
 }
 
 
@@ -1693,8 +1696,8 @@ double uniform_grid_cyl::idistance_cell2cell(
 
 
 double uniform_grid_cyl::distance_vertex2cell(
-    const double *v,  ///< vertex (physical)
-    const cell *c     ///< cell
+    const std::array<double, MAX_DIM> &v,  ///< vertex (physical)
+    const cell *c                          ///< cell
 )
 {
   //
@@ -1742,8 +1745,8 @@ double uniform_grid_cyl::difference_vertex2cell(
 
 
 double uniform_grid_cyl::idistance_vertex2cell(
-    const int *v,  ///< vertex (integer)
-    const cell *c  ///< cell
+    const std::array<int, MAX_DIM> &v,  ///< vertex (integer)
+    const cell *c                       ///< cell
 )
 {
   //
@@ -1874,7 +1877,7 @@ uniform_grid_sph::uniform_grid_sph(
 
 uniform_grid_sph::~uniform_grid_sph()
 {
-  spdlog::info("uniform_grid_sph destructor. Present and correct");
+  spdlog::debug("uniform_grid_sph destructor. Present and correct");
 }
 
 
@@ -1965,8 +1968,8 @@ double uniform_grid_sph::idistance_cell2cell(
 
 
 double uniform_grid_sph::distance_vertex2cell(
-    const double *v,  ///< vertex (physical)
-    const cell *c     ///< cell
+    const std::array<double, MAX_DIM> &v,  ///< vertex (physical)
+    const cell *c                          ///< cell
 )
 {
   return fabs(v[Rsph] - R_com(c, G_dx));
@@ -2002,8 +2005,8 @@ double uniform_grid_sph::difference_vertex2cell(
 
 
 double uniform_grid_sph::idistance_vertex2cell(
-    const int *v,  ///< vertex (integer)
-    const cell *c  ///< cell
+    const std::array<int, MAX_DIM> &v,  ///< vertex (integer)
+    const cell *c                       ///< cell
 )
 {
   return fabs(static_cast<double>(v[Rsph]) - iR_cov(c));

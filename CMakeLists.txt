@@ -186,8 +186,17 @@ if(NOT PION_SKIP_SOURCE)
         include_directories(${OpenMP_CXX_INCLUDE_DIR})
     endif(PION_OMP)
 
+    find_package(fmt REQUIRED)
     find_package(spdlog REQUIRED)
-    include_directories(${SPDLOG_INCLUDE_DIRS})
+
+    add_definitions("-DSPDLOG_FMT_EXTERNAL")
+    add_definitions("-DSPDLOG_COMPILED_LIB")
+
+    if (${spdlog_VERSION_MAJOR} GREATER_EQUAL 1)
+        if (${spdlog_VERSION_MINOR} GREATER_EQUAL 6)
+            add_definitions("-DSPDLOG_FWD")
+        endif (${spdlog_VERSION_MINOR} GREATER_EQUAL 6)
+    endif (${spdlog_VERSION_MAJOR} GREATER_EQUAL 1)
 
     #
     # Include optional subdirectories

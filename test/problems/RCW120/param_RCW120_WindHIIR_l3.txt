@@ -76,7 +76,7 @@ NG_refine_ZZ 1
 # Type of Boundary Condition
 BC_XN outflow
 BC_XP inflow
-BC_YN reflecting
+BC_YN axisymmetric
 BC_YP outflow
 BC_Ninternal 1
 BC_INTERNAL_000 stellar-wind
@@ -169,6 +169,9 @@ WIND_NSRC 1
 WIND_0_pos0         0.0e18
 WIND_0_pos1         0.0e18
 WIND_0_pos2         0.0e18
+WIND_0_velocity0    0.0
+WIND_0_velocity1    0.0
+WIND_0_velocity2    0.0
 WIND_0_radius       1.2055e17
 WIND_0_type         0
 WIND_0_mdot         1.55e-7

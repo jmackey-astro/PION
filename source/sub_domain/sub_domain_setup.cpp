@@ -14,9 +14,12 @@
 #include <tools/command_line_interface.h>
 #include <tools/mem_manage.h>
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #include "sub_domain.h"
 
@@ -83,7 +86,7 @@ Sub_domain::~Sub_domain()
   --m_count;
 
 #ifndef NDEBUG
-  spdlog::info("Sub_domain Destructor: done");
+  spdlog::debug("Sub_domain Destructor: done");
 #endif
 }
 
@@ -124,7 +127,7 @@ int Sub_domain::decomposeDomain(
 )
 {
 #ifndef NDEBUG
-  spdlog::info(
+  spdlog::debug(
       "---Sub_domain::decomposeDomain() decomposing domain.  Nproc={}, myrank={}",
       nproc, myrank);
 #endif
@@ -188,7 +191,7 @@ int Sub_domain::decomposeDomain(
         Xmin[i], Xmax[i], neighbour_ranks[2 * i], neighbour_ranks[2 * i + 1],
         coordinates[i]);
   }
-  spdlog::info("---Sub_domain::decomposeDomain() Domain decomposition done");
+  spdlog::debug("---Sub_domain::decomposeDomain() Domain decomposition done");
 #endif
   return 0;
 }
@@ -560,7 +563,7 @@ void Sub_domain::set_NG_hierarchy(
 )
 {
 #ifndef NDEBUG
-  spdlog::info("Setting up NG hierarchy (Sub_domain) on level {}", l);
+  spdlog::debug("Setting up NG hierarchy (Sub_domain) on level {}", l);
   ;
 #endif
   // set rank of parent for each grid except root level 0

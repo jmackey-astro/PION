@@ -9,9 +9,12 @@
 #include "tools/mem_manage.h"
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -319,13 +322,8 @@ int IC_shock_cloud::setup_data(
     spdlog::error("{}: {}", "Don't know what Initial Condition is!", ics);
 
   // set cloud centre
-  IC_shock_cloud::shockpos    = SimPM->Xmin[XX] + SimPM->Range[XX] / 8.0;
-  IC_shock_cloud::cloudcentre = 0;
-  cloudcentre                 = new double[ndim];
-  if (!cloudcentre)
-    spdlog::error("{}: {}", "cloud centre malloc", fmt::ptr(cloudcentre));
-  cloudcentre[XX] = shockpos + 2.0 * clrad;
-  ;
+  IC_shock_cloud::shockpos = SimPM->Xmin[XX] + SimPM->Range[XX] / 8.0;
+  cloudcentre[XX]          = shockpos + 2.0 * clrad;
   if (coords == COORD_CRT) {
     // cartesian coords, so centre cloud accordingly.
     cloudcentre[YY] = SimPM->Xmin[YY] + SimPM->Range[YY] / 2.0;
@@ -380,7 +378,7 @@ int IC_shock_cloud::setup_shockcloud()
     nsub = 100;
   else
     nsub = 32;
-  class inside_sphere stest(cloudcentre, clrad, SimPM->dx, nsub, ndim);
+  class inside_sphere stest(cloudcentre.data(), clrad, SimPM->dx, nsub, ndim);
 
   spdlog::info("\t\tAssigning primitive vectors");
   double vfrac = 0.0;

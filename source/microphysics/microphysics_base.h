@@ -356,8 +356,4 @@ protected:
   int ntracer;  ///< number of tracer variables
 };
 
-///
-/// Global pointer to the microphysics class.
-///
-
 #endif  // MICROPHYSICS_BASE_H

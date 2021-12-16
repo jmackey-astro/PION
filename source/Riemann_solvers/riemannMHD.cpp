@@ -35,9 +35,12 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #include "riemannMHD.h"
 using namespace std;
@@ -76,7 +79,7 @@ riemann_MHD::riemann_MHD(
     eqns_mhd_ideal(nv)
 {
 #ifdef RS_TESTING
-  spdlog::info("(riemann_MHD::riemann_MHD) Initialising Riemann Solver Class");
+  spdlog::debug("(riemann_MHD::riemann_MHD) Initialising Riemann Solver Class");
   if (eq_nvar < 8) {
     spdlog::error(
         "{}: {}",
@@ -108,7 +111,7 @@ riemann_MHD::riemann_MHD(
   }
   for (int v = 0; v < eq_nvar; v++)
     eq_refvec[v] = RS_pstar[v] = RS_left[v] = RS_right[v] = RS_meanp[v] = 0.0;
-  spdlog::info(" Done");
+  spdlog::debug(" Done");
 
   onaxis = offaxis = 0;
   samestate        = 0;
@@ -121,7 +124,7 @@ riemann_MHD::riemann_MHD(
 
   SetAvgState(state, eq_gamma);
 
-  spdlog::info("(riemann_MHD::riemann_MHD) Finished Setup");
+  spdlog::debug("(riemann_MHD::riemann_MHD) Finished Setup");
 }
 
 // ##################################################################
@@ -130,7 +133,7 @@ riemann_MHD::riemann_MHD(
 // Destructor.
 riemann_MHD::~riemann_MHD()
 {
-  spdlog::info("(riemann_MHD::riemann_MHD) Class Destructing!!!");
+  spdlog::debug("(riemann_MHD::riemann_MHD) Class Destructing!!!");
   spdlog::debug("\t Failed Tests: OnAxis: {} and OffAxis: {}", onaxis, offaxis);
 }
 
@@ -343,7 +346,7 @@ int riemann_MHD::JMs_riemann_solve(
       break;  // END CASE MODE=1
 
     default:
-      spdlog::info("MODE not known.  Only know 1.  Please enter a valid mode");
+      spdlog::debug("MODE not known.  Only know 1.  Please enter a valid mode");
       spdlog::error("{}: {}", "Bad solve mode in riemann_MHD", mode);
   }
 

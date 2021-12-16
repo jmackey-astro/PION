@@ -26,7 +26,11 @@
 #include "tools/mem_manage.h"
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -54,7 +58,7 @@ MPv5::MPv5(
     MPv3(nd, csys, nv, ntr, tracers, ephys, rsrcs, g)
 {
 #ifndef NDEBUG
-  spdlog::info("MPv5 constructor setting up");
+  spdlog::debug("MPv5 constructor setting up");
 #endif
   return;
 }
@@ -65,7 +69,7 @@ MPv5::MPv5(
 MPv5::~MPv5()
 {
 #ifndef NDEBUG
-  spdlog::info("MPv5 destructor");
+  spdlog::debug("MPv5 destructor");
 #endif
   return;
 }

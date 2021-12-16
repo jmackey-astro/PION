@@ -17,9 +17,12 @@
 
 #include "grid/setup_NG_grid.h"
 #include "grid/uniform_grid.h"
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #include "spatial_solvers/solver_eqn_hydro_adi.h"
 #include "spatial_solvers/solver_eqn_mhd_adi.h"
@@ -73,7 +76,7 @@ void setup_NG_grid::setup_NG_grid_levels(
     class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
-  spdlog::info("(pion-ng)  Setting up nested grid parameters");
+  spdlog::debug("(pion-ng)  Setting up nested grid parameters");
   // first make sure that NG_centre[] is oriented such that an
   // oct-tree structure works.  Centre should be xmin + i/4 of the
   // full domain, where i is in [0,4]
@@ -400,7 +403,7 @@ int setup_NG_grid::setup_boundary_structs(
     const int l                 ///< level in NG grid
 )
 {
-  spdlog::info("Set BC types...");
+  spdlog::debug("Set BC types...");
 
   // first call fixed grid version
   int err = setup_fixed_grid::setup_boundary_structs(par, grid, l);
@@ -477,7 +480,7 @@ int setup_NG_grid::setup_boundary_structs(
         grid->BC_bd[grid->BC_bd.size() - 1]->NGrecvF2C[0].size());
   }
 
-  spdlog::info("BC structs set up");
+  spdlog::debug("BC structs set up");
   return 0;
 }
 

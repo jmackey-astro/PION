@@ -18,7 +18,11 @@
 #include "tools/mem_manage.h"
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #include "microphysics/microphysics_base.h"
 
@@ -869,7 +873,7 @@ int setup_fixed_grid::setup_boundary_structs(
     class GridBaseClass *grid,  ///< pointer to grid.
     const int)
 {
-  spdlog::info("Set BC types...");
+  spdlog::debug("Set BC types...");
 
   // Set number of boundaries: 2 for each dimension, plus internal.
   int len = 2 * par.ndim + par.BC_Nint;
@@ -886,7 +890,7 @@ int setup_fixed_grid::setup_boundary_structs(
   else {
     // assume this has already been called so quit (happens for
     // MPI Nested Grid algorithm)
-    spdlog::info("already set up boundaries, so returning here");
+    spdlog::debug("already set up boundaries, so returning here");
     return 0;
   }
 

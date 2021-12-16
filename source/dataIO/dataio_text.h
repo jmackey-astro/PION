@@ -14,7 +14,11 @@
 
 #include "dataio_base.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 ///
 /// The Text dataio class.  Note this is only intended for 1d and 2d test

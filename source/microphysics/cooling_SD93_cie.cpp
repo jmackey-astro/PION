@@ -84,7 +84,7 @@ void cooling_function_SD93CIE::setup_SD93_cie()
         1);
   }
 #ifdef DEBUG_COOL
-  spdlog::info(
+  spdlog::debug(
       "\t\t----------------------------------------------------\n\t\tSetting up Sutherland & Dopita (1993, ApJS, 88, 253) CIE cooling function\n\t\tfrom file m-00.cie from http://www.mso.anu.edu.au/~ralph/data/cool/");
 #endif
 
@@ -159,7 +159,7 @@ void cooling_function_SD93CIE::setup_SD93_cie()
 
   have_set_cooling = true;
 #ifdef DEBUG_COOL
-  spdlog::info("\t\t----------------------------------------------------");
+  spdlog::debug("\t\t----------------------------------------------------");
 #endif
 #ifndef NDEBUG
   ofstream outf("cooling_SD93_cie_solar.txt");
@@ -193,7 +193,7 @@ void cooling_function_SD93CIE::setup_SD93_cie_OnlyMetals()
         1);
   }
 #ifdef DEBUG_COOL
-  spdlog::info(
+  spdlog::debug(
       "\t\t----------------------------------------------------\n\t\tSetting up Sutherland & Dopita (1993, ApJS, 88, 253) CIE cooling function\n\t\tfrom file m-00.cie from http://www.mso.anu.edu.au/~ralph/data/cool/\n\t\tand file mzero.cie from http://www.mso.anu.edu.au/~ralph/data/cool/\n");
 #endif
 
@@ -283,7 +283,7 @@ void cooling_function_SD93CIE::setup_SD93_cie_OnlyMetals()
   outf.close();
 #endif  // NDEBUG
 #ifdef DEBUG_COOL
-  spdlog::info("\t\t----------------------------------------------------");
+  spdlog::debug("\t\t----------------------------------------------------");
 #endif
   return;
 }
@@ -304,7 +304,7 @@ void cooling_function_SD93CIE::setup_SD93_cie_MetalFree()
         1);
   }
 #ifdef DEBUG_COOL
-  spdlog::info(
+  spdlog::debug(
       "\t\t----------------------------------------------------\n\t\tSetting up Sutherland&Dopita(1993,ApJS,88,253) METAL-FREE-CIE cooling function\n\t\tfrom file m-zero.cie from http://www.mso.anu.edu.au/~ralph/data/cool/\n");
 #endif
 
@@ -382,7 +382,7 @@ void cooling_function_SD93CIE::setup_SD93_cie_MetalFree()
   have_set_cooling = true;
 
 #ifdef DEBUG_COOL
-  spdlog::info("\t\t----------------------------------------------------");
+  spdlog::debug("\t\t----------------------------------------------------");
 #endif
 #ifndef NDEBUG
   ofstream outf("cooling_SD93_cie_metalfree.txt");
@@ -420,7 +420,7 @@ void cooling_function_SD93CIE::setup_WSS09_CIE_OnlyMetals()
         1);
   }
 #ifdef DEBUG_COOL
-  spdlog::info(
+  spdlog::debug(
       "\t\t----------------------------------------------------\n\t\tSetting up  Wiersma et al. (2009,MNRAS,393,99) CIE cooling function\n\t\tMETALS-ONLY CURVE, resampled onto a 91 point cubic spline interpolation.\n\t\tFile from file http://www.strw.leidenuniv.nl/WSS08/z_collis.txt\n");
 #endif
 
@@ -516,7 +516,7 @@ void cooling_function_SD93CIE::setup_WSS09_CIE_OnlyMetals()
   outf.close();
 #endif  // NDEBUG
 #ifdef DEBUG_COOL
-  spdlog::info("\t\t----------------------------------------------------");
+  spdlog::debug("\t\t----------------------------------------------------");
 #endif
   return;
 }
@@ -541,7 +541,7 @@ void cooling_function_SD93CIE::setup_WSS09_CIE()
         1);
   }
 #ifdef DEBUG_COOL
-  spdlog::info(
+  spdlog::debug(
       "\t\t----------------------------------------------------\t\tSetting up  Wiersma et al. (2009,MNRAS,393,99) CIE cooling function\n\t\tTOTAL COOLING CURVE, resampled onto a 91 point cubic spline interpolation.\n\t\tFile from file http://www.strw.leidenuniv.nl/WSS08/z_collis.txt\n");
 #endif
 
@@ -637,7 +637,7 @@ void cooling_function_SD93CIE::setup_WSS09_CIE()
   outf.close();
 #endif  // NDEBUG
 #ifdef DEBUG_COOL
-  spdlog::info("\t\t----------------------------------------------------");
+  spdlog::debug("\t\t----------------------------------------------------");
 #endif
   return;
 }

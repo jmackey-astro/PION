@@ -31,7 +31,7 @@ script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 
 EPOCH_FILE=${script_dir}/data/3DTest_adi_ng_level00_0000.00007808.silo
 ${mpi} ../pion-ng \
- ${EPOCH_FILE} outfile=3DTest_adi_ng_new \
+ ${EPOCH_FILE} outfile=3DTest_adi_ng_new redirect=pion-3d-ng-adi \
  opfreq=1024 omp-nthreads=${nt} || exit 1
 
 REF_FILE=3DTest_adi_ng_level00_0000.00008852.silo

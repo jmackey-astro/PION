@@ -27,7 +27,7 @@
 #include <sstream>
 
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 // ##################################################################
 // ##################################################################

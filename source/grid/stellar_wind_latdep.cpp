@@ -12,9 +12,12 @@
 #include "tools/interpolate.h"
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -331,8 +334,8 @@ void stellar_wind_latdep::set_wind_cell_reference_state(
     wc->p[PG] *= pconst.pow_fast(wc->p[RO], eos_gamma);
   }
 
-  cell *c = wc->c;
-  double x, y, z, xf, yf;
+  cell *c  = wc->c;
+  double x = 0.0, y = 0.0, z = 0.0, xf = 0.0, yf = 0.0;
   switch (ndim) {
     case 1:
       x = grid->difference_vertex2cell(WP->dpos, c, XX);
@@ -772,7 +775,7 @@ void stellar_wind_latdep::update_source(
     spdlog::debug(
         "stellar_wind_latdep::update_source() activating source id={} at Simulation time t=",
         wp->id, t_now);
-    spdlog::debug("Source position : {}", wpos);
+    // spdlog::debug("Source position : {}", wpos);
     wd->is_active = true;
   }
 

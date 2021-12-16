@@ -33,9 +33,12 @@
 #include "tools/mem_manage.h"
 
 #include <sim_params.h>
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -109,9 +112,9 @@ mp_only_cooling::mp_only_cooling(
       setup_WSS09_CIE();
       break;
     case WSS09_CIE_LINE_HEAT_COOL:
-      spdlog::info("\tRequested fully ionized gas with WSS09 cooling at high"
-                   " temperatures,\n\tand photoionized gas at nebular"
-                   " temperatures, with T_eq approx 8000 K.");
+      spdlog::debug("\tRequested fully ionized gas with WSS09 cooling at high"
+                    " temperatures,\n\tand photoionized gas at nebular"
+                    " temperatures, with T_eq approx 8000 K.");
       setup_WSS09_CIE_OnlyMetals();
       break;
     default:

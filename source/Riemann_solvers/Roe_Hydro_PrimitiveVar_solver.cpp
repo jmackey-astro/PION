@@ -22,9 +22,12 @@
 
 #include "Roe_Hydro_PrimitiveVar_solver.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 using namespace std;
 
@@ -35,18 +38,18 @@ Riemann_Roe_Hydro_PV::Riemann_Roe_Hydro_PV(
     eqns_base(nv),
     eqns_Euler(nv), rs_nvar(5)
 {
-  spdlog::info("Riemann_Roe_Hydro_PV::Riemann_Roe_Hydro_PV ...starting");
+  spdlog::debug("Riemann_Roe_Hydro_PV::Riemann_Roe_Hydro_PV ...starting");
   //
   // eq_gamma, eq_nvar are defined in eqns_base class
   //
   eq_gamma = g;
-  spdlog::info("Riemann_Roe_Hydro_PV::Riemann_Roe_Hydro_PV ...returning");
+  spdlog::debug("Riemann_Roe_Hydro_PV::Riemann_Roe_Hydro_PV ...returning");
 }
 
 Riemann_Roe_Hydro_PV::~Riemann_Roe_Hydro_PV()
 {
-  spdlog::info("Riemann_Roe_Hydro_PV::~Riemann_Roe_Hydro_PV ...starting"
-               "Riemann_Roe_Hydro_PV::~Riemann_Roe_Hydro_PV ...returning");
+  spdlog::debug("Riemann_Roe_Hydro_PV::~Riemann_Roe_Hydro_PV ...starting"
+                "Riemann_Roe_Hydro_PV::~Riemann_Roe_Hydro_PV ...returning");
 }
 
 int Riemann_Roe_Hydro_PV::Roe_prim_var_solver(
@@ -55,7 +58,7 @@ int Riemann_Roe_Hydro_PV::Roe_prim_var_solver(
     const double rpv_g,
     pion_flt *rpv_pstar)
 {
-  spdlog::info("Riemann_Roe_Hydro_PV::Roe_prim_var_solver ...starting");
+  spdlog::debug("Riemann_Roe_Hydro_PV::Roe_prim_var_solver ...starting");
   int err = 0;
 
   //
@@ -194,6 +197,6 @@ int Riemann_Roe_Hydro_PV::Roe_prim_var_solver(
   //
   // Now we are finished, so return 0 for success.
   //
-  spdlog::info("Riemann_Roe_Hydro_PV::Roe_prim_var_solver ...returning");
+  spdlog::debug("Riemann_Roe_Hydro_PV::Roe_prim_var_solver ...returning");
   return err;
 }

@@ -40,9 +40,12 @@
 #include "tools/mem_manage.h"
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 using namespace std;
 
@@ -194,7 +197,7 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric(
   //  }
 
   if (fabs(out_flux[1]) > 1.0e50) {
-    spdlog::info("Very big Energy Flux!");
+    spdlog::debug("Very big Energy Flux!");
     spdlog::debug("\tleft : {}", left);
     spdlog::debug("\tright : {}", right);
     spdlog::debug("\tRCV_meanp : {}", RCV_meanp);
@@ -245,7 +248,7 @@ int Riemann_Roe_Hydro_CV::test_left_right_equality(
           / (fabs(right[eqVZ]) + fabs(left[eqVZ]) + SMALLVALUE);
 
   if (diff < 1.e-6) {
-    spdlog::info("same states...");
+    spdlog::debug("same states...");
     return 1;
   }
 
@@ -557,7 +560,7 @@ void Riemann_Roe_Hydro_CV::calculate_asymmetric_flux(
       }
       spdlog::debug("]");
     }
-    spdlog::info(
+    spdlog::debug(
         "*** FLUX CALCULATION ERROR IN flux_solver_hydro_adi::Roe_flux_solver()");
   }  // if large difference
 

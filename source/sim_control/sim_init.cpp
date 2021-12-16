@@ -17,7 +17,11 @@
 #include "tools/command_line_interface.h"
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_SC.h"
@@ -43,7 +47,7 @@ using namespace std;
 sim_init::sim_init()
 {
 #ifndef NDEBUG
-  spdlog::info("(sim_init::Constructor)");
+  spdlog::debug("(sim_init::Constructor)");
 #endif
   SimPM.checkpoint_freq = INT_MAX;
   max_walltime          = 1.0e100;
@@ -56,7 +60,7 @@ sim_init::sim_init()
 sim_init::~sim_init()
 {
 #ifndef NDEBUG
-  spdlog::info("(sim_init::Destructor)");
+  spdlog::debug("(sim_init::Destructor)");
 #endif
   if (dataio) {
     delete dataio;
@@ -101,8 +105,8 @@ void sim_init::print_command_line_options(int argc, char **argv)
   std::stringstream invocation;
   for (int v = 0; v < argc; v++)
     invocation << argv[v] << " ";
-  spdlog::debug(
-      "{}\n      ************************         \n{}: must call with at least 1 argument...\n <main> <icfile> [optional args]\nParameters:\n<icfile> \n\tCan be an ASCII parameter-file for 1D and 2D shocktubes.\n\tOtherwise should be a restart-file in FITS or Silo format.\n\n[optional args] are in the format <name>=<value> with no spaces.\n\n\n*********** DATA I/O OPTIONS ************\n\t op_criterion=N  : 0=output every I steps, 1=output every D time units.\n\t opfreq=N        : Save snapshot every Nth timestep  (if op_criterion=0).\n\t opfreq_time=D   : Save snapshot every Dth time unit (if op_criterion=1).\n\t finishtime=D    : set time to finish simulation, in code time units.\n\t optype=S        : Specify type of output file, [1,text]=TEXT,[2,fits]=FITS,[4,both]=FITS+TEXT,[5,silo]=SILO,[6]=SILO+TEXT.\n\t outfile=NAME    : Replacement snapshot filename, with path.\n\n*********** PHYSICS/Grid OPTIONS *************\n\t ooa=N         : modify order of accuracy (either 1 or 2).\n\t AVtype=N      : modify type of artificial viscosity: 0=none, 1=Falle,Komissarov,Joarder(1998), 3=Sanders et al.(1998)[H-correction], 4=both 1+3.\n\t EtaVisc=D     : modify viscosity parameter to the given double precision value.\n\t cfl=D         : change the CFL no. for the simulation, in range (0,1).\n\t cooling=N     : cooling=0 for no cooling, >0 for different prescriptions.\t solver=N      :\n\t\t 0 = Lax-Friedrichs Flux\n\t\t 1 = Linear Riemann Solver : HD/MHD (Falle, Komissarov, Joarder, 1998),\n\t\t 2 = Exact Riemann Solver  : HD (Hirsch (199X), Toro, 1999)\n\t\t 3 = Hybrid Riemann Solver (1+2)         : HD \n\t\t 4 = Roe Conserved Variables flux solver : HD/MHD (e.g. Toro, 1999, Stone, Gardiner et al. 2008)\n\t\t 5 = Roe Primitive Variables flux solver : HD (e.g. Stone, Gardiner et al. 2008)\n\t\t 6 = Flux vector splitting : HD only (van Leer, 1982) \n\t\t 7 = HLLD solver : MHD only \n\t\t 8 = HLL  solver : HD/MHD \n\n*********** PARALLEL CODE ONLY *************\n\t maxwalltime=D : change the max. runtime to D in hours.\n\n\n*********** NESTED GRID CODE ONLY *************\n\t nlevels=N     : modify number of levels in NG grid.\n\t wind_radius_N=D : change radius of boundary for wind source N to value D (in cm)\n\n     *********************************************\n\n",
+  spdlog::info(
+      "{}\n      ************************         \n{}: must call with at least 1 argument...\n <main> <icfile> [optional args]\nParameters:\n<icfile> \n\tCan be an ASCII parameter-file for 1D and 2D shocktubes.\n\tOtherwise should be a restart-file in FITS or Silo format.\n\n[optional args] are in the format <name>=<value> with no spaces.\n\n\n*********** DATA I/O OPTIONS ************\n\t redirect=string : filename with path to redirect stdout/stderr to\n\t op_criterion=N  : 0=output every I steps, 1=output every D time units.\n\t opfreq=N        : Save snapshot every Nth timestep  (if op_criterion=0).\n\t opfreq_time=D   : Save snapshot every Dth time unit (if op_criterion=1).\n\t finishtime=D    : set time to finish simulation, in code time units.\n\t optype=S        : Specify type of output file, [1,text]=TEXT,[2,fits]=FITS,[4,both]=FITS+TEXT,[5,silo]=SILO,[6]=SILO+TEXT.\n\t outfile=NAME    : Replacement snapshot filename, with path.\n\n*********** PHYSICS/Grid OPTIONS *************\n\t ooa=N         : modify order of accuracy (either 1 or 2).\n\t AVtype=N      : modify type of artificial viscosity: 0=none, 1=Falle,Komissarov,Joarder(1998), 3=Sanders et al.(1998)[H-correction], 4=both 1+3.\n\t EtaVisc=D     : modify viscosity parameter to the given double precision value.\n\t cfl=D         : change the CFL no. for the simulation, in range (0,1).\n\t cooling=N     : cooling=0 for no cooling, >0 for different prescriptions.\t solver=N      :\n\t\t 0 = Lax-Friedrichs Flux\n\t\t 1 = Linear Riemann Solver : HD/MHD (Falle, Komissarov, Joarder, 1998),\n\t\t 2 = Exact Riemann Solver  : HD (Hirsch (199X), Toro, 1999)\n\t\t 3 = Hybrid Riemann Solver (1+2)         : HD \n\t\t 4 = Roe Conserved Variables flux solver : HD/MHD (e.g. Toro, 1999, Stone, Gardiner et al. 2008)\n\t\t 5 = Roe Primitive Variables flux solver : HD (e.g. Stone, Gardiner et al. 2008)\n\t\t 6 = Flux vector splitting : HD only (van Leer, 1982) \n\t\t 7 = HLLD solver : MHD only \n\t\t 8 = HLL  solver : HD/MHD \n\n*********** PARALLEL CODE ONLY *************\n\t maxwalltime=D : change the max. runtime to D in hours.\n\n\n*********** NESTED GRID CODE ONLY *************\n\t nlevels=N     : modify number of levels in NG grid.\n\t wind_radius_N=D : change radius of boundary for wind source N to value D (in cm)\n\n     *********************************************\n\n",
       invocation.get(), argv[0]);
 }
 
@@ -210,7 +214,7 @@ int sim_init::Init(
   //
   if (SimPM.eqntype == EQGLM && SimPM.timestep == 0) {
 #ifndef NDEBUG
-    spdlog::info("Initial state, zero-ing glm variable.");
+    spdlog::debug("Initial state, zero-ing glm variable.");
 #endif
     c = grid[0]->FirstPt();
     do {
@@ -336,7 +340,7 @@ int sim_init::override_params(int narg, string *args)
       int tmp     = SimPM.spOOA;
       SimPM.spOOA = atoi((args[i].substr(4)).c_str());
       SimPM.tmOOA = SimPM.spOOA;
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: Resetting OOA from ooa={} to command-line value = {}",
           tmp, SimPM.spOOA);
     }
@@ -345,13 +349,13 @@ int sim_init::override_params(int narg, string *args)
       // Assign number of grid levels;  string is 'nlevels=N', where N>=1.
       int tmp            = SimPM.grid_nlevels;
       SimPM.grid_nlevels = atoi((args[i].substr(8)).c_str());
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: Resetting nlevels from nlevels={} to command-line value = {}",
           tmp, SimPM.grid_nlevels);
     }
 
     else if (args[i].find("AVtype=") != string::npos) {
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: old AV={} ... overriding!\n", SimPM.artviscosity);
       // Assign art.viscosity parameter. String is 'artvisc=I' with I in
       // [0,N].
@@ -397,24 +401,24 @@ int sim_init::override_params(int narg, string *args)
         SimPM.etav         = 1.0;
       }
       else {
-        spdlog::debug(
+        spdlog::info(
             "\t\tDIDN'T UNDERSTAND AV={}, SETTING TO FALLE et al (1998).\n", v);
         SimPM.artviscosity = 1;
         SimPM.etav         = 0.1;
         spdlog::error("{}: {}", "Bad viscosity flag from command-line", v);
       }
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: setting AV = {} and eta = {}", SimPM.artviscosity,
           SimPM.etav);
     }
 
     else if (args[i].find("EtaVisc=") != string::npos) {
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: old and eta={} ... overriding!\n", SimPM.etav);
       // Assign art.viscosity parameter. String is 'artvisc=D' with D in
       // [0,N].
       double visc = atof((args[i].substr(8)).c_str());
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: Resetting eta_visc from {} to {}", SimPM.etav,
           visc);
       if (visc < 0.0 || !isfinite(visc))
@@ -428,7 +432,7 @@ int sim_init::override_params(int narg, string *args)
       // Assign output frequency to new value. String is 'opfreq=N' with
       // N=[0..Nmax].
       int tmp = atoi((args[i].substr(7)).c_str());
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: Resetting opfreq from {} to {}", SimPM.opfreq,
           tmp);
       SimPM.op_criterion = 0;
@@ -437,7 +441,7 @@ int sim_init::override_params(int narg, string *args)
     else if (args[i].find("outfile=") != string::npos) {
       // Assign a new output file.  string is outfile=char[128max]
       string tmp = args[i].substr(8);
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: Resetting output file from {}\n\t\t\tto new name: {}.xxx.ftype\n",
           SimPM.outFileBase, tmp);
       SimPM.outFileBase = tmp;
@@ -479,7 +483,7 @@ int sim_init::override_params(int narg, string *args)
         tmp = 6;
       else
         spdlog::error("{}: {}", "What kind of output do you want?", chg);
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: Resetting output file type from {} to {}", now,
           chg);
       SimPM.typeofop = tmp;
@@ -489,7 +493,7 @@ int sim_init::override_params(int narg, string *args)
       // assign new value to addnoise, double frac = fractional noise
       // level
       double tmp = atof((args[i].substr(6)).c_str());
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: Resetting addnoise value from {} to {}", tmp,
           SimPM.addnoise);
       SimPM.addnoise = tmp;
@@ -498,10 +502,15 @@ int sim_init::override_params(int narg, string *args)
     else if (args[i].find("finishtime=") != string::npos) {
       // assign new value to finishtime.
       double tmp = atof((args[i].substr(11)).c_str());
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: Resetting finishtime value from {} to {}",
           SimPM.finishtime, tmp);
       SimPM.finishtime = tmp;
+    }
+
+    else if (args[i].find("redirect=") != string::npos) {
+      spdlog::info(
+          "\tOVERRIDE PARAMS: already redirecting stdout, continueing...");
     }
 
     else if (args[i].find("maxwalltime=") != string::npos) {
@@ -516,20 +525,20 @@ int sim_init::override_params(int narg, string *args)
 
     else if (args[i].find("coordsys=") != string::npos) {
       // Change the coordinate system!
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: Resetting the coordinate system from value={}",
           SimPM.coord_sys);
       string t = args[i].substr(9);
       if (t == "cartesian" || t == "cart" || t == "crt") {
-        spdlog::debug(" to cartesian coords.\n");
+        spdlog::info(" to cartesian coords.\n");
         SimPM.coord_sys = COORD_CRT;
       }
       else if (t == "cylindrical" || t == "cyl") {
-        spdlog::debug(" to cylindrical coords.\n");
+        spdlog::info(" to cylindrical coords.\n");
         SimPM.coord_sys = COORD_CYL;
       }
       else if (t == "spherical" || t == "sph") {
-        spdlog::debug(" to spherical coords.\n");
+        spdlog::info(" to spherical coords.\n");
         SimPM.coord_sys = COORD_SPH;
       }
       else
@@ -539,7 +548,7 @@ int sim_init::override_params(int narg, string *args)
 
     else if (args[i].find("cfl=") != string::npos) {
       // Assign cfl no., where string is 'cfl=0.X'
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: Resetting CFL from original value of {}",
           SimPM.CFL);
       double c = atof((args[i].substr(4)).c_str());
@@ -548,12 +557,12 @@ int sim_init::override_params(int narg, string *args)
       else if (c > 1.)
         spdlog::warn("\tWARNING: CFL no. >1, so results will be unstable!!!");
       SimPM.CFL = c;
-      spdlog::debug(" to command-line value = {}", SimPM.CFL);
+      spdlog::info(" to command-line value = {}", SimPM.CFL);
     }
 
     else if (args[i].find("gamma=") != string::npos) {
       // Assign new value to EOS gamma, where string is 'gamma=X.XXXXX'
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: Resetting EOS gamma from original value of {}",
           SimPM.gamma);
       double c = atof((args[i].substr(6)).c_str());
@@ -562,80 +571,80 @@ int sim_init::override_params(int narg, string *args)
       else if (c > 2.0)
         spdlog::warn("\tWARNING: gamma >2 ?");
       SimPM.gamma = c;
-      spdlog::debug(" to command-line value = {}", SimPM.gamma);
+      spdlog::info(" to command-line value = {}", SimPM.gamma);
     }
 
     else if (args[i].find("cooling=") != string::npos) {
-      spdlog::debug("\tOVERRIDE PARAMS: resetting cooling");
+      spdlog::info("\tOVERRIDE PARAMS: resetting cooling");
       int c = atoi((args[i].substr(8)).c_str());
       if (c < 0 || c > 100)
         spdlog::error("{}: {}", "Bad cooling flag (only 0-11 allowed", c);
-      spdlog::debug(" flag from {}", SimPM.EP.cooling);
+      spdlog::info(" flag from {}", SimPM.EP.cooling);
       SimPM.EP.cooling = c;
-      spdlog::debug(" to {}", SimPM.EP.cooling);
+      spdlog::info(" to {}", SimPM.EP.cooling);
     }
 
     else if (args[i].find("dynamics=") != string::npos) {
-      spdlog::debug("\tOVERRIDE PARAMS: resetting dynamics");
+      spdlog::info("\tOVERRIDE PARAMS: resetting dynamics");
       int c = atoi((args[i].substr(9)).c_str());
       if (c < 0 || c > 1)
         spdlog::error("{}: {}", "Bad dynamics flag (only 0,1, allowed", c);
-      spdlog::debug(" flag from {}", SimPM.EP.dynamics);
+      spdlog::info(" flag from {}", SimPM.EP.dynamics);
       SimPM.EP.dynamics = c;
-      spdlog::debug(" to {}", SimPM.EP.dynamics);
+      spdlog::info(" to {}", SimPM.EP.dynamics);
     }
 
     else if (args[i].find("raytracing=") != string::npos) {
-      spdlog::debug("\tOVERRIDE PARAMS: resetting raytracing");
+      spdlog::info("\tOVERRIDE PARAMS: resetting raytracing");
       int c = atoi((args[i].substr(11)).c_str());
       if (c < 0 || c > 1)
         spdlog::error("{}: {}", "Bad raytracing flag (only 0,1, allowed", c);
-      spdlog::debug(" flag from {}", SimPM.EP.raytracing);
+      spdlog::info(" flag from {}", SimPM.EP.raytracing);
       SimPM.EP.raytracing = c;
-      spdlog::debug(" to {}", SimPM.EP.raytracing);
+      spdlog::info(" to {}", SimPM.EP.raytracing);
     }
 
     else if (args[i].find("chemistry=") != string::npos) {
-      spdlog::debug("\tOVERRIDE PARAMS: resetting chemistry");
+      spdlog::info("\tOVERRIDE PARAMS: resetting chemistry");
       int c = atoi((args[i].substr(10)).c_str());
       if (c < 0 || c > 1)
         spdlog::error("{}: {}", "Bad chemistry flag (only 0,1, allowed", c);
-      spdlog::debug(" flag from {}", SimPM.EP.chemistry);
+      spdlog::info(" flag from {}", SimPM.EP.chemistry);
       SimPM.EP.chemistry = c;
-      spdlog::debug(" to {}", SimPM.EP.chemistry);
+      spdlog::info(" to {}", SimPM.EP.chemistry);
     }
 
     else if (args[i].find("microphysics=") != string::npos) {
-      spdlog::debug("\tOVERRIDE PARAMS: resetting microphysics");
+      spdlog::info("\tOVERRIDE PARAMS: resetting microphysics");
       string t = (args[i].substr(13));
-      spdlog::debug(" flag from {}", SimPM.chem_code);
+      spdlog::info(" flag from {}", SimPM.chem_code);
       SimPM.chem_code = t;
-      spdlog::debug(" to {}", SimPM.chem_code);
+      spdlog::info(" to {}", SimPM.chem_code);
     }
 
     else if (args[i].find("solver=") != string::npos) {
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: resetting solver: 0=LF,1=RSlin,2=RSexact,3=RShybrid,4=RSroe,5=RSroePV,6=FVS,7=HLLD,8=HLL:");
       int c = atoi((args[i].substr(7)).c_str());
       if (c < 0 || c > 8)
         spdlog::error(
             "{}: {}", "Bad solver flag (only 0,1,2,3,4,5,6,7,8 allowed", c);
-      spdlog::debug(" solver from {}", SimPM.solverType);
+      spdlog::info(" solver from {}", SimPM.solverType);
       SimPM.solverType = c;
-      spdlog::debug(" to {}", SimPM.solverType);
+      spdlog::info(" to {}", SimPM.solverType);
     }
 
     else if (args[i].find("op_criterion=") != string::npos) {
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: resetting op_criterion from {} to ",
           SimPM.op_criterion);
       int c = atoi((args[i].substr(13)).c_str());
       if (c < 0 || c > 1) spdlog::error("{}: {}", "Bad op_criterion flag:", c);
       SimPM.op_criterion = c;
-      spdlog::debug("{}", SimPM.op_criterion);
+      spdlog::info("{}", SimPM.op_criterion);
     }
     else if (args[i].find("opfreq_time=") != string::npos) {
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: resetting opfreq_time from {} units [NOT YEARS!!!] to ",
           SimPM.opfreq_time);
       double c = atof((args[i].substr(12)).c_str());
@@ -643,7 +652,7 @@ int sim_init::override_params(int narg, string *args)
         spdlog::error("{}: {}", "Bad opfreq_time flag:", c);
       SimPM.op_criterion = 1;
       SimPM.opfreq_time  = c;
-      spdlog::debug("{} units.", SimPM.opfreq_time);
+      spdlog::info("{} units.", SimPM.opfreq_time);
       SimPM.next_optime = SimPM.simtime + SimPM.opfreq_time;
       if (SimPM.timestep > 0) {
         double tmp = ((SimPM.simtime / SimPM.opfreq_time)
@@ -654,45 +663,45 @@ int sim_init::override_params(int narg, string *args)
     }
 
     else if (args[i].find("min_timestep=") != string::npos) {
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: resetting min_timestep from {} units [NOT YEARS!!!] to ",
           SimPM.min_timestep);
       double c = atof((args[i].substr(13)).c_str());
       if (c < 0.0 || c > 1.e50)
         spdlog::error("{}: {}", "Bad min_timestep flag:", c);
       SimPM.min_timestep = c;
-      spdlog::debug("{} units.", SimPM.min_timestep);
+      spdlog::info("{} units.", SimPM.min_timestep);
     }
 
     else if (args[i].find("limit_timestep=") != string::npos) {
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: limiting timestep: changing from {} to ",
           SimPM.EP.MP_timestep_limit);
       int c = atoi((args[i].substr(15)).c_str());
       if (c < 0 || c > 5)
         spdlog::error("{}: {}", "Bad MP_timestep_limit flag:", c);
       SimPM.EP.MP_timestep_limit = c;
-      spdlog::debug("{}", SimPM.EP.MP_timestep_limit);
+      spdlog::info("{}", SimPM.EP.MP_timestep_limit);
     }
 
     else if (args[i].find("checkpt_freq=") != string::npos) {
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: checkpointing freq.: changing from {} to ",
           SimPM.checkpoint_freq);
       int c = atoi((args[i].substr(13)).c_str());
       if (c < 0) spdlog::error("{}: {}", "Bad checkpoint_freq flag:", c);
       SimPM.checkpoint_freq = c;
-      spdlog::debug("{}", SimPM.checkpoint_freq);
+      spdlog::info("{}", SimPM.checkpoint_freq);
     }
 
     else if (args[i].find("max_T=") != string::npos) {
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: resetting MaxTemperature from {} K to ",
           SimPM.EP.MaxTemperature);
       double c = atof((args[i].substr(6)).c_str());
       if (c < 0.0 || c > 1.e50) spdlog::error("{}: {}", "Bad Max_T flag:", c);
       SimPM.EP.MaxTemperature = c;
-      spdlog::debug("{} K.", SimPM.EP.MaxTemperature);
+      spdlog::info("{} K.", SimPM.EP.MaxTemperature);
     }
 
     else if (args[i].find("wind_radius=") != string::npos) {
@@ -710,31 +719,33 @@ int sim_init::override_params(int narg, string *args)
       else if (static_cast<size_t>(src) >= SWP.params.size())
         spdlog::error(
             "{}: {}", "change wind radius for source that doesn't exist", src);
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: resetting radius of wind src {} from {} cm to ",
           src, SWP.params[src]->radius);
       double c = atof((args[i].substr(14)).c_str());
       if (c < 0.0 || c > 1.e50) spdlog::error("{}: {}", "Bad radius flag:", c);
       SWP.params[src]->radius = c;
-      spdlog::debug("{} cm.", SWP.params[src]->radius);
+      spdlog::info("{} cm.", SWP.params[src]->radius);
     }
 
     else if (args[i].find("tc_strength=") != string::npos) {
-      spdlog::debug(
+      spdlog::info(
           "\tOVERRIDE PARAMS: resetting EP.tc_strength from {} to ",
           SimPM.EP.tc_strength);
       double c = atof((args[i].substr(12)).c_str());
       if (c < 0.0 || c > 1.01)
         spdlog::error("{}: {}", "Bad tc_strength flag:", c);
       SimPM.EP.tc_strength = c;
-      spdlog::debug("{}", SimPM.EP.tc_strength);
+      spdlog::info("{}", SimPM.EP.tc_strength);
     }
 
 
-    else
+    else {
       spdlog::error(
           "{}: {}", "Don't recognise this optional argument, please fix.",
           args[i]);
+      exit(i);
+    }
   }
   return (0);
 }  // sim_init::override_params
@@ -746,48 +757,11 @@ int sim_init::output_data(vector<class GridBaseClass *>
                               &grid  ///< address of vector of grid pointers.
 )
 {
-  ///
-  /// \section freq Output Frequency.
-  /// I'm going to set it to output every nth timestep.  Can modify this if
-  /// needed. This is a parameter in the parameterfile.  If opfreq is set to a
-  /// negative number then only output the final state. We can also set it so
-  /// that it outputs every D time units, and there is automatic checkpointing
-  /// to filebase.9999999.[txt/fits/silo] every 100 steps.
-  ///
   int err = 0;
-  //
-  // First see if we want to write a checkpoint file, and if so then do it!
-  //
-  int checkpoint_freq;
-  if (SimPM.checkpoint_freq > 0) {
-    checkpoint_freq = SimPM.checkpoint_freq;
-  }
-  else {
-    checkpoint_freq = 250;
-  }
-  long int checkpoint_id = 99999999;
-  if ((SimPM.timestep != 0) && ((SimPM.timestep % checkpoint_freq) == 0)) {
-    spdlog::info("Checkpointing...");
-    if ((SimPM.timestep % (2 * checkpoint_freq)) == 0)
-      checkpoint_id = 99999998;
-    else
-      checkpoint_id = 99999999;
-
-    err = dataio->OutputData(SimPM.outFileBase, grid, SimPM, checkpoint_id);
-    if (textio)
-      err += textio->OutputData(SimPM.outFileBase, grid, SimPM, checkpoint_id);
-    if (err) {
-      spdlog::error("\t Error writing data for checkpointing");
-      return (1);
-    }
-  }
-
   //
   // Now we move on the various output criteria.  The if statements
   // call return(0) if we decide we don't need to ouput, so if we get
   // past them then just output the current timestep.
-  //
-
   //
   // Always output at the start
   //
@@ -827,7 +801,7 @@ int sim_init::output_data(vector<class GridBaseClass *>
   // Since we got past all that, we are in a timestep that should be
   // saved, so go and do it...
   //
-  spdlog::debug(
+  spdlog::info(
       "\tSaving data at step {} and sim-time {} to file {}", SimPM.timestep,
       SimPM.simtime, SimPM.outFileBase);
   err = dataio->OutputData(SimPM.outFileBase, grid, SimPM, SimPM.timestep);

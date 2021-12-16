@@ -18,7 +18,11 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #include "eqns_base.h"
 

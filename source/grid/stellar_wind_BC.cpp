@@ -52,9 +52,12 @@
 
 #include "tools/timer.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -425,8 +428,8 @@ void stellar_wind::set_wind_cell_reference_state(
 
   // Velocities and magnetic fields: get coordinates relative to star
   // for calculating sin/cos angles in theta and phi.
-  cell *c = wc->c;
-  double x, y, z;
+  cell *c  = wc->c;
+  double x = 0.0, y = 0.0, z = 0.0;
   switch (ndim) {
     case 1:
       x = grid->difference_vertex2cell(WP->dpos, c, XX);
@@ -644,7 +647,7 @@ int stellar_wind::set_cell_values(
     for (int v = 0; v < nvar; v++)
       WS->wcells[i]->c->Ph[v] = WS->wcells[i]->p[v];
   }
-
+  spdlog::debug("updated source {} which has {} cells", id, WS->ncell);
   return 0;
 }
 
@@ -766,7 +769,7 @@ double stellar_wind::beta(const double Teff)
   }
 
   return beta;
-};
+}
 
 // ##################################################################
 // ##################################################################
@@ -1123,7 +1126,7 @@ void stellar_wind_evolution::update_source(
     spdlog::debug(
         "stellar_wind_evo::update_source activating source id={} at Simulation time t={}",
         wp->id, t_now);
-    spdlog::debug("Source position : {}", wpos);
+    // spdlog::debug("Source position : {}", wd->ws->dpos);
     wd->is_active = true;
   }
 

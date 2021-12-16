@@ -45,9 +45,12 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #include "Riemann_solvers/riemann.h"
 
@@ -138,7 +141,7 @@ riemann_Euler::riemann_Euler(
     eqns_base(nv),
     eqns_Euler(nv), findroot(), rs_nvar(5)
 {
-  spdlog::info("riemann_Euler::riemann_Euler ...starting");
+  spdlog::debug("riemann_Euler::riemann_Euler ...starting");
 
   spdlog::debug("riemann_Euler::riemann_Euler: eqnvar={}", eq_nvar);
   if (eq_nvar < 5) {
@@ -182,7 +185,7 @@ riemann_Euler::riemann_Euler(
   rs_meanp.resize(rs_nvar);
   rs_pstar.resize(rs_nvar);
 
-  spdlog::info("riemann_Euler::riemann_Euler ...returning");
+  spdlog::debug("riemann_Euler::riemann_Euler ...returning");
 }
 
 // ##################################################################
@@ -193,14 +196,14 @@ riemann_Euler::riemann_Euler(
 //
 riemann_Euler::~riemann_Euler()
 {
-  spdlog::info("riemann_Euler::~riemann_Euler ...starting");
+  spdlog::debug("riemann_Euler::~riemann_Euler ...starting");
 
 #ifdef RSTESTING
   riemann_Euler::testing();
   linearpstar = mem.myfree(linearpstar);
 #endif  // RSTESTING
 
-  spdlog::info("riemann_Euler::~riemann_Euler ...returning");
+  spdlog::debug("riemann_Euler::~riemann_Euler ...returning");
 }
 
 // ##################################################################

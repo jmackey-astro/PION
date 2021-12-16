@@ -5,9 +5,12 @@
 /// Modifications :\n
 /// - 2018.09.06 JM: started writing code.
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #include "boundaries/NG_MPI_coarse_to_fine_boundaries.h"
 #include "tools/mem_manage.h"
@@ -312,7 +315,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     else
       spdlog::error("{}: {}", "bad spOOA in MPI C2F", par.spOOA);
     pion_flt *buf = new pion_flt[n_el];
-    std::array<double, MAX_DIM> slope;
+    std::vector<double> slope(par.nvar);
     std::array<double, MAX_DIM> cpos;
 
     // loop over cells, add Ph[], cell-vol, slopes to send buffer

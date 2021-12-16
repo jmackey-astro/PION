@@ -16,7 +16,11 @@
 ///
 #include "raytracing/raytracer_shielding.h"  // short-characteristics ray-tracer.
 #include "tools/timer.h"
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 using namespace std;
 
 raytracer_shielding::raytracer_shielding(

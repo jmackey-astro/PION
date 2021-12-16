@@ -29,9 +29,12 @@
 
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -264,7 +267,7 @@ MPv4::MPv4(
   // here are that I have re-implemented some of the functions which
   // the explicit constructor calls.
   //
-  spdlog::info("MPv4::MPv4() constructor");
+  spdlog::debug("MPv4::MPv4() constructor");
   setup_local_vectors();
   //
   // --------------------------- CVODES ----------------------------
@@ -279,7 +282,7 @@ MPv4::MPv4(
 
 MPv4::~MPv4()
 {
-  spdlog::info("MPv4::MPv4() destructor");
+  spdlog::debug("MPv4::MPv4() destructor");
   return;
 }
 
@@ -331,7 +334,7 @@ double MPv4::timescales(
 {
 #ifdef MPV3_DEBUG
   if (RS->Nsources != 0) {
-    spdlog::info("WARNING: MPv3::timescales() using non-RT version");
+    spdlog::debug("WARNING: MPv3::timescales() using non-RT version");
   }
 #endif  // MPV3_DEBUG
   int err = 0;
@@ -372,7 +375,7 @@ double MPv4::timescales(
 
   if (tc && T > EP->MinTemperature) {
 #ifdef RT_TESTING
-    spdlog::info(
+    spdlog::debug(
         "timestep limiting: cooling time {}",
         NV_Ith_S(y_in, lv_eint) / (fabs(NV_Ith_S(y_out, lv_eint)) + TINYVALUE));
 #endif

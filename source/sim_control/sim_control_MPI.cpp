@@ -67,7 +67,11 @@
 
 #include "tools/timer.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #include "raytracing/raytracer_SC.h"
 #include "sim_control/sim_control_MPI.h"
@@ -95,7 +99,7 @@ using namespace std;
 sim_control_pllel::sim_control_pllel() : sim_control()
 {
 #ifndef NDEBUG
-  spdlog::info("sim_control_pllel constructor");
+  spdlog::debug("sim_control_pllel constructor");
 #endif
 }
 
@@ -105,7 +109,7 @@ sim_control_pllel::sim_control_pllel() : sim_control()
 sim_control_pllel::~sim_control_pllel()
 {
 #ifndef NDEBUG
-  spdlog::info("sim_control_pllel destructor");
+  spdlog::debug("sim_control_pllel destructor");
 #endif
 }
 
@@ -269,7 +273,7 @@ int sim_control_pllel::Init(
   //
   if (SimPM.eqntype == EQGLM && SimPM.timestep == 0) {
 #ifndef NDEBUG
-    spdlog::info("Initial state, zero-ing glm variable");
+    spdlog::debug("Initial state, zero-ing glm variable");
 #endif
     c = grid[0]->FirstPt();
     do {
@@ -425,7 +429,7 @@ int sim_control_pllel::Time_Int(
 
       // clk.start_timer("advance_time");
 #ifndef NDEBUG
-    spdlog::info("MPI time_int: calculating dt");
+    spdlog::debug("MPI time_int: calculating dt");
 #endif
     SimPM.levels[0].last_dt = SimPM.last_dt;
     err += calculate_timestep(SimPM, grid[0], 0);
@@ -434,23 +438,22 @@ int sim_control_pllel::Time_Int(
           "{}: Expected {} but got {}", "TIME_INT::calc_timestep()", 0, err);
 
 #ifndef NDEBUG
-    spdlog::info("MPI time_int: stepping forward in time");
+    spdlog::debug("MPI time_int: stepping forward in time");
 #endif
     advance_time(0, grid[0]);
     // cout <<"advance_time took "<<clk.stop_timer("advance_time")<<"
     // secs.\n";
 #ifndef NDEBUG
-    spdlog::info("MPI time_int: finished timestep");
+    spdlog::debug("MPI time_int: finished timestep");
     log_freq = 1;
 #endif
 
     if ((SimPM.levels[0].sub_domain.get_myrank() == 0)
         && (SimPM.timestep % log_freq) == 0) {
-      spdlog::debug(
-          "New time: {}\t dt={}\t steps: {}", SimPM.simtime, SimPM.dt,
-          SimPM.timestep);
       tsf = clk.time_so_far("time_int");
-      spdlog::debug("\t runtime: {} s", tsf);
+      spdlog::info(
+          "New time: {:12.6e}   dt: {:12.6e}   steps: {:8d}   runtime: {:12.2e} s",
+          SimPM.simtime, SimPM.dt, SimPM.timestep, tsf);
 #ifndef NDEBUG
 #endif  // NDEBUG
     }
@@ -480,7 +483,7 @@ int sim_control_pllel::Time_Int(
   }
   spdlog::info("(sim_control_pllel::time_int) FINISHED - FINALISING SIM");
   tsf = clk.time_so_far("time_int");
-  spdlog::debug(
+  spdlog::info(
       "TOTALS: Nsteps: {}, sim-time: {}, wall-time: {}, time/step: {}",
       SimPM.timestep, SimPM.simtime, tsf,
       tsf / static_cast<double>(SimPM.timestep));

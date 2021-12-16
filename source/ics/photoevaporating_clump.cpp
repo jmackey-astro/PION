@@ -35,9 +35,12 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -297,12 +300,6 @@ int IC_photoevaporatingclump::setup_data(
   else
     spdlog::error("{}: {}", "Don't know what Initial Condition is!", ics);
 
-  // set cloud centre
-  IC_photoevaporatingclump::cloudcentre = 0;
-  cloudcentre                           = new double[ndim];
-  if (!cloudcentre)
-    spdlog::error("{}: {}", "cloud centre malloc", fmt::ptr(cloudcentre));
-
   seek = "PEC_xpos";
   str  = rp->find_parameter(seek);
   if (str == "") spdlog::error("{}: {}", "didn't find parameter", seek);
@@ -407,10 +404,8 @@ int IC_photoevaporatingclump::setup_data(
     spdlog::error("{}: {}", "Smooth parameter not a number", smooth);
   if (smooth > 0) err += SmoothData(smooth);
 
-  delete[] cloudcentre;
-  cloudcentre = 0;
-  cltr        = mem.myfree(cltr);
-  ambient     = mem.myfree(ambient);
+  cltr    = mem.myfree(cltr);
+  ambient = mem.myfree(ambient);
   return err;
 }
 
@@ -563,7 +558,7 @@ int IC_photoevaporatingclump::setup_pec()
     nsub = 100;
   else
     nsub = 32;
-  class inside_sphere stest(cloudcentre, clrad, SimPM->dx, nsub, ndim);
+  class inside_sphere stest(cloudcentre.data(), clrad, SimPM->dx, nsub, ndim);
 
   spdlog::info("\t\tAssigning primitive vectors");
   double vfrac    = 0.0;
@@ -663,7 +658,7 @@ int IC_photoevaporatingclump::setup_cloud_clump()
     nsub = 100;
   else
     nsub = 32;
-  class inside_sphere stest(cloudcentre, clrad, SimPM->dx, nsub, ndim);
+  class inside_sphere stest(cloudcentre.data(), clrad, SimPM->dx, nsub, ndim);
   double vfrac = 0.0;
 
   spdlog::info("\t\tAssigning primitive vectors");
@@ -681,14 +676,12 @@ int IC_photoevaporatingclump::setup_cloud_clump()
     if (isnan(srcpos[v]))
       spdlog::error("{}: {}", "Bad source position", srcpos[v]);
   }
-  std::vector<double> ISM_centre(SimPM->ndim);
+  std::array<double, MAX_DIM> ISM_centre;
   for (int v = 0; v < SimPM->ndim; v++) {
     ISM_centre[v] = 0.0;
   }
   spdlog::debug("source position  : {}", srcpos);
-  spdlog::debug(
-      "clump centre     : {}",
-      std::vector<double>(cloudcentre, cloudcentre + SimPM->ndim));
+  spdlog::debug("clump centre     : {}", cloudcentre);
   spdlog::debug("ISM Cloud centre : {}", ISM_centre);
 
   std::array<double, MAX_DIM> dpos;
@@ -705,7 +698,7 @@ int IC_photoevaporatingclump::setup_cloud_clump()
     // (PEC_xpos,PEC_ypos,PEC_zpos).
     //
     if (!pconst.equalD(radial_slope, 0.0)) {
-      dist = gg->distance_vertex2cell(&ISM_centre[0], cpt);
+      dist = gg->distance_vertex2cell(ISM_centre, cpt);
 
       //
       // We use rho=rho0/(1+(r/r0)^n)
@@ -765,9 +758,7 @@ int IC_photoevaporatingclump::setup_radialprofile()
       spdlog::error("{}: {}", "Bad source position", srcpos[v]);
   }
   spdlog::debug("source position : {}", srcpos);
-  spdlog::debug(
-      "cloud centre    : {}",
-      std::vector<double>(cloudcentre, cloudcentre + SimPM->ndim));
+  spdlog::debug("cloud centre    : {}", cloudcentre);
   //
   // set scale radius of core. (TAKE CLUMP RADIUS AS THE SCALE RADIUS OF
   // CORE!!!)

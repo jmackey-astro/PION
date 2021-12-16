@@ -24,7 +24,11 @@
 #include "tools/mem_manage.h"
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -49,7 +53,7 @@ MPv6::MPv6(
     ) :
     MPv3(nd, csys, nv, ntr, tracers, ephys, rsrcs, g)
 {
-  spdlog::info("MPv6 constructor setting up.");
+  spdlog::debug("MPv6 constructor setting up.");
   //
   // Here we set JM_NELEC and JM_NION to 1.0 because there is only H.
   //
@@ -72,7 +76,7 @@ MPv6::MPv6(
 
 MPv6::~MPv6()
 {
-  spdlog::info("MPv6 destructor.");
+  spdlog::debug("MPv6 destructor.");
 }
 
 // ##################################################################

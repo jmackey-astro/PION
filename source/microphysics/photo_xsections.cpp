@@ -20,7 +20,11 @@
 #include <stdlib.h>
 #include <string>
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #include "tools/mem_manage.h"
 

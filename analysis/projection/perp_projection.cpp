@@ -22,7 +22,11 @@ using namespace std;
 
 #include "tools/timer.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #include "perp_projection.h"
 #include "projection_constants.h"

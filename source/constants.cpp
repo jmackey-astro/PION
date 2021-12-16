@@ -10,7 +10,11 @@
 /// Modifications:
 /// - 2015.03.10 JM: added equalD() function.
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #include "constants.h"
 

@@ -4,9 +4,12 @@
 
 #include "microphysics_base.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 using namespace std;
 
@@ -29,7 +32,7 @@ microphysics_base::microphysics_base(
   RS = rsrcs;
 
 #ifndef NDEBUG
-  spdlog::info(
+  spdlog::debug(
       "microphysics_base:: setting up EP and RS: {}\t{}", fmt::ptr(EP),
       fmt::ptr(RS));
 #endif

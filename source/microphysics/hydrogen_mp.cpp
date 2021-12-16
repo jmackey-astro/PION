@@ -21,7 +21,11 @@
 #include "tools/mem_manage.h"
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -38,7 +42,7 @@ using namespace std;
 Hydrogen_chem::Hydrogen_chem() : Hummer94_Hrecomb(), hydrogen_photoion()
 {
 #ifndef NDEBUG
-  spdlog::info("Setting up Hydrogen_chem()");
+  spdlog::debug("Setting up Hydrogen_chem()");
 #endif
 
   cx_T = cx_rate = 0;
@@ -56,7 +60,7 @@ Hydrogen_chem::Hydrogen_chem() : Hummer94_Hrecomb(), hydrogen_photoion()
 Hydrogen_chem::~Hydrogen_chem()
 {
 #ifndef NDEBUG
-  spdlog::info("Deleting Hydrogen_chem() class");
+  spdlog::debug("Deleting Hydrogen_chem() class");
 #endif
   cx_T    = mem.myfree(cx_T);
   cx_rate = mem.myfree(cx_rate);

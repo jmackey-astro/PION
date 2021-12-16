@@ -108,9 +108,12 @@
 #include "tools/mem_manage.h"
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -144,8 +147,10 @@ raytracer_USC_infinity::raytracer_USC_infinity(
     ndim(nd),
     coord_sys(csys), nvar(nv), first_tr(ftr)
 {
-  spdlog::info(
+#ifdef RT_TESTING
+  spdlog::debug(
       "SC src-at-infinity (parallel-rays) raytracer class constructor!");
+#endif
 
   if (XN != 0 || XP != 1 || YN != 2 || YP != 3 || ZN != 4 || ZP != 5
       || NO != -1)
@@ -165,7 +170,9 @@ raytracer_USC_infinity::raytracer_USC_infinity(
     spdlog::error(
         "{}: {}", "grid or microphysics null pointers", fmt::ptr(gridptr));
 
+#ifdef RT_TESTING
   spdlog::debug("  ndim = {} and grid pointer = ", ndim, fmt::ptr(gridptr));
+#endif
 
   if (ndim < 1 || ndim > 3)
     spdlog::error("{}: {}", "bad ndim for raytracing!", ndim);
@@ -184,7 +191,9 @@ raytracer_USC_infinity::raytracer_USC_infinity(
 
 raytracer_USC_infinity::~raytracer_USC_infinity()
 {
-  spdlog::info("SC src at infinity raytracer class destructor!");
+#ifdef RT_TESTING
+  spdlog::debug("SC src at infinity raytracer class destructor!");
+#endif
 
   for (vector<rad_source>::iterator i = SourceList.begin();
        i != SourceList.end(); ++i) {
@@ -214,7 +223,9 @@ int raytracer_USC_infinity::Add_Source(
   // domains in between these two steps.
   //
 
+#ifdef RT_TESTING
   spdlog::info("\n--BEGIN-----raytracer_USC_infinity::AddSource()------------");
+#endif
 
   add_source_to_list(src);
 
@@ -282,7 +293,7 @@ void raytracer_USC_infinity::add_source_to_list(
   // Check that opacity_var is not running off the end of the state vector.
   //
   if (rs->s->opacity_var + first_tr > nvar - 1) {
-    spdlog::debug(
+    spdlog::info(
         "opacity_var={} and ftr={}, but state-vec has only {} elements. The opacity var will run off then end of the state vector array\nOPACITY_VAR IS OFFSET - 1ST TRACER HAS OPACITY_VAR=0",
         rs->s->opacity_var, first_tr, nvar);
     spdlog::error("{}: {}", "Bad opacity var for source", rs->s->id);
@@ -291,7 +302,9 @@ void raytracer_USC_infinity::add_source_to_list(
   //
   // now find the cell closest to source so we can set up a pointer to it.
   //
+#ifdef RT_TESTING
   spdlog::info("Add_Source() finding source");
+#endif
 
   cell *c = gridptr->FirstPt();
   //
@@ -355,8 +368,10 @@ void raytracer_USC_infinity::add_source_to_list(
   c = gridptr->NextPt(c, gridptr->OppDir(dir));
 
   rs->sc = c;
+#ifdef RT_TESTING
   spdlog::debug(
       "Add_Source() source->sc = {}, id={}", fmt::ptr(rs->sc), rs->sc->id);
+#endif
 
   rs->src_on_grid = false;
 
@@ -376,7 +391,9 @@ void raytracer_USC_infinity::set_Vshell_for_source(struct rad_source *this_src)
   // each cell.  Then call RayTrace_Column_Density() where Vshell is set, and
   // then change the opacity flag back to its original value.
   //
+#ifdef RT_TESTING
   spdlog::info("\t\tSetting Vshell for source");
+#endif
 
   int temp                 = this_src->s->opacity_src;
   int upd                  = this_src->s->update;
@@ -586,8 +603,10 @@ int raytracer_USC_infinity::RayTrace_Column_Density(
     const double g    ///< EOS Gamma.
 )
 {
+#ifdef RT_TESTING
   spdlog::info("raytracer_USC_infinity::RayTrace_Column_Density\n"
                " calling RayTrace_SingleSource()");
+#endif
 
   struct rad_source *source = 0;
   for (vector<rad_source>::iterator i = SourceList.begin();
@@ -830,9 +849,11 @@ int raytracer_USC_infinity::ProcessCell(
     cell_col[iT] = ds;
   double temp           = 0.0;
   short unsigned int ix = 0;
+#ifdef RT_TESTING
   spdlog::debug(
       "\tsrc {}: Updating cell id={} with opacity-only step.  N[0]={}",
       source->s->id, c->id, col2cell[0]);
+#endif
 
   // set vshell in cell (setting up)
   if (source->s->opacity_src == RT_OPACITY_VSHELL) {
@@ -1048,8 +1069,10 @@ raytracer_USC::raytracer_USC(
     ) :
     raytracer_USC_infinity(ggg, mmm, nd, csys, nv, ftr)
 {
+#ifdef RT_TESTING
   spdlog::info("SC raytracer class constructor!");
   spdlog::debug("  ndim = {} and grid pointer = {}", ndim, fmt::ptr(gridptr));
+#endif
 
   if (ndim < 1 || ndim > 3)
     spdlog::error("{}: {}", "bad ndim for raytracing!", ndim);
@@ -1091,7 +1114,9 @@ raytracer_USC::raytracer_USC(
 
 raytracer_USC::~raytracer_USC()
 {
+#ifdef RT_TESTING
   spdlog::info("SC raytracer class destructor!");
+#endif
   TauMin.clear();
 }
 
@@ -1101,8 +1126,10 @@ raytracer_USC::~raytracer_USC()
 int raytracer_USC::Add_Source(struct rad_src_info *src  ///< source info.
 )
 {
+#ifdef RT_TESTING
   spdlog::info("AddSource() adding source to list."
                "\n--BEGIN-----raytracer_USC::AddSource()------------\n");
+#endif
   //
   // First see if the source is at infinity, and if so then call the parallel
   // rays setup function.
@@ -1166,7 +1193,7 @@ void raytracer_USC::add_source_to_list(
   // source is not on grid, find edge cell closest to it.  This
   // function also centres the source on a cell-vertex.
   //
-  spdlog::info("RTxxx: AddSource() finding source");
+  spdlog::debug("RTxxx: AddSource() finding source");
 
   rs->sc = find_source_cell(rs->s->pos);
 
@@ -1281,7 +1308,9 @@ void raytracer_USC::set_Vshell_for_source(struct rad_source *this_src)
   // Change opacity flag to 'Vshell' so ProcessCell() will just set Vshell in
   // each cell.
   //
+#ifdef RT_TESTING
   spdlog::info("\t\tSetting Vshell for source (finite src distance)");
+#endif
 
   int temp                 = this_src->s->opacity_src;
   int upd                  = this_src->s->update;
@@ -1327,8 +1356,8 @@ int raytracer_USC::RayTrace_SingleSource(
     const double g    ///< eos gamma.
 )
 {
-  spdlog::info("raytracer_USC::RayTrace_SingleSource() starting");
 #ifdef RT_TESTING
+  spdlog::info("raytracer_USC::RayTrace_SingleSource() starting");
   Print_SourceList();
 #endif
   delt  = dt;
@@ -1360,8 +1389,8 @@ int raytracer_USC::RayTrace_SingleSource(
     return 1;
   }
 
-  spdlog::info("found source. moving to it");
 #ifdef RT_TESTING
+  spdlog::info("found source. moving to it");
   sc = source->sc;
 #endif
 
@@ -1407,7 +1436,9 @@ int raytracer_USC::RayTrace_SingleSource(
 
   // source is not at infinity, so set list of start cells for each
   // quadrant.
+#ifdef RT_TESTING
   spdlog::info("Source not at infinity, tracing...");
+#endif
 
   int ndirs = 1;
   for (int i = 0; i < ndim; i++)
@@ -1430,7 +1461,7 @@ int raytracer_USC::RayTrace_SingleSource(
 
   // Loop over all lines/quads/octs.
   for (int oct = 0; oct < ndirs; oct++) {
-    std::vector<enum direction> dirs(ndim);
+    std::vector<enum direction> dirs(MAX_DIM);
     cell *c = startcell[oct];
 #ifdef RT_TESTING
     spdlog::debug(
@@ -1628,8 +1659,10 @@ void raytracer_USC::set_startcells(
 
       if (in_my_oct == false) {
         startcell[oct] = 0;
+#ifdef RT_TESTING
         spdlog::debug(
             "octant {}, source is off grid in this octant so start cell is NULL");
+#endif
       }
       else {
         //
@@ -1813,7 +1846,9 @@ cell *raytracer_USC::find_source_cell(
     std::array<double, MAX_DIM> &pos  ///< position of source.
 )
 {
+#ifdef RT_TESTING
   spdlog::debug("find source cell N-Dim algorithm. ndim={}", ndim);
+#endif
   cell *sc = gridptr->FirstPt();
   std::array<int, MAX_DIM> ipos;
   // rep.printVec("First-cell POS",sc->pos,ndim);
@@ -1877,14 +1912,18 @@ void raytracer_USC::centre_source_on_cell(
   // bool changed_pos=false;
 
   double dist = pos[axis] - gridptr->Xmin(axis);
+#ifdef RT_TESTING
   spdlog::debug(
       "axis:{}\tdist={} pos={} xmin={}", axis, dist, gridptr->Xmin(axis));
+#endif
 
   double dx = gridptr->DX();
   int x     = static_cast<int>(dist / dx);
   dist -= x * dx;
   dist /= dx;
+#ifdef RT_TESTING
   spdlog::debug(", new dist={} in units of cell size", dist);
+#endif
 
   if (!pconst.equalD(dist, 0.0)) {
     if (fabs(dist) > 1.0) {
@@ -1913,7 +1952,9 @@ void raytracer_USC::centre_source_on_cell(
       pos[axis] -= dist * dx;
     else
       spdlog::error("{}: {}", "logic failed in centre_source_on_cell()", dist);
+#ifdef RT_TESTING
     spdlog::debug("New Source Location: x = {}", pos[axis]);
+#endif
     // changed_pos=true;
   }
 
@@ -1923,7 +1964,9 @@ void raytracer_USC::centre_source_on_cell(
   // then propagate the change to the global data.
   //
 
+#ifdef RT_TESTING
   spdlog::info("raytracer_USC::centre_source_on_cell() returning");
+#endif
   return;
 }
 
@@ -1944,7 +1987,9 @@ int raytracer_USC::trace_column(
 
   if (c != 0) {
     // need to check in case we have moved from source cell off the grid.
+#ifdef RT_TESTING
     spdlog::info("raytracer_USC::trace_column() running");
+#endif
     do {
 #ifndef NDEBUG
       dp.c = c;
@@ -1965,15 +2010,19 @@ int raytracer_USC::trace_plane(
     const enum direction xdir,
     const enum direction ydir)
 {
+#ifdef RT_TESTING
   spdlog::debug(
       "tracing 2d plane, xdir={}, ydir={}, cy={}, id={}", xdir, ydir,
       fmt::ptr(cy), cy->id);
+#endif
 
   int err  = 0;
   cell *cx = 0;
   if (cy != 0) {
     do {
+#ifdef RT_TESTING
       spdlog::debug("new column in 2d. cy={}, id={}", fmt::ptr(cy), cy->id);
+#endif
       cx = cy;
 
       err += trace_column(source, cx, xdir);
@@ -1997,7 +2046,9 @@ int raytracer_USC::trace_octant(
   cell *cy = 0;
   if (cz != 0) {
     do {
+#ifdef RT_TESTING
       spdlog::info("Trace-Octant: new plane in 3d");
+#endif
       cy = cz;
       err += trace_plane(source, cy, xdir, ydir);
     } while ((cz = gridptr->NextPt(cz, zdir)) != 0);
@@ -2039,9 +2090,11 @@ int raytracer_USC::cell_cols_2d(
   int diffy   = abs(CI.get_ipos(c, YY) - src->ipos[YY]);
   int mindiff = 0, maxdiff = 0;
   *ds = 0.0;
+#ifdef RT_TESTING
   spdlog::debug(
       "\tGetting cell-cols 2D for cell id={}: diffx={} and diffy={}.  srcdir: xx={} yy={}",
       c->id, diffx, diffy, SrcDir[XX], SrcDir[YY]);
+#endif
 
   //
   // See which side the cell enters through, and set delta accordingly.
@@ -2065,7 +2118,9 @@ int raytracer_USC::cell_cols_2d(
   // ds is in physical units.
   //
   *ds = gridptr->DX() * sqrt(1.0 + delta * delta);
+#ifdef RT_TESTING
   spdlog::debug("ds={} delta={}", *ds, delta);
+#endif
 
   double idx   = gridptr->idx();  // cell size in integer units.
   double idxo2 = 0.5 * idx;
@@ -2080,7 +2135,9 @@ int raytracer_USC::cell_cols_2d(
   // column. NOTE: for integer cell positions, the cell size is "idx".
   //
   if (mindiff < idx && maxdiff < idx) {
+#ifdef RT_TESTING
     spdlog::info("At source cell, setting col2cell to zero");
+#endif
     // at source cell, so column to cell is zero.
     for (short unsigned int iT = 0; iT < src->s->NTau; iT++) {
       Nc[iT] = 0.0;
@@ -2088,7 +2145,9 @@ int raytracer_USC::cell_cols_2d(
     // CI.set_col(c, src->s->id, Nc);
   }
   else if (mindiff < idx) {
+#ifdef RT_TESTING
     spdlog::debug("Within the source column of cells! mindiff={}", mindiff);
+#endif
     //
     // Not at source cell, but are within column, so instead of an averaging
     // we can just take the distance from source to cell, taking care to
@@ -2139,7 +2198,9 @@ int raytracer_USC::cell_cols_2d(
                       / (maxmin2 * maxmin2 + idxo2 * idxo2))
                   * maxmin2 / maxd;
       }
+#ifdef RT_TESTING
       spdlog::debug("cell_cols_2d: close, Nc={}", Nc[0]);
+#endif
     }
 
   }  // mindiff<2
@@ -2148,14 +2209,18 @@ int raytracer_USC::cell_cols_2d(
     // source is not in 1D column, so do the 2D averaging.
     //
     col2cell_2d(src, c, entryface, &perpface, &delta, Nc);
+#ifdef RT_TESTING
     spdlog::debug("cell_cols_2d: normal, Nc={}", Nc[0]);
+#endif
   }
 
+#ifdef RT_TESTING
   if (maxdiff < idx) {
     spdlog::debug(
         "\t...\tcol = {}\tcell id: {} and col in cell = {}", *Nc, c->id, *ds);
     spdlog::info("raytracer_USC::cell_cols_2d() done");
   }
+#endif
   return 0;
 }
 
@@ -2220,7 +2285,9 @@ int raytracer_USC::cell_cols_3d(
     //
     // We are at the source cell, since max-dist=1, so tau=0.
     //
+#ifdef RT_TESTING
     spdlog::info("At the source Cell, so setting col2cell=0.0");
+#endif
     for (short unsigned int iT = 0; iT < src->s->NTau; iT++) {
       Nc[iT] = 0.0;
     }
@@ -2230,7 +2297,9 @@ int raytracer_USC::cell_cols_3d(
     // We're within a cell distance in 2 of 3 directions, so we don't
     // need to do any averaging, just the geometric change.
     //
+#ifdef RT_TESTING
     spdlog::info("In source column, so doing 1D column calculatio");
+#endif
     cell *ngb = gridptr->NextPt(c, entryface);
     //
     // assume if neighbour doesn't exist, that the source is coming
@@ -2282,10 +2351,12 @@ int raytracer_USC::cell_cols_3d(
       double max2 = max - idx;
       // if (max<1.499999*idx) spdlog::error("{}: {}", "maxdiff should be
       // >=1.5*idx",max);
+#ifdef RT_TESTING
       spdlog::debug(
           " tau={} scale factor={}", *Nc,
           sqrt((max * max + idxo2 * idxo2) / (max2 * max2 + idxo2 * idxo2))
               * max2 / max);
+#endif
       for (short unsigned int iT = 0; iT < src->s->NTau; iT++) {
         Nc[iT] *=
             sqrt((max * max + idxo2 * idxo2) / (max2 * max2 + idxo2 * idxo2))
@@ -2303,9 +2374,13 @@ int raytracer_USC::cell_cols_3d(
     // so we need to make the path length shorter, at least for cells
     // close to the source.
     //
+#ifdef RT_TESTING
     spdlog::info("In source plane; doing 2D average");
+#endif
     col2cell_2d(src, c, entryface, perpdirs, deltas, Nc);
+#ifdef RT_TESTING
     spdlog::debug(" tau={}", Nc[0]);
+#endif
     //
     // For cells with dx0>=5*idx, the scaling factor is >= 0.9974, so we
     // won't bother scaling in this case.  For the cell with
@@ -2331,10 +2406,12 @@ int raytracer_USC::cell_cols_3d(
         double one_over_a2r2 = static_cast<double>(dx[o[0]] * dx[o[0]])
                                / ((dx[o[0]] - idx) * (dx[o[0]] - idx))
                                * one_over_r2;
+#ifdef RT_TESTING
         spdlog::debug(
             "source plane averaging... 1/r2={} 1/(ar)2={} Scaling factor={}",
             one_over_r2, one_over_a2r2,
             (1.0 + one_over_r2) * (1.0 - one_over_a2r2));
+#endif
         for (short unsigned int iT = 0; iT < src->s->NTau; iT++) {
           Nc[iT] *= (1.0 + one_over_r2) * (1.0 - one_over_a2r2);
         }
@@ -2346,7 +2423,9 @@ int raytracer_USC::cell_cols_3d(
     // Now we aren't in the source plane, so do the full 3D column
     // calculation.
     //
+#ifdef RT_TESTING
     spdlog::info("Not in source plane, so usual average");
+#endif
     col2cell_3d(src, c, entryface, perpdirs, deltas, Nc);
   }
 
@@ -2411,9 +2490,11 @@ void raytracer_USC::col2cell_3d(
   // Algorithm is the same as that describe in Mellema et al.,2006,
   // NewA, 11,374, appendix A.  Good for 3D cartesian geometry.
 
+#ifdef RT_TESTING
   spdlog::debug(
       "3D ShortChars:: entrydir = {} and perps = [{}, {}]", entryface,
       perpdir[0], perpdir[1]);
+#endif
 #ifdef TEST_INF
   if (!c) spdlog::error("{}: {}", "col2cell_3d for non-existent cell!", c);
 #endif
@@ -2554,7 +2635,9 @@ void raytracer_USC::set_Vshell_in_cell(
   // If the source is at infinity then we just set Vshell=ds=delta-x
   //
   if (source->s->at_infinity) {
+#ifdef RT_TESTING
     spdlog::info("raytracer_USC::set_Vshell_in_cell() src at infinity!");
+#endif
     CI.set_cell_Vshell(c, source->s->id, ds);
     return;
   }
@@ -2578,9 +2661,11 @@ void raytracer_USC::set_Vshell_in_cell(
   //
   CI.get_dpos(c, c_pos);
   rs = gridptr->distance(source->s->pos, c_pos) - 0.5 * ds;
+#ifdef RT_TESTING
   spdlog::debug(
       "\tSetting Vshell for cell id={}: rs={} ds={} dx={}: ", c->id, rs, ds,
       gridptr->DX());
+#endif
 
   //
   // 3D shell, volume is 4/3.Pi.((r+dr)^3-r^3)
@@ -2588,7 +2673,9 @@ void raytracer_USC::set_Vshell_in_cell(
   Vshell =
       4.0 * M_PI * ((rs + ds) * (rs + ds) * (rs + ds) - rs * rs * rs) / 3.0;
 
+#ifdef RT_TESTING
   spdlog::debug("Vshell={}", Vshell);
+#endif
 
   //
   // Now set Vshell in the cell-data.

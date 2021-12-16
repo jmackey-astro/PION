@@ -70,8 +70,12 @@
 
 #include "raytracing/raytracer_SC.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #include <fitsio.h>
 
@@ -96,7 +100,7 @@ int main(int argc, char **argv)
       "silo2fits", "silo2fits.log", max_logfile_size, max_logfiles));
 
 #ifdef NDEBUG
-  spdlog::set_level(spdlog::level::err);
+  spdlog::set_level(spdlog::level::info);
   spdlog::flush_on(spdlog::level::err);
 #else
   spdlog::set_level(spdlog::level::trace);

@@ -34,9 +34,12 @@
 #include "constants.h"
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #include <set>
 #ifndef NDEBUG
@@ -125,7 +128,7 @@ MPv10::MPv10(
   //***********************************************************
 
 
-  spdlog::info("MPv10: a microphysics class");
+  spdlog::debug("MPv10: a microphysics class");
 
   // -----------------------------------------------------------------------------
   // --------- Set up tracer variables: ---------
@@ -445,7 +448,7 @@ MPv10::MPv10(
   spdlog::debug("\t\tMPv10: got {} radiation sources", N_rad_src);
   // ----------------------------------------------------------------
 
-  spdlog::info("MPv10: Constructor finished and returning");
+  spdlog::debug("MPv10: Constructor finished and returning");
 }
 
 
@@ -578,18 +581,18 @@ void MPv10::species_tracer_initialise(
       y_ip1_index_local.push_back(N_species + 1);
     }
     else {
-      spdlog::info("Next ion up doesn't exist");
+      spdlog::debug("Next ion up doesn't exist");
       y_ip1_index_local.push_back(-1);  // -1 flag => species doesn't exist
     }
   }
   else {
-    spdlog::info("Next ion up doesn't exist");
+    spdlog::debug("Next ion up doesn't exist");
     y_ip1_index_local.push_back(-1);  // -1 flag => species doesn't exist
   }
   ///< due to ordering in tracer list, if the previous ion exists, its index
   ///< will be 1 below the current index.
   if (im1 == neutral) {
-    spdlog::info("Next ion down is neutral");
+    spdlog::debug("Next ion down is neutral");
     y_im1_index_local.push_back(-2);  // -2 flag => species is neutral
   }
   else if (im1 == tracers[i - 1]) {  // check if the next lowest ion is the
@@ -599,7 +602,7 @@ void MPv10::species_tracer_initialise(
   }
   else {
     y_im1_index_local.push_back(-1);  // -1 flag => species doesn't exist
-    spdlog::info("Next ion down doesn't exist");
+    spdlog::debug("Next ion down doesn't exist");
   }
   N_species++;
 
@@ -1094,7 +1097,7 @@ int MPv10::Set_Temp(
   //
   // cout << "set temperature\n";
   if (p_pv[PG] <= 0.0) {
-    spdlog::info("MP_Hydrogen::Set_Temp() correcting negative pressure");
+    spdlog::debug("MP_Hydrogen::Set_Temp() correcting negative pressure");
     p_pv[PG] = 1.0e-12;  // Need p>0 for prim-to-local conversion.
   }
   double P[nvl];
@@ -1272,7 +1275,7 @@ double MPv10::timescales(
 {
 #ifdef MPv10_DEBUG
   if (RS->Nsources != 0) {
-    spdlog::info("WARNING: MPv10::timescales() using non-RT version!");
+    spdlog::debug("WARNING: MPv10::timescales() using non-RT version!");
   }
 #endif  // MPv10_DEBUG
   std::vector<struct rt_source_data> temp;

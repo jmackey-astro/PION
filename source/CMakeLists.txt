@@ -26,7 +26,7 @@ add_library(
   constants.cpp
 ) 
 
-target_link_libraries(global INTERFACE dataio tools)# spdlog::spdlog)
+target_link_libraries(global INTERFACE dataio tools spdlog::spdlog)
 
 if(PION_OMP)
     target_link_libraries(global INTERFACE OpenMP::OpenMP_CXX)
@@ -34,7 +34,10 @@ endif(PION_OMP)
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     include(../cmake/development_flags.cmake)
+    add_definitions("-DSPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE")
     target_link_libraries(global INTERFACE development_flags)
+else()
+    add_definitions("-DSPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO")
 endif(CMAKE_BUILD_TYPE MATCHES Debug)
 
 if(PION_NESTED_GRID)

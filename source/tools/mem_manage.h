@@ -17,7 +17,11 @@
 #include <new>
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 // ------------------ MEMORY MANAGEMENT -------------------
 /** \brief This class contains generic functions for dynamically allocating

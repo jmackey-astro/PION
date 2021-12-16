@@ -28,9 +28,12 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -517,7 +520,7 @@ int IC_photevap_multi_clumps::add_ambient_data_to_grid(
         fmt::ptr(ggg));
 
   class cell *c = ggg->FirstPt();
-  double cloudcentre[MAX_DIM];
+  std::array<double, MAX_DIM> cloudcentre;
   for (int v = 0; v < MAX_DIM; v++)
     cloudcentre[v] = 0.0;
   double dist = 0.0;

@@ -26,7 +26,11 @@
 #include <cmath>
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 using namespace std;
 
@@ -65,7 +69,7 @@ cvode_solver::~cvode_solver()
 int cvode_solver::setup_cvode_solver()
 {
   if (have_setup_cvodes) {
-    spdlog::info(
+    spdlog::debug(
         ">>>---- Warning! Setting up CVODES solver twice! will delete and re-init. ----<<<\n");
     if (abstol) {
 #if defined CVODE2
@@ -117,7 +121,7 @@ int cvode_solver::setup_cvode_solver()
 int cvode_solver::setup_cvode_solver_without_Jacobian()
 {
   if (have_setup_cvodes) {
-    spdlog::info(
+    spdlog::debug(
         ">>>---- Warning! Setting up CVODES solver twice! will delete and re-init. ----<<<\n");
     if (abstol) {
       N_VDestroy_Serial(abstol);
@@ -135,7 +139,7 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
   spdlog::debug("\t\tN_equations={}, N_extra_data={}", n_eq, n_xd);
 #endif
   if (n_eq < 0 || n_xd < 0) {
-    spdlog::info("Error in values for problem size");
+    spdlog::debug("Error in values for problem size");
     return 1;
   }
 
@@ -143,7 +147,7 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
   // initialise vector for abstol.
   //
   if (abstol) {
-    spdlog::info("Error! setup_cvode_solver(), vectors already initialised!");
+    spdlog::debug("Error! setup_cvode_solver(), vectors already initialised!");
     return 1;
   }
 
@@ -294,7 +298,7 @@ int cvode_solver::integrate_cvode_step(
   // it in steps, which is why it is in a loop.
   //
 #ifdef CVODE_DEBUG
-  spdlog::info("First try failed");
+  spdlog::debug("First try failed");
 #endif  // CVODE_DEBUG
   t_temp = t_now;
   dt *= 0.5;

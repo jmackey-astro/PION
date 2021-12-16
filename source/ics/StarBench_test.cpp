@@ -23,9 +23,12 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -965,7 +968,7 @@ int IC_StarBench_Tests::setup_StarBench_Cone(
     for (int v = 0; v < SimPM->ntracer; v++)
       c->P[SimPM->ftr + v] = 1.0e-12;
 
-    dist = ggg->distance_vertex2cell(&srcpos[0], c);
+    dist = ggg->distance_vertex2cell(srcpos, c);
     //
     // Following the Iliev et al 2009 test 6, we use rho=rho0(r0/r)^n if
     // r>r0 We also change the pressure so there is a constant temperature

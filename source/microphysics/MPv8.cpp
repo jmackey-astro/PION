@@ -19,7 +19,11 @@
 #include "tools/mem_manage.h"
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -45,7 +49,7 @@ MPv8::MPv8(
     MPv3(nd, csys, nv, ntr, tracers, ephys, rsrcs, g)
 {
 #ifndef NDEBUG
-  spdlog::info("MPv8 constructor setting up");
+  spdlog::debug("MPv8 constructor setting up");
 #endif
   gamma_minus_one = eos_gamma - 1.0;
 
@@ -106,7 +110,7 @@ MPv8::MPv8(
 MPv8::~MPv8()
 {
 #ifndef NDEBUG
-  spdlog::info(<< "MPv8 destructor");
+  spdlog::debug(<< "MPv8 destructor");
 #endif
 }
 
@@ -377,7 +381,7 @@ double MPv8::get_recombination_rate(
 )
 {
 #ifdef FUNCTION_ID
-  spdlog::info("MPv8::get_recombination_rate()");
+  spdlog::debug("MPv8::get_recombination_rate()");
 #endif  // FUNCTION_ID
   double rate = 0.0;
   double P[nvl];
@@ -392,7 +396,7 @@ double MPv8::get_recombination_rate(
          * JM_NELEC;
 
 #ifdef FUNCTION_ID
-  spdlog::info("MPv8::get_recombination_rate()");
+  spdlog::debug("MPv8::get_recombination_rate()");
 #endif  // FUNCTION_ID
   return rate;
 }

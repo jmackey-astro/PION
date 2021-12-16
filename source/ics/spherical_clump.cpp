@@ -13,7 +13,11 @@
 #include "tools/mem_manage.h"
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -179,7 +183,7 @@ int IC_spherical_clump::setup_clump()
   //
   // Centred at [0]
   //
-  double centre[ndim];
+  std::array<double, MAX_DIM> centre;
   for (int i = 0; i < ndim; i++)
     centre[0] = 0.0;
 

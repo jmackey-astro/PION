@@ -161,9 +161,12 @@
 #include "constants.h"
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #ifndef NDEBUG
 #include "tools/command_line_interface.h"
@@ -271,7 +274,7 @@ MPv3::MPv3(
     microphysics_base(nv, ntr, tracers, ephys, rsrcs),
     ndim(nd), eos_gamma(g), coord_sys(csys)
 {
-  spdlog::info("MPv3: a microphysics class");
+  spdlog::debug("MPv3: a microphysics class");
 
   // ----------------------------------------------------------------
   // ------- Set up tracer variables (find which one is H+). --------
@@ -543,7 +546,7 @@ MPv3::MPv3(
         // ================================================================
         // ================================================================
 
-  spdlog::info("MPv3: Constructor finished and returning.");
+  spdlog::debug("MPv3: Constructor finished and returning.");
 }
 
 // ##################################################################
@@ -1098,10 +1101,8 @@ int MPv3::TimeUpdateMP_RTnew(
     double *random_stuff  ///< final temperature (not strictly needed).
 )
 {
-  //
   // First set local variables for state vector and radiation source
   // properties.
-  //
   int err = 0;
   std::vector<double> P(nvl);
   err = convert_prim2local(p_in, &P[0]);
@@ -1114,30 +1115,26 @@ int MPv3::TimeUpdateMP_RTnew(
 
   for (int v = 0; v < nvl; v++)
     NV_Ith_S(y_in, v) = P[v];
-  //
   // Calculate y-dot[] to see if anything is changing significantly over dt
-  //
   double maxdelta = 0.0;
   err             = ydot(0, y_in, y_out, 0);
-  if (err)
+  if (err) {
     spdlog::error(
         "{}: {}", "dYdt() returned an error in MPv3::TimeUpdateMP_RTnew()",
         err);
+    exit(1);
+  }
   for (int v = 0; v < nvl; v++) {
     maxdelta = max(maxdelta, fabs(NV_Ith_S(y_out, v) * dt / NV_Ith_S(y_in, v)));
   }
 
-  //
   // Now if nothing is changing much, just to a forward Euler integration.
-  //
   if (maxdelta < EULER_CUTOFF) {
     for (int v = 0; v < nvl; v++) {
       NV_Ith_S(y_out, v) = NV_Ith_S(y_in, v) + dt * NV_Ith_S(y_out, v);
     }
   }
-  //
   // Otherwise do the implicit CVODE integration
-  //
   else {
     err = integrate_cvode_step(y_in, 0, 0.0, dt, y_out);
     if (err) {
@@ -1152,12 +1149,11 @@ int MPv3::TimeUpdateMP_RTnew(
       spdlog::error(
           "{}: {}", "integration failed again: MPv3::TimeUpdateMP_RTnew()",
           err);
+      exit(1);
     }
   }
 
-  //
   // Now put the result into p_out[] and return.
-  //
   for (int v = 0; v < nvl; v++)
     P[v] = NV_Ith_S(y_out, v);
   err = convert_local2prim(&P[0], p_in, p_out);
@@ -1345,7 +1341,7 @@ double MPv3::get_recombination_rate(
     const double g         ///< EOS gamma (optional)
 )
 {
-  spdlog::info("MPv3::get_recombination_rate()");
+  spdlog::debug("MPv3::get_recombination_rate()");
   double rate = 0.0;
   double P[nvl];
   //
@@ -1359,7 +1355,7 @@ double MPv3::get_recombination_rate(
       Hii_rad_recomb_rate(get_temperature(mpv_nH, P[lv_eint], 1.0 - P[lv_H0]))
       * mpv_nH * mpv_nH * (1.0 - P[lv_H0]) * (1.0 - P[lv_H0]) * JM_NELEC;
 
-  spdlog::info("MPv3::get_recombination_rate()");
+  spdlog::debug("MPv3::get_recombination_rate()");
   return rate;
 }
 

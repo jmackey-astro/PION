@@ -5,7 +5,11 @@
 /// Modifications :\n
 /// - 2018.08.08 JM: moved code.
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #include "boundaries/periodic_boundaries_MPI.h"
 #include "sub_domain/sub_domain.h"

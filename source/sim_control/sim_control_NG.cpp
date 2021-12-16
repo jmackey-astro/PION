@@ -20,7 +20,11 @@
 
 #include "tools/timer.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #include "sim_control/sim_control_NG.h"
 
@@ -34,7 +38,7 @@ using namespace std;
 sim_control_NG::sim_control_NG()
 {
 #ifndef NDEBUG
-  spdlog::info("(sim_control_NG::Constructor)");
+  spdlog::debug("(sim_control_NG::Constructor)");
 #endif
 }
 
@@ -44,7 +48,7 @@ sim_control_NG::sim_control_NG()
 sim_control_NG::~sim_control_NG()
 {
 #ifndef NDEBUG
-  spdlog::info("(sim_control_NG::Destructor)");
+  spdlog::debug("(sim_control_NG::Destructor)");
 #endif
 }
 
@@ -128,7 +132,7 @@ int sim_control_NG::Init(
 
     if (SimPM.eqntype == EQGLM && SimPM.timestep == 0) {
 #ifndef NDEBUG
-      spdlog::info("Initial state, zero-ing glm variable");
+      spdlog::debug("Initial state, zero-ing glm variable");
 #endif
       c = grid[l]->FirstPt();
       do {
@@ -404,12 +408,11 @@ int sim_control_NG::Time_Int(
 
 #if !defined(CHECK_MAGP)
 #if !defined(BLAST_WAVE_CHECK)
-    spdlog::debug(
-        "New time: {}\t dt={}\t steps: {}\t level-0 steps={}", SimPM.simtime,
-        SimPM.levels[SimPM.grid_nlevels - 1].dt, SimPM.timestep,
-        SimPM.levels[0].step);
     tsf = clk.time_so_far("time_int");
-    spdlog::debug("\t runtime: {} s", tsf);
+    spdlog::info(
+        "New time: {:12.6e}   dt: {:12.6e}   steps: {:8d}   l0 steps: {:6d}   runtime: {:12.2e} s",
+        SimPM.simtime, SimPM.levels[SimPM.grid_nlevels - 1].dt, SimPM.timestep,
+        SimPM.timestep / static_cast<int>(pow(2, SimPM.grid_nlevels - 1)), tsf);
 #endif
 #endif
 
@@ -427,11 +430,11 @@ int sim_control_NG::Time_Int(
           "{}: Expected {} but got {}", "TIME_INT::check_eosim()", 0, err);
   }
 
-  spdlog::info(
+  spdlog::debug(
       "(sim_control_NG::Time_Int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM.\n");
 
   tsf = clk.time_so_far("time_int");
-  spdlog::debug(
+  spdlog::info(
       "TOTALS: Nsteps: {} wall-time: {} time/step: {}\nSTEPS: {}\t{}\t{}\t{}\n-------------------------------------------------------\n",
       SimPM.timestep, tsf, tsf / static_cast<double>(SimPM.timestep),
       SimPM.timestep, tsf, tsf / static_cast<double>(SimPM.timestep),
@@ -541,7 +544,7 @@ int sim_control_NG::Finalise(vector<class GridBaseClass *>
     spdlog::error(
         "{}: Expected {} but got {}",
         "(FINALISE::output_data) Something went wrong", 0, err);
-  spdlog::debug(
+  spdlog::info(
       "\tSimTime = {}   #timesteps = {}", SimPM.simtime, SimPM.timestep);
 #ifndef NDEBUG
   spdlog::info("(sim_control::Finalise) DONE.");

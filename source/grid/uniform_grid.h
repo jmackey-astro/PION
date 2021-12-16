@@ -535,8 +535,8 @@ public:
   /// geometry).  Here both input and output are physical units.
   ///
   virtual double distance_vertex2cell(
-      const double *,  ///< vertex (physical)
-      const cell *     ///< cell
+      const std::array<double, MAX_DIM> &,  ///< vertex (physical)
+      const cell *                          ///< cell
   );
 
   ///
@@ -556,8 +556,8 @@ public:
   /// geometry).  Here both input and output are code-integer units.
   ///
   virtual double idistance_vertex2cell(
-      const int *,  ///< vertex (integer)
-      const cell *  ///< cell
+      const std::array<int, MAX_DIM> &,  ///< vertex (integer)
+      const cell *                       ///< cell
   );
 
   ///
@@ -676,8 +676,8 @@ public:
   /// geometry).  Here both input and output are physical units.
   ///
   virtual double distance_vertex2cell(
-      const double *,  ///< vertex (physical)
-      const cell *     ///< cell
+      const std::array<double, MAX_DIM> &,  ///< vertex (physical)
+      const cell *                          ///< cell
   );
 
   ///
@@ -697,8 +697,8 @@ public:
   /// geometry).  Here both input and output are code-integer units.
   ///
   virtual double idistance_vertex2cell(
-      const int *,  ///< vertex (integer)
-      const cell *  ///< cell
+      const std::array<int, MAX_DIM> &,  ///< vertex (integer)
+      const cell *                       ///< cell
   );
 
   ///
@@ -833,8 +833,8 @@ public:
   /// geometry).  Here both input and output are physical units.
   ///
   virtual double distance_vertex2cell(
-      const double *,  ///< vertex (physical)
-      const cell *     ///< cell
+      const std::array<double, MAX_DIM> &,  ///< vertex (physical)
+      const cell *                          ///< cell
   );
 
   ///
@@ -854,8 +854,8 @@ public:
   /// geometry).  Here both input and output are code-integer units.
   ///
   virtual double idistance_vertex2cell(
-      const int *,  ///< vertex (integer)
-      const cell *  ///< cell
+      const std::array<int, MAX_DIM> &,  ///< vertex (integer)
+      const cell *                       ///< cell
   );
 
   ///

@@ -33,9 +33,12 @@
 #include "defines/testing_flags.h"
 #include "tools/mem_manage.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 #include "Riemann_solvers/Riemann_FVS_hydro.h"
 
@@ -91,7 +94,7 @@ int Riemann_FVS_Euler::FVS_flux(
   //
   for (int v = 0; v < rs_nvar; v++) {
     if (!isfinite(pl[v]) || !isfinite(pr[v])) {
-      spdlog::info("NAN's detected FVS flux solver");
+      spdlog::debug("NAN's detected FVS flux solver");
       rep.printVec("left ", pl, rs_nvar);
       rep.printVec("right", pr, rs_nvar);
       return 1;
@@ -178,7 +181,7 @@ int Riemann_FVS_Euler::FVS_flux(
   //
   for (int v = 0; v < rs_nvar; v++) {
     if (!isfinite(fpos[v]) || !isfinite(fneg[v]) || !isfinite(flux[v])) {
-      spdlog::info("NAN's detected!!!");
+      spdlog::debug("NAN's detected!!!");
       rep.printVec("fpos ", fneg, rs_nvar);
       rep.printVec("fneg ", fpos, rs_nvar);
       rep.printVec("flux ", flux, rs_nvar);

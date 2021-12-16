@@ -33,11 +33,12 @@ script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 
 ${mpi} ../icgen-ug \
   ${script_dir}/problems/blastwave_crt3d/params_BW_UGcrt3Dpbc_NR032.txt \
-  silo omp-nthreads=${nt} || exit 1
+  silo omp-nthreads=${nt} redirect=icgen || exit 1
 
 ${mpi} ../pion-ug \
   BW_UGcrt3Dpbc_NR032_0000.00000000.silo \
-  outfile=BW_UGcrt3Dpbc_NR032_new omp-nthreads=${nt} || exit 1
+  outfile=BW_UGcrt3Dpbc_NR032_new omp-nthreads=${nt} \ 
+  redirect=pion-3d-ug-pbc || exit 1
 
 
 REF_FILE=BW_UGcrt3Dpbc_NR032_REF_0000.00000140.silo

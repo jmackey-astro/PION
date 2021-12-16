@@ -15,9 +15,12 @@
 #include <tools/command_line_interface.h>
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 using namespace std;
 
@@ -250,10 +253,10 @@ void CommandLineInterface::print_flux(
     const int nvar  ///< Length of state vectors
 )
 {
-  spdlog::debug("left  : {}", dp.vec2);
-  spdlog::debug("right : {}", dp.vec3);
-  spdlog::debug("pstar : {}", dp.vec1);
-  spdlog::debug("flux  : {}", dp.vec4);
+  // spdlog::debug("left  : {}", dp.vec2);
+  // spdlog::debug("right : {}", dp.vec3);
+  // spdlog::debug("pstar : {}", dp.vec1);
+  // spdlog::debug("flux  : {}", dp.vec4);
 }
 
 void CommandLineInterface::fpt()

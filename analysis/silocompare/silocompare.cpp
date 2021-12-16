@@ -36,9 +36,12 @@ using namespace std;
 
 #include "constants.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 #include <spdlog/sinks/rotating_file_sink.h>
 
 #include "dataIO/dataio_base.h"
@@ -69,7 +72,7 @@ int main(int argc, char **argv)
       "silocompare", "silocompare.log", max_logfile_size, max_logfiles));
 
 #ifdef NDEBUG
-  spdlog::set_level(spdlog::level::err);
+  spdlog::set_level(spdlog::level::info);
   spdlog::flush_on(spdlog::level::err);
 #else
   spdlog::set_level(spdlog::level::trace);

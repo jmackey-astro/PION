@@ -27,7 +27,11 @@
 #include "tools/mem_manage.h"
 
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #ifndef NDEBUG
 #include "grid/cell_interface.h"
@@ -52,7 +56,7 @@ CoolingFn::CoolingFn(int flag)
 
 #ifdef FUNCTION_ID
   string fname = "CoolingFn::CoolingFn";
-  spdlog::info("\t\tCooling Function Constructor)"
+  spdlog::debug("\t\tCooling Function Constructor)"
 #endif  // FUNCTION_ID
   if (flag == 1) {
     WhichFunction = 1;
@@ -219,7 +223,7 @@ CoolingFn::CoolingFn(int flag)
   else if (flag == 5) {
     // C2Ray -- free-free cooling and collisional excitation cooling due to
     // HI
-    spdlog::info(
+    spdlog::debug(
         "\t\tC2RAY-like cooling due to free-free and HI coll.excitation.\t\t the recombination and ionisation cooling are in the microphysics routine.\n\t\t I approx the ff cooling with 1.34e-11*sqrt(T_e)*ne*ni, good for 10^3<T<10^4 or so.\n\t\t I ignore inverse compton cooling off the cmb, since i'm at z=0.\n\t\t I use 7.5e-19*exp(-118348/T)/(1+sqrt(T/1.e5))*n_e*n_H0 as the c.ex. cooling rate...\n");
     MinTemp       = 0.000001;
     MaxTemp       = 1.e8;
@@ -456,7 +460,7 @@ double CoolingFn::CoolingRate(
   }  // KI02 function.
 
   else if (WhichFunction == 3) {
-    spdlog::info(
+    spdlog::debug(
         "DALGARNO AND MCCRAY FUNCTION IS VERY DODGY -- BAD INTERPOLATION");
     if (T > MaxTemp) {
       spdlog::debug(

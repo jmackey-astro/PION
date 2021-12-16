@@ -16,7 +16,7 @@
 #include <spdlog/spdlog.h>
 #include <vector>
 /* prevent clang-format reordering */
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 
 using namespace std;
 
@@ -251,7 +251,7 @@ int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
 
 #ifndef NDEBUG
   spdlog::debug("*** srcrad={}", srcrad);
-  spdlog::debug("src : {}", srcpos);
+  // spdlog::debug("src : {}", srcpos);
 #endif
 
   array<double, MAX_DIM> cpos;
@@ -259,7 +259,7 @@ int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
   do {
     CI.get_dpos(c, cpos);
 #ifndef NDEBUG
-    spdlog::debug("cell: {}", grid->distance(srcpos, c));
+    spdlog::debug("cell: {}", grid->distance_vertex2cell(srcpos, c));
 #endif
     if (grid->distance(srcpos, cpos) <= srcrad) {
       ncell++;
@@ -421,11 +421,11 @@ int stellar_wind_bc::BC_update_STWIND(
     // with masses, positions and velocities, calculate acceleration,
     // brute-force n^2 method
     double sep[MAX_DIM], dist, acc;
-    for (int i = 0; i < stars.size(); i++) {
+    for (unsigned long i = 0; i < stars.size(); i++) {
       // cout<<"init "<<i<<", "; rep.printVec("star pos",stars[i].pos,3);
       // cout<<"     "<<i<<", "; rep.printVec("star vel",stars[i].vel,3);
       // first get acceleration
-      for (int j = 0; j < i; j++) {
+      for (unsigned long j = 0; j < i; j++) {
         for (int v = 0; v < ndim; v++)
           sep[v] = stars[j].pos[v] - stars[i].pos[v];
         dist = 0.0;
@@ -441,7 +441,7 @@ int stellar_wind_bc::BC_update_STWIND(
     }
 
     // step forward in time
-    for (int i = 0; i < stars.size(); i++) {
+    for (unsigned long i = 0; i < stars.size(); i++) {
       for (int v = 0; v < ndim; v++) {
         stars[i].vel[v] += stars[i].acc[v] * 0.5 * dt;
         stars[i].pos[v] += stars[i].vel[v] * dt;
@@ -453,11 +453,11 @@ int stellar_wind_bc::BC_update_STWIND(
     }
 
     // need acceleration at t+dt to get v at t+dt:
-    for (int i = 0; i < stars.size(); i++) {
+    for (unsigned long i = 0; i < stars.size(); i++) {
       for (int v = 0; v < ndim; v++)
         stars[i].acc[v] = 0.0;
       // first get acceleration
-      for (int j = 0; j < i; j++) {
+      for (unsigned long j = 0; j < i; j++) {
         for (int v = 0; v < ndim; v++)
           sep[v] = stars[j].pos[v] - stars[i].pos[v];
         dist = 0.0;
@@ -471,14 +471,14 @@ int stellar_wind_bc::BC_update_STWIND(
         }
       }
     }
-    for (int i = 0; i < stars.size(); i++) {
+    for (unsigned long i = 0; i < stars.size(); i++) {
       for (int v = 0; v < ndim; v++) {
         stars[i].vel[v] += stars[i].acc[v] * 0.5 * dt;
       }
     }
     // Set new source position
     outf << simtime << "  " << dt << "  ";
-    for (int i = 0; i < stars.size(); i++) {
+    for (unsigned long i = 0; i < stars.size(); i++) {
       for (int v = 0; v < ndim; v++)
         SWP.params[stars[i].id]->dpos[v] = stars[i].pos[v];
       for (int v = 0; v < ndim; v++)
@@ -514,10 +514,15 @@ int stellar_wind_bc::BC_update_STWIND(
   // int err=0;
   for (int id = 0; id < grid->Wind->Nsources(); id++) {
 #ifndef NDEBUG
-    spdlog::debug("stellar_wind_bc: updating wind boundary for id={}", id);
+    spdlog::debug(
+        "stellar_wind_bc: updating wind boundary for id={} of {}", id,
+        grid->Wind->Nsources());
 #endif
     err += grid->Wind->set_cell_values(grid, id, simtime);
   }
+#ifndef NDEBUG
+  spdlog::debug("stellar_wind_bc: finished updating wind boundaries");
+#endif
 
   return err;
 }

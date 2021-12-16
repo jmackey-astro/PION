@@ -88,7 +88,11 @@
 #include <sim_params.h>
 #include <vector>
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 /// this is the max change in x or E which is integrated with Euler integration.
 /// A larger change will be integrated with backward-differencing and Newton

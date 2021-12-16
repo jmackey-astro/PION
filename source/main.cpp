@@ -73,6 +73,9 @@ using namespace std;
 #endif /* PARALLEL */
 #endif /* PION_NESTED */
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/spdlog.h>
 
@@ -84,18 +87,8 @@ int main(int argc, char **argv)
 {
   int err = 0;
 
-  auto max_logfile_size = 1048576 * 5;
-  auto max_logfiles     = 3;
-#ifdef PARALLEL
-  spdlog::set_default_logger(spdlog::rotating_logger_mt(
-      "pion_pre_mpi", "pion.log", max_logfile_size, max_logfiles));
-#else
-  spdlog::set_default_logger(spdlog::rotating_logger_mt(
-      "pion", "pion.log", max_logfile_size, max_logfiles));
-#endif /* PARALLEL */
-
 #ifdef NDEBUG
-  spdlog::set_level(spdlog::level::err);
+  spdlog::set_level(spdlog::level::info);
   spdlog::flush_on(spdlog::level::err);
 #else
   spdlog::set_level(spdlog::level::trace);
@@ -129,10 +122,14 @@ int main(int argc, char **argv)
 #ifdef PARALLEL
   int myrank = sim_control->SimPM.levels[0].sub_domain.get_myrank();
   int nproc  = sim_control->SimPM.levels[0].sub_domain.get_nproc();
-  spdlog::set_default_logger(spdlog::rotating_logger_mt(
-      "pion", "pion_process_" + to_string(myrank) + ".log", max_logfile_size,
-      max_logfiles));
-#endif
+  /* turn off logging for not root processes for Release build */
+#ifdef NDEBUG
+  if (myrank > 0) {
+    spdlog::set_level(spdlog::level::off);
+    spdlog::flush_on(spdlog::level::off);
+  }
+#endif /* NDEBUG */
+#endif /* PARALLEL */
 
   //
   // Check that command-line arguments are sufficient.
@@ -143,8 +140,22 @@ int main(int argc, char **argv)
   }
 
   string *args = new string[argc];
-  for (int i = 0; i < argc; i++)
+  for (int i = 0; i < argc; ++i)
     args[i] = argv[i];
+  for (int i = 0; i < argc; ++i) {
+    if (args[i].find("redirect=") != string::npos) {
+      ostringstream path;
+      path << args[i].substr(9);
+#ifdef PARALLEL
+      path << "_" << myrank;
+#endif
+      path << ".log";
+      auto max_logfile_size = 1048576 * 5;
+      auto max_logfiles     = 3;
+      spdlog::set_default_logger(spdlog::rotating_logger_mt(
+          "pion", path.str(), max_logfile_size, max_logfiles));
+    }
+  }
 
 #ifdef PION_OMP
   // set number of OpenMP threads, if included
@@ -157,7 +168,7 @@ int main(int argc, char **argv)
         spdlog::warn("override: requested too many threads");
         nth = min(nth, omp_get_num_procs());
       }
-      spdlog::warn("override: setting OpenMP N-threads to {}");
+      spdlog::warn("override: setting OpenMP N-threads to {}", nth);
       found_omp = true;
     }
   }

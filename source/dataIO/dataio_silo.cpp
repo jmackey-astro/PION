@@ -55,7 +55,11 @@
 #include "tools/mem_manage.h"
 #include <fstream>
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
 #ifndef NDEBUG
 #include "raytracing/raytracer_base.h"

@@ -43,8 +43,13 @@
 #include "constants.h"
 #include "sim_constants.h"
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
 #include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
 
+#include <array>
 #include <vector>
 
 class cell_interface;
