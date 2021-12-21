@@ -65,8 +65,10 @@ endif(PION_PARALLEL)
 
 target_link_libraries(boundaries PUBLIC spatial_solvers)
 target_link_libraries(boundaries PRIVATE grid global)
+target_link_libraries(boundaries PRIVATE spdlog::spdlog)
 
 if(PION_NESTED_GRID)
     target_link_libraries(nested_boundaries PRIVATE nested_grid global)
     target_link_libraries(nested_boundaries PUBLIC boundaries)
+    target_link_libraries(nested_boundaries PRIVATE spdlog::spdlog)
 endif(PION_NESTED_GRID)

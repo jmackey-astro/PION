@@ -13,3 +13,5 @@ add_library(
 )
 
 target_link_libraries(riemann_solvers PUBLIC equations)
+target_link_libraries(riemann_solvers PRIVATE spdlog::spdlog)
+

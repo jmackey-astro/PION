@@ -10,3 +10,4 @@ target_link_libraries(spatial_solvers PUBLIC
     riemann_solvers
     coord_sys
 )
+target_link_libraries(spatial_solvers PRIVATE spdlog::spdlog)

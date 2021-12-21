@@ -6,4 +6,6 @@ if(PION_TOOLS AND PION_PARALLEL)
 
     xray_emission.cpp
   )
+  target_link_libraries(xray_emission PRIVATE spdlog::spdlog)
 endif(PION_TOOLS AND PION_PARALLEL)
+

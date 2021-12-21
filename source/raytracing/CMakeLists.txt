@@ -14,3 +14,5 @@ else()
 endif(PION_PARALLEL)
 
 target_link_libraries(raytracing PRIVATE global boundaries)
+target_link_libraries(raytracing PRIVATE spdlog::spdlog)
+

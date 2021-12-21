@@ -24,3 +24,5 @@ add_library(
 
 target_link_libraries(microphysics PUBLIC raytracing)
 target_link_libraries(microphysics PRIVATE tools ${SUNDIALS_LIBRARY})
+target_link_libraries(microphysics PRIVATE spdlog::spdlog)
+

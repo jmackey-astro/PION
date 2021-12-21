@@ -7,3 +7,5 @@ add_library(
 )
 
 target_link_libraries(equations PUBLIC microphysics)
+target_link_libraries(equations PRIVATE spdlog::spdlog)
+

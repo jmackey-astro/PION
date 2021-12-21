@@ -802,8 +802,8 @@ int sim_init::output_data(vector<class GridBaseClass *>
   // saved, so go and do it...
   //
   spdlog::info(
-      "\tSaving data at step {} and sim-time {} to file {}", SimPM.timestep,
-      SimPM.simtime, SimPM.outFileBase);
+      "\tSaving data at step {} and sim-time {:12.6e} to file {}",
+      SimPM.timestep, SimPM.simtime, SimPM.outFileBase);
   err = dataio->OutputData(SimPM.outFileBase, grid, SimPM, SimPM.timestep);
   if (textio)
     err += textio->OutputData(SimPM.outFileBase, grid, SimPM, SimPM.timestep);

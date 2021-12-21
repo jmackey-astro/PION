@@ -192,8 +192,10 @@ if(NOT PION_SKIP_SOURCE)
     add_definitions("-DSPDLOG_FMT_EXTERNAL")
     add_definitions("-DSPDLOG_COMPILED_LIB")
 
+
     if (${spdlog_VERSION_MAJOR} GREATER_EQUAL 1)
         if (${spdlog_VERSION_MINOR} GREATER_EQUAL 6)
+            message(STATUS "spdlog version = ${spdlog_VERSION_MAJOR}.${spdlog_VERSION_MINOR}")
             add_definitions("-DSPDLOG_FWD")
         endif (${spdlog_VERSION_MINOR} GREATER_EQUAL 6)
     endif (${spdlog_VERSION_MAJOR} GREATER_EQUAL 1)

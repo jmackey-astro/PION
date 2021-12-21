@@ -17,6 +17,7 @@ if(PION_TOOLS AND PION_PARALLEL AND PION_USE_SILO AND PION_USE_FITS)
     dataio
     xray_emission
     image_io
+    spdlog::spdlog
   )
   if(PION_NESTED_GRID)
       target_link_libraries(projection3D PRIVATE nested_grid)

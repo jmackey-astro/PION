@@ -5,3 +5,5 @@ add_library(
     HD_3D_ShockCloud.cpp
     read_BBurkhart_data.cpp
 )
+
+target_link_libraries(contrib PRIVATE spdlog::spdlog)

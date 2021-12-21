@@ -12,6 +12,7 @@ if(PION_TOOLS AND PION_PARALLEL AND PION_USE_SILO)
   target_link_libraries(silocompare PRIVATE
     global
     dataio
+    spdlog::spdlog
   )
 
   if (PION_NESTED_GRID)

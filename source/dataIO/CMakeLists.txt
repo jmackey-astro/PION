@@ -8,6 +8,8 @@ add_library(
     readparams.cpp
 )
 
+target_link_libraries(dataio PRIVATE spdlog::spdlog)
+
 if(PION_USE_SILO)
     if(PION_PARALLEL)
         add_library(
@@ -25,6 +27,8 @@ if(PION_USE_SILO)
         )
     endif(PION_PARALLEL)
 
+    target_link_libraries(dataio_silo PRIVATE spdlog::spdlog)
+    target_link_libraries(dataio_silo PRIVATE ${SILO_LIBRARY})
     target_link_libraries(dataio PRIVATE ${SILO_LIBRARY})
     target_link_libraries(dataio PUBLIC dataio_silo)
 endif(PION_USE_SILO)
@@ -53,6 +57,7 @@ if(PION_USE_FITS)
         ${CURL_LIBRARY}
         ${BZIP2_LIBRARY}
         Threads::Threads
+        spdlog::spdlog
     )
     target_link_libraries(dataio PUBLIC dataio_fits)
 endif(PION_USE_FITS)

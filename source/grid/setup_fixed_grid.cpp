@@ -107,7 +107,7 @@ setup_fixed_grid::setup_fixed_grid()
 
 setup_fixed_grid::~setup_fixed_grid()
 {
-  spdlog::info("(setup_fixed_grid::Destructor)...");
+  spdlog::debug("(setup_fixed_grid::Destructor)...");
 #ifdef PION_OMP
   #pragma omp parallel
   {
@@ -123,7 +123,7 @@ setup_fixed_grid::~setup_fixed_grid()
 #ifdef PION_OMP
   }
 #endif
-  spdlog::info("(setup_fixed_grid::Destructor) Done");
+  spdlog::debug("(setup_fixed_grid::Destructor) Done");
 }
 
 // ##################################################################
@@ -175,9 +175,6 @@ int setup_fixed_grid::setup_grid(
 )
 {
   spdlog::info("(pion ug)  Setting up computational grid");
-
-  spdlog::info("Init::setup_grid");
-
   class GridBaseClass **grid = &(g[0]);
 
   if (SimPM.ndim < 1 || SimPM.ndim > 3)
@@ -227,7 +224,7 @@ int setup_fixed_grid::setup_grid(
   //
   // Now we can setup the grid:
   //
-  spdlog::info("(setup_fixed_grid::setup_grid) Setting up grid...");
+  spdlog::debug("(setup_fixed_grid::setup_grid) Setting up grid...");
   if (*grid) spdlog::error("{}: {}", "Grid already set up!", fmt::ptr(*grid));
 
   if (SimPM.coord_sys == COORD_CRT)
@@ -444,7 +441,6 @@ int setup_fixed_grid::setup_microphysics(
             SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer,
             SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
         if (!MP) spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
-        spdlog::info("\tDone.");
         break;
 
 #ifdef CODE_EXT_HHE
@@ -452,7 +448,6 @@ int setup_fixed_grid::setup_microphysics(
         spdlog::info("\tsetting up MPv10 module");
         MP = new mpv9_HHe(
             SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), SimPM.gamma);
-        spdlog::info("\tDone.");
         if (!MP) spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
         break;
 #endif
@@ -857,7 +852,7 @@ int setup_fixed_grid::boundary_conditions(
         "{}: Expected {} but got {}", "sfg::boundary_conditions::SetupBCs", 0,
         err);
 
-  spdlog::info("(setup_fixed_grid::boundary_conditions) Done");
+  spdlog::debug("(setup_fixed_grid::boundary_conditions) Done");
   return 0;
 }
 

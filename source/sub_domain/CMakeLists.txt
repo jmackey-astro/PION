@@ -7,3 +7,4 @@ add_library(
 )
 
 target_link_libraries(sub_domain PUBLIC ${MPI_CXX_LIBRARIES})
+target_link_libraries(sub_domain PRIVATE spdlog::spdlog)

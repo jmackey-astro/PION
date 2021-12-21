@@ -41,8 +41,10 @@ endif(PION_PARALLEL)
 
 target_link_libraries(grid PUBLIC boundaries)
 target_link_libraries(grid PRIVATE global)
+target_link_libraries(grid PRIVATE spdlog::spdlog)
 
 if(PION_NESTED_GRID)
     target_link_libraries(nested_grid PUBLIC grid nested_boundaries)
     target_link_libraries(nested_grid PRIVATE global)
+    target_link_libraries(nested_grid PRIVATE spdlog::spdlog)
 endif(PION_NESTED_GRID)

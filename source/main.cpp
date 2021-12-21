@@ -149,16 +149,22 @@ int main(int argc, char **argv)
 #endif
   for (int i = 0; i < argc; ++i) {
     if (args[i].find("redirect=") != string::npos) {
-      ostringstream path;
-      path << args[i].substr(9);
-#ifdef PARALLEL
-      path << "_" << myrank;
+#if defined NDEBUG && defined PARALLEL
+      if (myrank == 0) {
 #endif
-      path << ".log";
-      auto max_logfile_size = 1048576 * 5;
-      auto max_logfiles     = 3;
-      spdlog::set_default_logger(spdlog::rotating_logger_mt(
-          "pion", path.str(), max_logfile_size, max_logfiles));
+        ostringstream path;
+        path << args[i].substr(9);
+#ifdef PARALLEL
+        path << "_" << myrank;
+#endif
+        path << ".log";
+        auto max_logfile_size = 1048576 * 5;
+        auto max_logfiles     = 3;
+        spdlog::set_default_logger(spdlog::rotating_logger_mt(
+            "pion", path.str(), max_logfile_size, max_logfiles));
+#if defined NDEBUG && defined PARALLEL
+      }
+#endif
     }
   }
 
@@ -293,9 +299,11 @@ int main(int argc, char **argv)
   delete[] args;
   args = 0;
 
+  spdlog::info("-------------------------------------------------------");
   spdlog::info(
-      "-------------------------------------------------------\n---------   pion {} {} v2.0  finished ---------------\n-------------------------------------------------------",
-      grid_type, parallelism);
+      "---------   pion {} {} v2.0  finished ---------------", grid_type,
+      parallelism);
+  spdlog::info("-------------------------------------------------------");
 
   return 0;
 }

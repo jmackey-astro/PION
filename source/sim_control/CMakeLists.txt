@@ -35,8 +35,10 @@ else()
 endif(PION_PARALLEL)
 
 target_link_libraries(sim_control PRIVATE global)
+target_link_libraries(sim_control PRIVATE spdlog::spdlog)
 
 if(PION_NESTED_GRID)
     target_link_libraries(nested_sim_control PRIVATE global)
     target_link_libraries(nested_sim_control PUBLIC sim_control)
+    target_link_libraries(nested_sim_control PRIVATE spdlog::spdlog)
 endif(PION_NESTED_GRID)

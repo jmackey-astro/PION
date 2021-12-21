@@ -17,3 +17,5 @@ add_library(
 	spherical_clump.cpp                      
 	StarBench_test.cpp                       
 )
+
+target_link_libraries(ics PRIVATE spdlog::spdlog)

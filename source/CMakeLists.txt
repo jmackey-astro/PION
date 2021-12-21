@@ -26,7 +26,8 @@ add_library(
   constants.cpp
 ) 
 
-target_link_libraries(global INTERFACE dataio tools spdlog::spdlog)
+target_link_libraries(global INTERFACE dataio tools)
+target_link_libraries(global PRIVATE spdlog::spdlog)
 
 if(PION_OMP)
     target_link_libraries(global INTERFACE OpenMP::OpenMP_CXX)

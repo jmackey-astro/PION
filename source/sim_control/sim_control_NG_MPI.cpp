@@ -78,22 +78,29 @@ int sim_control_NG_MPI::Init(
   // ----------------------------------------------------------------
   SimPM.typeofip = typeOfFile;
   setup_dataio_class(SimPM, typeOfFile);
-  if (!dataio->file_exists(infile))
+  if (!dataio->file_exists(infile)) {
     spdlog::error("{}: {}", "infile doesn't exist!", infile);
+    exit(1);
+  }
+
 
   // ----------------------------------------------------------------
   err = dataio->ReadHeader(infile, SimPM);
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "NG_MPI Init(): failed to read header", 0,
         err);
+    exit(err);
+  }
 
   // Check if any commandline args override the file parameters.
   // ----------------------------------------------------------------
   err = override_params(narg, args);
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "(NG_MPI INIT::override_params)", 0, err);
+    exit(err);
+  }
 
   // setup the nested grid levels, and decompose the domain on each
   // level
@@ -104,35 +111,43 @@ int sim_control_NG_MPI::Init(
   err = setup_grid(grid, SimPM);
   spdlog::info("NG_MPI Init: grid setup finished");
   SimPM.dx = grid[0]->DX();
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "(NG_MPI INIT::setup_grid) error", 0,
         err);
+    exit(err);
+  }
 
   // All grid parameters are now set, so set up the appropriate
   // equations/solver class.
   // ----------------------------------------------------------------
   err = set_equations(SimPM);
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "(NG_MPI INIT::set_equations)", 0, err);
+    exit(err);
+  }
   spatial_solver->SetEOS(SimPM.gamma);
 
   // set up Microphysics, if needed.
   // ----------------------------------------------------------------
   err = setup_microphysics(SimPM);
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "(NG_MPI INIT::setup_microphysics)", 0,
         err);
+    exit(err);
+  }
 
   // assign data to the grid from snapshot file.
   // ----------------------------------------------------------------
   err = dataio->ReadData(infile, grid, SimPM);
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "(NG_MPI INIT::assign_initial_data)", 0,
         err);
+    exit(err);
+  }
 
   // ----------------------------------------------------------------
   // Set Ph[] = P[], and then implement the boundary conditions.
@@ -162,24 +177,30 @@ int sim_control_NG_MPI::Init(
 
   // ----------------------------------------------------------------
   err = boundary_conditions(SimPM, grid);
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}",
         "(NG_MPI INIT::boundary_conditions) err!=0", 0, err);
+    exit(err);
+  }
 
   // ----------------------------------------------------------------
   err += setup_raytracing(SimPM, grid);
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "Failed to setup raytracer", 0, err);
+    exit(err);
+  }
 
   // ----------------------------------------------------------------
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     err = assign_boundary_data(SimPM, l, grid[l], MP);
-    if (0 != err)
+    if (err) {
       spdlog::error(
           "{}: Expected {} but got {}", "NG_MPI INIT::assign_boundary_data", 0,
           err);
+      exit(err);
+    }
     SimPM.levels[0].sub_domain.barrier("level assign boundary data");
   }
   // ----------------------------------------------------------------
@@ -193,10 +214,12 @@ int sim_control_NG_MPI::Init(
         SimPM, l, grid[l], spatial_solver, SimPM.simtime, SimPM.tmOOA,
         SimPM.tmOOA);
   }
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "NG_MPI INIT: error from bounday update",
         0, err);
+    exit(err);
+  }
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -232,10 +255,12 @@ int sim_control_NG_MPI::Init(
 #endif
     }
   }
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "NG_MPI INIT: error from bounday update",
         0, err);
+    exit(err);
+  }
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -247,10 +272,12 @@ int sim_control_NG_MPI::Init(
         SimPM, l, grid[l], spatial_solver, SimPM.simtime, SimPM.tmOOA,
         SimPM.tmOOA);
   }
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "NG_MPI INIT: error from bounday update",
         0, err);
+    exit(err);
+  }
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -262,10 +289,12 @@ int sim_control_NG_MPI::Init(
         SimPM, l, grid[l], spatial_solver, SimPM.simtime, 0.0, SimPM.tmOOA,
         SimPM.tmOOA);
   }
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "NG_MPI INIT: error from bounday update",
         0, err);
+    exit(err);
+  }
 
   // ----------------------------------------------------------------
   // update fine-to-coarse level boundaries
@@ -295,10 +324,12 @@ int sim_control_NG_MPI::Init(
 #endif
     }
   }
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "NG_MPI INIT: error from bounday update",
         0, err);
+    exit(err);
+  }
   // ----------------------------------------------------------------
 
   //
@@ -313,10 +344,12 @@ int sim_control_NG_MPI::Init(
   //
   // ----------------------------------------------------------------
   if (SimPM.op_criterion == 1) {
-    if (SimPM.opfreq_time < TINYVALUE)
+    if (SimPM.opfreq_time < TINYVALUE) {
       spdlog::error(
           "{}: {}", "opfreq_time not set right and is needed!",
           SimPM.opfreq_time);
+      exit(SimPM.opfreq_time);
+    }
     SimPM.next_optime = SimPM.simtime + SimPM.opfreq_time;
     double tmp        = ((SimPM.simtime / SimPM.opfreq_time)
                   - floor(SimPM.simtime / SimPM.opfreq_time))
@@ -339,8 +372,10 @@ int sim_control_NG_MPI::Init(
       textio = 0;
     }
     setup_dataio_class(SimPM, SimPM.typeofop);
-    if (!dataio)
+    if (!dataio) {
       spdlog::error("{}: {}", "NG_MPI INIT:: dataio", SimPM.typeofop);
+      exit(SimPM.typeofop);
+    }
   }
   dataio->SetSolver(spatial_solver);
   dataio->SetMicrophysics(MP);
@@ -413,10 +448,12 @@ int sim_control_NG_MPI::Time_Int(
         SimPM.tmOOA, SimPM.tmOOA);
     spdlog::debug("... done");
   }
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "sim_control_NG_MPI: internal boundary",
         0, err);
+    exit(err);
+  }
   // --------------------------------------------------------------
   // ----------------------------------------------------------------
   // update fine-to-coarse level boundaries
@@ -438,10 +475,12 @@ int sim_control_NG_MPI::Time_Int(
     spdlog::debug("NG_MPI raytracing level {}", l);
     err =
         update_evolving_RT_sources(SimPM, SimPM.levels[l].simtime, grid[l]->RT);
-    if (0 != err)
+    if (err) {
       spdlog::error(
           "{}: Expected {} but got {}", "NG TIME_INT::update_RT_sources error",
           0, err);
+      exit(err);
+    }
     do_ongrid_raytracing(SimPM, grid[l], l);
 
     if (l > 0) {
@@ -457,10 +496,12 @@ int sim_control_NG_MPI::Time_Int(
 #ifdef TEST_INT
   spdlog::info("NG_MPI updated F2C boundaries for all levels");
 #endif
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}",
         "NG_MPI time-int: error from bounday update", 0, err);
+    exit(err);
+  }
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -483,10 +524,12 @@ int sim_control_NG_MPI::Time_Int(
     err += TimeUpdateExternalBCs(
         SimPM, l, grid[l], spatial_solver, SimPM.levels[l].simtime, SimPM.tmOOA,
         SimPM.tmOOA);
-    if (0 != err)
+    if (err) {
       spdlog::error(
           "{}: Expected {} but got {}", "sim_control_NG_MPI: external boundary",
           0, err);
+      exit(err);
+    }
 
     if (l < SimPM.grid_nlevels - 1) {
       for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
@@ -497,10 +540,12 @@ int sim_control_NG_MPI::Time_Int(
       }
     }
   }
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}",
         "NG_MPI time-int: error from bounday update", 0, err);
+    exit(err);
+  }
   // ----------------------------------------------------------------
 
   cout.setf(ios_base::scientific);
@@ -523,9 +568,11 @@ int sim_control_NG_MPI::Time_Int(
         SimPM.levels[l].last_dt = SimPM.last_dt / SimPM.levels[l].multiplier;
       }
       err += calculate_timestep(SimPM, grid[l], l);
-      if (0 != err)
+      if (err) {
         spdlog::error(
             "{}: Expected {} but got {}", "TIME_INT::calc_timestep()", 0, err);
+        exit(err);
+      }
 
       mindt = std::min(mindt, SimPM.dt / scale);
       mindt = SimPM.levels[0].sub_domain.global_operation_double("MIN", mindt);
@@ -554,9 +601,11 @@ int sim_control_NG_MPI::Time_Int(
     }
     if (restart) restart = false;
     SimPM.last_dt = SimPM.levels[0].last_dt;
-    if (0 != err)
+    if (err) {
       spdlog::error(
           "{}: Expected {} but got {}", "TIME_INT::calc_timestep()", 0, err);
+      exit(err);
+    }
     clk.pause_timer("dt");
     // --------------------------------------------------------------
 
@@ -590,10 +639,12 @@ int sim_control_NG_MPI::Time_Int(
     // --------------------------------------------------------------
 
     err += output_data(grid);
-    if (0 != err)
+    if (err) {
       spdlog::error(
           "{}: Expected {} but got {}", "MPI_NG TIME_INT::output_data()", 0,
           err);
+      exit(err);
+    }
 
 #ifdef TEST_CONSERVATION
     err += check_energy_cons(grid);
@@ -611,10 +662,12 @@ int sim_control_NG_MPI::Time_Int(
     }
 
     err += check_eosim();
-    if (0 != err)
+    if (err) {
       spdlog::error(
           "{}: Expected {} but got {}", "MPI_NG TIME_INT::check_eosim()", 0,
           err);
+      exit(err);
+    }
   }
   spdlog::info(
       "sim_control_NG_MPI:: TIME_INT FINISHED.  MOVING ON TO FINALISE SIM");
@@ -776,10 +829,13 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
 #endif
   err += calc_microphysics_dU(dt2_this, grid);
   err += calc_dynamics_dU(dt2_this, OA1, grid);
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "NG-MPI scn::advance_step_OA1: calc_x_dU",
         0, err);
+    exit(err);
+  }
+
   if (l > 0) save_fine_fluxes(SimPM, l);
   if (l < SimPM.grid_nlevels - 1) save_coarse_fluxes(SimPM, l);
     // --------------------------------------------------------
@@ -825,17 +881,21 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
 #ifndef SKIP_BC89_FLUX
   if (l < SimPM.grid_nlevels - 1) {
     err += recv_BC89_fluxes_F2C(spatial_solver, SimPM, l, OA1, OA1);
-    if (0 != err)
+    if (err) {
       spdlog::error(
           "{}: Expected {} but got {}", "scn::advance_step_OA1: recv_BC89_flux",
           0, err);
+      exit(err);
+    }
   }
 #endif
   err += grid_update_state_vector(SimPM.levels[l].dt, OA1, OA1, grid);
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "scn::advance_step_OA1: state-vec update",
         0, err);
+    exit(err);
+  }
 #ifndef SKIP_BC89_FLUX
   if (l < SimPM.grid_nlevels - 1) {
     clear_sends_BC89_fluxes(SimPM.levels[l + 1].sub_domain);
@@ -879,15 +939,19 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   if (grid->RT) {
     spdlog::debug("advance_step_OA1: l={} RT at end of step", l);
     update_evolving_RT_sources(SimPM, SimPM.levels[l].simtime, grid->RT);
-    if (0 != err)
+    if (err) {
       spdlog::error(
           "{}: Expected {} but got {}", "NG TIME_INT::update_RT_sources error",
           0, err);
+      exit(err);
+    }
     err += do_ongrid_raytracing(SimPM, grid, l);
-    if (0 != err)
+    if (err) {
       spdlog::error(
           "{}: Expected {} but got {}",
           "NG-MPI::advance_step_OA1: calc_rt_cols()", 0, err);
+      exit(err);
+    }
   }
   // --------------------------------------------------------
 
@@ -1041,10 +1105,13 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   clk.start_timer("dyn");
   err += calc_dynamics_dU(dt_now, OA1, grid);
   clk.pause_timer("dyn");
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "NG-MPI scn::advance_step_OA2: calc_x_dU",
         0, err);
+    exit(err);
+  }
+
 
   // update state vector Ph to half-step values
   clk.start_timer("upd");
@@ -1052,10 +1119,12 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   spdlog::debug("advance_step_OA2: l={} update cell half step", l);
 #endif
   err += grid_update_state_vector(dt_now, OA1, OA2, grid);
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}",
         "scn::advance_step_OA2: state-vec update OA2", 0, err);
+    exit(err);
+  }
   clk.pause_timer("upd");
   // --------------------------------------------------------
 
@@ -1086,10 +1155,12 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   err += TimeUpdateExternalBCs(
       SimPM, l, grid, spatial_solver, ctime + dt_now, OA1, OA2);
   clk.pause_timer("ebc");
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}",
         "scn::advance_step_OA2: bounday update OA2", 0, err);
+    exit(err);
+  }
   // --------------------------------------------------------
 
   // --------------------------------------------------------
@@ -1111,15 +1182,19 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   if (grid->RT) {
     update_evolving_RT_sources(
         SimPM, SimPM.levels[l].simtime + 0.5 * dt_now, grid->RT);
-    if (0 != err)
+    if (err) {
       spdlog::error(
           "{}: Expected {} but got {}", "NG TIME_INT::update_RT_sources error",
           0, err);
+      exit(err);
+    }
     err += do_ongrid_raytracing(SimPM, grid, l);
-    if (0 != err)
+    if (err) {
       spdlog::error(
           "{}: Expected {} but got {}", "scn::advance_time: calc_rt_cols() OA2",
           0, err);
+      exit(err);
+    }
   }
   clk.pause_timer("rt");
 #ifdef TEST_INT
@@ -1131,10 +1206,12 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   clk.start_timer("dyn");
   err += calc_dynamics_dU(dt_now, OA2, grid);
   clk.pause_timer("dyn");
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "scn::advance_step_OA2: calc_x_dU OA2", 0,
         err);
+    exit(err);
+  }
   clk.start_timer("bc89");
   if (l > 0) save_fine_fluxes(SimPM, l);
   if (l < SimPM.grid_nlevels - 1) save_coarse_fluxes(SimPM, l);
@@ -1183,19 +1260,23 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   clk.start_timer("bc89");
   if (l < SimPM.grid_nlevels - 1) {
     err += recv_BC89_fluxes_F2C(spatial_solver, SimPM, l, OA2, OA2);
-    if (0 != err)
+    if (err) {
       spdlog::error(
           "{}: Expected {} but got {}", "scn::advance_step_OA1: recv_BC89_flux",
           0, err);
+      exit(err);
+    }
   }
   clk.pause_timer("bc89");
 #endif
   clk.start_timer("upd");
   err += grid_update_state_vector(SimPM.levels[l].dt, OA2, OA2, grid);
-  if (0 != err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "scn::advance_step_OA2: state-vec update",
         0, err);
+    exit(err);
+  }
   clk.pause_timer("upd");
 #ifndef SKIP_BC89_FLUX
   clk.start_timer("bc89");
@@ -1250,15 +1331,19 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   clk.start_timer("rt");
   if (grid->RT) {
     update_evolving_RT_sources(SimPM, SimPM.levels[l].simtime, grid->RT);
-    if (0 != err)
+    if (err) {
       spdlog::error(
           "{}: Expected {} but got {}", "NG TIME_INT::update_RT_sources error",
           0, err);
+      exit(err);
+    }
     err += do_ongrid_raytracing(SimPM, grid, l);
-    if (0 != err)
+    if (err) {
       spdlog::error(
           "{}: Expected {} but got {}",
           "NG-MPI::advance_step_OA2: raytracing()", 0, err);
+      exit(err);
+    }
   }
   clk.pause_timer("rt");
   // --------------------------------------------------------
@@ -1474,10 +1559,12 @@ int sim_control_NG_MPI::RT_all_sources_levels(
 #endif
     err = do_ongrid_raytracing(par, grid, l);
     // err = do_offgrid_raytracing(par,grid,l);
-    if (err)
+    if (err) {
       spdlog::error(
           "{}: Expected {} but got {}", "NG RT_all_sources_levels: pass 2 RT",
           0, err);
+      exit(err);
+    }
 
     // send column densities to coarser grid
     if (l > 0) {
@@ -1493,10 +1580,12 @@ int sim_control_NG_MPI::RT_all_sources_levels(
     cout << "moving on to next level.\n";
 #endif
   }
-  if (err)
+  if (err) {
     spdlog::error(
         "{}: Expected {} but got {}",
         "sim_control_NG: internal boundary update", 0, err);
+    exit(err);
+  }
   // --------------------------------------------------------------
 
   // --------------------------------------------------------------
@@ -1509,10 +1598,12 @@ int sim_control_NG_MPI::RT_all_sources_levels(
     // C2F gets data from parent grid onto this grid.
     err = TimeUpdateExternalBCs(
         par, l, grid, spatial_solver, par.simtime, par.tmOOA, par.tmOOA);
-    if (err)
+    if (err) {
       spdlog::error(
           "{}: Expected {} but got {}",
           "NG RT_all_sources_levels: pass 3 BC-ext", 0, err);
+      exit(err);
+    }
   }
   // --------------------------------------------------------------
 

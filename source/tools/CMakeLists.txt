@@ -8,6 +8,7 @@ add_library(tools
 
 #target_link_libraries(tools PRIVATE GSL::gsl)
 target_link_libraries(tools PRIVATE Boost::boost)
+target_link_libraries(tools PUBLIC spdlog::spdlog)
 
 if (CMAKE_BUILD_TYPE MATCHES "Debug")
     message(STATUS "Curses_FOUND: ${Curses_FOUND}")

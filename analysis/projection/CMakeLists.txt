@@ -16,6 +16,7 @@ if(PION_TOOLS AND PION_PARALLEL AND PION_USE_SILO AND PION_USE_FITS)
     global
     dataio
     xray_emission
+    spdlog::spdlog
   )
   if(PION_NESTED_GRID)
       target_link_libraries(projection2D PRIVATE nested_grid)
@@ -39,5 +40,6 @@ if(PION_TOOLS AND PION_PARALLEL AND PION_USE_SILO AND PION_USE_FITS)
     image_io.cpp
   )
   target_link_libraries(image_io PRIVATE dataio)
+  target_link_libraries(image_io PRIVATE spdlog::spdlog)  
 
 endif(PION_TOOLS AND PION_PARALLEL AND PION_USE_SILO AND PION_USE_FITS)
