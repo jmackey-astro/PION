@@ -63,7 +63,6 @@
 
 #ifndef NDEBUG
 #include "raytracing/raytracer_base.h"
-#include "tools/command_line_interface.h"
 #endif  // NDEBUG
 
 #include "microphysics/microphysics_base.h"
@@ -220,6 +219,7 @@ int dataio_silo::WriteHeader(
 )
 {
   spdlog::error("{}: {}", "dataio_silo::WriteHeader() don't call me!", 1);
+  exit(1);
   return 0;
 }
 
@@ -273,6 +273,7 @@ int dataio_silo::OutputData(
     if (!fff) {
       spdlog::error(
           "{}: {}", "!!!**** Can't write file.  directory exists???", silofile);
+      exit(1);
     }
     fff.close();
 

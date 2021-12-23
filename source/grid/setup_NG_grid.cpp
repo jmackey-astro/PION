@@ -12,7 +12,6 @@
 #include "defines/testing_flags.h"
 
 #include "raytracing/raytracer_SC.h"
-#include "tools/command_line_interface.h"
 
 
 #include "grid/setup_NG_grid.h"

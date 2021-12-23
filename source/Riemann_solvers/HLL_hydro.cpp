@@ -18,13 +18,10 @@
 
 
 #ifndef NDEBUG
-#include "tools/command_line_interface.h"
 #endif  // NDEBUG
 
 #include "equations/eqns_hydro_adiabatic.h"
 #include "microphysics/microphysics_base.h"
-#include <cmath>
-
 using namespace std;
 
 // ##################################################################

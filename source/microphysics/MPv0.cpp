@@ -64,7 +64,6 @@
 #include <fmt/ranges.h>
 
 #ifndef NDEBUG
-#include "tools/command_line_interface.h"
 #endif  // NDEBUG
 
 #ifdef LEGACY_CODE

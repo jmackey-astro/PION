@@ -164,7 +164,6 @@
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_SC.h"
 #include "sim_control.h"
-#include "tools/command_line_interface.h"
 
 #include "tools/timer.h"
 
@@ -259,7 +258,7 @@ int sim_control::Time_Int(
 #if !defined(BLAST_WAVE_CHECK)
     tsf = clk.time_so_far("time_int");
     spdlog::info(
-        "New time: {:12.6e}   dt: {:12.6e}   steps: {:8d}   runtime: {:12.2e} s",
+        "New time: {:12.6e}   dt: {:12.6e}   steps: {:8d}   runtime: {:12.4e} s",
         SimPM.simtime, SimPM.dt, SimPM.timestep, tsf);
 #endif
 #endif

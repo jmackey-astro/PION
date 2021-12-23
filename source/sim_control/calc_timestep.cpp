@@ -23,7 +23,6 @@
 #include <fmt/ranges.h>
 
 #ifndef NDEBUG
-#include "tools/command_line_interface.h"
 #endif  // NDEBUG
 
 #include "grid/setup_fixed_grid.h"
@@ -341,7 +340,7 @@ int calc_timestep::set_thermal_conduction_Edot(
           cpt          = grid->get_cell_all(index[0], index[1], index[2]);
           cell *npt    = grid->NextPt(cpt, posdirs[idim]);
           cell *lpt    = 0;
-          double q_neg = 0.0, q_pos = 0.0, gradT = 0.0, T = 0.0;
+          double q_neg = 0.0, q_pos = 0.0, gradT = 0.0;
           double q1 = 0.0, q2 = 0.0;
           double dx = grid->DX();
           if (npt == 0)
@@ -361,7 +360,6 @@ int calc_timestep::set_thermal_conduction_Edot(
               c2 = npt;
             else
               c2 = cpt;
-            T = c2->dU[RHO];
             // For saturated Q we follow S&C(1992) and use phi_s=0.3
             q_pos = 1.5 * c2->Ph[RO] * pow(c2->Ph[PG] / c2->Ph[RO], 1.5);
             if (gradT > 0.0) q_pos *= -1.0;

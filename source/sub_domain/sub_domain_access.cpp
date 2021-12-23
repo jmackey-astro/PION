@@ -1,10 +1,12 @@
+
+
+#include "sim_params.h"
 #include "sub_domain.h"
 #ifdef SPDLOG_FWD
 #include <spdlog/fwd.h>
 #endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
-#include <tools/command_line_interface.h>
 
 #include <sstream>
 

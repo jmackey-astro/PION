@@ -20,18 +20,13 @@
 #include <fmt/ranges.h>
 
 #ifndef NDEBUG
-#include "tools/command_line_interface.h"
 #endif  // NDEBUG
 
 #include "grid/grid_base_class.h"
 #include "grid/stellar_wind_latdep.h"
 #include "microphysics/microphysics_base.h"
-#include <sstream>
-
-
-#include "constants.h"
-#include <cmath>
 #include <cstdio>
+#include <sstream>
 #include <vector>
 using namespace std;
 

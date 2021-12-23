@@ -41,7 +41,6 @@
 #include <fstream>
 
 #ifndef NDEBUG
-#include "tools/command_line_interface.h"
 #endif  // NDEBUG
 
 #include "microphysics/cooling_SD93_cie.h"

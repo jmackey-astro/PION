@@ -43,6 +43,7 @@ case $HOSTNAME in
       ######## intel ########
       module load cmake3
       module load openmpi/intel
+      module load gcc
       export CC=icc
       export CXX=icpc
       export FC=ifort
@@ -54,7 +55,7 @@ case $HOSTNAME in
       ######### gcc #########
     fi
     module load conda
-    source activate
+    source activate python3
     module list
     MAKE_UNAME=KAY
     NCORES=8

@@ -13,7 +13,6 @@
 #include "defines/testing_flags.h"
 
 #include "raytracing/raytracer_SC.h"
-#include "tools/command_line_interface.h"
 
 
 #ifdef SPDLOG_FWD

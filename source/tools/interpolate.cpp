@@ -25,12 +25,6 @@
 /* prevent clang-format reordering */
 #include <fmt/ranges.h>
 
-#ifndef INTEL
-#include <cmath>  // Header file from gcc
-#else
-#include <mathimf.h>  // Header file from Intel Compiler
-#endif
-
 ///
 /// global instance of class, defined in interpolate.cpp.
 ///

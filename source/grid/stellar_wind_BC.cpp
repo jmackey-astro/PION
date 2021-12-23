@@ -60,7 +60,6 @@
 #include <fmt/ranges.h>
 
 #ifndef NDEBUG
-#include "tools/command_line_interface.h"
 #endif  // NDEBUG
 
 #include "grid/grid_base_class.h"
@@ -1044,7 +1043,6 @@ int stellar_wind_evolution::add_evolving_source(
   // Decide if the wind src is active yet.  If it is, then
   // set up a constant wind source for updating its properties.
   //
-  double mdot = 0.0, vinf = 0.0, vrot = 0.0, Twind = 0.0, rstar = 0.0;
   double xh = 0.0, xhe = 0.0, xc = 0.0, xn = 0.0, xo = 0.0, xz = 0.0, xd = 0.0;
 
   if (((t_now + temp->update_freq) > temp->tstart

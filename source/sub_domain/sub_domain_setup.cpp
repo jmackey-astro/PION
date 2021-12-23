@@ -10,9 +10,13 @@
 /// - 2016.02.02 JM: Added option to decompose only along one axis.
 /// - 2018.01.24 JM: worked on making SimPM non-global
 
-#include <algorithm>
-#include <tools/command_line_interface.h>
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "sim_params.h"
+#include "sub_domain.h"
 #include <tools/mem_manage.h>
+
+#include <algorithm>
 
 #ifdef SPDLOG_FWD
 #include <spdlog/fwd.h>
@@ -20,8 +24,6 @@
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
 #include <fmt/ranges.h>
-
-#include "sub_domain.h"
 
 using namespace std;
 

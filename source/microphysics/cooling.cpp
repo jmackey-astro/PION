@@ -35,7 +35,6 @@
 
 #ifndef NDEBUG
 #include "grid/cell_interface.h"
-#include "tools/command_line_interface.h"
 #endif  // NDEBUG
 
 #include "microphysics/cooling.h"

@@ -16,7 +16,6 @@
 #include "defines/testing_flags.h"
 
 #include "constants.h"
-#include "tools/command_line_interface.h"
 
 #include "tools/timer.h"
 
@@ -410,7 +409,7 @@ int sim_control_NG::Time_Int(
 #if !defined(BLAST_WAVE_CHECK)
     tsf = clk.time_so_far("time_int");
     spdlog::info(
-        "New time: {:12.6e}   dt: {:12.6e}   steps: {:8d}   l0 steps: {:6d}   runtime: {:12.2e} s",
+        "New time: {:12.6e}   dt: {:12.6e}   steps: {:8d}   l0 steps: {:6d}   runtime: {:12.4e} s",
         SimPM.simtime, SimPM.levels[SimPM.grid_nlevels - 1].dt, SimPM.timestep,
         SimPM.timestep / static_cast<int>(pow(2, SimPM.grid_nlevels - 1)), tsf);
 #endif

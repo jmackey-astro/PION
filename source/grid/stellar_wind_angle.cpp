@@ -24,7 +24,6 @@
 #include <fmt/ranges.h>
 
 #ifndef NDEBUG
-#include "tools/command_line_interface.h"
 #endif  // NDEBUG
 
 #include "grid/grid_base_class.h"
@@ -32,8 +31,6 @@
 #include "microphysics/microphysics_base.h"
 #include <sstream>
 
-#include "constants.h"
-#include <cmath>
 #include <cstdio>
 #include <vector>
 using namespace std;

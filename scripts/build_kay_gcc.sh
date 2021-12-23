@@ -11,8 +11,13 @@
 script="${BASH_SOURCE[0]:-${(%):-%x}}"
 script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 deps_dir="${script_dir}/extra_libraries"
-#modules_path="/path/to/modules"
-build_dir="${script_dir}/build"
+#
+#deps_dir="/ichec/work/EuroCC-AF-2/share/libs"
+#build_dir="/ichec/work/EuroCC-AF-2/share/pion/"
+#
+#deps_dir="/ichec/home/users/jmackey/.local"
+#dep2_dir="/ichec/home/users/jmackey/active/pion-gcc/extra_libraries"
+build_dir="/ichec/home/users/jmackey/active/pion-gcc/build"
 
 # (optionally) load any modules
 source /usr/share/Modules/init/bash
@@ -30,7 +35,7 @@ pushd ${build_dir}
 cmake \
     -DCMAKE_BUILD_TYPE=Release \
  -DPION_PARALLEL=ON              \
- -DPION_OMP=ON                   \
+ -DPION_OMP=ON                  \
  -DPION_USE_SILO=ON              \
  -DPION_USE_FITS=OFF             \
  -DPION_UNIFORM_GRID=ON          \
@@ -41,7 +46,7 @@ cmake \
  -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}" \
  "${script_dir}"
 
-make -j 4
+make -j 20
 
 popd # build_dir
 

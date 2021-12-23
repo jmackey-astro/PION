@@ -28,7 +28,6 @@
 /* prevent clang-format reordering */
 
 #ifndef NDEBUG
-#include "tools/command_line_interface.h"
 #endif  // NDEBUG
 
 #include "microphysics/hydrogen_mp.h"

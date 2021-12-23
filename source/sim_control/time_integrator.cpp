@@ -24,7 +24,6 @@
 #include <fmt/ranges.h>
 
 #ifndef NDEBUG
-#include "tools/command_line_interface.h"
 #endif  // NDEBUG
 
 #include "dataIO/dataio_base.h"
@@ -499,23 +498,23 @@ int time_integrator::calc_noRT_microphysics_dU(
   // No radiation sources and no diffuse radiation optical depths,
   // so call a simple microphysics update.
   //
-  cell *c = grid->FirstPt_All();
-  std::vector<pion_flt> p(
-      SimPM.nvar);  // temporary state vector for output state.
-  std::vector<pion_flt> ui(SimPM.nvar),
-      uf(SimPM.nvar);  // conserved variable states.
-  double tt = 0.;      // temperature returned at end of microphysics step.
-  int index[3];
   int nx2 = grid->NG_All(YY);
   int nx3 = grid->NG_All(ZZ);
 #ifdef PION_OMP
   #pragma omp parallel
   {
-    #pragma omp for collapse(2) private(c,index,p,ui,uf,tt)
+    #pragma omp for collapse(2)
 #endif
     for (int ax3 = 0; ax3 < nx3; ax3++) {
       for (int ax2 = 0; ax2 < nx2; ax2++) {
-        int err  = 0;
+        std::vector<pion_flt> p(
+            SimPM.nvar);  // temporary state vector for output state.
+        std::vector<pion_flt> ui(SimPM.nvar),
+            uf(SimPM.nvar);  // conserved variable states.
+        double tt = 0.;  // temperature returned at end of microphysics step.
+        cell *c   = grid->FirstPt_All();
+        int err   = 0;
+        int index[3];
         index[0] = 0;
         index[1] = ax2;
         index[2] = ax3;
@@ -1221,26 +1220,26 @@ int time_integrator::grid_update_state_vector(
     class GridBaseClass *grid  ///< Computational grid.
 )
 {
-  int err = 0;
   // temp variable to handle change of energy when correcting for negative
   // pressure.
-  pion_flt temperg = 0.0;
 
   // Loop through grid, updating Ph[] with CellAdvanceTime function.
-  class cell *c = grid->FirstPt_All();
-  int index[3];
-  double T = 0.0;
-  int nx2  = grid->NG_All(YY);
-  int nx3  = grid->NG_All(ZZ);
+  int nx2 = grid->NG_All(YY);
+  int nx3 = grid->NG_All(ZZ);
 #ifdef PION_OMP
   #pragma omp parallel
   {
-    #pragma omp for collapse(2) private(c,index,err,temperg,T)
+    #pragma omp for collapse(2)
 #endif
     // loop through cells in 1st y-z plane and calculate the MP update for the
     // x-column of cells associated with each starting cell.
     for (int ax3 = 0; ax3 < nx3; ax3++) {
       for (int ax2 = 0; ax2 < nx2; ax2++) {
+        double T         = 0.0;
+        int err          = 0;
+        pion_flt temperg = 0.0;
+        class cell *c    = grid->FirstPt_All();
+        int index[3];
         index[0] = 0;
         index[1] = ax2;
         index[2] = ax3;
@@ -1306,9 +1305,9 @@ int time_integrator::grid_update_state_vector(
 
 
 #ifndef NDEBUG
-  spdlog::debug("\tgrid_update_state_vector done. error={}", err);
+  spdlog::debug("\tgrid_update_state_vector done.");
 #endif  // NDEBUG
-  return err;
+  return 0;
 }
 
 

@@ -16,7 +16,6 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
-#include "tools/command_line_interface.h"
 
 #ifdef SPDLOG_FWD
 #include <spdlog/fwd.h>

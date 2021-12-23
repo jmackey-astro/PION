@@ -60,13 +60,16 @@ int stellar_wind_bc::BC_assign_STWIND(
   // Check that we have an internal boundary struct, and that we have
   // a stellar wind source to set up.
   //
-  if (b->dir != NO)
+  if (b->dir != NO) {
     spdlog::error("{}: {}", "STWIND not external boundary!", b->dir);
+    exit(1);
+  }
 #ifndef NDEBUG
   spdlog::debug("Assigning data to STWIND boundary. Nsrc={}", SWP.Nsources);
 #endif
   if (SWP.Nsources < 1) {
     spdlog::error("{}: {}", "BC_assign_STWIND() No Sources!", SWP.Nsources);
+    exit(1);
   }
 
   //
@@ -75,11 +78,13 @@ int stellar_wind_bc::BC_assign_STWIND(
   if (b->refval) {
     spdlog::error(
         "{}: {}", "Initialised STWIND boundary refval", fmt::ptr(b->refval));
+    exit(1);
   }
   b->refval = mem.myalloc(b->refval, par.nvar);
   if (!b->data.empty()) {
     spdlog::error(
         "{}: {}", "BC_assign_STWIND: Not empty boundary data", b->itype);
+    exit(1);
   }
   for (int v = 0; v < par.nvar; v++)
     b->refval[v] = 0.0;
@@ -114,10 +119,12 @@ int stellar_wind_bc::BC_assign_STWIND(
     if (isw == 0)
       xi = SWP.params[isw]->xi;
     else {
-      if (xi != SWP.params[isw]->xi)
+      if (xi != SWP.params[isw]->xi) {
         spdlog::error(
             "{}: Expected {} but got {}", "wind xi values don't match", xi,
             SWP.params[isw]->xi);
+        exit(1);
+      }
     }
   }
 
@@ -190,7 +197,10 @@ int stellar_wind_bc::BC_assign_STWIND(
       // cout <<SWP.params[isw]->evolving_wind_file<<"\n";
       err = grid->Wind->add_evolving_source(par.simtime, SWP.params[isw]);
     }
-    if (err) spdlog::error("{}: {}", "Error adding wind source", isw);
+    if (err) {
+      spdlog::error("{}: {}", "Error adding wind source", isw);
+      exit(1);
+    }
     // if star is moving, then set initial velocity to values at periastron
     // if (SWP.params[isw]->moving_star) {
     //  double pre = 2.0 * pconst.pi() * sqrt(1.0 -
@@ -244,10 +254,12 @@ int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
   grid->Wind->get_src_posn(id, srcpos);
   srcrad = SWP.params[id]->radius;
 
-  if (grid->Wind->get_num_cells(id) != 0)
+  if (grid->Wind->get_num_cells(id) != 0) {
     spdlog::error(
         "{}: {}", "adding cells to source that already has cells",
         grid->Wind->get_num_cells(id));
+    exit(1);
+  }
 
 #ifndef NDEBUG
   spdlog::debug("*** srcrad={}", srcrad);
@@ -291,8 +303,8 @@ int stellar_wind_bc::BC_update_STWIND(
     const double simtime,       ///< current simulation time
     const double dt,            ///< timestep
     boundary_data *b,           ///< Boundary to update.
-    const int cstep,            ///< current fractional step being taken
-    const int maxstep           ///< final step
+    const int,                  ///< current fractional step being taken
+    const int                   ///< final step
 )
 {
   int err = 0;

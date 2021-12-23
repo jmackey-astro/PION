@@ -26,15 +26,10 @@
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
 
+#include "constants.h"
 #include "tools/mem_manage.h"
 
 using namespace std;
-
-#ifndef INTEL
-#include <cmath>  // Header file from gcc
-#else
-#include <mathimf.h>  // Header file from Intel Compiler
-#endif
 
 
 // ##################################################################

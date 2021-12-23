@@ -64,7 +64,6 @@
 #include <fmt/ranges.h>
 
 #ifndef NDEBUG
-#include "tools/command_line_interface.h"
 #endif  // NDEBUG
 
 #ifndef PARALLEL
@@ -545,8 +544,10 @@ int dataio_silo_pllel::SaveLevelData(
   string file_id = "write_data";
   err            = mpiPM->silo_pllel_init(
       numfiles, "WRITE", file_id, &group_rank, &myrank_ingroup);
-  if (err)
+  if (err) {
     spdlog::error("{}: {}", "mpiPM->silo_pllel_init() returned err", err);
+    exit(1);
+  }
 
 #ifndef NDEBUG
   spdlog::debug(

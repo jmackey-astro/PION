@@ -17,7 +17,6 @@
 #include "tools/mem_manage.h"
 
 #ifndef NDEBUG
-#include "tools/command_line_interface.h"
 #endif  // NDEBUG
 
 #include "equations/eqns_hydro_adiabatic.h"

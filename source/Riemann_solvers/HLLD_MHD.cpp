@@ -13,12 +13,10 @@
 
 
 #ifndef NDEBUG
-#include "tools/command_line_interface.h"
 #endif  // NDEBUG
 
 #include "equations/eqns_mhd_adiabatic.h"
 #include "microphysics/microphysics_base.h"
-#include <cmath>
 
 using namespace std;
 

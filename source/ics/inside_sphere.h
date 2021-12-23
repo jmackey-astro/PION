@@ -11,10 +11,6 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-
-//#include <cmath>
-using namespace std;
-
 #include "grid/cell_interface.h"
 
 class inside_sphere {

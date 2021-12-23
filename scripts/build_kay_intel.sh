@@ -11,12 +11,15 @@
 script="${BASH_SOURCE[0]:-${(%):-%x}}"
 script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 deps_dir="${script_dir}/extra_libraries"
+#dep2_dir="/ichec/home/users/jmackey/.local"
 build_dir="${script_dir}/build"
 
 # load modules
 source /usr/share/Modules/init/bash
 module load cmake3
 module load openmpi/intel
+module load gcc
+module list
 
 # Help Cmake find libraries if necessary
 CMAKE_PREFIX_PATH="/ichec/packages/intel/2018u4/compilers_and_libraries_2018.5.274/linux/compiler/include/;${deps_dir};${CMAKE_PREFIX_PATH}"
@@ -29,8 +32,8 @@ pushd ${build_dir}
 cmake \
   -DCMAKE_BUILD_TYPE=Release \
   -DPION_PARALLEL=ON              \
-  -DCMAKE_CXX_COMPILER=mpicxx \
-  -DPION_OMP=ON                   \
+  -DCMAKE_CXX_COMPILER=mpiicpc \
+  -DPION_OMP=OFF                  \
   -DPION_USE_SILO=ON              \
   -DPION_USE_FITS=OFF             \
   -DPION_UNIFORM_GRID=ON          \
@@ -42,7 +45,7 @@ cmake \
   -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}" \
   "${script_dir}"
 
-make -j 4
+make -j 12
 
 popd # build_dir
 
