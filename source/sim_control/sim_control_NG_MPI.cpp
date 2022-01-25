@@ -1392,9 +1392,6 @@ int sim_control_NG_MPI::initial_conserved_quantities(
   // Energy, and Linear Momentum in x-direction.
 #ifdef TEST_CONSERVATION
   pion_flt u[SimPM.nvar];
-  // dp.ergTotChange = dp.mmxTotChange = dp.mmyTotChange = dp.mmzTotChange =
-  // 0.0;
-  //  cout <<"initERG: "<<dp.initERG<<"\n";
   initERG = 0.;
   initMMX = initMMY = initMMZ = 0.;
   initMASS                    = 0.0;

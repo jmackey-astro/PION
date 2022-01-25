@@ -249,9 +249,6 @@ int setup_fixed_grid::setup_grid(
   spdlog::debug(
       "(setup_fixed_grid::setup_grid) Done. &grid={}, and grid={}, DX={}",
       fmt::ptr(grid), fmt::ptr((*grid)), (*grid)->DX());
-#ifndef NDEBUG
-  dp.grid = (*grid);
-#endif
 
   return (0);
 }  // setup_grid()

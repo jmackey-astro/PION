@@ -157,11 +157,7 @@ int setup_fixed_grid_pllel::setup_grid(
 
   spdlog::debug("(setup_fixed_grid_pllel::setup_grid) Done");
   spdlog::debug("grid DX = {0}", (*grid)->DX());
-#ifndef NDEBUG
-  dp.grid = (*grid);
-#endif
-
-  return (0);
+  return 0;
 }
 
 // ##################################################################

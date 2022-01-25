@@ -396,9 +396,6 @@ double CoolingFn::CoolingRate(
     if (T > MaxTemp) {
       spdlog::debug(
           "Temp out of range!! Too large: T={} and MAX.T={}", T, MaxTemp);
-#ifndef NDEBUG
-      CI.print_cell(dp.c);
-#endif
       spdlog::debug("Returning Lambda(MaxTemp) = Lambda({}", MaxTemp);
       splint(Temp, Lamb, spline_id, Nspl, MaxTemp, &rate);
     }
@@ -464,9 +461,6 @@ double CoolingFn::CoolingRate(
     if (T > MaxTemp) {
       spdlog::debug(
           "Temp out of range!! Too large: T={} and MAX.T={}", T, MaxTemp);
-#ifndef NDEBUG
-      CI.print_cell(dp.c);
-#endif
       spdlog::debug("Returning Lambda(MaxTemp) = Lambda({}", MaxTemp);
       splint(Temp, Lamb, spline_id, Nspl, log10(MaxTemp), &rate);
       rate = exp(log(10.0) * rate);
@@ -573,9 +567,6 @@ double CoolingFn::CoolingRate(
     if (T > MaxTemp) {
       // cout <<"Temp out of range!! Too large: T="<<T<<" and
       // MAX.T="<<MaxTemp<<"\n";
-#ifndef NDEBUG
-      // CI.print_cell(dp.c);
-#endif
       // cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
       splint(Temp, Lamb, spline_id, Nspl, MaxTemp, &rate);
     }
@@ -624,9 +615,6 @@ double CoolingFn::CoolingRate(
     if (T > MaxTemp) {
       // cout <<"Temp out of range!! Too large: T="<<T<<" and
       // MAX.T="<<MaxTemp<<"\n";
-#ifndef NDEBUG
-      // CI.print_cell(dp.c);
-#endif
       // cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
       splint(Temp, Lamb, spline_id, Nspl, MaxTemp, &rate);
     }

@@ -2,16 +2,17 @@
 #
 # This is an example build script to compile PION on kay.ichec.ie
 #
+# (1)
 # N.B. make sure that you compiled the extra libraries with Intel compilers...
 # Check that line 33 of extra_libraries/install_all_libs.sh is *uncommented*
 # and reads 'KAY_INTEL=yes'
 # Then run that script from the extra_libraries directory before building PION
+# (2)
 # Copy this file to the PION root directory and try building then.
 
 script="${BASH_SOURCE[0]:-${(%):-%x}}"
 script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 deps_dir="${script_dir}/extra_libraries"
-#dep2_dir="/ichec/home/users/jmackey/.local"
 build_dir="${script_dir}/build"
 
 # load modules
@@ -47,6 +48,5 @@ cmake \
 
 make -j 12
 
-popd # build_dir
-
+popd
 exit

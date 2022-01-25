@@ -367,27 +367,11 @@ int MP_Hydrogen::convert_prim2local(
   p_local[lv_nh]   = p_in[RO] / m_p;
   p_local[lv_eint] = p_in[PG] / (gam - 1.);
   if (p_in[PG] <= 0.) {
-#ifndef NDEBUG
-    commandline.console("Mmmm... negative pressure input to MP! >");
-#endif  // testing
     spdlog::debug("neg.pres. input to MP: e={}", p_local[lv_eint]);
     spdlog::error("{}: {}", "Negative pressure input to RT solver!", p_in[PG]);
   }
-#ifndef NDEBUG
-  if (p_local[lv_eint] > 1.e-5) {
-    // cout <<"cell with crazy temperature:"; CI.print_cell(dp.c);
-    // spdlog::error("{}: {}", "goodbye",0);
-  }
-#endif  // testing
   p_local[lv_Hp] = p_in[pv_Hp];
   if (p_local[lv_Hp] < 0.0 || (p_local[lv_Hp] - 1.0 > SMALLVALUE)) {
-#ifndef NDEBUG
-    // commandline.console("Mmmm... bad ion frac. input to MP! >");
-#endif  // testing
-        //    spdlog::warn("{}: Expected {} but got {}", "bad ion frac. input to
-        //    MP_Hydrogen()",0.5,p_local[lv_Hp]);
-        // spdlog::error("{}: {}", "bad ion frac. input to
-        // MP_Hydrogen()",p_local[lv_Hp]);
     if (p_local[lv_Hp] < 0.0)
       p_local[lv_Hp] = min_elecf;
     else if (p_local[lv_Hp] >= 1.0)
@@ -965,19 +949,10 @@ int MP_Hydrogen::implicit_step(
       // p_now[] to have crazy values, and go on to the next iteration.
       T = (gamma - 1.) * p_now[lv_eint] / kB / (1.0 + p_now[lv_Hp])
           / p_now[lv_nh];  // Temperature.
-#ifndef NDEBUG
-      if (dp.c->id == 17042) {
-        spdlog::debug("\t\t\ttemperature={} gamma={}", T, gamma);
-        spdlog::debug("state: : {}", p_now);
-        spdlog::debug("  old: : {}", p_old);
-      }
-#endif
-
       if (T < 0.0 || isnan(T) || isinf(T)) {
 #ifndef NDEBUG
         spdlog::debug("\t\t\ttemperature={} gamma={}", T, gamma);
         spdlog::debug("state: : {}", p_now);
-        // CI.print_cell(dp.c);
 #endif
         for (int v = 0; v < nvl; v++) {
           p_now[v] = -HUGEVALUE * (i + 1.1);
@@ -1289,13 +1264,6 @@ int MP_Hydrogen::Int_Adaptive_RKCK(
     }
     else {
       // accept the step.
-#ifndef NDEBUG
-      if (dp.c->id == 2773) {
-        spdlog::debug(
-            "\t\t*** energy before = {} and after step = {}", p1[lv_eint],
-            p2[lv_eint]);
-      }
-#endif
       // cout <<"before="<<t;
       t += hdid;
       // cout <<" and after="<<t<<"\n";
@@ -1392,12 +1360,7 @@ int MP_Hydrogen::dPdt(
 #ifdef HUMMER_RECOMB
       R[lv_eint] -= rad_recomb_energy(T) * P[lv_Hp] * P[lv_Hp]
                     * P[lv_nh];  // rate [erg/s]
-#ifndef NDEBUG
-    if (dp.c->id == 2773) {
-      spdlog::debug("\t\t*** energy rate after  recomb   ={}", R[lv_eint]);
-    }
-#endif
-#endif  // HUMMER_RECOMB
+#endif                           // HUMMER_RECOMB
 #ifndef HUMMER_RECOMB
     R[lv_eint] -= temp * kB * T / (gamma - 1.0);
     // also takes energy of e- out of gas (assumed radiated away)
@@ -1429,12 +1392,6 @@ int MP_Hydrogen::dPdt(
         temp * (1.0 - P[lv_Hp])
         * phot_ion_energy(
               T);  // this adds in X.XeV of energy per photo-ionisation.
-#ifndef NDEBUG
-    // if (dp.c->id==649090) {
-    //  cout <<"photons_in="<<photons_in<<"\ttau="<<R[lv_dtau];
-    //  cout <<"\tdxdt="<<R[lv_Hp]<<"\tdedt="<<R[lv_eint]<<"\n";
-    //}
-#endif
     R[lv_dtau] = exp(-R[lv_dtau]);
 #ifdef COUNT_ENERGETICS
     if (!have_counted_ergs) {
@@ -1452,20 +1409,11 @@ int MP_Hydrogen::dPdt(
   // R[lv_Hp]=min(0.0,R[lv_Hp]);
   //}
   // cout <<"  total: rate="<<R[lv_Hp]<<"\n";
-
-  //#ifndef NDEBUG
-  //  if (dp.c->id==10446) cout <<"pre- cooling R[eint]="<<R[lv_eint]<<"\n";
-  //#endif
   if (EP->cooling) {
     temp = cool->CoolingRate(
                T, P[lv_Hp], P[lv_nh], FUV_unattenuated_flux, FUV_extinction)
            / P[lv_nh];
 
-#ifndef NDEBUG
-    if (dp.c->id == 2773) {
-      spdlog::debug("\t\t*** energy gain/loss to cooling = {}", -temp);
-    }
-#endif
     R[lv_eint] -= temp;
 #ifdef COUNT_ENERGETICS
     if (!have_counted_ergs) {
@@ -1473,9 +1421,6 @@ int MP_Hydrogen::dPdt(
     }
 #endif  // COUNT_ENERGETICS
   }
-  //#ifndef NDEBUG
-  //  if (dp.c->id==10446) cout <<"post-cooling R[eint]="<<R[lv_eint]<<"\n";
-  //#endif
 
   R[lv_eint] *=
       P[lv_nh];  // To convert to energy per unit volume per unit time.
@@ -1522,12 +1467,6 @@ int MP_Hydrogen::dPdt(
   // ************** BIG ISOTHERMAL HACK!!!! ***********
   // **************************************************
 #endif  // ISOTHERMAL_MP
-
-#ifndef NDEBUG
-  if (dp.c->id == 2773) {
-    spdlog::debug("\t\ttt rate : {}", R);
-  }
-#endif
 
   return 0;
 }

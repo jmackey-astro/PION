@@ -506,9 +506,6 @@ int Integrator_Base::Stepper_RKCK(
   for (int v = 0; v < int_nvar; v++) {
     p1[v] = ptemp[v];
     if (isnan(p1[v]) || isinf(p1[v])) {
-#ifndef NDEBUG
-      commandline.console("Error >");
-#endif
       spdlog::error("\tSTEPPER:\t NANs encountered!");
       spdlog::debug("Rel.err. : {}", err);
       spdlog::debug("p0       : {}", std::vector<double>(p0, p0 + int_nvar));
@@ -517,16 +514,6 @@ int Integrator_Base::Stepper_RKCK(
       rval++;
     }
   }
-
-#ifndef NDEBUG
-  if (dp.c->id == 2773) {
-    spdlog::debug(
-        "*********RKCK err estimate = {} after {} RKCK calls. rval={} and dt={}",
-        maxerr * errtol, ct, rval, h);
-    spdlog::debug("p0       : {}", std::vector<double>(p0, p0 + int_nvar));
-    spdlog::debug("ptemp    : {}", ptemp);
-  }
-#endif
 
   return rval;
 }

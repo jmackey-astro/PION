@@ -771,9 +771,6 @@ int raytracer_USC_infinity::trace_column_parallel(
 #endif  // RT_TESTING
 
   do {
-#ifndef NDEBUG
-    dp.c = c;
-#endif
     err += cell_cols_1d(source, c, oppdir, Nc, &ds);
     err += ProcessCell(c, Nc, ds, source);
 
@@ -1990,9 +1987,6 @@ int raytracer_USC::trace_column(
     spdlog::info("raytracer_USC::trace_column() running");
 #endif
     do {
-#ifndef NDEBUG
-      dp.c = c;
-#endif
       err += get_cell_columns(source, c, Nc, &ds);
       err += ProcessCell(c, Nc, ds, source);
     } while ((c = gridptr->NextPt(c, dir)) != 0);

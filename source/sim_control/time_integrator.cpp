@@ -1030,9 +1030,6 @@ int time_integrator::dynamics_dU_column(
   // vector.
   //
   do {
-#ifndef NDEBUG
-    dp.c = cpt;
-#endif
 #ifdef TEST_INT
     cout << "First Cell:";
     CI.print_cell(cpt);
@@ -1125,9 +1122,6 @@ int time_integrator::dynamics_dU_column(
   // Now n2pt=null. npt = bd-data, cpt= (gd/bd)-data.
   // So have to do something different.
   //
-#ifndef NDEBUG
-  dp.c = cpt;
-#endif
   // last cell 1st order.
   err += spatial_solver->SetEdgeState(
       cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
@@ -1169,9 +1163,6 @@ int time_integrator::dynamics_dU_column(
   // Right Ghost Cell-- have to calculate it's left interface differently,
   //
   cpt = npt;
-#ifndef NDEBUG
-  dp.c = cpt;
-#endif
   for (int v = 0; v < SimPM.nvar; v++)
     cpt->dU[v] += 0.;  // nothing to calculate for it.
   if (0 != err)
@@ -1245,13 +1236,6 @@ int time_integrator::grid_update_state_vector(
         index[2] = ax3;
         c        = grid->get_cell_all(index[0], index[1], index[2]);
         do {
-
-#ifndef NDEBUG
-          double dx       = grid->DX();
-          dp.ergTotChange = 0.;
-          temperg         = 0.;
-          dp.c            = c;
-#endif
           if (!c->isdomain || !c->isleaf) {
             // skip cell if it has been cut out of the domain.
             for (int v = 0; v < SimPM.nvar; v++)
@@ -1288,13 +1272,6 @@ int time_integrator::grid_update_state_vector(
           if (step == ooa) {
             for (int v = 0; v < SimPM.nvar; v++)
               c->P[v] = c->Ph[v];
-
-#ifndef NDEBUG
-            // Update Total Energy from fixing negative pressures. Reset
-            // update variables.
-            dp.ergTotChange = temperg;
-            dp.initERG += dp.ergTotChange * spatial_solver->CellVolume(c, dx);
-#endif  // NDEBUG
           }
         } while ((c = grid->NextPt(c, XP)) != 0);
       }  // ax2

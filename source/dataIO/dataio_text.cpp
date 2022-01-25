@@ -535,12 +535,7 @@ int dataio_text::get_parameters(
     SimPM.finishtime = atof((rp->find_parameter("FinishTime")).c_str());
   SimPM.dt       = 0.;
   SimPM.timestep = 0;  // Counter for what timestep we are on.
-
-#ifndef NDEBUG
-  dp.initERG = dp.initMMX = dp.initMMY = dp.initMMZ = 0.;
-  dp.ergTotChange = dp.mmxTotChange = dp.mmyTotChange = dp.mmzTotChange = 0.;
-#endif  // NDEBUG
-  SimPM.maxtime = false;
+  SimPM.maxtime  = false;
 
   // Ref state vec for riemann solver.
   for (int v = 0; v < MAX_NVAR; v++)

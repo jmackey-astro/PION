@@ -2,24 +2,20 @@
 #
 # This is an example build script to compile PION on kay.ichec.ie
 #
-# N.B. make sure that you compiled the extra libraries with Gnu compilers...
+# (1)
+# Make sure that you compiled the extra libraries with Gnu compilers...
 # Check that line 33 of extra_libraries/install_all_libs.sh is *commented out*
 # and reads '#KAY_INTEL=yes'
 # Then run that script from the extra_libraries directory before building PION
+# (2)
 # Copy this file to the PION root directory and try building then.
 
 script="${BASH_SOURCE[0]:-${(%):-%x}}"
 script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
 deps_dir="${script_dir}/extra_libraries"
-#
-#deps_dir="/ichec/work/EuroCC-AF-2/share/libs"
-#build_dir="/ichec/work/EuroCC-AF-2/share/pion/"
-#
-#deps_dir="/ichec/home/users/jmackey/.local"
-#dep2_dir="/ichec/home/users/jmackey/active/pion-gcc/extra_libraries"
-build_dir="/ichec/home/users/jmackey/active/pion-gcc/build"
+build_dir="${script_dir}/build"
 
-# (optionally) load any modules
+# load modules needed for PION
 source /usr/share/Modules/init/bash
 module load cmake3
 module load openmpi/gcc
@@ -33,9 +29,9 @@ mkdir -p ${build_dir}
 pushd ${build_dir}
 
 cmake \
-    -DCMAKE_BUILD_TYPE=Release \
+ -DCMAKE_BUILD_TYPE=Release      \
  -DPION_PARALLEL=ON              \
- -DPION_OMP=ON                  \
+ -DPION_OMP=ON                   \
  -DPION_USE_SILO=ON              \
  -DPION_USE_FITS=OFF             \
  -DPION_UNIFORM_GRID=ON          \
@@ -47,7 +43,6 @@ cmake \
  "${script_dir}"
 
 make -j 20
-
-popd # build_dir
+popd
 
 exit

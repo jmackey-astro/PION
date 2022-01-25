@@ -138,9 +138,6 @@ int eqns_Euler::UtoP(
   if (p[eqRO] <= 0.0) {
     spdlog::debug("u : {}", std::vector<double>(u, u + eq_nvar));
     spdlog::debug("p : {}", std::vector<double>(p, p + eq_nvar));
-#ifndef NDEBUG
-    //  cout <<"NEG.DENS.CELL:";CI.print_cell(dp.c);
-#endif
     spdlog::error("{}: {}", "Negative density (eqns_Euler::UtoP)", p[eqRO]);
     exit(1);
     if (ct_rho < 1000) {
@@ -193,7 +190,6 @@ int eqns_Euler::UtoP(
           p[eqPG], u[eqERG],
           0.5 * p[eqRO]
               * (p[eqVX] * p[eqVX] + p[eqVY] * p[eqVY] + p[eqVZ] * p[eqVZ]));
-      CI.print_cell(dp.c);
     }
 #endif
     p[eqPG] = 0.01 * p[eqRO];

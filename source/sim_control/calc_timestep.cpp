@@ -341,7 +341,6 @@ int calc_timestep::set_thermal_conduction_Edot(
           cell *npt    = grid->NextPt(cpt, posdirs[idim]);
           cell *lpt    = 0;
           double q_neg = 0.0, q_pos = 0.0, gradT = 0.0;
-          double q1 = 0.0, q2 = 0.0;
           double dx = grid->DX();
           if (npt == 0)
             spdlog::error("{}: {}", "Couldn't find two cells in column", 0);
@@ -515,9 +514,6 @@ double calc_timestep::calc_dynamics_dt(
   double dx     = grid->DX();
 
   class cell *c = grid->FirstPt_All();
-#ifndef NDEBUG
-  dp.c = c;
-#endif
 
   //
   // Now go through all of the cells on the local grid.
@@ -701,9 +697,6 @@ double calc_timestep::get_mp_timescales_no_radiation(
           continue;  // end iteration if there are no non-boundary cells
         }
         do {
-#ifndef NDEBUG
-          dp.c = c;
-#endif
           // If cell is boundary data then we skip it.
           if (c->isbd || !c->isleaf || !c->isdomain) {
 #ifndef NDEBUG
@@ -850,9 +843,6 @@ double calc_timestep::get_mp_timescales_with_radiation(
           continue;  // end iteration if there are no non-boundary cells
         }
         do {
-#ifndef NDEBUG
-          dp.c = c;
-#endif
           // Check if cell is boundary data (can only be an internal
           // boundary, such as a stellar wind, since we are looping over
           // cells which are grid data).  If it is boundary data then we

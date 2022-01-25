@@ -251,7 +251,6 @@ int setup_NG_grid::setup_grid(
     spdlog::debug(
         "(setup_NG_grid::setup_grid) Done. &grid={}, and grid={}, DX={}",
         fmt::ptr(&(grid[l])), fmt::ptr(grid[l]), (grid[l])->DX());
-    dp.grid = (grid[l]);
 #endif
   }
 

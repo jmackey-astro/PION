@@ -2368,11 +2368,6 @@ int DataIOBase::check_header_parameters(
         1, 1);
     SimPM.outFileBase = "noname";
   }
-
-#ifndef NDEBUG
-  dp.initERG = dp.initMMX = dp.initMMY = dp.initMMZ = 0.;
-  dp.ergTotChange = dp.mmxTotChange = dp.mmyTotChange = dp.mmzTotChange = 0.;
-#endif  // NDEBUG
   SimPM.maxtime = false;
   SimPM.dt      = 0.;
 
