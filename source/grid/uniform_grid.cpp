@@ -1036,7 +1036,7 @@ int UniformGrid::SetupBCs(
       if (!c) spdlog::error("{}: {}", "Got lost on grid! XN", cy->id);
       for (int v = 0; v < G_nbc[XN]; v++) {
         BC_bd[XN]->data.push_back(c);
-        spdlog::debug(" Adding cell {} to XN boundary", c->id);
+        // spdlog::debug(" Adding cell {} to XN boundary", c->id);
         c = NextPt(c, XP);
       }
       if (G_ndim > 1) cy = NextPt(cy, YP);
@@ -1070,8 +1070,7 @@ int UniformGrid::SetupBCs(
           spdlog::error("{}: {}", "Got lost on grid! XP", cy->id);
         }
         BC_bd[XP]->data.push_back(c);
-
-        spdlog::debug(" Adding cell {} to XP boundary", c->id);
+        // spdlog::debug(" Adding cell {} to XP boundary", c->id);
       }
       if (G_ndim > 1) cy = NextPt(cy, YP);
     } while (G_ndim > 1 && cy != 0 && cy->isgd);

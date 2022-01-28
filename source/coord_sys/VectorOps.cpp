@@ -118,8 +118,10 @@ VectorOps_Cart::VectorOps_Cart(int n) : VOnd(n)
 #ifndef NDEBUG
   spdlog::debug("Setting up VectorOpsCart with ndim={}", VOnd);
 #endif
-  if (VOnd > 3)
+  if (VOnd > 3) {
     spdlog::error("{}: {}", "Can't do more than 3D simulations!", VOnd);
+    exit(1);
+  }
 }
 
 // ##################################################################
@@ -145,6 +147,7 @@ double VectorOps_Cart::CellVolume(const cell *c, const double dR)
       break;
     default:
       spdlog::error("{}: {}", "bad ndim in CellVolume (cart)", VOnd);
+      exit(1);
       break;
   }
   return dV;
@@ -172,6 +175,7 @@ double VectorOps_Cart::CellInterface(
       break;
     default:
       spdlog::error("{}: {}", "bad ndim in CellInterface (cart)", VOnd);
+      exit(1);
       break;
   }
   return dA;
@@ -186,10 +190,12 @@ double VectorOps_Cart::max_grad_abs(
   double VOdx = grid->DX();
 #ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
-    if (!grid->NextPt(cpt, static_cast<direction>(i)))
+    if (!grid->NextPt(cpt, static_cast<direction>(i))) {
       spdlog::error(
           "{}: {}",
           "VectorOps_Cart::max_grad_abs: Some neighbour cells don't exist", i);
+      exit(1);
+    }
 #endif  // NDEBUG
 
   double grad = 0, temp = 0;
@@ -216,6 +222,8 @@ double VectorOps_Cart::max_grad_abs(
       spdlog::error(
           "{}: {}",
           "Don't know what state vector to use for calculating gradient.", sv);
+      exit(1);
+      break;
   }
 
   return (grad);
@@ -233,10 +241,12 @@ void VectorOps_Cart::Gradient(
 {
 #ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
-    if (!grid->NextPt(c, static_cast<direction>(i)))
+    if (!grid->NextPt(c, static_cast<direction>(i))) {
       spdlog::error(
           "{}: {}", "VectorOps_Cart::Grad: Some neighbour cells don't exist",
           i);
+      exit(1);
+    }
 #endif  // NDEBUG
   double VOdx = grid->DX();
 
@@ -265,6 +275,8 @@ void VectorOps_Cart::Gradient(
       spdlog::error(
           "{}: {}",
           "Don't know what state vector to use for calculating gradiend.", sv);
+      exit(1);
+      break;
   }
   return;
 }
@@ -300,6 +312,8 @@ double VectorOps_Cart::CentralDiff(
 
     default:
       spdlog::error("{}: {}", "state vector for calculating CentralDiff.", sv);
+      exit(1);
+      break;
   }
 
   return ans;
@@ -350,6 +364,8 @@ double VectorOps_Cart::GradZone(
 
     default:
       spdlog::error("{}: {}", "state vector for calculating GradZone.", sv);
+      exit(1);
+      break;
   }
 
   return ans;
@@ -415,6 +431,8 @@ double VectorOps_Cart::Divergence(
 
     default:
       spdlog::error("{}: {}", "state vectorfor calculating divergence.", sv);
+      exit(1);
+      break;
   }
   return (divv);
 }  // Div
@@ -431,10 +449,12 @@ void VectorOps_Cart::Curl(
 {
 #ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
-    if (!grid->NextPt(c, static_cast<direction>(i)))
+    if (!grid->NextPt(c, static_cast<direction>(i))) {
       spdlog::error(
           "{}: {}", "VectorOps_Cart::Curl: Some neighbour cells don't exist",
           i);
+      exit(1);
+    }
 #endif  // NDEBUG
   if (!c->isgd) {
     // cout <<"curl of non-grid-cell, returning 0";
@@ -492,6 +512,8 @@ void VectorOps_Cart::Curl(
       spdlog::error(
           "{}: {}", "Which vector to calculate on?  (VecCurl), don't know!",
           vec);
+      exit(1);
+      break;
   }
 
   ans[0] = 0.0;
@@ -551,6 +573,7 @@ int VectorOps_Cart::SetEdgeState(
         default:
           spdlog::error("\t(SetEdgeState) wrong direction!");
           return (1);
+          break;
       }       // Which Direction.
       break;  // O2
     default:
@@ -558,6 +581,7 @@ int VectorOps_Cart::SetEdgeState(
           "\t(SetEdgeState) Only know 1st and 2nd order spatial accuracy!!!\n\tOA={}",
           OA);
       return (1);
+      break;
   }  // Order of accuracy.
   return (0);
 }  // SetEdgeState
@@ -598,12 +622,16 @@ int VectorOps_Cart::SetSlope(
         break;
       default:
         spdlog::error("{}: {}", "Bad direction in SetSlope", d);
+        exit(1);
+        break;
     }
     cp = grid->NextPt(c, dp);
     cn = grid->NextPt(c, dn);
-    if (cp == 0 && cn == 0)
+    if (cp == 0 && cn == 0) {
       spdlog::error(
           "{}: {}", "No left or right cell in SetSlope", fmt::ptr(cp));
+      exit(1);
+    }
     if (!cp) {
       cp = grid->NextPt(cn, dp);
     }
@@ -725,6 +753,7 @@ double VectorOps_Cyl::CellInterface(
     case TPcyl:
       spdlog::error(
           "{}: {}", "3D cylindrical not implemented in CellInterface", dir);
+      exit(1);
       break;
     case RNcyl:
       if (pos[Rcyl] > 0 && pos[Rcyl] < dR)
@@ -745,6 +774,8 @@ double VectorOps_Cyl::CellInterface(
     default:
       spdlog::error(
           "{}: {}", "Bad direction to VectorOps_Cyl::CellInterface", dir);
+      exit(1);
+      break;
   }
   return (-1.0);
 }
@@ -757,10 +788,12 @@ double VectorOps_Cyl::max_grad_abs(
 {
 #ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
-    if (!grid->NextPt(c, static_cast<direction>(i)))
+    if (!grid->NextPt(c, static_cast<direction>(i))) {
       spdlog::error(
           "{}: {}",
           "VectorOps_Cyl::max_grad_abs: Some neighbour cells don't exist", i);
+      exit(1);
+    }
 #endif  // NDEBUG
 
   double dT = 0.;  // physical length R*dTheta
@@ -823,6 +856,8 @@ double VectorOps_Cyl::max_grad_abs(
       spdlog::error(
           "{}: {}",
           "Don't know what state vector to use for calculating gradient.", sv);
+      exit(1);
+      break;
   }
   return (grad);
 }  // max_grad_abs
@@ -839,10 +874,12 @@ void VectorOps_Cyl::Gradient(
 {
 #ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
-    if (!grid->NextPt(c, static_cast<direction>(i)))
+    if (!grid->NextPt(c, static_cast<direction>(i))) {
       spdlog::error(
           "{}: {}", "VectorOps_Cart::Grad: Some neighbour cells don't exist",
           i);
+      exit(1);
+    }
 #endif  // NDEBUG
 
   cell *cn, *cp;
@@ -888,6 +925,8 @@ void VectorOps_Cyl::Gradient(
       spdlog::error(
           "{}: {}",
           "Don't know what state vector to use for calculating gradiend.", sv);
+      exit(1);
+      break;
   }
   return;
 }
@@ -966,6 +1005,8 @@ double VectorOps_Cyl::Divergence(
     default:
       spdlog::error(
           "{}: {}", "CYL: state vector for calculating divergence.", sv);
+      exit(1);
+      break;
   }
   return (divv);
 }  // Div
@@ -982,13 +1023,17 @@ void VectorOps_Cyl::Curl(
 {
 #ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
-    if (!grid->NextPt(c, static_cast<direction>(i)))
+    if (!grid->NextPt(c, static_cast<direction>(i))) {
       spdlog::error(
           "{}: {}", "VectorOps_Cyl::Curl: Some neighbour cells don't exist", i);
+      exit(1);
+    }
 #endif  // NDEBUG
-  if (!c->isgd)
+  if (!c->isgd) {
     spdlog::error(
         "{}: {}", "Not Grid Cell! can't calculate curl. id follows", c->id);
+    exit(1);
+  }
   spdlog::warn("Cyl_Curl() is not tested!!! make sure it works!!!");
   // variables z,R,theta = z,r,t
   int vz = var[0], vr = var[1], vt = var[2];
@@ -1030,6 +1075,8 @@ void VectorOps_Cyl::Curl(
       spdlog::error(
           "{}: {}", "Which vector to calculate on?  (VecCurl), don't know!",
           vec);
+      exit(1);
+      break;
   }
 
   // First dz derivatives
@@ -1105,13 +1152,17 @@ int VectorOps_Cyl::SetEdgeState(
         break;
       default:
         spdlog::error("{}: {}", "Bad direction in SetEdgeState", dir);
+        exit(1);
+        break;
     }  // setting del based on direction.
 
     for (int v = 0; v < nv; v++)
       edge[v] = c->Ph[v] + dpdx[v] * del;
   }  // OA2
-  else
+  else {
     spdlog::error("{}: {}", "SetEdgeState OOA -- only 1st and 2nd order", OA);
+    exit(1);
+  }
 
   return (0);
 }  // SetEdgeState
@@ -1154,12 +1205,16 @@ int VectorOps_Cyl::SetSlope(
         break;
       default:
         spdlog::error("{}: {}", "Bad direction in SetSlope", d);
+        exit(1);
+        break;
     }
     cp = grid->NextPt(c, dp);
     cn = grid->NextPt(c, dn);
-    if (cp == 0 && cn == 0)
+    if (cp == 0 && cn == 0) {
       spdlog::error(
           "{}: {}", "No left or right cell in SetSlope", fmt::ptr(cp));
+      exit(1);
+    }
     if (!cp) {
       cp    = grid->NextPt(cn, dp);
       nopos = true;
@@ -1237,6 +1292,8 @@ int VectorOps_Cyl::SetSlope(
         break;
       default:
         spdlog::error("{}: {}", "Bad axis in SetSlope", d);
+        exit(1);
+        break;
     }  // calculate slope in direction d.
   }    // 2nd order accurate
   else {
@@ -1287,6 +1344,7 @@ int VectorOps_Cyl::DivStateVectorComponent(
   }
   else {
     spdlog::error("{}: {}", "Bad axis in DivStateVectorComponent", d);
+    exit(1);
   }
   return (0);
 }  // DivStateVectorComponent

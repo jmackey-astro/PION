@@ -176,8 +176,10 @@ int setup_fixed_grid::setup_grid(
   spdlog::info("(pion ug)  Setting up computational grid");
   class GridBaseClass **grid = &(g[0]);
 
-  if (SimPM.ndim < 1 || SimPM.ndim > 3)
+  if (SimPM.ndim < 1 || SimPM.ndim > 3) {
     spdlog::error("{}: {}", "Only know 1D,2D,3D methods!", SimPM.ndim);
+    exit(1);
+  }
 
   //
   // Nbc is the depth of the boundary layer.
@@ -193,10 +195,12 @@ int setup_fixed_grid::setup_grid(
     SimPM.Nbc    = 1;
     SimPM.Nbc_DD = 1;
   }
-  else
+  else {
     spdlog::error(
         "{}: {}", "Spatial order of accuracy unhandled by boundary conditions!",
         SimPM.spOOA);
+    exit(1);
+  }
 
   // Force Nbc=1 if using Lax-Friedrichs flux.
   if (SimPM.solverType == FLUX_LF) {
@@ -224,7 +228,10 @@ int setup_fixed_grid::setup_grid(
   // Now we can setup the grid:
   //
   spdlog::debug("(setup_fixed_grid::setup_grid) Setting up grid...");
-  if (*grid) spdlog::error("{}: {}", "Grid already set up!", fmt::ptr(*grid));
+  if (*grid) {
+    spdlog::error("{}: {}", "Grid already set up!", fmt::ptr(*grid));
+    exit(1);
+  }
 
   if (SimPM.coord_sys == COORD_CRT)
     *grid = new UniformGrid(
@@ -238,13 +245,17 @@ int setup_fixed_grid::setup_grid(
     *grid = new uniform_grid_sph(
         SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.Xmin,
         SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax, SimPM.Xmin, SimPM.Xmax);
-  else
+  else {
     spdlog::error("{}: {}", "Bad Geometry in setup_grid()", SimPM.coord_sys);
+    exit(1);
+  }
 
-  if (*grid == 0)
+  if (*grid == 0) {
     spdlog::error(
         "{}: {}", "(setup_fixed_grid::setup_grid) Couldn't assign data!",
         fmt::ptr(*grid));
+    exit(1);
+  }
 
   spdlog::debug(
       "(setup_fixed_grid::setup_grid) Done. &grid={}, and grid={}, DX={}",
@@ -299,8 +310,10 @@ int setup_fixed_grid::setup_microphysics(
   // set timestep limiting behaviour
   switch (mp) {
     case 0:
-      if (SimPM.EP.MP_timestep_limit < 0 || SimPM.EP.MP_timestep_limit > 5)
+      if (SimPM.EP.MP_timestep_limit < 0 || SimPM.EP.MP_timestep_limit > 5) {
         spdlog::error("{}: {}", "BAD dt LIMIT", SimPM.EP.MP_timestep_limit);
+        exit(1);
+      }
       break;
     case 2:
     case 3:
@@ -349,8 +362,10 @@ int setup_fixed_grid::setup_microphysics(
             SimPM.EP.MP_timestep_limit);
         MP = new mp_only_cooling(
             SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
-        if (!MP)
+        if (!MP) {
           spdlog::error("{}: {}", "mp_only_cooling() init", fmt::ptr(MP));
+          exit(1);
+        }
         break;
 
 #ifdef LEGACY_CODE
@@ -359,9 +374,14 @@ int setup_fixed_grid::setup_microphysics(
         MP = new MPv0(
             SimPM.nvar, SimPM.ntracer, SimPM.chem_code, SimPM.tracers,
             &(SimPM.EP), &(SimPM.RS));
-        if (SimPM.EP.MP_timestep_limit < 0 || SimPM.EP.MP_timestep_limit > 5)
+        if (SimPM.EP.MP_timestep_limit < 0 || SimPM.EP.MP_timestep_limit > 5) {
           spdlog::error("{}: {}", "BAD dt LIMIT", SimPM.EP.MP_timestep_limit);
-        if (!MP) spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+          exit(1);
+        }
+        if (!MP) {
+          spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+          exit(1);
+        }
         break;
 
       case 1:
@@ -370,7 +390,10 @@ int setup_fixed_grid::setup_microphysics(
             SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
         spdlog::info(
             "\t*-* WARNING, THIS MODULE HAS BEEN SUPERSEDED BY MPv4.*-*");
-        if (!MP) spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+        if (!MP) {
+          spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+          exit(1);
+        }
         break;
 
       case 2:
@@ -378,7 +401,10 @@ int setup_fixed_grid::setup_microphysics(
         MP = new MPv2(
             SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer,
             SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
-        if (!MP) spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+        if (!MP) {
+          spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+          exit(1);
+        }
         break;
 
       case 4:
@@ -386,7 +412,10 @@ int setup_fixed_grid::setup_microphysics(
         MP = new MPv4(
             SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer,
             SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
-        if (!MP) spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+        if (!MP) {
+          spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+          exit(1);
+        }
         break;
 
       case 8:
@@ -394,7 +423,10 @@ int setup_fixed_grid::setup_microphysics(
         MP = new MPv8(
             SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer,
             SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
-        if (!MP) spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+        if (!MP) {
+          spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+          exit(1);
+        }
         break;
 #endif  // LEGACY_CODE
 
@@ -403,7 +435,10 @@ int setup_fixed_grid::setup_microphysics(
         spdlog::info("\tsetting up microphysics_lowz module");
         MP = new microphysics_lowz(
             SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
-        if (!MP) spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+        if (!MP) {
+          spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+          exit(1);
+        }
         break;
 #endif  // exclude Harpreet's module
 
@@ -412,7 +447,10 @@ int setup_fixed_grid::setup_microphysics(
         MP = new MPv3(
             SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer,
             SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
-        if (!MP) spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+        if (!MP) {
+          spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+          exit(1);
+        }
         break;
 
       case 5:
@@ -420,7 +458,10 @@ int setup_fixed_grid::setup_microphysics(
         MP = new MPv5(
             SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer,
             SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
-        if (!MP) spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+        if (!MP) {
+          spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+          exit(1);
+        }
         break;
 
       case 6:
@@ -428,7 +469,10 @@ int setup_fixed_grid::setup_microphysics(
         MP = new MPv6(
             SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer,
             SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
-        if (!MP) spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+        if (!MP) {
+          spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+          exit(1);
+        }
         break;
 
       case 7:
@@ -436,7 +480,10 @@ int setup_fixed_grid::setup_microphysics(
         MP = new MPv7(
             SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer,
             SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
-        if (!MP) spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+        if (!MP) {
+          spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+          exit(1);
+        }
         break;
 
 #ifdef CODE_EXT_HHE
@@ -444,12 +491,16 @@ int setup_fixed_grid::setup_microphysics(
         spdlog::info("\tsetting up MPv10 module");
         MP = new mpv9_HHe(
             SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), SimPM.gamma);
-        if (!MP) spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+        if (!MP) {
+          spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+          exit(1);
+        }
         break;
 #endif
 
       default:
         spdlog::error("{}: {}", "unhandled microphysics type", SimPM.chem_code);
+        exit(1);
         break;
     }
 #ifdef PION_OMP
@@ -477,7 +528,10 @@ int setup_fixed_grid::setup_microphysics(
 #ifdef PION_OMP
   }
 #endif
-  if (err) spdlog::error("{}: {}", "Setting multifreq source properties", err);
+  if (err) {
+    spdlog::error("{}: {}", "Setting multifreq source properties", err);
+    exit(1);
+  }
 
   return 0;
 }
@@ -499,9 +553,11 @@ int setup_fixed_grid::setup_raytracing(
   }
   spdlog::info("(pion)  Setting up raytracing on level");
 
-  if (!MP)
+  if (!MP) {
     spdlog::error(
         "{}: {}", "can't do raytracing without microphysics", fmt::ptr(MP));
+    exit(1);
+  }
   //
   // If the ionising source is at infinity then set up the simpler parallel
   // rays tracer.  Otherwise the more complicated one is required.
@@ -515,9 +571,11 @@ int setup_fixed_grid::setup_raytracing(
     //
     grid->RT = new raytracer_USC_infinity(
         grid, MP, SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ftr);
-    if (!(grid->RT))
+    if (!(grid->RT)) {
       spdlog::error(
           "{}: {}", "init pllel-rays raytracer error", fmt::ptr(grid->RT));
+      exit(1);
+    }
   }
   else {
     //
@@ -526,8 +584,10 @@ int setup_fixed_grid::setup_raytracing(
     grid->RT = new raytracer_USC(
         grid, MP, SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ftr,
         SimPM.RS.Nsources);
-    if (!(grid->RT))
+    if (!(grid->RT)) {
       spdlog::error("{}: {}", "init raytracer error 2", fmt::ptr(grid->RT));
+      exit(1);
+    }
   }
 
   //
@@ -578,6 +638,7 @@ int setup_fixed_grid::setup_raytracing(
         "{}: {}",
         "Can only have one ionising source for currently implemented method",
         ion_count);
+    exit(1);
   }
   spdlog::debug(
       "Added {} ionising and {} non-ionising radiation sources, of which {} are diffuse radiation",
@@ -666,19 +727,25 @@ int setup_fixed_grid::setup_evolving_RT_sources(
     //
     FILE *infile = 0;
     infile       = fopen(istar->file_name.c_str(), "r");
-    if (!infile)
+    if (!infile) {
       spdlog::error(
           "{}: {}", "can't open wind evolving radiation source file",
           fmt::ptr(infile));
+      exit(1);
+    }
     // Skip first two lines
     char line[512];
     char *rval = 0;
     rval       = fgets(line, 512, infile);
-    if (!rval)
+    if (!rval) {
       spdlog::error("{}: {}", "setup_fixed_grid, RS, file read 1", line);
+      exit(1);
+    }
     rval = fgets(line, 512, infile);
-    if (!rval)
+    if (!rval) {
       spdlog::error("{}: {}", "setup_fixed_grid, RS, file read 2", line);
+      exit(1);
+    }
     // Temporary variables for column values
     // Columns are time, M, L, Teff, Mdot, vrot, vcrit, vinf
     double t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0, t5 = 0.0, t6 = 0.0, t7 = 0.0;
@@ -834,19 +901,23 @@ int setup_fixed_grid::boundary_conditions(
   // Choose what BCs to set up based on BC strings.
   //
   int err = setup_boundary_structs(par, grid[0], 0);
-  if (0 != err)
+  if (0 != err) {
     spdlog::error(
         "{}: Expected {} but got {}", "sfg::boundary_conditions::sb_structs", 0,
         err);
+    exit(1);
+  }
 
   //
   // Ask grid to set up data for external boundaries.
   //
   err = grid[0]->SetupBCs(par);
-  if (0 != err)
+  if (0 != err) {
     spdlog::error(
         "{}: Expected {} but got {}", "sfg::boundary_conditions::SetupBCs", 0,
         err);
+    exit(1);
+  }
 
   spdlog::debug("(setup_fixed_grid::boundary_conditions) Done");
   return 0;
@@ -970,12 +1041,15 @@ int setup_fixed_grid::setup_boundary_structs(
     }
     else {
       spdlog::error("{}: {}", "Don't know this BC type", grid->BC_bd[i]->type);
+      exit(1);
     }
 
-    if (!grid->BC_bd[i]->data.empty())
+    if (!grid->BC_bd[i]->data.empty()) {
       spdlog::error(
           "{}: {}", "Boundary data not empty in constructor!",
           grid->BC_bd[i]->data.size());
+      exit(1);
+    }
     grid->BC_bd[i]->refval = 0;
 
     spdlog::debug("\tBoundary type {} is {}", i, grid->BC_bd[i]->type);
@@ -988,6 +1062,7 @@ int setup_fixed_grid::setup_boundary_structs(
       grid->BC_bd[i]->dir = NO;
       if (par.BC_Nint < i - 2 * par.ndim) {
         spdlog::error("{}: {}", "Bad Number of boundaries", par.BC_Nint);
+        exit(1);
       }
       else {
         grid->BC_bd[i]->type = par.BC_INT[i - 2 * par.ndim];
@@ -1008,12 +1083,14 @@ int setup_fixed_grid::setup_boundary_structs(
       else {
         spdlog::error(
             "{}: {}", "Don't know this BC type", grid->BC_bd[i]->type);
+        exit(1);
       }
 
       if (!grid->BC_bd[i]->data.empty()) {
         spdlog::error(
             "{}: {}", "Boundary data not empty in constructor!",
             grid->BC_bd[i]->data.size());
+        exit(1);
       }
       grid->BC_bd[i]->refval = 0;
 
@@ -1044,8 +1121,10 @@ void setup_fixed_grid::setup_dataio_class(
 
     case 1:  // Start From ASCII Parameterfile.
       dataio = new dataio_text(par);
-      if (!dataio)
+      if (!dataio) {
         spdlog::error("{}: {}", "dataio_text initialisation", fmt::ptr(dataio));
+        exit(1);
+      }
       break;
 
 #ifdef FITS
@@ -1065,13 +1144,17 @@ void setup_fixed_grid::setup_dataio_class(
     case 6:  // silo + text
       dataio = new dataio_silo(par, "DOUBLE");
       textio = new dataio_text(par);
-      if (!textio)
+      if (!textio) {
         spdlog::error("{}: {}", "INIT:: textio initialisation", par.typeofop);
+        exit(1);
+      }
       break;
 #endif  // if SILO
     default:
       spdlog::error(
           "{}: {}", "setup_fixed_grid::Init unhandled filetype", typeOfFile);
+      exit(1);
+      break;
   }
   return;
 }
@@ -1085,24 +1168,38 @@ int setup_fixed_grid::set_equations(
 {
   spdlog::info("(pion)  Setting up solver for equations");
 
-  if (par.solverType < 0)
+  if (par.solverType < 0) {
     spdlog::error(
         "{}: {}", "set_equations: solverType not set yet.", par.solverType);
-  if (par.eqntype <= 0)
+    exit(1);
+  }
+  if (par.eqntype <= 0) {
     spdlog::error("{}: {}", "set_equations: eqntype not set yet.", par.eqntype);
-  if (par.eqnNDim != 3)
+    exit(1);
+  }
+  if (par.eqnNDim != 3) {
     spdlog::error(
         "{}: {}", "set_equations: eqnNDim not set right.", par.eqnNDim);
-  if (par.nvar <= 0)
+    exit(1);
+  }
+  if (par.nvar <= 0) {
     spdlog::error("{}: {}", "set_equations: nvar not set yet.", par.nvar);
-  if (par.ndim <= 0)
+    exit(1);
+  }
+  if (par.ndim <= 0) {
     spdlog::error("{}: {}", "set_equations: ndim not set yet.", par.ndim);
-  if (par.artviscosity < 0)
+    exit(1);
+  }
+  if (par.artviscosity < 0) {
     spdlog::error(
         "{}: {}", "set_equations: artviscosity not set yet.", par.artviscosity);
-  if (par.coord_sys < 0)
+    exit(1);
+  }
+  if (par.coord_sys < 0) {
     spdlog::error(
         "{}: {}", "set_equations: coordinate system not set.", par.coord_sys);
+    exit(1);
+  }
 
 #ifdef PION_OMP
   #pragma omp parallel
@@ -1121,36 +1218,44 @@ int setup_fixed_grid::set_equations(
           spatial_solver = new class FV_solver_Hydro_Euler(
               par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
               par.ntracer);
-          if (!spatial_solver)
+          if (!spatial_solver) {
             spdlog::error(
                 "{}: {}", "Couldn't set up solver/equations class.", EQEUL);
+            exit(1);
+          }
           break;
         case EQMHD:
           spdlog::info("\tset_equations() Using Ideal MHD Equations");
           spatial_solver = new class FV_solver_mhd_ideal_adi(
               par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
               par.ntracer);
-          if (!spatial_solver)
+          if (!spatial_solver) {
             spdlog::error(
                 "{}: {}", "Couldn't set up solver/equations class.", EQMHD);
+            exit(1);
+          }
           break;
         case EQGLM:
           spdlog::info("\tset_equations() Using GLM MHD Equations");
           spatial_solver = new class FV_solver_mhd_mixedGLM_adi(
               par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
               par.ntracer);
-          if (!spatial_solver)
+          if (!spatial_solver) {
             spdlog::error(
                 "{}: {}", "Couldn't set up solver/equations class.", EQGLM);
+            exit(1);
+          }
           break;
         case EQFCD:
           spdlog::info("\tset_equations() Using Field-CD MHD Equations");
           spdlog::error(
               "{}: {}", "Field CD got lost in some code updates", EQFCD);
+          exit(1);
           break;
         default:
           spdlog::error(
               "{}: {}", "Don't know the specified equations...", par.eqntype);
+          exit(1);
           break;
       }
     }  // cartesian
@@ -1163,31 +1268,38 @@ int setup_fixed_grid::set_equations(
           spatial_solver = new class cyl_FV_solver_Hydro_Euler(
               par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
               par.ntracer);
-          if (!spatial_solver)
+          if (!spatial_solver) {
             spdlog::error(
                 "{}: {}", "Couldn't set up solver/equations class.", EQEUL);
+            exit(1);
+          }
           break;
         case EQMHD:
           spdlog::info("\tset_equations() Using Ideal MHD Equations");
           spatial_solver = new class cyl_FV_solver_mhd_ideal_adi(
               par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
               par.ntracer);
-          if (!spatial_solver)
+          if (!spatial_solver) {
             spdlog::error(
                 "{}: {}", "Couldn't set up solver/equations class.", EQMHD);
+            exit(1);
+          }
           break;
         case EQGLM:
           spdlog::info("\tset_equations() Using GLM MHD Equations");
           spatial_solver = new class cyl_FV_solver_mhd_mixedGLM_adi(
               par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
               par.ntracer);
-          if (!spatial_solver)
+          if (!spatial_solver) {
             spdlog::error(
                 "{}: {}", "Couldn't set up solver/equations class.", EQGLM);
+            exit(1);
+          }
           break;
         default:
           spdlog::error(
               "{}: {}", "not implemented yet for axisymmetry", par.eqntype);
+          exit(1);
       }
     }  // axisymmetric
 
@@ -1199,13 +1311,16 @@ int setup_fixed_grid::set_equations(
           spatial_solver = new class sph_FV_solver_Hydro_Euler(
               par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec, par.etav,
               par.ntracer);
-          if (!spatial_solver)
+          if (!spatial_solver) {
             spdlog::error(
                 "{}: {}", "Couldn't set up solver/equations class.", EQEUL);
+            exit(1);
+          }
           break;
         default:
           spdlog::error(
               "{}: {}", "not implemented yet for spherical", par.eqntype);
+          exit(1);
       }
     }  // spherically symmetric
 #ifdef PION_OMP
@@ -1215,10 +1330,12 @@ int setup_fixed_grid::set_equations(
   //
   // Check that we set up an equations class!
   //
-  if (!spatial_solver)
+  if (!spatial_solver) {
     spdlog::error(
         "{}: {}", "setup_fixed_grid::set_equations() Failed",
         fmt::ptr(spatial_solver));
+    exit(1);
+  }
 
   return (0);
 }  // set_equations.

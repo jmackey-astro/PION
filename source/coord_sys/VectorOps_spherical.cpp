@@ -43,8 +43,10 @@ using namespace std;
 VectorOps_Sph::VectorOps_Sph(int n) : VectorOps_Cart(n), VectorOps_Cyl(n)
 {
   spdlog::info("Setting up 1D spherical coordinates with ndim={}", VOnd);
-  if (VOnd != 1)
+  if (VOnd != 1) {
     spdlog::error("{}: {}", "Spherical coordinates only work in 1D!", VOnd);
+    exit(1);
+  }
   return;
 }
 
@@ -88,11 +90,13 @@ double VectorOps_Sph::CellInterface(
         break;
       default:
         spdlog::error("{}: {}", "Bad direction in 1D spherical coords!", dir);
+        exit(1);
         break;
     }
   }
 
   spdlog::error("{}: {}", "VectorOps_Sph::CellInterface", "fix me");
+  exit(1);
   return -1.0;
 }
 
@@ -104,14 +108,18 @@ double VectorOps_Sph::maxGradAbs(
 {
 #ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
-    if (!grid->NextPt(c, static_cast<direction>(i)))
+    if (!grid->NextPt(c, static_cast<direction>(i))) {
       spdlog::error(
           "{}: {}",
           "VectorOps_Sph::maxGradAbs: Some neighbour cells don't exist", i);
+      exit(1);
+    }
 #endif  // NDEBUG
 
-  if (VOnd != 1)
+  if (VOnd != 1) {
     spdlog::error("{}: {}", "Spherical coordinates only work in 1D!", VOnd);
+    exit(1);
+  }
 
   //
   // 1D gradient in radial direction is just df/dr
@@ -140,6 +148,8 @@ double VectorOps_Sph::maxGradAbs(
       spdlog::error(
           "{}: {}",
           "Don't know what state vector to use for calculating gradient.", sv);
+      exit(1);
+      break;
   }
   return (grad);
 }  // maxGradAbs
@@ -156,14 +166,18 @@ void VectorOps_Sph::Gradient(
 {
 #ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
-    if (!grid->NextPt(c, static_cast<direction>(i)))
+    if (!grid->NextPt(c, static_cast<direction>(i))) {
       spdlog::error(
           "{}: {}",
           "VectorOps_Cart::maxGradAbs: Some neighbour cells don't exist", i);
+      exit(1);
+    }
 #endif  // NDEBUG
 
-  if (VOnd != 1)
+  if (VOnd != 1) {
     spdlog::error("{}: {}", "Spherical coordinates only work in 1D!", VOnd);
+    exit(1);
+  }
   //
   // 1D gradient in radial direction is just df/dr.  The sign is
   // automatically correct for r<0, so we don't need to make any
@@ -191,6 +205,8 @@ void VectorOps_Sph::Gradient(
       spdlog::error(
           "{}: {}",
           "Don't know what state vector to use for calculating gradient.", sv);
+      exit(1);
+      break;
   }
   return;
 }
@@ -202,8 +218,10 @@ double VectorOps_Sph::Divergence(
     cell *c, const int sv, const int *var, class GridBaseClass *grid)
 {
 
-  if (VOnd != 1)
+  if (VOnd != 1) {
     spdlog::error("{}: {}", "Spherical coordinates only work in 1D!", VOnd);
+    exit(1);
+  }
   //
   // 1D divergence in radial direction is (1/r^2)d/dr(r^2*V_r)
   //
@@ -237,6 +255,8 @@ double VectorOps_Sph::Divergence(
           "{}: {}",
           "Don't know what state vector to use for calculating divergence.",
           sv);
+      exit(1);
+      break;
   }
   return (divv);
 }  // Div
@@ -253,15 +273,21 @@ void VectorOps_Sph::Curl(
 {
 #ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
-    if (!grid->NextPt(c, static_cast<direction>(i)))
+    if (!grid->NextPt(c, static_cast<direction>(i))) {
       spdlog::error(
           "{}: {}", "VectorOps_Sph::Curl: Some neighbour cells don't exist", i);
+      exit(1);
+    }
 #endif  // NDEBUG
-  if (!c->isgd)
+  if (!c->isgd) {
     spdlog::error(
         "{}: {}", "Not Grid Cell! can't calculate curl. id follows", c->id);
-  if (VOnd != 1)
+    exit(1);
+  }
+  if (VOnd != 1) {
     spdlog::error("{}: {}", "Spherical coordinates only work in 1D!", VOnd);
+    exit(1);
+  }
 
   //
   // 1D curl is always zero
@@ -284,8 +310,10 @@ int VectorOps_Sph::SetEdgeState(
     class GridBaseClass *grid)
 {
 
-  if (VOnd != 1)
+  if (VOnd != 1) {
     spdlog::error("{}: {}", "Spherical coordinates only work in 1D!", VOnd);
+    exit(1);
+  }
   double dR = grid->DX();
 
   //
@@ -310,6 +338,8 @@ int VectorOps_Sph::SetEdgeState(
         break;
       default:
         spdlog::error("{}: {}", "Bad direction in SetEdgeState", dir);
+        exit(1);
+        break;
     }  // setting del based on direction
 
     for (int v = 0; v < nv; v++)
@@ -327,17 +357,22 @@ int VectorOps_Sph::SetEdgeState(
 #endif  // TRACER_SLOPES_CONSERVED_VARS
   }     // OA2
 
-  else
+  else {
     spdlog::error(
         "{}: {}", "Bad order of accuracy in SetEdgeState \
                   -- only know 1st and 2nd order space",
         OA);
-
+    exit(1);
+  }
   return 0;
 }  // SetEdgeState
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int VectorOps_Sph::SetSlope(
     const cell *c,   ///< Current Cell.
@@ -374,13 +409,17 @@ int VectorOps_Sph::SetSlope(
         break;
       default:
         spdlog::error("{}: {}", "Bad direction in SetSlope", d);
+        exit(1);
+        break;
     }
     cp = grid->NextPt(c, dp);
     cn = grid->NextPt(c, dn);
 #ifndef NDEBUG
-    if (cp == 0 || cn == 0)
+    if (cp == 0 || cn == 0) {
       spdlog::error(
           "{}: {}", "No left or right cell in SetSlope", fmt::ptr(cp));
+      exit(1);
+    }
 #endif  // NDEBUG
 
     //
@@ -396,6 +435,8 @@ int VectorOps_Sph::SetSlope(
         break;
       default:
         spdlog::error("{}: {}", "Bad axis in SetSlope", d);
+        exit(1);
+        break;
     }  // calculate slope in direction d.
 
 #ifdef TRACER_SLOPES_CONSERVED_VARS
@@ -472,6 +513,7 @@ int VectorOps_Sph::DivStateVectorComponent(
   }
   else {
     spdlog::error("{}: {}", "Bad axis in DivStateVectorComponent", d);
+    exit(1);
   }
 
   return 0;

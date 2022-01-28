@@ -209,18 +209,24 @@ int sim_control::Time_Int(
   clk.start_timer("time_int");
   double tsf = 0;
   err        = update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
-  if (0 != err)
+  if (0 != err) {
     spdlog::error(
         "{}: Expected {} but got {}", "TIME_INT:: initial RT src update()", 0,
         err);
+    exit(1);
+  }
   err = RT_all_sources(SimPM, grid[0], 0);
-  if (0 != err)
+  if (0 != err) {
     spdlog::error(
         "{}: Expected {} but got {}", "TIME_INT:: initial RT()", 0, err);
+    exit(1);
+  }
   err += output_data(grid);
-  if (0 != err)
+  if (0 != err) {
     spdlog::error(
         "{}: Expected {} but got {}", "TIME_INT:: initial save", 0, err);
+    exit(1);
+  }
 
   while (SimPM.maxtime == false) {
 
@@ -233,22 +239,28 @@ int sim_control::Time_Int(
     // Update RT sources and do raytracing.
     //
     err = update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
-    if (0 != err)
+    if (0 != err) {
       spdlog::error(
           "{}: Expected {} but got {}", "TIME_INT::update_RT_sources()", 0,
           err);
+      exit(1);
+    }
     err = RT_all_sources(SimPM, grid[0], 0);
-    if (0 != err)
+    if (0 != err) {
       spdlog::error(
           "{}: Expected {} but got {}", "TIME_INT:: loop RT()", 0, err);
+      exit(1);
+    }
 
     // clk.start_timer("advance_time");
     // step forward by dt.
     SimPM.levels[0].last_dt = SimPM.last_dt;
     err += calculate_timestep(SimPM, grid[0], 0);
-    if (0 != err)
+    if (0 != err) {
       spdlog::error(
           "{}: Expected {} but got {}", "TIME_INT::calc_timestep()", 0, err);
+      exit(1);
+    }
 
     advance_time(0, grid[0]);
     // cout <<"advance_time took "<<clk.stop_timer("advance_time")<<"
@@ -386,6 +398,7 @@ int sim_control::check_eosim()
     spdlog::debug("finishtime={}", SimPM.finishtime);
     spdlog::error(
         "{}: {}", "Don't know how to check for end of simulation.", 2);
+    exit(1);
   }
 
   return (0);
@@ -446,10 +459,12 @@ int sim_control::Finalise(vector<class GridBaseClass *>
   err += check_energy_cons(grid[0]);
 #endif /* TEST_CONSERVATION */
   err += output_data(grid);
-  if (0 != err)
+  if (0 != err) {
     spdlog::error(
         "{}: Expected {} but got {}",
         "(FINALISE::output_data) Something went wrong", 0, err);
+    exit(1);
+  }
   spdlog::info(
       "\tSimTime = {}   #timesteps = {}", SimPM.simtime, SimPM.timestep);
   spdlog::info("(sim_control::Finalise) DONE");
