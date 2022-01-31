@@ -2368,6 +2368,7 @@ int DataIOBase::check_header_parameters(
         1, 1);
     SimPM.outFileBase = "noname";
   }
+
   SimPM.maxtime = false;
   SimPM.dt      = 0.;
 

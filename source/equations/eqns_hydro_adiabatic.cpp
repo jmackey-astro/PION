@@ -186,7 +186,7 @@ int eqns_Euler::UtoP(
     if (ct_pg < 1000) {
       ct_pg++;
       spdlog::debug(
-          "(eqns_Euler::UtoP) negative pressure...p={}, u[eqERG]={}, 0.5*rho*v^2={}... correcting\nNEG.PRES.CELL:",
+          "(eqns_Euler::UtoP) negative pressure...p={}, u[eqERG]={}, 0.5*rho*v^2={}... correcting",
           p[eqPG], u[eqERG],
           0.5 * p[eqRO]
               * (p[eqVX] * p[eqVX] + p[eqVY] * p[eqVY] + p[eqVZ] * p[eqVZ]));

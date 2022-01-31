@@ -370,6 +370,11 @@ int MP_Hydrogen::convert_prim2local(
     spdlog::debug("neg.pres. input to MP: e={}", p_local[lv_eint]);
     spdlog::error("{}: {}", "Negative pressure input to RT solver!", p_in[PG]);
   }
+#ifndef NDEBUG
+  if (p_local[lv_eint] > 1.e-5) {
+    // spdlog::error("{}: {}", "goodbye",0);
+  }
+#endif  // testing
   p_local[lv_Hp] = p_in[pv_Hp];
   if (p_local[lv_Hp] < 0.0 || (p_local[lv_Hp] - 1.0 > SMALLVALUE)) {
     if (p_local[lv_Hp] < 0.0)
@@ -439,9 +444,6 @@ int MP_Hydrogen::convert_local2prim(
 #endif  // ISOTHERMAL_MP
 
   if (p_out[PG] < 0.) {
-#ifndef NDEBUG
-    commandline.console("Mmmm... negative pressure! >");
-#endif  // testing
     spdlog::debug("neg.pres. e={}", p_local[lv_eint]);
     spdlog::error(
         "{}: {}", "Negative pressure output from RT solver!", p_out[PG]);
@@ -710,9 +712,6 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
       // cout <<"  ...rejecting step. integrator gave code:
       // err="<<err<<"\n"; P2[lv_Hp] = 1.0; cout <<"irate =
       // "<<irate<<"\n";
-#ifndef NDEBUG
-      commandline.console("Mmmm>");
-#endif
     }
     else if (!pconst.equalD(t_out, hh)) {
       t_now += t_out;
@@ -777,16 +776,12 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
     if (P[lv_Hp] > 1.00001) {
       spdlog::warn("H+ has i-frac={}  ...setting to 1", P[lv_Hp]);
       //      P[lv_Hp] = 1.0;
-#ifndef NDEBUG
-      commandline.console("Mmmm>");
-#endif
       spdlog::error(
           "{}: {}", "FAILURE of method on every level! FIX ME!", P[lv_Hp]);
     }
     if (!pconst.equalD(t_out, hh)) {
       // cout <<"integration overshot, so cut short! req: "<<hh<<" did:
       // "<<t_out<<"\n"; rep.printVec("p_new",P,nvl);
-      // commandline.console("interr Mmmm>"); spdlog::error("{}: {}",
       // "integration didn't go for specified time!",(t_out-hh)/(t_out+hh));
       hh = t_out;
     }
@@ -1287,9 +1282,6 @@ int MP_Hydrogen::Int_Adaptive_RKCK(
         "MP_HYDROGEN::Int_Adaptive_RKCK() errors encountered. nstep={}", ct);
     spdlog::debug("p1 : {}", p1);
     if (!err) err = ct;
-#ifndef NDEBUG
-    commandline.console("bad luck! >");
-#endif
   }
   if (ct > 0.75 * ctmax) spdlog::debug("ADAPTIVE INT: took {} steps!", ct);
   for (int v = 0; v < nvl; v++)
@@ -1360,12 +1352,11 @@ int MP_Hydrogen::dPdt(
 #ifdef HUMMER_RECOMB
       R[lv_eint] -= rad_recomb_energy(T) * P[lv_Hp] * P[lv_Hp]
                     * P[lv_nh];  // rate [erg/s]
-#endif                           // HUMMER_RECOMB
-#ifndef HUMMER_RECOMB
-    R[lv_eint] -= temp * kB * T / (gamma - 1.0);
-    // also takes energy of e- out of gas (assumed radiated away)
-    // if we are using a cooling curve, then we don't want to double count
-    // this! This is an overestimate, maybe by a factor of 2 or more.
+#endif
+#ifndef HUMMER_RECOMB R[lv_eint] -= temp * kB * T / (gamma - 1.0);
+      // also takes energy of e- out of gas (assumed radiated away)
+      // if we are using a cooling curve, then we don't want to double count
+      // this! This is an overestimate, maybe by a factor of 2 or more.
 #endif  // not HUMMER_RECOMB
 #ifdef COUNT_ENERGETICS
     if (!have_counted_ergs) {

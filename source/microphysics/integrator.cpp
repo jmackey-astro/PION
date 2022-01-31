@@ -514,7 +514,6 @@ int Integrator_Base::Stepper_RKCK(
       rval++;
     }
   }
-
   return rval;
 }
 

@@ -21,6 +21,7 @@
 #include <mpi.h>
 #include <sim_constants.h>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "grid/cell_interface.h"
@@ -141,7 +142,7 @@ public:
   ///
   /// Create a vector of child grids of this processes on level + 1
   ///
-  void determine_parent_processes(
+  void evaluate_parent_process(
       const class SimParams &par,  ///< simulation parameters
       const int level              ///< level in grid hierarchy
   );
@@ -153,8 +154,8 @@ public:
   void determine_child_neighbour_ranks(
       const class SimParams &par,   ///< simulation parameters
       const int level,              ///< level in grid hierarchy
-      std::vector<double> &centre,  ///< centre of current local grid
-      std::vector<std::vector<int> >
+      std::vector<double> &cursor,  ///< cursor for exploring domain
+      std::array<std::unordered_set<int>, 2>
           &neighbours,  ///< resultant vector of child neighbour ranks
       const int current_dimension,  ///< current dimension to traverse
       const int
@@ -164,7 +165,7 @@ public:
   ///
   /// Determine the neighbours of this processes' children on level + 1
   ///
-  void determine_child_neighbours(
+  void evaluate_child_neighbours(
       const class SimParams &par,  ///< simulation parameters
       const int level              ///< level in grid hierarchy
   );
@@ -173,10 +174,11 @@ public:
   /// Determine the ranks of this processes children on level + 1
   ///
   void determine_child_ranks(
-      const class SimParams &par,   ///< simulation parameters
-      const int level,              ///< level in grid hierarchy
-      std::vector<int> &children,   ///< resultant vector of child process ranks
-      std::vector<double> &centre,  ///< centre of current local grid
+      const class SimParams &par,  ///< simulation parameters
+      const int level,             ///< level in grid hierarchy
+      std::unordered_set<int>
+          &children,                ///< resultant set of child process ranks
+      std::vector<double> &cursor,  ///< cursor for exploring domain
       const int current_dimension   ///< current dimension to traverse
       ) const;
 
@@ -195,16 +197,6 @@ public:
       class SimParams &,  ///< simulation parameters
       const int           ///< level in grid hierarchy.
   );
-
-  ///
-  /// Get a list of all abutting domains, including corner/edge
-  /// intersections.
-  /// Helper function to recurse traversal of dimensions
-  ///
-  void create_abutting_domains_list(
-      int,    ///< current dimension to traverse
-      int[],  ///< position to traverse relative to
-      bool);
 
   ///
   /// Get a list of all abutting domains, including corner/edge

@@ -156,7 +156,6 @@ int eqns_mhd_ideal::check_pressure(
       spdlog::debug("(eqns_mhd_ideal::check_pressure) negative density!");
       spdlog::debug("u : {}", std::vector<pion_flt>(u, u + eq_nvar));
       spdlog::debug("p : {}", std::vector<pion_flt>(p, p + eq_nvar));
-      spdlog::debug("NEG.DENS.CELL:");
     }
     // reset all variables because a negative density will change the
     // sign of all of the velocities
