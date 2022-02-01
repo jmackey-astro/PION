@@ -266,6 +266,12 @@ int Sub_domain::decomposeDomain(
  *      ZNYNXN, ZNYNXP, ZNYPXN, ZNYPXP
  *      ZPXN, ZPXP, ZPYN, ZPYP,
  *      ZPYNXN, ZPYNXP, ZPYPXN, ZPYPXP
+ *
+ * These can be found in the correct order by first adding (in order of
+ * dimension) each basis vector which corresponds to a valid neighbour
+ * (XN, XP, ..., ZP). Then, in a queue-like fashion, checking for combinations
+ * of a basis vector (eg. YN) with known valid neighbours in the queue (eg. XN,
+ * XP).
  */
 void Sub_domain::create_abutting_domains_list()
 {
@@ -327,7 +333,9 @@ void Sub_domain::create_abutting_domains_list()
   /* now that we have the coordinates of each abutting domain, we are left to
    * determine their ranks */
   abutting_domains.reserve(neighbours.size());
+#ifndef NDEBUG
   spdlog::debug("abutting_domains:\n {}", neighbours);
+#endif
   for (auto n : neighbours) {
     int neighbour_rank;
     MPI_Cart_rank(cart_comm, n.data(), &neighbour_rank);
@@ -408,7 +416,16 @@ void Sub_domain::evaluate_parent_process(
 
 /*
  * recursively work through the dimensions to move cursor and try to find
- * child domains
+ * child domains.
+ * Begining at the lowest-order dimension, cursor is set to a position on the
+ * domain and the function is called recursively for the next-order dimension.
+ * When current_dimension is the highest-order dimension (therefore cursor has
+ * a value in each dimension), it is determined whether cursor corresponds to a
+ * valid location on the domain and, if so, the rank of the processor who owns
+ * that location on the next grid level is added to the unordered_set, children.
+ * When the recursion returns to a given dimension, the cursor is moved in that
+ * dimension and the recursion is invoked again for the higher-order dimensions.
+ * In this way, the recursion tree explores all possible locations for children.
  */
 void Sub_domain::determine_child_ranks(
     const class SimParams &par,
@@ -417,25 +434,35 @@ void Sub_domain::determine_child_ranks(
     vector<double> &cursor,
     const int current_dimension) const
 {
-  /* split domain in 4 in each dimension */
-  for (int i = 0; i < 4; i++) {
+  cursor[current_dimension] =
+      Xmin[current_dimension] + 0.25 * range[current_dimension];
+
+  if (current_dimension == m_ndim - 1) { /* check if cursor found child */
     cursor[current_dimension] =
-        Xmin[current_dimension] + 0.25 * i * range[current_dimension];
-    if (current_dimension == m_ndim - 1) {
-      int child_rank = get_rank_from_grid_location(par, cursor, level + 1);
-      if (child_rank > -1) children.insert(child_rank);
-    }
-    else {
-      determine_child_ranks(
-          par, level, children, cursor, current_dimension + 1);
-    }
+        Xmin[current_dimension] + 0.25 * range[current_dimension];
+    int child_rank = get_rank_from_grid_location(par, cursor, level + 1);
+    if (child_rank > -1) children.insert(child_rank);
+
+    cursor[current_dimension] += 0.5 * range[current_dimension];
+    child_rank = get_rank_from_grid_location(par, cursor, level + 1);
+    if (child_rank > -1) children.insert(child_rank);
+  }
+  else {
+    determine_child_ranks(par, level, children, cursor, current_dimension + 1);
+
+    cursor[current_dimension] += 0.5 * range[current_dimension];
+
+    determine_child_ranks(par, level, children, cursor, current_dimension + 1);
   }
 }
 
 // ##################################################################
 // ##################################################################
 
-/* populate the child_procs vector of child structs */
+/*
+ * populate the child_procs vector with cgrid structs. Each cgrid has the rank
+ * of a child and the range of it's domain
+ */
 void Sub_domain::determine_child_processes(
     const class SimParams &par, const int level)
 {
@@ -486,8 +513,11 @@ void Sub_domain::determine_child_processes(
 /*
  * Recurse dimensions to get child process' neighbouring ranks in
  * neighbour_dimension. cursor is used to explore the space, set in each other
- * dimension first, before exploring for valid neighbours in
- * neighbour_dimension.
+ * dimension first (two locations per dimension), before exploring for valid
+ * neighbours in neighbour_dimension. Similar logic to calculate_child_processes
+ *
+ * Note: this function is called from evaluate_child_neighbours for each
+ * neighbour_dimension
  */
 void Sub_domain::determine_child_neighbour_ranks(
     const class SimParams &par,
@@ -498,36 +528,54 @@ void Sub_domain::determine_child_neighbour_ranks(
     const int neighbour_dimension) const
 {
   const int next_dimension = (current_dimension + 1) % par.ndim;
-  for (int i = 0; i < 4; i++) {
-    cursor[current_dimension] =
-        Xmin[current_dimension] + 0.25 * i * range[current_dimension];
-    if (next_dimension != neighbour_dimension) {
-      determine_child_neighbour_ranks(
-          par, level, cursor, neighbours, next_dimension, neighbour_dimension);
-    }
-    else {
-      /* negative direction */
-      cursor[neighbour_dimension] =
-          Xmin[neighbour_dimension]
-          - range[neighbour_dimension]
-                / directional_Ncells[neighbour_dimension];
-      int child_rank = get_rank_from_grid_location(par, cursor, level + 1);
-      if (child_rank > -1) neighbours[0].insert(child_rank);
+  cursor[current_dimension] =
+      Xmin[current_dimension] + 0.25 * range[current_dimension];
 
-      /* positive direction */
-      cursor[neighbour_dimension] =
-          Xmax[neighbour_dimension]
-          + range[neighbour_dimension]
-                / directional_Ncells[neighbour_dimension];
-      child_rank = get_rank_from_grid_location(par, cursor, level + 1);
-      if (child_rank > -1) neighbours[1].insert(child_rank);
-    }
+  if (next_dimension != neighbour_dimension) {
+    determine_child_neighbour_ranks(
+        par, level, cursor, neighbours, next_dimension, neighbour_dimension);
+
+    cursor[current_dimension] += 0.5 * range[current_dimension];
+
+    determine_child_neighbour_ranks(
+        par, level, cursor, neighbours, next_dimension, neighbour_dimension);
+  }
+  else {
+    /* negative direction */
+    cursor[neighbour_dimension] =
+        Xmin[neighbour_dimension]
+        - range[neighbour_dimension] / directional_Ncells[neighbour_dimension];
+    int child_rank = get_rank_from_grid_location(par, cursor, level + 1);
+    if (child_rank > -1) neighbours[0].insert(child_rank);
+
+    cursor[current_dimension] += 0.5 * range[current_dimension];
+
+    child_rank = get_rank_from_grid_location(par, cursor, level + 1);
+    if (child_rank > -1) neighbours[0].insert(child_rank);
+
+    /* positive direction */
+    cursor[neighbour_dimension] =
+        Xmax[neighbour_dimension]
+        + range[neighbour_dimension] / directional_Ncells[neighbour_dimension];
+    child_rank = get_rank_from_grid_location(par, cursor, level + 1);
+    if (child_rank > -1) neighbours[1].insert(child_rank);
+
+    cursor[current_dimension] -= 0.5 * range[current_dimension];
+
+    child_rank = get_rank_from_grid_location(par, cursor, level + 1);
+    if (child_rank > -1) neighbours[1].insert(child_rank);
   }
 }
 
 // ##################################################################
 // ##################################################################
 
+/*
+ * cgrid_ngb is filled with cgrid structs corresponding to the neighbours of
+ * children in order such that cgrid_ngb[2 * dim + dir] contains a vector of
+ * cgrids that are neighbours in dimension, dim, in direction dir (neg = 0, pos
+ * = 1).
+ */
 void Sub_domain::evaluate_child_neighbours(
     const class SimParams &par, const int level)
 {
@@ -537,7 +585,7 @@ void Sub_domain::evaluate_child_neighbours(
   }
   if (par.ndim == 1) return;
 
-  for (int i = 0; i < par.ndim; ++i) {
+  for (int i = 0; i < par.ndim; ++i) { /* per dimension */
     vector<double> cursor(par.ndim);
     /* ranks of neighbours in dimension i in negative and positive directions,
      * neighbours[0] is negative, neighbours[1] is positive */
