@@ -25,9 +25,12 @@ if [[ $1 -eq 1 ]]; then
 elif [[ $1 -eq 2 ]]; then
   nt=2
   mpi="mpirun --allow-run-as-root --oversubscribe -np 2"
-else
+elif [[ -z $1 ]]; then
   nt=1
   mpi="mpirun --allow-run-as-root --oversubscribe -np 4"
+else
+  nt=1
+  mpi="mpirun --allow-run-as-root --oversubscribe -np $1"
 fi
 ####################################
 

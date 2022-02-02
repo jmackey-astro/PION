@@ -39,6 +39,18 @@ if (PION_PARALLEL)
             SCRIPT run-2d-rhd.sh
             EXCLUDE
         )
+        custom_add_test(
+            NAME 3d-uniform-large
+            SCRIPT blastwave_3d_ug.sh
+            ARGUMENTS 16
+            EXCLUDE
+        )
+        custom_add_test(
+            NAME 3d-uniform-pbc-large
+            SCRIPT blastwave_3d_ug_pbc.sh
+            ARGUMENTS 16
+            EXCLUDE
+        )
     if (PION_OMP)
         custom_add_test(
             NAME dte-omp
@@ -84,6 +96,18 @@ if (PION_PARALLEL)
         custom_add_test(
             NAME binary-3d-ng-adi
             SCRIPT binary_3d_adi_ng.sh
+            EXCLUDE
+        )
+        custom_add_test(
+            NAME 3d-nested-large
+            SCRIPT blastwave_3d_ng.sh
+            ARGUMENTS 16
+            EXCLUDE
+        )
+        custom_add_test(
+            NAME 3d-nested-pbc-large
+            SCRIPT blastwave_3d_ng_pbc.sh
+            ARGUMENTS 16
             EXCLUDE
         )
     endif(PION_NESTED_GRID)
