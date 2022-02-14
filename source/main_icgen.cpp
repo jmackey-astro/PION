@@ -330,7 +330,7 @@ int main(int argc, char **argv)
     // cout <<"icgen_NG: assigning boundary data for level "<<l<<"\n";
     err = SimSetup->assign_boundary_data(SimPM, l, grid[l], MP);
 #ifdef PARALLEL
-    SimPM.levels[0].sub_domain.barrier("level assign boundary data");
+    SimPM.levels[0].sub_domain.barrier();
 #endif /* PARALLEL */
     if (0 != err)
       spdlog::error(

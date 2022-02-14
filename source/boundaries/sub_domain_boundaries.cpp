@@ -151,9 +151,8 @@ int sub_domain_bc::BC_update_BCMPI(
 #endif
   err += ppar->send_cell_data(
       ppar->get_neighbour_rank(b->dir),  // to_rank
-      &(b->send_data),                   // cells list.
-      b->send_data.size(),               // number of cells.
-      par.ndim, par.nvar,
+      b->send_data,                      // cells list.
+      par.nvar,
       send_id,  // identifier for send.
       comm_tag);
   if (err) spdlog::error("{}: {}", "sending data failed", err);
@@ -202,10 +201,9 @@ int sub_domain_bc::BC_update_BCMPI(
   // Receive the data:
   //
   err = ppar->receive_cell_data(
-      from_rank,       ///< rank of process we are receiving from.
-      &(b->data),      ///< list of cells to get data for.
-      b->data.size(),  ///< number of cells in list (extra checking!)
-      par.ndim, par.nvar,
+      from_rank,  ///< rank of process we are receiving from.
+      b->data,    ///< list of cells to get data for.
+      par.nvar,
       recv_tag,  ///< comm_tag: what sort of comm we are looking for
                  ///< (PER,MPI,etc.)
       recv_id    ///< identifier for receive, for any book-keeping.

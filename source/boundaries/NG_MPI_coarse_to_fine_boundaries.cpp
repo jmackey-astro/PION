@@ -314,7 +314,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
       n_el = n_cell * ((1 + par.ndim) * par.nvar + 1 + par.ndim);
     else
       spdlog::error("{}: {}", "bad spOOA in MPI C2F", par.spOOA);
-    pion_flt *buf = new pion_flt[n_el];
+    vector<pion_flt> buf(n_el);
     std::vector<double> slope(par.nvar);
     std::array<double, MAX_DIM> cpos;
 
@@ -377,7 +377,6 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
 #endif
     // store ID to clear the send later (and delete the MPI temp data)
     par.levels[l].sub_domain.NG_C2F_send_list.push_back(id);
-    buf = mem.myfree(buf);
   }  // loop over send boundaries
   return 0;
 }
@@ -677,8 +676,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
       n_el = n_cell * ((1 + par.ndim) * par.nvar + 1 + par.ndim);
     else
       spdlog::error("{}: {}", "bad spOOA in MPI C2F", par.spOOA);
-    pion_flt *buf = 0;
-    buf           = mem.myalloc(buf, n_el);
+    vector<pion_flt> buf(n_el);
 #ifdef TEST_C2F
     if (1 == 1) {
       spdlog::debug(
@@ -858,10 +856,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
         }  // loop over coarse cells
       }    // if 3D
     }      // if 2nd order accurate
-
-    buf = mem.myfree(buf);
-    buf = 0;
-  }  // if parent proc is different to my proc.
+  }        // if parent proc is different to my proc.
 
 #ifdef TEST_C2F
   spdlog::info("NG_MPI_C2F_bc::BC_update_COARSE_TO_FINE_RECV() done");

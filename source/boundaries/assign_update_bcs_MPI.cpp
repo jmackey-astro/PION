@@ -195,7 +195,7 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
         break;
     }
 
-    par.levels[0].sub_domain.barrier("External BC update");
+    par.levels[0].sub_domain.barrier();
 
     // if (i==XP || (i==YP && par.ndim>=2) || (i==ZP && par.ndim==3)) {
     //  // Need to make sure all processors are updating boundaries along
@@ -205,7 +205,7 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
     //  //      cout <<"Barrier synching for dir="<<i<<" with
     //  1=XP,2=YP,3=ZP.\n"; ostringstream tmp; tmp
     //  <<"assign_update_bcs_MPI_TimeUpdateExternalBCs_"<<i;
-    //  par.levels[0].sub_domain.barrier(tmp.str());
+    //  par.levels[0].sub_domain.barrier();
     //  tmp.str("");
     //}
   }

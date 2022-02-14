@@ -432,7 +432,7 @@ int dataio_silo_pllel::ReadData(
   if (err)
     spdlog::error(
         "{}: {}", "mpiPM->silo_pllel_finish_with_file() returned err", err);
-  mpiPM->barrier("dataio_silo_pllel__ReadData");
+  mpiPM->barrier();
 
 #ifndef NDEBUG
   spdlog::debug(
@@ -959,7 +959,7 @@ int dataio_silo_pllel::SaveLevelData(
   if (err)
     spdlog::error(
         "{}: {}", "mpiPM->silo_pllel_finish_with_file() returned err", err);
-  mpiPM->barrier("dataio_silo_pllel__SaveLevelData");
+  mpiPM->barrier();
 
   //   cout <<"Got past barrier... finished outputting silo data.\n\n";
 

@@ -547,11 +547,10 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
           "l={}: BC89_FLUX send {} is not null: sending data.", l, isend);
 #endif
     }
-    size_t n_el    = fup->fi.size();
-    size_t n_data  = n_el * par.nvar;
-    pion_flt *data = 0;  // buffer for sending by MPI
-    data           = mem.myalloc(data, n_data);
-    size_t iel     = 0;
+    size_t n_el   = fup->fi.size();
+    size_t n_data = n_el * par.nvar;
+    vector<pion_flt> data(n_data);
+    size_t iel = 0;
     for (size_t ii = 0; ii < n_el; ii++) {
       for (int v = 0; v < par.nvar; v++) {
         data[iel] = fup->fi[ii]->flux[v];
@@ -593,8 +592,7 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
       // store ID to clear the send later
       sub_domain->BC89_flux_send_list.push_back(id);
     }  // loop over ranks
-    data = mem.myfree(data);
-  }  // loop over send boundaries.
+  }    // loop over send boundaries.
 #ifdef TEST_BC89FLUX
   spdlog::info("BC89 MPI flux send finished");
 #endif
@@ -678,8 +676,7 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
     struct flux_interface *fi = 0;
     size_t n_el               = fup->fi.size();
     size_t n_data             = n_el * par.nvar;
-    pion_flt *buf             = 0;
-    buf                       = mem.myalloc(buf, n_data);
+    vector<pion_flt> buf(n_data);
 
     // receive data: comm_tag ensures that we select the data
     // relating to this value of "irecv".
@@ -766,7 +763,6 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
 
     }  // loop over elements
     if (iel != n_data) spdlog::error("{}: {}", "ndata", iel - n_data);
-    buf = mem.myfree(buf);
 #ifdef TEST_BC89FLUX
     spdlog::debug("l={}: BC89 FLUX: finished with recv ID {}", l, recv_id);
 #endif

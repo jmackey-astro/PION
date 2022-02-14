@@ -360,7 +360,7 @@ int IC_photevap_random_clumps::setup_perc_fixedmass()
     m1 += cpt->P[RO] * vol;
   } while ((cpt = gg->NextPt(cpt)) != 0);
 #ifdef PARALLEL
-  double m2 = sub_domain->global_operation_double("SUM", m1);
+  double m2 = sub_domain->global_operation_double(SUM, m1);
   m1        = m2;
 #endif  // PARALLEL
 
@@ -388,7 +388,7 @@ int IC_photevap_random_clumps::setup_perc_fixedmass()
     mass += cpt->P[RO] * vol;
   } while ((cpt = gg->NextPt(cpt)) != 0);
 #ifdef PARALLEL
-  double mtot = sub_domain->global_operation_double("SUM", mass);
+  double mtot = sub_domain->global_operation_double(SUM, mass);
   mass        = mtot;
 #endif  // PARALLEL
   spdlog::debug(
@@ -778,10 +778,10 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel_fixedmass()
   int err = 0;
   if (sub_domain->get_myrank() == 0) {
     err += IC_photevap_random_clumps::clumps_random_setup_fixedmass();
-    err += sub_domain->broadcast_data(0, "INT", 1, &Nclumps);
+    err += sub_domain->broadcast_data(0, INT, 1, &Nclumps);
   }
   else {
-    err += sub_domain->broadcast_data(0, "INT", 1, &Nclumps);
+    err += sub_domain->broadcast_data(0, INT, 1, &Nclumps);
     // set up clumps
     if (cl)
       spdlog::error(
@@ -804,7 +804,7 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel_fixedmass()
   if (sub_domain->get_myrank() == 0)
     for (int i = 0; i < Nclumps; i++)
       d[i] = cl[i].overdensity;
-  err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+  err += sub_domain->broadcast_data(0, DOUBLE, Nclumps, d);
   if (sub_domain->get_myrank() != 0)
     for (int i = 0; i < Nclumps; i++)
       cl[i].overdensity = d[i];
@@ -813,7 +813,7 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel_fixedmass()
   if (sub_domain->get_myrank() == 0)
     for (int i = 0; i < Nclumps; i++)
       d[i] = cl[i].mass;
-  err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+  err += sub_domain->broadcast_data(0, DOUBLE, Nclumps, d);
   if (sub_domain->get_myrank() != 0)
     for (int i = 0; i < Nclumps; i++)
       cl[i].mass = d[i];
@@ -823,7 +823,7 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel_fixedmass()
     if (sub_domain->get_myrank() == 0)
       for (int i = 0; i < Nclumps; i++)
         d[i] = cl[i].centre[nd];
-    err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+    err += sub_domain->broadcast_data(0, DOUBLE, Nclumps, d);
     if (sub_domain->get_myrank() != 0)
       for (int i = 0; i < Nclumps; i++)
         cl[i].centre[nd] = d[i];
@@ -834,7 +834,7 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel_fixedmass()
     if (sub_domain->get_myrank() == 0)
       for (int i = 0; i < Nclumps; i++)
         d[i] = cl[i].size[nd];
-    err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+    err += sub_domain->broadcast_data(0, DOUBLE, Nclumps, d);
     if (sub_domain->get_myrank() != 0)
       for (int i = 0; i < Nclumps; i++)
         cl[i].size[nd] = d[i];
@@ -845,7 +845,7 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel_fixedmass()
     if (sub_domain->get_myrank() == 0)
       for (int i = 0; i < Nclumps; i++)
         d[i] = cl[i].ang[nd];
-    err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+    err += sub_domain->broadcast_data(0, DOUBLE, Nclumps, d);
     if (sub_domain->get_myrank() != 0)
       for (int i = 0; i < Nclumps; i++)
         cl[i].ang[nd] = d[i];
@@ -857,7 +857,7 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel_fixedmass()
       if (sub_domain->get_myrank() == 0)
         for (int i = 0; i < Nclumps; i++)
           d[i] = cl[i].rm[x][y];
-      err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+      err += sub_domain->broadcast_data(0, DOUBLE, Nclumps, d);
       if (sub_domain->get_myrank() != 0)
         for (int i = 0; i < Nclumps; i++)
           cl[i].rm[x][y] = d[i];
@@ -897,7 +897,7 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel()
   if (sub_domain->get_myrank() == 0)
     for (int i = 0; i < Nclumps; i++)
       d[i] = cl[i].overdensity;
-  err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+  err += sub_domain->broadcast_data(0, DOUBLE, Nclumps, d);
   if (sub_domain->get_myrank() != 0)
     for (int i = 0; i < Nclumps; i++)
       cl[i].overdensity = d[i];
@@ -907,7 +907,7 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel()
     if (sub_domain->get_myrank() == 0)
       for (int i = 0; i < Nclumps; i++)
         d[i] = cl[i].centre[nd];
-    err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+    err += sub_domain->broadcast_data(0, DOUBLE, Nclumps, d);
     if (sub_domain->get_myrank() != 0)
       for (int i = 0; i < Nclumps; i++)
         cl[i].centre[nd] = d[i];
@@ -918,7 +918,7 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel()
     if (sub_domain->get_myrank() == 0)
       for (int i = 0; i < Nclumps; i++)
         d[i] = cl[i].size[nd];
-    err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+    err += sub_domain->broadcast_data(0, DOUBLE, Nclumps, d);
     if (sub_domain->get_myrank() != 0)
       for (int i = 0; i < Nclumps; i++)
         cl[i].size[nd] = d[i];
@@ -929,7 +929,7 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel()
     if (sub_domain->get_myrank() == 0)
       for (int i = 0; i < Nclumps; i++)
         d[i] = cl[i].ang[nd];
-    err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+    err += sub_domain->broadcast_data(0, DOUBLE, Nclumps, d);
     if (sub_domain->get_myrank() != 0)
       for (int i = 0; i < Nclumps; i++)
         cl[i].ang[nd] = d[i];
@@ -941,7 +941,7 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel()
       if (sub_domain->get_myrank() == 0)
         for (int i = 0; i < Nclumps; i++)
           d[i] = cl[i].rm[x][y];
-      err += sub_domain->broadcast_data(0, "DOUBLE", Nclumps, d);
+      err += sub_domain->broadcast_data(0, DOUBLE, Nclumps, d);
       if (sub_domain->get_myrank() != 0)
         for (int i = 0; i < Nclumps; i++)
           cl[i].rm[x][y] = d[i];

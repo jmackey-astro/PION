@@ -569,7 +569,7 @@ int main(int argc, char **argv)
   //
   // im is a pointer to one of im1/2/3/4/5
   //
-  double *im = 0, *im1 = 0, *im2 = 0;
+  vector<double> im1, im2;
   long int nels = num_pixels * Nbins;  // Nbins=1 unless we want V_los or V_x
 
   //
@@ -585,9 +585,9 @@ int main(int argc, char **argv)
     rank0_num_pixels = rank0_npix[0] * rank0_npix[1];
   }
 
-  int n_images       = 0;
-  int *what2int      = 0;
-  double **img_array = 0;
+  int n_images  = 0;
+  int *what2int = 0;
+  vector<vector<double> > img_array;
 #ifdef SUBTRACT_MEAN
   double **mean_array = 0;
 #endif  // SUBTRACT_MEAN
@@ -597,20 +597,20 @@ int main(int argc, char **argv)
     case I_NtD:
     case I_HA:
       // Only need one image:
-      n_images     = 1;
-      im1          = mem.myalloc(im1, nels);
-      what2int     = mem.myalloc(what2int, n_images);
-      img_array    = mem.myalloc(img_array, n_images);
+      n_images = 1;
+      im1.resize(nels);
+      what2int = mem.myalloc(what2int, n_images);
+      img_array.resize(n_images);
       what2int[0]  = what_to_integrate;
       img_array[0] = im1;
       break;
     case I_VEL_LOS:
     case I_VX:
-      n_images     = 1;
-      im1          = mem.myalloc(im1, nels);
-      im2          = mem.myalloc(im2, npix[0] * npix[2]);
-      what2int     = mem.myalloc(what2int, n_images);
-      img_array    = mem.myalloc(img_array, n_images);
+      n_images = 1;
+      im1.resize(nels);
+      im2.resize(npix[0] * npix[2]);
+      what2int = mem.myalloc(what2int, n_images);
+      img_array.resize(n_images);
       what2int[0]  = what_to_integrate;
       img_array[0] = im1;
       break;
@@ -622,9 +622,9 @@ int main(int argc, char **argv)
       else
         n_images = N_MHD_SCALAR;  // Project Stokes Q,U and BX,BT, RM
 
-      img_array = mem.myalloc(img_array, n_images);
+      img_array.resize(n_images);
       for (int v = 0; v < n_images; v++)
-        img_array[v] = mem.myalloc(img_array[v], nels);
+        img_array[v].resize(nels);
 
       what2int                 = mem.myalloc(what2int, n_images);
       what2int[PROJ_D]         = I_D;
@@ -678,12 +678,12 @@ int main(int argc, char **argv)
 
   // set up master image vectors for each level and each variable.
   spdlog::info("allocating imgmaster array... ");
-  vector<vector<double *> > imgmaster;
+  vector<vector<vector<double> > > imgmaster;
   imgmaster.resize(n_images);
   for (int im = 0; im < n_images; im++) {
     imgmaster[im].resize(SimPM.grid_nlevels);
     for (int lv = 0; lv < SimPM.grid_nlevels; lv++) {
-      imgmaster[im][lv] = mem.myalloc(imgmaster[im][lv], nels);
+      imgmaster[im][lv].resize(nels);
     }
   }
   spdlog::info("done!");
@@ -814,7 +814,6 @@ int main(int argc, char **argv)
 #ifndef NDEBUG
         spdlog::debug("starting image {} calculation", outputs);
 #endif  // NDEBUG
-        im       = img_array[outputs];
         w2i      = what2int[outputs];
         tot_mass = 0.0;
 
@@ -825,7 +824,8 @@ int main(int argc, char **argv)
 
         for (int i = 0; i < num_pixels; i++) {
           px = &(IMG[lv]->pix[i]);
-          IMG[lv]->calculate_pixel(px, &vps, w2i, SimPM, im, &tot_mass);
+          IMG[lv]->calculate_pixel(
+              px, &vps, w2i, SimPM, img_array[outputs].data(), &tot_mass);
         }
         tsf = clk.time_so_far("makeimage");
 #ifndef NDEBUG
@@ -867,8 +867,12 @@ int main(int argc, char **argv)
             //
             // cout <<"receiving from "<<from_rank<<"  ";
             // cout <<recv_id<<"  "<<recv_tag<<"\n";
+            std::vector<double> recv_buf(ct);
             err = SimPM.levels[0].sub_domain.receive_double_data(
-                from_rank, recv_tag, recv_id, ct, &(im[ct * from_rank]));
+                from_rank, recv_tag, recv_id, ct, recv_buf);
+            std::copy(
+                recv_buf.begin(), recv_buf.end(),
+                &(img_array[outputs][ct * from_rank]));
             if (err) {
               spdlog::debug(
                   "{}\t{}\t{}\t{}\t{}", from_rank, recv_tag, recv_id, ct,
@@ -892,9 +896,9 @@ int main(int argc, char **argv)
           // cout <<"sending "<<nels<<" to rank 0.\n";
           // cout.flush();
           err = SimPM.levels[0].sub_domain.send_double_data(
-              0,        ///< rank to send to.
-              nels,     ///< size of buffer, in number of doubles.
-              im,       ///< pointer to double array.
+              0,                   ///< rank to send to.
+              nels,                ///< size of buffer, in number of doubles.
+              img_array[outputs],  ///< pointer to double array.
               id,       ///< identifier for send, for tracking delivery later.
               BC_RTtag  ///< comm_tag, to say what kind of send this is.
           );
@@ -906,7 +910,7 @@ int main(int argc, char **argv)
         }  // if myrank !=0
         // ------------------------------------------------------------
         // ------------------------------------------------------------
-        SimPM.levels[0].sub_domain.barrier("outputs");
+        SimPM.levels[0].sub_domain.barrier();
 
       }  // loop over output images
 
@@ -1239,7 +1243,6 @@ int main(int argc, char **argv)
       //
       for (int outputs = 0; outputs < n_images; outputs++) {
         // Make a global image by summing results from all levels.
-        im = imgmaster[outputs][0];
 #ifndef NDEBUG
         spdlog::debug(
             "ipx={}, npix= [{}, {}], \nbig-img pix= [{}, {}], tot={}", ipx,
@@ -1252,7 +1255,7 @@ int main(int argc, char **argv)
               for (int kx = 0; kx < ipx; kx++) {
                 global_image
                     [rank0_npix[0] * ipx * (ipx * j + ky) + ipx * i + kx] =
-                        im[rank0_npix[0] * j + i];
+                        imgmaster[outputs][0][rank0_npix[0] * j + i];
               }
             }
           }
@@ -1267,7 +1270,6 @@ int main(int argc, char **argv)
           sz /= 2;
           double lv_xmin[3];
           std::array<int, 3> corner;
-          im = imgmaster[outputs][lv];
           for (int v = 0; v < 3; v++)
             origin[v] = o2[v];
           IMG[lv]->get_image_Dpos(origin, origin);
@@ -1296,7 +1298,8 @@ int main(int argc, char **argv)
                 for (int kx = 0; kx < sz; kx++) {
                   global_image
                       [rank0_npix[0] * ipx * (corner[1] + sz * j + ky)
-                       + corner[0] + sz * i + kx] += im[rank0_npix[0] * j + i];
+                       + corner[0] + sz * i + kx] +=
+                      imgmaster[outputs][lv][rank0_npix[0] * j + i];
                   // cout <<ct<<", "<<j<<", "<<i<<", ";
                   // cout <<rank0_npix[0]*ipx*(ipx*j+ky)+ipx*i+kx;
                   // cout <<", "<< rank0_npix[0]*j+i<<"\n";
@@ -1322,9 +1325,10 @@ int main(int argc, char **argv)
             spdlog::error(
                 "{}: {}", "Code no longer works for PPV datacubes", 1);
             err = imio.write_image_to_file(
-                filehandle, op_filetype, im, rank0_num_pixels * Nbins, 3,
-                rank0_npix, im_name[outputs], im_xmin.data(), im_dx.data(),
-                SimPM.simtime, SimPM.timestep);
+                filehandle, op_filetype,
+                imgmaster[outputs][SimPM.grid_nlevels].data(),
+                rank0_num_pixels * Nbins, 3, rank0_npix, im_name[outputs],
+                im_xmin.data(), im_dx.data(), SimPM.simtime, SimPM.timestep);
             break;
           default:
             spdlog::error(
@@ -1386,17 +1390,7 @@ int main(int argc, char **argv)
   spdlog::info(
       "--------------- Finised Analysing all Files -----------\n-------------------------------------------------------\n--------------- Clearing up and Exiting ---------------");
 
-  if (n_images < 2 && im) im = mem.myfree(im);
-  if (im1) im1 = mem.myfree(im1);
-  if (im2) im2 = mem.myfree(im2);
-  if (n_images > 1) {
-    for (int v = 0; v < n_images; v++) {
-      // cout <<"v="<<v<<" freeing image "<<img_array[v]<<"\n";
-      if (img_array[v]) img_array[v] = mem.myfree(img_array[v]);
-    }
-  }
-  img_array = mem.myfree(img_array);
-  what2int  = mem.myfree(what2int);
+  what2int = mem.myfree(what2int);
 #ifdef SUBTRACT_MEAN
   mean_array[IMG_DENSITY] = mem.myfree(mean_array[IMG_DENSITY]);
   mean_array[1]           = mem.myfree(mean_array[1]);

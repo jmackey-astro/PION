@@ -129,11 +129,10 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
 
   // data to send will be ordered as position,conserved-var,X-data
   // for each averaged cell.  Position only needed for testing.
-  pion_flt *data = 0;
 #ifdef NG_F2C_POS
-  data = mem.myalloc(data, nel * (par.nvar + F2C_Nxd + par.ndim));
+  vector<pion_flt> data(nel * (par.nvar + F2C_Nxd + par.ndim));
 #else
-  data = mem.myalloc(data, nel * (par.nvar + F2C_Nxd));
+  vector<pion_flt> data(nel * (par.nvar + F2C_Nxd));
 #endif
 
   // loop through avg vector and add cells and positions to
@@ -181,7 +180,6 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   spdlog::debug(
       "F2C_Send: id=[ {} ]  size={}", id, sub_domain->NG_F2C_send_list.size());
 #endif
-  data = mem.myfree(data);
 
   return 0;
 }
@@ -411,8 +409,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       size_t ct = nel * (par.nvar + F2C_Nxd);
 #endif
 
-      pion_flt *buf = 0;
-      buf           = mem.myalloc(buf, ct);
+      vector<pion_flt> buf(ct);
 #ifdef TEST_MPI_NG_F2C
       spdlog::debug("BC_update_FINE_TO_COARSE_RECV: get {} cells.\n", nel);
 #endif
@@ -483,7 +480,6 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       spdlog::debug(
           "(BC_update_F2C_RECV) i_el={} of {} total elements.\n", i_el, ct);
 #endif
-      buf = mem.myfree(buf);
       count++;
 
     }  // else child is not on my proc

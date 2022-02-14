@@ -327,8 +327,7 @@ int RT_MPI_bc::Receive_RT_Boundaries(
         spdlog::error("data size = {}, NTau = {}", b->data.size(), RS.NTau);
         spdlog::error("{}: {}", "Empty boundary!", ct);
       }
-      buf = 0;
-      buf = mem.myalloc(buf, ct);
+      vector<pion_flt> buf(ct);
 #ifdef RT_TESTING
       spdlog::debug(
           "\tReceive_RT_Boundaries() rad_src={}: getting {} cells from proc. {}",
@@ -423,7 +422,6 @@ int RT_MPI_bc::Receive_RT_Boundaries(
       // same data twice.
       //
       r_done[i_recv] = true;
-      buf            = mem.myfree(buf);
       if (err)
         spdlog::error(
             "{}: {}", "Error receiving boundary data from rank: ", from_rank);
@@ -509,7 +507,6 @@ int RT_MPI_bc::Send_RT_Boundaries(
         "\tSend_RT_Boundaries() src={}: Allocating {} data buffers.", src_id,
         n_send);
 #endif
-    double *data    = 0;
     std::string *id = 0;
     id              = mem.myalloc(id, n_send);
     //
@@ -518,7 +515,6 @@ int RT_MPI_bc::Send_RT_Boundaries(
     //
     for (int i = 0; i < n_send; i++) {
       struct boundary_data *b = i_src->RT_send_list[i].RT_bd;
-      data                    = 0;
 
 #ifdef RT_TESTING
       spdlog::debug(
@@ -530,8 +526,8 @@ int RT_MPI_bc::Send_RT_Boundaries(
       // For sources with more than one optical depth, we need to
       // account for this.
       //
-      int nc = b->data.size() * 2 * RS.NTau;
-      data   = mem.myalloc(data, nc);
+      const int nc = b->data.size() * 2 * RS.NTau;
+      vector<double> data(nc);
 
       //
       // Put columns into data
@@ -615,7 +611,7 @@ int RT_MPI_bc::Send_RT_Boundaries(
       err += par.levels[0].sub_domain.send_double_data(
           i_src->RT_send_list[i].rank,  ///< rank to send to.
           nc,       ///< size of buffer, in number of doubles.
-          data,     ///< pointer to double array.
+          data,     ///< vector of data
           id[i],    ///< identifier for send, for tracking delivery later.
           BC_RTtag  ///< comm_tag, to say what kind of send this is.
       );
@@ -623,10 +619,6 @@ int RT_MPI_bc::Send_RT_Boundaries(
 #ifdef RT_TESTING
       spdlog::debug("Send_BC[{}]: send returned with id={}", i, id[i]);
 #endif
-      //
-      // Delete data array for reuse in next send.
-      //
-      data = mem.myfree(data);
     }  // loop over all sends to send data.
 
     //
@@ -657,7 +649,7 @@ int RT_MPI_bc::Send_RT_Boundaries(
       "\tSend_RT_Boundaries() src={}: Waiting for all procs to finish.\n",
       src_id);
 #endif
-  par.levels[0].sub_domain.barrier("Send_RT_Boundaries_finished");
+  par.levels[0].sub_domain.barrier();
   return err;
 }
 

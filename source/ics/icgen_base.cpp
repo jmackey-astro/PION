@@ -277,7 +277,7 @@ int ICsetup_base::AddNoise2Data(
         }
       } while ((cpt = grid->NextPt(cpt)) != 0);
 #ifdef PARALLEL
-      avg = sub_domain->global_operation_double("SUM", avg);
+      avg = sub_domain->global_operation_double(SUM, avg);
 #endif
       spdlog::debug("avg = {}\t ct = {}", avg, ct);
       avg /= static_cast<double>(SimPM.Ncell);

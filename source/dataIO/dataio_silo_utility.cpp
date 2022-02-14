@@ -721,7 +721,7 @@ int dataio_silo_utility::ReadLevelData(
             "waiting my turn... myrank={}  i={}", mpiPM->get_myrank(), count);
 #endif
       }
-      mpiPM->barrier("pllel_file_read");
+      mpiPM->barrier();
       tsf = clk.time_so_far("readdata");
 #ifdef TEST_SILO_IO
       spdlog::debug("\t time = {} secs.", tsf);

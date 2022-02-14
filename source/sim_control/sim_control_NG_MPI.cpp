@@ -200,7 +200,7 @@ int sim_control_NG_MPI::Init(
           err);
       exit(err);
     }
-    SimPM.levels[0].sub_domain.barrier("level assign boundary data");
+    SimPM.levels[0].sub_domain.barrier();
   }
   // ----------------------------------------------------------------
 
@@ -574,7 +574,7 @@ int sim_control_NG_MPI::Time_Int(
       }
 
       mindt = std::min(mindt, SimPM.dt / scale);
-      mindt = SimPM.levels[0].sub_domain.global_operation_double("MIN", mindt);
+      mindt = SimPM.levels[0].sub_domain.global_operation_double(MIN, mindt);
       spdlog::debug(
           "level {} got dt={} and {}... mindt={}", l, SimPM.dt,
           SimPM.dt / scale, mindt);
@@ -616,7 +616,7 @@ int sim_control_NG_MPI::Time_Int(
     //
     advance_time(0, grid[0]);
     SimPM.simtime = SimPM.levels[0].simtime;
-    SimPM.levels[0].sub_domain.barrier("step");
+    SimPM.levels[0].sub_domain.barrier();
     spdlog::debug("MPI time_int: finished timestep");
 
     if (SimPM.levels[0].sub_domain.get_myrank() == 0) {
@@ -652,9 +652,8 @@ int sim_control_NG_MPI::Time_Int(
     //
     // check if we are at time limit yet.
     //
-    tsf = clk.time_so_far("time_int");
-    double maxt =
-        SimPM.levels[0].sub_domain.global_operation_double("MAX", tsf);
+    tsf         = clk.time_so_far("time_int");
+    double maxt = SimPM.levels[0].sub_domain.global_operation_double(MAX, tsf);
     if (maxt > get_max_walltime()) {
       SimPM.maxtime = true;
       spdlog::debug("RUNTIME>{} SECS", get_max_walltime());
@@ -1423,12 +1422,11 @@ int sim_control_NG_MPI::initial_conserved_quantities(
   // cout << initMMZ <<", ";
   // cout << initMASS <<"]\n";
 
-  initERG = SimPM.levels[0].sub_domain.global_operation_double("SUM", initERG);
-  initMMX = SimPM.levels[0].sub_domain.global_operation_double("SUM", initMMX);
-  initMMY = SimPM.levels[0].sub_domain.global_operation_double("SUM", initMMY);
-  initMMZ = SimPM.levels[0].sub_domain.global_operation_double("SUM", initMMZ);
-  initMASS =
-      SimPM.levels[0].sub_domain.global_operation_double("SUM", initMASS);
+  initERG  = SimPM.levels[0].sub_domain.global_operation_double(SUM, initERG);
+  initMMX  = SimPM.levels[0].sub_domain.global_operation_double(SUM, initMMX);
+  initMMY  = SimPM.levels[0].sub_domain.global_operation_double(SUM, initMMY);
+  initMMZ  = SimPM.levels[0].sub_domain.global_operation_double(SUM, initMMZ);
+  initMASS = SimPM.levels[0].sub_domain.global_operation_double(SUM, initMASS);
 
   spdlog::debug(
       "(conserved quantities) [{}, {}, {}, {}, {}]", initERG, initMMX, initMMY,
@@ -1476,12 +1474,12 @@ int sim_control_NG_MPI::check_energy_cons(vector<class GridBaseClass *> &grid)
   // cout << nowMMZ <<", ";
   // cout << nowMASS <<"]\n";
 
-  nowERG  = SimPM.levels[0].sub_domain.global_operation_double("SUM", nowERG);
-  nowMMX  = SimPM.levels[0].sub_domain.global_operation_double("SUM", nowMMX);
-  nowMMY  = SimPM.levels[0].sub_domain.global_operation_double("SUM", nowMMY);
-  nowMMZ  = SimPM.levels[0].sub_domain.global_operation_double("SUM", nowMMZ);
-  nowMASS = SimPM.levels[0].sub_domain.global_operation_double("SUM", nowMASS);
-  totmom  = SimPM.levels[0].sub_domain.global_operation_double("SUM", totmom);
+  nowERG  = SimPM.levels[0].sub_domain.global_operation_double(SUM, nowERG);
+  nowMMX  = SimPM.levels[0].sub_domain.global_operation_double(SUM, nowMMX);
+  nowMMY  = SimPM.levels[0].sub_domain.global_operation_double(SUM, nowMMY);
+  nowMMZ  = SimPM.levels[0].sub_domain.global_operation_double(SUM, nowMMZ);
+  nowMASS = SimPM.levels[0].sub_domain.global_operation_double(SUM, nowMASS);
+  totmom  = SimPM.levels[0].sub_domain.global_operation_double(SUM, totmom);
   // cout <<" totmom="<<totmom<<" initMMX="<<initMMX;
   // cout <<", nowMMX="<<nowMMX<<"\n";
 

@@ -49,7 +49,7 @@ struct cgrid {
 #define COMM_CELLDATA 1
 #define COMM_DOUBLEDATA 2
 
-struct sent_info {
+struct Send_info {
   MPI_Request request;  ///< MPI handle for the send.
   std::string id;       ///< string that code uses as handle for send.
   int comm_tag;         ///< the tag used to describe the send.
@@ -60,7 +60,7 @@ struct sent_info {
                         ///< COMM_DOUBLEDATA=double array.
 };
 
-struct recv_info {
+struct Recv_info {
   MPI_Status status;  ///< MPI handle for the receive.
   std::string id;     ///< string that code uses as handle for send.
   int comm_tag;       ///< the tag used to describe the send.
@@ -70,6 +70,12 @@ struct recv_info {
   int type;           ///< type of data: COMM_CELLDATA=char array;
                       ///< COMM_DOUBLEDATA=double array.
 };
+
+// ##################################################################
+// ##################################################################
+
+enum mpi_op { MAX, MIN, SUM };
+enum mpi_type { INT, FLOAT, DOUBLE };
 
 // ##################################################################
 // ##################################################################
@@ -415,7 +421,9 @@ private:
 
   /// communicator created by MPI_Cart_create with Cartesian domain
   /// decomposition
-  MPI_Comm cart_comm;
+  MPI_Comm cart_comm = MPI_COMM_WORLD;
+  /// whether the cartesion communicator has been created
+  bool m_is_cart_comm = false;
 
   /* MPI communication */
 public:
@@ -433,18 +441,18 @@ public:
   std::vector<std::string> BC89_flux_send_list;
 
   /// Tell other processes to abort!
-  int abort();
+  int abort() const;
 
   /// Set up a barrier, and return when all processes have also
   /// set up their own barrier.
-  int barrier(const std::string);
+  int barrier() const;
 
   /// Do a global operation on local data, options are MAX,MIN,SUM.
   /// Returns the global value when local value is passed in.
   ///
   double global_operation_double(
-      const std::string,  ///< MAX,MIN,SUM
-      const double        ///< this process's local value.
+      const mpi_op,  ///< MAX,MIN,SUM
+      const double   ///< this process's local value.
       ) const;
 
   ///
@@ -455,17 +463,17 @@ public:
   /// buffers are the same.
   ///
   void global_op_double_array(
-      const std::string,  ///< MAX,MIN,SUM
-      const size_t,       ///< Number of elements in array.
-      double *            ///< pointer to this process's data array.
+      const mpi_op,  ///< MAX,MIN,SUM
+      const size_t,  ///< Number of elements in array.
+      double *       ///< pointer to this process's data array.
       ) const;
 
   /// Broadcast data from one process to all others.
   int broadcast_data(
-      const int,          ///< rank of sender.
-      const std::string,  ///< Type of data INT,DOUBLE,etc.
-      const int,          ///< number of elements
-      void *              ///< pointer to data.
+      const int,       ///< rank of sender.
+      const mpi_type,  ///< Type of data INT,DOUBLE,etc.
+      const int,       ///< number of elements
+      void *           ///< pointer to data.
       ) const;
 
   /// Send cell data to another processor, return immediately, but
@@ -482,9 +490,7 @@ public:
   ///
   int send_cell_data(
       const int,            ///< rank to send to.
-      std::list<cell *> *,  ///< list of cells to get data from.
-      long int,             ///< number of cells in list
-      const int,            ///< ndim
+      std::list<cell *> &,  ///< list of cells to get data from.
       const int,            ///< nvar
       std::string &,        ///< identifier for send, delivery tracking
       const int             ///< comm_tag, kind of send this is.
@@ -498,11 +504,11 @@ public:
   /// free to delete the data on return, before the send is complete.
   ///
   int send_double_data(
-      const int,       ///< rank to send to.
-      const long int,  ///< size of buffer, in number of doubles.
-      const double *,  ///< pointer to double array.
-      std::string &,   ///< identifier for send, for tracking delivery
-      const int        ///< comm_tag, for what kind of send this is.
+      const int,              ///< rank to send to.
+      const long int,         ///< size of buffer, in number of doubles.
+      std::vector<double> &,  ///< vector of data
+      std::string &,          ///< identifier for send, for tracking delivery
+      const int               ///< comm_tag, for what kind of send this is.
   );
 
   /// Called when we need to make sure a send has been received.
@@ -531,9 +537,7 @@ public:
   ///
   int receive_cell_data(
       const int,            ///< rank of process we are receiving from.
-      std::list<cell *> *,  ///< list of cells to get data for.
-      const long int,       ///< number of cells in list
-      const int,            ///< ndim
+      std::list<cell *> &,  ///< list of cells to get data for.
       const int,            ///< nvar
       const int,            ///< comm_tag: (PER,MPI,F2C,C2F)
       const std::string &   ///< identifier for receive.
@@ -541,11 +545,11 @@ public:
 
   /// Receive array of doubles from a specific process rank.
   int receive_double_data(
-      const int,            ///< rank of process we are receiving from.
-      const int,            ///< comm_tag: (PER,MPI,F2C,C2F)
-      const std::string &,  ///< identifier for receive.
-      const long int,       ///< number of doubles to receive
-      double *              ///< Pointer to array to write to (initialised).
+      const int,             ///< rank of process we are receiving from.
+      const int,             ///< comm_tag: (PER,MPI,F2C,C2F)
+      const std::string &,   ///< identifier for receive.
+      const long int,        ///< number of doubles to receive
+      std::vector<double> &  ///< Pointer to array to write to (initialised).
   );
 
 #ifdef SILO
@@ -579,13 +583,16 @@ public:
 #endif
 
 private:
-  std::list<struct sent_info *> sent_list;
-  std::list<struct recv_info *> recv_list;
+  std::list<struct Send_info> send_list;
+  std::list<struct Recv_info> recv_list;
 
+  std::vector<char> m_send_buff;
+  std::vector<double> m_send_buff_double;
+  long int m_num_send_cells = 0;
 
 #ifdef SILO
-  PMPIO_baton_t *bat;
-  std::string silo_id;
+  PMPIO_baton_t *m_baton;
+  std::string m_silo_id;
 #endif
 
   static unsigned int m_count;

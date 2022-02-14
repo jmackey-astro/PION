@@ -57,14 +57,15 @@ Sub_domain::Sub_domain()
   /* multiple Sub_domains may be initialised by each process, we need to ensure
    * only one of these takes responsibility for initialising and finialising MPI
    */
-  if (m_count == 0) {
+  if (m_count++ == 0) {
+#ifndef NDEBUG
+    spdlog::debug("Subdomain::Subdomain() initialising MPI");
+#endif
     MPI_Init(nullptr, nullptr);
   }
 
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
-
-  ++m_count;
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
 
   NG_F2C_send_list.clear();
   NG_C2F_send_list.clear();
@@ -78,14 +79,15 @@ Sub_domain::Sub_domain()
 
 Sub_domain::~Sub_domain()
 {
-  if (cart_comm) {
+  if (m_is_cart_comm) {
     MPI_Comm_free(&cart_comm);
   }
-  if (m_count == 1) {
+  if (m_count-- == 1) {
+#ifndef NDEBUG
+    spdlog::debug("Subdomain::Subdomain() finialising MPI");
+#endif
     MPI_Finalize();
   }
-
-  --m_count;
 
 #ifndef NDEBUG
   spdlog::debug("Sub_domain Destructor: done");
@@ -149,6 +151,8 @@ int Sub_domain::decomposeDomain(
   MPI_Cart_create(
       MPI_COMM_WORLD, m_ndim, num_subdomains.data(), &periodic[0], 0,
       &cart_comm);
+
+  m_is_cart_comm = true;
 
   /* find my rank in the Cartesian communicator */
   MPI_Comm_rank(cart_comm, &myrank);

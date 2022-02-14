@@ -367,7 +367,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
             "{}: {}", "Unhandled BC: NG-MPI update external", b->itype);
         break;
     }
-    par.levels[0].sub_domain.barrier("external bcs");
+    par.levels[0].sub_domain.barrier();
   }
 #ifdef TEST_MPI_NG
   spdlog::debug("LEVEL {}: updated NG-MPI-grid external BCs", level);

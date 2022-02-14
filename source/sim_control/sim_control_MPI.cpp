@@ -460,9 +460,8 @@ int sim_control_pllel::Time_Int(
     //
     // check if we are at time limit yet.
     //
-    tsf = clk.time_so_far("time_int");
-    double maxt =
-        SimPM.levels[0].sub_domain.global_operation_double("MAX", tsf);
+    tsf         = clk.time_so_far("time_int");
+    double maxt = SimPM.levels[0].sub_domain.global_operation_double(MAX, tsf);
     if (maxt > get_max_walltime()) {
       SimPM.maxtime = true;
       spdlog::debug("RUNTIME>{} SECS.\n", get_max_walltime());
@@ -536,8 +535,8 @@ int sim_control_pllel::calculate_timestep(
   //
   // Get global min over all grids on this level.
   //
-  t_dyn = SimPM.levels[0].sub_domain.global_operation_double("MIN", t_dyn);
-  t_mp  = SimPM.levels[0].sub_domain.global_operation_double("MIN", t_mp);
+  t_dyn = SimPM.levels[0].sub_domain.global_operation_double(MIN, t_dyn);
+  t_mp  = SimPM.levels[0].sub_domain.global_operation_double(MIN, t_mp);
 
 #ifndef NDEBUG
   spdlog::info("calc_time: global t_dyn= {}, t_mp= {}", t_dyn, t_mp);
@@ -559,7 +558,7 @@ int sim_control_pllel::calculate_timestep(
   // later multiplication is done in eqn->preprocess_data()
   //
   double t_cond = set_conduction_dt_and_Edot(par, grid);
-  t_cond = SimPM.levels[0].sub_domain.global_operation_double("MIN", t_cond);
+  t_cond = SimPM.levels[0].sub_domain.global_operation_double(MIN, t_cond);
 #ifndef NDEBUG
   if (t_cond < par.dt) {
     spdlog::debug(
@@ -626,7 +625,7 @@ int sim_control_pllel::calculate_timestep(
   // Check that if my process has modified dt to get to either
   // an output time or finishtime, then all procs have done this too!
   t_dyn = par.dt;
-  t_mp  = SimPM.levels[0].sub_domain.global_operation_double("MIN", t_dyn);
+  t_mp  = SimPM.levels[0].sub_domain.global_operation_double(MIN, t_dyn);
   if (!pconst.equalD(t_dyn, t_mp))
     spdlog::error(
         "{}: {}", "synchonisation trouble in timesteps!", t_dyn - t_mp);
