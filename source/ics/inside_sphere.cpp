@@ -57,7 +57,7 @@ double inside_sphere::distance(const double *d1, const double *d2, int nd)
 // ##################################################################
 // ##################################################################
 
-double inside_sphere::volumeFraction(cell *cpt)
+double inside_sphere::volumeFraction(cell &cpt)
 {
   // Assign centre of square positions.
   for (int v = 0; v < ndim; v++)

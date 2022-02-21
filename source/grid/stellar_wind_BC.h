@@ -144,7 +144,7 @@ public:
   int add_cell(
       class GridBaseClass *,
       const int,  ///< src id
-      cell *      ///< cell to add to list.
+      cell &      ///< cell to add to list.
   );
 
   ///

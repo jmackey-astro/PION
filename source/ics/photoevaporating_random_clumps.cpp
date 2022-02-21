@@ -290,7 +290,7 @@ int IC_photevap_random_clumps::setup_data(
       c->P[v] = (ambdens / c->P[RO]) * ambient[v]
                 + (1.0 - ambdens / c->P[RO]) * cltr[v - SimPM->ftr];
     }
-  } while ((c = gg->NextPt(c)) != 0);
+  } while ((c = gg->NextPt(*c)) != 0);
 
   // Add noise to data?  Smooth data?
   int smooth   = 0;
@@ -342,7 +342,7 @@ int IC_photevap_random_clumps::setup_perc_fixedmass()
 
   // clump_mass is as a fraction of the ambient mass.
   class cell *cpt = gg->FirstPt();
-  double vol      = gg->CellVolume(cpt, 0);
+  double vol      = gg->CellVolume(*cpt, 0);
   spdlog::debug(
       "{}\n\t\t(={} times ambient mass) and radial sizes of {} to {} in units of y-range",
       clump_mass * (ambient[RO] * vol * SimPM->Ncell), clump_mass, min_size,
@@ -358,7 +358,7 @@ int IC_photevap_random_clumps::setup_perc_fixedmass()
       cpt->P[v] = ambient[v];
     cpt->P[RO] *= (1.0 - clump_mass);
     m1 += cpt->P[RO] * vol;
-  } while ((cpt = gg->NextPt(cpt)) != 0);
+  } while ((cpt = gg->NextPt(*cpt)) != 0);
 #ifdef PARALLEL
   double m2 = sub_domain->global_operation_double(SUM, m1);
   m1        = m2;
@@ -384,9 +384,9 @@ int IC_photevap_random_clumps::setup_perc_fixedmass()
   cpt         = gg->FirstPt();
   double mass = 0.0;
   do {
-    err += clumps_random_set_dens(cpt);
+    err += clumps_random_set_dens(*cpt);
     mass += cpt->P[RO] * vol;
-  } while ((cpt = gg->NextPt(cpt)) != 0);
+  } while ((cpt = gg->NextPt(*cpt)) != 0);
 #ifdef PARALLEL
   double mtot = sub_domain->global_operation_double(SUM, mass);
   mass        = mtot;
@@ -432,7 +432,7 @@ int IC_photevap_random_clumps::setup_perc()
     // Set values of primitive variables.
     for (int v = 0; v < SimPM->nvar; v++)
       cpt->P[v] = ambient[v];
-  } while ((cpt = gg->NextPt(cpt)) != NULL);
+  } while ((cpt = gg->NextPt(*cpt)) != NULL);
 
   spdlog::info("setting up clump properties...");
 #ifdef SERIAL
@@ -444,8 +444,8 @@ int IC_photevap_random_clumps::setup_perc()
   spdlog::info("adding clumps to grid...");
   cpt = gg->FirstPt();
   do {
-    err += clumps_random_set_dens(cpt);
-  } while ((cpt = gg->NextPt(cpt)) != NULL);
+    err += clumps_random_set_dens(*cpt);
+  } while ((cpt = gg->NextPt(*cpt)) != NULL);
 
   return (err);
 }
@@ -973,7 +973,7 @@ void IC_photevap_random_clumps::print_clump(struct clump *rc)
 
 
 
-int IC_photevap_random_clumps::clumps_random_set_dens(class cell *c)
+int IC_photevap_random_clumps::clumps_random_set_dens(class cell &c)
 {
   int err = 0;
   std::array<double, MAX_DIM> x0, x1, dpos;
@@ -1025,7 +1025,7 @@ int IC_photevap_random_clumps::clumps_random_set_dens(class cell *c)
       for (int k = 0; k < ndim; k++)
         if (fabs(x1[k]) > cl[j].size[k]) inside = false;
       if (inside) {
-        c->P[RO] += ambient[RO] * cl[j].overdensity;
+        c.P[RO] += ambient[RO] * cl[j].overdensity;
       }
     }
     else if (profile == 1) {
@@ -1037,7 +1037,7 @@ int IC_photevap_random_clumps::clumps_random_set_dens(class cell *c)
       double ef = 0.0;
       for (int v = 0; v < ndim; v++)
         ef += x1[v] * x1[v] / cl[j].size[v] / cl[j].size[v];
-      c->P[RO] += ambient[RO] * cl[j].overdensity * exp(-ef);
+      c.P[RO] += ambient[RO] * cl[j].overdensity * exp(-ef);
     }
     else
       spdlog::error("{}: {}", "Bad profile id in parameter-file", profile);

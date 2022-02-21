@@ -58,7 +58,7 @@ VectorOps_Sph::~VectorOps_Sph() {}
 // ##################################################################
 // ##################################################################
 
-double VectorOps_Sph::CellVolume(const cell *c, const double dR)
+double VectorOps_Sph::CellVolume(const cell &c, const double dR)
 {
   ///
   /// The volume of a cell is
@@ -74,7 +74,7 @@ double VectorOps_Sph::CellVolume(const cell *c, const double dR)
 // ##################################################################
 
 double VectorOps_Sph::CellInterface(
-    const cell *c, const direction dir, const double dR)
+    const cell &c, const direction dir, const double dR)
 {
   double temp = 0.0;
 
@@ -104,7 +104,7 @@ double VectorOps_Sph::CellInterface(
 // ##################################################################
 
 double VectorOps_Sph::maxGradAbs(
-    const cell *c, const int sv, const int var, class GridBaseClass *grid)
+    const cell &c, const int sv, const int var, class GridBaseClass *grid)
 {
 #ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
@@ -130,18 +130,18 @@ double VectorOps_Sph::maxGradAbs(
   switch (sv) {
     case 0:  // Use vector c->P
       cn   = grid->NextPt(c, RPsph);
-      temp = fabs(cn->P[var] - c->P[var]) / (R_com(cn, dR) - R_com(c, dR));
+      temp = fabs(cn->P[var] - c.P[var]) / (R_com(*cn, dR) - R_com(c, dR));
       if (temp > grad) grad = temp;
       cn   = grid->NextPt(c, RNsph);
-      temp = fabs(cn->P[var] - c->P[var]) / (R_com(c, dR) - R_com(cn, dR));
+      temp = fabs(cn->P[var] - c.P[var]) / (R_com(c, dR) - R_com(*cn, dR));
       if (temp > grad) grad = temp;
       break;
     case 1:  // Use Vector c-Ph
       cn   = grid->NextPt(c, RPsph);
-      temp = fabs(cn->Ph[var] - c->Ph[var]) / (R_com(cn, dR) - R_com(c, dR));
+      temp = fabs(cn->Ph[var] - c.Ph[var]) / (R_com(*cn, dR) - R_com(c, dR));
       if (temp > grad) grad = temp;
       cn   = grid->NextPt(c, RNsph);
-      temp = fabs(cn->Ph[var] - c->Ph[var]) / (R_com(c, dR) - R_com(cn, dR));
+      temp = fabs(cn->Ph[var] - c.Ph[var]) / (R_com(c, dR) - R_com(*cn, dR));
       if (temp > grad) grad = temp;
       break;
     default:
@@ -158,7 +158,7 @@ double VectorOps_Sph::maxGradAbs(
 // ##################################################################
 
 void VectorOps_Sph::Gradient(
-    const cell *c,
+    const cell &c,
     const int sv,
     const int var,
     class GridBaseClass *grid,
@@ -190,15 +190,15 @@ void VectorOps_Sph::Gradient(
     case 0:  // Use vector c->P
       cn      = grid->NextPt(c, RNsph);
       cp      = grid->NextPt(c, RPsph);
-      rn      = R_com(cn, dR);
-      rp      = R_com(cp, dR);
+      rn      = R_com(*cn, dR);
+      rp      = R_com(*cp, dR);
       grad[0] = (cp->P[var] - cn->P[var]) / (rp - rn);
       break;
     case 1:  // Use Vector c-Ph
       cn      = grid->NextPt(c, RNsph);
       cp      = grid->NextPt(c, RPsph);
-      rn      = R_com(cn, dR);
-      rp      = R_com(cp, dR);
+      rn      = R_com(*cn, dR);
+      rp      = R_com(*cp, dR);
       grad[0] = (cp->Ph[var] - cn->Ph[var]) / (rp - rn);
       break;
     default:
@@ -215,7 +215,7 @@ void VectorOps_Sph::Gradient(
 // ##################################################################
 
 double VectorOps_Sph::Divergence(
-    cell *c, const int sv, const int *var, class GridBaseClass *grid)
+    cell &c, const int sv, const int *var, class GridBaseClass *grid)
 {
 
   if (VOnd != 1) {
@@ -228,26 +228,26 @@ double VectorOps_Sph::Divergence(
   double divv = 0.0, rn = 0.0, rp = 0.0;
   cell *cn, *cp;
   double dR = grid->DX();
-  cn        = (grid->NextPt(c, RNsph)) ? grid->NextPt(c, RNsph) : c;
-  cp        = (grid->NextPt(c, RPsph)) ? grid->NextPt(c, RPsph) : c;
+  cn        = (grid->NextPt(c, RNsph)) ? grid->NextPt(c, RNsph) : &c;
+  cp        = (grid->NextPt(c, RPsph)) ? grid->NextPt(c, RPsph) : &c;
 
   switch (sv) {
     case 0:  // Use vector c->P
       // r^{-2}d(r^2 V_r)/dr or (2/r)V_r +d(V_r)/dr
-      rn = R_com(cn, dR);
-      rp = R_com(cp, dR);
+      rn = R_com(*cn, dR);
+      rp = R_com(*cp, dR);
       // divv = (rp*rp*cp->P[var[0]] -
       // rn*rn*cn->P[var[0]])*3.0/(pow(rp,3.0)-pow(rn,3.0));
-      divv = 2.0 * c->P[var[0]] / R_com(c, dR)
+      divv = 2.0 * c.P[var[0]] / R_com(c, dR)
              + (cp->P[var[0]] - cn->P[var[0]]) / (rp - rn);
       break;
     case 1:  // Use Vector c-Ph
       // r^{-2}d(r^2 V_r)/dr or (2/r)V_r+dV_r/dr
-      rn = R_com(cn, dR);
-      rp = R_com(cp, dR);
+      rn = R_com(*cn, dR);
+      rp = R_com(*cp, dR);
       // divv = (rp*rp*cp->P[var[0]] -
       // rn*rn*cn->P[var[0]])*3.0/(pow(rp,3.0)-pow(rn,3.0));
-      divv = 2.0 * c->P[var[0]] / R_com(c, dR)
+      divv = 2.0 * c.P[var[0]] / R_com(c, dR)
              + (cp->P[var[0]] - cn->P[var[0]]) / (rp - rn);
       break;
     default:
@@ -265,7 +265,7 @@ double VectorOps_Sph::Divergence(
 // ##################################################################
 
 void VectorOps_Sph::Curl(
-    const cell *c,
+    const cell &c,
     const int vec,
     const int *var,
     class GridBaseClass *grid,
@@ -279,9 +279,9 @@ void VectorOps_Sph::Curl(
       exit(1);
     }
 #endif  // NDEBUG
-  if (!c->isgd) {
+  if (!c.isgd) {
     spdlog::error(
-        "{}: {}", "Not Grid Cell! can't calculate curl. id follows", c->id);
+        "{}: {}", "Not Grid Cell! can't calculate curl. id follows", c.id);
     exit(1);
   }
   if (VOnd != 1) {
@@ -301,7 +301,7 @@ void VectorOps_Sph::Curl(
 // ##################################################################
 
 int VectorOps_Sph::SetEdgeState(
-    const cell *c,        ///< Current Cell.
+    const cell &c,        ///< Current Cell.
     const direction dir,  ///< Add or subtract the slope depending on direction.
     const int nv,         ///< length of state vectors.
     const pion_flt *dpdx,  ///< Slope vector.
@@ -321,7 +321,7 @@ int VectorOps_Sph::SetEdgeState(
   //
   if (OA == OA1) {
     for (int v = 0; v < nv; v++)
-      edge[v] = c->Ph[v];
+      edge[v] = c.Ph[v];
   }
 
   //
@@ -343,7 +343,7 @@ int VectorOps_Sph::SetEdgeState(
     }  // setting del based on direction
 
     for (int v = 0; v < nv; v++)
-      edge[v] = c->Ph[v] + dpdx[v] * del;
+      edge[v] = c.Ph[v] + dpdx[v] * del;
 
 #ifdef TRACER_SLOPES_CONSERVED_VARS
     //
@@ -375,7 +375,7 @@ int VectorOps_Sph::SetEdgeState(
 
 
 int VectorOps_Sph::SetSlope(
-    const cell *c,   ///< Current Cell.
+    const cell &c,   ///< Current Cell.
     const axes d,    ///< Which direction to calculate slope in.
     const int nv,    ///< length of state vectors.
     pion_flt *dpdx,  ///< Slope vector to be written to.
@@ -428,8 +428,8 @@ int VectorOps_Sph::SetSlope(
     switch (d) {
       case Rsph:
         for (int v = 0; v < nv; v++) {
-          slpn[v] = (c->Ph[v] - cn->Ph[v]) / (R_com(c, dR) - R_com(cn, dR));
-          slpp[v] = (cp->Ph[v] - c->Ph[v]) / (R_com(cp, dR) - R_com(c, dR));
+          slpn[v] = (c.Ph[v] - cn->Ph[v]) / (R_com(c, dR) - R_com(*cn, dR));
+          slpp[v] = (cp->Ph[v] - c.Ph[v]) / (R_com(*cp, dR) - R_com(c, dR));
           dpdx[v] = AvgFalle(slpn[v], slpp[v]);
         }
         break;
@@ -479,7 +479,7 @@ int VectorOps_Sph::SetSlope(
 // ##################################################################
 
 int VectorOps_Sph::DivStateVectorComponent(
-    const cell *c,  ///< current cell.
+    const cell &c,  ///< current cell.
     class GridBaseClass *grid,
     const axes d,        ///< current coordinate axis we are looking along.
     const int nv,        ///< length of state vectors.

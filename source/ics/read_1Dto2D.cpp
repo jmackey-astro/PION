@@ -115,7 +115,7 @@ int IC_read_1Dto2D::setup_data(
   }
 
   do {
-    CI.get_dpos(c, dpos);
+    CI.get_dpos(*c, dpos);
     switch (SimPM->ndim) {
       case 2:
         get_data_vals(dpos, radius, data, nvar, &data_vals[0]);
@@ -139,7 +139,7 @@ int IC_read_1Dto2D::setup_data(
     }
     for (int v = 0; v < SimPM->nvar; v++)
       c->Ph[v] = c->P[v];
-  } while ((c = ggg->NextPt(c)) != 0);
+  } while ((c = ggg->NextPt(*c)) != 0);
 
   radius.clear();
   for (int v = 0; v < SimPM->nvar; v++)

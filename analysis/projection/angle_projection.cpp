@@ -157,13 +157,13 @@ cell *get_start_of_ray(
   // Get cell associated with this ray end-point
   //
   cell *c = grid->FirstPt();
-  while ((CI.get_dpos(c, Rcyl) + 0.5 * grid->DX()) < r_ini
-         && grid->NextPt(c, RPcyl) && grid->NextPt(c, RPcyl)->isgd) {
-    c = grid->NextPt(c, RPcyl);
+  while ((CI.get_dpos(*c, Rcyl) + 0.5 * grid->DX()) < r_ini
+         && grid->NextPt(*c, RPcyl) && grid->NextPt(*c, RPcyl)->isgd) {
+    c = grid->NextPt(*c, RPcyl);
   }
-  while ((CI.get_dpos(c, Zcyl) + 0.5 * grid->DX()) < z_ini
-         && grid->NextPt(c, ZPcyl) && grid->NextPt(c, ZPcyl)->isgd) {
-    c = grid->NextPt(c, ZPcyl);
+  while ((CI.get_dpos(*c, Zcyl) + 0.5 * grid->DX()) < z_ini
+         && grid->NextPt(*c, ZPcyl) && grid->NextPt(*c, ZPcyl)->isgd) {
+    c = grid->NextPt(*c, ZPcyl);
   }
 
   if (!c) spdlog::error("{}: {}", "cell error", fmt::ptr(c));
@@ -196,7 +196,7 @@ void get_entry_exit_points(
     double *pos,                ///< position vector of pixel.
     double angle,           ///< angle of ray with respect to radial direction
     int inout,              ///< =1 for incoming ray, -1 for outgoing.
-    cell *ray,              ///< cell we are at.
+    cell &ray,              ///< cell we are at.
     vector<double> &entry,  ///< entry point of ray into cell  (output)
     vector<double> &exit,   ///< exit point of ray from cell  (output)
     cell **next             ///< cell the ray exits into.              (output)
@@ -305,7 +305,7 @@ void get_entry_exit_points(
   // both vertically and horizontally, but have to be careful of
   // grazing incidence on the corner of a cell.
   //
-  *next = ray;
+  *next = &ray;
   // use dir_flag for exiting ray, in case we are at turning point
   // and have changed the 'inout' flag above when calculating exit
   // point.
@@ -319,12 +319,12 @@ void get_entry_exit_points(
 
   if (fabs(exit[Zcyl] - (cpos[Zcyl] + dxo2)) / dx < 1.0e-8
       && angle > pconst.halfpi()) {
-    *next = grid->NextPt(*next, ZPcyl);
+    *next = grid->NextPt(**next, ZPcyl);
   }
   else if (
       fabs(exit[Zcyl] - (cpos[Zcyl] - dxo2)) / dx < 1.0e-8
       && angle < pconst.halfpi()) {
-    *next = grid->NextPt(*next, ZNcyl);
+    *next = grid->NextPt(**next, ZNcyl);
   }
 
   // If the flag was set, then we must treat cells specially:
@@ -482,7 +482,7 @@ int generate_angle_image(
       cell *c         = grid->FirstPt();
       cell *ray       = get_start_of_ray(grid, &pos[0], angle);
       cell *next_cell = 0;
-      CI.get_dpos(ray, startpos);
+      CI.get_dpos(*ray, startpos);
 #ifdef DEBUG
       spdlog::debug("ray={}", ray);
       spdlog::debug("starting cell : {}", startpos);
@@ -498,10 +498,10 @@ int generate_angle_image(
       if (pos[Zcyl] < SimPM.Xmax[Zcyl] && pos[Zcyl] > SimPM.Xmin[Zcyl]) {
         pix_on_grid = true;
         c           = grid->FirstPt();
-        while (!pconst.equalD(pos[Zcyl], CI.get_dpos(c, Zcyl)))
-          c = grid->NextPt(c, ZPcyl);
-        while (!pconst.equalD(pos[Rcyl], CI.get_dpos(c, Rcyl)))
-          c = grid->NextPt(c, RPcyl);
+        while (!pconst.equalD(pos[Zcyl], CI.get_dpos(*c, Zcyl)))
+          c = grid->NextPt(*c, ZPcyl);
+        while (!pconst.equalD(pos[Rcyl], CI.get_dpos(*c, Rcyl)))
+          c = grid->NextPt(*c, RPcyl);
       }
 #ifdef DEBUG
       spdlog::debug("pix on grid? c={}", c);
@@ -526,7 +526,7 @@ int generate_angle_image(
         inout = 1;  // to show that we are on the inward trajectory.
         // first check that the ray passes through cell *ray:
         get_entry_exit_points(
-            grid, &pos[0], angle, inout, ray, entry, exit, &next_cell);
+            grid, &pos[0], angle, inout, *ray, entry, exit, &next_cell);
         if (entry[Rcyl] > 1.0e90) {
 #ifdef DEBUG
           spdlog::error("INCOMING RAY ERROR: doesn't intersect grid, skipping");
@@ -539,7 +539,7 @@ int generate_angle_image(
             // Get entry and exit points of ray, and pointer to next cell.
             //
             get_entry_exit_points(
-                grid, &pos[0], angle, inout, ray, entry, exit, &next_cell);
+                grid, &pos[0], angle, inout, *ray, entry, exit, &next_cell);
 
             //
             // Integrate through cell along path (constant gas density)
@@ -551,11 +551,10 @@ int generate_angle_image(
                 * abs(sqrt(entry[Rcyl] * entry[Rcyl] - pos[Rcyl] * pos[Rcyl])
                       - sqrt(exit[Rcyl] * exit[Rcyl] - pos[Rcyl] * pos[Rcyl]));
             // For each emission variable, add to ans[] vector
-            add_cell_emission_to_ray(SimPM, MP, integral, ray->P, XR, ans);
+            add_cell_emission_to_ray(
+                SimPM, MP, integral, ray->P.data(), XR, ans);
             if (ans[PROJ_NtD] < 0.0) {
-              spdlog::debug(
-                  "Ray state vec : {}",
-                  std::vector<double>(ray->P, ray->P + SimPM.nvar));
+              spdlog::debug("Ray state vec : {}", ray->P);
               spdlog::debug(
                   "ray  {},  next_cell={}\n{}, {}", fmt::ptr(ray),
                   fmt::ptr(next_cell), ray->isgd, ray->isbd);
@@ -575,7 +574,7 @@ int generate_angle_image(
             }
             else {
               if (!(ray) || !(ray->isgd)
-                  || pconst.equalD(CI.get_dpos(ray, Zcyl), pos[Zcyl]))
+                  || pconst.equalD(CI.get_dpos(*ray, Zcyl), pos[Zcyl]))
                 at_source = true;
               else
                 at_source = false;
@@ -605,12 +604,12 @@ int generate_angle_image(
         inout = 0;
         // spdlog::error("{}: {}", "got to cell",1);
         get_entry_exit_points(
-            grid, &pos[0], angle, inout, ray, entry, exit, &next_cell);
+            grid, &pos[0], angle, inout, *ray, entry, exit, &next_cell);
         // Path length is twice the inward part.
         integral = invst * 2.0
                    * sqrt(entry[Rcyl] * entry[Rcyl] - pos[Rcyl] * pos[Rcyl]);
         // For each emission variable, add to ans[] vector
-        add_cell_emission_to_ray(SimPM, MP, integral, ray->P, XR, ans);
+        add_cell_emission_to_ray(SimPM, MP, integral, ray->P.data(), XR, ans);
         ray = next_cell;
         ncell++;
 #ifdef DEBUG
@@ -644,7 +643,7 @@ int generate_angle_image(
         inout = -1;
         // first check that the ray passes through cell *ray:
         get_entry_exit_points(
-            grid, &pos[0], angle, inout, ray, entry, exit, &next_cell);
+            grid, &pos[0], angle, inout, *ray, entry, exit, &next_cell);
         if (entry[Rcyl] > 1.0e90) {
 #ifdef DEBUG
           spdlog::error(
@@ -666,7 +665,7 @@ int generate_angle_image(
             spdlog::debug("getting entry/exit points of ray, ncell={}", ncell);
 #endif
             get_entry_exit_points(
-                grid, &pos[0], angle, inout, ray, entry, exit, &next_cell);
+                grid, &pos[0], angle, inout, *ray, entry, exit, &next_cell);
 #ifdef DEBUG
             spdlog::debug("entry/exit next_cell={}", next_cell);
 #endif
@@ -680,7 +679,8 @@ int generate_angle_image(
                 * abs(sqrt(entry[Rcyl] * entry[Rcyl] - pos[Rcyl] * pos[Rcyl])
                       - sqrt(exit[Rcyl] * exit[Rcyl] - pos[Rcyl] * pos[Rcyl]));
             // For each emission variable, add to ans[] vector
-            add_cell_emission_to_ray(SimPM, MP, integral, ray->P, XR, ans);
+            add_cell_emission_to_ray(
+                SimPM, MP, integral, ray->P.data(), XR, ans);
             //
             // move to next cell.
             //

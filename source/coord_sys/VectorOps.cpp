@@ -132,7 +132,7 @@ VectorOps_Cart::~VectorOps_Cart() {}
 // ##################################################################
 // ##################################################################
 
-double VectorOps_Cart::CellVolume(const cell *c, const double dR)
+double VectorOps_Cart::CellVolume(const cell &c, const double dR)
 {
   double dV = 0.0;
   switch (VOnd) {
@@ -157,7 +157,7 @@ double VectorOps_Cart::CellVolume(const cell *c, const double dR)
 // ##################################################################
 
 double VectorOps_Cart::CellInterface(
-    const cell *,
+    const cell &,
     const direction,
     const double dR  ///< cell diameter
 )
@@ -185,7 +185,7 @@ double VectorOps_Cart::CellInterface(
 // ##################################################################
 
 double VectorOps_Cart::max_grad_abs(
-    const cell *cpt, const int sv, const int var, class GridBaseClass *grid)
+    const cell &cpt, const int sv, const int var, class GridBaseClass *grid)
 {
   double VOdx = grid->DX();
 #ifndef NDEBUG
@@ -204,7 +204,7 @@ double VectorOps_Cart::max_grad_abs(
       for (int i = 0; i < 2 * VOnd; i++) {
         temp = fabs(
                    (grid->NextPt(cpt, static_cast<direction>(i)))->P[var]
-                   - cpt->P[var])
+                   - cpt.P[var])
                / VOdx;
         if (temp > grad) grad = temp;
       }
@@ -213,7 +213,7 @@ double VectorOps_Cart::max_grad_abs(
       for (int i = 0; i < 2 * VOnd; i++) {
         temp = fabs(
                    (grid->NextPt(cpt, static_cast<direction>(i)))->Ph[var]
-                   - cpt->Ph[var])
+                   - cpt.Ph[var])
                / VOdx;
         if (temp > grad) grad = temp;
       }
@@ -233,7 +233,7 @@ double VectorOps_Cart::max_grad_abs(
 // ##################################################################
 
 void VectorOps_Cart::Gradient(
-    const cell *c,
+    const cell &c,
     const int sv,
     const int var,
     class GridBaseClass *grid,
@@ -286,7 +286,7 @@ void VectorOps_Cart::Gradient(
 
 double VectorOps_Cart::CentralDiff(
     class GridBaseClass *grid,  ///< pointer to computational grid.
-    class cell *c,              ///< pointer to cell
+    class cell &c,              ///< pointer to cell
     const int ax,               ///< axis along which to take difference
     const int sv,  ///< Which vector to take values from (P=0,Ph=1,dU=2)
     const int ii   ///< index in state vector of variable
@@ -296,8 +296,8 @@ double VectorOps_Cart::CentralDiff(
   enum direction ndir = static_cast<direction>(2 * ax);
   enum direction pdir = static_cast<direction>(2 * ax + 1);
 
-  cn = (grid->NextPt(c, ndir)) ? grid->NextPt(c, ndir) : c;
-  cp = (grid->NextPt(c, pdir)) ? grid->NextPt(c, pdir) : c;
+  cn = (grid->NextPt(c, ndir)) ? grid->NextPt(c, ndir) : &c;
+  cp = (grid->NextPt(c, pdir)) ? grid->NextPt(c, pdir) : &c;
 
   double ans = 0.0;
   switch (sv) {
@@ -324,7 +324,7 @@ double VectorOps_Cart::CentralDiff(
 
 double VectorOps_Cart::GradZone(
     class GridBaseClass *grid,  ///< pointer to computational grid.
-    class cell *c,              ///< pointer to cell
+    class cell &c,              ///< pointer to cell
     const int ax,               ///< axis along which to take difference
     const int sv,  ///< Which vector to take values from (P=0,Ph=1,dU=2)
     const int ii   ///< index in state vector of variable
@@ -334,8 +334,8 @@ double VectorOps_Cart::GradZone(
   enum direction ndir = static_cast<direction>(2 * ax);
   enum direction pdir = static_cast<direction>(2 * ax + 1);
 
-  cn = (grid->NextPt(c, ndir)) ? grid->NextPt(c, ndir) : c;
-  cp = (grid->NextPt(c, pdir)) ? grid->NextPt(c, pdir) : c;
+  cn = (grid->NextPt(c, ndir)) ? grid->NextPt(c, ndir) : &c;
+  cp = (grid->NextPt(c, pdir)) ? grid->NextPt(c, pdir) : &c;
 
   double ans   = 0.0;
   double min_v = 0.0;
@@ -375,7 +375,7 @@ double VectorOps_Cart::GradZone(
 // ##################################################################
 
 double VectorOps_Cart::Divergence(
-    cell *c, const int sv, const int *var, class GridBaseClass *grid)
+    cell &c, const int sv, const int *var, class GridBaseClass *grid)
 {  // get divergence of vector quantity.
 
   cell *ngb[6];
@@ -391,9 +391,9 @@ double VectorOps_Cart::Divergence(
   for (int v = 0; v < VOnd; v++) {
     ndir      = static_cast<direction>(2 * v);
     pdir      = static_cast<direction>(2 * v + 1);
-    ngb[ndir] = (grid->NextPt(c, ndir)) ? grid->NextPt(c, ndir) : c;
-    ngb[pdir] = (grid->NextPt(c, pdir)) ? grid->NextPt(c, pdir) : c;
-    if (ngb[ndir] == c || ngb[pdir] == c)
+    ngb[ndir] = (grid->NextPt(c, ndir)) ? grid->NextPt(c, ndir) : &c;
+    ngb[pdir] = (grid->NextPt(c, pdir)) ? grid->NextPt(c, pdir) : &c;
+    if (ngb[ndir] == &c || ngb[pdir] == &c)
       dx[v] = VOdx;
     else
       dx[v] = 2.0 * VOdx;
@@ -441,7 +441,7 @@ double VectorOps_Cart::Divergence(
 // ##################################################################
 
 void VectorOps_Cart::Curl(
-    const cell *c,
+    const cell &c,
     const int vec,
     const int *var,
     class GridBaseClass *grid,
@@ -456,7 +456,7 @@ void VectorOps_Cart::Curl(
       exit(1);
     }
 #endif  // NDEBUG
-  if (!c->isgd) {
+  if (!c.isgd) {
     // cout <<"curl of non-grid-cell, returning 0";
     ans[0] = ans[1] = ans[2] = 0.0;
     return;
@@ -469,15 +469,15 @@ void VectorOps_Cart::Curl(
   switch (vec) {
     case 0:  // c->P
              //    cout <<"using P.\n";
-      vxp = grid->NextPt(c, XP)->P;
-      vxn = grid->NextPt(c, XN)->P;
+      vxp = grid->NextPt(c, XP)->P.data();
+      vxn = grid->NextPt(c, XN)->P.data();
       if (VOnd > 1) {
-        vyp = grid->NextPt(c, YP)->P;
-        vyn = grid->NextPt(c, YN)->P;
+        vyp = grid->NextPt(c, YP)->P.data();
+        vyn = grid->NextPt(c, YN)->P.data();
       }
       if (VOnd > 2) {
-        vzp = grid->NextPt(c, ZP)->P;
-        vzn = grid->NextPt(c, ZN)->P;
+        vzp = grid->NextPt(c, ZP)->P.data();
+        vzn = grid->NextPt(c, ZN)->P.data();
       }
       break;
     case 1:  // c->Ph
@@ -497,15 +497,15 @@ void VectorOps_Cart::Curl(
       break;
     case 2:  // c->dU
              //    cout <<"using dU.\n";
-      vxp = grid->NextPt(c, XP)->dU;
-      vxn = grid->NextPt(c, XN)->dU;
+      vxp = grid->NextPt(c, XP)->dU.data();
+      vxn = grid->NextPt(c, XN)->dU.data();
       if (VOnd > 1) {
-        vyp = grid->NextPt(c, YP)->dU;
-        vyn = grid->NextPt(c, YN)->dU;
+        vyp = grid->NextPt(c, YP)->dU.data();
+        vyn = grid->NextPt(c, YN)->dU.data();
       }
       if (VOnd > 2) {
-        vzp = grid->NextPt(c, ZP)->dU;
-        vzn = grid->NextPt(c, ZN)->dU;
+        vzp = grid->NextPt(c, ZP)->dU.data();
+        vzn = grid->NextPt(c, ZN)->dU.data();
       }
       break;
     default:
@@ -540,7 +540,7 @@ void VectorOps_Cart::Curl(
 // ##################################################################
 
 int VectorOps_Cart::SetEdgeState(
-    const cell *c,      ///< Current Cell.
+    const cell &c,      ///< Current Cell.
     const direction d,  ///< Add or subtract the slope depending on direction.
     const int nv,       ///< length of state vectors.
     const pion_flt *dpdx,  ///< Slope vector.
@@ -553,7 +553,7 @@ int VectorOps_Cart::SetEdgeState(
 
     case OA1:  // First Order Spatial Accuracy.
       for (int v = 0; v < nv; v++)
-        edge[v] = c->Ph[v];
+        edge[v] = c.Ph[v];
       break;  // O1
 
     case OA2:  // Second Order Spatial Accuracy.
@@ -562,13 +562,13 @@ int VectorOps_Cart::SetEdgeState(
         case YP:
         case ZP:
           for (int v = 0; v < nv; v++)
-            edge[v] = c->Ph[v] + dpdx[v] * VOdx * 0.5;
+            edge[v] = c.Ph[v] + dpdx[v] * VOdx * 0.5;
           break;  // XP
         case XN:
         case YN:
         case ZN:
           for (int v = 0; v < nv; v++)
-            edge[v] = c->Ph[v] - dpdx[v] * VOdx * 0.5;
+            edge[v] = c.Ph[v] - dpdx[v] * VOdx * 0.5;
           break;  // XN
         default:
           spdlog::error("\t(SetEdgeState) wrong direction!");
@@ -590,7 +590,7 @@ int VectorOps_Cart::SetEdgeState(
 // ##################################################################
 
 int VectorOps_Cart::SetSlope(
-    const cell *c,   ///< Current Cell.
+    const cell &c,   ///< Current Cell.
     const axes d,    ///< Which direction to calculate slope in.
     const int nv,    ///< length of state vectors.
     pion_flt *dpdx,  ///< Slope vector to be written to.
@@ -633,14 +633,14 @@ int VectorOps_Cart::SetSlope(
       exit(1);
     }
     if (!cp) {
-      cp = grid->NextPt(cn, dp);
+      cp = grid->NextPt(*cn, dp);
     }
     if (!cn) {
-      cn = grid->NextPt(cp, dn);
+      cn = grid->NextPt(*cp, dn);
     }
     for (int v = 0; v < nv; v++) {
-      slpn[v] = (c->Ph[v] - cn->Ph[v]) / dx;
-      slpp[v] = (cp->Ph[v] - c->Ph[v]) / dx;
+      slpn[v] = (c.Ph[v] - cn->Ph[v]) / dx;
+      slpp[v] = (cp->Ph[v] - c.Ph[v]) / dx;
       dpdx[v] = AvgFalle(slpn[v], slpp[v]);
     }
   }  // 2nd order accurate
@@ -656,7 +656,7 @@ int VectorOps_Cart::SetSlope(
 // ##################################################################
 
 int VectorOps_Cart::DivStateVectorComponent(
-    const cell *c,  ///< current cell.
+    const cell &c,  ///< current cell.
     class GridBaseClass *grid,
     const axes d,        ///< current coordinate axis
     const int nv,        ///< length of state vectors.
@@ -708,7 +708,7 @@ VectorOps_Cyl::~VectorOps_Cyl() {}
 // ##################################################################
 // ##################################################################
 
-double VectorOps_Cyl::CellVolume(const cell *c, const double dR)
+double VectorOps_Cyl::CellVolume(const cell &c, const double dR)
 {
   /// cell vol = pi * (R+^2 - R-^2) * dz, where dz=dR
   double r = CI.get_dpos(c, Rcyl);
@@ -720,7 +720,7 @@ double VectorOps_Cyl::CellVolume(const cell *c, const double dR)
 // ##################################################################
 
 double VectorOps_Cyl::CellInterface(
-    const cell *c,
+    const cell &c,
     const direction dir,
     const double dR  ///< cell diameter
 )
@@ -784,7 +784,7 @@ double VectorOps_Cyl::CellInterface(
 // ##################################################################
 
 double VectorOps_Cyl::max_grad_abs(
-    const cell *c, const int sv, const int var, class GridBaseClass *grid)
+    const cell &c, const int sv, const int var, class GridBaseClass *grid)
 {
 #ifndef NDEBUG
   for (int i = 0; i < 2 * VOnd; i++)
@@ -804,51 +804,51 @@ double VectorOps_Cyl::max_grad_abs(
   switch (sv) {
     case 0:  // Use vector c->P
       // Z-dir
-      temp = fabs(grid->NextPt(c, ZPcyl)->P[var] - c->P[var]) / dZ;
+      temp = fabs(grid->NextPt(c, ZPcyl)->P[var] - c.P[var]) / dZ;
       if (temp > grad) grad = temp;
-      temp = fabs(grid->NextPt(c, ZNcyl)->P[var] - c->P[var]) / dZ;
+      temp = fabs(grid->NextPt(c, ZNcyl)->P[var] - c.P[var]) / dZ;
       if (temp > grad) grad = temp;
       if (VOnd > 1) {  // R-dir
-        temp = fabs(grid->NextPt(c, RPcyl)->P[var] - c->P[var])
-               / (R_com(grid->NextPt(c, RPcyl), dR) - R_com(c, dR));
+        temp = fabs(grid->NextPt(c, RPcyl)->P[var] - c.P[var])
+               / (R_com(*grid->NextPt(c, RPcyl), dR) - R_com(c, dR));
         if (temp > grad) grad = temp;
-        temp = fabs(grid->NextPt(c, RNcyl)->P[var] - c->P[var])
-               / (R_com(c, dR) - R_com(grid->NextPt(c, RNcyl), dR));
+        temp = fabs(grid->NextPt(c, RNcyl)->P[var] - c.P[var])
+               / (R_com(c, dR) - R_com(*grid->NextPt(c, RNcyl), dR));
         if (temp > grad) grad = temp;
       }
       if (VOnd > 2) {  // Theta-dir, need scale factor 1/R
-        dT = (CI.get_dpos(grid->NextPt(c, TPcyl), Tcyl) - CI.get_dpos(c, Tcyl))
+        dT = (CI.get_dpos(*grid->NextPt(c, TPcyl), Tcyl) - CI.get_dpos(c, Tcyl))
              * R_com(c, dR);
-        temp = fabs(grid->NextPt(c, TPcyl)->P[var] - c->P[var]) / dT;
+        temp = fabs(grid->NextPt(c, TPcyl)->P[var] - c.P[var]) / dT;
         if (temp > grad) grad = temp;
-        dT = (CI.get_dpos(c, Tcyl) - CI.get_dpos(grid->NextPt(c, TNcyl), Tcyl))
+        dT = (CI.get_dpos(c, Tcyl) - CI.get_dpos(*grid->NextPt(c, TNcyl), Tcyl))
              * R_com(c, dR);
-        temp = fabs(grid->NextPt(c, TNcyl)->P[var] - c->P[var]) / dT;
+        temp = fabs(grid->NextPt(c, TNcyl)->P[var] - c.P[var]) / dT;
         if (temp > grad) grad = temp;
       }
       break;
     case 1:  // Use Vector c-Ph
       // Z-dir
-      temp = fabs(grid->NextPt(c, ZPcyl)->Ph[var] - c->Ph[var]) / dZ;
+      temp = fabs(grid->NextPt(c, ZPcyl)->Ph[var] - c.Ph[var]) / dZ;
       if (temp > grad) grad = temp;
-      temp = fabs(grid->NextPt(c, ZNcyl)->Ph[var] - c->Ph[var]) / dZ;
+      temp = fabs(grid->NextPt(c, ZNcyl)->Ph[var] - c.Ph[var]) / dZ;
       if (temp > grad) grad = temp;
       if (VOnd > 1) {  // R-dir
-        temp = fabs(grid->NextPt(c, RPcyl)->Ph[var] - c->Ph[var])
-               / (R_com(grid->NextPt(c, RPcyl), dR) - R_com(c, dR));
+        temp = fabs(grid->NextPt(c, RPcyl)->Ph[var] - c.Ph[var])
+               / (R_com(*grid->NextPt(c, RPcyl), dR) - R_com(c, dR));
         if (temp > grad) grad = temp;
-        temp = fabs(grid->NextPt(c, RNcyl)->Ph[var] - c->Ph[var])
-               / (R_com(c, dR) - R_com(grid->NextPt(c, RNcyl), dR));
+        temp = fabs(grid->NextPt(c, RNcyl)->Ph[var] - c.Ph[var])
+               / (R_com(c, dR) - R_com(*grid->NextPt(c, RNcyl), dR));
         if (temp > grad) grad = temp;
       }
       if (VOnd > 2) {  // Theta-dir, need scale factor 1/R
-        dT = (CI.get_dpos(grid->NextPt(c, TPcyl), Tcyl) - CI.get_dpos(c, Tcyl))
+        dT = (CI.get_dpos(*grid->NextPt(c, TPcyl), Tcyl) - CI.get_dpos(c, Tcyl))
              * R_com(c, dR);
-        temp = fabs(grid->NextPt(c, TPcyl)->Ph[var] - c->Ph[var]) / dT;
+        temp = fabs(grid->NextPt(c, TPcyl)->Ph[var] - c.Ph[var]) / dT;
         if (temp > grad) grad = temp;
-        dT = (CI.get_dpos(c, Tcyl) - CI.get_dpos(grid->NextPt(c, TNcyl), Tcyl))
+        dT = (CI.get_dpos(c, Tcyl) - CI.get_dpos(*grid->NextPt(c, TNcyl), Tcyl))
              * R_com(c, dR);
-        temp = fabs(grid->NextPt(c, TNcyl)->Ph[var] - c->Ph[var]) / dT;
+        temp = fabs(grid->NextPt(c, TNcyl)->Ph[var] - c.Ph[var]) / dT;
         if (temp > grad) grad = temp;
       }
       break;
@@ -866,7 +866,7 @@ double VectorOps_Cyl::max_grad_abs(
 // ##################################################################
 
 void VectorOps_Cyl::Gradient(
-    const cell *c,
+    const cell &c,
     const int sv,
     const int var,
     class GridBaseClass *grid,
@@ -894,13 +894,13 @@ void VectorOps_Cyl::Gradient(
       if (VOnd > 1) {
         cn      = grid->NextPt(c, RNcyl);
         cp      = grid->NextPt(c, RPcyl);
-        grad[1] = (cp->P[var] - cn->P[var]) / (R_com(cp, dR) - R_com(cn, dR));
+        grad[1] = (cp->P[var] - cn->P[var]) / (R_com(*cp, dR) - R_com(*cn, dR));
       }
       if (VOnd > 2) {
         cn      = grid->NextPt(c, TNcyl);
         cp      = grid->NextPt(c, TPcyl);
         grad[2] = (cp->P[var] - cn->P[var])
-                  / (CI.get_dpos(cp, Tcyl) - CI.get_dpos(cn, Tcyl))
+                  / (CI.get_dpos(*cp, Tcyl) - CI.get_dpos(*cn, Tcyl))
                   / R_com(c, dR);
       }
       break;
@@ -909,15 +909,16 @@ void VectorOps_Cyl::Gradient(
       cp      = grid->NextPt(c, ZPcyl);
       grad[0] = (cp->Ph[var] - cn->Ph[var]) / (2. * dZ);
       if (VOnd > 1) {
-        cn      = grid->NextPt(c, RNcyl);
-        cp      = grid->NextPt(c, RPcyl);
-        grad[1] = (cp->Ph[var] - cn->Ph[var]) / (R_com(cp, dR) - R_com(cn, dR));
+        cn = grid->NextPt(c, RNcyl);
+        cp = grid->NextPt(c, RPcyl);
+        grad[1] =
+            (cp->Ph[var] - cn->Ph[var]) / (R_com(*cp, dR) - R_com(*cn, dR));
       }
       if (VOnd > 2) {
         cn      = grid->NextPt(c, TNcyl);
         cp      = grid->NextPt(c, TPcyl);
         grad[2] = (cp->Ph[var] - cn->Ph[var])
-                  / (CI.get_dpos(cp, Tcyl) - CI.get_dpos(cn, Tcyl))
+                  / (CI.get_dpos(*cp, Tcyl) - CI.get_dpos(*cn, Tcyl))
                   / R_com(c, dR);
       }
       break;
@@ -935,7 +936,7 @@ void VectorOps_Cyl::Gradient(
 // ##################################################################
 
 double VectorOps_Cyl::Divergence(
-    cell *c, const int sv, const int *var, class GridBaseClass *grid)
+    cell &c, const int sv, const int *var, class GridBaseClass *grid)
 {
   // get divergence of vector quantity.
 
@@ -952,9 +953,9 @@ double VectorOps_Cyl::Divergence(
   for (int v = 0; v < VOnd; v++) {
     ndir      = static_cast<direction>(2 * v);
     pdir      = static_cast<direction>(2 * v + 1);
-    ngb[ndir] = (grid->NextPt(c, ndir)) ? grid->NextPt(c, ndir) : c;
-    ngb[pdir] = (grid->NextPt(c, pdir)) ? grid->NextPt(c, pdir) : c;
-    if (ngb[ndir] == c || ngb[pdir] == c)
+    ngb[ndir] = (grid->NextPt(c, ndir)) ? grid->NextPt(c, ndir) : &c;
+    ngb[pdir] = (grid->NextPt(c, pdir)) ? grid->NextPt(c, pdir) : &c;
+    if (ngb[ndir] == &c || ngb[pdir] == &c)
       dx[v] = dZ;
     else
       dx[v] = 2.0 * dZ;
@@ -969,15 +970,15 @@ double VectorOps_Cyl::Divergence(
       if (VOnd > 1) {  // d(R* V_R)/(R*dR)
         cn        = ngb[RNcyl];
         cp        = ngb[RPcyl];
-        double rn = R_com(cn, dR);
-        double rp = R_com(cp, dR);
+        double rn = R_com(*cn, dR);
+        double rp = R_com(*cp, dR);
         divv += 2.0 * (rp * cp->P[var[1]] - rn * cn->P[var[1]])
                 / (rp * rp - rn * rn);
       }
       if (VOnd > 2) {  // d(V_theta)/(R*dtheta)
         cn = ngb[TNcyl];
         cp = ngb[TPcyl];
-        dT = (CI.get_dpos(cp, Tcyl) - CI.get_dpos(cn, Tcyl)) * R_com(c, dR);
+        dT = (CI.get_dpos(*cp, Tcyl) - CI.get_dpos(*cn, Tcyl)) * R_com(c, dR);
         divv += (cp->P[var[2]] - cn->P[var[2]]) / dT;
       }
       break;
@@ -990,15 +991,15 @@ double VectorOps_Cyl::Divergence(
       if (VOnd > 1) {  // d(R* V_R)/(R*dR)
         cn        = ngb[RNcyl];
         cp        = ngb[RPcyl];
-        double rn = R_com(cn, dR);
-        double rp = R_com(cp, dR);
+        double rn = R_com(*cn, dR);
+        double rp = R_com(*cp, dR);
         divv += 2.0 * (rp * cp->Ph[var[1]] - rn * cn->Ph[var[1]])
                 / (rp * rp - rn * rn);
       }
       if (VOnd > 2) {  // d(V_theta)/(R*dtheta)
         cn = ngb[TNcyl];
         cp = ngb[TPcyl];
-        dT = (CI.get_dpos(cp, Tcyl) - CI.get_dpos(cn, Tcyl)) * R_com(c, dR);
+        dT = (CI.get_dpos(*cp, Tcyl) - CI.get_dpos(*cn, Tcyl)) * R_com(c, dR);
         divv += (cp->Ph[var[2]] - cn->Ph[var[2]]) / dT;
       }
       break;
@@ -1015,7 +1016,7 @@ double VectorOps_Cyl::Divergence(
 // ##################################################################
 
 void VectorOps_Cyl::Curl(
-    const cell *c,
+    const cell &c,
     const int vec,
     const int *var,
     class GridBaseClass *grid,
@@ -1029,9 +1030,9 @@ void VectorOps_Cyl::Curl(
       exit(1);
     }
 #endif  // NDEBUG
-  if (!c->isgd) {
+  if (!c.isgd) {
     spdlog::error(
-        "{}: {}", "Not Grid Cell! can't calculate curl. id follows", c->id);
+        "{}: {}", "Not Grid Cell! can't calculate curl. id follows", c.id);
     exit(1);
   }
   spdlog::warn("Cyl_Curl() is not tested!!! make sure it works!!!");
@@ -1045,16 +1046,15 @@ void VectorOps_Cyl::Curl(
   switch (vec) {
     case 0:  // c->P
       spdlog::debug("using P.\n");
-      vzp = grid->NextPt(c, ZPcyl)->P;
-      vzn = grid->NextPt(c, ZNcyl)->P;
-      vrp = grid->NextPt(c, RPcyl)->P;
-      vrn = grid->NextPt(c, RNcyl)->P;
-      vtp = grid->NextPt(c, TPcyl)->P;
-      vtn = grid->NextPt(c, TNcyl)->P;
+      vzp = grid->NextPt(c, ZPcyl)->P.data();
+      vzn = grid->NextPt(c, ZNcyl)->P.data();
+      vrp = grid->NextPt(c, RPcyl)->P.data();
+      vrn = grid->NextPt(c, RNcyl)->P.data();
+      vtp = grid->NextPt(c, TPcyl)->P.data();
+      vtn = grid->NextPt(c, TNcyl)->P.data();
       break;
     case 1:  // c->Ph
-      spdlog::debug(
-          "using Ph = [{}, {}, {} ]\n", c->Ph[vz], c->Ph[vr], c->Ph[vt]);
+      spdlog::debug("using Ph = [{}, {}, {} ]\n", c.Ph[vz], c.Ph[vr], c.Ph[vt]);
       vzp = grid->NextPt(c, ZPcyl)->Ph;
       vzn = grid->NextPt(c, ZNcyl)->Ph;
       vrp = grid->NextPt(c, RPcyl)->Ph;
@@ -1064,12 +1064,12 @@ void VectorOps_Cyl::Curl(
       break;
     case 2:  // c->dU
       spdlog::debug("using dU.\n");
-      vzp = grid->NextPt(c, ZPcyl)->dU;
-      vzn = grid->NextPt(c, ZNcyl)->dU;
-      vrp = grid->NextPt(c, RPcyl)->dU;
-      vrn = grid->NextPt(c, RNcyl)->dU;
-      vtp = grid->NextPt(c, TPcyl)->dU;
-      vtn = grid->NextPt(c, TNcyl)->dU;
+      vzp = grid->NextPt(c, ZPcyl)->dU.data();
+      vzn = grid->NextPt(c, ZNcyl)->dU.data();
+      vrp = grid->NextPt(c, RPcyl)->dU.data();
+      vrn = grid->NextPt(c, RNcyl)->dU.data();
+      vtp = grid->NextPt(c, TPcyl)->dU.data();
+      vtn = grid->NextPt(c, TNcyl)->dU.data();
       break;
     default:
       spdlog::error(
@@ -1080,21 +1080,21 @@ void VectorOps_Cyl::Curl(
   }
 
   // First dz derivatives
-  rp        = R_com(grid->NextPt(c, ZPcyl), dR);
-  rn        = R_com(grid->NextPt(c, ZNcyl), dR);
+  rp        = R_com(*grid->NextPt(c, ZPcyl), dR);
+  rn        = R_com(*grid->NextPt(c, ZNcyl), dR);
   ans[Zcyl] = 0.0;
   ans[Rcyl] = -(rp * vzp[vt] - rn * vzn[vt]) / (2. * dZ);
   ans[Tcyl] = (vzp[vr] - vzn[vr]) / (2. * dZ);
   if (VOnd > 1) {  // now R derivatives, if present
-    rp = R_com(grid->NextPt(c, RPcyl), dR);
-    rn = R_com(grid->NextPt(c, RNcyl), dR);
+    rp = R_com(*grid->NextPt(c, RPcyl), dR);
+    rn = R_com(*grid->NextPt(c, RNcyl), dR);
     ans[Zcyl] += (rp * vrp[vt] - rn * vrn[vt]) / (rp - rn);
     ans[Rcyl] += 0.0;
     ans[Tcyl] += -(vrp[vz] - vrn[vz]) / (rp - rn);
   }
   if (VOnd > 2) {  // now Theta derivatives if present.
-    rp = CI.get_dpos(grid->NextPt(c, TPcyl), Tcyl);
-    rn = CI.get_dpos(grid->NextPt(c, TNcyl), Tcyl);
+    rp = CI.get_dpos(*grid->NextPt(c, TPcyl), Tcyl);
+    rn = CI.get_dpos(*grid->NextPt(c, TNcyl), Tcyl);
     ans[Zcyl] += -(vtp[vr] - vtn[vr]) / (rp - rn);
     ans[Rcyl] += (vtp[vz] - vtn[vz]) / (rp - rn);
     ans[Tcyl] += 0.0;
@@ -1110,7 +1110,7 @@ void VectorOps_Cyl::Curl(
 // ##################################################################
 
 int VectorOps_Cyl::SetEdgeState(
-    const cell *c,        ///< Current Cell.
+    const cell &c,        ///< Current Cell.
     const direction dir,  ///< Add or subtract the slope depending on direction.
     const int nv,         ///< length of state vectors.
     const pion_flt *dpdx,  ///< Slope vector.
@@ -1120,7 +1120,7 @@ int VectorOps_Cyl::SetEdgeState(
 {
   if (OA == OA1) {  // 1st order, constant data.
     for (int v = 0; v < nv; v++)
-      edge[v] = c->Ph[v];
+      edge[v] = c.Ph[v];
   }
 
   else if (OA == OA2) {
@@ -1142,12 +1142,12 @@ int VectorOps_Cyl::SetEdgeState(
         break;
       case TPcyl:
         del = R_com(c, dR)
-              * (CI.get_dpos(grid->NextPt(c, TPcyl), Tcyl)
+              * (CI.get_dpos(*grid->NextPt(c, TPcyl), Tcyl)
                  - CI.get_dpos(c, Tcyl));
         break;
       case TNcyl:
         del = R_com(c, dR)
-              * (CI.get_dpos(grid->NextPt(c, TNcyl), Tcyl)
+              * (CI.get_dpos(*grid->NextPt(c, TNcyl), Tcyl)
                  - CI.get_dpos(c, Tcyl));
         break;
       default:
@@ -1157,7 +1157,7 @@ int VectorOps_Cyl::SetEdgeState(
     }  // setting del based on direction.
 
     for (int v = 0; v < nv; v++)
-      edge[v] = c->Ph[v] + dpdx[v] * del;
+      edge[v] = c.Ph[v] + dpdx[v] * del;
   }  // OA2
   else {
     spdlog::error("{}: {}", "SetEdgeState OOA -- only 1st and 2nd order", OA);
@@ -1171,7 +1171,7 @@ int VectorOps_Cyl::SetEdgeState(
 // ##################################################################
 
 int VectorOps_Cyl::SetSlope(
-    const cell *c,   ///< Current Cell.
+    const cell &c,   ///< Current Cell.
     const axes d,    ///< Which direction to calculate slope in.
     const int nv,    ///< length of state vectors.
     pion_flt *dpdx,  ///< Slope vector to be written to.
@@ -1216,18 +1216,18 @@ int VectorOps_Cyl::SetSlope(
       exit(1);
     }
     if (!cp) {
-      cp    = grid->NextPt(cn, dp);
+      cp    = grid->NextPt(*cn, dp);
       nopos = true;
     }
     if (!cn) {
-      cn    = grid->NextPt(cp, dn);
+      cn    = grid->NextPt(*cp, dn);
       noneg = true;
     }
     switch (d) {
       case Zcyl:
         for (int v = 0; v < nv; v++) {
-          slpn[v] = (c->Ph[v] - cn->Ph[v]) / dZ;
-          slpp[v] = (cp->Ph[v] - c->Ph[v]) / dZ;
+          slpn[v] = (c.Ph[v] - cn->Ph[v]) / dZ;
+          slpp[v] = (cp->Ph[v] - c.Ph[v]) / dZ;
           dpdx[v] = AvgFalle(slpn[v], slpp[v]);
         }
 #ifdef DEBUG3
@@ -1244,7 +1244,7 @@ int VectorOps_Cyl::SetSlope(
         }
         else {
           for (int v = 0; v < nv; v++) {
-            slpn[v] = (c->Ph[v] - cn->Ph[v]) / (R_com(c, dR) - R_com(cn, dR));
+            slpn[v] = (c.Ph[v] - cn->Ph[v]) / (R_com(c, dR) - R_com(*cn, dR));
           }
         }
         if (nopos) {
@@ -1253,7 +1253,7 @@ int VectorOps_Cyl::SetSlope(
         }
         else {
           for (int v = 0; v < nv; v++) {
-            slpp[v] = (cp->Ph[v] - c->Ph[v]) / (R_com(cp, dR) - R_com(c, dR));
+            slpp[v] = (cp->Ph[v] - c.Ph[v]) / (R_com(*cp, dR) - R_com(c, dR));
           }
         }
         for (int v = 0; v < nv; v++)
@@ -1273,8 +1273,8 @@ int VectorOps_Cyl::SetSlope(
         }
         else {
           for (int v = 0; v < nv; v++) {
-            slpn[v] = (c->Ph[v] - cn->Ph[v]) / R_com(c, dR)
-                      / (CI.get_dpos(c, Tcyl) - CI.get_dpos(cn, Tcyl));
+            slpn[v] = (c.Ph[v] - cn->Ph[v]) / R_com(c, dR)
+                      / (CI.get_dpos(c, Tcyl) - CI.get_dpos(*cn, Tcyl));
           }
         }
         if (nopos) {
@@ -1283,8 +1283,8 @@ int VectorOps_Cyl::SetSlope(
         }
         else {
           for (int v = 0; v < nv; v++) {
-            slpp[v] = (cp->Ph[v] - c->Ph[v]) / R_com(c, dR)
-                      / (CI.get_dpos(cp, Tcyl) - CI.get_dpos(c, Tcyl));
+            slpp[v] = (cp->Ph[v] - c.Ph[v]) / R_com(c, dR)
+                      / (CI.get_dpos(*cp, Tcyl) - CI.get_dpos(c, Tcyl));
           }
         }
         for (int v = 0; v < nv; v++)
@@ -1308,7 +1308,7 @@ int VectorOps_Cyl::SetSlope(
 // ##################################################################
 
 int VectorOps_Cyl::DivStateVectorComponent(
-    const cell *c,  ///< current cell.
+    const cell &c,  ///< current cell.
     class GridBaseClass *grid,
     const axes d,        ///< current coordinate axis
     const int nv,        ///< length of state vectors.
@@ -1338,7 +1338,7 @@ int VectorOps_Cyl::DivStateVectorComponent(
   else if (d == Tcyl) {
     double dth =
         R_com(c, dR)
-        * (CI.get_dpos(grid->NextPt(c, TPcyl), Tcyl) - CI.get_dpos(c, Tcyl));
+        * (CI.get_dpos(*grid->NextPt(c, TPcyl), Tcyl) - CI.get_dpos(c, Tcyl));
     for (int v = 0; v < nv; v++)
       dudt[v] = (fn[v] - fp[v]) / dth;
   }

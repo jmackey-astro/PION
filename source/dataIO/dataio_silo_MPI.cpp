@@ -423,7 +423,7 @@ int dataio_silo_pllel::ReadData(
   do {
     for (int v = 0; v < SimPM.nvar; v++)
       cpt->Ph[v] = cpt->P[v];
-  } while ((cpt = gp->NextPt(cpt)) != 0);
+  } while ((cpt = gp->NextPt(*cpt)) != 0);
 
   //
   // Finished Local work; hand off baton and wait!

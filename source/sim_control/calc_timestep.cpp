@@ -231,7 +231,7 @@ double calc_timestep::set_conduction_dt_and_Edot(
           // the max speed temporarily in set_thermal_conduction_Edot().
           tempdt    = min(tempdt, par.CFL * par.dx / c->dU[VX]);
           c->dU[VX] = 0.0;
-        } while ((c = grid->NextPt(c, XP)) != 0);
+        } while ((c = grid->NextPt(*c, XP)) != 0);
         dt = min(dt, tempdt);
       }
     }
@@ -282,7 +282,7 @@ int calc_timestep::set_thermal_conduction_Edot(
       do {
         cpt->dU[RHO] = MP->Temperature(cpt->Ph, par.gamma);
         cpt->dU[ERG] = 0.0;
-      } while ((cpt = grid->NextPt(cpt, XP)) != 0);
+      } while ((cpt = grid->NextPt(*cpt, XP)) != 0);
     }
   }
 
@@ -338,7 +338,7 @@ int calc_timestep::set_thermal_conduction_Edot(
           index[x2]    = static_cast<int>(ax2);
           index[x3]    = 0;
           cpt          = grid->get_cell_all(index[0], index[1], index[2]);
-          cell *npt    = grid->NextPt(cpt, posdirs[idim]);
+          cell *npt    = grid->NextPt(*cpt, posdirs[idim]);
           cell *lpt    = 0;
           double q_neg = 0.0, q_pos = 0.0, gradT = 0.0;
           double dx = grid->DX();
@@ -367,13 +367,13 @@ int calc_timestep::set_thermal_conduction_Edot(
             // Finally cpt needs an updated -div(q) value from the
             // current direction.
             if (par.coord_sys == COORD_CYL && axis[idim] == Rcyl) {
-              double rp = CI.get_dpos(cpt, Rcyl) + 0.5 * dx;
+              double rp = CI.get_dpos(*cpt, Rcyl) + 0.5 * dx;
               double rn = rp - dx;
               cpt->dU[ERG] +=
                   2.0 * (rn * q_neg - rp * q_pos) / (rp * rp - rn * rn);
             }
             else if (par.coord_sys == COORD_SPH && axis[idim] == Rsph) {
-              double rc = CI.get_dpos(cpt, Rsph);
+              double rc = CI.get_dpos(*cpt, Rsph);
               double rp = rc + 0.5 * dx;
               double rn = rp - dx;
               rc        = (pow(rp, 3.0) - pow(rn, 3.0)) / 3.0;
@@ -396,7 +396,7 @@ int calc_timestep::set_thermal_conduction_Edot(
             q_neg = q_pos;
             lpt   = cpt;
             cpt   = npt;
-          } while ((npt = grid->NextPt(npt, posdirs[idim])) != 0);
+          } while ((npt = grid->NextPt(*npt, posdirs[idim])) != 0);
           cpt->dU[VX] = max(cpt->dU[VX], lpt->dU[VX]);
         }  // ax1
       }    // ax2
@@ -432,7 +432,7 @@ int calc_timestep::set_thermal_conduction_Edot(
       cell *cpt = grid->get_cell_all(index[0], index[1], index[2]);
       do {
         cpt->dU[RHO] = 0.0;
-      } while ((cpt = grid->NextPt(cpt, XP)) != 0);
+      } while ((cpt = grid->NextPt(*cpt, XP)) != 0);
     }
   }
 
@@ -539,7 +539,7 @@ double calc_timestep::calc_dynamics_dt(
         tempdt   = 1.0e100;
         // get to first non-boundary cell:
         while (c && !c->isgd)
-          c = grid->NextPt(c, XP);
+          c = grid->NextPt(*c, XP);
         if (!c) {
           continue;  // end iteration if there are no non-boundary cells
         }
@@ -547,9 +547,9 @@ double calc_timestep::calc_dynamics_dt(
         do {
           if (c->timestep && !c->isbd && c->isdomain) {
             tempdt =
-                min(tempdt, spatial_solver->CellTimeStep(c, par.gamma, dx));
+                min(tempdt, spatial_solver->CellTimeStep(*c, par.gamma, dx));
           }
-        } while ((c = grid->NextPt(c, XP)));
+        } while ((c = grid->NextPt(*c, XP)));
         dt = min(dt, tempdt);
       }
     }
@@ -692,7 +692,7 @@ double calc_timestep::get_mp_timescales_no_radiation(
         tempdt   = 1.0e100;
         // get to first non-boundary cell:
         while (c && !c->isgd)
-          c = grid->NextPt(c, XP);
+          c = grid->NextPt(*c, XP);
         if (!c) {
           continue;  // end iteration if there are no non-boundary cells
         }
@@ -731,7 +731,7 @@ double calc_timestep::get_mp_timescales_no_radiation(
             tempdt = min(tempdt, t);
             // cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<dt<<"\n";
           }  // if not boundary data.
-        } while ((c = grid->NextPt(c, XP)));
+        } while ((c = grid->NextPt(*c, XP)));
         dt = min(dt, tempdt);
       }
     }
@@ -838,7 +838,7 @@ double calc_timestep::get_mp_timescales_with_radiation(
         tempdt   = 1.0e100;
         // get to first non-boundary cell:
         while (c && !c->isgd)
-          c = grid->NextPt(c, XP);
+          c = grid->NextPt(*c, XP);
         if (!c) {
           continue;  // end iteration if there are no non-boundary cells
         }
@@ -859,18 +859,18 @@ double calc_timestep::get_mp_timescales_with_radiation(
             // Get column densities and Vshell in struct for each source.
             //
             for (int v = 0; v < FVI_nheat; v++) {
-              heating[v].Vshell = CI.get_cell_Vshell(c, heating[v].id);
-              heating[v].dS     = CI.get_cell_deltaS(c, heating[v].id);
-              CI.get_cell_col(c, heating[v].id, heating[v].DelCol);
-              CI.get_col(c, heating[v].id, heating[v].Column);
+              heating[v].Vshell = CI.get_cell_Vshell(*c, heating[v].id);
+              heating[v].dS     = CI.get_cell_deltaS(*c, heating[v].id);
+              CI.get_cell_col(*c, heating[v].id, heating[v].DelCol);
+              CI.get_col(*c, heating[v].id, heating[v].Column);
               for (short unsigned int iC = 0; iC < heating[v].NTau; iC++)
                 heating[v].Column[iC] -= heating[v].DelCol[iC];
             }
             for (int v = 0; v < FVI_nion; v++) {
-              ionize[v].Vshell = CI.get_cell_Vshell(c, ionize[v].id);
-              ionize[v].dS     = CI.get_cell_deltaS(c, ionize[v].id);
-              CI.get_cell_col(c, ionize[v].id, ionize[v].DelCol);
-              CI.get_col(c, ionize[v].id, ionize[v].Column);
+              ionize[v].Vshell = CI.get_cell_Vshell(*c, ionize[v].id);
+              ionize[v].dS     = CI.get_cell_deltaS(*c, ionize[v].id);
+              CI.get_cell_col(*c, ionize[v].id, ionize[v].DelCol);
+              CI.get_col(*c, ionize[v].id, ionize[v].Column);
               for (short unsigned int iC = 0; iC < ionize[v].NTau; iC++)
                 ionize[v].Column[iC] -= ionize[v].DelCol[iC];
               if (ionize[v].Column[0] < 0.0) {
@@ -909,7 +909,7 @@ double calc_timestep::get_mp_timescales_with_radiation(
             tempdt = min(tempdt, t);
             // cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<dt<<"\n";
           }  // if not boundary data.
-        } while ((c = grid->NextPt(c, XP)));
+        } while ((c = grid->NextPt(*c, XP)));
         dt = min(dt, tempdt);
       }
     }

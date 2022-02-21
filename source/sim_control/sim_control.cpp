@@ -422,15 +422,15 @@ int sim_control::check_energy_cons(class GridBaseClass *grid)
   double dR       = grid->DX();
   double dv       = 0.0;
   do {
-    dv = spatial_solver->CellVolume(cpt, dR);
-    spatial_solver->PtoU(cpt->P, u.data(), SimPM.gamma);
+    dv = spatial_solver->CellVolume(*cpt, dR);
+    spatial_solver->PtoU(cpt->P.data(), u.data(), SimPM.gamma);
     nowERG += u[ERG] * dv;
     nowMMX += u[MMX] * dv;
     nowMMY += u[MMY] * dv;
     nowMMZ += u[MMZ] * dv;
     nowMASS += u[RHO] * dv;
     totmom += sqrt(u[MMX] * u[MMX] + u[MMY] * u[MMY] + u[MMZ] * u[MMZ]) * dv;
-  } while ((cpt = grid->NextPt(cpt)) != 0);
+  } while ((cpt = grid->NextPt(*cpt)) != 0);
   spdlog::debug(
       "(conserved quantities) [{}, {}, {}, {}, {}]", nowERG, nowMMX, nowMMY,
       nowMMZ, nowMASS);

@@ -346,7 +346,7 @@ int IC_basic_tests::setup_uniformgrid(
     // an isothermal sphere with a constant density core.
     // rho = rho_0 /(1+ (r_core/r)^slope)
     //
-    CI.get_dpos(cpt, dpos);
+    CI.get_dpos(*cpt, dpos);
     distance = ggg->distance(centre, dpos);
     if (use_core) {
       cpt->P[RO] /= (1.0 + exp(radial_slope * log(core_radius / distance)));
@@ -355,7 +355,7 @@ int IC_basic_tests::setup_uniformgrid(
       cpt->P[VY] = radial_vel * (dpos[YY] - centre[YY]) / distance;
       cpt->P[VZ] = radial_vel * (dpos[ZZ] - centre[ZZ]) / distance;
     }
-  } while ((cpt = ggg->NextPt(cpt)) != NULL);
+  } while ((cpt = ggg->NextPt(*cpt)) != NULL);
   return (0);
 }
 
@@ -436,7 +436,8 @@ int IC_basic_tests::setup_sinewave_velocity()
     cpt->P[RO] = rhoout;
     cpt->P[PG] = pout;
     cpt->P[VX] = vx;
-    cpt->P[VY] = vy * sin(2.0 * M_PI * CI.get_dpos(cpt, YY) / SimPM->Range[YY]);
+    cpt->P[VY] =
+        vy * sin(2.0 * M_PI * CI.get_dpos(*cpt, YY) / SimPM->Range[YY]);
     cpt->P[VZ] = vz;
     if (SimPM->eqntype == EQMHD || SimPM->eqntype == EQGLM
         || SimPM->eqntype == EQFCD) {
@@ -448,12 +449,12 @@ int IC_basic_tests::setup_sinewave_velocity()
       cpt->P[SimPM->ftr + i] = 1.;
 
     // This is where I set the state inside the overdense clump.
-    if ((vfrac = stest.volumeFraction(cpt)) > 0) {
+    if ((vfrac = stest.volumeFraction(*cpt)) > 0) {
       cpt->P[RO] = vfrac * (rhoin) + (1. - vfrac) * rhoout;
       for (int i = 0; i < SimPM->ntracer; i++)
         cpt->P[SimPM->ftr + i] = vfrac * (-1.) + (1. - vfrac) * 1.;
     }
-  } while ((cpt = gg->NextPt(cpt)) != NULL);
+  } while ((cpt = gg->NextPt(*cpt)) != NULL);
   // Data done.
 
   return 0;
@@ -552,13 +553,13 @@ int IC_basic_tests::setup_advection()
       cpt->P[SimPM->ftr + i] = 1.;
 
     // This is where I set the state inside the blast radius.
-    if ((vfrac = stest.volumeFraction(cpt)) > 0) {
+    if ((vfrac = stest.volumeFraction(*cpt)) > 0) {
       //       cpt->P[PG] = vfrac*(pin) + (1.-vfrac)*cpt->P[PG];
       cpt->P[RO] = vfrac * (rhoin) + (1. - vfrac) * rhoout;
       for (int i = 0; i < SimPM->ntracer; i++)
         cpt->P[SimPM->ftr + i] = vfrac * (-1.) + (1. - vfrac) * 1.;
     }
-  } while ((cpt = gg->NextPt(cpt)) != NULL);
+  } while ((cpt = gg->NextPt(*cpt)) != NULL);
   // Data done.
 
   return (0);
@@ -612,10 +613,10 @@ int IC_basic_tests::setup_divBpeak()
   class cell *c = gg->FirstPt();
   double r2     = 0;
   std::array<double, MAX_DIM> dpos;
-  CI.get_dpos(c, dpos);
+  CI.get_dpos(*c, dpos);
   // rep.printVec("position of first cell",dpos,ndim);
   do {
-    CI.get_dpos(c, dpos);
+    CI.get_dpos(*c, dpos);
     for (int v = 0; v < nvar; v++)
       c->P[v] = s[v];
     r2 = dpos[XX] * dpos[XX] + dpos[YY] * dpos[YY];
@@ -626,7 +627,7 @@ int IC_basic_tests::setup_divBpeak()
       r2 = 0.;
     if (r2 < 0.) r2 = 0.;
     c->P[BX] = r2;
-  } while ((c = gg->NextPt(c)) != 0);
+  } while ((c = gg->NextPt(*c)) != 0);
   delete[] s;
   return (0);
 }
@@ -688,7 +689,7 @@ int IC_basic_tests::setup_FieldLoop(double vz  ///< Z-velocity of fluid
     c->P[VX] = vel;        // vel*sin(flow_angle);
     c->P[VY] = vel / 2.0;  // vel*cos(flow_angle);
     c->P[VZ] = vz;         // If vz!=0, this tests if B_z gets contaminated.
-    CI.get_dpos(c, dpos);
+    CI.get_dpos(*c, dpos);
     dist = gg->distance(centre, dpos);
 
     //
@@ -717,7 +718,7 @@ int IC_basic_tests::setup_FieldLoop(double vz  ///< Z-velocity of fluid
       c->Ph[BZ] = 0.0;
     }
     c->Ph[BX] = c->Ph[BY] = 0.0;
-  } while ((c = gg->NextPt(c)) != 0);
+  } while ((c = gg->NextPt(*c)) != 0);
   // Data done.
 
   //
@@ -729,7 +730,7 @@ int IC_basic_tests::setup_FieldLoop(double vz  ///< Z-velocity of fluid
   c                         = gg->FirstPt();
   do {
     if (!c->isedge) {
-      vec->Curl(c, 1, els, gg, ans);
+      vec->Curl(*c, 1, els, gg, ans);
       c->P[BX] = ans[0];
       c->P[BY] = ans[1];
       c->P[BZ] = ans[2];
@@ -739,7 +740,7 @@ int IC_basic_tests::setup_FieldLoop(double vz  ///< Z-velocity of fluid
       c->P[BY] = 0;
       c->P[BZ] = 0;
     }
-  } while ((c = gg->NextPt(c)) != 0);
+  } while ((c = gg->NextPt(*c)) != 0);
   delete vec;
   vec = 0;
 
@@ -800,7 +801,7 @@ int IC_basic_tests::setup_OrszagTang()
   std::array<double, MAX_DIM> dpos;
   class cell *c = gg->FirstPt();
   do {
-    CI.get_dpos(c, dpos);
+    CI.get_dpos(*c, dpos);
     // Set values of primitive variables.
     c->P[RO] = d0;
     c->P[PG] = p0;
@@ -814,7 +815,7 @@ int IC_basic_tests::setup_OrszagTang()
     for (int i = 0; i < SimPM->ntracer; i++) {
       c->P[SimPM->ftr + i] = 1.;
     }
-  } while ((c = gg->NextPt(c)) != 0);
+  } while ((c = gg->NextPt(*c)) != 0);
   // Data done.
   return (0);
 }
@@ -899,7 +900,7 @@ int IC_basic_tests::setup_DoubleMachRef()
   class cell *c = gg->FirstPt();
   std::array<double, MAX_DIM> dpos;
   do {
-    CI.get_dpos(c, dpos);
+    CI.get_dpos(*c, dpos);
     xs = x0 + dpos[YY] / tan(dmrtheta);
     if (dpos[XX] <= xs) {
       c->P[RO] = ro1;
@@ -915,7 +916,7 @@ int IC_basic_tests::setup_DoubleMachRef()
       c->P[VY] = vy0;
       c->P[VZ] = vz0;
     }
-  } while ((c = gg->NextPt(c)) != 0);
+  } while ((c = gg->NextPt(*c)) != 0);
   // Data done.
 
   return (0);
@@ -960,7 +961,7 @@ int IC_basic_tests::setup_KelvinHelmholtz_Stone()
   class cell *c = gg->FirstPt();
   std::array<double, MAX_DIM> dpos;
   do {
-    CI.get_dpos(c, dpos);
+    CI.get_dpos(*c, dpos);
     c->P[VY] = 0.0;
     c->P[PG] = pressure;
     if (eqns == 2) {
@@ -981,7 +982,7 @@ int IC_basic_tests::setup_KelvinHelmholtz_Stone()
     }
     c->P[VX] += noise_amp * (static_cast<double>(rand()) / RAND_MAX - 0.5);
     c->P[VY] += noise_amp * (static_cast<double>(rand()) / RAND_MAX - 0.5);
-  } while ((c = gg->NextPt(c)) != 0);
+  } while ((c = gg->NextPt(*c)) != 0);
   // Data done.
 
   return err;
@@ -1017,7 +1018,7 @@ int IC_basic_tests::setup_KelvinHelmholtz()
   class cell *c = gg->FirstPt();
   std::array<double, MAX_DIM> dpos;
   do {
-    CI.get_dpos(c, dpos);
+    CI.get_dpos(*c, dpos);
     c->P[RO] = rho;
     c->P[PG] = pressure;
     if (eqns == 2) {
@@ -1035,7 +1036,7 @@ int IC_basic_tests::setup_KelvinHelmholtz()
                   + sin(4.0 * M_PI * dpos[XX] / SimPM->Range[XX]))
                * exp(-(dpos[YY] * dpos[YY]) / 4.0 / a / a);
     c->P[VZ] = 0.0;
-  } while ((c = gg->NextPt(c)) != 0);
+  } while ((c = gg->NextPt(*c)) != 0);
   // Data done.
 
   return err;
@@ -1069,7 +1070,7 @@ int IC_basic_tests::setup_LWImplosion()
   class cell *c = gg->FirstPt();
   std::array<double, MAX_DIM> dpos;
   do {
-    CI.get_dpos(c, dpos);
+    CI.get_dpos(*c, dpos);
     c->P[RO] = rho;
     c->P[PG] = pressure;
     c->P[VX] = 0.0;
@@ -1079,7 +1080,7 @@ int IC_basic_tests::setup_LWImplosion()
       c->P[RO] = 0.125;
       c->P[PG] = 0.140;
     }
-  } while ((c = gg->NextPt(c)) != 0);
+  } while ((c = gg->NextPt(*c)) != 0);
   return err;
 }
 

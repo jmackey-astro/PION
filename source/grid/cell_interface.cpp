@@ -70,9 +70,6 @@ cell_interface::cell_interface()
   // NG grid parameters
   //
   nlevels = 1;
-  n_idx.resize(1);
-  n_dxo2.resize(1);
-  n_dx.resize(1);
 
   if (sizeof(pion_flt) == sizeof(double)) {
     int_converter = ONE_PLUS_EPS;
@@ -97,34 +94,10 @@ cell_interface::cell_interface()
   //
   // index arrays initialise to zero.
   //
-  NTau   = 0;
-  iTau   = 0;
-  iDTau  = 0;
-  iVsh   = 0;
-  idS    = 0;
   iDivV  = 0;
   iGradP = 0;
   /// indices of Hcorrection values in extra_data [XX,YY,ZZ].
-  for (int v = 0; v < MAX_DIM; v++)
-    iHcorr[v] = 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-cell_interface::~cell_interface()
-{
-  if (using_RT > 0) {
-    NTau  = mem.myfree(NTau);
-    iTau  = mem.myfree(iTau);
-    iDTau = mem.myfree(iDTau);
-    iVsh  = mem.myfree(iVsh);
-    idS   = mem.myfree(idS);
-  }
+  fill(iHcorr.begin(), iHcorr.end(), 0);
 }
 
 
@@ -137,7 +110,6 @@ cell_interface::~cell_interface()
 void cell_interface::set_minimal_cell_data()
 {
   minimal_cell = true;
-  return;
 }
 
 
@@ -150,7 +122,6 @@ void cell_interface::set_minimal_cell_data()
 void cell_interface::unset_minimal_cell_data()
 {
   minimal_cell = false;
-  return;
 }
 
 
@@ -163,7 +134,6 @@ void cell_interface::unset_minimal_cell_data()
 void cell_interface::set_ndim(const int nd)
 {
   ndim = nd;
-  return;
 }
 
 
@@ -176,7 +146,6 @@ void cell_interface::set_ndim(const int nd)
 void cell_interface::set_nvar(const int nv)
 {
   nvar = nv;
-  return;
 }
 
 
@@ -188,9 +157,7 @@ void cell_interface::set_nvar(const int nv)
 
 void cell_interface::set_xmin(const std::array<double, MAX_DIM> &xm)
 {
-  for (int v = 0; v < ndim; v++) {
-    xmin[v] = xm[v];
-  }
+  copy(xm.begin(), xm.end(), xmin.begin());
 }
 
 
@@ -224,10 +191,7 @@ void cell_interface::setup_extra_data(
   //
   // Now add ray-tracing optical depth variable(s).
   //
-  if (rsi.Nsources <= 0) {
-    // do nothing because there is no raytracing.
-  }
-  else {
+  if (rsi.Nsources > 0) {
     //
     // A number of sources, each with a number of variables determined by
     // the source type.
@@ -242,13 +206,13 @@ void cell_interface::setup_extra_data(
     // - iVsh[s]:  index of Vshell variable in extra_data[] for s.
     // - idS[s]:   index of dS variable in extra_data[] for s.
     //
-    NTau  = mem.myalloc(NTau, rsi.Nsources);
-    iTau  = mem.myalloc(iTau, rsi.Nsources);
-    iDTau = mem.myalloc(iDTau, rsi.Nsources);
-    iVsh  = mem.myalloc(iVsh, rsi.Nsources);
-    idS   = mem.myalloc(idS, rsi.Nsources);
+    NTau.resize(rsi.Nsources);
+    iTau.resize(rsi.Nsources);
+    iDTau.resize(rsi.Nsources);
+    iVsh.resize(rsi.Nsources);
+    idS.resize(rsi.Nsources);
 
-    for (int s = 0; s < rsi.Nsources; s++) {
+    for (int s = 0; s < rsi.Nsources; ++s) {
       //
       // Number of quantities traced from source:
       //
@@ -261,10 +225,8 @@ void cell_interface::setup_extra_data(
       N_extra_data += NTau[s];
       iDTau[s] = N_extra_data;
       N_extra_data += NTau[s];
-      iVsh[s] = N_extra_data;
-      N_extra_data++;
-      idS[s] = N_extra_data;
-      N_extra_data++;
+      iVsh[s] = N_extra_data++;
+      idS[s]  = N_extra_data++;
     }  // loop over radiation sources.
     spdlog::debug("Adding RT: N={}", N_extra_data);
   }
@@ -280,8 +242,7 @@ void cell_interface::setup_extra_data(
           hc_flag);
 
     for (int v = 0; v < hc_flag; v++) {
-      iHcorr[v] = N_extra_data;
-      N_extra_data += 1;
+      iHcorr[v] = N_extra_data++;
     }
     spdlog::debug("Adding HCORR: N={}", N_extra_data);
   }
@@ -291,8 +252,7 @@ void cell_interface::setup_extra_data(
   //
   if (dv_flag) {
     using_DivV = dv_flag;
-    iDivV      = N_extra_data;
-    N_extra_data += 1;
+    iDivV      = N_extra_data++;
     spdlog::debug("Adding DIVV: N={}", N_extra_data);
   }
 
@@ -301,8 +261,7 @@ void cell_interface::setup_extra_data(
   //
   if (gp_flag) {
     using_GradP = dv_flag;
-    iGradP      = N_extra_data;
-    N_extra_data += 1;
+    iGradP      = N_extra_data++;
     spdlog::debug("Adding GRADP: N={}", N_extra_data);
   }
 
@@ -330,74 +289,12 @@ bool cell_interface::query_minimal_cells()
 
 
 
-#ifdef NEWGRIDDATA
-int cell_interface::get_Nel()
-{
-  if (!have_setup_extra_data)
-    spdlog::error(
-        "{}: {}", "Setup extra data before calling get_Nel", using_RT);
-  int n = 0;
-  n += nvar;  // P
-  if (!minimal_cell) n += 2 * nvar;
-  n += N_extra_data;
-  return n;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-unsigned int cell_interface::get_offset_P()
-{
-  return offset_P;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-unsigned int cell_interface::get_offset_Ph()
-{
-  return offset_Ph;
-}
-
-
-// ##################################################################
-// ##################################################################
-
-
-unsigned int cell_interface::get_offset_dU()
-{
-  return offset_dU;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-unsigned int cell_interface::get_offset_xd()
-{
-  return offset_xd;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-size_t cell_interface::set_cell_pointers(
-    cell *c,    ///< cell to add pointers to
-    double *d,  ///< data array
-    size_t ix   ///< index of first free element in array
+void cell_interface::set_cell_pointers(
+    cell &c,                    ///< cell to add pointers to
+    std::vector<double> &d_Ph,  ///< data array
+    size_t ix_Ph,               ///< index of first free element in array
+    std::vector<double> &d_xd,  ///< data array
+    size_t ix_xd                ///< index of first free element in array
 )
 {
   if (!have_setup_extra_data)
@@ -406,150 +303,37 @@ size_t cell_interface::set_cell_pointers(
   if (dxo2 < 0.0) spdlog::error("{}: {}", "Cell Interface: set dx", dxo2);
   if (ndim < 0) spdlog::error("{}: {}", "Cell Interface: set ndim", ndim);
   if (nvar < 0) spdlog::error("{}: {}", "Cell Interface: set nvar", nvar);
-  int offset = 0;
 
-  c->ngb                   = mem.myalloc(c->ngb, 2 * MAX_DIM);
-  c->pos                   = mem.myalloc(c->pos, ndim);
-  c->P                     = &(d[ix]);
-  cell_interface::offset_P = offset;
-  ix += nvar;
-  offset += nvar * sizeof(pion_flt);
+  c.pos.resize(ndim, 0);
 
-  for (int v = 0; v < ndim; v++)
-    c->pos[v] = 0;
-  for (int v = 0; v < nvar; v++)
-    c->P[v] = 0.0;
-  for (int v = 0; v < 2 * MAX_DIM; v++)
-    c->ngb[v] = 0;
-  c->npt      = 0;
-  c->npt_all  = 0;
-  c->isedge   = -999;
-  c->isbd     = false;
-  c->isgd     = false;
-  c->isdomain = false;
-  c->rt       = false;
-  c->timestep = false;
-  c->isbd_ref = mem.myalloc(c->isbd_ref, 2 * MAX_DIM);
-  for (int v = 0; v < 2 * MAX_DIM; v++)
-    c->isbd_ref[v] = false;
+  c.P.resize(nvar, 0.0);
+  fill(c.ngb.begin(), c.ngb.end(), nullptr);
+  c.npt      = 0;
+  c.npt_all  = 0;
+  c.isedge   = -999;
+  c.isbd     = false;
+  c.isgd     = true;
+  c.isdomain = false;
+  c.rt       = false;
+  c.timestep = false;
+
+  fill(c.isbd_ref.begin(), c.isbd_ref.end(), false);
 
   //
   // If we need all the [dU,Ph] arrays, initialise them, but if we have
   // set "minimal_cell" to true, then skip them to save memory in
   // analysis code.
   //
-  if (minimal_cell) {
-    c->Ph = 0;
-    c->dU = 0;
-  }
-  else {
-    c->Ph                     = &(d[ix]);
-    cell_interface::offset_Ph = offset;
-    offset += nvar * sizeof(pion_flt);
-    ix += nvar;
-    for (int v = 0; v < nvar; v++)
-      c->Ph[v] = 0.0;
-
-    c->dU                     = &(d[ix]);
-    cell_interface::offset_dU = offset;
-    offset += nvar * sizeof(pion_flt);
-    ix += nvar;
-    for (int v = 0; v < nvar; v++)
-      c->dU[v] = 0.0;
-  }
-  c->F.resize(ndim);
-  for (int i = 0; i < ndim; i++)
-    c->F[i] = 0;
-
-  if (N_extra_data >= 1) {
-    c->extra_data             = &(d[ix]);
-    cell_interface::offset_xd = offset;
-    offset += N_extra_data * sizeof(pion_flt);
-    ix += N_extra_data;
-    for (short unsigned int v = 0; v < N_extra_data; v++)
-      c->extra_data[v] = 0.0;
-  }
-  return ix;
-}
-#endif  // NEWGRIDDATA
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-cell *cell_interface::new_cell()
-{
-  if (!have_setup_extra_data)
-    spdlog::error(
-        "{}: {}", "Setup extra data before calling new_cell", using_RT);
-
-  //
-  // If this is the first cell we are assigning, make sure we have set
-  // dx/2 and the xmin pointer correctly.
-  //
-  if (dxo2 < 0.0) spdlog::error("{}: {}", "Cell Interface: set dx", dxo2);
-  if (ndim < 0) spdlog::error("{}: {}", "Cell Interface: set ndim", ndim);
-  if (nvar < 0) spdlog::error("{}: {}", "Cell Interface: set nvar", nvar);
-
-  cell *c = 0;
-  c       = mem.myalloc(c, 1);
-  c->pos  = 0;
-
-  //
-  // Allocate memory and initialise to zero.
-  //
-  c->P   = mem.myalloc(c->P, nvar);
-  c->ngb = mem.myalloc(c->ngb, 2 * MAX_DIM);
-  c->pos = mem.myalloc(c->pos, ndim);
-
-  for (int v = 0; v < ndim; v++)
-    c->pos[v] = 0;
-  for (int v = 0; v < nvar; v++)
-    c->P[v] = 0.0;
-  for (int v = 0; v < 2 * MAX_DIM; v++)
-    c->ngb[v] = 0;
-  c->npt      = 0;
-  c->npt_all  = 0;
-  c->id       = -9999;
-  c->isedge   = -999;
-  c->isbd     = false;
-  c->isgd     = false;
-  c->isdomain = false;
-  c->rt       = false;
-  c->timestep = false;
-  c->isbd_ref = mem.myalloc(c->isbd_ref, 2 * MAX_DIM);
-  for (int v = 0; v < 2 * MAX_DIM; v++)
-    c->isbd_ref[v] = false;
-
-  //
-  // If we need all the [dU,Ph] arrays, initialise them, but if we have
-  // set "minimal_cell" to true, then skip them to save memory in
-  // analysis code.
-  //
-  if (minimal_cell) {
-    c->Ph = 0;
-    c->dU = 0;
-  }
-  else {
-    c->Ph = mem.myalloc(c->Ph, nvar);
-    c->dU = mem.myalloc(c->dU, nvar);
-    for (int v = 0; v < nvar; v++)
-      c->Ph[v] = c->dU[v] = 0.0;
-  }
-  c->F.resize(ndim);
-  for (int i = 0; i < ndim; i++)
-    c->F[i] = 0;
-
-  if (N_extra_data >= 1) {
-    c->extra_data = mem.myalloc(c->extra_data, N_extra_data);
-    for (short unsigned int v = 0; v < N_extra_data; v++)
-      c->extra_data[v] = 0.0;
+  if (!minimal_cell) {
+    c.dU.resize(nvar, 0.0);
+    c.Ph = &(d_Ph[ix_Ph]);
+    fill(c.Ph, c.Ph + nvar, 0.0);
   }
 
-  return c;
+  if (N_extra_data > 0) {
+    c.extra_data = &(d_xd[ix_xd]);
+    fill(c.extra_data, c.extra_data + N_extra_data, 0.0);
+  }
 }
 
 
@@ -559,23 +343,11 @@ cell *cell_interface::new_cell()
 
 
 
-void cell_interface::delete_cell(cell *c)
+void cell_interface::delete_cell(cell &c)
 {
-  c->pos      = mem.myfree(c->pos);
-  c->P        = mem.myfree(c->P);
-  c->Ph       = mem.myfree(c->Ph);
-  c->dU       = mem.myfree(c->dU);
-  c->ngb      = mem.myfree(c->ngb);
-  c->isbd_ref = mem.myfree(c->isbd_ref);
+  c.Ph = mem.myfree(c.Ph);
 
-  for (int i = 0; i < ndim; i++) {
-    if (c->F[i]) c->F[i] = mem.myfree(c->F[i]);
-  }
-
-  if (N_extra_data >= 1) c->extra_data = mem.myfree(c->extra_data);
-
-  c = mem.myfree(c);
-  return;
+  if (N_extra_data >= 1) c.extra_data = mem.myfree(c.extra_data);
 }
 
 
@@ -586,7 +358,7 @@ void cell_interface::delete_cell(cell *c)
 
 
 void cell_interface::set_pos(
-    cell *c,  ///< pointer to cell
+    cell &c,  ///< pointer to cell
     const std::array<double, MAX_DIM>
         &p_in  ///< double array of size ndim, containing cell position.
 )
@@ -595,12 +367,11 @@ void cell_interface::set_pos(
   // Set position integer according to Xmin+i*DX/2=x
   //
   for (int v = 0; v < ndim; v++) {
-    c->pos[v] = static_cast<int>(int_converter * ((p_in[v] - xmin[v]) / dxo2));
+    c.pos[v] = static_cast<int>(int_converter * ((p_in[v] - xmin[v]) / dxo2));
   }
 #ifdef DEBUG
   spdlog::debug("int-pos from double : {}", c->pos);
 #endif
-  return;
 }
 
 
@@ -611,7 +382,7 @@ void cell_interface::set_pos(
 
 
 void cell_interface::set_pos(
-    cell *c,  ///< pointer to cell
+    cell &c,  ///< pointer to cell
     const std::array<int, MAX_DIM>
         &p_in  ///< integer array of size ndim, containing cell position.
 )
@@ -621,11 +392,7 @@ void cell_interface::set_pos(
   // This function assumes a clever person has set p_in to have these values!
   // If not, the code may fail catastrophically.
   //
-  for (int v = 0; v < ndim; v++) {
-    c->pos[v] = p_in[v];
-  }
-  //  rep.printVec("int-pos",c->pos,ndim);
-  return;
+  copy(p_in.begin(), p_in.end(), c.pos.begin());
 }
 
 
@@ -636,13 +403,12 @@ void cell_interface::set_pos(
 
 
 void cell_interface::get_dpos(
-    const cell *c,                      ///< pointer to cell
+    const cell &c,                      ///< pointer to cell
     std::array<double, MAX_DIM> &p_out  ///< array to write position into.
 )
 {
   for (int v = 0; v < ndim; v++)
-    p_out[v] = xmin[v] + c->pos[v] * dxo2;
-  return;
+    p_out[v] = xmin[v] + c.pos[v] * dxo2;
 }
 
 
@@ -653,11 +419,11 @@ void cell_interface::get_dpos(
 
 
 double cell_interface::get_dpos(
-    const cell *c,  ///< pointer to cell
+    const cell &c,  ///< pointer to cell
     const int v     ///< element of position vector we want
 )
 {
-  return xmin[v] + c->pos[v] * dxo2;
+  return xmin[v] + c.pos[v] * dxo2;
 }
 
 
@@ -668,13 +434,12 @@ double cell_interface::get_dpos(
 
 
 void cell_interface::get_ipos(
-    const cell *c,  ///< pointer to cell
+    const cell &c,  ///< pointer to cell
     int *ipos_out   ///< array to write integer position into.
 )
 {
   for (int v = 0; v < ndim; v++)
-    ipos_out[v] = c->pos[v];
-  return;
+    ipos_out[v] = c.pos[v];
 }
 
 
@@ -685,11 +450,11 @@ void cell_interface::get_ipos(
 
 
 int cell_interface::get_ipos(
-    const cell *c,  ///< pointer to cell
+    const cell &c,  ///< pointer to cell
     const int v     ///< element of position we want.
 )
 {
-  return c->pos[v];
+  return c.pos[v];
 }
 
 
@@ -763,35 +528,23 @@ void cell_interface::get_dpos_vec(
 
 
 
-void cell_interface::copy_cell(const cell *c1, cell *c2)
+void cell_interface::copy_cell(const cell &c1, cell &c2)
 {
-  for (int i = 0; i < ndim; i++)
-    c2->pos[i] = c1->pos[i];
-  for (int v = 0; v < nvar; v++)
-    c2->P[v] = c1->P[v];
-  for (int v = 0; v < nvar; v++)
-    c2->Ph[v] = c1->Ph[v];
-  for (int v = 0; v < nvar; v++)
-    c2->dU[v] = c1->dU[v];
-  for (int i = 0; i < ndim; i++) {
-    if (c1->F[i])
-      for (int v = 0; v < nvar; v++)
-        c2->F[i][v] = c1->F[i][v];
-  }
-  for (int i = 0; i < 2 * ndim; i++)
-    c2->ngb[i] = c1->ngb[i];
-  for (short unsigned int v = 0; v < N_extra_data; v++)
-    c2->extra_data[v] = c1->extra_data[v];
-  c2->npt      = c1->npt;
-  c2->npt_all  = c1->npt_all;
-  c2->id       = c1->id;
-  c2->isedge   = c1->isedge;
-  c2->isbd     = c1->isbd;
-  c2->isgd     = c1->isgd;
-  c2->isdomain = c1->isdomain;
-  for (int i = 0; i < 2 * ndim; i++)
-    c2->isbd_ref[i] = c1->isbd_ref[i];
-  return;
+  c2.pos = c1.pos;
+  c2.P   = c1.P;
+  c2.dU  = c1.dU;
+  copy(c2.Ph, c2.Ph + nvar, c1.Ph);
+  c2.F   = c1.F;
+  c2.ngb = c1.ngb;
+  copy(c1.extra_data, c1.extra_data + N_extra_data, c2.extra_data);
+  c2.npt      = c1.npt;
+  c2.npt_all  = c1.npt_all;
+  c2.id       = c1.id;
+  c2.isedge   = c1.isedge;
+  c2.isbd     = c1.isbd;
+  c2.isgd     = c1.isgd;
+  c2.isdomain = c1.isdomain;
+  c2.isbd_ref = c1.isbd_ref;
 }
 
 
@@ -801,48 +554,41 @@ void cell_interface::copy_cell(const cell *c1, cell *c2)
 
 
 
-void cell_interface::print_cell(const cell *c)
+void cell_interface::print_cell(const cell &c)
 {
-  if (c == 0) {
-    spdlog::warn("Null Pointer!");
-    return;
-  }
   spdlog::info(
       "cell:\t id = {}\tisedge: {}\tisbd: {}\tisgd: {}\tisdomain: {}\tisleaf: {}\ttimestep: {}\trt: {}",
-      c->id, c->isedge, c->isbd, c->isgd, c->isdomain, c->isleaf, c->timestep,
-      c->rt);
-  if (c->npt != 0)
-    spdlog::info("\tnpt[id]: {}", c->npt->id);
+      c.id, c.isedge, c.isbd, c.isgd, c.isdomain, c.isleaf, c.timestep, c.rt);
+  if (c.npt != 0)
+    spdlog::info("\tnpt[id]: {}", c.npt->id);
   else
     spdlog::info("\tnpt is not addressed (last point?)");
-  if (c->npt_all != 0)
-    spdlog::info("\tnpt_all[id]: {}", c->npt_all->id);
+  if (c.npt_all != 0)
+    spdlog::info("\tnpt_all[id]: {}", c.npt_all->id);
   else
     spdlog::warn("\tnpt_all is not addressed (last point?)");
   if (N_extra_data > 0) {
     spdlog::info(
         "extra_data[] : {}",
-        std::vector<double>(c->extra_data, c->extra_data + N_extra_data));
+        std::vector<double>(c.extra_data, c.extra_data + N_extra_data));
   }
-  spdlog::info("pos[] : {}", std::vector<double>(c->pos, c->pos + ndim));
+  spdlog::info("pos[] : {}", c.pos);
   std::array<double, MAX_DIM> p;
   get_dpos(c, p);
   spdlog::info("dpos[] : {}", p);
-  spdlog::info("P[]   : {}", std::vector<double>(c->P, c->P + nvar));
+  spdlog::info("P[]   : {}", c.P);
   if (!minimal_cell) {
-    spdlog::info("Ph[]  : {}", std::vector<double>(c->Ph, c->Ph + nvar));
-    spdlog::info("dU[]  : {}", std::vector<double>(c->dU, c->dU + nvar));
+    spdlog::info("Ph[]  : {}", std::vector<double>(c.Ph, c.Ph + nvar));
+    spdlog::info("dU[]  : {}", c.dU);
   }
   for (int i = 0; i < ndim; i++) {
-    if (c->F[i]) {
-      spdlog::info("F[i]  : {}", std::vector<double>(c->F[i], c->F[i] + nvar));
+    if (!c.F[i].empty()) {
+      spdlog::info("F[i]  : {}", c.F[i]);
     }
   }
-  // TODO spdlog::info("ngb[] : {}", std::vector<cell *>(c->ngb, c->ngb + 2 *
+  // TODO spdlog::info("ngb[] : {}", std::vector<cell *>(c.ngb, c.ngb + 2 *
   // ndim));
-  spdlog::info(
-      "isbd_ref[] : {}\n",
-      std::vector<int>(c->isbd_ref, c->isbd_ref + 2 * ndim));
+  spdlog::info("isbd_ref[] : {}\n", c.isbd_ref);
 }
 
 

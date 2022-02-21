@@ -327,7 +327,7 @@ int main(int argc, char **argv)
     do {
       for (int v = 0; v < SimPM.nvar; v++)
         c->Ph[v] = c->P[v];
-    } while ((c = grid->NextPt(c)) != 0);
+    } while ((c = grid->NextPt(*c)) != 0);
 
     spdlog::info("FINISHED reading first file: {}", firstfile);
 
@@ -353,8 +353,8 @@ int main(int argc, char **argv)
     //  }
     //} while ( (c=grid->NextPt(c))!=0);
     c = grid->FirstPt();
-    spdlog::debug("P : {}", std::vector<double>(c->P, c->P + SimPM.nvar));
-    spdlog::debug("Ph : {}", std::vector<double>(c->Ph, c->Ph + SimPM.nvar));
+    spdlog::debug("P : {}", c->P);
+    spdlog::debug("Ph : {}", fmt::ptr(c->Ph));
 
 
     // *********************************************************************
@@ -376,8 +376,8 @@ int main(int argc, char **argv)
       absdiff[v] = 0.0;
     std::vector<int> ipos(SimPM.ndim);
 
-    spdlog::debug("P : {}", std::vector<double>(c->P, c->P + SimPM.nvar));
-    spdlog::debug("Ph : {}", std::vector<double>(c->Ph, c->Ph + SimPM.nvar));
+    spdlog::debug("P : {}", c->P);
+    spdlog::debug("Ph : {}", fmt::ptr(c->Ph));
 
     switch (optype) {
       case 0:
@@ -385,7 +385,7 @@ int main(int argc, char **argv)
         // fabs(error)
         //
         do {
-          CI.get_ipos(c, ipos.data());
+          CI.get_ipos(*c, ipos.data());
           for (int v = 0; v < SimPM.nvar; v++) {
             temp = std::max(maxdiff[v], fabs(c->P[v] - c->Ph[v]));
             if (temp > maxdiff[v]) {
@@ -408,14 +408,14 @@ int main(int argc, char **argv)
             if (v == PG) c->P[v] = temp;  // relative differences in p_g
             c->P[v] = fabs(c->P[v]);
           }
-        } while ((c = grid->NextPt(c)) != 0);
+        } while ((c = grid->NextPt(*c)) != 0);
         break;
       case 1:
         //
         // not abs(diff) in the image
         //
         do {
-          CI.get_ipos(c, ipos.data());
+          CI.get_ipos(*c, ipos.data());
           for (int v = 0; v < SimPM.nvar; v++) {
             temp = std::max(maxdiff[v], fabs(c->P[v] - c->Ph[v]));
             if (temp > maxdiff[v]) {
@@ -437,7 +437,7 @@ int main(int argc, char **argv)
             if (v == RO) c->P[v] = temp;  // relative differences in rho
             if (v == PG) c->P[v] = temp;  // relative differences in p_g
           }
-        } while ((c = grid->NextPt(c)) != 0);
+        } while ((c = grid->NextPt(*c)) != 0);
         break;
       case 2:
         //
@@ -459,7 +459,7 @@ int main(int argc, char **argv)
             reldiff[v] += temp * temp;
             maxdiff[v] = std::max(maxdiff[v], temp);
           }
-        } while ((c = grid->NextPt(c)) != 0);
+        } while ((c = grid->NextPt(*c)) != 0);
         //
         // Now divide by N and take sqrt for L2
         //

@@ -536,7 +536,7 @@ int IC_photevap_multi_clumps::add_ambient_data_to_grid(
     // (PEC_xpos,PEC_ypos,PEC_zpos).
     //
     if (amb->radial_profile != 0) {
-      dist = gg->distance_vertex2cell(cloudcentre, c);
+      dist = gg->distance_vertex2cell(cloudcentre, *c);
       //
       // Following the Iliev et al 2009 test 6, we use rho=rho0(r0/r)^n if
       // r>r0 We also change the pressure so there is a constant
@@ -549,7 +549,7 @@ int IC_photevap_multi_clumps::add_ambient_data_to_grid(
     }
 
     if (amb->xscale == true) {
-      CI.get_dpos(c, dpos);
+      CI.get_dpos(*c, dpos);
       // scale factor:
       dist     = exp(-pow(
           fabs(dpos[XX] - amb->xscale_x0) / amb->xscale_l0, amb->xscale_alpha));
@@ -557,7 +557,7 @@ int IC_photevap_multi_clumps::add_ambient_data_to_grid(
       c->P[PG] = amb->ambient[PG] * dist;
     }
 
-  } while ((c = ggg->NextPt(c)) != 0);
+  } while ((c = ggg->NextPt(*c)) != 0);
 
   return err;
 }
@@ -585,14 +585,14 @@ int IC_photevap_multi_clumps::add_alternate_ambient_data_to_grid(
   //  int xmin=;
   do {
     // Set values of primitive variables.
-    if (CI.get_dpos(c, XX) < cutoff) {
+    if (CI.get_dpos(*c, XX) < cutoff) {
       for (int v = 0; v < SimPM->nvar; v++)
         c->P[v] = amb->ambient[v];
       // rep.printVec("P new",c->P,SimPM->nvar);
       // if (amb->radial_profile!=0) c->P[RO] *=
       // exp(amb->radial_profile*log((c->pos[XX]-xmin)
     }
-  } while ((c = ggg->NextPt(c)) != 0);
+  } while ((c = ggg->NextPt(*c)) != 0);
 
   return err;
 }
@@ -1003,8 +1003,8 @@ int IC_photevap_multi_clumps::add_random_clumps_to_grid(
 
   cell *c = ggg->FirstPt();
   do {
-    err += clumps_set_dens(c, rcd->Nclumps, rcd->cl, rcd->profile);
-  } while ((c = ggg->NextPt(c)) != 0);
+    err += clumps_set_dens(*c, rcd->Nclumps, rcd->cl, rcd->profile);
+  } while ((c = ggg->NextPt(*c)) != 0);
 
   //
   // Set tracer values, assuming all random clumps have the same tracer value,
@@ -1020,7 +1020,7 @@ int IC_photevap_multi_clumps::add_random_clumps_to_grid(
           (ambdens / c->P[RO]) * amb_data.ambient[v]
           + (1.0 - ambdens / c->P[RO]) * rcd->cl[0].tracer_vals[v - SimPM->ftr];
     }
-  } while ((c = ggg->NextPt(c)) != 0);
+  } while ((c = ggg->NextPt(*c)) != 0);
 
   spdlog::info("\tFinished adding random clumps to grid");
 
@@ -1265,9 +1265,9 @@ int IC_photevap_multi_clumps::add_strategic_clumps_to_grid(
 
   cell *c = ggg->FirstPt();
   do {
-    err += clumps_set_dens(c, scd->Nclumps, scd->cl, scd->profile);
+    err += clumps_set_dens(*c, scd->Nclumps, scd->cl, scd->profile);
 
-  } while ((c = ggg->NextPt(c)) != 0);
+  } while ((c = ggg->NextPt(*c)) != 0);
 
   spdlog::info("\tFinished adding strategic clumps to grid");
 
@@ -1289,7 +1289,7 @@ double IC_photevap_multi_clumps::random_frac()
 // ##################################################################
 
 int IC_photevap_multi_clumps::clumps_set_dens(
-    class cell *c, const int Nclumps, struct clump *cl, const int profile)
+    class cell &c, const int Nclumps, struct clump *cl, const int profile)
 {
   int err = 0;
   std::array<double, MAX_DIM> x0, x1, dpos;
@@ -1350,7 +1350,7 @@ int IC_photevap_multi_clumps::clumps_set_dens(
       //      inside=false;
       if (inside) {
         add_rho = ambdens * cl[j].overdensity;
-        c->P[RO] += add_rho;
+        c.P[RO] += add_rho;
       }
     }
     else if (profile == 1) {
@@ -1365,7 +1365,7 @@ int IC_photevap_multi_clumps::clumps_set_dens(
       for (int v = 0; v < ndim; v++)
         ef += x1[v] * x1[v] / cl[j].size[v] / cl[j].size[v] / 2.0;
       add_rho = ambdens * cl[j].overdensity * exp(-ef);
-      c->P[RO] += add_rho;
+      c.P[RO] += add_rho;
     }
     else
       spdlog::error("{}: {}", "Bad profile id in parameter-file", profile);
@@ -1387,11 +1387,11 @@ int IC_photevap_multi_clumps::clumps_set_dens(
     // tracer value appropriately.  Note this only works if all the
     // clumps have the same tracer value (and also for ambient data!).
     //
-    if (add_rho / c->P[RO] > 0.001) {
+    if (add_rho / c.P[RO] > 0.001) {
       for (int v = SimPM->ftr; v < SimPM->nvar; v++) {
-        c->P[v] =
+        c.P[v] =
             cl[j].tracer_vals[v - SimPM->ftr]
-            + ambdens / c->P[RO]
+            + ambdens / c.P[RO]
                   * (amb_data.ambient[v] - cl[j].tracer_vals[v - SimPM->ftr]);
       }
       //
@@ -1399,12 +1399,12 @@ int IC_photevap_multi_clumps::clumps_set_dens(
       // varying from the max value at the centre to the ambient value
       // near the edge.
       //
-      c->P[VX] = cl[j].Vel[0]
-                 + ambdens / c->P[RO] * (amb_data.ambient[VX] - cl[j].Vel[0]);
-      c->P[VY] = cl[j].Vel[1]
-                 + ambdens / c->P[RO] * (amb_data.ambient[VY] - cl[j].Vel[1]);
-      c->P[VZ] = cl[j].Vel[2]
-                 + ambdens / c->P[RO] * (amb_data.ambient[VZ] - cl[j].Vel[2]);
+      c.P[VX] = cl[j].Vel[0]
+                + ambdens / c.P[RO] * (amb_data.ambient[VX] - cl[j].Vel[0]);
+      c.P[VY] = cl[j].Vel[1]
+                + ambdens / c.P[RO] * (amb_data.ambient[VY] - cl[j].Vel[1]);
+      c.P[VZ] = cl[j].Vel[2]
+                + ambdens / c.P[RO] * (amb_data.ambient[VZ] - cl[j].Vel[2]);
     }
 
     //

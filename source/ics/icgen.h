@@ -402,7 +402,7 @@ protected:
   int clumps_random_setup_pllel_fixedmass();  ///< setup clumps in parallel
                                               ///< (fixed total mass).
 #endif                                        // PARALLEL
-  int clumps_random_set_dens(cell *           ///< cell to operate on.
+  int clumps_random_set_dens(cell &           ///< cell to operate on.
   );
   void print_clump(struct clump *);
   double
@@ -505,7 +505,7 @@ protected:
   double random_frac();
   void print_clump(struct clump *);
   int clumps_set_dens(
-      class cell *,    ///< cell to operate on.
+      class cell &,    ///< cell to operate on.
       const int,       ///< number of clumps (length of clump array following)
       struct clump *,  ///< pointer to list of clump structs.
       const int        ///< clump profile.

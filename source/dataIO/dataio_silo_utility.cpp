@@ -132,7 +132,7 @@ int dataio_silo_utility::SRAD_get_nproc_numfiles(string fname, int *np, int *nf)
 // ##################################################################
 
 bool dataio_silo_utility::SRAD_point_on_my_domain(
-    const cell *c,            ///< pointer to cell
+    const cell &c,            ///< pointer to cell
     class SimParams &SimPM,   ///< pointer to simulation parameters
     class Sub_domain *filePM  ///< pointer to class with nproc.
 )
@@ -233,7 +233,7 @@ int dataio_silo_utility::SRAD_read_var2grid(
     cell *c     = ggg->FirstPt();
     long int ct = 0;
     do {
-      if (SRAD_point_on_my_domain(c, SimPM, filePM)) {
+      if (SRAD_point_on_my_domain(*c, SimPM, filePM)) {
         //      cout <<"ct="<<ct<<"\t and ncell="<<npt<<"\n";
         if (silo_dtype == DB_FLOAT) {
           c->P[v1] = fdata[0][ct];
@@ -257,7 +257,7 @@ int dataio_silo_utility::SRAD_read_var2grid(
         }
 #endif
       }
-    } while ((c = ggg->NextPt(c)) != 0);
+    } while ((c = ggg->NextPt(*c)) != 0);
     if (ct != npt)
       spdlog::error(
           "{}: {}", "wrong number of points read for vector variable",
@@ -314,8 +314,8 @@ int dataio_silo_utility::SRAD_read_var2grid(
     cell *start              = ggg->FirstPt();
     long int ct              = 0;
     for (int i = 0; i < SimPM.ndim; i++) {
-      while (CI.get_dpos(start, i) < filePM->get_Xmin(i))
-        start = ggg->NextPt(start, posdir[i]);
+      while (CI.get_dpos(*start, i) < filePM->get_Xmin(i))
+        start = ggg->NextPt(*start, posdir[i]);
     }
     //
     // Now use NG for-loops to only go through cells in the local domain.
@@ -331,7 +331,7 @@ int dataio_silo_utility::SRAD_read_var2grid(
       for (int j = 0; j < filePM->get_directional_Ncells(YY); j++) {
         cx = cy;
         for (int i = 0; i < filePM->get_directional_Ncells(XX); i++) {
-          if (!SRAD_point_on_my_domain(cx, SimPM, filePM))
+          if (!SRAD_point_on_my_domain(*cx, SimPM, filePM))
             spdlog::error(
                 "{}: {}", "FAST READ IS IN THE WRONG PLACE!!!", cx->pos[XX]);
           if (silo_dtype == DB_FLOAT) {
@@ -349,11 +349,11 @@ int dataio_silo_utility::SRAD_read_var2grid(
           }
 #endif
           ct++;
-          cx = ggg->NextPt(cx, posdir[XX]);
+          cx = ggg->NextPt(*cx, posdir[XX]);
         }
-        if (SimPM.ndim > 1) cy = ggg->NextPt(cy, posdir[YY]);
+        if (SimPM.ndim > 1) cy = ggg->NextPt(*cy, posdir[YY]);
       }
-      if (SimPM.ndim > 2) cz = ggg->NextPt(cz, posdir[ZZ]);
+      if (SimPM.ndim > 2) cz = ggg->NextPt(*cz, posdir[ZZ]);
     }
     if (ct != npt) {
       spdlog::error(
@@ -1217,7 +1217,7 @@ int dataio_silo_utility::PP_read_var2grid(
     enum direction posdir = static_cast<direction>(2 * v + 1);
 
     while (c != 0 && c->pos[v] < iXmin[v]) {
-      c = ggg->NextPt(c, posdir);
+      c = ggg->NextPt(*c, posdir);
     }
     if (!c) {
       spdlog::error(
@@ -1309,7 +1309,7 @@ int dataio_silo_utility::PP_read_var2grid(
         }
 #endif
 
-        cx = ggg->NextPt(cx, XP);
+        cx = ggg->NextPt(*cx, XP);
         qv_index++;
         qm_ix[XX]++;
         ct++;
@@ -1321,7 +1321,7 @@ int dataio_silo_utility::PP_read_var2grid(
         // it is on the mesh domain.  Also increment qm_ix[YY] to
         // indicate this.
         //
-        cy = ggg->NextPt(cy, YP);
+        cy = ggg->NextPt(*cy, YP);
         if (cy != 0 && cy->pos[YY] > iXmax[YY]) cy = 0;
         qm_ix[YY]++;
       }
@@ -1340,7 +1340,7 @@ int dataio_silo_utility::PP_read_var2grid(
       // if it is on the mesh domain.  Also increment the qm_ix[ZZ]
       // counter.
       //
-      cz = ggg->NextPt(cz, ZP);
+      cz = ggg->NextPt(*cz, ZP);
       if (cz != 0 && cz->pos[ZZ] > iXmax[ZZ]) cz = 0;
       qm_ix[ZZ]++;
     }

@@ -428,16 +428,16 @@ int NG_BC89flux::add_cells_to_face(
   if (par.ndim == 1) {
     if (d == XN) {
       while (c->pos[XX] < ixmin[XX] - idx)
-        c = grid->NextPt(c, XP);
+        c = grid->NextPt(*c, XP);
     }
     else if (d == XP) {
       while (c->pos[XX] < ixmax[XX])
-        c = grid->NextPt(c, XP);
+        c = grid->NextPt(*c, XP);
     }
-    flux.fi[0]->c[0]    = c;
-    c->F[a]             = mem.myalloc(c->F[a], par.nvar);
+    flux.fi[0]->c[0] = c;
+    c->F[a].resize(par.nvar);
     c->isbd_ref[d]      = true;
-    flux.fi[0]->area[0] = grid->CellInterface(c, grid->OppDir(d), 0);
+    flux.fi[0]->area[0] = grid->CellInterface(*c, grid->OppDir(d), 0);
   }  // 1D
 
   else if (par.ndim == 2) {
@@ -450,33 +450,33 @@ int NG_BC89flux::add_cells_to_face(
     switch (d) {
       case XN:
         while (c->pos[XX] < ixmin[XX] - idx)
-          c = grid->NextPt(c, XP);
+          c = grid->NextPt(*c, XP);
         while (c->pos[YY] < ixmin[YY])
-          c = grid->NextPt(c, YP);
+          c = grid->NextPt(*c, YP);
         perpdir  = YP;
         perpaxis = YY;
         break;
       case XP:
         while (c->pos[XX] < ixmax[XX])
-          c = grid->NextPt(c, XP);
+          c = grid->NextPt(*c, XP);
         while (c->pos[YY] < ixmin[YY])
-          c = grid->NextPt(c, YP);
+          c = grid->NextPt(*c, YP);
         perpdir  = YP;
         perpaxis = YY;
         break;
       case YN:
         while (c->pos[XX] < ixmin[XX])
-          c = grid->NextPt(c, XP);
+          c = grid->NextPt(*c, XP);
         while (c->pos[YY] < ixmin[YY] - idx)
-          c = grid->NextPt(c, YP);
+          c = grid->NextPt(*c, YP);
         perpdir  = XP;
         perpaxis = XX;
         break;
       case YP:
         while (c->pos[XX] < ixmin[XX])
-          c = grid->NextPt(c, XP);
+          c = grid->NextPt(*c, XP);
         while (c->pos[YY] < ixmax[YY])
-          c = grid->NextPt(c, YP);
+          c = grid->NextPt(*c, YP);
         perpdir  = XP;
         perpaxis = XX;
         break;
@@ -525,16 +525,16 @@ int NG_BC89flux::add_cells_to_face(
         if (!c)
           spdlog::error(
               "{}: {}", "Cell is null in BC89 add_cells", fmt::ptr(c));
-        flux.fi[i]->c[ic]    = c;
-        c->F[a]              = mem.myalloc(c->F[a], par.nvar);
+        flux.fi[i]->c[ic] = c;
+        c->F[a].resize(par.nvar);
         c->isbd_ref[d]       = true;
-        flux.fi[i]->area[ic] = grid->CellInterface(c, grid->OppDir(d), 0);
+        flux.fi[i]->area[ic] = grid->CellInterface(*c, grid->OppDir(d), 0);
 #ifdef TEST_BC89FLUX
         // cout <<"area["<<ic<<"] = "<<flux.fi[i]->area[ic]<<": adding
         // cell: "; rep.printVec("pos",c->pos,par.ndim);
         // CI.print_cell(c);
 #endif
-        c = grid->NextPt(c, perpdir);
+        c = grid->NextPt(*c, perpdir);
       }
     }
   }  // 2D
@@ -548,11 +548,11 @@ int NG_BC89flux::add_cells_to_face(
     switch (d) {
       case XN:
         while (c->pos[XX] < ixmin[XX] - idx)
-          c = grid->NextPt(c, XP);
+          c = grid->NextPt(*c, XP);
         while (c->pos[YY] < ixmin[YY])
-          c = grid->NextPt(c, YP);
+          c = grid->NextPt(*c, YP);
         while (c->pos[ZZ] < ixmin[ZZ])
-          c = grid->NextPt(c, ZP);
+          c = grid->NextPt(*c, ZP);
         perpdir1  = YP;
         perpdir2  = ZP;
         perpaxis1 = YY;
@@ -560,11 +560,11 @@ int NG_BC89flux::add_cells_to_face(
         break;
       case XP:
         while (c->pos[XX] < ixmax[XX])
-          c = grid->NextPt(c, XP);
+          c = grid->NextPt(*c, XP);
         while (c->pos[YY] < ixmin[YY])
-          c = grid->NextPt(c, YP);
+          c = grid->NextPt(*c, YP);
         while (c->pos[ZZ] < ixmin[ZZ])
-          c = grid->NextPt(c, ZP);
+          c = grid->NextPt(*c, ZP);
         perpdir1  = YP;
         perpdir2  = ZP;
         perpaxis1 = YY;
@@ -572,11 +572,11 @@ int NG_BC89flux::add_cells_to_face(
         break;
       case YN:
         while (c->pos[XX] < ixmin[XX])
-          c = grid->NextPt(c, XP);
+          c = grid->NextPt(*c, XP);
         while (c->pos[YY] < ixmin[YY] - idx)
-          c = grid->NextPt(c, YP);
+          c = grid->NextPt(*c, YP);
         while (c->pos[ZZ] < ixmin[ZZ])
-          c = grid->NextPt(c, ZP);
+          c = grid->NextPt(*c, ZP);
         perpdir1  = XP;
         perpdir2  = ZP;
         perpaxis1 = XX;
@@ -584,11 +584,11 @@ int NG_BC89flux::add_cells_to_face(
         break;
       case YP:
         while (c->pos[XX] < ixmin[XX])
-          c = grid->NextPt(c, XP);
+          c = grid->NextPt(*c, XP);
         while (c->pos[YY] < ixmax[YY])
-          c = grid->NextPt(c, YP);
+          c = grid->NextPt(*c, YP);
         while (c->pos[ZZ] < ixmin[ZZ])
-          c = grid->NextPt(c, ZP);
+          c = grid->NextPt(*c, ZP);
         perpdir1  = XP;
         perpdir2  = ZP;
         perpaxis1 = XX;
@@ -596,11 +596,11 @@ int NG_BC89flux::add_cells_to_face(
         break;
       case ZN:
         while (c->pos[XX] < ixmin[XX])
-          c = grid->NextPt(c, XP);
+          c = grid->NextPt(*c, XP);
         while (c->pos[YY] < ixmin[YY])
-          c = grid->NextPt(c, YP);
+          c = grid->NextPt(*c, YP);
         while (c->pos[ZZ] < ixmin[ZZ] - idx)
-          c = grid->NextPt(c, ZP);
+          c = grid->NextPt(*c, ZP);
         perpdir1  = XP;
         perpdir2  = YP;
         perpaxis1 = XX;
@@ -608,11 +608,11 @@ int NG_BC89flux::add_cells_to_face(
         break;
       case ZP:
         while (c->pos[XX] < ixmin[XX])
-          c = grid->NextPt(c, XP);
+          c = grid->NextPt(*c, XP);
         while (c->pos[YY] < ixmin[YY])
-          c = grid->NextPt(c, YP);
+          c = grid->NextPt(*c, YP);
         while (c->pos[ZZ] < ixmax[ZZ])
-          c = grid->NextPt(c, ZP);
+          c = grid->NextPt(*c, ZP);
         perpdir1  = XP;
         perpdir2  = YP;
         perpaxis1 = XX;
@@ -657,72 +657,62 @@ int NG_BC89flux::add_cells_to_face(
           // CI.print_cell(c); cout.flush();
 #endif
           flux.fi[i * nface[perpaxis1] + j]->c[0] = c;
-          c->F[a] = mem.myalloc(c->F[a], par.nvar);
-          for (int v = 0; v < par.nvar; v++)
-            c->F[a][v] = 0.0;
+          c->F[a].resize(par.nvar, 0.0);
           c->isbd_ref[d] = true;
           flux.fi[i * nface[perpaxis1] + j]->area[0] =
-              grid->CellInterface(c, grid->OppDir(d), 0);
+              grid->CellInterface(*c, grid->OppDir(d), 0);
         }
         else {
           // need to get 4 cells onto this face.
 
           flux.fi[i * nface[perpaxis1] + j]->c[0] = c;
-          c->F[a] = mem.myalloc(c->F[a], par.nvar);
-          for (int v = 0; v < par.nvar; v++)
-            c->F[a][v] = 0.0;
+          c->F[a].resize(par.nvar, 0.0);
           c->isbd_ref[d] = true;
           flux.fi[i * nface[perpaxis1] + j]->area[0] =
-              grid->CellInterface(c, grid->OppDir(d), 0);
+              grid->CellInterface(*c, grid->OppDir(d), 0);
 #ifdef TEST_BC89FLUX
           // cout <<"c1="<<c->id<<" ";
           // rep.printVec("pos",c->pos,par.ndim);
 #endif
 
-          m2                                      = grid->NextPt(c, perpdir1);
+          m2                                      = grid->NextPt(*c, perpdir1);
           flux.fi[i * nface[perpaxis1] + j]->c[1] = m2;
-          m2->F[a] = mem.myalloc(m2->F[a], par.nvar);
-          for (int v = 0; v < par.nvar; v++)
-            m2->F[a][v] = 0.0;
+          m2->F[a].resize(par.nvar, 0.0);
           m2->isbd_ref[d] = true;
           flux.fi[i * nface[perpaxis1] + j]->area[1] =
-              grid->CellInterface(m2, grid->OppDir(d), 0);
+              grid->CellInterface(*m2, grid->OppDir(d), 0);
 #ifdef TEST_BC89FLUX
           // cout <<"c2="<<m2->id<<" ";
           // rep.printVec("pos",m2->pos,par.ndim);
 #endif
 
-          m2                                      = grid->NextPt(c, perpdir2);
+          m2                                      = grid->NextPt(*c, perpdir2);
           flux.fi[i * nface[perpaxis1] + j]->c[2] = m2;
-          m2->F[a] = mem.myalloc(m2->F[a], par.nvar);
-          for (int v = 0; v < par.nvar; v++)
-            m2->F[a][v] = 0.0;
+          m2->F[a].resize(par.nvar, 0.0);
           m2->isbd_ref[d] = true;
           flux.fi[i * nface[perpaxis1] + j]->area[2] =
-              grid->CellInterface(m2, grid->OppDir(d), 0);
+              grid->CellInterface(*m2, grid->OppDir(d), 0);
 #ifdef TEST_BC89FLUX
           // cout <<"c3="<<m2->id<<" ";
           // rep.printVec("pos",m2->pos,par.ndim);
 #endif
 
-          m2                                      = grid->NextPt(m2, perpdir1);
+          m2                                      = grid->NextPt(*m2, perpdir1);
           flux.fi[i * nface[perpaxis1] + j]->c[3] = m2;
-          m2->F[a] = mem.myalloc(m2->F[a], par.nvar);
-          for (int v = 0; v < par.nvar; v++)
-            m2->F[a][v] = 0.0;
+          m2->F[a].resize(par.nvar, 0.0);
           m2->isbd_ref[d] = true;
           flux.fi[i * nface[perpaxis1] + j]->area[3] =
-              grid->CellInterface(m2, grid->OppDir(d), 0);
+              grid->CellInterface(*m2, grid->OppDir(d), 0);
 #ifdef TEST_BC89FLUX
           // cout <<"c4="<<m2->id<<" ";
           // rep.printVec("pos",m2->pos,par.ndim);
 #endif
         }
         for (int ic = 0; ic < ncell; ic++)
-          c = grid->NextPt(c, perpdir1);
+          c = grid->NextPt(*c, perpdir1);
       }
       for (int ic = 0; ic < ncell; ic++)
-        marker = grid->NextPt(marker, perpdir2);
+        marker = grid->NextPt(*marker, perpdir2);
       c = marker;
     }
   }  // 3D
@@ -779,7 +769,7 @@ void NG_BC89flux::save_fine_fluxes(
           fi->flux[v] = 0.0;
       }
       for (int i = 0; i < flux_update_send[l][d].Ncells; i++) {
-        if (!fi->c[i]->F[a])
+        if (fi->c[i]->F[a].empty())
           spdlog::error("{}: {}", "fine flux is not allocated!", f);
           // Add cell flux to the full flux for this face over 2
           // steps.
@@ -843,7 +833,7 @@ void NG_BC89flux::save_coarse_fluxes(
         continue;
       else if (fi == 0)
         spdlog::error("{}: {}", "save_fine_fluxes fi=0", d);
-      if (!fi->c[0]->F[a])
+      if (fi->c[0]->F[a].empty())
         spdlog::error("{}: {}", "coarse flux is not allocated!", f);
 
         // set face flux to be the negative of the intercell flux
@@ -976,11 +966,11 @@ int NG_BC89flux::recv_BC89_flux_boundary(
     // The other face of the cell is set to zero flux.
     if (d % 2 == 0) {
       spatial_solver->DivStateVectorComponent(
-          fc->c[0], grid, ax, par.nvar, ftmp.data(), fc->flux, utmp.data());
+          *fc->c[0], grid, ax, par.nvar, ftmp.data(), fc->flux, utmp.data());
     }
     else {
       spatial_solver->DivStateVectorComponent(
-          fc->c[0], grid, ax, par.nvar, fc->flux, ftmp.data(), utmp.data());
+          *fc->c[0], grid, ax, par.nvar, fc->flux, ftmp.data(), utmp.data());
     }
     for (int v = 0; v < par.nvar; v++)
       fc->c[0]->dU[v] += utmp[v];

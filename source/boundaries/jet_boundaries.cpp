@@ -114,7 +114,7 @@ int jet_bc::BC_assign_JETBC(
       c = grid->FirstPt();
       do {
         temp = c;
-        while ((temp = grid->NextPt(temp, XN)) != 0) {
+        while ((temp = grid->NextPt(*temp, XN)) != 0) {
           for (int v = 0; v < par.nvar; v++)
             temp->P[v] = b->refval[v];
           for (int v = 0; v < par.nvar; v++)
@@ -131,7 +131,7 @@ int jet_bc::BC_assign_JETBC(
           temp->Ph[VX] = temp->P[VX];
 #endif  // SOFTJET
 #ifdef JETPROFILE
-          double r     = fabs(CI.get_dpos(temp, YY));
+          double r     = fabs(CI.get_dpos(*temp, YY));
           double rm    = 0.9 * jr;
           double B_phi = b->refval[BZ];
           double p0    = b->refval[PG];
@@ -170,7 +170,7 @@ int jet_bc::BC_assign_JETBC(
           }
         }
         ct++;
-      } while ((c = grid->NextPt(c, YP)) && ct < JP.jetradius);
+      } while ((c = grid->NextPt(*c, YP)) && ct < JP.jetradius);
       if (ct != JP.jetradius) {
         spdlog::error("{}: {}", "Not enough cells for jet", ct);
       }
@@ -191,15 +191,15 @@ int jet_bc::BC_assign_JETBC(
         cy = c;
         do {  // loop over YY axis
           dist = sqrt(
-              CI.get_dpos(cy, YY) * CI.get_dpos(cy, YY)
-              + CI.get_dpos(cy, ZZ) * CI.get_dpos(cy, ZZ));
+              CI.get_dpos(*cy, YY) * CI.get_dpos(*cy, YY)
+              + CI.get_dpos(*cy, ZZ) * CI.get_dpos(*cy, ZZ));
           //
           // if dist <= jr, then we are within the jet inflow, and we
           // add the cells to the boundary.
           //
           if (dist <= jr) {
             temp = cy;
-            while ((temp = grid->NextPt(temp, XN)) != 0) {
+            while ((temp = grid->NextPt(*temp, XN)) != 0) {
               for (int v = 0; v < par.nvar; v++)
                 temp->P[v] = b->refval[v];
               for (int v = 0; v < par.nvar; v++)
@@ -219,11 +219,11 @@ int jet_bc::BC_assign_JETBC(
                     fmt::ptr(temp));
               }
             }
-          }                                     // if within jet radius
-        } while ((cy = grid->NextPt(cy, YP)));  // through cells on YY axis.
-      } while ((c = grid->NextPt(c, ZP)));      // through cells on ZZ axis.
-                                                //      BC_printBCdata(b);
-    }                                           // 3D Cartesian
+          }                                      // if within jet radius
+        } while ((cy = grid->NextPt(*cy, YP)));  // through cells on YY axis.
+      } while ((c = grid->NextPt(*c, ZP)));      // through cells on ZZ axis.
+                                                 //      BC_printBCdata(b);
+    }                                            // 3D Cartesian
 
     else {
       spdlog::error(

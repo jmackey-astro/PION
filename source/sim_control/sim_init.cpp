@@ -217,7 +217,7 @@ int sim_init::Init(
   do {
     for (int v = 0; v < SimPM.nvar; v++)
       c->Ph[v] = c->P[v];
-  } while ((c = grid[0]->NextPt(c)) != 0);
+  } while ((c = grid[0]->NextPt(*c)) != 0);
 
   //
   // If I'm using the GLM method, make sure Psi variable is
@@ -230,7 +230,7 @@ int sim_init::Init(
     c = grid[0]->FirstPt();
     do {
       c->P[SI] = c->Ph[SI] = 0.;
-    } while ((c = grid[0]->NextPt(c)) != 0);
+    } while ((c = grid[0]->NextPt(*c)) != 0);
   }
 
   //
@@ -341,9 +341,9 @@ int sim_init::Init(
   do {
     if (pconst.equalD(c->P[RO], 0.0)) {
       cout << "zero data in cell: ";
-      CI.print_cell(c);
+      CI.print_cell(*c);
     }
-  } while ((c = (grid[0])->NextPt_All(c)) != 0);
+  } while ((c = (grid[0])->NextPt_All(*c)) != 0);
 #endif  // NDEBUG
 
   return (0);
@@ -914,7 +914,7 @@ int sim_init::initial_conserved_quantities(class GridBaseClass *grid)
       initMMZ += u[MMZ] * dv;
       initMASS += u[RHO] * dv;
     }
-  } while ((cpt = grid->NextPt(cpt)) != 0);
+  } while ((cpt = grid->NextPt(*cpt)) != 0);
   spdlog::debug(
       "(sim_init::InitialconservedQuantities) [{}, {}, {}, {}, {}]\n", initERG,
       initMMX, initMMY, initMMZ, initMASS);

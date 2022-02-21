@@ -185,7 +185,7 @@ int IC_laser_ablation::setup_LaserAblationAxi()
   class cell *c = gg->FirstPt();
   std::array<double, MAX_DIM> pos;
   do {
-    CI.get_dpos(c, pos);
+    CI.get_dpos(*c, pos);
     if (pos[XX] < 0.0025 && pos[YY] < 0.04) {
       c->P[RO] = r0;
       c->P[PG] = p0;
@@ -229,7 +229,7 @@ int IC_laser_ablation::setup_LaserAblationAxi()
         c->P[SimPM->ftr + i] = 0.0;
     }
     // done.
-  } while ((c = gg->NextPt(c)) != 0);
+  } while ((c = gg->NextPt(*c)) != 0);
 
   // c = gg->FirstPt();
   // for (int v=0;v<40;v++) {

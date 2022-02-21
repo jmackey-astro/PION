@@ -75,8 +75,8 @@ public:
   /// calculate Powell and GLM source terms for multi-D MHD
   virtual int MHDsource(
       class GridBaseClass *,  ///< pointer to grid.
-      class cell *,           ///< pointer to cell of left state
-      class cell *,           ///< pointer to cell of right state
+      class cell &,           ///< pointer to cell of left state
+      class cell &,           ///< pointer to cell of right state
       pion_flt *,             ///< left edge state
       pion_flt *,             ///< right edge state
       const axes,             ///< Which axis we are looking along.
@@ -111,7 +111,7 @@ public:
   /// calculated left and right edge states at the boundary.
   ///
   void set_Hcorrection(
-      cell *,            ///< cell to assign eta value to.
+      cell &,            ///< cell to assign eta value to.
       const axes,        ///< axis we are looking along
       const pion_flt *,  ///< left state (from current cell).
       const pion_flt *,  ///< right state (from next cell).
@@ -124,8 +124,8 @@ public:
   int InterCellFlux(
       class SimParams &,          ///< simulation parameters
       class GridBaseClass *grid,  ///< pointer to grid
-      class cell *,               ///< Left state cell pointer
-      class cell *,               ///< Right state cell pointer
+      class cell &,               ///< Left state cell pointer
+      class cell &,               ///< Right state cell pointer
       pion_flt *,                 ///< Left Primitive State Vector.
       pion_flt *,                 ///< Right Primitive State Vector.
       pion_flt *,                 ///< Flux Vector. (written to).
@@ -140,8 +140,8 @@ public:
       class SimParams &,      ///< simulation parameters
       class GridBaseClass *,  ///<  pointer to grid
       const double,           ///< cell-size dx (for LF method)
-      class cell *,           ///< Left state cell pointer
-      class cell *,           ///< Right state cell pointer
+      class cell &,           ///< Left state cell pointer
+      class cell &,           ///< Right state cell pointer
       const pion_flt *,       ///< Left Primitive state vector.
       const pion_flt *,       ///< Right Primitive state vector.
       pion_flt *,             ///< Resultant Flux state vector.
@@ -153,7 +153,7 @@ public:
   /// Adds the contribution from flux in the current direction to dU.
   virtual int dU_Cell(
       class GridBaseClass *grid,
-      cell *,            ///< Current cell.
+      cell &,            ///< Current cell.
       const axes,        ///< Which axis we are looking along.
       const pion_flt *,  ///< Negative direction flux.
       const pion_flt *,  ///< Positive direction flux.
@@ -167,7 +167,7 @@ public:
   /// primitive state vector, for homogeneous equations.
   ///
   virtual int CellAdvanceTime(
-      class cell *,      ///< cell to update.
+      class cell &,      ///< cell to update.
       const pion_flt *,  ///< Initial Primitive State Vector.
       pion_flt *,        ///< Update vector dU
       pion_flt *,    ///< Final Primitive state vector (can be same as initial
@@ -181,7 +181,7 @@ public:
 
   /// \brief Given a cell, calculate the hydrodynamic timestep.
   virtual double CellTimeStep(
-      const cell *,  ///< pointer to cell
+      const cell &,  ///< pointer to cell
       const double,  ///< gas EOS gamma.
       const double   ///< Cell size dx.
       ) = 0;
@@ -256,8 +256,8 @@ protected:
   ///
   void pre_calc_viscous_terms(
       class GridBaseClass *,  ///< pointer to computational grid.
-      const cell *,           ///< left-of-interface cell
-      const cell *,           ///< right-of-interface cell
+      const cell &,           ///< left-of-interface cell
+      const cell &,           ///< right-of-interface cell
       const int               ///< What kind of AV?
   );
 
@@ -267,8 +267,8 @@ protected:
   /// H-correction, but everything for FKJ98 and LAPIDUS viscosities.
   ///
   void post_calc_viscous_terms(
-      const cell *,      ///< left-of-interface cell
-      const cell *,      ///< right-of-interface cell
+      const cell &,      ///< left-of-interface cell
+      const cell &,      ///< right-of-interface cell
       const pion_flt *,  ///< left state Prim.vec. (Pl)
       const pion_flt *,  ///< right state Prim.vec. (Pr)
       const pion_flt *,  ///< interface state Prim.vec. (P*)
@@ -282,8 +282,8 @@ protected:
   /// (1998,JCP,14,511).  Uses Eq. 16 and Fig. 9 from paper.
   ///
   double select_Hcorr_eta(
-      const cell *,          ///< cell to left of interface
-      const cell *,          ///< cell to right of interface
+      const cell &,          ///< cell to left of interface
+      const cell &,          ///< cell to right of interface
       class GridBaseClass *  ///< pointer to computational grid.
   );
 

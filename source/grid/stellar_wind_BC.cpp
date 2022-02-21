@@ -213,7 +213,7 @@ int stellar_wind::Nsources()
 int stellar_wind::add_cell(
     class GridBaseClass *grid,
     const int id,  ///< src id
-    cell *c        ///< cell to add to list.
+    cell &c        ///< cell to add to list.
 )
 {
   if (id < 0 || id >= nsrc) spdlog::error("{}: {}", "bad src id", id);
@@ -242,13 +242,13 @@ int stellar_wind::add_cell(
   // Now set wc cell pointer to this one.  Also set c->isbd to indicate
   // that it is now boundary data (while also grid data).
   //
-  c->isbd     = true;
-  c->isdomain = false;
+  c.isbd     = true;
+  c.isdomain = false;
   if (wc->dist < 0.8 * WP->radius)
-    c->timestep = false;
+    c.timestep = false;
   else
-    c->timestep = true;
-  wc->c = c;
+    c.timestep = true;
+  wc->c = &c;
 
   //
   // Calculate the polar angle theta
@@ -304,8 +304,7 @@ int stellar_wind::add_cell(
 
 #ifndef NDEBUG
   spdlog::debug("*** dist={}", wc->dist);
-  spdlog::debug(
-      "Wind BC cell pos : {}", std::vector<int>(wc->c->pos, wc->c->pos + ndim));
+  spdlog::debug("Wind BC cell pos : {}", wc->c->pos);
   spdlog::debug(
       "Wind BC cell values : {}", std::vector<double>(wc->p, wc->p + nvar));
   CI.print_cell(c);
@@ -372,7 +371,7 @@ void stellar_wind::set_wind_cell_reference_state(
   }
 
   std::array<double, MAX_DIM> pp;
-  CI.get_dpos(wc->c, pp);
+  CI.get_dpos(*wc->c, pp);
   //
   // Density at cell position: rho = Mdot/(4.pi.R^2.v_inf) (for 3D)
   // or in 2D (slab-symmetry) rho = Mdot/(2.pi.R.v_inf)
@@ -431,19 +430,19 @@ void stellar_wind::set_wind_cell_reference_state(
   double x = 0.0, y = 0.0, z = 0.0;
   switch (ndim) {
     case 1:
-      x = grid->difference_vertex2cell(WP->dpos, c, XX);
+      x = grid->difference_vertex2cell(WP->dpos, *c, XX);
       y = 0.0;
       z = 0.0;
       break;
     case 2:
-      x = grid->difference_vertex2cell(WP->dpos, c, XX);
-      y = grid->difference_vertex2cell(WP->dpos, c, YY);
+      x = grid->difference_vertex2cell(WP->dpos, *c, XX);
+      y = grid->difference_vertex2cell(WP->dpos, *c, YY);
       z = 0.0;
       break;
     case 3:
-      x = grid->difference_vertex2cell(WP->dpos, c, XX);
-      y = grid->difference_vertex2cell(WP->dpos, c, YY);
-      z = grid->difference_vertex2cell(WP->dpos, c, ZZ);
+      x = grid->difference_vertex2cell(WP->dpos, *c, XX);
+      y = grid->difference_vertex2cell(WP->dpos, *c, YY);
+      z = grid->difference_vertex2cell(WP->dpos, *c, ZZ);
       break;
     default:
       spdlog::error(

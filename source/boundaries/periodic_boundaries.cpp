@@ -37,7 +37,7 @@ int periodic_bc::BC_assign_PERIODIC(
     //
     temp = (*bpt);
     for (int v = 0; v < grid->NG(b->baxis); v++) {
-      temp = grid->NextPt(temp, ondir);
+      temp = grid->NextPt(*temp, ondir);
     }
     for (int v = 0; v < par.nvar; v++)
       (*bpt)->P[v] = temp->P[v];

@@ -23,7 +23,7 @@ public:
       int        ///< number of spatial dimensions on grid.
   );
   ~inside_sphere() {}             ///< trivial destructor
-  double volumeFraction(cell *);  ///< calculates fraction of cell that is
+  double volumeFraction(cell &);  ///< calculates fraction of cell that is
                                   ///< within radius r of a point.
 private:
   const double sr;    ///< radius of sphere.

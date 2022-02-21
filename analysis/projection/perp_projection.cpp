@@ -70,11 +70,11 @@ int generate_perpendicular_image(
   for (iz = 0; iz < npix[0]; iz++) {
     // cout <<"#+#+#+#+#+# New column, iz="<<iz<<"\n";
     err = calculate_column(
-        SimPM, MP, cz, XR, grid, iz, npix[1], NIMG, npix, grid->DX(),
+        SimPM, MP, *cz, XR, grid, iz, npix[1], NIMG, npix, grid->DX(),
         img_array);
     if (0 != err)
       spdlog::error("{}: Expected {} but got {}", "calculate_column", 0, err);
-    cz = grid->NextPt(cz, ZPcyl);
+    cz = grid->NextPt(*cz, ZPcyl);
   }
 
 #ifndef NDEBUG
@@ -113,7 +113,7 @@ int generate_perpendicular_image(
 int calculate_column(
     class SimParams &SimPM,       ///< simulation parameters
     class microphysics_base *MP,  ///< microphysics class
-    class cell *cz,               ///< current cell at start of column.
+    class cell &cz,               ///< current cell at start of column.
     class Xray_emission &XR,      ///< Xray emission class.
     class GridBaseClass *grid,    ///< pointer to grid.
     int iz,                       ///< counter of number of columns completed.
@@ -180,13 +180,13 @@ int calculate_column(
   }
 
   // Starting cell.
-  cell *cy = cz;
+  cell *cy = &cz;
   int iy   = 0;
   std::array<double, MAX_DIM> cpos;
 
   // cout <<"\t\t assigning data from column to arrays.\n";
   do {
-    CI.get_dpos(cy, cpos);
+    CI.get_dpos(*cy, cpos);
     raw_data[DATA_R][iy] = cpos[Rcyl];
     raw_data[DATA_D][iy] = cy->P[RO];
     raw_data[DATA_P][iy] = cy->P[PG];
@@ -213,12 +213,12 @@ int calculate_column(
     // Get Temperature from microphysics, or set it to sound speed.
     //
     if (MP)
-      raw_data[DATA_T][iy] = MP->Temperature(cy->P, SimPM.gamma);
+      raw_data[DATA_T][iy] = MP->Temperature(cy->P.data(), SimPM.gamma);
     else
       raw_data[DATA_T][iy] = sqrt(SimPM.gamma * cy->P[PG] / cy->P[RO]);
     // increment iy
     iy++;
-  } while ((cy = grid->NextPt(cy, RPcyl)) != 0 && cy->isgd);
+  } while ((cy = grid->NextPt(*cy, RPcyl)) != 0 && cy->isgd);
   if (iy != N_R)
     spdlog::error("{}: {}", "Bad logic for radial grid size", iy - N_R);
 
@@ -292,7 +292,7 @@ int get_emission_absorption_data(
     class SimParams &SimPM,       ///< simulation parameters
     class microphysics_base *MP,  ///< microphysics class
     class GridBaseClass *grid,    ///< pointer to grid.
-    class cell *cz,               ///< cell at start of column.
+    class cell &cz,               ///< cell at start of column.
     double const *const *data,    ///< raw data to get variable from
     const int n_img,              ///< number of images to write
     const size_t Nr,              ///< Number of radial data elements
@@ -311,18 +311,18 @@ int get_emission_absorption_data(
 
 
   // loop over all cells in column and set cell-centre quantities
-  cell *c = cz;
+  cell *c = &cz;
   for (size_t i = 0; i < Nr; i++) {
 
     // calculate data for each cell:
-    n_e  = MP->get_n_elec(c->P);
-    n_Hp = MP->get_n_Hplus(c->P);
-    n_H0 = MP->get_n_Hneutral(c->P);
+    n_e  = MP->get_n_elec(c->P.data());
+    n_Hp = MP->get_n_Hplus(c->P.data());
+    n_H0 = MP->get_n_Hneutral(c->P.data());
     // T = MP->Temperature(c->P,SimPM.gamma);
     T = data[DATA_T][i];
     XR.get_xray_emissivity(T, xr);
     if (MP->Tr("N1p") > 0)
-      n_N1p = MP->get_n_ion("N1p", c->P);
+      n_N1p = MP->get_n_ion("N1p", c->P.data());
     else
       n_N1p = fNp * n_Hp;
 
@@ -342,18 +342,18 @@ int get_emission_absorption_data(
     ems[PROJ_NII][i]       = n_e * n_N1p * XR.NII6584_emissivity(T);
     ems[PROJ_BREMS6GHZ][i] = n_e * n_Hp * XR.Brems6GHz_emissivity(T);
 
-    c = grid->NextPt(c, RPcyl);
+    c = grid->NextPt(*c, RPcyl);
   }
 
   // 2nd loop over all cells in column to set slope/abs quantities
-  c         = cz;
+  c         = &cz;
   double dr = 0.0;
   for (size_t i = 0; i < Nr; i++) {
 
     // calculate data for each cell:
     // n_e = MP->get_n_elec(c->P);
-    n_Hp = MP->get_n_Hplus(c->P);
-    n_H0 = MP->get_n_Hneutral(c->P);
+    n_Hp = MP->get_n_Hplus(c->P.data());
+    n_H0 = MP->get_n_Hneutral(c->P.data());
 
     if (i < Nr - 1) {
       dr                 = data[DATA_R][i + 1] - data[DATA_R][i];
@@ -403,7 +403,7 @@ int get_emission_absorption_data(
       abs[PROJ_BREMS6GHZ][i] = abs[PROJ_BREMS6GHZ][i - 1];
     }
 
-    c = grid->NextPt(c, RPcyl);
+    c = grid->NextPt(*c, RPcyl);
   }  // 2nd loop
 
   return 0;

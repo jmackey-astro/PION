@@ -190,7 +190,7 @@ int IC_radiative_shock::setup_RadiativeShock()
     for (int i = 0; i < SimPM->ntracer; i++)
       c->P[SimPM->ftr + i] = trup[i];  // set later in MP.
                                        // done.
-  } while ((c = gg->NextPt(c)) != 0);
+  } while ((c = gg->NextPt(*c)) != 0);
   return 0;
 }
 
@@ -262,7 +262,7 @@ int IC_radiative_shock::setup_OutflowRadiativeShock()
   class cell *c = gg->FirstPt();
   std::array<double, MAX_DIM> dpos;
   do {
-    CI.get_dpos(c, dpos);
+    CI.get_dpos(*c, dpos);
     if (dpos[XX] >= xboundary + range) {
       //
       // Upstream of shock -- low density fast gas flowing onto domain.
@@ -319,7 +319,7 @@ int IC_radiative_shock::setup_OutflowRadiativeShock()
         c->P[SimPM->ftr + i] = frac * trup[i] + (1. - frac) * trdn[i];
     }
     // done.
-  } while ((c = gg->NextPt(c)) != 0);
+  } while ((c = gg->NextPt(*c)) != 0);
   return 0;
 }
 

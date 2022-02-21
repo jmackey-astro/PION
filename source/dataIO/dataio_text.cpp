@@ -618,12 +618,12 @@ int dataio_text::output_ascii_data(
   // Go through every point, output one line per point.
   class cell *cpt = gp->FirstPt();
   do {
-    if (CI.get_dpos(cpt, 0) < gp->SIM_Xmin(XX) + dx)
+    if (CI.get_dpos(*cpt, 0) < gp->SIM_Xmin(XX) + dx)
       outf << "\n";  // put in a blank line for gnuplot
     // First positions.
-    outf << CI.get_dpos(cpt, 0) << "  ";
-    if (SimPM.ndim > 1) outf << CI.get_dpos(cpt, 1) << "  ";
-    if (SimPM.ndim > 2) outf << CI.get_dpos(cpt, 2) << "\t";
+    outf << CI.get_dpos(*cpt, 0) << "  ";
+    if (SimPM.ndim > 1) outf << CI.get_dpos(*cpt, 1) << "  ";
+    if (SimPM.ndim > 2) outf << CI.get_dpos(*cpt, 2) << "\t";
 
       // Next all primitive variables.
 #ifdef NEW_B_NORM
@@ -647,9 +647,9 @@ int dataio_text::output_ascii_data(
 
     // internal energy/ temperature.
     if (mp)
-      outf << mp->Temperature(cpt->P, SimPM.gamma);
+      outf << mp->Temperature(cpt->P.data(), SimPM.gamma);
     else if (eqn) {
-      outf << eqn->eint(cpt->P, SimPM.gamma);
+      outf << eqn->eint(cpt->P.data(), SimPM.gamma);
       // total energy, x-momentum
       // eqn->PtoU(cpt->P,Utemp,SimPM.gamma);
       // outf <<"  "<< Utemp[ERG] <<"  "<< Utemp[MMX];
@@ -663,7 +663,7 @@ int dataio_text::output_ascii_data(
       //       cpt->P[BZ]
       //       <<"  ";
       outf << "  " << cpt->P[PG] + b2 / 2.;
-      if (eqn) outf << "  " << eqn->Divergence(cpt, 0, vars, gp);
+      if (eqn) outf << "  " << eqn->Divergence(*cpt, 0, vars, gp);
     }
 #ifdef RT_TESTING_OUTPUTCOL
     // THIS CAN'T WORK BECAUSE YOU NEED TO DO RAYTRACING TO SET VALUES
@@ -677,7 +677,7 @@ int dataio_text::output_ascii_data(
     //}
 #endif  // RT_TESTING_OUTPUTCOL
     outf << "\n";
-  } while ((cpt = gp->NextPt(cpt)) != 0);
+  } while ((cpt = gp->NextPt(*cpt)) != 0);
 
   outf.setf(ios_base::fmtflags(0), ios_base::floatfield);
   outf.precision(6);
@@ -708,13 +708,13 @@ int dataio_text::assign_initial_data(
     if (SimPM.ndim == 1) {
       // interface = 0.5;
       do {
-        if (CI.get_dpos(cpt, 0) <= interface)
+        if (CI.get_dpos(*cpt, 0) <= interface)
           for (int v = 0; v < SimPM.nvar; v++)
             cpt->P[v] = cpt->Ph[v] = left[v];
         else
           for (int v = 0; v < SimPM.nvar; v++)
             cpt->P[v] = cpt->Ph[v] = right[v];
-      } while ((cpt = gp->NextPt(cpt)) != 0);
+      } while ((cpt = gp->NextPt(*cpt)) != 0);
     }  // if 1D
 
     else if (SimPM.ndim == 2) {
@@ -779,13 +779,13 @@ int dataio_text::assign_initial_data(
       if (fabs(theta) < 1.e-6) {  // If zero slope, then just run a
                                   // vertical shock at x=interface.
         do {
-          if (CI.get_dpos(cpt, XX) < interface)
+          if (CI.get_dpos(*cpt, XX) < interface)
             for (int v = 0; v < SimPM.nvar; v++)
               cpt->P[v] = cpt->Ph[v] = left[v];
           else
             for (int v = 0; v < SimPM.nvar; v++)
               cpt->P[v] = cpt->Ph[v] = right[v];
-        } while ((cpt = gp->NextPt(cpt)) != 0);
+        } while ((cpt = gp->NextPt(*cpt)) != 0);
       }
       else {
         spdlog::info(
@@ -793,13 +793,13 @@ int dataio_text::assign_initial_data(
         // Slope is non-zero, so set a shock at angle theta to x-axis,
         // passing through centre of domain.
         do {
-          if (CI.get_dpos(cpt, YY) - dx
-              > ypivot + slope * (CI.get_dpos(cpt, XX) + dx / 2. - xpivot))
+          if (CI.get_dpos(*cpt, YY) - dx
+              > ypivot + slope * (CI.get_dpos(*cpt, XX) + dx / 2. - xpivot))
             for (int v = 0; v < SimPM.nvar; v++)
               cpt->P[v] = cpt->Ph[v] = left[v];
           else if (
-              CI.get_dpos(cpt, YY) + dx
-              <= ypivot + slope * (CI.get_dpos(cpt, XX) - dx / 2. - xpivot))
+              CI.get_dpos(*cpt, YY) + dx
+              <= ypivot + slope * (CI.get_dpos(*cpt, XX) - dx / 2. - xpivot))
             for (int v = 0; v < SimPM.nvar; v++)
               cpt->P[v] = cpt->Ph[v] = right[v];
           else {
@@ -820,7 +820,7 @@ int dataio_text::assign_initial_data(
             // Set first position.
             int ntot = 1;
             for (int v = 0; v < SimPM.ndim; v++) {
-              startpt[v] = CI.get_dpos(cpt, v) - dx / 2. + dxc / 2.;
+              startpt[v] = CI.get_dpos(*cpt, v) - dx / 2. + dxc / 2.;
               ntot *= nint;
             }
             for (int i = 0; i < ntot; i++) {
@@ -833,19 +833,19 @@ int dataio_text::assign_initial_data(
                 frac += dv;
               }
             }
-            frac /= gp->CellVolume(cpt, 0);
+            frac /= gp->CellVolume(*cpt, 0);
             // cout <<"frac = "<<frac<<"\n";
             for (int v = 0; v < SimPM.nvar; v++)
               cpt->P[v] = cpt->Ph[v] = frac * left[v] + (1. - frac) * right[v];
           }
-        } while ((cpt = gp->NextPt(cpt)) != 0);
+        } while ((cpt = gp->NextPt(*cpt)) != 0);
       }  // if slope is non-zero.
     }    // if 2d
     if (SimPM.eqntype == EQGLM) {
       cpt = gp->FirstPt();
       do {
         cpt->P[SI] = cpt->Ph[SI] = 0.;
-      } while ((cpt = gp->NextPt(cpt)) != 0);
+      } while ((cpt = gp->NextPt(*cpt)) != 0);
     }
     if (err != 0) {
       spdlog::error("\tError assigning data");
@@ -1506,7 +1506,7 @@ int dataio_text::add_noise2data(
       do {
         avg += cpt->P[PG];
         ct++;
-      } while ((cpt = gp->NextPt(cpt)) != 0);
+      } while ((cpt = gp->NextPt(*cpt)) != 0);
       spdlog::debug("avg = {}\t ct= {}", avg, ct);
       avg /= static_cast<double>(ct);
       avg *= frac;  // avg is now a fraction 'frac' of the mean pressure
@@ -1519,7 +1519,7 @@ int dataio_text::add_noise2data(
           cpt->P[PG] += avg * (static_cast<double>(rand()) / RAND_MAX - 0.5);
           // cout <<"\tPG after : "<<cpt->P[PG]<<"\n";
         }
-      } while ((cpt = gp->NextPt(cpt)) != 0);
+      } while ((cpt = gp->NextPt(*cpt)) != 0);
       break;
 
     case 2:
@@ -1536,7 +1536,7 @@ int dataio_text::add_noise2data(
           cpt->P[RO] *= exp(log(1 + temp) / SimPM.gamma);
           // cout <<"\tPG after : "<<cpt->P[PG]<<"\n";
         }
-      } while ((cpt = gp->NextPt(cpt)) != 0);
+      } while ((cpt = gp->NextPt(*cpt)) != 0);
       break;
 
     case 3:
@@ -1547,7 +1547,7 @@ int dataio_text::add_noise2data(
       do {
         avg += cpt->P[PG];
         ct++;
-      } while ((cpt = gp->NextPt(cpt)) != 0);
+      } while ((cpt = gp->NextPt(*cpt)) != 0);
       spdlog::debug("avg = {}\t ct= {}", avg, ct);
       avg /= static_cast<double>(ct);
       // Now add wave to preshock state.
@@ -1558,13 +1558,13 @@ int dataio_text::add_noise2data(
             && cpt->P[PG] < avg) {  // Don't want to alter any edge cells.
           // cout <<"PG before : "<<cpt->P[PG];
           temp = frac
-                 * sin(2. * M_PI * (CI.get_dpos(cpt, YY) / SimPM.Range[YY])
+                 * sin(2. * M_PI * (CI.get_dpos(*cpt, YY) / SimPM.Range[YY])
                        * (SimPM.NG[YY] / 50));
           cpt->P[PG] *= 1 + temp;
           cpt->P[RO] *= exp(log(1 + temp) / SimPM.gamma);
           // cout <<"\tPG after : "<<cpt->P[PG]<<"\n";
         }
-      } while ((cpt = gp->NextPt(cpt)) != 0);
+      } while ((cpt = gp->NextPt(*cpt)) != 0);
 
       break;
 

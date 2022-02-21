@@ -240,7 +240,7 @@ protected:
   ///
   int cell_cols_1d(
       const rad_source *,    ///< pointer to source struct.
-      class cell *,          ///< Current Cell
+      class cell &,          ///< Current Cell
       const enum direction,  ///< direction to source.
       double *,              ///< column to cell.
       double *               ///< path length of ray in cell.
@@ -252,7 +252,7 @@ protected:
   /// behaviour of this function is set by rs->update and rs->opacity_src.
   ///
   virtual int ProcessCell(
-      cell *,             ///< Current cell.
+      cell &,             ///< Current cell.
       double[],           ///< Column to cell.
       double,             ///< Path Length through cell.
       const rad_source *  ///< pointer to source struct.
@@ -281,7 +281,7 @@ protected:
   /// photoionisation rate calculation.
   ///
   virtual void set_Vshell_in_cell(
-      cell *,             ///< current cell.
+      cell &,             ///< current cell.
       double,             ///< Path Length through cell.
       const rad_source *  ///< pointer to source struct.
   );
@@ -377,7 +377,7 @@ protected:
   /// cell nearest the off-grid source.  Works for 2D and 3D.
   void find_closest_cell(
       const rad_source *,  ///< pointer to source
-      cell *,              ///< cell to move to cell nearest to source.
+      cell &,              ///< cell to move to cell nearest to source.
       enum direction *     ///< array to put in directions to
                            ///< source from cell nearest.
   );
@@ -385,7 +385,7 @@ protected:
   /// Given a source cell, assign a list of start cells for each
   /// line/quad/octant that we need to trace along (some may be null).
   void set_startcells(
-      cell *,   ///< source cell, or cell nearest to source if off grid (const).
+      cell &,   ///< source cell, or cell nearest to source if off grid (const).
       cell **,  ///< list of startcells for each line/quadrant/octant (to be
                 ///< assigned).
       enum direction *  ///< list of directions to source if it is off grid
@@ -434,7 +434,7 @@ protected:
   ///
   int get_cell_columns(
       const rad_source *,  ///< pointer to source struct.
-      class cell *,        ///< Current Cell
+      class cell &,        ///< Current Cell
       double *,            ///< column to cell.
       double *             ///< path length of ray in cell.
   );
@@ -445,7 +445,7 @@ protected:
   ///
   int cell_cols_2d(
       const rad_source *,  ///< pointer to source struct.
-      class cell *,        ///< Current Cell
+      class cell &,        ///< Current Cell
       double *,            ///< column to cell.
       double *             ///< path length of ray in cell.
   );
@@ -455,7 +455,7 @@ protected:
   ///
   int cell_cols_3d(
       const rad_source *,  ///< pointer to source struct.
-      class cell *,        ///< Current Cell
+      class cell &,        ///< Current Cell
       double *,            ///< column to cell.
       double *             ///< path length of ray in cell.
   );
@@ -465,7 +465,7 @@ protected:
   ///
   virtual void col2cell_2d(
       const rad_source *,      ///< source we are working on.
-      const cell *,            ///< cell to get column to.
+      const cell &,            ///< cell to get column to.
       const enum direction,    ///< face ray enters cell through.
       const enum direction *,  ///< perp direction(s) towards source. (1 el
                                ///< array in 2d)
@@ -479,7 +479,7 @@ protected:
   ///
   virtual void col2cell_3d(
       const rad_source *,      ///< source we are working on.
-      const cell *,            ///< cell to get column to.
+      const cell &,            ///< cell to get column to.
       const enum direction,    ///< face ray enters cell through.
       const enum direction *,  ///< perp direction(s) towards source. (1 el
                                ///< array in 2d)
@@ -542,7 +542,7 @@ protected:
   /// photoionisation rate calculation.
   ///
   virtual void set_Vshell_in_cell(
-      cell *,             ///< current cell.
+      cell &,             ///< current cell.
       double,             ///< Path Length through cell.
       const rad_source *  ///< pointer to source struct.
   );
@@ -552,7 +552,7 @@ protected:
   /// to the cell, and the column through the cell is different.
   ///
   int ProcessSourceCell(
-      cell *,              ///< Current cell.
+      cell &,              ///< Current cell.
       const rad_source *,  ///< pointer to source struct.
       const double         ///< Timestep
   );

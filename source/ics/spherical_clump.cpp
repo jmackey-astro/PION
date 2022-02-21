@@ -213,21 +213,21 @@ int IC_spherical_clump::setup_clump()
 
     switch (SC_density_profile) {
       case 0:  // top-hat
-        if (gg->distance_vertex2cell(centre, cpt) <= SC_rad)
+        if (gg->distance_vertex2cell(centre, *cpt) <= SC_rad)
           cpt->P[RO] *= SC_overdensity;
         break;
 
       case 1:  // 1/r^2 with a core.
         cpt->P[RO] *=
             SC_overdensity
-            / (1.0 + pow(gg->distance_vertex2cell(centre, cpt) / SC_rad, 2.0));
+            / (1.0 + pow(gg->distance_vertex2cell(centre, *cpt) / SC_rad, 2.0));
         break;
 
       case 2:  // Gaussian
         cpt->P[RO] *=
             SC_overdensity
             * exp(-0.5
-                  * pow(gg->distance_vertex2cell(centre, cpt) / SC_rad, 2.0));
+                  * pow(gg->distance_vertex2cell(centre, *cpt) / SC_rad, 2.0));
         break;
 
       default:
@@ -253,7 +253,7 @@ int IC_spherical_clump::setup_clump()
         spdlog::error("{}: {}", "Bad pressure profile", SC_pressure_profile);
         break;
     }
-  } while ((cpt = gg->NextPt(cpt)) != 0);
+  } while ((cpt = gg->NextPt(*cpt)) != 0);
   spdlog::info("Got through data successfully");
   // Data done.
   return (0);

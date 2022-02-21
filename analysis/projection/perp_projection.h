@@ -46,7 +46,7 @@ int generate_perpendicular_image(
 int calculate_column(
     class SimParams &,          ///< simulation parameters
     class microphysics_base *,  ///< microphysics class
-    class cell *,               ///< cell at start of column.
+    class cell &,               ///< cell at start of column.
     class Xray_emission &,      ///< Xray emission class.
     class GridBaseClass *,      ///< pointer to grid.
     int,                        ///< counter of number of columns completed.
@@ -89,7 +89,7 @@ int get_emission_absorption_data(
     class SimParams &,          ///< simulation parameters
     class microphysics_base *,  ///< microphysics class
     class GridBaseClass *,      ///< pointer to grid.
-    class cell *,               ///< cell at start of column.
+    class cell &,               ///< cell at start of column.
     double const *const *,      ///< raw data to get variable from
     const int,                  ///< number of images to write
     const size_t,               ///< Number of radial data elements

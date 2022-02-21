@@ -46,8 +46,8 @@ protected:
       const pion_flt *,        ///< state vector of coarse cell.
       const pion_flt,          ///< volume of coarse cell.
       pion_flt *,              ///< dP/dx in coarse cell.
-      cell *,                  ///< pointer to first fine cell  (XN)
-      cell *                   ///< pointer to second fine cell (XP)
+      cell &,                  ///< pointer to first fine cell  (XN)
+      cell &                   ///< pointer to second fine cell (XP)
   );
 
   /// interpolate data from one coarse cell onto 4 fine cells in 2D
@@ -60,10 +60,10 @@ protected:
       const pion_flt,          ///< volume of coarse cell.
       pion_flt *,              ///< dP/dx in coarse cell.
       pion_flt *,              ///< dP/dy in coarse cell.
-      cell *,                  ///< pointer to first fine cell  (XN,YN)
-      cell *,                  ///< pointer to second fine cell (XP,YN)
-      cell *,                  ///< pointer to third fine cell  (XN,YP)
-      cell *                   ///< pointer to fourth fine cell (XP,YP)
+      cell &,                  ///< pointer to first fine cell  (XN,YN)
+      cell &,                  ///< pointer to second fine cell (XP,YN)
+      cell &,                  ///< pointer to third fine cell  (XN,YP)
+      cell &                   ///< pointer to fourth fine cell (XP,YP)
   );
 
   /// interpolate data from one coarse cell onto 8 fine cells in 3D

@@ -807,7 +807,7 @@ int main(int argc, char **argv)
       int w2i = -1;
       cell *c = grid->FirstPt();
       // For Cartesian 3D grid, all cell faces have the same area:
-      double cell_area = grid->CellInterface(c, XP, 0.0);
+      double cell_area = grid->CellInterface(*c, XP, 0.0);
 
       // loop over images.
       for (int outputs = 0; outputs < n_images; outputs++) {

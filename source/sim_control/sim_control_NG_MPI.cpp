@@ -156,21 +156,21 @@ int sim_control_NG_MPI::Init(
     do {
       // make sure temperature of the gas is reasonable
       if (SimPM.timestep == 0) {
-        spatial_solver->PtoU(c->P, u.data(), SimPM.gamma);
+        spatial_solver->PtoU(c->P.data(), u.data(), SimPM.gamma);
         spatial_solver->UtoP(
-            u.data(), c->P, SimPM.EP.MinTemperature, SimPM.gamma);
+            u.data(), c->P.data(), SimPM.EP.MinTemperature, SimPM.gamma);
       }
       // set Ph[]=P[]
       for (int v = 0; v < SimPM.nvar; v++)
         c->Ph[v] = c->P[v];
-    } while ((c = grid[l]->NextPt(c)) != 0);
+    } while ((c = grid[l]->NextPt(*c)) != 0);
 
     if (SimPM.eqntype == EQGLM && SimPM.timestep == 0) {
       spdlog::info("Initial state, zero-ing glm variable");
       c = grid[l]->FirstPt();
       do {
         c->P[SI] = c->Ph[SI] = 0.;
-      } while ((c = grid[l]->NextPt(c)) != 0);
+      } while ((c = grid[l]->NextPt(*c)) != 0);
     }
   }  // loop over levels
 
@@ -397,9 +397,9 @@ int sim_control_NG_MPI::Init(
     do {
       if (pconst.equalD(c->P[RO], 0.0)) {
         cout << "ZERO DATA IN CELL: ";
-        CI.print_cell(c);
+        CI.print_cell(*c);
       }
-    } while ((c = (grid[l])->NextPt_All(c)) != 0);
+    } while ((c = (grid[l])->NextPt_All(*c)) != 0);
   }
   //#endif // NDEBUG
   return (err);
@@ -426,7 +426,7 @@ int sim_control_NG_MPI::Time_Int(
   double tsf            = 0.0;
   vector<string> timing = {"dt",   "ibc", "ebc", "f2c", "c2f",
                            "bc89", "rt",  "dyn", "mp",  "upd"};
-  for (auto i : timing) {
+  for (auto const &i : timing) {
     clk.start_timer(i);
     clk.pause_timer(i);
   }
@@ -689,7 +689,7 @@ int sim_control_NG_MPI::Time_Int(
   }
   ostringstream tm;
   tm << "#";
-  for (auto i : timing) {
+  for (auto const &i : timing) {
     tm << setw(11) << i;
   }
   tm << setw(11) << "sum";
@@ -699,7 +699,7 @@ int sim_control_NG_MPI::Time_Int(
   tm << "   ";
   tm.setf(ios_base::scientific);
   tm.precision(3);
-  for (auto i : timing) {
+  for (auto const &i : timing) {
     tsf = clk.time_so_far_paused(i);
     t += tsf;
     tm << tsf << "  ";
@@ -1455,8 +1455,8 @@ int sim_control_NG_MPI::check_energy_cons(vector<class GridBaseClass *> &grid)
     class cell *c = grid[l]->FirstPt();
     do {
       if (c->isdomain && c->isleaf) {
-        dv = spatial_solver->CellVolume(c, dx);
-        spatial_solver->PtoU(c->P, u.data(), SimPM.gamma);
+        dv = spatial_solver->CellVolume(*c, dx);
+        spatial_solver->PtoU(c->P.data(), u.data(), SimPM.gamma);
         nowERG += u[ERG] * dv;
         nowMMX += u[MMX] * dv;
         nowMMY += u[MMY] * dv;
@@ -1465,7 +1465,7 @@ int sim_control_NG_MPI::check_energy_cons(vector<class GridBaseClass *> &grid)
         totmom +=
             sqrt(u[MMX] * u[MMX] + u[MMY] * u[MMY] + u[MMZ] * u[MMZ]) * dv;
       }
-    } while ((c = grid[l]->NextPt(c)) != 0);
+    } while ((c = grid[l]->NextPt(*c)) != 0);
   }
 
   // cout <<"(local quantities) ["<< nowERG <<", ";

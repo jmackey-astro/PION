@@ -743,12 +743,12 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
       // re-calculate dU based on error in flux.
       if (fup->dir % 2 == 0) {
         spatial_solver->DivStateVectorComponent(
-            fi->c[0], grid, static_cast<axes>(fup->ax), par.nvar, ftmp.data(),
+            *fi->c[0], grid, static_cast<axes>(fup->ax), par.nvar, ftmp.data(),
             fi->flux, utmp.data());
       }
       else {
         spatial_solver->DivStateVectorComponent(
-            fi->c[0], grid, static_cast<axes>(fup->ax), par.nvar, fi->flux,
+            *fi->c[0], grid, static_cast<axes>(fup->ax), par.nvar, fi->flux,
             ftmp.data(), utmp.data());
       }
 #ifdef TEST_BC89FLUX

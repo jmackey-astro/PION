@@ -100,16 +100,16 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
 #endif
     // add fine cells to each avg struct
     avg[v].c[0] = f;
-    avg[v].c[1] = grid->NextPt(f, XP);
+    avg[v].c[1] = grid->NextPt(*f, XP);
     if (ndim > 1) {
-      avg[v].c[2] = grid->NextPt(avg[v].c[0], YP);
-      avg[v].c[3] = grid->NextPt(avg[v].c[1], YP);
+      avg[v].c[2] = grid->NextPt(*avg[v].c[0], YP);
+      avg[v].c[3] = grid->NextPt(*avg[v].c[1], YP);
     }
     if (ndim > 2) {
-      avg[v].c[4] = grid->NextPt(avg[v].c[0], ZP);
-      avg[v].c[5] = grid->NextPt(avg[v].c[1], ZP);
-      avg[v].c[6] = grid->NextPt(avg[v].c[2], ZP);
-      avg[v].c[7] = grid->NextPt(avg[v].c[3], ZP);
+      avg[v].c[4] = grid->NextPt(*avg[v].c[0], ZP);
+      avg[v].c[5] = grid->NextPt(*avg[v].c[1], ZP);
+      avg[v].c[6] = grid->NextPt(*avg[v].c[2], ZP);
+      avg[v].c[7] = grid->NextPt(*avg[v].c[3], ZP);
     }
     // add position of coarse cell centre (for testing)
     for (int i = 0; i < ndim; i++)
@@ -125,9 +125,9 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
     // rep.printVec("fine cell pos",f->pos,ndim);
 #endif
     // get to next cell.
-    f = grid->NextPt(f);
+    f = grid->NextPt(*f);
     ix++;
-    f = grid->NextPt(f);
+    f = grid->NextPt(*f);
     ix++;
     if (ix >= grid->NG(XX)) {
       // end of column, loop to next y-column
@@ -138,7 +138,7 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
       if (ndim > 1) {
         iy++;
         if (iy < grid->NG(YY) - 1) {
-          f = grid->NextPt(f, YP);
+          f = grid->NextPt(*f, YP);
           iy++;
 #ifdef TEST_MPI_NG
           spdlog::debug("moving to next row, iy={}", iy);
@@ -152,10 +152,10 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
           iy = 0;
           if (ndim > 2) {
             iz++;
-            m = grid->NextPt(m, ZP);
+            m = grid->NextPt(*m, ZP);
             f = m;
             if (iz < grid->NG(ZZ) - 1) {
-              m = grid->NextPt(m, ZP);
+              m = grid->NextPt(*m, ZP);
               f = m;
               iz++;
             }
@@ -217,8 +217,8 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
     for (int isrc = 0; isrc < par.RS.Nsources; isrc++) {
       s   = &(par.RS.sources[isrc]);
       off = par.nvar + F2C_tauoff[isrc];
-      CI.set_col(c, s->id, &(cd[off]));
-      CI.set_cell_col(c, s->id, &(cd[off + s->NTau]));
+      CI.set_col(*c, s->id, &(cd[off]));
+      CI.set_cell_col(*c, s->id, &(cd[off + s->NTau]));
     }
 
     // set primitive variables in coarse cell based on interpolated
@@ -275,7 +275,7 @@ int NG_fine_to_coarse_bc::average_cells(
     // cout <<"cell "<<f->id<<" averaging. ";
     // get conserved vars for cell in fine grid, *cellvol.
     solver->PtoU(f->Ph, u.data(), par.gamma);
-    vol = grid->CellVolume(f, 0);
+    vol = grid->CellVolume(*f, 0);
     sum_vol += vol;
 
     // DEBUG
@@ -373,8 +373,8 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_1D(
   for (int isrc = 0; isrc < par.RS.Nsources; isrc++) {
     s = &(par.RS.sources[isrc]);
     CI.get_ipos_vec(s->pos, spos);
-    CI.get_col(f1, s->id, Tau1);
-    CI.get_col(f2, s->id, Tau2);
+    CI.get_col(*f1, s->id, Tau1);
+    CI.get_col(*f2, s->id, Tau2);
     // column from source through cell depends on
     // which direction is to the source
     if (spos[XX] > cpos[XX]) {
@@ -386,8 +386,8 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_1D(
         Tavg[iT] = Tau2[iT];
     }
     // column through cell is sum of two fine cells.
-    CI.get_cell_col(f1, s->id, Tau1);
-    CI.get_cell_col(f2, s->id, Tau2);
+    CI.get_cell_col(*f1, s->id, Tau1);
+    CI.get_cell_col(*f2, s->id, Tau2);
     for (int v = 0; v < s->NTau; v++) {
       Tau1[v] += Tau2[v];
     }
@@ -399,8 +399,6 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_1D(
     for (int iT = 0; iT < s->NTau; iT++)
       T[F2C_tauoff[isrc] + s->NTau + iT] = Tau1[iT];
   }
-
-  return;
 }
 
 // ##################################################################
@@ -443,10 +441,10 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_2D(
     CI.get_ipos_vec(s->pos, spos);
     // rep.printVec("spos",spos,2);
     // rep.printVec("cpos",cpos,2);
-    CI.get_col(f1, s->id, Tau1);
-    CI.get_col(f2, s->id, Tau2);
-    CI.get_col(f3, s->id, Tau3);
-    CI.get_col(f4, s->id, Tau4);
+    CI.get_col(*f1, s->id, Tau1);
+    CI.get_col(*f2, s->id, Tau2);
+    CI.get_col(*f3, s->id, Tau3);
+    CI.get_col(*f4, s->id, Tau4);
     diffx = spos[XX] - cpos[XX];
     diffy = spos[YY] - cpos[YY];
 #ifdef RT_TESTING
@@ -461,8 +459,8 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_2D(
       for (int v = 0; v < s->NTau; v++)
         Tavg[v] = Tau1[v];
       // dtau = dtau1 + dtau4
-      CI.get_cell_col(f1, s->id, Tau1);
-      CI.get_cell_col(f4, s->id, Tau4);
+      CI.get_cell_col(*f1, s->id, Tau1);
+      CI.get_cell_col(*f4, s->id, Tau4);
       for (int v = 0; v < s->NTau; v++)
         dTavg[v] = Tau1[v] + Tau4[v];
     }
@@ -471,8 +469,8 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_2D(
       for (int v = 0; v < s->NTau; v++)
         Tavg[v] = Tau3[v];
       // dtau = dtau2 + dtau3
-      CI.get_cell_col(f2, s->id, Tau2);
-      CI.get_cell_col(f3, s->id, Tau3);
+      CI.get_cell_col(*f2, s->id, Tau2);
+      CI.get_cell_col(*f3, s->id, Tau3);
       for (int v = 0; v < s->NTau; v++)
         dTavg[v] = Tau2[v] + Tau3[v];
     }
@@ -481,8 +479,8 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_2D(
       for (int v = 0; v < s->NTau; v++)
         Tavg[v] = Tau4[v];
       // dtau = dtau1 + dtau4
-      CI.get_cell_col(f1, s->id, Tau1);
-      CI.get_cell_col(f4, s->id, Tau4);
+      CI.get_cell_col(*f1, s->id, Tau1);
+      CI.get_cell_col(*f4, s->id, Tau4);
       for (int v = 0; v < s->NTau; v++)
         dTavg[v] = Tau1[v] + Tau4[v];
     }
@@ -491,8 +489,8 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_2D(
       for (int v = 0; v < s->NTau; v++)
         Tavg[v] = Tau2[v];
       // dtau = dtau2 + dtau3
-      CI.get_cell_col(f2, s->id, Tau2);
-      CI.get_cell_col(f3, s->id, Tau3);
+      CI.get_cell_col(*f2, s->id, Tau2);
+      CI.get_cell_col(*f3, s->id, Tau3);
       for (int v = 0; v < s->NTau; v++)
         dTavg[v] = Tau2[v] + Tau3[v];
     }
@@ -532,10 +530,10 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_2D(
       // column through cell is sum of 4 fine cells divided by 2.
       // this is a fairly crude approx, and so it is checked in the
       // next code block.
-      CI.get_cell_col(f1, s->id, Tau1);
-      CI.get_cell_col(f2, s->id, Tau2);
-      CI.get_cell_col(f3, s->id, Tau3);
-      CI.get_cell_col(f4, s->id, Tau4);
+      CI.get_cell_col(*f1, s->id, Tau1);
+      CI.get_cell_col(*f2, s->id, Tau2);
+      CI.get_cell_col(*f3, s->id, Tau3);
+      CI.get_cell_col(*f4, s->id, Tau4);
       for (int v = 0; v < s->NTau; v++) {
         dTavg[v] = 0.5 * (Tau1[v] + Tau2[v] + Tau3[v] + Tau4[v]);
       }
@@ -608,7 +606,7 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_3D(
     // rep.printVec("cpos",cpos,2);
     // Get "Tau to cell" for each fine cell.
     for (int i = 0; i < 8; i++)
-      CI.get_col(f[i], s->id, Tau[i]);
+      CI.get_col(*f[i], s->id, Tau[i]);
     // Get offsets of source from coarse cell centre.
     // diffx = spos[XX] - cpos[XX];
     // diffy = spos[YY] - cpos[YY];
@@ -634,7 +632,7 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_3D(
     // this is a fairly crude approx, and so it is checked and
     // corrected if needed.
     for (int i = 0; i < 8; i++)
-      CI.get_cell_col(f[i], s->id, Tau[i]);
+      CI.get_cell_col(*f[i], s->id, Tau[i]);
     for (int v = 0; v < s->NTau; v++) {
       for (int i = 0; i < 8; i++) {
         dTavg[v] += Tau[i][v];

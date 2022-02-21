@@ -278,7 +278,7 @@ int IC_jet::setup_data(
   do {
     for (int v = 0; v < SimPM->nvar; v++)
       c->P[v] = ambient[v];
-  } while ((c = gg->NextPt(c)) != 0);
+  } while ((c = gg->NextPt(*c)) != 0);
 
   // Add noise to data?  Smooth data?
   double noise = 0.0;

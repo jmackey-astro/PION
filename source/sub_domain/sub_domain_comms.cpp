@@ -245,7 +245,7 @@ int Sub_domain::send_cell_data(
       reinterpret_cast<const void *>(&m_num_send_cells), 1, MPI_LONG,
       reinterpret_cast<void *>(m_send_buff.data()), totalsize, &position,
       cart_comm);
-  for (auto c : cell_list) {
+  for (auto const &c : cell_list) {
 #if defined PION_DATATYPE_DOUBLE
     err += MPI_Pack(
         reinterpret_cast<void *>(c->Ph), nvar, MPI_DOUBLE,
@@ -537,7 +537,7 @@ int Sub_domain::receive_cell_data(
       "Sub_domain::receive_cell_data: unpacking data into list of cells");
 #endif  // TEST_COMMS
 
-  for (auto c : cell_list) {
+  for (auto const &c : cell_list) {
 #if defined PION_DATATYPE_DOUBLE
     err += MPI_Unpack(
         buf.data(), buffer_size, &position, c->Ph, nvar, MPI_DOUBLE, cart_comm);
@@ -609,12 +609,13 @@ int Sub_domain::send_double_data(
   send_id = temp.str();
   temp.str("");
   send_info.id = send_id;
-  send_list.push_back(move(send_info));
 
   /* Non-blocking send of data */
   err += MPI_Isend(
       send_info.data, num_elements, MPI_DOUBLE, send_info.to_rank,
       send_info.comm_tag, cart_comm, &(send_info.request));
+
+  send_list.push_back(move(send_info));
 
   return err;
 }

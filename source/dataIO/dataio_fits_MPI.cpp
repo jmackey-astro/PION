@@ -714,7 +714,7 @@ int DataIOFits_pllel::ReadData(
         cell *c = gp->FirstPt();
         do {
           c->P[v] = 0.;
-        } while ((c = gp->NextPt(c)) != 0);
+        } while ((c = gp->NextPt(*c)) != 0);
         if (status) {
           fits_report_error(stderr, status);
         }
@@ -786,7 +786,7 @@ int DataIOFits_pllel::ReadData(
     do {
       for (int v = 0; v < nvar; v++)
         cpt->Ph[v] = cpt->P[v];
-    } while ((cpt = gp->NextPt(cpt)) != 0);
+    } while ((cpt = gp->NextPt(*cpt)) != 0);
   }
   return err;
 }

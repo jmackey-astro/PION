@@ -150,8 +150,8 @@ int FV_solver_base::get_LaxFriedrichs_flux(
 int FV_solver_base::InterCellFlux(
     class SimParams &par,  ///< simulation parameters
     class GridBaseClass *grid,
-    class cell *Cl,  ///< Left state cell pointer
-    class cell *Cr,  ///< Right state cell pointer
+    class cell &Cl,  ///< Left state cell pointer
+    class cell &Cr,  ///< Right state cell pointer
     pion_flt *lp,    ///< Left Primitive State Vector.
     pion_flt *rp,    ///< Right Primitive State Vector.
     pion_flt *f,     ///< Flux Vector. (written to).
@@ -208,8 +208,8 @@ int FV_solver_base::InterCellFlux(
 
 void FV_solver_base::pre_calc_viscous_terms(
     class GridBaseClass *grid,
-    const cell *cl,    ///< left-of-interface cell
-    const cell *cr,    ///< right-of-interface cell
+    const cell &cl,    ///< left-of-interface cell
+    const cell &cr,    ///< right-of-interface cell
     const int av_flag  ///< what kind of AV?
 )
 {
@@ -233,8 +233,8 @@ void FV_solver_base::pre_calc_viscous_terms(
 // ##################################################################
 
 void FV_solver_base::post_calc_viscous_terms(
-    const cell *cl,  ///< left-of-interface cell
-    const cell *cr,  ///< right-of-interface cell
+    const cell &cl,  ///< left-of-interface cell
+    const cell &cr,  ///< right-of-interface cell
     const pion_flt *Pl,
     const pion_flt *Pr,
     const pion_flt *Pstar,
@@ -328,7 +328,7 @@ void FV_solver_base::set_interface_tracer_flux(
 
 
 void FV_solver_base::set_Hcorrection(
-    cell *c,                ///< cell to operate on
+    cell &c,                ///< cell to operate on
     const axes axis,        ///< axis normal to interface.
     const pion_flt *edgeL,  ///< Left state
     const pion_flt *edgeR,  ///< right state
@@ -355,8 +355,8 @@ void FV_solver_base::set_Hcorrection(
 // ##################################################################
 
 double FV_solver_base::select_Hcorr_eta(
-    const cell *cl,  ///< cell to left of interface
-    const cell *cr,  ///< cell to right of interface
+    const cell &cl,  ///< cell to left of interface
+    const cell &cr,  ///< cell to right of interface
     class GridBaseClass *grid)
 {
   //
@@ -408,15 +408,15 @@ double FV_solver_base::select_Hcorr_eta(
     perp   = static_cast<axes>((static_cast<int>(axis) + idim) % FV_gndim);
     negdir = static_cast<direction>(static_cast<int>(axis) * 2);
     cneg   = grid->NextPt(cl, negdir);
-    if (cneg) eta = max(eta, CI.get_Hcorr(cneg, perp));
+    if (cneg) eta = max(eta, CI.get_Hcorr(*cneg, perp));
     cneg = grid->NextPt(cr, negdir);
-    if (cneg) eta = max(eta, CI.get_Hcorr(cneg, perp));
+    if (cneg) eta = max(eta, CI.get_Hcorr(*cneg, perp));
   }
 
   //
   // Will want to comment this out later...
   //
-  spdlog::debug("cell id={} axis={}, eta_max={}", cl->id, axis, eta);
+  spdlog::debug("cell id={} axis={}, eta_max={}", cl.id, axis, eta);
 
   return eta;
 }

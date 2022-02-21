@@ -319,7 +319,7 @@ void setup_NG_grid::set_leaf_cells(
       }
       if (!c->isleaf) c->timestep = false;
 
-    } while ((c = grid[l]->NextPt_All(c)) != 0);
+    } while ((c = grid[l]->NextPt_All(*c)) != 0);
   }
   return;
 }
@@ -458,7 +458,7 @@ int setup_NG_grid::setup_boundary_structs(
     cell *c = grid->FirstPt();
     do {
       within_child = true;
-      CI.get_dpos(c, cpos);
+      CI.get_dpos(*c, cpos);
       for (int v = 0; v < par.ndim; v++) {
         if (cpos[v] < cxmin[v] || cpos[v] > cxmax[v]) within_child = false;
       }
@@ -467,7 +467,7 @@ int setup_NG_grid::setup_boundary_structs(
         bd->NGrecvF2C[0].push_back(c);
         ct++;
       }
-    } while ((c = grid->NextPt(c)) != 0);
+    } while ((c = grid->NextPt(*c)) != 0);
     spdlog::debug(
         "Got {} cells for FINE_TO_COARSE boundary, ", ct, bd->data.size());
 

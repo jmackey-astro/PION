@@ -76,7 +76,7 @@ void get_entry_exit_points(
     double *,               ///< position vector of pixel.
     double,                 ///< angle of ray with respect to radial direction
     int,                    ///< =1 for incoming ray, -1 for outgoing.
-    cell *,                 ///< cell we are at.
+    cell &,                 ///< cell we are at.
     std::vector<double> &,  ///< entry point of ray into cell  (output)
     std::vector<double> &,  ///< exit point of ray from cell  (output)
     cell **                 ///< cell the ray exits into.              (output)

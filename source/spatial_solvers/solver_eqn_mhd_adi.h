@@ -64,8 +64,8 @@ public:
       class SimParams &,      ///< simulation parameters
       class GridBaseClass *,  ///< pointer to grid
       const double,           ///< cell-size dx (for LF method)
-      class cell *,           ///< Left state cell pointer
-      class cell *,           ///< Right state cell pointer
+      class cell &,           ///< Left state cell pointer
+      class cell &,           ///< Right state cell pointer
       const pion_flt *,       ///< Left Primitive state vector.
       const pion_flt *,       ///< Right Primitive state vector.
       pion_flt *,             ///< Resultant Flux state vector.
@@ -79,7 +79,7 @@ public:
   ///
   virtual int dU_Cell(
       class GridBaseClass *,
-      cell *,            ///< Current cell.
+      cell &,            ///< Current cell.
       const axes,        ///< Which axis we are looking along.
       const pion_flt *,  ///< Negative direction flux.
       const pion_flt *,  ///< Positive direction flux.
@@ -94,8 +94,8 @@ public:
   ///
   virtual int MHDsource(
       class GridBaseClass *,  ///< pointer to grid.
-      class cell *,           ///< pointer to cell of left state
-      class cell *,           ///< pointer to cell of right state
+      class cell &,           ///< pointer to cell of left state
+      class cell &,           ///< pointer to cell of right state
       pion_flt *,             ///< left edge state
       pion_flt *,             ///< right edge state
       const axes,             ///< Which axis we are looking along.
@@ -108,7 +108,7 @@ public:
   /// Geometric source terms (does nothing for Cartesian geometry).
   ///
   virtual void geometric_source(
-      cell *,            ///< Current cell.
+      cell &,            ///< Current cell.
       const axes,        ///< Which axis we are looking along.
       const pion_flt *,  ///< slope vector for cell c.
       const int,         ///< spatial order of accuracy.
@@ -124,7 +124,7 @@ public:
   /// primitive state vector, for homogeneous equations.
   ///
   virtual int CellAdvanceTime(
-      class cell *c,     ///< cell to update.
+      class cell &c,     ///< cell to update.
       const pion_flt *,  ///< Initial Primitive State Vector.
       pion_flt *,        ///< Update vector dU
       pion_flt *,    ///< Final Primitive state vector (can be same as initial
@@ -140,7 +140,7 @@ public:
   /// Given a cell, calculate the MHD/hydrodynamic timestep.
   ///
   virtual double CellTimeStep(
-      const cell *,  ///< pointer to cell
+      const cell &,  ///< pointer to cell
       const double,  ///< gas EOS gamma.
       const double   ///< Cell size dx.
   );
@@ -262,7 +262,7 @@ public:
   /// velocity on the domain.
   ///
   virtual double CellTimeStep(
-      const cell *,  ///< pointer to cell
+      const cell &,  ///< pointer to cell
       const double,  ///< gas EOS gamma.
       const double   ///< Cell size dx.
   );
@@ -274,7 +274,7 @@ public:
   /// update of Psi and the total energy.
   ///
   virtual int CellAdvanceTime(
-      class cell *c,     ///< cell to update.
+      class cell &c,     ///< cell to update.
       const pion_flt *,  ///< Initial Primitive State Vector.
       pion_flt *,        ///< Update vector dU
       pion_flt *,    ///< Final Primitive state vector (can be same as initial
@@ -318,8 +318,8 @@ public:
       class SimParams &,      ///< simulation parameters
       class GridBaseClass *,  ///< pointer to grid
       const double,           ///< cell-size dx (for LF method)
-      class cell *,           ///< Left state cell pointer
-      class cell *,           ///< Right state cell pointer
+      class cell &,           ///< Left state cell pointer
+      class cell &,           ///< Right state cell pointer
       const pion_flt *,       ///< Left Primitive state vector.
       const pion_flt *,       ///< Right Primitive state vector.
       pion_flt *,             ///< Resultant Flux state vector.
@@ -330,8 +330,8 @@ public:
 
   virtual int MHDsource(
       class GridBaseClass *,  ///< pointer to grid.
-      class cell *,           ///< pointer to cell of left state
-      class cell *,           ///< pointer to cell of right state
+      class cell &,           ///< pointer to cell of left state
+      class cell &,           ///< pointer to cell of right state
       pion_flt *,             ///< left edge state
       pion_flt *,             ///< right edge state
       const axes,             ///< Which axis we are looking along.
@@ -395,7 +395,7 @@ public:
   /// spatial accuracy.
   ///
   virtual void geometric_source(
-      cell *,            ///< Current cell.
+      cell &,            ///< Current cell.
       const axes,        ///< Which axis we are looking along.
       const pion_flt *,  ///< slope vector for cell c.
       const int,         ///< spatial order of accuracy.
@@ -409,8 +409,8 @@ public:
   ///
   virtual int MHDsource(
       class GridBaseClass *,  ///< pointer to grid.
-      class cell *,           ///< pointer to cell of left state
-      class cell *,           ///< pointer to cell of right state
+      class cell &,           ///< pointer to cell of left state
+      class cell &,           ///< pointer to cell of right state
       pion_flt *,             ///< left edge state
       pion_flt *,             ///< right edge state
       const axes,             ///< Which axis we are looking along.
@@ -449,7 +449,7 @@ public:
   /// spatial accuracy, and the GLM Psi source terms.
   ///
   virtual void geometric_source(
-      cell *,            ///< Current cell.
+      cell &,            ///< Current cell.
       const axes,        ///< Which axis we are looking along.
       const pion_flt *,  ///< slope vector for cell c.
       const int,         ///< spatial order of accuracy.
@@ -464,8 +464,8 @@ public:
   ///
   virtual int MHDsource(
       class GridBaseClass *,  ///< pointer to grid.
-      class cell *,           ///< pointer to cell of left state
-      class cell *,           ///< pointer to cell of right state
+      class cell &,           ///< pointer to cell of left state
+      class cell &,           ///< pointer to cell of right state
       pion_flt *,             ///< left edge state
       pion_flt *,             ///< right edge state
       const axes,             ///< Which axis we are looking along.

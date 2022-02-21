@@ -67,7 +67,7 @@ protected:
   /// density to the point entering the next cell).
   ///
   virtual int ProcessCell(
-      class cell *,       ///< Current cell.
+      class cell &,       ///< Current cell.
       double,             ///< Column to cell.
       double,             ///< Path Length through cell.
       const rad_source *  ///< pointer to source struct.

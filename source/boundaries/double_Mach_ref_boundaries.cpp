@@ -58,9 +58,9 @@ int double_Mach_ref_bc::BC_assign_DMACH(
     // This is the boundary position:
     //
     bpos = 10.0 * par.simtime / sin(M_PI / 3.0) + 1.0 / 6.0
-           + CI.get_dpos(*bpt, YY) / tan(M_PI / 3.0);
+           + CI.get_dpos(**bpt, YY) / tan(M_PI / 3.0);
 
-    if (CI.get_dpos(*bpt, XX) <= bpos) {
+    if (CI.get_dpos(**bpt, XX) <= bpos) {
       (*bpt)->P[RO] = 8.0;
       (*bpt)->P[PG] = 116.5;
       (*bpt)->P[VX] = 7.14470958;
@@ -151,9 +151,9 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
     // the domain is outside the DMR region.  This saves having to
     // rewrite the function in the parallel uniform grid.
     //
-    if (CI.get_dpos(c, XX) <= 1. / 6.) {
+    if (CI.get_dpos(*c, XX) <= 1. / 6.) {
       temp = c;
-      while ((temp = grid->NextPt(temp, YN)) != 0) {
+      while ((temp = grid->NextPt(*temp, YN)) != 0) {
         for (int v = 0; v < par.nvar; v++)
           temp->P[v] = b->refval[v];
         for (int v = 0; v < par.nvar; v++)
@@ -166,7 +166,7 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
         }
       }
     }
-  } while ((c = grid->NextPt(c, XP)) && (CI.get_dpos(c, XX) <= 1. / 6.));
+  } while ((c = grid->NextPt(*c, XP)) && (CI.get_dpos(*c, XX) <= 1. / 6.));
 
 #ifndef NDEBUG
   spdlog::info("Setting up DMACH2 boundary... finished.");
@@ -192,9 +192,9 @@ int double_Mach_ref_bc::BC_update_DMACH(
     // This is the boundary position:
     //
     bpos = 10.0 * simtime / sin(M_PI / 3.0) + 1.0 / 6.0
-           + CI.get_dpos(*c, YY) / tan(M_PI / 3.0);
+           + CI.get_dpos(**c, YY) / tan(M_PI / 3.0);
 
-    if (CI.get_dpos(*c, XX) <= bpos) {
+    if (CI.get_dpos(**c, XX) <= bpos) {
       (*c)->Ph[RO] = 8.0;
       (*c)->Ph[PG] = 116.5;
       (*c)->Ph[VX] = 7.14470958;

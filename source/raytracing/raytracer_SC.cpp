@@ -362,9 +362,9 @@ void raytracer_USC_infinity::add_source_to_list(
   // now go from first point on grid in direction dir until we get
   // to the edge.  Then go back one cell.  This is rs.sc.
   //
-  while (gridptr->NextPt(c, dir))
-    c = gridptr->NextPt(c, dir);
-  c = gridptr->NextPt(c, gridptr->OppDir(dir));
+  while (gridptr->NextPt(*c, dir))
+    c = gridptr->NextPt(*c, dir);
+  c = gridptr->NextPt(*c, gridptr->OppDir(dir));
 
   rs->sc = c;
 #ifdef RT_TESTING
@@ -403,11 +403,11 @@ void raytracer_USC_infinity::set_Vshell_for_source(struct rad_source *this_src)
   int err   = 0;
   cell *c   = gridptr->FirstPt_All();
   do {
-    err += cell_cols_1d(this_src, c, XN, Nc, &ds);
-    err += ProcessCell(c, Nc, ds, this_src);
+    err += cell_cols_1d(this_src, *c, XN, Nc, &ds);
+    err += ProcessCell(*c, Nc, ds, this_src);
     if (err != 0)
       spdlog::error("{}: Expected {} but got {}", "rt_inf:Vshell", err, 0);
-  } while ((c = gridptr->NextPt_All(c)) != 0);
+  } while ((c = gridptr->NextPt_All(*c)) != 0);
 
   this_src->s->opacity_src = temp;  // revert opacity type
   this_src->s->update      = upd;   // revert update type.
@@ -685,12 +685,12 @@ int raytracer_USC_infinity::trace_parallel_rays(
   int err = 0;
   cell *c = source->sc;
   // make sure source cell is at the edge of the grid, in direction dir.
-  if (gridptr->NextPt(c, dir) != 0 && gridptr->NextPt(c, dir)->isgd)
+  if (gridptr->NextPt(*c, dir) != 0 && gridptr->NextPt(*c, dir)->isgd)
     spdlog::error("{}: {}", "source cell not set up right", source->s->id);
 #ifdef RT_TESTING
   spdlog::info("raytracer_USC_infinity::trace_parallel_rays");
   spdlog::debug(": start_cell: ");
-  CI.print_cell(c);
+  CI.print_cell(*c);
 #endif
 
   enum direction oppdir = gridptr->OppDir(dir);
@@ -711,7 +711,7 @@ int raytracer_USC_infinity::trace_parallel_rays(
       spdlog::error("{}: {}", "Source not in xy plane in 2d sim!", dir);
     do {
       err += trace_column_parallel(source, c, oppdir);
-    } while ((c = gridptr->NextPt(c, perpdir)) != 0);
+    } while ((c = gridptr->NextPt(*c, perpdir)) != 0);
   }  // 2D
 
   else if (ndim == 3) {
@@ -735,8 +735,8 @@ int raytracer_USC_infinity::trace_parallel_rays(
       cp = c;
       do {
         err += trace_column_parallel(source, cp, oppdir);
-      } while ((cp = gridptr->NextPt(cp, pdir1)) != 0);
-    } while ((c = gridptr->NextPt(c, pdir2)) != 0);
+      } while ((cp = gridptr->NextPt(*cp, pdir1)) != 0);
+    } while ((c = gridptr->NextPt(*c, pdir2)) != 0);
   }  // 3D
 
   return err;
@@ -771,14 +771,14 @@ int raytracer_USC_infinity::trace_column_parallel(
 #endif  // RT_TESTING
 
   do {
-    err += cell_cols_1d(source, c, oppdir, Nc, &ds);
-    err += ProcessCell(c, Nc, ds, source);
+    err += cell_cols_1d(source, *c, oppdir, Nc, &ds);
+    err += ProcessCell(*c, Nc, ds, source);
 
     if (c->Ph[PG] < 0.0 || !isfinite(c->Ph[PG]))
       spdlog::error(
           "{}: {}", "ProcessCell() gives negative energy!", c->Ph[PG]);
 
-  } while ((c = gridptr->NextPt(c, dir)) != 0);
+  } while ((c = gridptr->NextPt(*c, dir)) != 0);
 
   return err;
 }
@@ -788,12 +788,11 @@ int raytracer_USC_infinity::trace_column_parallel(
 
 int raytracer_USC_infinity::cell_cols_1d(
     const rad_source *src,
-    cell *c,
+    cell &c,
     const enum direction sdir,  // direction to source
     double Nc[],
     double *ds)
 {
-  if (!c) spdlog::error("{}: {}", "cell_cols_1d() null cell", fmt::ptr(c));
   //
   // column through cell is very easy in 1D with uniform grid.
   // (ds is back in physical units now!)
@@ -804,7 +803,7 @@ int raytracer_USC_infinity::cell_cols_1d(
     return 0;
   }
 
-  if (c == src->sc && !src->s->at_infinity && src->src_on_grid) {
+  if (&c == src->sc && !src->s->at_infinity && src->src_on_grid) {
     //
     // Cell is source cell (can happen for 1D spherical grids)
     //
@@ -819,7 +818,7 @@ int raytracer_USC_infinity::cell_cols_1d(
     if (ngb) {
       // boundary cells should have zero column (or some value if MPI
       // boundary)
-      CI.get_col(ngb, src->s->id, Nc);
+      CI.get_col(*ngb, src->s->id, Nc);
     }
     else {
       for (unsigned short int iT = 0; iT < src->s->NTau; iT++)
@@ -834,7 +833,7 @@ int raytracer_USC_infinity::cell_cols_1d(
 // ##################################################################
 
 int raytracer_USC_infinity::ProcessCell(
-    cell *c,                  ///< Current cell.
+    cell &c,                  ///< Current cell.
     double col2cell[],        ///< Column to cell (optical depth)
     double ds,                ///< Path length through cell.
     const rad_source *source  ///< pointer to source struct.
@@ -864,7 +863,7 @@ int raytracer_USC_infinity::ProcessCell(
   // 2 special cases: cell is not part of domain, so nothing is set,
   // or else cell is not a leaf, in which case col2cell/cell_col are
   // received from finer grid.
-  if (!c->isdomain && !c->isgd) {
+  if (!c.isdomain && !c.isgd) {
     // if cell is not in the domain, set its column to be zero,
 #ifdef RT_TESTING
     spdlog::debug("off domain: {}, ", c->id);
@@ -884,7 +883,7 @@ int raytracer_USC_infinity::ProcessCell(
   // Just check that the interpolated d-Tau is less than Tau (which
   // is the sum of d-Tau and the optical depth from source to cell).
   //
-  if (!c->isleaf && c->isgd) {
+  if (!c.isleaf && c.isgd) {
     CI.get_col(c, source->s->id, col2cell);
     CI.get_cell_col(c, source->s->id, cell_col);
 #ifdef RT_TESTING
@@ -901,7 +900,7 @@ int raytracer_USC_infinity::ProcessCell(
     return 0;
   }
 
-  if (!c->rt) return 0;
+  if (!c.rt) return 0;
 
   // Now cell is a leaf (or boundary data), so we have to set the
   // optical depth to and through the cell.
@@ -909,22 +908,22 @@ int raytracer_USC_infinity::ProcessCell(
   switch (source->s->opacity_src) {
 
     case RT_OPACITY_MP:
-      mpptr->get_dtau(source, ds, c->Ph, cell_col);
+      mpptr->get_dtau(source, ds, c.Ph, cell_col);
       break;
 
     case RT_OPACITY_MINUS:
       // generic flag for integrating rho*(1-y_i)*ds
       cell_col[0] =
-          ds * c->Ph[RO] * (1.0 - c->Ph[source->s->opacity_var + first_tr]);
+          ds * c.Ph[RO] * (1.0 - c.Ph[source->s->opacity_var + first_tr]);
       break;
 
     case RT_OPACITY_TOTAL:
-      cell_col[0] = ds * c->Ph[RO];
+      cell_col[0] = ds * c.Ph[RO];
       break;
 
     case RT_OPACITY_TRACER:
       // this is a generic flag for integrating rho*y_i*ds
-      cell_col[0] = ds * c->Ph[RO] * c->Ph[source->s->opacity_var + first_tr];
+      cell_col[0] = ds * c.Ph[RO] * c.Ph[source->s->opacity_var + first_tr];
       break;
 
     case RT_OPACITY_HALPHA:
@@ -935,14 +934,14 @@ int raytracer_USC_infinity::ProcessCell(
       // dtau=n(H)*5.0e-22*ds. S=0.22*n(e)*n(H+)/n(H)/T^0.9.  Use cell_col
       // for source function S. Then I(out) = S +exp(-dtau)*(I(in)-S)
       //
-      cell_col[0] = 0.22 * (c->Ph[RO] * mpptr->get_X_H() / pconst.m_p()) * 1.1
-                    * c->Ph[source->s->opacity_var + first_tr]
-                    * c->Ph[source->s->opacity_var + first_tr]
-                    * pow(mpptr->Temperature(c->Ph, gamma), -0.9);
+      cell_col[0] = 0.22 * (c.Ph[RO] * mpptr->get_X_H() / pconst.m_p()) * 1.1
+                    * c.Ph[source->s->opacity_var + first_tr]
+                    * c.Ph[source->s->opacity_var + first_tr]
+                    * pow(mpptr->Temperature(c.Ph, gamma), -0.9);
       // now set cell_col[0] to be I(out)
       cell_col[0] =
           cell_col[0]
-          + exp(-(c->Ph[RO] * mpptr->get_X_H() / pconst.m_p()) * 5.0e-22 * ds)
+          + exp(-(c.Ph[RO] * mpptr->get_X_H() / pconst.m_p()) * 5.0e-22 * ds)
                 * (col2cell[0] - cell_col[0]);
       break;
 
@@ -950,14 +949,14 @@ int raytracer_USC_infinity::ProcessCell(
       // Get the radiative recombination rate *Vshell, for the
       // photoionisation equilibrium assumption (with caseB).
       // We assume the cell is fully ionised, so we set the
-      // first tracer value to 1.0 in c->Ph[] when we call the rate
+      // first tracer value to 1.0 in c.Ph[] when we call the rate
       // function, and reset it afterwards.
       // HARDCODED ASSUMPTION THAT 1ST TRACER IS ION FRACTION.
-      temp            = c->Ph[first_tr];
-      c->Ph[first_tr] = 1.0;
+      temp           = c.Ph[first_tr];
+      c.Ph[first_tr] = 1.0;
       cell_col[0] = CI.get_cell_Vshell(c, source->s->id) / source->s->strength
-                    * mpptr->get_recombination_rate(0, c->Ph, gamma);
-      c->Ph[first_tr] = temp;
+                    * mpptr->get_recombination_rate(0, c.Ph, gamma);
+      c.Ph[first_tr] = temp;
       break;
 
     case RT_OPACITY_HHE:
@@ -971,19 +970,19 @@ int raytracer_USC_infinity::ProcessCell(
       //
       // ---------- H0 -----------
       ix          = source->s->opacity_var + first_tr;
-      cell_col[0] = ds * mpptr->get_n_el(c->Ph, EL_H)
-                    * mpptr->get_th_xsection(ION_H_N) * c->Ph[ix];
+      cell_col[0] = ds * mpptr->get_n_el(c.Ph, EL_H)
+                    * mpptr->get_th_xsection(ION_H_N) * c.Ph[ix];
       // ---------- He0 -----------
       ix++;
-      cell_col[1] = ds * mpptr->get_n_el(c->Ph, EL_HE)
-                    * mpptr->get_th_xsection(ION_HE_N) * c->Ph[ix];
+      cell_col[1] = ds * mpptr->get_n_el(c.Ph, EL_HE)
+                    * mpptr->get_th_xsection(ION_HE_N) * c.Ph[ix];
       // ---------- He+ -----------
       ix++;
-      cell_col[2] = ds * mpptr->get_n_el(c->Ph, EL_HE)
-                    * mpptr->get_th_xsection(ION_HE_P) * c->Ph[ix];
+      cell_col[2] = ds * mpptr->get_n_el(c.Ph, EL_HE)
+                    * mpptr->get_th_xsection(ION_HE_P) * c.Ph[ix];
       // ---------- DUST -----------
       cell_col[3] =
-          ds * mpptr->get_n_el(c->Ph, EL_H) * mpptr->get_th_xsection(ION_DUST);
+          ds * mpptr->get_n_el(c.Ph, EL_H) * mpptr->get_th_xsection(ION_DUST);
       break;
 
     default:
@@ -1020,7 +1019,7 @@ int raytracer_USC_infinity::ProcessCell(
 // ##################################################################
 
 void raytracer_USC_infinity::set_Vshell_in_cell(
-    cell *c,              ///< current cell.
+    cell &c,              ///< current cell.
     double ds,            ///< Path Length through cell.
     const rad_source *rs  ///< pointer to source struct.
 )
@@ -1322,11 +1321,11 @@ void raytracer_USC::set_Vshell_for_source(struct rad_source *this_src)
   int err   = 0;
   cell *c   = gridptr->FirstPt_All();
   do {
-    err += get_cell_columns(this_src, c, Nc, &ds);
-    err += ProcessCell(c, Nc, ds, this_src);
+    err += get_cell_columns(this_src, *c, Nc, &ds);
+    err += ProcessCell(*c, Nc, ds, this_src);
     if (err != 0)
       spdlog::error("{}: Expected {} but got {}", "rt_finite:Vshell", err, 0);
-  } while ((c = gridptr->NextPt_All(c)) != 0);
+  } while ((c = gridptr->NextPt_All(*c)) != 0);
 
   this_src->s->opacity_src = temp;  // revert opacity type
   this_src->s->update      = upd;   // revert update type.
@@ -1338,7 +1337,7 @@ void raytracer_USC::set_Vshell_for_source(struct rad_source *this_src)
     c->rt = true;
     if (!c->isdomain && !c->isgd) c->rt = false;
     if (!c->isleaf && c->isgd) c->rt = false;
-  } while ((c = gridptr->NextPt_All(c)) != 0);
+  } while ((c = gridptr->NextPt_All(*c)) != 0);
 
   return;
 }
@@ -1445,7 +1444,7 @@ int raytracer_USC::RayTrace_SingleSource(
 #ifdef RT_TESTING
   cell *temp = sc;  // for testing.
 #endif              // RT_TESTING
-  set_startcells(source->sc, startcell.data(), src_off_grid.data());
+  set_startcells(*source->sc, startcell.data(), src_off_grid.data());
 #ifdef RT_TESTING
   if (sc != temp)
     spdlog::error(
@@ -1496,7 +1495,7 @@ int raytracer_USC::RayTrace_SingleSource(
 // ##################################################################
 
 void raytracer_USC::set_startcells(
-    cell *sc,          ///< source cell, or cell nearest to source if off grid.
+    cell &sc,          ///< source cell, or cell nearest to source if off grid.
     cell **startcell,  ///< list of startcells for each line/quadrant/octant.
     enum direction *src_off_grid  ///< list of dirs if source is off grid.
 )
@@ -1505,7 +1504,7 @@ void raytracer_USC::set_startcells(
     bool in_my_half = false;
     // Loop over two directions along the 1D line.
     for (int i = 0; i < 2; i++) {
-      cell *c            = sc;
+      cell *c            = &sc;
       enum direction dir = dir1[i];
 
       // First make sure this direction contains some cells to traverse.
@@ -1523,7 +1522,7 @@ void raytracer_USC::set_startcells(
         if (src_off_grid[XX] == XN)
           in_my_half = false;
         else if (src_off_grid[XX] == NO) {
-          c = gridptr->NextPt(c, dir);
+          c = gridptr->NextPt(*c, dir);
           if ((c != 0))
             in_my_half = true;
           else
@@ -1554,7 +1553,7 @@ void raytracer_USC::set_startcells(
     for (int i = 0; i < NQUADS; i++) {
       // Now have 4 quadrants to go around, instead of two sides of
       // a line.
-      cell *c = sc;
+      cell *c = &sc;
       //  test if starting cell is in my quad
       if (i == Q1) {  // XP,YP quadrant.
         if (src_off_grid[XX] == XP || src_off_grid[YY] == YP)
@@ -1575,7 +1574,7 @@ void raytracer_USC::set_startcells(
         else if (src_off_grid[XX] != XP) {
           // source is on grid in x-dir, so sc is in Q1, so move one
           // cell left.
-          c = gridptr->NextPt(c, XN);
+          c = gridptr->NextPt(*c, XN);
           if (c)
             in_my_quad = true;
           else
@@ -1597,7 +1596,7 @@ void raytracer_USC::set_startcells(
         else if (src_off_grid[YY] != YP) {
           // source is on grid in y-dir, so sc is in Q1, so move one
           // cell YN.
-          c = gridptr->NextPt(c, YN);
+          c = gridptr->NextPt(*c, YN);
           if (c)
             in_my_quad = true;
           else
@@ -1617,11 +1616,11 @@ void raytracer_USC::set_startcells(
       else if (i == Q3) {  // XN,YN quadrant.
         if (src_off_grid[YY] != YP) {
           // source is not off grid in +ve y-dir, so move one cell YN.
-          c = gridptr->NextPt(c, YN);
+          c = gridptr->NextPt(*c, YN);
         }
         if (c != 0 && src_off_grid[XX] != XP) {
           // source is not off-grid in +ve x-dir, so move one cell XN.
-          c = gridptr->NextPt(c, XN);
+          c = gridptr->NextPt(*c, XN);
         }
         if (c != 0)
           in_my_quad = true;
@@ -1671,14 +1670,14 @@ void raytracer_USC::set_startcells(
         CI.print_cell(startcell[oct]);
 #endif  // RT_TESTING
         if (oct == OCT1)
-          startcell[oct] = sc;
+          startcell[oct] = &sc;
         else if (oct == OCT2) {
           if (startcell[OCT1] != 0) {
-            startcell[oct] = gridptr->NextPt(startcell[OCT1], XN);
+            startcell[oct] = gridptr->NextPt(*startcell[OCT1], XN);
             // may be zero!
           }
           else if (src_off_grid[XX] == XP) {
-            startcell[oct] = sc;
+            startcell[oct] = &sc;
           }
           else {
             spdlog::error(
@@ -1687,11 +1686,11 @@ void raytracer_USC::set_startcells(
         }
         else if (oct == OCT4) {
           if (startcell[OCT1] != 0) {
-            startcell[oct] = gridptr->NextPt(startcell[OCT1], YN);
+            startcell[oct] = gridptr->NextPt(*startcell[OCT1], YN);
             // may be zero!
           }
           else if (src_off_grid[YY] == YP) {
-            startcell[oct] = sc;
+            startcell[oct] = &sc;
           }
           else {
             spdlog::error(
@@ -1706,15 +1705,15 @@ void raytracer_USC::set_startcells(
           spdlog::debug(" src_off_grid : {}", src_off_grid);
 #endif  // RT_TESTING
           if (startcell[OCT2] != 0) {
-            startcell[oct] = gridptr->NextPt(startcell[OCT2], YN);
+            startcell[oct] = gridptr->NextPt(*startcell[OCT2], YN);
             // may be zero!
           }
           else if (startcell[OCT4] != 0) {
-            startcell[oct] = gridptr->NextPt(startcell[OCT4], XN);
+            startcell[oct] = gridptr->NextPt(*startcell[OCT4], XN);
             // may be zero!
           }
           else if (src_off_grid[XX] == XP && src_off_grid[YY] == YP) {
-            startcell[oct] = sc;
+            startcell[oct] = &sc;
           }
           // Extra condition: if 2 and 4 are both zero, then whole
           // plane must be (1,2,3,4)
@@ -1728,11 +1727,11 @@ void raytracer_USC::set_startcells(
         }
         else if (oct == OCT5) {  // XP,YP,ZN
           if (startcell[OCT1] != 0) {
-            startcell[oct] = gridptr->NextPt(startcell[OCT1], ZN);
+            startcell[oct] = gridptr->NextPt(*startcell[OCT1], ZN);
             // may be zero!
           }
           else if (src_off_grid[ZZ] == ZP) {
-            startcell[oct] = sc;
+            startcell[oct] = &sc;
           }
           else {
             spdlog::error(
@@ -1741,15 +1740,15 @@ void raytracer_USC::set_startcells(
         }
         else if (oct == OCT6) {  // XN,YP,ZN
           if (startcell[OCT5] != 0) {
-            startcell[oct] = gridptr->NextPt(startcell[OCT5], XN);
+            startcell[oct] = gridptr->NextPt(*startcell[OCT5], XN);
             // may be zero!
           }
           else if (startcell[OCT2] != 0) {
-            startcell[oct] = gridptr->NextPt(startcell[OCT2], ZN);
+            startcell[oct] = gridptr->NextPt(*startcell[OCT2], ZN);
             // may be zero!
           }
           else if (src_off_grid[XX] == XP && src_off_grid[ZZ] == ZP) {
-            startcell[oct] = sc;
+            startcell[oct] = &sc;
           }
           // Extra condition: if 2 and 5 are both zero, then whole
           // plane must be (1,2,3,4)
@@ -1763,15 +1762,15 @@ void raytracer_USC::set_startcells(
         }
         else if (oct == OCT8) {  // XP,YN,ZN
           if (startcell[OCT5] != 0) {
-            startcell[oct] = gridptr->NextPt(startcell[OCT5], YN);
+            startcell[oct] = gridptr->NextPt(*startcell[OCT5], YN);
             // may be zero!
           }
           else if (startcell[OCT4] != 0) {
-            startcell[oct] = gridptr->NextPt(startcell[OCT4], ZN);
+            startcell[oct] = gridptr->NextPt(*startcell[OCT4], ZN);
             // may be zero!
           }
           else if (src_off_grid[YY] == YP && src_off_grid[ZZ] == ZP) {
-            startcell[oct] = sc;
+            startcell[oct] = &sc;
           }
           // Extra condition: if 4 and 5 are both zero, then whole
           // plane must be (1,2,3,4)
@@ -1785,21 +1784,21 @@ void raytracer_USC::set_startcells(
         }
         else if (oct == OCT7) {
           if (startcell[OCT6] != 0) {
-            startcell[oct] = gridptr->NextPt(startcell[OCT6], YN);
+            startcell[oct] = gridptr->NextPt(*startcell[OCT6], YN);
             // may be zero!
           }
           else if (startcell[OCT8] != 0) {
-            startcell[oct] = gridptr->NextPt(startcell[OCT8], XN);
+            startcell[oct] = gridptr->NextPt(*startcell[OCT8], XN);
             // may be zero!
           }
           else if (startcell[OCT3] != 0) {
-            startcell[oct] = gridptr->NextPt(startcell[OCT3], ZN);
+            startcell[oct] = gridptr->NextPt(*startcell[OCT3], ZN);
             // may be zero!
           }
           else if (
               src_off_grid[XX] == XP && src_off_grid[YY] == YP
               && src_off_grid[ZZ] == ZP) {
-            startcell[oct] = sc;
+            startcell[oct] = &sc;
           }
           else if (!startcell[OCT3] && !startcell[OCT8]) {
             // Extra conditions:
@@ -1856,10 +1855,10 @@ cell *raytracer_USC::find_source_cell(
     enum direction posdir = static_cast<direction>(2 * static_cast<int>(a) + 1);
     enum direction negdir = gridptr->OppDir(posdir);
 
-    t = gridptr->NextPt(sc, negdir);
-    while (t != 0 && t->isdomain && (gridptr->NextPt(t, negdir) != 0)) {
+    t = gridptr->NextPt(*sc, negdir);
+    while (t != 0 && t->isdomain && (gridptr->NextPt(*t, negdir) != 0)) {
       sc = t;
-      t  = gridptr->NextPt(t, negdir);
+      t  = gridptr->NextPt(*t, negdir);
     }
   }
   // rep.printVec("Second-cell POS",sc->pos,ndim);
@@ -1878,8 +1877,8 @@ cell *raytracer_USC::find_source_cell(
     }
     else {
       while ((ipos[a] > sc->pos[a] || !sc->isdomain)
-             && gridptr->NextPt(gridptr->NextPt(sc, posdir), posdir) != 0)
-        sc = gridptr->NextPt(sc, posdir);
+             && gridptr->NextPt(*gridptr->NextPt(*sc, posdir), posdir) != 0)
+        sc = gridptr->NextPt(*sc, posdir);
     }
   }  // loop over ndim axes.
 
@@ -1987,9 +1986,9 @@ int raytracer_USC::trace_column(
     spdlog::info("raytracer_USC::trace_column() running");
 #endif
     do {
-      err += get_cell_columns(source, c, Nc, &ds);
-      err += ProcessCell(c, Nc, ds, source);
-    } while ((c = gridptr->NextPt(c, dir)) != 0);
+      err += get_cell_columns(source, *c, Nc, &ds);
+      err += ProcessCell(*c, Nc, ds, source);
+    } while ((c = gridptr->NextPt(*c, dir)) != 0);
   }
   return err;
 }
@@ -2019,7 +2018,7 @@ int raytracer_USC::trace_plane(
       cx = cy;
 
       err += trace_column(source, cx, xdir);
-    } while ((cy = gridptr->NextPt(cy, ydir)) != 0);
+    } while ((cy = gridptr->NextPt(*cy, ydir)) != 0);
   }
   return err;
 }
@@ -2044,7 +2043,7 @@ int raytracer_USC::trace_octant(
 #endif
       cy = cz;
       err += trace_plane(source, cy, xdir, ydir);
-    } while ((cz = gridptr->NextPt(cz, zdir)) != 0);
+    } while ((cz = gridptr->NextPt(*cz, zdir)) != 0);
   }
   return err;
 }
@@ -2053,7 +2052,7 @@ int raytracer_USC::trace_octant(
 // ##################################################################
 
 int raytracer_USC::get_cell_columns(
-    const rad_source *s, cell *c, double *Nc, double *ds)
+    const rad_source *s, cell &c, double *Nc, double *ds)
 {
   int err = 0;
   if (ndim == 3) {
@@ -2075,7 +2074,7 @@ int raytracer_USC::get_cell_columns(
 // ##################################################################
 
 int raytracer_USC::cell_cols_2d(
-    const rad_source *src, cell *c, double Nc[], double *ds)
+    const rad_source *src, cell &c, double Nc[], double *ds)
 {
   double delta             = 0.0;
   enum direction entryface = NO, perpface = NO;
@@ -2152,7 +2151,7 @@ int raytracer_USC::cell_cols_2d(
     // in from off grid to cell c.
     //
     if (ngb) {
-      CI.get_col(ngb, src->s->id, Nc);
+      CI.get_col(*ngb, src->s->id, Nc);
     }
     else {
       for (short unsigned int iT = 0; iT < src->s->NTau; iT++) {
@@ -2221,7 +2220,7 @@ int raytracer_USC::cell_cols_2d(
 // ##################################################################
 
 int raytracer_USC::cell_cols_3d(
-    const rad_source *src, cell *c, double Nc[], double *ds)
+    const rad_source *src, cell &c, double Nc[], double *ds)
 {
 
   int dx[3];  // relative position vector.
@@ -2299,7 +2298,7 @@ int raytracer_USC::cell_cols_3d(
     // in from off grid to cell c.
     //
     if (ngb) {
-      CI.get_col(ngb, src->s->id, Nc);
+      CI.get_col(*ngb, src->s->id, Nc);
     }
     else {
       for (short unsigned int iT = 0; iT < src->s->NTau; iT++) {
@@ -2430,7 +2429,7 @@ int raytracer_USC::cell_cols_3d(
 
 void raytracer_USC::col2cell_2d(
     const rad_source *src,           ///< source we are working on.
-    const cell *c,                   ///< cell to get column to.
+    const cell &c,                   ///< cell to get column to.
     const enum direction entryface,  ///< face ray enters cell through.
     const enum direction *perpdir,  ///< array of perp dirs tosource (only 1 el)
     const double *delta,  ///< array of tan(theta) (1 el) (angle in [0,45]deg)
@@ -2447,15 +2446,15 @@ void raytracer_USC::col2cell_2d(
       col1[iT] = col2[iT] = 0.0;
   }
   else {
-    cell *c2 = gridptr->NextPt(c1, (*perpdir));
+    cell *c2 = gridptr->NextPt(*c1, (*perpdir));
     if (!c2) {
-      CI.get_col(c1, src->s->id, col1);
+      CI.get_col(*c1, src->s->id, col1);
       for (short unsigned int iT = 0; iT < src->s->NTau; iT++)
         col2[iT] = 0.0;
     }
     else {
-      CI.get_col(c1, src->s->id, col1);
-      CI.get_col(c2, src->s->id, col2);
+      CI.get_col(*c1, src->s->id, col1);
+      CI.get_col(*c2, src->s->id, col2);
     }
   }
 
@@ -2473,7 +2472,7 @@ void raytracer_USC::col2cell_2d(
 
 void raytracer_USC::col2cell_3d(
     const rad_source *src,           ///< source we are working on.
-    const cell *c,                   ///< cell to get column to.
+    const cell &c,                   ///< cell to get column to.
     const enum direction entryface,  ///< face ray enters cell through.
     const enum direction *perpdir,   ///< array of perp dirs to source (1 el)
     const double *dx,  ///< array of tan(theta) (angle in [0,45]deg)
@@ -2502,33 +2501,33 @@ void raytracer_USC::col2cell_3d(
     }
   }
   else {
-    CI.get_col(c1, src->s->id, col1);
+    CI.get_col(*c1, src->s->id, col1);
 
-    c2 = gridptr->NextPt(c1, perpdir[0]);
+    c2 = gridptr->NextPt(*c1, perpdir[0]);
     if (!c2) {
       for (short unsigned int iT = 0; iT < src->s->NTau; iT++)
         col2[iT] = 0.0;
     }
     else {
-      CI.get_col(c2, src->s->id, col2);
+      CI.get_col(*c2, src->s->id, col2);
     }
 
-    c3 = gridptr->NextPt(c1, perpdir[1]);
+    c3 = gridptr->NextPt(*c1, perpdir[1]);
     if (!c3) {
       for (short unsigned int iT = 0; iT < src->s->NTau; iT++)
         col3[iT] = 0.0;
     }
     else {
-      CI.get_col(c3, src->s->id, col3);
+      CI.get_col(*c3, src->s->id, col3);
     }
 
     if (c2 && c3) {
-      c4 = gridptr->NextPt(c2, perpdir[1]);
+      c4 = gridptr->NextPt(*c2, perpdir[1]);
       if (!c4)
         spdlog::error(
             "{}: {}", "lost on grid -- corner cell doesn't exist",
             fmt::ptr(c4));
-      CI.get_col(c4, src->s->id, col4);
+      CI.get_col(*c4, src->s->id, col4);
     }
     else {
       for (short unsigned int iT = 0; iT < src->s->NTau; iT++)
@@ -2614,7 +2613,7 @@ double raytracer_USC::interpolate_3D(
 // ##################################################################
 
 void raytracer_USC::set_Vshell_in_cell(
-    cell *c,                  ///< current cell.
+    cell &c,                  ///< current cell.
     double ds,                ///< Path Length through cell.
     const rad_source *source  ///< pointer to source struct.
 )

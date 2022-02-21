@@ -264,7 +264,7 @@ int sim_control_pllel::Init(
   do {
     for (int v = 0; v < SimPM.nvar; v++)
       c->Ph[v] = c->P[v];
-  } while ((c = grid[0]->NextPt(c)) != 0);
+  } while ((c = grid[0]->NextPt(*c)) != 0);
 
   //
   // If I'm using the GLM method, make sure Psi variable is
@@ -277,7 +277,7 @@ int sim_control_pllel::Init(
     c = grid[0]->FirstPt();
     do {
       c->P[SI] = c->Ph[SI] = 0.;
-    } while ((c = grid[0]->NextPt(c)) != 0);
+    } while ((c = grid[0]->NextPt(*c)) != 0);
   }
 
   //
@@ -379,9 +379,9 @@ int sim_control_pllel::Init(
   do {
     if (pconst.equalD(c->P[RO], 0.0)) {
       cout << "zero data in cell: ";
-      CI.print_cell(c);
+      CI.print_cell(*c);
     }
-  } while ((c = (grid[0])->NextPt_All(c)) != 0);
+  } while ((c = (grid[0])->NextPt_All(*c)) != 0);
 #endif  // NDEBUG
   return (err);
 }

@@ -42,13 +42,13 @@ public:
 
   /// Returns Volume of cell.
   virtual double CellVolume(
-      const cell *,  ///< cell pointer
+      const cell &,  ///< cell pointer
       const double   ///< cell diameter
   );
 
   /// Returns Surface area of interface.
   virtual double CellInterface(
-      const cell *,     ///< Cell
+      const cell &,     ///< Cell
       const direction,  ///< outward normal to interface.
       const double      ///< cell diameter
   );
@@ -58,7 +58,7 @@ public:
   /// Coordinates.
   ///
   virtual double maxGradAbs(
-      const cell *,  ///< current point.
+      const cell &,  ///< current point.
       const int,     ///< Which State Vector to take scalar from (P=0,Ph=1)
       const int,     ///< Index of Primitive Variable to get gradient of.
       class GridBaseClass *  ///< pointer to computational grid.
@@ -73,7 +73,7 @@ public:
   ///     \frac{\phi(x_{i+1})-\phi(x_{i-1})}{2\delta x} \f]
   ///
   virtual void Gradient(
-      const cell *,  ///< Cell to calculate gradient of
+      const cell &,  ///< Cell to calculate gradient of
       const int,     ///< Which State Vector to take scalar from (P=0,Ph=1)
       const int,     ///< Index of Scalar (in state vector) to calculate
                      ///< gradient of.
@@ -92,7 +92,7 @@ public:
   /// includes the relevant scale factors for each derivative.
   ///
   virtual double Divergence(
-      cell *,       ///< point for which to calculate div(B)
+      cell &,       ///< point for which to calculate div(B)
       const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
       const int *,  ///< Indices of vector quantity (in state vector) to
                     ///< calculate divergence of. Should contain 3
@@ -104,7 +104,7 @@ public:
   /// Calculate Curl of Vector Quantity at a point for Spherical Coordinates.
   /// Note this is identically zero in 1D.
   virtual void Curl(
-      const cell *,  ///< point for which to calculate curl
+      const cell &,  ///< point for which to calculate curl
       const int,     ///< Which vector to take values from (P=0,Ph=1,dU=2)
       const int *,   ///< Indices of vector quantity (in state vector) to
                      ///< calculate divergence of. Should contain 3 elements,
@@ -126,7 +126,7 @@ public:
   /// the centre of gravity of the cell.
   ///
   int SetEdgeState(
-      const cell *,      ///< Current Cell.
+      const cell &,      ///< Current Cell.
       const direction,   ///< Add or subtract the slope depending on direction.
       const int,         ///< length of state vectors.
       const pion_flt *,  ///< Slope vector.
@@ -139,7 +139,7 @@ public:
   /// Calculate the slope (dP/dx) in cell i.
   ///
   int SetSlope(
-      const cell *,          ///< Current Cell.
+      const cell &,          ///< Current Cell.
       const axes,            ///< Which direction to calculate slope in.
       const int,             ///< length of state vectors.
       pion_flt *,            ///< Slope vector to be written to.
@@ -152,7 +152,7 @@ public:
   /// variables, given a cell and positive and negative flux vectors.
   ///
   int DivStateVectorComponent(
-      const cell *,           ///< current cell.
+      const cell &,           ///< current cell.
       class GridBaseClass *,  ///< pointer to computational grid.
       const axes,             ///< current coordinate axis we are looking along.
       const int,              ///< length of state vectors.
@@ -169,7 +169,7 @@ protected:
   /// for evaluating volume averages of source terms.
   ///
   virtual inline double R3(
-      const cell *c,   ///< Cell to operate on.
+      const cell &c,   ///< Cell to operate on.
       const double dR  ///< cell diameter
   )
   {
@@ -185,7 +185,7 @@ protected:
   /// \f[ r>>\delta r \f] it approaches the midpoint.
   ///
   virtual inline double R_com(
-      const cell *c,   ///< cell to operate on
+      const cell &c,   ///< cell to operate on
       const double dR  ///< cell diameter
   )
   {

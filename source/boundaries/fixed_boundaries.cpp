@@ -48,9 +48,9 @@ int fixed_bc::BC_assign_FIXED(
   do {
     (*bpt)->isdomain = false;
     temp             = (*bpt);
-    CI.print_cell(temp);
+    CI.print_cell(*temp);
     for (int v = 0; v > (*bpt)->isedge; v--) {
-      temp = grid->NextPt(temp, ondir);
+      temp = grid->NextPt(*temp, ondir);
     }
   } while (!temp->isgd);
   if (!temp) spdlog::error("{}: {}", "Got lost assigning FIXED bcs.", temp->id);

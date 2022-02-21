@@ -461,7 +461,7 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   }
 
   std::array<double, MAX_DIM> pp;
-  CI.get_dpos(wc->c, pp);
+  CI.get_dpos(*wc->c, pp);
 
   //
   // 3D geometry: either 3D-cartesian, 2D-axisymmetry, or 1D-spherical.
@@ -497,19 +497,19 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   double x = 0.0, y = 0.0, z = 0.0, xf = 0.0, yf = 0.0;
   switch (ndim) {
     case 1:
-      x = grid->difference_vertex2cell(WP->dpos, c, XX);
+      x = grid->difference_vertex2cell(WP->dpos, *c, XX);
       y = 0.0;
       z = 0.0;
       break;
     case 2:
-      x = grid->difference_vertex2cell(WP->dpos, c, XX);
-      y = grid->difference_vertex2cell(WP->dpos, c, YY);
+      x = grid->difference_vertex2cell(WP->dpos, *c, XX);
+      y = grid->difference_vertex2cell(WP->dpos, *c, YY);
       z = 0.0;
       break;
     case 3:
-      x = grid->difference_vertex2cell(WP->dpos, c, XX);
-      y = grid->difference_vertex2cell(WP->dpos, c, YY);
-      z = grid->difference_vertex2cell(WP->dpos, c, ZZ);
+      x = grid->difference_vertex2cell(WP->dpos, *c, XX);
+      y = grid->difference_vertex2cell(WP->dpos, *c, YY);
+      z = grid->difference_vertex2cell(WP->dpos, *c, ZZ);
       break;
     default:
       spdlog::error(

@@ -164,7 +164,7 @@ public:
   /// -F_{i+\frac{1}{2}}) \f$.
   ///
   int dynamics_dU_column(
-      class cell *,          ///< starting point for column.
+      class cell &,          ///< starting point for column.
       const enum direction,  ///< direction to traverse column in.
       const enum direction,  ///< opposite direction.
       const double,          ///< dt, timestep for this calculation

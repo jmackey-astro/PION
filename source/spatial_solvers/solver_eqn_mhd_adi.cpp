@@ -84,8 +84,8 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
     class SimParams &par,       ///< simulation parameters
     class GridBaseClass *grid,  ///< pointer to grid
     const double dx,            ///< cell-size dx (for LF method)
-    class cell *Cl,             ///< Left state cell pointer
-    class cell *Cr,             ///< Right state cell pointer
+    class cell &Cl,             ///< Left state cell pointer
+    class cell &Cr,             ///< Right state cell pointer
     const pion_flt *Pl,         ///< Left Primitive vector.
     const pion_flt *Pr,         ///< Right Primitive vector.
     pion_flt *flux,             ///< Resultant Flux vector.
@@ -333,7 +333,7 @@ void FV_solver_mhd_ideal_adi::UtoFlux(
 
 int FV_solver_mhd_ideal_adi::dU_Cell(
     class GridBaseClass *grid,
-    cell *c,                // Current cell.
+    cell &c,                // Current cell.
     const axes d,           // Which axis we are looking along.
     const pion_flt *fn,     // Negative direction flux.
     const pion_flt *fp,     // Positive direction flux.
@@ -349,7 +349,7 @@ int FV_solver_mhd_ideal_adi::dU_Cell(
   geometric_source(c, d, slope, ooa, dx, u1);
 
   for (int v = 0; v < eq_nvar; v++)
-    c->dU[v] += FV_dt * u1[v];
+    c.dU[v] += FV_dt * u1[v];
   return (err);
 }
 
@@ -358,8 +358,8 @@ int FV_solver_mhd_ideal_adi::dU_Cell(
 
 int FV_solver_mhd_ideal_adi::MHDsource(
     class GridBaseClass *grid,  ///< pointer to grid.
-    class cell *Cl,             ///< pointer to cell of left state
-    class cell *Cr,             ///< pointer to cell of right state
+    class cell &Cl,             ///< pointer to cell of left state
+    class cell &Cr,             ///< pointer to cell of right state
     pion_flt *Pl,               ///< left edge state
     pion_flt *Pr,               ///< right edge state
     const axes d,               ///< Which axis we are looking along.
@@ -371,34 +371,34 @@ int FV_solver_mhd_ideal_adi::MHDsource(
   // The Powell source terms from Powell's paper (1999)
   // called by time_integrator::dynamics_dU_column()
   double dx   = grid->DX();
-  double bm   = 0.5 * (Cl->Ph[eqBX] + Cr->Ph[eqBX]);
-  double uB_l = Cl->Ph[eqBX] * Cl->Ph[eqVX] + Cl->Ph[eqBY] * Cl->Ph[eqVY]
-                + Cl->Ph[eqBZ] * Cl->Ph[eqVZ];
-  double uB_r = Cr->Ph[eqBX] * Cr->Ph[eqVX] + Cr->Ph[eqBY] * Cr->Ph[eqVY]
-                + Cr->Ph[eqBZ] * Cr->Ph[eqVZ];
+  double bm   = 0.5 * (Cl.Ph[eqBX] + Cr.Ph[eqBX]);
+  double uB_l = Cl.Ph[eqBX] * Cl.Ph[eqVX] + Cl.Ph[eqBY] * Cl.Ph[eqVY]
+                + Cl.Ph[eqBZ] * Cl.Ph[eqVZ];
+  double uB_r = Cr.Ph[eqBX] * Cr.Ph[eqVX] + Cr.Ph[eqBY] * Cr.Ph[eqVY]
+                + Cr.Ph[eqBZ] * Cr.Ph[eqVZ];
   pion_flt Powell_l[eq_nvar], Powell_r[eq_nvar];
   for (int v = 0; v < eq_nvar; v++) {
     Powell_l[v] = Powell_r[v] = 0.0;
   }
-  Powell_l[eqMMX] = Cl->Ph[eqBX];
-  Powell_l[eqMMY] = Cl->Ph[eqBY];
-  Powell_l[eqMMZ] = Cl->Ph[eqBZ];
+  Powell_l[eqMMX] = Cl.Ph[eqBX];
+  Powell_l[eqMMY] = Cl.Ph[eqBY];
+  Powell_l[eqMMZ] = Cl.Ph[eqBZ];
   Powell_l[eqERG] = uB_l;
-  Powell_l[eqBBX] = Cl->Ph[eqVX];
-  Powell_l[eqBBY] = Cl->Ph[eqVY];
-  Powell_l[eqBBZ] = Cl->Ph[eqVZ];
+  Powell_l[eqBBX] = Cl.Ph[eqVX];
+  Powell_l[eqBBY] = Cl.Ph[eqVY];
+  Powell_l[eqBBZ] = Cl.Ph[eqVZ];
 
-  Powell_r[eqMMX] = Cr->Ph[eqBX];
-  Powell_r[eqMMY] = Cr->Ph[eqBY];
-  Powell_r[eqMMZ] = Cr->Ph[eqBZ];
+  Powell_r[eqMMX] = Cr.Ph[eqBX];
+  Powell_r[eqMMY] = Cr.Ph[eqBY];
+  Powell_r[eqMMZ] = Cr.Ph[eqBZ];
   Powell_r[eqERG] = uB_r;
-  Powell_r[eqBBX] = Cr->Ph[eqVX];
-  Powell_r[eqBBY] = Cr->Ph[eqVY];
-  Powell_r[eqBBZ] = Cr->Ph[eqVZ];
+  Powell_r[eqBBX] = Cr.Ph[eqVX];
+  Powell_r[eqBBY] = Cr.Ph[eqVY];
+  Powell_r[eqBBZ] = Cr.Ph[eqVZ];
 
   for (int v = 0; v < eq_nvar; v++) {
-    Cl->dU[v] -= dt * bm * (Powell_l[v]) / dx;
-    Cr->dU[v] += dt * bm * (Powell_r[v]) / dx;
+    Cl.dU[v] -= dt * bm * (Powell_l[v]) / dx;
+    Cr.dU[v] += dt * bm * (Powell_r[v]) / dx;
   }
   return 0;
 }
@@ -407,7 +407,7 @@ int FV_solver_mhd_ideal_adi::MHDsource(
 // ##################################################################
 
 int FV_solver_mhd_ideal_adi::CellAdvanceTime(
-    class cell *c,         // cell to update.
+    class cell &c,         // cell to update.
     const pion_flt *Pin,   // Initial State Vector.
     pion_flt *dU,          // Update vector dU
     pion_flt *Pf,          // Final state vector (can be same as initial vec.).
@@ -470,7 +470,7 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
 /// Given a cell, calculate the hydrodynamic timestep.
 ///
 double FV_solver_mhd_ideal_adi::CellTimeStep(
-    const cell *c,   ///< pointer to cell
+    const cell &c,   ///< pointer to cell
     const double,    ///< gas EOS gamma.
     const double dx  ///< Cell size dx.
 )
@@ -480,9 +480,9 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
   //
   pion_flt u1[eq_nvar];
   double l_dt   = 0.0;
-  pion_flt temp = fabs(c->P[eqVX]);
-  if (FV_gndim > 1) temp = max(temp, fabs(c->P[eqVY]));
-  if (FV_gndim > 2) temp = max(temp, fabs(c->P[eqVZ]));
+  pion_flt temp = fabs(c.P[eqVX]);
+  if (FV_gndim > 1) temp = max(temp, fabs(c.P[eqVY]));
+  if (FV_gndim > 2) temp = max(temp, fabs(c.P[eqVZ]));
 
   //
   // First rotate the state vector to the fastest directions,
@@ -492,27 +492,27 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
   enum axes newdir;
   double cf = 0.0;
   if (FV_gndim == 1)
-    temp += cfast(c->P, eq_gamma);
+    temp += cfast(c.P.data(), eq_gamma);
   else {
     // We may have to rotate the state vector to find the fastest
     // fast speed.
     newdir = XX;
-    if (fabs(c->P[BY]) < fabs(c->P[BX])) {
+    if (fabs(c.P[BY]) < fabs(c.P[BX])) {
       newdir = YY;
-      if (fabs(c->P[BZ]) < fabs(c->P[BY])) newdir = ZZ;
+      if (fabs(c.P[BZ]) < fabs(c.P[BY])) newdir = ZZ;
     }
-    else if (fabs(c->P[BZ]) < fabs(c->P[BX]))
+    else if (fabs(c.P[BZ]) < fabs(c.P[BX]))
       newdir = ZZ;
 
     if (newdir != XX) {
       for (int v = 0; v < eq_nvar; v++)
-        u1[v] = c->P[v];
+        u1[v] = c.P[v];
       rotate(u1, XX, newdir);
       cf = cfast(u1, eq_gamma);
       temp += cf;
     }
     else {
-      cf += cfast(c->P, eq_gamma);
+      cf += cfast(c.P.data(), eq_gamma);
       temp += cf;
     }
   }
@@ -583,7 +583,7 @@ FV_solver_mhd_mixedGLM_adi::~FV_solver_mhd_mixedGLM_adi()
 
 
 double FV_solver_mhd_mixedGLM_adi::CellTimeStep(
-    const cell *c,   ///< pointer to cell
+    const cell &c,   ///< pointer to cell
     const double,    ///< gas EOS gamma.
     const double dx  ///< Cell size dx.
 )
@@ -603,8 +603,8 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
     class SimParams &par,       ///< simulation parameters
     class GridBaseClass *grid,  ///< pointer to grid
     const double dx,            ///< cell-size dx (for LF method)
-    class cell *Cl,             ///< Left state cell pointer
-    class cell *Cr,             ///< Right state cell pointer
+    class cell &Cl,             ///< Left state cell pointer
+    class cell &Cr,             ///< Right state cell pointer
     const pion_flt *Pl,         ///< Left Primitive state vector.
     const pion_flt *Pr,         ///< Right Primitive state vector.
     pion_flt *flux,             ///< Resultant Flux state vector.
@@ -726,8 +726,8 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
 
 int FV_solver_mhd_mixedGLM_adi::MHDsource(
     class GridBaseClass *grid,  ///< pointer to grid.
-    class cell *Cl,             ///< pointer to cell of left state
-    class cell *Cr,             ///< pointer to cell of right state
+    class cell &Cl,             ///< pointer to cell of left state
+    class cell &Cr,             ///< pointer to cell of right state
     pion_flt *Pl,               ///< left edge state
     pion_flt *Pr,               ///< right edge state
     const axes d,               ///< Which axis we are looking along.
@@ -741,22 +741,22 @@ int FV_solver_mhd_mixedGLM_adi::MHDsource(
   // Not exactly as indicated in Dominik's paper, but it works.
   //
   double dx = grid->DX();
-  double sm = 0.5 * (Cl->Ph[eqSI] + Cr->Ph[eqSI]);
+  double sm = 0.5 * (Cl.Ph[eqSI] + Cr.Ph[eqSI]);
   FV_solver_mhd_ideal_adi::MHDsource(grid, Cl, Cr, Pl, Pr, d, pos, neg, dt);
 
   pion_flt psi_l[eq_nvar], psi_r[eq_nvar];
   for (int v = 0; v < eq_nvar; v++) {
     psi_l[v] = psi_r[v] = 0.0;
   }
-  psi_l[eqERG] = Cl->Ph[eqVX] * Cl->Ph[eqSI];
-  psi_l[eqPSI] = Cl->Ph[eqVX];
+  psi_l[eqERG] = Cl.Ph[eqVX] * Cl.Ph[eqSI];
+  psi_l[eqPSI] = Cl.Ph[eqVX];
 
-  psi_r[eqERG] = Cr->Ph[eqVX] * Cr->Ph[eqSI];
-  psi_r[eqPSI] = Cr->Ph[eqVX];
+  psi_r[eqERG] = Cr.Ph[eqVX] * Cr.Ph[eqSI];
+  psi_r[eqPSI] = Cr.Ph[eqVX];
 
   for (int v = 0; v < eq_nvar; v++) {
-    Cl->dU[v] -= dt * sm * psi_l[v] / dx;
-    Cr->dU[v] += dt * sm * psi_r[v] / dx;
+    Cl.dU[v] -= dt * sm * psi_l[v] / dx;
+    Cr.dU[v] += dt * sm * psi_r[v] / dx;
   }
   return 0;
 }
@@ -769,7 +769,7 @@ int FV_solver_mhd_mixedGLM_adi::MHDsource(
 
 
 int FV_solver_mhd_mixedGLM_adi::CellAdvanceTime(
-    class cell *c,
+    class cell &c,
     const pion_flt *Pin,  // Initial State Vector.
     pion_flt *dU,         // Update vector dU
     pion_flt *Pf,         // Final state vector (can be same as initial vec.).
@@ -871,7 +871,7 @@ cyl_FV_solver_mhd_ideal_adi::~cyl_FV_solver_mhd_ideal_adi()
 // ##################################################################
 
 void cyl_FV_solver_mhd_ideal_adi::geometric_source(
-    cell *c,               ///< Current cell.
+    cell &c,               ///< Current cell.
     const axes d,          ///< Which axis we are looking along.
     const pion_flt *dpdx,  ///< slope vector for cell c.
     const int OA,          ///< spatial order of accuracy.
@@ -881,19 +881,19 @@ void cyl_FV_solver_mhd_ideal_adi::geometric_source(
 {
 
   if (d == Rcyl) {
-    double pm = (c->Ph[eqBX] * c->Ph[eqBX] + c->Ph[eqBY] * c->Ph[eqBY]
-                 + c->Ph[eqBZ] * c->Ph[eqBZ])
+    double pm = (c.Ph[eqBX] * c.Ph[eqBX] + c.Ph[eqBY] * c.Ph[eqBY]
+                 + c.Ph[eqBZ] * c.Ph[eqBZ])
                 / 2.;
     switch (OA) {
       case OA1:
-        dU[eqMMX] += (c->Ph[eqPG] + pm) / CI.get_dpos(c, Rcyl);
+        dU[eqMMX] += (c.Ph[eqPG] + pm) / CI.get_dpos(c, Rcyl);
         break;
       case OA2:
         dU[eqMMX] +=
-            (c->Ph[eqPG] + pm
+            (c.Ph[eqPG] + pm
              + (CI.get_dpos(c, Rcyl) - R_com(c, dR))
-                   * (dpdx[eqPG] + c->Ph[eqBX] * dpdx[eqBX]
-                      + c->Ph[eqBY] * dpdx[eqBY] + c->Ph[eqBZ] * dpdx[eqBZ]))
+                   * (dpdx[eqPG] + c.Ph[eqBX] * dpdx[eqBX]
+                      + c.Ph[eqBY] * dpdx[eqBY] + c.Ph[eqBZ] * dpdx[eqBZ]))
             / CI.get_dpos(c, Rcyl);
         break;
       default:
@@ -910,8 +910,8 @@ void cyl_FV_solver_mhd_ideal_adi::geometric_source(
 
 int cyl_FV_solver_mhd_ideal_adi::MHDsource(
     class GridBaseClass *grid,  ///< pointer to grid.
-    class cell *Cl,             ///< pointer to cell of left state
-    class cell *Cr,             ///< pointer to cell of right state
+    class cell &Cl,             ///< pointer to cell of left state
+    class cell &Cr,             ///< pointer to cell of right state
     pion_flt *Pl,               ///< left edge state
     pion_flt *Pr,               ///< right edge state
     const axes d,               ///< Which axis we are looking along.
@@ -923,48 +923,48 @@ int cyl_FV_solver_mhd_ideal_adi::MHDsource(
   // The Powell source terms from Powell's paper (1999)
   // called by time_integrator::dynamics_dU_column()
   double dx = grid->DX(), rp = 0.0, rn = 0.0;
-  double bm   = 0.5 * (Cl->Ph[eqBX] + Cr->Ph[eqBX]);
-  double uB_l = Cl->Ph[eqBX] * Cl->Ph[eqVX] + Cl->Ph[eqBY] * Cl->Ph[eqVY]
-                + Cl->Ph[eqBZ] * Cl->Ph[eqVZ];
-  double uB_r = Cr->Ph[eqBX] * Cr->Ph[eqVX] + Cr->Ph[eqBY] * Cr->Ph[eqVY]
-                + Cr->Ph[eqBZ] * Cr->Ph[eqVZ];
+  double bm   = 0.5 * (Cr.Ph[eqBX] + Cr.Ph[eqBX]);
+  double uB_l = Cr.Ph[eqBX] * Cr.Ph[eqVX] + Cr.Ph[eqBY] * Cr.Ph[eqVY]
+                + Cr.Ph[eqBZ] * Cr.Ph[eqVZ];
+  double uB_r = Cr.Ph[eqBX] * Cr.Ph[eqVX] + Cr.Ph[eqBY] * Cr.Ph[eqVY]
+                + Cr.Ph[eqBZ] * Cr.Ph[eqVZ];
   pion_flt Powell_l[eq_nvar], Powell_r[eq_nvar];
   for (int v = 0; v < eq_nvar; v++) {
     Powell_l[v] = Powell_r[v] = 0.0;
   }
-  Powell_l[eqMMX] = Cl->Ph[eqBX];
-  Powell_l[eqMMY] = Cl->Ph[eqBY];
-  Powell_l[eqMMZ] = Cl->Ph[eqBZ];
+  Powell_l[eqMMX] = Cr.Ph[eqBX];
+  Powell_l[eqMMY] = Cr.Ph[eqBY];
+  Powell_l[eqMMZ] = Cr.Ph[eqBZ];
   Powell_l[eqERG] = uB_l;
-  Powell_l[eqBBX] = Cl->Ph[eqVX];
-  Powell_l[eqBBY] = Cl->Ph[eqVY];
-  Powell_l[eqBBZ] = Cl->Ph[eqVZ];
+  Powell_l[eqBBX] = Cr.Ph[eqVX];
+  Powell_l[eqBBY] = Cr.Ph[eqVY];
+  Powell_l[eqBBZ] = Cr.Ph[eqVZ];
 
-  Powell_r[eqMMX] = Cr->Ph[eqBX];
-  Powell_r[eqMMY] = Cr->Ph[eqBY];
-  Powell_r[eqMMZ] = Cr->Ph[eqBZ];
+  Powell_r[eqMMX] = Cr.Ph[eqBX];
+  Powell_r[eqMMY] = Cr.Ph[eqBY];
+  Powell_r[eqMMZ] = Cr.Ph[eqBZ];
   Powell_r[eqERG] = uB_r;
-  Powell_r[eqBBX] = Cr->Ph[eqVX];
-  Powell_r[eqBBY] = Cr->Ph[eqVY];
-  Powell_r[eqBBZ] = Cr->Ph[eqVZ];
+  Powell_r[eqBBX] = Cr.Ph[eqVX];
+  Powell_r[eqBBY] = Cr.Ph[eqVY];
+  Powell_r[eqBBZ] = Cr.Ph[eqVZ];
 
   switch (d) {
     case Zcyl:
       for (int v = 0; v < eq_nvar; v++) {
-        Cl->dU[v] -= dt * bm * (Powell_l[v]) / dx;
-        Cr->dU[v] += dt * bm * (Powell_r[v]) / dx;
+        Cr.dU[v] -= dt * bm * (Powell_l[v]) / dx;
+        Cr.dU[v] += dt * bm * (Powell_r[v]) / dx;
       }
       break;
     case Rcyl:
       rp = CI.get_dpos(Cl, Rcyl) + dx * 0.5;
       rn = rp - dx;
       for (int v = 0; v < eq_nvar; v++) {
-        Cl->dU[v] -= dt * bm * (Powell_l[v]) * 2.0 * rp / (rp * rp - rn * rn);
+        Cr.dU[v] -= dt * bm * (Powell_l[v]) * 2.0 * rp / (rp * rp - rn * rn);
       }
       rn = rp;
       rp += dx;
       for (int v = 0; v < eq_nvar; v++) {
-        Cr->dU[v] += dt * bm * (Powell_r[v]) * 2.0 * rn / (rp * rp - rn * rn);
+        Cr.dU[v] += dt * bm * (Powell_r[v]) * 2.0 * rn / (rp * rp - rn * rn);
       }
       break;
     case Tcyl:
@@ -1023,7 +1023,7 @@ cyl_FV_solver_mhd_mixedGLM_adi::~cyl_FV_solver_mhd_mixedGLM_adi()
 // ##################################################################
 
 void cyl_FV_solver_mhd_mixedGLM_adi::geometric_source(
-    cell *c,               ///< Current cell.
+    cell &c,               ///< Current cell.
     const axes d,          ///< Which axis we are looking along.
     const pion_flt *dpdx,  ///< slope vector for cell c.
     const int OA,          ///< spatial order of accuracy.
@@ -1033,31 +1033,31 @@ void cyl_FV_solver_mhd_mixedGLM_adi::geometric_source(
 {
 
   if (d == Rcyl) {
-    double pm = (c->Ph[eqBX] * c->Ph[eqBX] + c->Ph[eqBY] * c->Ph[eqBY]
-                 + c->Ph[eqBZ] * c->Ph[eqBZ])
+    double pm = (c.Ph[eqBX] * c.Ph[eqBX] + c.Ph[eqBY] * c.Ph[eqBY]
+                 + c.Ph[eqBZ] * c.Ph[eqBZ])
                 / 2.;
     switch (OA) {
       case OA1:
         // if (c->pos[Rcyl]<4 && c->pos[Rcyl]>0) {
         //  cout <<"pos="<<c->pos[Rcyl]<<", dU = "<<c->dU[eqMMX] <<"  ";
-        //  cout << (c->Ph[eqPG]+pm)/CI.get_dpos(c,Rcyl);
+        //  cout << (c.Ph[eqPG]+pm)/CI.get_dpos(c,Rcyl);
         //}
-        dU[eqMMX] += (c->Ph[eqPG] + pm) / CI.get_dpos(c, Rcyl);
+        dU[eqMMX] += (c.Ph[eqPG] + pm) / CI.get_dpos(c, Rcyl);
         // if (c->pos[Rcyl]<4 && c->pos[Rcyl]>0) {
         //  cout <<"  "<<c->dU[eqMMX]<<"\n";
         //}
-        dU[eqBBX] += GLM_chyp * c->Ph[eqSI] / CI.get_dpos(c, Rcyl);
+        dU[eqBBX] += GLM_chyp * c.Ph[eqSI] / CI.get_dpos(c, Rcyl);
         break;
       case OA2:
         dU[eqMMX] +=
-            (c->Ph[eqPG] + pm
+            (c.Ph[eqPG] + pm
              + (CI.get_dpos(c, Rcyl) - R_com(c, dR))
-                   * (dpdx[eqPG] + c->Ph[eqBX] * dpdx[eqBX]
-                      + c->Ph[eqBY] * dpdx[eqBY] + c->Ph[eqBZ] * dpdx[eqBZ]))
+                   * (dpdx[eqPG] + c.Ph[eqBX] * dpdx[eqBX]
+                      + c.Ph[eqBY] * dpdx[eqBY] + c.Ph[eqBZ] * dpdx[eqBZ]))
             / CI.get_dpos(c, Rcyl);
         dU[eqBBX] +=
             GLM_chyp
-            * (c->Ph[eqSI] + (CI.get_dpos(c, Rcyl) - R_com(c, dR)) * dpdx[eqSI])
+            * (c.Ph[eqSI] + (CI.get_dpos(c, Rcyl) - R_com(c, dR)) * dpdx[eqSI])
             / CI.get_dpos(c, Rcyl);
         break;
       default:
@@ -1078,8 +1078,8 @@ void cyl_FV_solver_mhd_mixedGLM_adi::geometric_source(
 ///
 int cyl_FV_solver_mhd_mixedGLM_adi::MHDsource(
     class GridBaseClass *grid,  ///< pointer to grid.
-    class cell *Cl,             ///< pointer to cell of left state
-    class cell *Cr,             ///< pointer to cell of right state
+    class cell &Cl,             ///< pointer to cell of left state
+    class cell &Cr,             ///< pointer to cell of right state
     pion_flt *Pl,               ///< left edge state
     pion_flt *Pr,               ///< right edge state
     const axes d,               ///< Which axis we are looking along.
@@ -1089,22 +1089,22 @@ int cyl_FV_solver_mhd_mixedGLM_adi::MHDsource(
 )
 {
   double dx = grid->DX();
-  double sm = 0.5 * (Cl->Ph[eqSI] + Cr->Ph[eqSI]);
+  double sm = 0.5 * (Cr.Ph[eqSI] + Cr.Ph[eqSI]);
   cyl_FV_solver_mhd_ideal_adi::MHDsource(grid, Cl, Cr, Pl, Pr, d, pos, neg, dt);
 
   pion_flt psi_l[eq_nvar], psi_r[eq_nvar];
   for (int v = 0; v < eq_nvar; v++) {
     psi_l[v] = psi_r[v] = 0.0;
   }
-  psi_l[eqERG] = Cl->Ph[eqVX] * Cl->Ph[eqSI];
-  psi_l[eqPSI] = Cl->Ph[eqVX];
+  psi_l[eqERG] = Cr.Ph[eqVX] * Cr.Ph[eqSI];
+  psi_l[eqPSI] = Cr.Ph[eqVX];
 
-  psi_r[eqERG] = Cr->Ph[eqVX] * Cr->Ph[eqSI];
-  psi_r[eqPSI] = Cr->Ph[eqVX];
+  psi_r[eqERG] = Cr.Ph[eqVX] * Cr.Ph[eqSI];
+  psi_r[eqPSI] = Cr.Ph[eqVX];
 
   for (int v = 0; v < eq_nvar; v++) {
-    Cl->dU[v] -= dt * sm * psi_l[v] / dx;
-    Cr->dU[v] += dt * sm * psi_r[v] / dx;
+    Cr.dU[v] -= dt * sm * psi_l[v] / dx;
+    Cr.dU[v] += dt * sm * psi_r[v] / dx;
   }
   return 0;
 }

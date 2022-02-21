@@ -353,19 +353,19 @@ int IC_shocktube::assign_data(
   if (ndim == 1) {
     do {
       // Set values of primitive variables.
-      if (CI.get_dpos(cpt, XX) < (interface - dx))
+      if (CI.get_dpos(*cpt, XX) < (interface - dx))
         for (int v = 0; v < nvar; v++)
           cpt->P[v] = left[v];
-      else if (CI.get_dpos(cpt, XX) > (interface + dx))
+      else if (CI.get_dpos(*cpt, XX) > (interface + dx))
         for (int v = 0; v < nvar; v++)
           cpt->P[v] = right[v];
       else {
         for (int v = 0; v < nvar; v++)
           cpt->P[v] = 0.5 * (left[v] + right[v])
-                      + 0.5 * (CI.get_dpos(cpt, XX) - interface)
+                      + 0.5 * (CI.get_dpos(*cpt, XX) - interface)
                             * (right[v] - left[v]) / dx;
       }
-    } while ((cpt = gg->NextPt(cpt)) != NULL);
+    } while ((cpt = gg->NextPt(*cpt)) != NULL);
   }
   else if (ndim == 2 || ndim == 3) {
     //
@@ -383,7 +383,7 @@ int IC_shocktube::assign_data(
       //
       // Get cell position, and position of discontinuity at this y-value.
       //
-      CI.get_dpos(cpt, dpos);
+      CI.get_dpos(*cpt, dpos);
       x0 = xmax - (dpos[YY] - SimPM->Xmin[YY]) * tt;
       if (dpos[XX] <= x0) {
         for (int v = 0; v < nvar; v++)
@@ -401,7 +401,7 @@ int IC_shocktube::assign_data(
       else
         for (int v = 0; v < nvar; v++)
           cpt->P[v] = cpt->Ph[v] = right[v];
-    } while ((cpt = gg->NextPt(cpt)) != 0);
+    } while ((cpt = gg->NextPt(*cpt)) != 0);
 
     // Now enforce divB=0 if needed.
     /*    if (nvar>=8) {
@@ -441,7 +441,7 @@ int IC_shocktube::assign_data(
       std::array<double, MAX_DIM> dpos;
       cpt = gg->FirstPt();
       do {
-        CI.get_dpos(cpt, dpos);
+        CI.get_dpos(*cpt, dpos);
         //
         // If we are in [0.5,0.8] then add in a rotation by 2pi
         //
@@ -455,7 +455,7 @@ int IC_shocktube::assign_data(
           cpt->P[BZ] = cpt->Ph[BZ] =
               amp * sin(2.0 * M_PI * (dpos[XX] - interface) / len);
         }
-      } while ((cpt = gg->NextPt(cpt)) != 0);
+      } while ((cpt = gg->NextPt(*cpt)) != 0);
     }  // 1D
     else if (ndim == 2) {
       // spdlog::error("{}: {}", "AW test not set up in 2D yet.",ndim);
@@ -469,7 +469,7 @@ int IC_shocktube::assign_data(
       std::array<double, MAX_DIM> dpos;
       cpt = gg->FirstPt();
       do {
-        CI.get_dpos(cpt, dpos);
+        CI.get_dpos(*cpt, dpos);
         //
         // This uses the test from Stone's code test page.
         //
@@ -485,8 +485,8 @@ int IC_shocktube::assign_data(
         cpt->P[BX] = 1.0;
         cpt->P[BY] = cpt->P[VY];
         cpt->P[BZ] = cpt->P[VZ];
-        eqn->rotateXY(cpt->P, theta);
-      } while ((cpt = gg->NextPt(cpt)) != 0);
+        eqn->rotateXY(cpt->P.data(), theta);
+      } while ((cpt = gg->NextPt(*cpt)) != 0);
     }  // 2D
     else
       spdlog::error("{}: {}", "AW test not set up in 3D yet.", ndim);

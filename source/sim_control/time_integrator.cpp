@@ -296,7 +296,7 @@ int time_integrator::calc_conduction_dU(
       cell *cpt = grid->get_cell_all(index[0], index[1], index[2]);
       do {
         cpt->dU[ERG] *= delt;
-      } while ((cpt = grid->NextPt(cpt, XP)) != 0);
+      } while ((cpt = grid->NextPt(*cpt, XP)) != 0);
     }
   }
   // ----------------------------------------------------------------
@@ -423,18 +423,18 @@ int time_integrator::calc_RT_microphysics_dU(
             // Get column densities and Vshell in struct for each source.
             //
             for (int v = 0; v < FVI_nheat; v++) {
-              heating[v].Vshell = CI.get_cell_Vshell(c, heating[v].id);
-              heating[v].dS     = CI.get_cell_deltaS(c, heating[v].id);
-              CI.get_cell_col(c, heating[v].id, heating[v].DelCol);
-              CI.get_col(c, heating[v].id, heating[v].Column);
+              heating[v].Vshell = CI.get_cell_Vshell(*c, heating[v].id);
+              heating[v].dS     = CI.get_cell_deltaS(*c, heating[v].id);
+              CI.get_cell_col(*c, heating[v].id, heating[v].DelCol);
+              CI.get_col(*c, heating[v].id, heating[v].Column);
               for (short unsigned int iC = 0; iC < heating[v].NTau; iC++)
                 heating[v].Column[iC] -= heating[v].DelCol[iC];
             }
             for (int v = 0; v < FVI_nion; v++) {
-              ionize[v].Vshell = CI.get_cell_Vshell(c, ionize[v].id);
-              ionize[v].dS     = CI.get_cell_deltaS(c, ionize[v].id);
-              CI.get_cell_col(c, ionize[v].id, ionize[v].DelCol);
-              CI.get_col(c, ionize[v].id, ionize[v].Column);
+              ionize[v].Vshell = CI.get_cell_Vshell(*c, ionize[v].id);
+              ionize[v].dS     = CI.get_cell_deltaS(*c, ionize[v].id);
+              CI.get_cell_col(*c, ionize[v].id, ionize[v].DelCol);
+              CI.get_col(*c, ionize[v].id, ionize[v].Column);
               for (short unsigned int iC = 0; iC < ionize[v].NTau; iC++)
                 ionize[v].Column[iC] -= ionize[v].DelCol[iC];
               if (ionize[v].Column[0] < 0.0) {
@@ -445,11 +445,11 @@ int time_integrator::calc_RT_microphysics_dU(
 
             // 4th and 5th args are for ionising sources.
             err += MP->TimeUpdateMP_RTnew(
-                c->P, FVI_nheat, heating, FVI_nion, ionize, p.data(), delt,
-                SimPM.gamma, 0, &tt);
+                c->P.data(), FVI_nheat, heating, FVI_nion, ionize, p.data(),
+                delt, SimPM.gamma, 0, &tt);
 
             // New state is p[], old state is c->P[].  Get dU from these.
-            spatial_solver->PtoU(c->P, ui.data(), SimPM.gamma);
+            spatial_solver->PtoU(c->P.data(), ui.data(), SimPM.gamma);
             spatial_solver->PtoU(p.data(), uf.data(), SimPM.gamma);
             for (int v = 0; v < SimPM.nvar; v++)
               c->dU[v] += uf[v] - ui[v];
@@ -464,8 +464,8 @@ int time_integrator::calc_RT_microphysics_dU(
               }
             }
 #endif
-          }                                        // if not boundary data.
-        } while ((c = grid->NextPt(c, XP)) != 0);  // loop over x-column cells
+          }                                         // if not boundary data.
+        } while ((c = grid->NextPt(*c, XP)) != 0);  // loop over x-column cells
         if (err) {
           spdlog::error("Errors in calc_RT_microphysics_dU() {} {}", ax2, ax3);
           exit(1);
@@ -534,23 +534,24 @@ int time_integrator::calc_noRT_microphysics_dU(
             // 0 = adaptive RK5 Cash-Karp method.
             // 1 = adaptive euler integration.
             // 2 = single step RK4 method (at your own risk!)
-            err += MP->TimeUpdateMP(c->P, p.data(), delt, SimPM.gamma, 0, &tt);
+            err += MP->TimeUpdateMP(
+                c->P.data(), p.data(), delt, SimPM.gamma, 0, &tt);
             if (err) {
               spdlog::error(
                   "{}: {}", "calc_noRT_microphysics_dU returned error: cell id",
                   c->id);
-              CI.print_cell(c);
+              CI.print_cell(*c);
               cout << "error code = " << err << "\n";
             }
             // New state is p[], old state is c->P[].  Get dU from these.
-            spatial_solver->PtoU(c->P, ui.data(), SimPM.gamma);
+            spatial_solver->PtoU(c->P.data(), ui.data(), SimPM.gamma);
             spatial_solver->PtoU(p.data(), uf.data(), SimPM.gamma);
             for (int v = 0; v < SimPM.nvar; v++)
               c->dU[v] += uf[v] - ui[v];
-          }                                        // if not boundary data.
-        } while ((c = grid->NextPt(c, XP)) != 0);  // loop over x-column cells
-      }                                            // ax2
-    }                                              // ax3
+          }                                         // if not boundary data.
+        } while ((c = grid->NextPt(*c, XP)) != 0);  // loop over x-column cells
+      }                                             // ax2
+    }                                               // ax3
 #ifdef PION_OMP
   }
 #endif
@@ -673,12 +674,12 @@ int time_integrator::preprocess_data(
           index[2] = ax3;
           c        = grid->get_cell_all(index[0], index[1], index[2]);
           do {
-            CI.set_DivV(c, spatial_solver->Divergence(c, 1, indices, grid));
+            CI.set_DivV(*c, spatial_solver->Divergence(*c, 1, indices, grid));
             gradp = 0.0;
             for (int i = 0; i < SimPM.ndim; i++)
-              gradp += spatial_solver->GradZone(grid, c, i, 1, PG);
-            CI.set_MagGradP(c, gradp);
-          } while ((c = grid->NextPt(c, XP)) != 0);
+              gradp += spatial_solver->GradZone(grid, *c, i, 1, PG);
+            CI.set_MagGradP(*c, gradp);
+          } while ((c = grid->NextPt(*c, XP)) != 0);
         }  // ax2
       }    // ax3
 #ifdef PION_OMP
@@ -770,8 +771,8 @@ int time_integrator::calc_Hcorrection(
 
           // Set three cell pointers (2nd order slopes have a 3-point
           // stencil).
-          cell *npt  = grid->NextPt(cpt, posdirs[idim]);
-          cell *n2pt = grid->NextPt(npt, posdirs[idim]);
+          cell *npt  = grid->NextPt(*cpt, posdirs[idim]);
+          cell *n2pt = grid->NextPt(*npt, posdirs[idim]);
           if (npt == 0 || n2pt == 0)
             spdlog::error("{}: {}", "Couldn't find three cells in column", 0);
           // Need to get slopes and edge states if 2nd order (csp==OA2).
@@ -784,34 +785,34 @@ int time_integrator::calc_Hcorrection(
           // --------------------------------------------------------
           do {
             err += spatial_solver->SetEdgeState(
-                cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL.data(), csp,
+                *cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL.data(), csp,
                 grid);
             err += spatial_solver->SetSlope(
-                npt, axis[idim], SimPM.nvar, slope_npt, csp, grid);
+                *npt, axis[idim], SimPM.nvar, slope_npt, csp, grid);
             err += spatial_solver->SetEdgeState(
-                npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR.data(), csp,
+                *npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR.data(), csp,
                 grid);
             spatial_solver->set_Hcorrection(
-                cpt, axis[idim], edgeL.data(), edgeR.data(), SimPM.gamma);
+                *cpt, axis[idim], edgeL.data(), edgeR.data(), SimPM.gamma);
 
             cpt       = npt;
             npt       = n2pt;
             temp      = slope_cpt;
             slope_cpt = slope_npt;
             slope_npt = temp;
-          } while ((n2pt = grid->NextPt(n2pt, posdirs[idim])) != 0);
+          } while ((n2pt = grid->NextPt(*n2pt, posdirs[idim])) != 0);
 
           // last cell must be 1st order.
           err += spatial_solver->SetEdgeState(
-              cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL.data(), csp,
+              *cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL.data(), csp,
               grid);
           for (int v = 0; v < SimPM.nvar; v++)
             slope_npt[v] = 0.;
           err += spatial_solver->SetEdgeState(
-              npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR.data(), csp,
+              *npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR.data(), csp,
               grid);
           spatial_solver->set_Hcorrection(
-              cpt, axis[idim], edgeL.data(), edgeR.data(), SimPM.gamma);
+              *cpt, axis[idim], edgeL.data(), edgeR.data(), SimPM.gamma);
 
           // --------------------------------------------------------
           // Finished H-correction calculation for the column.
@@ -931,7 +932,7 @@ int time_integrator::set_dynamics_dU(
           index[x3]    = 0;
           cpt          = grid->get_cell_all(index[0], index[1], index[2]);
           return_value = dynamics_dU_column(
-              cpt, posdirs[i], negdirs[i], dt, space_ooa, grid);
+              *cpt, posdirs[i], negdirs[i], dt, space_ooa, grid);
           if (0 != return_value)
             spdlog::error(
                 "{}: Expected {} but got {}", "set_dynamics_dU: column", 0,
@@ -963,7 +964,7 @@ int time_integrator::set_dynamics_dU(
 
 
 int time_integrator::dynamics_dU_column(
-    class cell *startingPt,       ///< starting point of column.
+    class cell &startingPt,       ///< starting point of column.
     const enum direction posdir,  ///< direction to trace column.
     const enum direction negdir,  ///< reverse direction
     const double dt,              ///< timestep we are advancing by.
@@ -1000,13 +1001,13 @@ int time_integrator::dynamics_dU_column(
   //
   // Set starting point, and next two points in the column.
   //
-  cell *cpt = startingPt;
+  cell *cpt = &startingPt;
   if (cpt == 0) {
     spdlog::error("(dynamics_dU_column) error finding left boundary cell");
     return (1);
   }
-  cell *npt  = grid->NextPt(cpt, posdir);
-  cell *n2pt = grid->NextPt(npt, posdir);
+  cell *npt  = grid->NextPt(*cpt, posdir);
+  cell *n2pt = grid->NextPt(*npt, posdir);
 #ifdef TEST_INT
   // cout <<"Column: "<<cpt<<", "<<npt<<", "<<n2pt<<"\n";
 #endif
@@ -1039,9 +1040,9 @@ int time_integrator::dynamics_dU_column(
     // Get the flux from left and right states, adding artificial
     // viscosity if needed.
     err += spatial_solver->SetEdgeState(
-        cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
+        *cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
     err +=
-        spatial_solver->SetSlope(npt, axis, SimPM.nvar, slope_npt, csp, grid);
+        spatial_solver->SetSlope(*npt, axis, SimPM.nvar, slope_npt, csp, grid);
 #ifdef ZERO_SLOPE_TRACERS
     // not recommended b/c it is diffusive, but it does make the code
     // more symmetric.
@@ -1049,13 +1050,13 @@ int time_integrator::dynamics_dU_column(
       slope_npt[v] = 0.0;
 #endif
     err += spatial_solver->SetEdgeState(
-        npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
+        *npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
     err += spatial_solver->InterCellFlux(
-        SimPM, grid, cpt, npt, edgeL, edgeR, Fr_this, SimPM.gamma, dx);
+        SimPM, grid, *cpt, *npt, edgeL, edgeR, Fr_this, SimPM.gamma, dx);
     err += spatial_solver->MHDsource(
-        grid, cpt, npt, edgeL, edgeR, axis, posdir, negdir, dt);
+        grid, *cpt, *npt, edgeL, edgeR, axis, posdir, negdir, dt);
     err += spatial_solver->dU_Cell(
-        grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
+        grid, *cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
 
     // record flux entering and leaving domain
     if (cpt->isbd_ref[negdir]) {
@@ -1116,7 +1117,7 @@ int time_integrator::dynamics_dU_column(
     slope_npt = temp;
     cpt       = npt;
     npt       = n2pt;
-  } while ((n2pt = grid->NextPt(n2pt, posdir)));
+  } while ((n2pt = grid->NextPt(*n2pt, posdir)));
 
   //
   // Now n2pt=null. npt = bd-data, cpt= (gd/bd)-data.
@@ -1124,17 +1125,17 @@ int time_integrator::dynamics_dU_column(
   //
   // last cell 1st order.
   err += spatial_solver->SetEdgeState(
-      cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
+      *cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
   for (int v = 0; v < SimPM.nvar; v++)
     slope_npt[v] = 0.;
   err += spatial_solver->SetEdgeState(
-      npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
+      *npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
   err += spatial_solver->InterCellFlux(
-      SimPM, grid, cpt, npt, edgeL, edgeR, Fr_this, SimPM.gamma, dx);
+      SimPM, grid, *cpt, *npt, edgeL, edgeR, Fr_this, SimPM.gamma, dx);
   err += spatial_solver->MHDsource(
-      grid, cpt, npt, edgeL, edgeR, axis, posdir, negdir, dt);
+      grid, *cpt, *npt, edgeL, edgeR, axis, posdir, negdir, dt);
   err += spatial_solver->dU_Cell(
-      grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
+      grid, *cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
   // record flux entering and leaving domain
   if (cpt->isbd_ref[negdir]) {
     for (int v = 0; v < SimPM.nvar; v++)
@@ -1243,15 +1244,15 @@ int time_integrator::grid_update_state_vector(
           }
           else {
             err += spatial_solver->CellAdvanceTime(
-                c, c->P, c->dU, c->Ph, &temperg, SimPM.gamma,
+                *c, c->P.data(), c->dU.data(), c->Ph, &temperg, SimPM.gamma,
                 SimPM.EP.MinTemperature, dt);
           }
 
 #ifndef NDEBUG
           if (err) {
             spdlog::error("______ Error in Cell-advance-time: ");
-            CI.print_cell(c);
-            CI.print_cell(c->npt);
+            CI.print_cell(*c);
+            CI.print_cell(*c->npt);
             err = 0;
           }
 #else
@@ -1273,7 +1274,7 @@ int time_integrator::grid_update_state_vector(
             for (int v = 0; v < SimPM.nvar; v++)
               c->P[v] = c->Ph[v];
           }
-        } while ((c = grid->NextPt(c, XP)) != 0);
+        } while ((c = grid->NextPt(*c, XP)) != 0);
       }  // ax2
     }    // ax3
 #ifdef PION_OMP

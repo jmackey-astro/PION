@@ -384,7 +384,7 @@ int IC_shock_cloud::setup_shockcloud()
   std::array<double, MAX_DIM> dpos;
   class cell *cpt = gg->FirstPt();
   do {
-    CI.get_dpos(cpt, dpos);
+    CI.get_dpos(*cpt, dpos);
     // Set values of primitive variables.
     if (dpos[XX] < shockpos)
       for (int v = 0; v < SimPM->nvar; v++)
@@ -394,7 +394,7 @@ int IC_shock_cloud::setup_shockcloud()
         cpt->P[v] = preshock[v];
 
     // This is where I set the state inside the blast radius.
-    if ((vfrac = stest.volumeFraction(cpt)) > 0) {
+    if ((vfrac = stest.volumeFraction(*cpt)) > 0) {
       cpt->P[RO] = vfrac * (dratio * cpt->P[RO]) + (1. - vfrac) * cpt->P[RO];
       cpt->P[PG] = vfrac * (pratio * cpt->P[PG]) + (1. - vfrac) * cpt->P[PG];
       if (eqns == 2)
@@ -412,7 +412,7 @@ int IC_shock_cloud::setup_shockcloud()
           cpt->P[SimPM->ftr + v] = -2.0;
       }
     }
-  } while ((cpt = gg->NextPt(cpt)) != NULL);
+  } while ((cpt = gg->NextPt(*cpt)) != NULL);
   //  cpt = firstPt();
   spdlog::info("\t\tGot through data successfully");
   // Data done.

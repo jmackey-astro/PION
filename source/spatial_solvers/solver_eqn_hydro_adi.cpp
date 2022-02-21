@@ -90,8 +90,8 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     class SimParams &par,   ///< simulation parameters
     class GridBaseClass *,  ///< pointer to grid
     const double dx,        ///< cell-size dx (for LF method)
-    class cell *Cl,         ///< Left state cell pointer
-    class cell *Cr,         ///< Right state cell pointer
+    class cell &Cl,         ///< Left state cell pointer
+    class cell &Cr,         ///< Right state cell pointer
     const pion_flt *Pl,     ///< Left Primitive state vector.
     const pion_flt *Pr,     ///< Right Primitive state vector.
     pion_flt *flux,         ///< Resultant Flux state vector.
@@ -307,7 +307,7 @@ int FV_solver_Hydro_Euler::AVFalle(
 ///
 int FV_solver_Hydro_Euler::dU_Cell(
     class GridBaseClass *grid,
-    cell *c,                // Current cell.
+    cell &c,                // Current cell.
     const axes d,           // Which axis we are looking along.
     const pion_flt *fn,     // Negative direction flux.
     const pion_flt *fp,     // Positive direction flux.
@@ -325,7 +325,7 @@ int FV_solver_Hydro_Euler::dU_Cell(
   // add source terms
   geometric_source(c, d, slope, ooa, dx, u1);
   for (int v = 0; v < eq_nvar; v++)
-    c->dU[v] += dt * u1[v];
+    c.dU[v] += dt * u1[v];
   return (err);
 }
 
@@ -333,7 +333,7 @@ int FV_solver_Hydro_Euler::dU_Cell(
 // ##################################################################
 
 int FV_solver_Hydro_Euler::CellAdvanceTime(
-    class cell *c,
+    class cell &c,
     const pion_flt *Pin,  // Initial State Vector.
     pion_flt *dU,         // Update vector dU
     pion_flt *Pf,         // Final state vector (can be same as initial vec.).
@@ -421,7 +421,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
 /// Given a cell, calculate the hydrodynamic timestep.
 ///
 double FV_solver_Hydro_Euler::CellTimeStep(
-    const cell *c,   ///< pointer to cell
+    const cell &c,   ///< pointer to cell
     const double,    ///< gas EOS gamma.
     const double dx  ///< Cell size dx.
 )
@@ -435,9 +435,9 @@ double FV_solver_Hydro_Euler::CellTimeStep(
 
   pion_flt temp = 0.0, l_dt = 0.0;
   for (int v = 0; v < FV_gndim; v++)
-    temp += c->P[eqVX + v] * c->P[eqVX + v];
+    temp += c.P[eqVX + v] * c.P[eqVX + v];
   temp = sqrt(temp);
-  temp += chydro(c->P, eq_gamma);
+  temp += chydro(c.P.data(), eq_gamma);
 
   //
   // Get Max velocity along a grid direction.
@@ -508,7 +508,7 @@ cyl_FV_solver_Hydro_Euler::~cyl_FV_solver_Hydro_Euler() {}
 // ##################################################################
 
 void cyl_FV_solver_Hydro_Euler::geometric_source(
-    cell *c,               ///< Current cell.
+    cell &c,               ///< Current cell.
     const axes d,          ///< Which axis we are looking along.
     const pion_flt *dpdx,  ///< slope vector for cell c.
     const int OA,          ///< spatial order of accuracy.
@@ -520,11 +520,11 @@ void cyl_FV_solver_Hydro_Euler::geometric_source(
   if (d == Rcyl) {
     switch (OA) {
       case OA1:
-        dU[eqMMX] += c->Ph[eqPG] / CI.get_dpos(c, Rcyl);
+        dU[eqMMX] += c.Ph[eqPG] / CI.get_dpos(c, Rcyl);
         break;
       case OA2:
         dU[eqMMX] +=
-            (c->Ph[eqPG] + (CI.get_dpos(c, Rcyl) - R_com(c, dR)) * dpdx[eqPG])
+            (c.Ph[eqPG] + (CI.get_dpos(c, Rcyl) - R_com(c, dR)) * dpdx[eqPG])
             / CI.get_dpos(c, Rcyl);
         break;
       default:
@@ -580,7 +580,7 @@ sph_FV_solver_Hydro_Euler::~sph_FV_solver_Hydro_Euler() {}
 // ##################################################################
 
 void sph_FV_solver_Hydro_Euler::geometric_source(
-    cell *c,               ///< Current cell.
+    cell &c,               ///< Current cell.
     const axes d,          ///< Which axis we are looking along.
     const pion_flt *dpdx,  ///< slope vector for cell c.
     const int OA,          ///< spatial order of accuracy.
@@ -593,12 +593,12 @@ void sph_FV_solver_Hydro_Euler::geometric_source(
     switch (OA) {
       //
       case OA1:
-        dU[eqMMX] += 2.0 * c->Ph[eqPG] / R3(c, dR);
+        dU[eqMMX] += 2.0 * c.Ph[eqPG] / R3(c, dR);
         break;
       //
       case OA2:
         dU[eqMMX] += 2.0
-                     * ((c->Ph[eqPG] - dpdx[eqPG] * R_com(c, dR)) / R3(c, dR)
+                     * ((c.Ph[eqPG] - dpdx[eqPG] * R_com(c, dR)) / R3(c, dR)
                         + dpdx[eqPG]);
         break;
       //

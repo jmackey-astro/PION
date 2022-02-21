@@ -281,7 +281,7 @@ int main(int argc, char **argv)
     do {
       for (int v = 0; v < SimPM.nvar; v++)
         c->Ph[v] = c->P[v];
-    } while ((c = grid[l]->NextPt(c)) != 0);
+    } while ((c = grid[l]->NextPt(*c)) != 0);
     //
     // If I'm using the GLM method, make sure Psi variable is initialised.
     //
@@ -290,7 +290,7 @@ int main(int argc, char **argv)
         c = grid[l]->FirstPt();
         do {
           c->P[SI] = c->Ph[SI] = 0.;  // grid->divB(c);
-        } while ((c = grid[l]->NextPt(c)) != 0);
+        } while ((c = grid[l]->NextPt(*c)) != 0);
       }
     }
   }
@@ -543,7 +543,7 @@ int main(int argc, char **argv)
     delete SimSetup;
     SimSetup = 0;
   }
-  for (auto g : grid)
+  for (auto &g : grid)
     delete g;
 
   //

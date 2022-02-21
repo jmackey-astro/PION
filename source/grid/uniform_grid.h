@@ -187,11 +187,9 @@ protected:
   std::array<int, MAX_DIM>
       L_ixmax;  ///< Max value of x,y,z in level domain: int coords
 
-#ifdef NEWGRIDDATA
-  pion_flt **griddata;     ///< array for state vectors of all cells
-  class cell **gridcells;  ///< array of grid cells
-  size_t gdata_stride;     ///< number of bytes per cell in griddata
-#endif                     // NEWGRIDDATA
+  std::vector<pion_flt> griddata_Ph;  ///< array for Ph of all cells
+  std::vector<pion_flt> griddata_xd;  ///< array for extra data of all cells
+  std::vector<class cell> gridcells;  ///< array of grid cells
 
 
   ///
@@ -261,7 +259,7 @@ public:
   /// Returns cell diameter for a given cell along a given axis.
   ///
   virtual double DX(
-      const cell *,    ///< cell to get dx for
+      const cell &,    ///< cell to get dx for
       const enum axes  ///< axis along which to get dx.
       ) const
   {
@@ -371,30 +369,24 @@ public:
   /// Return cell size in integer units
   int idx() const { return G_idx; }
 
-  virtual double CellVolume(const cell *c, const double)
+  virtual double CellVolume(const cell &c, const double)
   {
     return VectorOps_Cart::CellVolume(c, G_dx);
   }
 
   virtual double CellInterface(
-      const cell *c,        ///< Cell
+      const cell &c,        ///< Cell
       const direction dir,  ///< outward normal to interface.
       const double)
   {
     return VectorOps_Cart::CellInterface(c, dir, G_dx);
   }
 
-#ifdef NEWGRIDDATA
-  ///< Query number of bytes per cell in griddata
-  virtual size_t get_gdata_stride() const { return gdata_stride; }
-
   ///< get pointer to cell associated with i,j,k (including boundary data)
   virtual cell *get_cell_all(const int i, const int j, const int k)
   {
-    return &(
-        gridcells[0][G_ng_all[YY] * G_ng_all[XX] * k + G_ng_all[XX] * j + i]);
+    return &(gridcells[G_ng_all[YY] * G_ng_all[XX] * k + G_ng_all[XX] * j + i]);
   }
-#endif
 
   // ---------- QUERY BASIC GRID PROPERTIES -------------------------
 
@@ -431,28 +423,28 @@ public:
   /// doesn't.
   ///
   virtual cell *NextPt(
-      const cell *c,            ///< Current cell.
+      const cell &c,            ///< Current cell.
       const enum direction dir  ///< direction of neighbour.
   )
   {
-    return (c->ngb[dir]);
+    return (c.ngb[dir]);
   }
 
   ///
   /// returns a pointer to the next cell (ex. boundary data).
   ///
-  virtual cell *NextPt(const cell *c) { return (c->npt); }
+  virtual cell *NextPt(const cell &c) { return (c.npt); }
 
   ///
   /// returns a pointer to the next cell (inc. boundary data).
   ///
-  virtual cell *NextPt_All(const cell *c) { return (c->npt_all); }
+  virtual cell *NextPt_All(const cell &c) { return (c.npt_all); }
 
   ///
   /// Like NextPt(cell,dir), but in reverse direction.
   ///
   virtual class cell *PrevPt(
-      const class cell *,  ///< Current Point.
+      const class cell &,  ///< Current Point.
       enum direction       ///< Direction to go in.
   );
 
@@ -514,8 +506,8 @@ public:
   /// Result returned in physical units (e.g. centimetres).
   ///
   virtual double distance_cell2cell(
-      const cell *,  ///< cell 1
-      const cell *   ///< cell 2
+      const cell &,  ///< cell 1
+      const cell &   ///< cell 2
   );
 
   ///
@@ -525,8 +517,8 @@ public:
   /// two units).
   ///
   virtual double idistance_cell2cell(
-      const cell *,  ///< cell 1
-      const cell *   ///< cell 2
+      const cell &,  ///< cell 1
+      const cell &   ///< cell 2
   );
 
   ///
@@ -536,7 +528,7 @@ public:
   ///
   virtual double distance_vertex2cell(
       const std::array<double, MAX_DIM> &,  ///< vertex (physical)
-      const cell *                          ///< cell
+      const cell &                          ///< cell
   );
 
   ///
@@ -546,7 +538,7 @@ public:
   ///
   virtual double difference_vertex2cell(
       const double *,  ///< vertex (double)
-      const cell *,    ///< cell
+      const cell &,    ///< cell
       const axes       ///< Axis to calculate.
   );
 
@@ -557,7 +549,7 @@ public:
   ///
   virtual double idistance_vertex2cell(
       const std::array<int, MAX_DIM> &,  ///< vertex (integer)
-      const cell *                       ///< cell
+      const cell &                       ///< cell
   );
 
   ///
@@ -567,7 +559,7 @@ public:
   ///
   virtual double idifference_vertex2cell(
       const int *,   ///< vertex (integer)
-      const cell *,  ///< cell
+      const cell &,  ///< cell
       const axes     ///< Axis to calculate.
   );
 
@@ -577,8 +569,8 @@ public:
   /// It returns *cell2* coordinate minus *cell1* coordinate.
   ///
   virtual double idifference_cell2cell(
-      const cell *,  ///< cell 1
-      const cell *,  ///< cell 2
+      const cell &,  ///< cell 1
+      const cell &,  ///< cell 2
       const axes     ///< Axis.
   );
 
@@ -655,8 +647,8 @@ public:
   /// Result returned in physical units (e.g. centimetres).
   ///
   virtual double distance_cell2cell(
-      const cell *,  ///< cell 1
-      const cell *   ///< cell 2
+      const cell &,  ///< cell 1
+      const cell &   ///< cell 2
   );
 
   ///
@@ -666,8 +658,8 @@ public:
   /// two units).
   ///
   virtual double idistance_cell2cell(
-      const cell *,  ///< cell 1
-      const cell *   ///< cell 2
+      const cell &,  ///< cell 1
+      const cell &   ///< cell 2
   );
 
   ///
@@ -677,7 +669,7 @@ public:
   ///
   virtual double distance_vertex2cell(
       const std::array<double, MAX_DIM> &,  ///< vertex (physical)
-      const cell *                          ///< cell
+      const cell &                          ///< cell
   );
 
   ///
@@ -687,7 +679,7 @@ public:
   ///
   virtual double difference_vertex2cell(
       const double *,  ///< vertex (double)
-      const cell *,    ///< cell
+      const cell &,    ///< cell
       const axes       ///< Axis to calculate.
   );
 
@@ -698,7 +690,7 @@ public:
   ///
   virtual double idistance_vertex2cell(
       const std::array<int, MAX_DIM> &,  ///< vertex (integer)
-      const cell *                       ///< cell
+      const cell &                       ///< cell
   );
 
   ///
@@ -708,7 +700,7 @@ public:
   ///
   virtual double idifference_vertex2cell(
       const int *,   ///< vertex (integer)
-      const cell *,  ///< cell
+      const cell &,  ///< cell
       const axes     ///< Axis to calculate.
   );
 
@@ -718,18 +710,18 @@ public:
   /// It returns *cell2* coordinate minus *cell1* coordinate.
   ///
   virtual double idifference_cell2cell(
-      const cell *,  ///< cell 1
-      const cell *,  ///< cell 2
+      const cell &,  ///< cell 1
+      const cell &,  ///< cell 2
       const axes     ///< Axis.
   );
 
-  virtual double CellVolume(const cell *c, const double)
+  virtual double CellVolume(const cell &c, const double)
   {
     return VectorOps_Cyl::CellVolume(c, G_dx);
   }
 
   virtual double CellInterface(
-      const cell *c,        ///< Cell
+      const cell &c,        ///< Cell
       const direction dir,  ///< outward normal to interface.
       const double)
   {
@@ -741,7 +733,7 @@ protected:
   /// Returns the centre of volume of a cell (in the radial
   /// direction) in the dimensionless integer coordinate system.
   ///
-  virtual double iR_cov(const cell *);
+  virtual double iR_cov(const cell &);
 };
 
 // ##################################################################
@@ -812,8 +804,8 @@ public:
   /// Result returned in physical units (e.g. centimetres).
   ///
   virtual double distance_cell2cell(
-      const cell *,  ///< cell 1
-      const cell *   ///< cell 2
+      const cell &,  ///< cell 1
+      const cell &   ///< cell 2
   );
 
   ///
@@ -823,8 +815,8 @@ public:
   /// two units).
   ///
   virtual double idistance_cell2cell(
-      const cell *,  ///< cell 1
-      const cell *   ///< cell 2
+      const cell &,  ///< cell 1
+      const cell &   ///< cell 2
   );
 
   ///
@@ -834,7 +826,7 @@ public:
   ///
   virtual double distance_vertex2cell(
       const std::array<double, MAX_DIM> &,  ///< vertex (physical)
-      const cell *                          ///< cell
+      const cell &                          ///< cell
   );
 
   ///
@@ -844,7 +836,7 @@ public:
   ///
   virtual double difference_vertex2cell(
       const double *,  ///< vertex (double)
-      const cell *,    ///< cell
+      const cell &,    ///< cell
       const axes       ///< Axis to calculate.
   );
 
@@ -855,7 +847,7 @@ public:
   ///
   virtual double idistance_vertex2cell(
       const std::array<int, MAX_DIM> &,  ///< vertex (integer)
-      const cell *                       ///< cell
+      const cell &                       ///< cell
   );
 
   ///
@@ -865,7 +857,7 @@ public:
   ///
   virtual double idifference_vertex2cell(
       const int *,   ///< vertex (integer)
-      const cell *,  ///< cell
+      const cell &,  ///< cell
       const axes     ///< Axis to calculate.
   );
 
@@ -875,18 +867,18 @@ public:
   /// It returns *cell2* coordinate minus *cell1* coordinate.
   ///
   virtual double idifference_cell2cell(
-      const cell *,  ///< cell 1
-      const cell *,  ///< cell 2
+      const cell &,  ///< cell 1
+      const cell &,  ///< cell 2
       const axes     ///< Axis.
   );
 
-  virtual double CellVolume(const cell *c, const double)
+  virtual double CellVolume(const cell &c, const double)
   {
     return VectorOps_Sph::CellVolume(c, G_dx);
   }
 
   virtual double CellInterface(
-      const cell *c,        ///< Cell
+      const cell &c,        ///< Cell
       const direction dir,  ///< outward normal to interface.
       const double)
   {
@@ -898,7 +890,7 @@ protected:
   /// Returns the centre of volume of a cell (in the radial
   /// direction) in the dimensionless integer coordinate system.
   ///
-  virtual double iR_cov(const cell *);
+  virtual double iR_cov(const cell &);
 };
 
 #endif  // UNIFORM_GRID_H

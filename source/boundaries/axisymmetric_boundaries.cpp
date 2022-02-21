@@ -62,7 +62,7 @@ int axisymmetric_bc::BC_assign_AXISYMMETRIC(
   do {
     temp = (*bpt);
     for (int v = 0; v > (*bpt)->isedge; v--) {
-      temp = grid->NextPt(temp, b->ondir);
+      temp = grid->NextPt(*temp, b->ondir);
     }
     if (!temp) {
       spdlog::error("{}: {}", "Got lost assigning axisymmetric bcs.", temp->id);

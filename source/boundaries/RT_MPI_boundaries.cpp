@@ -379,29 +379,25 @@ int RT_MPI_bc::Receive_RT_Boundaries(
         for (short unsigned int v = 0; v < RS.NTau; v++) {
           tau[v] = std::max(buf[count], 0.0);
           if (buf[count] < -SMALLVALUE) {
-            spdlog::debug(
-                "RECV neg tau cell : {}",
-                std::vector<int>((*c)->pos, (*c)->pos + par.ndim));
+            spdlog::debug("RECV neg tau cell : {}", (*c)->pos);
             spdlog::debug("tau={} ... correcting to zero, ", buf[count]);
-            CI.print_cell(*c);
+            CI.print_cell(**c);
           }
           count++;
         }
-        CI.set_col(*c, src_id, tau);
+        CI.set_col(**c, src_id, tau);
 
         // get column through cell.
         for (short unsigned int v = 0; v < RS.NTau; v++) {
           tau[v] = std::max(buf[count], 0.0);
           if (buf[count] < -SMALLVALUE) {
-            spdlog::debug(
-                "RECV neg dtau cell : {}",
-                std::vector<int>((*c)->pos, (*c)->pos + par.ndim));
+            spdlog::debug("RECV neg dtau cell : {}", (*c)->pos);
             spdlog::debug("tau={} ... correcting to zero, ", buf[count]);
-            CI.print_cell(*c);
+            CI.print_cell(**c);
           }
           count++;
         }
-        CI.set_cell_col(*c, src_id, tau);
+        CI.set_cell_col(**c, src_id, tau);
 
         (*c)->rt = false;
         // HACK
@@ -566,22 +562,20 @@ int RT_MPI_bc::Send_RT_Boundaries(
         }
 #endif
         // column to and through cell.
-        CI.get_col(*c, src_id, tau);
+        CI.get_col(**c, src_id, tau);
         for (short unsigned int v = 0; v < RS.NTau; v++) {
           data[count] = std::max(tau[v], 0.0);
           if (tau[v] < -SMALLVALUE) {
-            spdlog::debug(
-                "SEND neg tau cell : {}",
-                std::vector<int>((*c)->pos, (*c)->pos + par.ndim));
+            spdlog::debug("SEND neg tau cell : {}", (*c)->pos);
             spdlog::debug("tau={} ", tau[v]);
-            CI.print_cell(*c);
+            CI.print_cell(**c);
             // tau[v]=0.0;
           }
           count++;
         }
 
         // column through cell.
-        CI.get_cell_col(*c, src_id, tau);
+        CI.get_cell_col(**c, src_id, tau);
         for (short unsigned int v = 0; v < RS.NTau; v++) {
           data[count] = std::max(tau[v], 0.0);
           if (tau[v] < -SMALLVALUE) {
@@ -1264,7 +1258,7 @@ int RT_MPI_bc::setup_RT_send_boundary(
   do {
     target = (*bpt);
     for (int v = 0; v < grid_b->depth; v++)
-      target = grid->NextPt(target, grid_b->ondir);
+      target = grid->NextPt(*target, grid_b->ondir);
 
     send_b.RT_bd->data.push_back(target);
 #ifdef RT_TESTING

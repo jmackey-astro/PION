@@ -179,7 +179,7 @@ uniform_grid_cyl_parallel::~uniform_grid_cyl_parallel()
 // ##################################################################
 // ##################################################################
 
-double uniform_grid_cyl_parallel::iR_cov(const cell *c)
+double uniform_grid_cyl_parallel::iR_cov(const cell &c)
 {
   //
   // integer and physical units have different origins, so I need a
@@ -251,7 +251,7 @@ uniform_grid_sph_parallel::~uniform_grid_sph_parallel()
 // ##################################################################
 // ##################################################################
 
-double uniform_grid_sph_parallel::iR_cov(const cell *c)
+double uniform_grid_sph_parallel::iR_cov(const cell &c)
 {
   //
   // integer and physical units have different origins, so I need a

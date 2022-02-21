@@ -76,7 +76,7 @@ double point_quantities::get_point_electron_numberdensity(
   //
   for (int v = 0; v < 4; v++) {
     if (pt->ngb[v]) {
-      val += pt->wt[v] * MP->get_n_elec(pt->ngb[v]->P);
+      val += pt->wt[v] * MP->get_n_elec(pt->ngb[v]->P.data());
     }
   }
   return val;
@@ -96,7 +96,7 @@ double point_quantities::get_point_ionizedH_numberdensity(
   //
   for (int v = 0; v < 4; v++) {
     if (pt->ngb[v]) {
-      val += pt->wt[v] * MP->get_n_Hplus(pt->ngb[v]->P);
+      val += pt->wt[v] * MP->get_n_Hplus(pt->ngb[v]->P.data());
     }
   }
   return val;
@@ -116,7 +116,7 @@ double point_quantities::get_point_neutralH_numberdensity(
   //
   for (int v = 0; v < 4; v++) {
     if (pt->ngb[v]) {
-      val += pt->wt[v] * MP->get_n_Hneutral(pt->ngb[v]->P);
+      val += pt->wt[v] * MP->get_n_Hneutral(pt->ngb[v]->P.data());
     }
   }
   return val;
@@ -144,7 +144,7 @@ double point_quantities::get_point_temperature(
   if (MP) {
     for (int v = 0; v < 4; v++) {
       if (pt->ngb[v]) {
-        val += pt->wt[v] * MP->Temperature(pt->ngb[v]->P, gamma);
+        val += pt->wt[v] * MP->Temperature(pt->ngb[v]->P.data(), gamma);
         // val += MP->Temperature(pt->ngb[v]->P,gamma);
         // if (!isfinite(MP->Temperature(pt->ngb[v]->P,gamma)) ||
         //    MP->Temperature(pt->ngb[v]->P,gamma)==0.0) {
@@ -425,7 +425,7 @@ double point_quantities::get_point_RotationMeasure(
     if (pt->ngb[v]) {
       val += pt->wt[v]
              * (sx * pt->ngb[v]->P[bx] * st + sz * pt->ngb[v]->P[bz] * ct)
-             * MP->get_n_elec(pt->ngb[v]->P);
+             * MP->get_n_elec(pt->ngb[v]->P.data());
     }
   }
   return val;
@@ -466,10 +466,10 @@ void point_quantities::get_point_Halpha_params(
   for (int v = 0; v < 4; v++) {
     // If point exists, add its contribution, with weight.
     if (pt->ngb[v]) {
-      T  = MP->Temperature(pt->ngb[v]->P, gamma);
-      ne = MP->get_n_elec(pt->ngb[v]->P);
-      ni = MP->get_n_Hplus(pt->ngb[v]->P);
-      nn = MP->get_n_Hneutral(pt->ngb[v]->P);
+      T  = MP->Temperature(pt->ngb[v]->P.data(), gamma);
+      ne = MP->get_n_elec(pt->ngb[v]->P.data());
+      ni = MP->get_n_Hplus(pt->ngb[v]->P.data());
+      nn = MP->get_n_Hneutral(pt->ngb[v]->P.data());
       //
       // First absorption, from Henney et al. (2009) assuming the opacity
       // is from dust, so that neutrals and ions both count.
@@ -528,10 +528,10 @@ void point_quantities::get_point_NII6584_params(
   for (int v = 0; v < 4; v++) {
     // If point exists, add its contribution, with weight.
     if (pt->ngb[v]) {
-      T  = MP->Temperature(pt->ngb[v]->P, gamma);
-      ne = MP->get_n_elec(pt->ngb[v]->P);
-      ni = MP->get_n_Hplus(pt->ngb[v]->P);
-      nn = MP->get_n_Hneutral(pt->ngb[v]->P);
+      T  = MP->Temperature(pt->ngb[v]->P.data(), gamma);
+      ne = MP->get_n_elec(pt->ngb[v]->P.data());
+      ni = MP->get_n_Hplus(pt->ngb[v]->P.data());
+      nn = MP->get_n_Hneutral(pt->ngb[v]->P.data());
       //
       // First absorption, from Henney et al. (2009) assuming the opacity
       // is from dust, so that neutrals and ions both count.
@@ -577,7 +577,7 @@ double point_quantities::get_point_EmissionMeasure(
   for (int v = 0; v < 4; v++) {
     // If point exists, add its contribution, with weight.
     if (pt->ngb[v]) {
-      val += pt->wt[v] * pow(MP->get_n_elec(pt->ngb[v]->P), 2.0);
+      val += pt->wt[v] * pow(MP->get_n_elec(pt->ngb[v]->P.data()), 2.0);
     }
   }
   return val;
@@ -605,9 +605,10 @@ double point_quantities::get_point_Bremsstrahlung6GHz(
   for (int v = 0; v < 4; v++) {
     // If point exists, add its contribution, with weight.
     if (pt->ngb[v]) {
-      val += pt->wt[v] * MP->get_n_elec(pt->ngb[v]->P)
-             * MP->get_n_elec(pt->ngb[v]->P)
-             * Brems6GHz_emissivity(MP->Temperature(pt->ngb[v]->P, gamma));
+      val +=
+          pt->wt[v] * MP->get_n_elec(pt->ngb[v]->P.data())
+          * MP->get_n_elec(pt->ngb[v]->P.data())
+          * Brems6GHz_emissivity(MP->Temperature(pt->ngb[v]->P.data(), gamma));
     }
   }
   return val;
@@ -639,9 +640,9 @@ void point_quantities::get_point_Xray_params(
   for (int v = 0; v < 4; v++) {
     // If point exists, add its contribution, with weight.
     if (pt->ngb[v]) {
-      T  = MP->Temperature(pt->ngb[v]->P, gamma);
-      ne = MP->get_n_elec(pt->ngb[v]->P);
-      ni = MP->get_n_Hplus(pt->ngb[v]->P);
+      T  = MP->Temperature(pt->ngb[v]->P.data(), gamma);
+      ne = MP->get_n_elec(pt->ngb[v]->P.data());
+      ni = MP->get_n_Hplus(pt->ngb[v]->P.data());
       if (T > 1.0e3) {
         get_xray_emissivity(T, xr);  // volume emissivity per e- per H+
         *j += pt->wt[v] * xr[index] * ne * ni * per_angle;

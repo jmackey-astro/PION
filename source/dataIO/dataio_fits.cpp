@@ -596,7 +596,7 @@ int DataIOFits::ReadData(
       cell *c = gp->FirstPt();
       do {
         c->P[v] = 0.;
-      } while ((c = gp->NextPt(c)) != 0);
+      } while ((c = gp->NextPt(*c)) != 0);
       if (status) {
         fits_report_error(stderr, status);
       }
@@ -640,9 +640,8 @@ int DataIOFits::ReadData(
   // Now assign Ph to be equal to P for each cell.
   cell *cpt = gp->FirstPt();
   do {
-    for (int v = 0; v < nvar; v++)
-      cpt->Ph[v] = cpt->P[v];
-  } while ((cpt = gp->NextPt(cpt)) != 0);
+    copy(cpt->P.begin(), cpt->P.end(), cpt->Ph);
+  } while ((cpt = gp->NextPt(*cpt)) != 0);
 
   return err;
 }
@@ -914,21 +913,21 @@ int DataIOFits::put_variable_into_data_array(
       if (B) (*data)[ct] *= norm;
 #endif
       ct++;
-    } while ((c = gp->NextPt(c)) != 0);
+    } while ((c = gp->NextPt(*c)) != 0);
   }
 
   else if (v == -1) {  // internal energy
     do {
-      (*data)[ct] = eqn->eint(c->P, SimPM.gamma);
+      (*data)[ct] = eqn->eint(c->P.data(), SimPM.gamma);
       ct++;
-    } while ((c = gp->NextPt(c)) != 0);
+    } while ((c = gp->NextPt(*c)) != 0);
   }
 
   else if (v == -5) {  // temperature
     do {
-      (*data)[ct] = mp->Temperature(c->P, SimPM.gamma);
+      (*data)[ct] = mp->Temperature(c->P.data(), SimPM.gamma);
       ct++;
-    } while ((c = gp->NextPt(c)) != 0);
+    } while ((c = gp->NextPt(*c)) != 0);
   }
 
   else if (v == -2) {  // divB
@@ -938,21 +937,21 @@ int DataIOFits::put_variable_into_data_array(
     vars[1]   = static_cast<int>(BY);
     vars[2]   = static_cast<int>(BZ);
     do {
-      (*data)[ct] = eqn->Divergence(c, 0, vars, gp);
+      (*data)[ct] = eqn->Divergence(*c, 0, vars, gp);
 #ifdef NEW_B_NORM
       // re-scale B-field to Gauss by multiplying by sqrt(4pi)
       (*data)[ct] *= norm;
 #endif
       ct++;
-    } while ((c = gp->NextPt(c)) != 0);
+    } while ((c = gp->NextPt(*c)) != 0);
     vars = mem.myfree(vars);
   }
 
   else if (v == -3) {  // total pressure.
     do {
-      (*data)[ct] = eqn->Ptot(c->P, SimPM.gamma);
+      (*data)[ct] = eqn->Ptot(c->P.data(), SimPM.gamma);
       ct++;
-    } while ((c = gp->NextPt(c)) != 0);
+    } while ((c = gp->NextPt(*c)) != 0);
   }
 
   else if (v == -4) {
@@ -964,10 +963,10 @@ int DataIOFits::put_variable_into_data_array(
     int Ti = atoi(name.substr(11).c_str());
     double Tau[MAX_TAU];
     do {
-      CI.get_col(c, Si, Tau);
+      CI.get_col(*c, Si, Tau);
       (*data)[ct] = Tau[Ti];
       ct++;
-    } while ((c = gp->NextPt(c)) != 0);
+    } while ((c = gp->NextPt(*c)) != 0);
   }
 
   else
@@ -1070,7 +1069,7 @@ int DataIOFits::read_fits_image(
           "{}: {}", "Read null value from file! pixel count follows", ct);
     }
     ct++;
-  } while ((c = gp->NextPt(c)) != 0);
+  } while ((c = gp->NextPt(*c)) != 0);
   if (ct != ntot)
     spdlog::error("{}: {}", "Counting cells in read_fits_image()", ct - ntot);
 

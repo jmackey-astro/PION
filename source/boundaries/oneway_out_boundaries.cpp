@@ -128,7 +128,7 @@ int oneway_out_bc::BC_update_ONEWAY_OUT(
 #ifdef GLM_NEGATIVE_BOUNDARY
     if (par.eqntype == EQGLM) {
       for (int v = (*c)->isedge + 1; v < 0; v++)
-        gc = grid->NextPt(gc, b->ondir);
+        gc = grid->NextPt(*gc, b->ondir);
       (*c)->P[SI]  = -gc->P[SI];
       (*c)->Ph[SI] = -gc->Ph[SI];
     }

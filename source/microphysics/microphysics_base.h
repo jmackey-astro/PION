@@ -116,7 +116,7 @@ public:
   /// THE C2RAY METHOD UPDATES FOR MANY SOURCES.
   ///
   virtual int Get_MP_Rates(
-      cell *,        ///< current cell.
+      cell &,        ///< current cell.
       const double,  ///< timestep
       const double,  ///< column to cell
       const double,  ///< Flux entering cell?

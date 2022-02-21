@@ -105,7 +105,7 @@ int sub_domain_bc::BC_select_data2send(
     temp = *c;
     // CI.print_cell(temp);
     for (int v = 0; v < Nc; v++)
-      temp = grid->NextPt(temp, b->ondir);
+      temp = grid->NextPt(*temp, b->ondir);
     (*l).push_back(temp);
     count++;
     ++c;

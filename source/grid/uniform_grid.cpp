@@ -227,27 +227,6 @@ UniformGrid::UniformGrid(
     G_range_all[v] = G_xmax_all[v] - G_xmin_all[v];
   }
 
-  // HERE WE SHOULD CALL A FUNCTION TO ALLOCATE A GRID OF CELLS, AND
-  // ALLOCATE A BIG BLOCK OF MEMORY FOR ALL THE ARRAY POINTERS OF
-  // EACH CELL.  PROBABLY I CAN RE-WRITE allocate_grid_data().
-#ifndef NEWGRIDDATA
-  //
-  // Now create the first cell, and then allocate data from there.
-  // Safe to assume we have at least one cell...
-  //
-  spdlog::debug("... done. Initialising first cell...");
-
-  G_fpt_all     = CI.new_cell();
-  G_fpt_all->id = 0;
-
-  spdlog::debug(" done");
-
-  if (G_fpt_all == 0) {
-    spdlog::error(
-        "{}: {}", "Couldn't assign memory to first cell in grid.", G_fpt_all);
-  }
-#endif  // NEWGRIDDATA
-
   // allocate memory for all cells, including boundary cells.
 
   spdlog::debug("allocating memory for grid");
@@ -266,12 +245,8 @@ UniformGrid::UniformGrid(
         "{}: {}", "Error setting up grid, assign_grid_structure", err);
 
 #ifndef NDEBUG
-  spdlog::debug(
-      "\tFirst Pt. integer position : {}",
-      std::vector<int>(FirstPt()->pos, FirstPt()->pos + nd));
-  spdlog::debug(
-      "\tLast  Pt. integer position : {}",
-      std::vector<int>(LastPt()->pos, LastPt()->pos + nd));
+  spdlog::debug("\tFirst Pt. integer position : {}", FirstPt()->pos);
+  spdlog::debug("\tLast  Pt. integer position : {}", LastPt()->pos);
 #endif  // NDEBUG
 
   //
@@ -320,7 +295,7 @@ UniformGrid::UniformGrid(
     if (dom) {
       c->timestep = true;
     }
-  } while ((c = NextPt_All(c)) != 0);
+  } while ((c = NextPt_All(*c)) != 0);
 
 #ifndef NDEBUG
   spdlog::debug("grid ixmin  : {}", G_ixmin);
@@ -358,43 +333,7 @@ UniformGrid::UniformGrid(
 
 UniformGrid::~UniformGrid()
 {
-  //
-  // Delete the grid data.
-  //
-#ifdef NEWGRIDDATA
-
-  // deallocate grid data
-  *griddata = mem.myfree(*griddata);
-  griddata  = mem.myfree(griddata);
-
-  for (size_t i = 0; i < G_ncell_all; i++) {
-    (*gridcells)[i].ngb      = mem.myfree((*gridcells)[i].ngb);
-    (*gridcells)[i].pos      = mem.myfree((*gridcells)[i].pos);
-    (*gridcells)[i].isbd_ref = mem.myfree((*gridcells)[i].isbd_ref);
-    if (!(*gridcells)[i].F.empty()) {
-      for (int id = 0; id < G_ndim; id++) {
-        if ((*gridcells)[i].F[id]) {
-          (*gridcells)[i].F[id] = mem.myfree((*gridcells)[i].F[id]);
-        }
-      }
-    }
-  }
-  gridcells = mem.myfree(gridcells);
-
-#else
-
-  cell *cpt = FirstPt_All();
-  cell *npt = NextPt_All(cpt);
-  do {
-    CI.delete_cell(cpt);
-    cpt = npt;
-  } while ((npt = NextPt_All(cpt)) != 0);
-  CI.delete_cell(cpt);
-
-#endif  // NEWGRIDDATA
-
   BC_deleteBoundaryData();
-
   spdlog::debug("UniformGrid Destructor:\tdone");
 }  // Destructor
 
@@ -407,58 +346,40 @@ UniformGrid::~UniformGrid()
 
 int UniformGrid::allocate_grid_data()
 {
-  spdlog::debug("Allocating grid data... G_ncell={}", G_ncell);
-#ifdef NEWGRIDDATA
+  spdlog::debug(
+      "Allocating grid data... G_ncell={}, G_ncell_all={}", G_ncell,
+      G_ncell_all);
   // allocate grid-data
   // * find out how many doubles are needed for each cell
-  size_t nel = static_cast<size_t>(CI.get_Nel());
+  const int size_ed = CI.get_extra_data_size();
+  const int num_ed  = size_ed * G_ncell_all;
   // * multiply by number of cells to get total array size
-  nel *= G_ncell_all;
+  const int num_Ph = G_nvar * G_ncell_all;
 
-  // set stride (number of bytes per cell in big array)
-  UniformGrid::gdata_stride = nel;
-
-  // * allocate data for big array
-  griddata  = mem.myalloc(griddata, 1);
-  *griddata = mem.myalloc(*griddata, nel);
+  // * allocate data for big arrays
+  griddata_Ph.resize(num_Ph);
+  griddata_xd.resize(num_ed);
   // * allocate array of cells
-  gridcells    = mem.myalloc(gridcells, 1);
-  *gridcells   = mem.myalloc(*gridcells, G_ncell_all);
-  cell *carr   = *gridcells;
-  double *data = *griddata;
+  gridcells.resize(G_ncell_all);
 
   // * initialise first and last pointers
-  G_fpt_all = &(carr[0]);
-  G_lpt_all = &(carr[G_ncell_all - 1]);
+  G_fpt_all = &(gridcells[0]);
+  G_lpt_all = &(gridcells[G_ncell_all - 1]);
 
   // * loop over cells, add pointers to elements in big data array
   // for each cell, and add an npt_all pointer to the next cell so
   // that the cells are a linked list.
-  size_t ix = 0;
-  for (size_t i = 0; i < G_ncell_all; i++) {
-#ifndef NDEBUG
-    // spdlog::debug("i={} of {}: ix={}, nel={}", i, G_ncell_all, ix, nel);
-#endif
-    carr[i].id = static_cast<long int>(i);
-    ix         = CI.set_cell_pointers(&(carr[i]), data, ix);
-    if (i < G_ncell_all - 1)
-      carr[i].npt_all = &(carr[i + 1]);
-    else
-      carr[i].npt_all = 0;
+  size_t i = 0;
+  for (; i < G_ncell_all - 1; ++i) {
+    CI.set_cell_pointers(
+        gridcells[i], griddata_Ph, i * G_nvar, griddata_xd, i * size_ed);
+    gridcells[i].id      = static_cast<long int>(i);
+    gridcells[i].npt_all = &(gridcells[i + 1]);
   }
-#else
-  // add a npt_all pointer so cells are in a singly linked list.
-  cell *c      = G_fpt_all;
-  size_t count = 0;
-  while (c->id < static_cast<long int>(G_ncell_all - 1)) {
-    c->npt_all = CI.new_cell();
-    c          = c->npt_all;
-    count++;
-    c->id = count;
-  }
-  c->npt_all = 0;
-  G_lpt_all  = c;
-#endif  // NEWGRIDDATA
+  CI.set_cell_pointers(
+      gridcells[i], griddata_Ph, i * G_nvar, griddata_xd, i * size_ed);
+  gridcells[i].id      = static_cast<long int>(i);
+  gridcells[i].npt_all = 0;
   spdlog::debug("Finished Allocating Data");
   return 0;
 }  // allocate_grid_data
@@ -514,12 +435,10 @@ int UniformGrid::assign_grid_structure()
   for (int i = 0; i < MAX_DIM; i++)
     ix[i] = -G_nbc[2 * i];
 
-  std::array<double, MAX_DIM> dpos;
-  for (int i = 0; i < MAX_DIM; i++)
-    dpos[i] = 0.0;
+  array<double, MAX_DIM> dpos;
+  fill(dpos.begin(), dpos.end(), 0);
 
-  class cell *c = FirstPt_All();
-  do {
+  for (auto &c : gridcells) {
     //
     // Assign positions, for integer positions the first on-grid cell
     // is at [1,1,1], and a cell is 2 units across, so the second
@@ -533,39 +452,17 @@ int UniformGrid::assign_grid_structure()
     for (int i = 0; i < G_ndim; i++)
       dpos[i] = G_xmin[i] + G_dx * (ix[i] + 0.5);
     CI.set_pos(c, dpos);
-#ifndef NDEBUG
-    // rep.printVec("    pos", c->pos, G_ndim);
-#endif  // NDEBUG
-
-    //
-    // Initialise the cell data to zero.
-    //
-    for (int v = 0; v < G_nvar; v++)
-      c->P[v] = 0.0;
-    if (!CI.query_minimal_cells()) {
-      for (int v = 0; v < G_nvar; v++)
-        c->Ph[v] = c->dU[v] = 0.;
-    }
 
     //
     // See if cell is on grid or not, and set isgd/isbd accordingly.
     //
     CI.get_dpos(c, dpos);
-    bool on_grid = true;
-    for (int v = 0; v < G_ndim; v++)
-      if (dpos[v] < G_xmin[v] || dpos[v] > G_xmax[v]) on_grid = false;
-#ifndef NDEBUG
-        // rep.printVec("    dpos",dpos,G_ndim);
-        // rep.printVec("    xmax",G_xmax,G_ndim);
-#endif  // NDEBUG
-
-    if (on_grid) {
-      c->isgd = true;
-      c->isbd = false;
-    }
-    else {
-      c->isgd = false;
-      c->isbd = true;
+    for (int v = 0; v < G_ndim; v++) {
+      if (dpos[v] < G_xmin[v] || dpos[v] > G_xmax[v]) {
+        c.isgd = !c.isgd;
+        c.isbd = !c.isbd;
+        break;
+      }
     }
 
     ///
@@ -585,22 +482,22 @@ int UniformGrid::assign_grid_structure()
     /// - \f$ 18\leq i <27 \f$ Pos. Z-edge.
     /// - \f$ i \geq 27 \f$ Out of Range error.
     ///
-    c->isedge = 0;
+    c.isedge = 0;
     if (ix[XX] == 0)
-      c->isedge += 1;
+      c.isedge += 1;
     else if (ix[XX] == G_ng[XX] - 1)
-      c->isedge += 2;
+      c.isedge += 2;
     if (G_ndim > 1) {
       if (ix[YY] == 0)
-        c->isedge += 1 * 3;
+        c.isedge += 1 * 3;
       else if (ix[YY] == G_ng[YY] - 1)
-        c->isedge += 2 * 3;
+        c.isedge += 2 * 3;
     }
     if (G_ndim > 2) {
       if (ix[ZZ] == 0)
-        c->isedge += 1 * 3 * 3;
+        c.isedge += 1 * 3 * 3;
       else if (ix[ZZ] == G_ng[ZZ] - 1)
-        c->isedge += 2 * 3 * 3;
+        c.isedge += 2 * 3 * 3;
     }
 
     //
@@ -608,24 +505,24 @@ int UniformGrid::assign_grid_structure()
     // isedge to equal the number of cells it is from the grid.
     //
     if (ix[XX] < 0) {
-      c->isedge = ix[XX];
+      c.isedge = ix[XX];
     }
     else if (ix[XX] >= G_ng[XX]) {
-      c->isedge = G_ng[XX] - 1 - ix[XX];
+      c.isedge = G_ng[XX] - 1 - ix[XX];
     }
     if (G_ndim > 1) {
       if (ix[YY] < 0) {
-        c->isedge = ix[YY];
+        c.isedge = ix[YY];
       }
       else if (ix[YY] >= G_ng[YY]) {
-        c->isedge = G_ng[YY] - 1 - ix[YY];
+        c.isedge = G_ng[YY] - 1 - ix[YY];
       }
     }
     if (G_ndim > 2) {
       if (ix[ZZ] < 0)
-        c->isedge = ix[ZZ];
+        c.isedge = ix[ZZ];
       else if (ix[ZZ] >= G_ng[ZZ])
-        c->isedge = G_ng[ZZ] - 1 - ix[ZZ];
+        c.isedge = G_ng[ZZ] - 1 - ix[ZZ];
     }
 
     //
@@ -655,7 +552,7 @@ int UniformGrid::assign_grid_structure()
         }    // If at end of YY row.
       }      // If 2D.
     }        // If at end of XX row.
-  } while ((c = NextPt_All(c)) != 0);
+  }
   // ---------------------- SET CELL POSITIONS ----------------------
   // ----------------------------------------------------------------
 
@@ -664,27 +561,26 @@ int UniformGrid::assign_grid_structure()
   // Now run through grid and set npt pointer for on-grid cells.
   // Also set fpt for the first on-grid point, and lpt for the last.
   //
-  bool set_fpt = false, set_lpt = false;
+  bool is_fpt_set = false, is_lpt_set = false;
   cell *ctemp = 0;
-  c           = FirstPt_All();
-  do {
+  for (auto &c : gridcells) {
     //
     // If cell is on-grid, set npt to be the next cell in the list
     // that is also on-grid.
     //
-    if (c->isgd) {
+    if (c.isgd) {
       //
       // set pointer to first on-grid cell.
       //
-      if (!set_fpt) {
-        G_fpt   = c;
-        set_fpt = true;
+      if (!is_fpt_set) {
+        G_fpt      = &c;
+        is_fpt_set = true;
       }
       //
       // if next cell in list is also on-grid, this is npt.
       //
       if (NextPt_All(c) != 0 && NextPt_All(c)->isgd) {
-        c->npt = NextPt_All(c);
+        c.npt = NextPt_All(c);
       }
       //
       // Otherwise, go through the list until we get to the end (so
@@ -692,28 +588,29 @@ int UniformGrid::assign_grid_structure()
       // cell, which we set npt to point to.
       //
       else {
-        ctemp = c;
+        ctemp = &c;
         do {
-          ctemp = NextPt_All(ctemp);
+          ctemp = NextPt_All(*ctemp);
         } while (ctemp != 0 && !ctemp->isgd);
 
         if (ctemp) {
           // there is another on-grid point.
           if (!ctemp->isgd)
             spdlog::error("{}: {}", "Setting npt error", ctemp->id);
-          c->npt = ctemp;
+          c.npt = ctemp;
         }
         else {
           // must be last point on grid.
-          c->npt  = 0;
-          G_lpt   = c;
-          set_lpt = true;
+          c.npt      = 0;
+          G_lpt      = &c;
+          is_lpt_set = true;
         }
       }
     }  // if c->isgd
-  } while ((c = NextPt_All(c)) != 0);
-  if (!set_lpt) spdlog::error("{}: {}", "failed to find last on-grid point", 1);
-  if (!set_fpt)
+  }
+  if (!is_lpt_set)
+    spdlog::error("{}: {}", "failed to find last on-grid point", 1);
+  if (!is_fpt_set)
     spdlog::error("{}: {}", "failed to find first on-grid point", 1);
   // ----------------------  SET npt POINTERS  ----------------------
   // ----------------------------------------------------------------
@@ -723,26 +620,24 @@ int UniformGrid::assign_grid_structure()
   //
   // Set up pointers to neighbours in x-direction
   //
-  c            = FirstPt_All();
-  cell *c_prev = 0, *c_next = c;
-  do {
-    c_next     = NextPt_All(c_next);
-    c->ngb[XN] = c_prev;
+  // TODO: This should be done using indices in gridcells
+  cell *c_prev = 0, *c_next = FirstPt_All();
+  for (auto &c : gridcells) {
+    c_next    = NextPt_All(*c_next);
+    c.ngb[XN] = c_prev;
 
     if (!c_next) {
-      c->ngb[XP] = 0;
+      c.ngb[XP] = 0;
     }
-    else if (c_next->pos[XX] > c->pos[XX]) {
-      c->ngb[XP] = c_next;
-      c_prev     = c;
+    else if (c_next->pos[XX] > c.pos[XX]) {
+      c.ngb[XP] = c_next;
+      c_prev    = &c;
     }
     else {
-      c->ngb[XP] = 0;
-      c_prev     = 0;
+      c.ngb[XP] = 0;
+      c_prev    = 0;
     }
-
-    c = c_next;
-  } while (c != 0);
+  }
 
   //
   // Pointers to neighbours in the Y-Direction, if it exists.
@@ -750,33 +645,32 @@ int UniformGrid::assign_grid_structure()
   // but it does the job.
   //
   if (G_ndim > 1) {
-    c = FirstPt_All();
-    do {
-      c_next = c;
+    for (auto &c : gridcells) {
+      c_next = &c;
       do {
-        c_next = NextPt_All(c_next);
-      } while ((c_next != 0) && (c_next->pos[YY] >= c->pos[YY])
-               && (c_next->pos[XX] != c->pos[XX]));
+        c_next = NextPt_All(*c_next);
+      } while ((c_next != 0) && (c_next->pos[YY] >= c.pos[YY])
+               && (c_next->pos[XX] != c.pos[XX]));
       //
       // So now maybe c_next is zero, in which case ngb[YP]=0
       //
       if (!c_next) {
-        c->ngb[YP] = 0;
+        c.ngb[YP] = 0;
       }
       //
       // Or else we have looped onto the next z-plane, so ngb[YP]=0
       //
-      else if (c_next->pos[YY] < c->pos[YY]) {
-        c->ngb[YP] = 0;
+      else if (c_next->pos[YY] < c.pos[YY]) {
+        c.ngb[YP] = 0;
       }
       //
       // Or else cells have the same pos[XX], so they are neighbours.
       //
       else {
-        c->ngb[YP]      = c_next;
-        c_next->ngb[YN] = c;
+        c.ngb[YP]       = c_next;
+        c_next->ngb[YN] = &c;
       }
-    } while ((c = NextPt_All(c)) != 0);
+    }
   }  // if G_ndim>1
 
   //
@@ -786,26 +680,18 @@ int UniformGrid::assign_grid_structure()
     //
     // First get two cells, one above the other:
     //
-    c      = FirstPt_All();
-    c_next = NextPt_All(c);
-    // CI.print_cell(c);
-    // CI.print_cell(c_next);
-    while (c_next->pos[ZZ] == c->pos[ZZ]) {
-      c_next = NextPt_All(c_next);
-      // Let c_next loop through x-y plane until i get to above the
-      // first point.
-    }
+    auto c = gridcells.begin();
+    auto c_next =
+        find_if(gridcells.begin() + 1, gridcells.end(), [c](const auto &next) {
+          return next.pos[ZZ] != c->pos[ZZ];
+        });
     //
     // Now c_next should be c's ZP neighbour.
     //
-    do {
-      // rep.printVec("C-",c->pos,G_ndim);
-      // rep.printVec("C+",c_next->pos,G_ndim);
-      c->ngb[ZP]      = c_next;
-      c_next->ngb[ZN] = c;
-      c               = NextPt_All(c);
-      c_next          = NextPt_All(c_next);
-    } while (c_next != 0);
+    for (; c_next < gridcells.end(); ++c_next, ++c) {
+      c->ngb[ZP]      = &(*c_next);
+      c_next->ngb[ZN] = &(*c);
+    }
   }
   // ----------------------  SET ngb POINTERS  ----------------------
   // ----------------------------------------------------------------
@@ -963,7 +849,7 @@ class cell *UniformGrid::LastPt_All()
 
 
 
-class cell *UniformGrid::PrevPt(const class cell *p, enum direction dir)
+class cell *UniformGrid::PrevPt(const class cell &p, enum direction dir)
 {
   // Returns previous cell, including virtual boundary cells.
   //
@@ -978,7 +864,7 @@ class cell *UniformGrid::PrevPt(const class cell *p, enum direction dir)
   // This is going to be very inefficient...
   spdlog::debug(
       "This function is very inefficient and probably shouldn't be used");
-  return (p->ngb[opp]);
+  return (p.ngb[opp]);
 }
 
 
@@ -1032,16 +918,16 @@ int UniformGrid::SetupBCs(
       c = cy;
       // add boundary cells beside the grid.
       for (int v = 0; v < G_nbc[XN]; v++)
-        c = NextPt(c, XN);
+        c = NextPt(*c, XN);
       if (!c) spdlog::error("{}: {}", "Got lost on grid! XN", cy->id);
       for (int v = 0; v < G_nbc[XN]; v++) {
         BC_bd[XN]->data.push_back(c);
         // spdlog::debug(" Adding cell {} to XN boundary", c->id);
-        c = NextPt(c, XP);
+        c = NextPt(*c, XP);
       }
-      if (G_ndim > 1) cy = NextPt(cy, YP);
+      if (G_ndim > 1) cy = NextPt(*cy, YP);
     } while (G_ndim > 1 && cy != 0 && cy->isgd);
-    if (G_ndim > 2) cz = NextPt(cz, ZP);
+    if (G_ndim > 2) cz = NextPt(*cz, ZP);
   } while (G_ndim > 2 && cz != 0 && cz->isgd);
 
   spdlog::debug("Setup XN boundary, got {} grid cells", BC_bd[XN]->data.size());
@@ -1054,8 +940,8 @@ int UniformGrid::SetupBCs(
   // at the XP boundary and moving to the most positive.
   //
   cz = FirstPt();
-  while (NextPt(cz, XP)->isgd)
-    cz = NextPt(cz, XP);
+  while (NextPt(*cz, XP)->isgd)
+    cz = NextPt(*cz, XP);
   // loop in ZP direction
   do {
     cy = cz;
@@ -1064,17 +950,17 @@ int UniformGrid::SetupBCs(
       c = cy;
       // add boundary cells beside the grid.
       for (int v = 0; v < G_nbc[XP]; v++) {
-        c = NextPt(c, XP);
+        c = NextPt(*c, XP);
         if (!c) {
-          CI.print_cell(cy);
+          CI.print_cell(*cy);
           spdlog::error("{}: {}", "Got lost on grid! XP", cy->id);
         }
         BC_bd[XP]->data.push_back(c);
         // spdlog::debug(" Adding cell {} to XP boundary", c->id);
       }
-      if (G_ndim > 1) cy = NextPt(cy, YP);
+      if (G_ndim > 1) cy = NextPt(*cy, YP);
     } while (G_ndim > 1 && cy != 0 && cy->isgd);
-    if (G_ndim > 2) cz = NextPt(cz, ZP);
+    if (G_ndim > 2) cz = NextPt(*cz, ZP);
   } while (G_ndim > 2 && cz != 0 && cz->isgd);
   spdlog::debug("Setup XP boundary, got {} grid cells", BC_bd[XP]->data.size());
   // ----------------------------------------------------------------
@@ -1092,10 +978,10 @@ int UniformGrid::SetupBCs(
     // the next one.
     //
     cz = FirstPt();
-    while (NextPt(cz, XN) != 0)
-      cz = NextPt(cz, XN);
-    while (NextPt(cz, YN) != 0)
-      cz = NextPt(cz, YN);
+    while (NextPt(*cz, XN) != 0)
+      cz = NextPt(*cz, XN);
+    while (NextPt(*cz, YN) != 0)
+      cz = NextPt(*cz, YN);
     //
     // loop in ZP-direction, at least once because there must be
     // at least one plane of boundary cells.
@@ -1108,10 +994,10 @@ int UniformGrid::SetupBCs(
       //
       do {
         BC_bd[YN]->data.push_back(cy);
-        cy = NextPt_All(cy);
+        cy = NextPt_All(*cy);
       } while (cy->pos[YY] < G_ixmin[YY]);
 
-      if (G_ndim > 2) cz = NextPt(cz, ZP);
+      if (G_ndim > 2) cz = NextPt(*cz, ZP);
     } while (G_ndim > 2 && cz != 0 && cz->pos[ZZ] < G_ixmax[ZZ]);
     spdlog::debug(
         "Setup YN boundary, got {} grid cells", BC_bd[YN]->data.size());
@@ -1125,9 +1011,9 @@ int UniformGrid::SetupBCs(
     //
     cz = FirstPt();
     while (cz->isgd)
-      cz = NextPt(cz, YP);
-    while (NextPt(cz, XN) != 0)
-      cz = NextPt(cz, XN);
+      cz = NextPt(*cz, YP);
+    while (NextPt(*cz, XN) != 0)
+      cz = NextPt(*cz, XN);
 
     //
     // loop in ZP-direction, at least once because there must be
@@ -1141,10 +1027,10 @@ int UniformGrid::SetupBCs(
       //
       do {
         BC_bd[YP]->data.push_back(cy);
-        cy = NextPt_All(cy);
+        cy = NextPt_All(*cy);
       } while ((cy != 0) && (cy->pos[YY] > G_ixmax[YY]));
 
-      if (G_ndim > 2) cz = NextPt(cz, ZP);
+      if (G_ndim > 2) cz = NextPt(*cz, ZP);
     } while (G_ndim > 2 && cz != 0 && cz->pos[ZZ] < G_ixmax[ZZ]);
 
     spdlog::debug(
@@ -1164,7 +1050,7 @@ int UniformGrid::SetupBCs(
     cz = FirstPt_All();
     do {
       BC_bd[ZN]->data.push_back(cz);
-      cz = NextPt_All(cz);
+      cz = NextPt_All(*cz);
     } while (cz->pos[ZZ] < G_ixmin[ZZ]);
     spdlog::debug(
         "Setup ZN boundary, got {} grid cells", BC_bd[ZN]->data.size());
@@ -1173,10 +1059,10 @@ int UniformGrid::SetupBCs(
     //
     cz = LastPt();
     while (cz->pos[ZZ] < G_ixmax[ZZ])
-      cz = NextPt_All(cz);
+      cz = NextPt_All(*cz);
     do {
       BC_bd[ZP]->data.push_back(cz);
-      cz = NextPt_All(cz);
+      cz = NextPt_All(*cz);
     } while (cz != 0);
     spdlog::debug(
         "Setup ZP boundary, got {} grid cells", BC_bd[ZP]->data.size());
@@ -1196,7 +1082,7 @@ int UniformGrid::BC_printBCdata(boundary_data *b)
 {
   list<cell *>::iterator c = b->data.begin();
   for (c = b->data.begin(); c != b->data.end(); ++c) {
-    CI.print_cell(*c);
+    CI.print_cell(**c);
   }
   return 0;
 }
@@ -1348,8 +1234,8 @@ double UniformGrid::idistance(
 // Result returned in physical units (e.g. centimetres).
 //
 double UniformGrid::distance_cell2cell(
-    const cell *c1,  ///< cell 1
-    const cell *c2   ///< cell 2
+    const cell &c1,  ///< cell 1
+    const cell &c2   ///< cell 2
 )
 {
   double temp = 0.0;
@@ -1372,8 +1258,8 @@ double UniformGrid::distance_cell2cell(
 // two units).
 //
 double UniformGrid::idistance_cell2cell(
-    const cell *c1,  ///< cell 1
-    const cell *c2   ///< cell 2
+    const cell &c1,  ///< cell 1
+    const cell &c2   ///< cell 2
 )
 {
   double temp = 0.0;
@@ -1397,7 +1283,7 @@ double UniformGrid::idistance_cell2cell(
 //
 double UniformGrid::distance_vertex2cell(
     const std::array<double, MAX_DIM> &v,  ///< vertex (physical)
-    const cell *c                          ///< cell
+    const cell &c                          ///< cell
 )
 {
   double temp = 0.0;
@@ -1420,7 +1306,7 @@ double UniformGrid::distance_vertex2cell(
 //
 double UniformGrid::difference_vertex2cell(
     const double *v,  ///< vertex (double)
-    const cell *c,    ///< cell
+    const cell &c,    ///< cell
     const axes a      ///< Axis to calculate.
 )
 {
@@ -1441,7 +1327,7 @@ double UniformGrid::difference_vertex2cell(
 //
 double UniformGrid::idistance_vertex2cell(
     const std::array<int, MAX_DIM> &v,  ///< vertex (integer)
-    const cell *c                       ///< cell
+    const cell &c                       ///< cell
 )
 {
   double temp = 0.0;
@@ -1464,7 +1350,7 @@ double UniformGrid::idistance_vertex2cell(
 //
 double UniformGrid::idifference_vertex2cell(
     const int *v,   ///< vertex (integer)
-    const cell *c,  ///< cell
+    const cell &c,  ///< cell
     const axes a    ///< Axis to calculate.
 )
 {
@@ -1484,8 +1370,8 @@ double UniformGrid::idifference_vertex2cell(
 // It returns *cell2* coordinate minus *cell1* coordinate.
 //
 double UniformGrid::idifference_cell2cell(
-    const cell *c1,  ///< cell 1
-    const cell *c2,  ///< cell 2
+    const cell &c1,  ///< cell 1
+    const cell &c2,  ///< cell 2
     const axes a     ///< Axis.
 )
 {
@@ -1581,7 +1467,7 @@ uniform_grid_cyl::~uniform_grid_cyl()
 
 
 
-double uniform_grid_cyl::iR_cov(const cell *c)
+double uniform_grid_cyl::iR_cov(const cell &c)
 {
   //
   // integer and physical units have different origins, so I need a
@@ -1646,8 +1532,8 @@ double uniform_grid_cyl::idistance(
 
 
 double uniform_grid_cyl::distance_cell2cell(
-    const cell *c1,  ///< cell 1
-    const cell *c2   ///< cell 2
+    const cell &c1,  ///< cell 1
+    const cell &c2   ///< cell 2
 )
 {
   //
@@ -1670,8 +1556,8 @@ double uniform_grid_cyl::distance_cell2cell(
 
 
 double uniform_grid_cyl::idistance_cell2cell(
-    const cell *c1,  ///< cell 1
-    const cell *c2   ///< cell 2
+    const cell &c1,  ///< cell 1
+    const cell &c2   ///< cell 2
 )
 {
   //
@@ -1696,7 +1582,7 @@ double uniform_grid_cyl::idistance_cell2cell(
 
 double uniform_grid_cyl::distance_vertex2cell(
     const std::array<double, MAX_DIM> &v,  ///< vertex (physical)
-    const cell *c                          ///< cell
+    const cell &c                          ///< cell
 )
 {
   //
@@ -1720,7 +1606,7 @@ double uniform_grid_cyl::distance_vertex2cell(
 
 double uniform_grid_cyl::difference_vertex2cell(
     const double *v,  ///< vertex (double)
-    const cell *c,    ///< cell
+    const cell &c,    ///< cell
     const axes a      ///< Axis to calculate.
 )
 {
@@ -1745,7 +1631,7 @@ double uniform_grid_cyl::difference_vertex2cell(
 
 double uniform_grid_cyl::idistance_vertex2cell(
     const std::array<int, MAX_DIM> &v,  ///< vertex (integer)
-    const cell *c                       ///< cell
+    const cell &c                       ///< cell
 )
 {
   //
@@ -1773,7 +1659,7 @@ double uniform_grid_cyl::idistance_vertex2cell(
 
 double uniform_grid_cyl::idifference_vertex2cell(
     const int *v,   ///< vertex (integer)
-    const cell *c,  ///< cell
+    const cell &c,  ///< cell
     const axes a    ///< Axis to calculate.
 )
 {
@@ -1798,8 +1684,8 @@ double uniform_grid_cyl::idifference_vertex2cell(
 
 
 double uniform_grid_cyl::idifference_cell2cell(
-    const cell *c1,  ///< cell 1
-    const cell *c2,  ///< cell 2
+    const cell &c1,  ///< cell 1
+    const cell &c2,  ///< cell 2
     const axes a     ///< Axis.
 )
 {
@@ -1886,7 +1772,7 @@ uniform_grid_sph::~uniform_grid_sph()
 
 
 
-double uniform_grid_sph::iR_cov(const cell *c)
+double uniform_grid_sph::iR_cov(const cell &c)
 {
   //
   // integer and physical units have different origins, so I need a
@@ -1937,8 +1823,8 @@ double uniform_grid_sph::idistance(
 
 
 double uniform_grid_sph::distance_cell2cell(
-    const cell *c1,  ///< cell 1
-    const cell *c2   ///< cell 2
+    const cell &c1,  ///< cell 1
+    const cell &c2   ///< cell 2
 )
 {
   return fabs(R_com(c1, G_dx) - R_com(c2, G_dx));
@@ -1952,8 +1838,8 @@ double uniform_grid_sph::distance_cell2cell(
 
 
 double uniform_grid_sph::idistance_cell2cell(
-    const cell *c1,  ///< cell 1
-    const cell *c2   ///< cell 2
+    const cell &c1,  ///< cell 1
+    const cell &c2   ///< cell 2
 )
 {
   return fabs(R_com(c1, G_dx) - R_com(c2, G_dx)) / CI.phys_per_int();
@@ -1968,7 +1854,7 @@ double uniform_grid_sph::idistance_cell2cell(
 
 double uniform_grid_sph::distance_vertex2cell(
     const std::array<double, MAX_DIM> &v,  ///< vertex (physical)
-    const cell *c                          ///< cell
+    const cell &c                          ///< cell
 )
 {
   return fabs(v[Rsph] - R_com(c, G_dx));
@@ -1983,7 +1869,7 @@ double uniform_grid_sph::distance_vertex2cell(
 
 double uniform_grid_sph::difference_vertex2cell(
     const double *v,  ///< vertex (double)
-    const cell *c,    ///< cell
+    const cell &c,    ///< cell
     const axes a      ///< Axis to calculate.
 )
 {
@@ -2005,7 +1891,7 @@ double uniform_grid_sph::difference_vertex2cell(
 
 double uniform_grid_sph::idistance_vertex2cell(
     const std::array<int, MAX_DIM> &v,  ///< vertex (integer)
-    const cell *c                       ///< cell
+    const cell &c                       ///< cell
 )
 {
   return fabs(static_cast<double>(v[Rsph]) - iR_cov(c));
@@ -2020,7 +1906,7 @@ double uniform_grid_sph::idistance_vertex2cell(
 
 double uniform_grid_sph::idifference_vertex2cell(
     const int *v,   ///< vertex (integer)
-    const cell *c,  ///< cell
+    const cell &c,  ///< cell
     const axes a    ///< Axis to calculate.
 )
 {
@@ -2042,8 +1928,8 @@ double uniform_grid_sph::idifference_vertex2cell(
 
 
 double uniform_grid_sph::idifference_cell2cell(
-    const cell *c1,  ///< cell 1
-    const cell *c2,  ///< cell 2
+    const cell &c1,  ///< cell 1
+    const cell &c2,  ///< cell 2
     const axes a     ///< Axis.
 )
 {

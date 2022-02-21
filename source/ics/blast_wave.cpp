@@ -491,14 +491,14 @@ int IC_blastwave::setup_sph_bw_File(const std::string fname, const int tr_id)
       // This is where I set the state inside the blast radius.
       // This is exact for spherical coords.
       // The ion fraction should be 1 already, so ignore it.
-      CI.get_dpos(c, dpos);
+      CI.get_dpos(*c, dpos);
       // dist="<<gg->distance(centre,dpos)<<"  bw_rad="<<bw_rad<<"\n";
       if (gg->distance(centre, dpos) <= bw_rad) {
         c->P[PG] = Pin;
         c->P[RO] = bw_blastRO;
         spdlog::debug("Setting cell {} to internal value", c->id);
       }
-      c = gg->NextPt(c);
+      c = gg->NextPt(*c);
     }
     i++;
   } while (c != 0);
@@ -554,7 +554,7 @@ int IC_blastwave::setup_sph_bw()
     }
     // This is where I set the state inside the blast radius.
     // This is exact for spherical coords.
-    CI.get_dpos(cpt, dpos);
+    CI.get_dpos(*cpt, dpos);
     if (gg->distance(centre, dpos) <= bw_rad) {
       cpt->P[PG] = Pin;
       cpt->P[RO] = bw_blastRO;
@@ -573,7 +573,7 @@ int IC_blastwave::setup_sph_bw()
         cpt->P[v] = ambient[v];
     }
 
-  } while ((cpt = gg->NextPt(cpt)) != NULL);
+  } while ((cpt = gg->NextPt(*cpt)) != NULL);
   spdlog::info("Got through data successfully");
   // Data done.
   return (0);
@@ -627,7 +627,7 @@ int IC_blastwave::setup_cyl_bw()
     // This is not so exact for cyl.coords, as I assume space inside the
     // cell is cartesian!  But it's better than nothing.
     // if( (vfrac=stest.volumeFraction(cpt)) >0) {
-    CI.get_dpos(cpt, dpos);
+    CI.get_dpos(*cpt, dpos);
     if (gg->distance(centre, dpos) <= bw_rad) {
       vfrac      = 1.0;
       cpt->P[PG] = vfrac * (Pin) + (1. - vfrac) * cpt->P[PG];
@@ -636,7 +636,7 @@ int IC_blastwave::setup_cyl_bw()
         cpt->P[SimPM->ftr + i] = -vfrac + (1. - vfrac);
       }
     }
-  } while ((cpt = gg->NextPt(cpt)) != NULL);
+  } while ((cpt = gg->NextPt(*cpt)) != NULL);
   spdlog::info("Got through data successfully");
   // Data done.
   return (0);
@@ -696,14 +696,14 @@ int IC_blastwave::setup_cart_bw()
       cpt->P[SimPM->ftr + i] = 1.0;
     }
     // This is where I set the state inside the blast radius.
-    if ((vfrac = stest.volumeFraction(cpt)) > 0) {
+    if ((vfrac = stest.volumeFraction(*cpt)) > 0) {
       cpt->P[PG] = vfrac * (Pin) + (1.0 - vfrac) * cpt->P[PG];
       cpt->P[RO] = vfrac * (bw_blastRO) + (1.0 - vfrac) * cpt->P[RO];
       for (int i = 0; i < SimPM->ntracer; i++) {
         cpt->P[SimPM->ftr + i] = -vfrac + (1.0 - vfrac);
       }
     }
-  } while ((cpt = gg->NextPt(cpt)) != NULL);
+  } while ((cpt = gg->NextPt(*cpt)) != NULL);
   spdlog::info("Got through data successfully");
   // Data done.
   return (0);

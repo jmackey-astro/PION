@@ -273,7 +273,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
       for (unsigned int c_iter = 0; c_iter < b->NGsendC2F[ib]->c.size();
            c_iter++) {
         cell *c = b->NGsendC2F[ib]->c[c_iter];
-        solver->PtoU(c->P, U.data(), par.gamma);
+        solver->PtoU(c->P.data(), U.data(), par.gamma);
         for (int v = 0; v < par.nvar; v++)
           U[v] += 0.5 * c->dU[v];
         solver->UtoP(U.data(), c->Ph, par.EP.MinTemperature, par.gamma);
@@ -326,9 +326,9 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
       for (int v = 0; v < par.nvar; v++)
         buf[ibuf + v] = c->Ph[v];
       ibuf += par.nvar;
-      buf[ibuf] = grid->CellVolume(c, 0);
+      buf[ibuf] = grid->CellVolume(*c, 0);
       ibuf++;
-      CI.get_dpos(c, cpos);
+      CI.get_dpos(*c, cpos);
       for (int v = 0; v < par.ndim; v++)
         buf[ibuf + v] = cpos[v];
       ibuf += par.ndim;
@@ -340,7 +340,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
           // cout <<" idim="<<idim<<" calling setslope on cell ";
           // cout <<c->id<<", isbd="<<c->isbd<<",
           // isgd="<<c->isgd<<"\n";
-          solver->SetSlope(c, a, par.nvar, &slope[0], OA2, grid);
+          solver->SetSlope(*c, a, par.nvar, &slope[0], OA2, grid);
           for (int v = 0; v < par.nvar; v++)
             buf[ibuf + v] = slope[v];
           ibuf += par.nvar;
@@ -545,8 +545,8 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
           f_iter++;
           temp = (*f_iter);
           b->NGrecvC2F[ic].push_back(temp);
-          b->NGrecvC2F[ic].push_back(grid->NextPt(c, YP));
-          b->NGrecvC2F[ic].push_back(grid->NextPt(temp, YP));
+          b->NGrecvC2F[ic].push_back(grid->NextPt(*c, YP));
+          b->NGrecvC2F[ic].push_back(grid->NextPt(*temp, YP));
           ic++;
         }
         else if (c->pos[YY] - row_y == idx) {
@@ -586,14 +586,14 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
           temp = (*f_iter);
           b->NGrecvC2F[ic].push_back(c);
           b->NGrecvC2F[ic].push_back(temp);
-          b->NGrecvC2F[ic].push_back(grid->NextPt(c, YP));
-          b->NGrecvC2F[ic].push_back(grid->NextPt(temp, YP));
-          c    = grid->NextPt(c, ZP);
-          temp = grid->NextPt(temp, ZP);
+          b->NGrecvC2F[ic].push_back(grid->NextPt(*c, YP));
+          b->NGrecvC2F[ic].push_back(grid->NextPt(*temp, YP));
+          c    = grid->NextPt(*c, ZP);
+          temp = grid->NextPt(*temp, ZP);
           b->NGrecvC2F[ic].push_back(c);
           b->NGrecvC2F[ic].push_back(temp);
-          b->NGrecvC2F[ic].push_back(grid->NextPt(c, YP));
-          b->NGrecvC2F[ic].push_back(grid->NextPt(temp, YP));
+          b->NGrecvC2F[ic].push_back(grid->NextPt(*c, YP));
+          b->NGrecvC2F[ic].push_back(grid->NextPt(*temp, YP));
 
           ic++;
         }
@@ -764,7 +764,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
             f_iter++;
           }
           interpolate_coarse2fine1D(
-              par, grid, solver, Ph.data(), c_vol, sx.data(), f[0], f[1]);
+              par, grid, solver, Ph.data(), c_vol, sx.data(), *f[0], *f[1]);
         }  // loop over coarse cells
       }    // if 1D
       else if (par.ndim == 2) {
@@ -802,7 +802,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
           CI.get_ipos_vec(cpos, ipos);
           interpolate_coarse2fine2D(
               par, grid, solver, Ph.data(), ipos.data(), c_vol, sx.data(),
-              sy.data(), f[0], f[1], f[2], f[3]);
+              sy.data(), *f[0], *f[1], *f[2], *f[3]);
 
         }  // loop over coarse cells
       }    // if 2D
@@ -947,7 +947,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_1D(
   cell *c = grid->FirstPt_All();
   do {
     if (c->pos[XX] > xn && c->pos[XX] < xp) bdata->c.push_back(c);
-  } while ((c = grid->NextPt_All(c)) != 0);
+  } while ((c = grid->NextPt_All(*c)) != 0);
 
   return;
 }
@@ -1027,7 +1027,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
       bdata->c.push_back(c);
       ct++;
     }
-  } while ((c = grid->NextPt_All(c)) != 0);
+  } while ((c = grid->NextPt_All(*c)) != 0);
 #ifdef TEST_C2F
   spdlog::debug("add_cells_to_C2F_send_list_2D: added {} cells", ct);
 #endif
@@ -1159,12 +1159,10 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
       // cout <<"adding cell "<<ct<<" to list.\n";
       ct++;
     }
-  } while ((c = grid->NextPt_All(c)) != 0);
+  } while ((c = grid->NextPt_All(*c)) != 0);
 #ifdef TEST_C2F
   spdlog::debug("Added {} cells to c2f list", ct);
 #endif
-
-  return;
 }
 
 // ##################################################################

@@ -72,25 +72,25 @@ public:
   /// returns a pointer to a neighbouring cell in the given direction.
   ///
   virtual cell *NextPt(
-      const cell *,         ///< Current cell.
+      const cell &,         ///< Current cell.
       const enum direction  ///< direction of neighbour.
       ) = 0;
 
   ///
   /// returns a pointer to the next cell (ex. boundary data).
   ///
-  virtual cell *NextPt(const cell *) = 0;
+  virtual cell *NextPt(const cell &) = 0;
 
   ///
   /// returns a pointer to the next cell (inc. boundary data).
   ///
-  virtual cell *NextPt_All(const cell *) = 0;
+  virtual cell *NextPt_All(const cell &) = 0;
 
   ///
   /// Like nextPt(cell,dir), but in reverse direction.
   ///
   virtual class cell *PrevPt(
-      const class cell *,  ///< Current Point.
+      const class cell &,  ///< Current Point.
       enum direction       ///< Direction to go in.
       ) = 0;
   // ---------- ACCESSING AND MOVING FROM CELL TO CELL --------------
@@ -108,12 +108,12 @@ public:
   virtual size_t Ncell_all() const = 0;  ///< number of grid+ghost cells
 
   virtual double CellVolume(
-      const cell *,  ///< Cell
+      const cell &,  ///< Cell
       const double   /// unused
       ) = 0;         ///< Returns Volume of cell.
 
   virtual double CellInterface(
-      const cell *,     ///< Cell
+      const cell &,     ///< Cell
       const direction,  ///< outward normal to interface.
       const double      ///< unused
       ) = 0;            ///< Returns Surface area of interface.
@@ -125,7 +125,7 @@ public:
   /// Returns cell diameter for a given cell along a given axis.
   ///
   virtual double DX(
-      const cell *,    ///< cell to get dx for
+      const cell &,    ///< cell to get dx for
       const enum axes  ///< axis along which to get dx.
       ) const = 0;
 
@@ -204,13 +204,8 @@ public:
   /// Returns lelel x,y,z range in integer coords.
   virtual int level_iRange(enum axes) const = 0;
 
-#ifdef NEWGRIDDATA
-  ///< Query number of bytes per cell in griddata
-  virtual size_t get_gdata_stride() const = 0;
-
   ///< get pointer to cell associated with i,j,k (including boundary data)
   virtual cell *get_cell_all(const int, const int, const int) = 0;
-#endif  // NEWGRIDDATA
 
 
   // ---------- QUERY BASIC GRID PROPERTIES -------------------------
@@ -268,7 +263,7 @@ public:
   ///
   virtual double distance_vertex2cell(
       const std::array<double, MAX_DIM> &,  ///< vertex (physical)
-      const cell *                          ///< cell
+      const cell &                          ///< cell
       ) = 0;
 
   ///
@@ -277,8 +272,8 @@ public:
   /// Result returned in physical units (e.g. centimetres).
   ///
   virtual double distance_cell2cell(
-      const cell *,  ///< cell 1
-      const cell *   ///< cell 2
+      const cell &,  ///< cell 1
+      const cell &   ///< cell 2
       ) = 0;
 
   ///
@@ -288,7 +283,7 @@ public:
   ///
   virtual double difference_vertex2cell(
       const double *,  ///< vertex (double)
-      const cell *,    ///< cell
+      const cell &,    ///< cell
       const axes       ///< Axis to calculate.
       ) = 0;
 
@@ -309,8 +304,8 @@ public:
   /// Result returned in grid--integer units (one cell has dx=2).
   ///
   virtual double idistance_cell2cell(
-      const cell *,  ///< cell 1
-      const cell *   ///< cell 2
+      const cell &,  ///< cell 1
+      const cell &   ///< cell 2
       ) = 0;
 
   ///
@@ -320,7 +315,7 @@ public:
   ///
   virtual double idistance_vertex2cell(
       const std::array<int, MAX_DIM> &,  ///< vertex (integer)
-      const cell *                       ///< cell
+      const cell &                       ///< cell
       ) = 0;
 
   ///
@@ -330,7 +325,7 @@ public:
   ///
   virtual double idifference_vertex2cell(
       const int *,   ///< vertex (integer)
-      const cell *,  ///< cell
+      const cell &,  ///< cell
       const axes     ///< Axis to calculate.
       ) = 0;
 
@@ -340,8 +335,8 @@ public:
   /// It returns *cell2* coordinate minus *cell1* coordinate.
   ///
   virtual double idifference_cell2cell(
-      const cell *,  ///< cell 1
-      const cell *,  ///< cell 2
+      const cell &,  ///< cell 1
+      const cell &,  ///< cell 2
       const axes     ///< Axis.
       ) = 0;
 

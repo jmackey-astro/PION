@@ -52,7 +52,7 @@ int outflow_bc::BC_assign_OUTFLOW(
     for (int v = 0; v > (*bpt)->isedge; v--) {
       // CI.print_cell(temp);
       // cout <<"ondir="<<ondir<<"\n";
-      temp = grid->NextPt(temp, ondir);
+      temp = grid->NextPt(*temp, ondir);
     }
 
     for (int v = 0; v < par.nvar; v++)
@@ -82,7 +82,7 @@ int outflow_bc::BC_assign_OUTFLOW(
       }
       // get to nth cell on grid.
       for (int v = (*bpt)->isedge + 1; v < 0; v++)
-        temp = grid->NextPt(temp, ondir);
+        temp = grid->NextPt(*temp, ondir);
       (*bpt)->P[SI]  = -temp->P[SI];
       (*bpt)->Ph[SI] = -temp->Ph[SI];
     }
@@ -143,7 +143,7 @@ int outflow_bc::BC_update_OUTFLOW(
 #ifdef GLM_NEGATIVE_BOUNDARY
     if (par.eqntype == EQGLM) {
       for (int v = (*c)->isedge + 1; v < 0; v++)
-        gc = grid->NextPt(gc, b->ondir);
+        gc = grid->NextPt(*gc, b->ondir);
       (*c)->P[SI]  = -gc->P[SI];
       (*c)->Ph[SI] = -gc->Ph[SI];
     }

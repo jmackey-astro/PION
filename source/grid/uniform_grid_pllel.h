@@ -115,7 +115,7 @@ public:
   /// It is redefined here because we need the radius calculated from
   /// the global simulation Xmin[Rcyl], not the grid Xmin.
   ///
-  virtual double iR_cov(const cell *);
+  virtual double iR_cov(const cell &);
 };
 
 // ##################################################################
@@ -168,7 +168,7 @@ public:
   /// It is re-defined here because we need the radius calculated from
   /// the global simulation Xmin[Rcyl], not the grid Xmin.
   ///
-  virtual double iR_cov(const cell *);
+  virtual double iR_cov(const cell &);
 };
 
 // ##################################################################

@@ -270,7 +270,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
         b->NGrecvF2C[i].push_back(c);
         ct++;
       }
-    } while ((c = grid->NextPt(c)) != 0);
+    } while ((c = grid->NextPt(*c)) != 0);
 
 #ifdef TEST_MPI_NG_F2C
     spdlog::debug(
@@ -469,8 +469,8 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
         for (int isrc = 0; isrc < par.RS.Nsources; isrc++) {
           s   = &(par.RS.sources[isrc]);
           off = i_el + F2C_tauoff[isrc];
-          CI.set_col(c, s->id, &(buf[off]));
-          CI.set_cell_col(c, s->id, &(buf[off + s->NTau]));
+          CI.set_col(*c, s->id, &(buf[off]));
+          CI.set_cell_col(*c, s->id, &(buf[off + s->NTau]));
         }
         i_el += F2C_Nxd;
 

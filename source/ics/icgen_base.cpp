@@ -144,12 +144,8 @@ int ICsetup_base::equilibrate_MP(
   if (!mp || !gg || !rp)
     spdlog::error(
         "{}: {}", "microphysics or grid not initialised.", fmt::ptr(mp));
-  spdlog::debug(
-      "Init left  vec : {}",
-      std::vector<double>(gg->FirstPt()->P, gg->FirstPt()->P + SimPM.nvar));
-  spdlog::debug(
-      "Init right vec : {}",
-      std::vector<double>(gg->LastPt()->P, gg->LastPt()->P + SimPM.nvar));
+  spdlog::debug("Init left  vec : {}", gg->FirstPt()->P);
+  spdlog::debug("Init right vec : {}", gg->LastPt()->P);
 
   string seek = "InitIons";
   string s    = rp->find_parameter(seek);
@@ -167,20 +163,15 @@ int ICsetup_base::equilibrate_MP(
         spdlog::debug("skipping cell {} in equilibrate_MP() c->isbd", c->id);
       }
       else {
-        mp->Init_ionfractions(c->P, SimPM.gamma, -1);
+        mp->Init_ionfractions(c->P.data(), SimPM.gamma, -1);
       }
-    } while ((c = gg->NextPt(c)) != 0);
-    spdlog::debug(
-        "init left  vec : {}",
-        std::vector<double>(gg->FirstPt()->P, gg->FirstPt()->P + SimPM.nvar));
-    spdlog::debug(
-        "init right vec : {}",
-        std::vector<double>(gg->LastPt()->P, gg->LastPt()->P + SimPM.nvar));
+    } while ((c = gg->NextPt(*c)) != 0);
+    spdlog::debug("init left  vec : {}", gg->FirstPt()->P);
+    spdlog::debug("init right vec : {}", gg->LastPt()->P);
 
     // now do a long time integration to get to equilibrium.
     c           = gg->FirstPt();
-    pion_flt *p = c->P;
-    double tint = sqrt(SimPM.gamma * p[PG] / p[RO]);
+    double tint = sqrt(SimPM.gamma * c->P[PG] / c->P[RO]);
     tint        = 50. * gg->DX()
            / tint;  // gives us 50 times the dynamical time for a cell.
     spdlog::debug("time to step by={}", tint);
@@ -189,30 +180,22 @@ int ICsetup_base::equilibrate_MP(
     do {
       if (!c->isbd) {
         for (int i = 0; i < 50; i++) {
-          mp->TimeUpdateMP(c->P, c->P, tint, SimPM.gamma, 0, &tt);
+          mp->TimeUpdateMP(c->P.data(), c->P.data(), tint, SimPM.gamma, 0, &tt);
         }
       }
-    } while ((c = gg->NextPt(c)) != 0);
-    spdlog::debug(
-        "Final left  vec : {}",
-        std::vector<double>(gg->FirstPt()->P, gg->FirstPt()->P + SimPM.nvar));
-    spdlog::debug(
-        "Final right vec : {}",
-        std::vector<double>(gg->LastPt()->P, gg->LastPt()->P + SimPM.nvar));
+    } while ((c = gg->NextPt(*c)) != 0);
+    spdlog::debug("Final left  vec : {}", gg->FirstPt()->P);
+    spdlog::debug("Final right vec : {}", gg->LastPt()->P);
     c = gg->FirstPt();
     do {
       if (!c->isbd) {
         for (int i = 0; i < 50; i++) {
-          mp->TimeUpdateMP(c->P, c->P, tint, SimPM.gamma, 0, &tt);
+          mp->TimeUpdateMP(c->P.data(), c->P.data(), tint, SimPM.gamma, 0, &tt);
         }
       }
-    } while ((c = gg->NextPt(c)) != 0);
-    spdlog::debug(
-        "Final left  vec : {}",
-        std::vector<double>(gg->FirstPt()->P, gg->FirstPt()->P + SimPM.nvar));
-    spdlog::debug(
-        "Final right vec : {}",
-        std::vector<double>(gg->LastPt()->P, gg->LastPt()->P + SimPM.nvar));
+    } while ((c = gg->NextPt(*c)) != 0);
+    spdlog::debug("Final left  vec : {}", gg->FirstPt()->P);
+    spdlog::debug("Final right vec : {}", gg->LastPt()->P);
   }
   else if (s == "NO" || s == "N" || s == "n" || s == "no") {
     // initial values should be read from paramfile.
@@ -231,15 +214,11 @@ int ICsetup_base::equilibrate_MP(
         c         = gg->FirstPt();
         do {
           c->P[SimPM.ftr + i] = tr;
-        } while ((c = gg->NextPt(c)) != 0);
+        } while ((c = gg->NextPt(*c)) != 0);
       }
     }
-    spdlog::debug(
-        "Final left  vec : {}",
-        std::vector<double>(gg->FirstPt()->P, gg->FirstPt()->P + SimPM.nvar));
-    spdlog::debug(
-        "Final right vec : {}",
-        std::vector<double>(gg->LastPt()->P, gg->LastPt()->P + SimPM.nvar));
+    spdlog::debug("Final left  vec : {}", gg->FirstPt()->P);
+    spdlog::debug("Final right vec : {}", gg->LastPt()->P);
   }
   else if (s == "LEAVE") {
     // do nothing! hopefully a subroutine has set them already.
@@ -275,7 +254,7 @@ int ICsetup_base::AddNoise2Data(
           avg += cpt->P[PG];
           ct++;
         }
-      } while ((cpt = grid->NextPt(cpt)) != 0);
+      } while ((cpt = grid->NextPt(*cpt)) != 0);
 #ifdef PARALLEL
       avg = sub_domain->global_operation_double(SUM, avg);
 #endif
@@ -333,7 +312,7 @@ int ICsetup_base::AddNoise2Data(
         {  // Don't want to alter any edge cells.
           cpt->P[PG] += avg * (static_cast<double>(rand()) / RAND_MAX - 0.5);
         }
-      } while ((cpt = grid->NextPt(cpt)) != 0);
+      } while ((cpt = grid->NextPt(*cpt)) != 0);
       break;
 
     case 2:
@@ -399,7 +378,7 @@ int ICsetup_base::AddNoise2Data(
           cpt->P[RO] *= exp(log(1 + temp) / SimPM.gamma);
           //}
         }
-      } while ((cpt = grid->NextPt(cpt)) != 0);
+      } while ((cpt = grid->NextPt(*cpt)) != 0);
       break;
 
     case 3:
@@ -414,7 +393,7 @@ int ICsetup_base::AddNoise2Data(
       do {
         if (!cpt->isedge && !cpt->isbd) avg += cpt->P[PG];
         ct++;
-      } while ((cpt = grid->NextPt(cpt)) != 0);
+      } while ((cpt = grid->NextPt(*cpt)) != 0);
       spdlog::debug("avg = {}\t ct = {}", avg, ct);
       avg /= static_cast<double>(ct);
       // Now add wave to preshock state.
@@ -424,12 +403,12 @@ int ICsetup_base::AddNoise2Data(
         if (cpt->isedge == 0 && !cpt->isbd
             && cpt->P[PG] < avg) {  // Don't want to alter any edge cells.
           temp = frac
-                 * sin(2. * M_PI * (CI.get_dpos(cpt, YY) / SimPM.Range[YY])
+                 * sin(2. * M_PI * (CI.get_dpos(*cpt, YY) / SimPM.Range[YY])
                        * (SimPM.NG[YY] / 50));
           cpt->P[PG] *= 1 + temp;
           cpt->P[RO] *= exp(log(1 + temp) / SimPM.gamma);
         }
-      } while ((cpt = grid->NextPt(cpt)) != 0);
+      } while ((cpt = grid->NextPt(*cpt)) != 0);
       break;
 
       //
@@ -496,7 +475,7 @@ int ICsetup_base::AddNoise2Data(
           cpt->P[PG] *= 1.0 + temp;
           cpt->P[RO] *= 1.0 + temp;
         }
-      } while ((cpt = grid->NextPt(cpt)) != 0);
+      } while ((cpt = grid->NextPt(*cpt)) != 0);
       break;
 
     default:

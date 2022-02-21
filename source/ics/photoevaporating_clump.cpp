@@ -465,7 +465,7 @@ int IC_photoevaporatingclump::setup_pec2()
     // cloud state.  If in the outer 5 per cent, then assign a linear
     // interpolation.
     //
-    CI.get_dpos(cpt, cell_pos);
+    CI.get_dpos(*cpt, cell_pos);
     d = gg->distance(cell_pos, cloud1);
     if (d < edge) {
       cpt->P[RO] = rho1;
@@ -490,7 +490,7 @@ int IC_photoevaporatingclump::setup_pec2()
     // cloud state.  If in the outer 5 per cent, then assign a linear
     // interpolation.
     //
-    CI.get_dpos(cpt, cell_pos);
+    CI.get_dpos(*cpt, cell_pos);
     d = gg->distance(cell_pos, cloud2);
     if (d < edge) {
       cpt->P[RO] = rho1;
@@ -533,7 +533,7 @@ int IC_photoevaporatingclump::setup_pec2()
     // }
     // ******* OLD CODE FOR HARD-EDGED CLUMPS *******
 
-  } while ((cpt = gg->NextPt(cpt)) != 0);
+  } while ((cpt = gg->NextPt(*cpt)) != 0);
   //  cpt = firstPt();
   //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;} while  (
   //  (cpt=nextPt(cpt))!=NULL);
@@ -568,7 +568,7 @@ int IC_photoevaporatingclump::setup_pec()
       cpt->P[v] = ambient[v];
 
     // This is where I set the state inside the cloud.
-    if ((vfrac = stest.volumeFraction(cpt)) > 0) {
+    if ((vfrac = stest.volumeFraction(*cpt)) > 0) {
       cpt->P[RO] = vfrac * (dratio * cpt->P[RO]) + (1. - vfrac) * cpt->P[RO];
       cpt->P[PG] = vfrac * (pratio * cpt->P[PG]) + (1. - vfrac) * cpt->P[PG];
       if (eqns == 2)
@@ -577,7 +577,7 @@ int IC_photoevaporatingclump::setup_pec()
         cpt->P[SimPM->ftr + v] =
             vfrac * cltr[v] + (1. - vfrac) * cpt->P[SimPM->ftr + v];
     }
-  } while ((cpt = gg->NextPt(cpt)) != NULL);
+  } while ((cpt = gg->NextPt(*cpt)) != NULL);
   //  cpt = firstPt();
   //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;} while  (
   //  (cpt=nextPt(cpt))!=NULL);
@@ -623,12 +623,12 @@ int IC_photoevaporatingclump::setup_powerlaw_density()
   std::array<double, MAX_DIM> dpos;
   class cell *cpt = gg->FirstPt();
   do {
-    CI.get_dpos(cpt, dpos);
+    CI.get_dpos(*cpt, dpos);
     // Set values of primitive variables.
     for (int v = 0; v < SimPM->nvar; v++)
       cpt->P[v] = ambient[v];
     cpt->P[RO] = rho0 * exp(3.0 * log((dpos[XX] + xoffset) / x0));
-  } while ((cpt = gg->NextPt(cpt)) != 0);
+  } while ((cpt = gg->NextPt(*cpt)) != 0);
   //  cpt = firstPt();
   //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;} while  (
   //  (cpt=nextPt(cpt))!=NULL);
@@ -686,7 +686,7 @@ int IC_photoevaporatingclump::setup_cloud_clump()
   std::array<double, MAX_DIM> dpos;
   class cell *cpt = gg->FirstPt();
   do {
-    CI.get_dpos(cpt, dpos);
+    CI.get_dpos(*cpt, dpos);
     // Set values of primitive variables.
     for (int v = 0; v < SimPM->nvar; v++)
       cpt->P[v] = ambient[v];
@@ -697,7 +697,7 @@ int IC_photoevaporatingclump::setup_cloud_clump()
     // (PEC_xpos,PEC_ypos,PEC_zpos).
     //
     if (!pconst.equalD(radial_slope, 0.0)) {
-      dist = gg->distance_vertex2cell(ISM_centre, cpt);
+      dist = gg->distance_vertex2cell(ISM_centre, *cpt);
 
       //
       // We use rho=rho0/(1+(r/r0)^n)
@@ -710,7 +710,7 @@ int IC_photoevaporatingclump::setup_cloud_clump()
     // Now add in the clump.
     // Here dratio is the actual clump density.
     //
-    if ((vfrac = stest.volumeFraction(cpt)) > 0) {
+    if ((vfrac = stest.volumeFraction(*cpt)) > 0) {
       cpt->P[RO] =
           std::max(static_cast<pion_flt>(vfrac * (dratio)), cpt->P[RO]);
       cpt->P[PG] = vfrac * (pratio * cpt->P[PG]) + (1. - vfrac) * cpt->P[PG];
@@ -720,7 +720,7 @@ int IC_photoevaporatingclump::setup_cloud_clump()
         cpt->P[SimPM->ftr + v] =
             vfrac * cltr[v] + (1. - vfrac) * cpt->P[SimPM->ftr + v];
     }
-  } while ((cpt = gg->NextPt(cpt)) != 0);
+  } while ((cpt = gg->NextPt(*cpt)) != 0);
   //  cpt = firstPt();
   //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;} while  (
   //  (cpt=nextPt(cpt))!=NULL);
@@ -767,7 +767,7 @@ int IC_photoevaporatingclump::setup_radialprofile()
   std::array<double, MAX_DIM> dpos;
   class cell *cpt = gg->FirstPt();
   do {
-    CI.get_dpos(cpt, dpos);
+    CI.get_dpos(*cpt, dpos);
     // Set values of primitive variables.
     for (int v = 0; v < SimPM->nvar; v++)
       cpt->P[v] = ambient[v];
@@ -778,7 +778,7 @@ int IC_photoevaporatingclump::setup_radialprofile()
     // (PEC_xpos,PEC_ypos,PEC_zpos).
     //
     if (!pconst.equalD(radial_slope, 0.0)) {
-      dist = gg->distance_vertex2cell(cloudcentre, cpt);
+      dist = gg->distance_vertex2cell(cloudcentre, *cpt);
       //
       // Following the Iliev et al 2009 test 6, we use rho=rho0(r0/r)^n if
       // r>r0 We also change the pressure so there is a constant
@@ -796,7 +796,7 @@ int IC_photoevaporatingclump::setup_radialprofile()
          + pow(cos(16 * M_PI * dpos[XX] / SimPM->Range[XX]), 2.0)
                * pow(cos(16 * M_PI * dpos[YY] / SimPM->Range[YY]), 2.0));
 #endif
-  } while ((cpt = gg->NextPt(cpt)) != 0);
+  } while ((cpt = gg->NextPt(*cpt)) != 0);
   //  cpt = firstPt();
   //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;} while  (
   //  (cpt=nextPt(cpt))!=NULL);
@@ -831,11 +831,11 @@ int IC_photoevaporatingclump::setup_paralleltest()
     for (int v = 0; v < SimPM->nvar; v++)
       c->P[v] = ambient[v];
     // Now we have a radial profile in the slope, so we need to adjust rho
-    if (ndim > 1 && SimPM->NG[YY] > 2 && (tmp = gg->NextPt(c, YN)) != 0) {
+    if (ndim > 1 && SimPM->NG[YY] > 2 && (tmp = gg->NextPt(*c, YN)) != 0) {
       c->P[RO] = 1.1 * tmp->P[RO];
       c->P[PG] = 1.1 * tmp->P[PG];
     }
-  } while ((c = gg->NextPt(c)) != 0);
+  } while ((c = gg->NextPt(*c)) != 0);
   //  c = firstPt();
   //  do {cout <<"c.rho = "<<c->P[RO]<<endl;} while  ( (c=nextPt(c))!=NULL);
   spdlog::info("\t\tGot through data successfully");

@@ -767,9 +767,9 @@ void image::find_surrounding_cells(
       d1   = get_negdir(sa[ZZ]);
       sign = -1;
     }
-    while (gptr->NextPt(seek, d1) != 0 && gptr->NextPt(seek, d1)->isgd
+    while (gptr->NextPt(*seek, d1) != 0 && gptr->NextPt(*seek, d1)->isgd
            && sign * (x[sa[ZZ]] - seek->pos[sa[ZZ]]) > 0.0)
-      seek = gptr->NextPt(seek, d1);
+      seek = gptr->NextPt(*seek, d1);
 
 
     //
@@ -783,9 +783,9 @@ void image::find_surrounding_cells(
       d1   = get_negdir(sa[XX]);
       sign = -1;
     }
-    while (gptr->NextPt(seek, d1) != 0 && gptr->NextPt(seek, d1)->isgd
+    while (gptr->NextPt(*seek, d1) != 0 && gptr->NextPt(*seek, d1)->isgd
            && sign * (x[sa[XX]] - seek->pos[sa[XX]]) > 0.0)
-      seek = gptr->NextPt(seek, d1);
+      seek = gptr->NextPt(*seek, d1);
 
     //
     // Make sure cell is less than dx*sqrt(2.0) from point in each direction.
@@ -796,7 +796,7 @@ void image::find_surrounding_cells(
     dist2 += (x[sa[ZZ]] - seek->pos[sa[ZZ]]) * (x[sa[ZZ]] - seek->pos[sa[ZZ]]);
     if (dist2 > 2 * sim_dxI * sim_dxI) {
       spdlog::debug("posn : {}", x);
-      spdlog::debug("cell : {}", fmt::ptr(seek->pos));
+      spdlog::debug("cell : {}", seek->pos);
       spdlog::error(
           "{}: {}", "Nearest cell is more than root2*dx from point in xz plane",
           dist2);
@@ -871,42 +871,42 @@ void image::find_surrounding_cells(
     // Assign other neighbours.
     //
     if (ct == 3) {
-      ngb[2] = gptr->NextPt(ngb[ct], d1);
-      ngb[1] = gptr->NextPt(ngb[ct], d2);
+      ngb[2] = gptr->NextPt(*ngb[ct], d1);
+      ngb[1] = gptr->NextPt(*ngb[ct], d2);
       if (ngb[1])
-        ngb[0] = gptr->NextPt(ngb[1], d1);
+        ngb[0] = gptr->NextPt(*ngb[1], d1);
       else if (ngb[2])
-        ngb[0] = gptr->NextPt(ngb[2], d2);
+        ngb[0] = gptr->NextPt(*ngb[2], d2);
       else
         ngb[0] = 0;
     }
     else if (ct == 2) {
-      ngb[3] = gptr->NextPt(ngb[ct], d1);
-      ngb[0] = gptr->NextPt(ngb[ct], d2);
+      ngb[3] = gptr->NextPt(*ngb[ct], d1);
+      ngb[0] = gptr->NextPt(*ngb[ct], d2);
       if (ngb[0])
-        ngb[1] = gptr->NextPt(ngb[0], d1);
+        ngb[1] = gptr->NextPt(*ngb[0], d1);
       else if (ngb[3])
-        ngb[1] = gptr->NextPt(ngb[3], d2);
+        ngb[1] = gptr->NextPt(*ngb[3], d2);
       else
         ngb[1] = 0;
     }
     else if (ct == 1) {
-      ngb[0] = gptr->NextPt(ngb[ct], d1);
-      ngb[3] = gptr->NextPt(ngb[ct], d2);
+      ngb[0] = gptr->NextPt(*ngb[ct], d1);
+      ngb[3] = gptr->NextPt(*ngb[ct], d2);
       if (ngb[0])
-        ngb[2] = gptr->NextPt(ngb[0], d2);
+        ngb[2] = gptr->NextPt(*ngb[0], d2);
       else if (ngb[3])
-        ngb[2] = gptr->NextPt(ngb[3], d1);
+        ngb[2] = gptr->NextPt(*ngb[3], d1);
       else
         ngb[2] = 0;
     }
     else {
-      ngb[1] = gptr->NextPt(ngb[ct], d1);
-      ngb[2] = gptr->NextPt(ngb[ct], d2);
+      ngb[1] = gptr->NextPt(*ngb[ct], d1);
+      ngb[2] = gptr->NextPt(*ngb[ct], d2);
       if (ngb[1])
-        ngb[3] = gptr->NextPt(ngb[1], d2);
+        ngb[3] = gptr->NextPt(*ngb[1], d2);
       else if (ngb[2])
-        ngb[3] = gptr->NextPt(ngb[2], d1);
+        ngb[3] = gptr->NextPt(*ngb[2], d1);
       else
         ngb[3] = 0;
     }
@@ -1013,7 +1013,7 @@ void image::add_cells_to_pixels()
       }
     }
     //  } while ( (c=gptr->NextPt(c)) !=0);
-  } while ((c = gptr->NextPt(c)) != 0);
+  } while ((c = gptr->NextPt(*c)) != 0);
 
   //
   // Checking to make sure that all pixels have cells in them, and
@@ -1064,12 +1064,12 @@ void image::set_cell_positions_in_image()
   do {
     c->Ph = mem.myalloc(c->Ph, 3);
     get_image_Ipos(
-        c->pos,  ///< input position, sim coords, integer units.
-        c->Ph    ///< output: image coords and units.
+        c->pos.data(),  ///< input position, sim coords, integer units.
+        c->Ph           ///< output: image coords and units.
     );
     // cout <<c->id<<"\t\t"; rep.printVec("cell-pos",c->pos,3);
     // cout <<"\t\t"; rep.printVec("img-pos ",c->Ph,3);
-  } while ((c = gptr->NextPt(c)) != 0);
+  } while ((c = gptr->NextPt(*c)) != 0);
 
   //
   // Set flag indicating we have set positions.
@@ -1097,7 +1097,7 @@ void image::delete_cell_positions()
   cell *c = gptr->FirstPt();
   do {
     c->Ph = mem.myfree(c->Ph);
-  } while ((c = gptr->NextPt(c)) != 0);
+  } while ((c = gptr->NextPt(*c)) != 0);
 
   //
   // Unset cell positions flag.

@@ -44,7 +44,7 @@ int inflow_bc::BC_assign_INFLOW(
     // on-grid value.
     //
     for (int v = 0; v > (*bpt)->isedge; v--) {
-      temp = grid->NextPt(temp, ondir);
+      temp = grid->NextPt(*temp, ondir);
     }
 
     //

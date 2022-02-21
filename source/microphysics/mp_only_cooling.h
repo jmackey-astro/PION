@@ -151,7 +151,7 @@ public:
   /// to the primitive vector to get the updated value.
   ///
   virtual int Get_MP_Rates(
-      cell *,        ///< current cell.
+      cell &,        ///< current cell.
       const double,  ///< timestep
       const double,  ///< column to cell
       const double,  ///< Flux entering cell?

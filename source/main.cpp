@@ -294,7 +294,7 @@ int main(int argc, char **argv)
 
   delete sim_control;
   sim_control = 0;
-  for (auto g : grid)
+  for (auto &g : grid)
     delete g;
   delete[] args;
   args = 0;

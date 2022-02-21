@@ -114,7 +114,7 @@ protected:
   /// Returns true if it is.
   ///
   bool SRAD_point_on_my_domain(
-      const cell *,       ///< pointer to cell
+      const cell &,       ///< pointer to cell
       class SimParams &,  ///< pointer to simulation parameters
       class Sub_domain *  ///< pointer to class with nproc.
   );

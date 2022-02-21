@@ -63,9 +63,9 @@ int raytracer_shielding::RayTrace_Column_Density(
     cell *c   = gridptr->FirstPt();
     double dx = gridptr->DX();
     do {
-      CI.set_cell_Vshell(c, s_id, dx);
-      CI.set_cell_deltaS(c, s_id, dx);
-    } while ((c = gridptr->NextPt(c)) != 0);
+      CI.set_cell_Vshell(*c, s_id, dx);
+      CI.set_cell_deltaS(*c, s_id, dx);
+    } while ((c = gridptr->NextPt(*c)) != 0);
     have_set_Vshell[s_id] = true;
   }
 
@@ -81,7 +81,7 @@ int raytracer_shielding::RayTrace_Column_Density(
 }
 
 int raytracer_shielding::ProcessCell(
-    class cell *c,            ///< Current cell.
+    class cell &c,            ///< Current cell.
     double col2cell,          ///< Column to cell [N(H) per cm2].
     double ds,                ///< Path Length through cell (physical units!).
     const rad_source *source  ///< pointer to source struct.
@@ -105,7 +105,7 @@ int raytracer_shielding::ProcessCell(
   // is purely absorption along a ray.  So we don't need to worry about the
   // centre-of-volume or any of that.
   //
-  double local_col = c->Ph[RO] * ds;
+  double local_col = c.Ph[RO] * ds;
   //
   // We may need to multiply the projected density by a tracer variable,
   // depending on what is providing the opacity.
@@ -121,7 +121,7 @@ int raytracer_shielding::ProcessCell(
       //
       // opacity provided by (1-y_i)*rho
       //
-      local_col *= (1.0 - c->Ph[source->opacity_var]);
+      local_col *= (1.0 - c.Ph[source->opacity_var]);
       CI.set_col(c, source->id, col2cell + local_col);
       CI.set_cell_col(c, source->id, local_col);
       break;
@@ -130,7 +130,7 @@ int raytracer_shielding::ProcessCell(
       //
       // Opacity provided by y_i*rho
       //
-      local_col *= c->Ph[source->opacity_var];
+      local_col *= c.Ph[source->opacity_var];
       CI.set_col(c, source->id, col2cell + local_col);
       CI.set_cell_col(c, source->id, local_col);
       break;

@@ -1374,7 +1374,7 @@ int dataio_silo::get_int_scalar_data_array(
 #ifdef WRITE_GHOST_ZONES
     while ((c = gp->NextPt_All(c)) != 0);
 #else
-    while ((c = gp->NextPt(c)) != 0);
+    while ((c = gp->NextPt(*c)) != 0);
 #endif
   }
   else
@@ -1551,7 +1551,7 @@ int dataio_silo::get_scalar_data_array(
 #ifdef WRITE_GHOST_ZONES
       while ((c = gp->NextPt_All(c)) != 0);
 #else
-      while ((c = gp->NextPt(c)) != 0);
+      while ((c = gp->NextPt(*c)) != 0);
 #endif
     }
     else {
@@ -1567,7 +1567,7 @@ int dataio_silo::get_scalar_data_array(
 #ifdef WRITE_GHOST_ZONES
       while ((c = gp->NextPt_All(c)) != 0);
 #else
-      while ((c = gp->NextPt(c)) != 0);
+      while ((c = gp->NextPt(*c)) != 0);
 #endif
     }
   }
@@ -1579,48 +1579,50 @@ int dataio_silo::get_scalar_data_array(
     if (mp) {
       if (silo_dtype == DB_FLOAT) {
         do {
-          farr[ct] = static_cast<float>(mp->Temperature(c->P, SimPM.gamma));
+          farr[ct] =
+              static_cast<float>(mp->Temperature(c->P.data(), SimPM.gamma));
           ct++;
         }
 #ifdef WRITE_GHOST_ZONES
         while ((c = gp->NextPt_All(c)) != 0);
 #else
-        while ((c = gp->NextPt(c)) != 0);
+        while ((c = gp->NextPt(*c)) != 0);
 #endif
       }
       else {
         do {
-          darr[ct] = static_cast<double>(mp->Temperature(c->P, SimPM.gamma));
+          darr[ct] =
+              static_cast<double>(mp->Temperature(c->P.data(), SimPM.gamma));
           ct++;
         }
 #ifdef WRITE_GHOST_ZONES
-        while ((c = gp->NextPt_All(c)) != 0);
+        while ((c = gp->NextPt_All(*c)) != 0);
 #else
-        while ((c = gp->NextPt(c)) != 0);
+        while ((c = gp->NextPt(*c)) != 0);
 #endif
       }
     }
     else {
       if (silo_dtype == DB_FLOAT) {
         do {
-          farr[ct] = static_cast<float>(eqn->eint(c->P, SimPM.gamma));
+          farr[ct] = static_cast<float>(eqn->eint(c->P.data(), SimPM.gamma));
           ct++;
         }
 #ifdef WRITE_GHOST_ZONES
-        while ((c = gp->NextPt_All(c)) != 0);
+        while ((c = gp->NextPt_All(*c)) != 0);
 #else
-        while ((c = gp->NextPt(c)) != 0);
+        while ((c = gp->NextPt(*c)) != 0);
 #endif
       }
       else {
         do {
-          darr[ct] = static_cast<double>(eqn->eint(c->P, SimPM.gamma));
+          darr[ct] = static_cast<double>(eqn->eint(c->P.data(), SimPM.gamma));
           ct++;
         }
 #ifdef WRITE_GHOST_ZONES
-        while ((c = gp->NextPt_All(c)) != 0);
+        while ((c = gp->NextPt_All(*c)) != 0);
 #else
-        while ((c = gp->NextPt(c)) != 0);
+        while ((c = gp->NextPt(*c)) != 0);
 #endif
       }
     }
@@ -1633,7 +1635,7 @@ int dataio_silo::get_scalar_data_array(
     vars[2] = static_cast<int>(BZ);
     if (silo_dtype == DB_FLOAT) {
       do {
-        farr[ct] = static_cast<float>(eqn->Divergence(c, 0, vars, gp));
+        farr[ct] = static_cast<float>(eqn->Divergence(*c, 0, vars, gp));
 #ifdef NEW_B_NORM
         // scale values from code units to CGS.
         if (B) farr[ct] *= norm;
@@ -1641,14 +1643,14 @@ int dataio_silo::get_scalar_data_array(
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
-      while ((c = gp->NextPt_All(c)) != 0);
+      while ((c = gp->NextPt_All(*c)) != 0);
 #else
-      while ((c = gp->NextPt(c)) != 0);
+      while ((c = gp->NextPt(*c)) != 0);
 #endif
     }
     else {
       do {
-        darr[ct] = static_cast<double>(eqn->Divergence(c, 0, vars, gp));
+        darr[ct] = static_cast<double>(eqn->Divergence(*c, 0, vars, gp));
 #ifdef NEW_B_NORM
         // scale values from code units to CGS.
         if (B) darr[ct] *= norm;
@@ -1656,9 +1658,9 @@ int dataio_silo::get_scalar_data_array(
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
-      while ((c = gp->NextPt_All(c)) != 0);
+      while ((c = gp->NextPt_All(*c)) != 0);
 #else
-      while ((c = gp->NextPt(c)) != 0);
+      while ((c = gp->NextPt(*c)) != 0);
 #endif
     }
   }
@@ -1673,7 +1675,7 @@ int dataio_silo::get_scalar_data_array(
       crl[el] = 0.0;
     if (silo_dtype == DB_FLOAT) {
       do {
-        eqn->Curl(c, 0, vars, gp, crl);
+        eqn->Curl(*c, 0, vars, gp, crl);
         farr[ct] = static_cast<float>(crl[2]);
 #ifdef NEW_B_NORM
         // scale values from code units to CGS.
@@ -1684,12 +1686,12 @@ int dataio_silo::get_scalar_data_array(
 #ifdef WRITE_GHOST_ZONES
       while ((c = gp->NextPt_All(c)) != 0);
 #else
-      while ((c = gp->NextPt(c)) != 0);
+      while ((c = gp->NextPt(*c)) != 0);
 #endif
     }
     else {
       do {
-        eqn->Curl(c, 0, vars, gp, crl);
+        eqn->Curl(*c, 0, vars, gp, crl);
         darr[ct] = static_cast<double>(crl[2]);
 #ifdef NEW_B_NORM
         // scale values from code units to CGS.
@@ -1698,9 +1700,9 @@ int dataio_silo::get_scalar_data_array(
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
-      while ((c = gp->NextPt_All(c)) != 0);
+      while ((c = gp->NextPt_All(*c)) != 0);
 #else
-      while ((c = gp->NextPt(c)) != 0);
+      while ((c = gp->NextPt(*c)) != 0);
 #endif
     }
   }
@@ -1708,24 +1710,24 @@ int dataio_silo::get_scalar_data_array(
   else if (v == -3) {  // total pressure.
     if (silo_dtype == DB_FLOAT) {
       do {
-        farr[ct] = static_cast<float>(eqn->Ptot(c->P, SimPM.gamma));
+        farr[ct] = static_cast<float>(eqn->Ptot(c->P.data(), SimPM.gamma));
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
       while ((c = gp->NextPt_All(c)) != 0);
 #else
-      while ((c = gp->NextPt(c)) != 0);
+      while ((c = gp->NextPt(*c)) != 0);
 #endif
     }
     else {
       do {
-        darr[ct] = static_cast<double>(eqn->Ptot(c->P, SimPM.gamma));
+        darr[ct] = static_cast<double>(eqn->Ptot(c->P.data(), SimPM.gamma));
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
-      while ((c = gp->NextPt_All(c)) != 0);
+      while ((c = gp->NextPt_All(*c)) != 0);
 #else
-      while ((c = gp->NextPt(c)) != 0);
+      while ((c = gp->NextPt(*c)) != 0);
 #endif
     }
   }
@@ -1743,26 +1745,26 @@ int dataio_silo::get_scalar_data_array(
     int iT = atoi(variable.substr(11).c_str());
     if (silo_dtype == DB_FLOAT) {
       do {
-        CI.get_col(c, col_id, Tau);
+        CI.get_col(*c, col_id, Tau);
         farr[ct] = static_cast<float>(Tau[iT]);
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
-      while ((c = gp->NextPt_All(c)) != 0);
+      while ((c = gp->NextPt_All(*c)) != 0);
 #else
-      while ((c = gp->NextPt(c)) != 0);
+      while ((c = gp->NextPt(*c)) != 0);
 #endif
     }
     else {
       do {
-        CI.get_col(c, col_id, Tau);
+        CI.get_col(*c, col_id, Tau);
         darr[ct] = static_cast<double>(Tau[iT]);
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
-      while ((c = gp->NextPt_All(c)) != 0);
+      while ((c = gp->NextPt_All(*c)) != 0);
 #else
-      while ((c = gp->NextPt(c)) != 0);
+      while ((c = gp->NextPt(*c)) != 0);
 #endif
     }
   }
@@ -1780,26 +1782,26 @@ int dataio_silo::get_scalar_data_array(
     int iT = atoi(variable.substr(11).c_str());
     if (silo_dtype == DB_FLOAT) {
       do {
-        CI.get_col(c, col_id, Tau);
+        CI.get_col(*c, col_id, Tau);
         farr[ct] = static_cast<float>(Tau[iT]);
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
-      while ((c = gp->NextPt_All(c)) != 0);
+      while ((c = gp->NextPt_All(*c)) != 0);
 #else
-      while ((c = gp->NextPt(c)) != 0);
+      while ((c = gp->NextPt(*c)) != 0);
 #endif
     }
     else {
       do {
-        CI.get_col(c, col_id, Tau);
+        CI.get_col(*c, col_id, Tau);
         darr[ct] = static_cast<double>(Tau[iT]);
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
-      while ((c = gp->NextPt_All(c)) != 0);
+      while ((c = gp->NextPt_All(*c)) != 0);
 #else
-      while ((c = gp->NextPt(c)) != 0);
+      while ((c = gp->NextPt(*c)) != 0);
 #endif
     }
   }
@@ -2241,9 +2243,9 @@ int dataio_silo::read_variable2grid(
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
-      while ((c = gp->NextPt_All(c)) != 0);
+      while ((c = gp->NextPt_All(*c)) != 0);
 #else
-      while ((c = gp->NextPt(c)) != 0);
+      while ((c = gp->NextPt(*c)) != 0);
 #endif
     }
     else {
@@ -2263,9 +2265,9 @@ int dataio_silo::read_variable2grid(
       }
 
 #ifdef WRITE_GHOST_ZONES
-      while ((c = gp->NextPt_All(c)) != 0);
+      while ((c = gp->NextPt_All(*c)) != 0);
 #else
-      while ((c = gp->NextPt(c)) != 0);
+      while ((c = gp->NextPt(*c)) != 0);
 #endif
     }
     if (ct != npt)
@@ -2338,7 +2340,7 @@ int dataio_silo::read_variable2grid(
 #ifdef WRITE_GHOST_ZONES
       while ((c = gp->NextPt_All(c)) != 0);
 #else
-      while ((c = gp->NextPt(c)) != 0);
+      while ((c = gp->NextPt(*c)) != 0);
 #endif
     }
     else {
@@ -2351,9 +2353,9 @@ int dataio_silo::read_variable2grid(
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
-      while ((c = gp->NextPt_All(c)) != 0);
+      while ((c = gp->NextPt_All(*c)) != 0);
 #else
-      while ((c = gp->NextPt(c)) != 0);
+      while ((c = gp->NextPt(*c)) != 0);
 #endif
     }
     if (ct != npt)

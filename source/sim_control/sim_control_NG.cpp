@@ -139,7 +139,7 @@ int sim_control_NG::Init(
     do {
       for (int v = 0; v < SimPM.nvar; v++)
         c->Ph[v] = c->P[v];
-    } while ((c = grid[l]->NextPt(c)) != 0);
+    } while ((c = grid[l]->NextPt(*c)) != 0);
 
     if (SimPM.eqntype == EQGLM && SimPM.timestep == 0) {
 #ifndef NDEBUG
@@ -148,7 +148,7 @@ int sim_control_NG::Init(
       c = grid[l]->FirstPt();
       do {
         c->P[SI] = c->Ph[SI] = 0.;  // grid->divB(c);
-      } while ((c = grid[l]->NextPt(c)) != 0);
+      } while ((c = grid[l]->NextPt(*c)) != 0);
     }
   }  // loop over levels
 
@@ -274,9 +274,9 @@ int sim_control_NG::Init(
     do {
       if (pconst.equalD(c->P[RO], 0.0)) {
         cout << "zero data in cell: ";
-        CI.print_cell(c);
+        CI.print_cell(*c);
       }
-    } while ((c = (grid[l])->NextPt_All(c)) != 0);
+    } while ((c = (grid[l])->NextPt_All(*c)) != 0);
   }
 #endif  // NDEBUG
 
@@ -309,7 +309,7 @@ int sim_control_NG::initial_conserved_quantities(
         initMMZ += u[MMZ] * dv;
         initMASS += u[RHO] * dv;
       }
-    } while ((c = grid[l]->NextPt(c)) != 0);
+    } while ((c = grid[l]->NextPt(*c)) != 0);
   }
 
   spdlog::debug(
@@ -504,7 +504,7 @@ void sim_control_NG::calculate_magnetic_pressure(
       if (!c->isbd && c->isleaf)
         magp += (spatial_solver->Ptot(c->P, 0.0) - c->P[PG])
                 * spatial_solver->CellVolume(c, grid[l]->DX());
-    } while ((c = grid[l]->NextPt(c)) != 0);
+    } while ((c = grid[l]->NextPt(*c)) != 0);
   }
 
   if (init_magp < 0) init_magp = magp;
@@ -541,7 +541,7 @@ void sim_control_NG::calculate_blastwave_radius(
     }
     else {
       do {
-        c = grid->NextPt(c, RNsph);
+        c = grid->NextPt(*c, RNsph);
         // cout <<c->id<<", vx="<<c->P[VX]<<"\n";
       } while (c != 0 && fabs(c->P[VX]) < 1.0e4);
       if (c && (c->P[VX] >= 1.0e4)) {
@@ -968,8 +968,8 @@ int sim_control_NG::check_energy_cons(vector<class GridBaseClass *> &grid)
     class cell *c = grid[l]->FirstPt();
     do {
       if (!c->isbd && c->isgd) {
-        dv = spatial_solver->CellVolume(c, dx);
-        spatial_solver->PtoU(c->P, u.data(), SimPM.gamma);
+        dv = spatial_solver->CellVolume(*c, dx);
+        spatial_solver->PtoU(c->P.data(), u.data(), SimPM.gamma);
         nowERG += u[ERG] * dv;
         nowMMX += u[MMX] * dv;
         nowMMY += u[MMY] * dv;
@@ -978,7 +978,7 @@ int sim_control_NG::check_energy_cons(vector<class GridBaseClass *> &grid)
         totmom +=
             sqrt(u[MMX] * u[MMX] + u[MMY] * u[MMY] + u[MMZ] * u[MMZ]) * dv;
       }
-    } while ((c = grid[l]->NextPt(c)) != 0);
+    } while ((c = grid[l]->NextPt(*c)) != 0);
   }
 
   // spdlog::debug(

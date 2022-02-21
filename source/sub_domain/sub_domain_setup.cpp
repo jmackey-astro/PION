@@ -337,7 +337,7 @@ void Sub_domain::create_abutting_domains_list()
 #ifndef NDEBUG
   spdlog::debug("abutting_domains:\n {}", neighbours);
 #endif
-  for (auto n : neighbours) {
+  for (auto const &n : neighbours) {
     int neighbour_rank;
     MPI_Cart_rank(cart_comm, n.data(), &neighbour_rank);
     abutting_domains.push_back(neighbour_rank);
@@ -500,7 +500,7 @@ void Sub_domain::determine_child_processes(
   }
 #ifndef NDEBUG
   spdlog::debug("child procs on level {}", level + 1);
-  for (auto c : child_procs) {
+  for (auto const &c : child_procs) {
     spdlog::debug("child rank {}", c.rank);
     spdlog::debug("Xmin : {}", c.Xmin);
     spdlog::debug("Xmax : {}", c.Xmax);
@@ -581,7 +581,7 @@ void Sub_domain::evaluate_child_neighbours(
     const class SimParams &par, const int level)
 {
   cgrid_ngb.resize(2 * par.ndim);
-  for (auto c : cgrid_ngb) {
+  for (auto &c : cgrid_ngb) {
     c.clear();
   }
   if (par.ndim == 1) return;
@@ -616,7 +616,7 @@ void Sub_domain::evaluate_child_neighbours(
   spdlog::debug("Child process' neighbours:");
   for (int d = 0; d < 2 * par.ndim; d++) {
     spdlog::debug("dir {}:", d);
-    for (auto ngb : cgrid_ngb[d]) {
+    for (auto const &ngb : cgrid_ngb[d]) {
       spdlog::debug("rank = {}", ngb.rank);
       spdlog::debug("Xmin : {}", ngb.Xmin);
       spdlog::debug("Xmax : {}", ngb.Xmax);
