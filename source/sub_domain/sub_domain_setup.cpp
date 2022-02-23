@@ -281,11 +281,7 @@ void Sub_domain::create_abutting_domains_list()
 {
   if (!abutting_domains.empty()) return;
 
-  int max_neighbours = 2;
-  for (int i = 1; i < m_ndim; ++i) {
-    max_neighbours *= 3;
-    max_neighbours += 2;
-  }
+  int max_neighbours = pow(3, m_ndim) - 1;
 
   vector<vector<int> > neighbours;
   neighbours.reserve(max_neighbours);
@@ -293,11 +289,13 @@ void Sub_domain::create_abutting_domains_list()
    * of these bases */
   vector<int> neighbour(coordinates.begin(), coordinates.end());
   for (int i = 0; i < m_ndim; i++) {
+    /* add negative direction neighbour in ith dimension */
     if (coordinates[i] > 0) {
       --neighbour[i];
       neighbours.push_back(neighbour);
       ++neighbour[i];
     }
+    /* add positive direction neighbour in ith dimension */
     if (coordinates[i] < num_subdomains[i] - 1) {
       ++neighbour[i];
       neighbours.push_back(neighbour);
@@ -308,14 +306,18 @@ void Sub_domain::create_abutting_domains_list()
   /* each dimension checks if it can create a new valid neighbour given the
    * valid neighbours formed from lower-order dimensions */
   for (int i = 1; i < m_ndim; i++) {
-    auto it = find_if(
-        neighbours.begin(), neighbours.end(),
-        [i, this](vector<int> &neighbour) {
-          /* we are interested in previously evaluated neighbours that are
-           * aligned in the current dimension */
-          return neighbour[i] == coordinates[i];
-        });
-    while (it < neighbours.end()) {
+    /* loop over those neighbours which have only traversed lower-order
+     * dimensions. e.g for i = 1, we combine YN with XN, XP (to make YNXN, YNXP)
+     * but not YN, YP, ZN, or ZP. Valid combinations are added to the list */
+    auto it = neighbours.begin() - 1;
+    do {
+      it = find_if(it + 1, neighbours.end(), [i, this](vector<int> &neighbour) {
+        return equal(
+            neighbour.begin() + i, neighbour.end(), coordinates.begin() + i);
+      });
+      if (it == neighbours.end()) break; /* no more valid combinations in i */
+      /* it is a neighbour we can create new neighbours from by moving it in
+       * negative and positive directions of the ith dimension */
       if (coordinates[i] > 0) {
         --(*it)[i];
         neighbours.push_back(*it);
@@ -326,12 +328,7 @@ void Sub_domain::create_abutting_domains_list()
         neighbours.push_back(*it);
         --(*it)[i];
       }
-      it = find_if(it + 1, neighbours.end(), [i, this](vector<int> &neighbour) {
-        /* we are interested in previously evaluated neighbours that are aligned
-         * in the current dimension */
-        return neighbour[i] == coordinates[i];
-      });
-    }
+    } while (true);
   }
 
   /* now that we have the coordinates of each abutting domain, we are left to
