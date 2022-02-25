@@ -79,13 +79,18 @@ Sub_domain::Sub_domain()
 
 Sub_domain::~Sub_domain()
 {
-  if (m_is_cart_comm) {
-    MPI_Comm_free(&cart_comm);
-  }
-  if (m_count-- == 1) {
+  NG_F2C_send_list.clear();
+  NG_C2F_send_list.clear();
+  NG_C2F_send_list.resize(0);
+  BC89_flux_send_list.clear();
+  send_list.clear();
+  recv_list.clear();
+
+  if (--m_count == 0) {
 #ifndef NDEBUG
-    spdlog::debug("Subdomain::Subdomain() finialising MPI");
+    spdlog::debug("Subdomain::Subdomain() finalising MPI");
 #endif
+    MPI_Comm_free(&cart_comm);
     MPI_Finalize();
   }
 
@@ -135,29 +140,6 @@ int Sub_domain::decomposeDomain(
       "---Sub_domain::decomposeDomain() decomposing domain.  Nproc={}, myrank={}",
       nproc, myrank);
 #endif
-
-  m_ndim = ndim;
-
-  /*
-   * the following sets num_subdomains to application topology aware values
-   * dimensions of num_subdomains not set to 0 are restricted to the previously
-   * held value
-   */
-  vector<float> ratios(begin(level.Range), begin(level.Range) + m_ndim);
-  calculate_process_topology(move(ratios));
-
-  /* TODO: reordering of ranks is temporarily disabled so old communicator works
-   */
-  MPI_Cart_create(
-      MPI_COMM_WORLD, m_ndim, num_subdomains.data(), &periodic[0], 0,
-      &cart_comm);
-
-  m_is_cart_comm = true;
-
-  /* find my rank in the Cartesian communicator */
-  MPI_Comm_rank(cart_comm, &myrank);
-
-  MPI_Cart_coords(cart_comm, myrank, m_ndim, coordinates.data());
 
   Ncell           = 1;
   neighbour_ranks = vector<int>(2 * m_ndim);
@@ -223,6 +205,8 @@ int Sub_domain::decomposeDomain(
   return decomposeDomain(ndim, level);
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
@@ -237,6 +221,29 @@ int Sub_domain::decomposeDomain(
 #ifndef NDEBUG
   spdlog::debug("periodic : {}", periodic);
 #endif
+  m_ndim = ndim;
+
+  /*
+   * the following sets num_subdomains to application topology aware values
+   * dimensions of num_subdomains not set to 0 are restricted to the previously
+   * held value
+   */
+  vector<float> ratios(begin(level.Range), begin(level.Range) + m_ndim);
+  calculate_process_topology(move(ratios));
+
+  /* TODO: reordering of ranks is temporarily disabled so old communicator works
+   */
+  MPI_Cart_create(
+      MPI_COMM_WORLD, m_ndim, num_subdomains.data(), &periodic[0], 0,
+      &cart_comm);
+
+  m_is_cartcomm = true;
+
+  /* find my rank in the Cartesian communicator */
+  MPI_Comm_rank(cart_comm, &myrank);
+
+  MPI_Cart_coords(cart_comm, myrank, m_ndim, coordinates.data());
+
   return decomposeDomain(ndim, level);
 }
 
@@ -256,6 +263,29 @@ int Sub_domain::decomposeDomain(
 #ifndef NDEBUG
   spdlog::debug("periodic : {}", periodic);
 #endif
+  m_ndim = ndim;
+
+  /*
+   * the following sets num_subdomains to application topology aware values
+   * dimensions of num_subdomains not set to 0 are restricted to the previously
+   * held value
+   */
+  vector<float> ratios(begin(level.Range), begin(level.Range) + m_ndim);
+  calculate_process_topology(move(ratios));
+
+  /* TODO: reordering of ranks is temporarily disabled so old communicator works
+   */
+  MPI_Cart_create(
+      MPI_COMM_WORLD, m_ndim, num_subdomains.data(), &periodic[0], 0,
+      &cart_comm);
+
+  m_is_cartcomm = true;
+
+  /* find my rank in the Cartesian communicator */
+  MPI_Comm_rank(cart_comm, &myrank);
+
+  MPI_Cart_coords(cart_comm, myrank, m_ndim, coordinates.data());
+
   return decomposeDomain(daxis, ndim, level);
 }
 

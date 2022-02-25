@@ -650,7 +650,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     // receive data.
     string recv_id;
     int recv_tag  = -1;
-    int from_rank = -1;
+    int from_rank = b->NGrecvC2F_parent;
     int comm_tag  = BC_MPI_NGC2F_tag + 100 * b->dir + l;
 #ifdef TEST_C2F
     spdlog::debug(

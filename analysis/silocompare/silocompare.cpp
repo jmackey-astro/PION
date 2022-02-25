@@ -223,7 +223,8 @@ int main(int argc, char **argv)
   for (int v = 0; v < MAX_DIM; v++)
     SimPM.Xmax[v] = SimPM.levels[lev].Xmax[v];
   SimPM.dx = SimPM.Range[XX] / SimPM.NG[XX];
-  SimPM.levels[0].sub_domain.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
+  SimPM.levels[0].sub_domain.decomposeDomain(
+      SimPM.ndim, SimPM.levels[0], SimPM.get_pbc_bools());
 
 #ifndef PION_NESTED
   class setup_fixed_grid_pllel *SimSetup = new setup_fixed_grid_pllel();

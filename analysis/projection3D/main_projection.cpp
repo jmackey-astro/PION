@@ -439,6 +439,7 @@ int main(int argc, char **argv)
   // the domain on one axis.
   enum axes perpaxis = static_cast<axes>(static_cast<int>(perpdir) / 2);
   spdlog::debug("*** perpendicular axis = {}", perpaxis);
+
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     SimPM.levels[l].sub_domain.decomposeDomain(
         perpaxis, SimPM.ndim, SimPM.levels[l]);

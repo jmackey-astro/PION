@@ -404,67 +404,6 @@ void dataio_silo_utility::set_pllel_filename(
 // ##################################################################
 // ##################################################################
 
-int dataio_silo_utility::serial_read_any_data(
-    string firstfile,                  ///< file to read from
-    class SimParams &SimPM,            ///< pointer to simulation parameters
-    vector<class GridBaseClass *> &cg  ///< address of vector of grid pointers.
-)
-{
-  class GridBaseClass *ggg = cg[0];
-  if (!ggg)
-    spdlog::error(
-        "{}: {}", "null pointer to computational grid!", fmt::ptr(ggg));
-
-  //
-  // Read file data onto grid; this may be serial or parallel, so we
-  // need to decide first.
-  //
-  int nproc = 0, numfiles = 0, groupsize = 0;
-  int err = SRAD_get_nproc_numfiles(firstfile, &nproc, &numfiles);
-
-  //
-  // Set up a Sub_domain class for iterating over the quadmeshes
-  //
-  class Sub_domain filePM;
-  filePM.set_nproc(nproc);
-
-  if (err) {
-    //
-    // must be reading serial file, so use serial ReadData() function:
-    //
-    groupsize = 1;
-    err       = dataio_silo::ReadData(firstfile, cg, SimPM);
-    if (0 != err)
-      spdlog::error(
-          "{}: Expected {} but got {}", "Failed to read serial data", 0, err);
-  }
-  else {
-    //
-    // must be reading parallel file, so want to read in every subdomain
-    // onto grid. Use local functions for this.
-    //
-    // groupsize is decided interestingly by PMPIO (silo): if numfiles
-    // divided nproc evenly then groupsize is nproc/numfiles, but if not
-    // then groupsize is
-    // ((int) (nproc/numfiles))+1, I guess so the last files has at least
-    // one fewer domain rather than at least one more domain.
-    //
-    groupsize = nproc / numfiles;
-    if ((nproc % numfiles) != 0) groupsize++;
-
-    err = serial_read_pllel_silodata(
-        firstfile, ggg, numfiles, groupsize, SimPM, &filePM);
-    if (0 != err)
-      spdlog::error(
-          "{}: Expected {} but got {}", "Failed to read parallel data", 0, err);
-  }
-  //  cout <<"read data successfully.\n";
-  return 0;
-}
-
-// ##################################################################
-// ##################################################################
-
 int dataio_silo_utility::serial_read_pllel_silodata(
     const string firstfile,    ///< filename
     class GridBaseClass *ggg,  ///< pointer to data.

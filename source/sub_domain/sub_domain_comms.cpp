@@ -221,7 +221,7 @@ int Sub_domain::send_cell_data(
   int err = 0;
 
   /* Determine size of send buffer needed */
-  const int unitsize = nvar * sizeof((*cell_list.begin())->P[0])
+  const int unitsize = nvar * sizeof((*cell_list.begin())->Ph[0])
                        + sizeof((*cell_list.begin())->id);
   const long int totalsize = sizeof(long int) + m_num_send_cells * unitsize;
 #ifndef NDEBUG
@@ -230,8 +230,14 @@ int Sub_domain::send_cell_data(
       unitsize, totalsize);
 #endif
 
+  /* Create record of the send */
+  send_list.emplace_back();
+  send_list.back().comm_tag  = comm_tag;
+  send_list.back().from_rank = myrank;
+  send_list.back().to_rank   = to_rank;
+  send_list.back().type      = COMM_CELLDATA;
   /* Allocate memory for send buffer, and for the record of the send */
-  m_send_buff.resize(totalsize);
+  send_list.back().send_buff.resize(totalsize);
 
   /*
    *  Pack data, using MPI.
@@ -242,20 +248,17 @@ int Sub_domain::send_cell_data(
    */
   int position = 0;
   err += MPI_Pack(
-      reinterpret_cast<const void *>(&m_num_send_cells), 1, MPI_LONG,
-      reinterpret_cast<void *>(m_send_buff.data()), totalsize, &position,
-      cart_comm);
+      &m_num_send_cells, 1, MPI_LONG, send_list.back().send_buff.data(),
+      totalsize, &position, cart_comm);
   for (auto const &c : cell_list) {
 #if defined PION_DATATYPE_DOUBLE
     err += MPI_Pack(
-        reinterpret_cast<void *>(c->Ph), nvar, MPI_DOUBLE,
-        reinterpret_cast<void *>(m_send_buff.data()), totalsize, &position,
-        cart_comm);
+        c->Ph, nvar, MPI_DOUBLE, send_list.back().send_buff.data(), totalsize,
+        &position, cart_comm);
 #elif defined PION_DATATYPE_FLOAT
     err += MPI_Pack(
-        reinterpret_cast<void *>(c->Ph), nvar, MPI_FLOAT,
-        reinterpret_cast<void *>(m_send_buff.data()), totalsize, &position,
-        cart_comm);
+        c->Ph, nvar, MPI_FLOAT, send_list.back().send_buff.data(), totalsize,
+        &position, cart_comm);
 #else
 #error "MUST define either PION_DATATYPE_FLOAT or PION_DATATYPE_DOUBLE"
 #endif
@@ -267,23 +270,6 @@ int Sub_domain::send_cell_data(
   }
   if (err) {
     spdlog::error("{}: {}", "MPI_Pack returned abnormally", err);
-    exit(1);
-  }
-
-  /* Create record of the send */
-  struct Send_info send_info;
-  send_info.comm_tag  = comm_tag;
-  send_info.from_rank = myrank;
-  send_info.to_rank   = to_rank;
-  send_info.data      = reinterpret_cast<void *>(m_send_buff.data());
-  send_info.type      = COMM_CELLDATA;
-
-  /* Send data. (non-blocking, so i can return and receive a boundary) */
-  err += MPI_Isend(
-      send_info.data, position, MPI_PACKED, send_info.to_rank,
-      send_info.comm_tag, cart_comm, &(send_info.request));
-  if (err) {
-    spdlog::error("{}: {}", "MPI_Send failed", err);
     exit(1);
   }
 
@@ -299,8 +285,17 @@ int Sub_domain::send_cell_data(
   temp << "from " << myrank << " to " << to_rank << " tag=" << comm_tag;
   send_id = temp.str();
   temp.str("");
-  send_info.id = send_id;
-  send_list.push_back(move(send_info));
+  send_list.back().id = send_id;
+
+  /* Send data. (non-blocking, so i can return and receive a boundary) */
+  err += MPI_Isend(
+      send_list.back().send_buff.data(), position, MPI_PACKED,
+      send_list.back().to_rank, send_list.back().comm_tag, cart_comm,
+      &(send_list.back().request));
+  if (err) {
+    spdlog::error("{}: {}", "MPI_Send failed", err);
+    exit(1);
+  }
 
   return 0;
 }
@@ -319,9 +314,10 @@ int Sub_domain::wait_for_send_to_finish(
 #endif  // TEST_COMMS
 
   /* Find the send in the list of active sends */
-  auto si = find_if(
-      send_list.begin(), send_list.end(),
-      [send_id](const struct Send_info &si) { return si.id == send_id; });
+  auto si =
+      find_if(send_list.begin(), send_list.end(), [send_id](const auto &si) {
+        return si.id == send_id;
+      });
 
   if (si == send_list.end()) {
     spdlog::error("{}: {}", "Failed to find send with id:", send_id);
@@ -332,6 +328,9 @@ int Sub_domain::wait_for_send_to_finish(
   spdlog::debug("found send id={} while looking for id={}", si->id, send_id);
 #endif  // TEST_COMMS
 
+  spdlog::debug(
+      "waiting for send to {}, with tag {} to finish", si->to_rank,
+      si->comm_tag);
   MPI_Status status;
   int err = MPI_Wait(&(si->request), &status);
   if (err) {
@@ -365,14 +364,15 @@ int Sub_domain::look_for_data_to_receive(
 #endif  // TEST_COMMS
 
   /* Create a new received info record */
-  struct Recv_info recv_info;
-  recv_info.to_rank = myrank;
-  recv_info.data    = 0;
+  recv_list.emplace_back();
+
+  recv_list.back().to_rank = myrank;
+  recv_list.back().data    = 0;
   if (type != COMM_CELLDATA && type != COMM_DOUBLEDATA) {
     spdlog::error("{}: {}", "only know two types of data to look for!", type);
     exit(1);
   }
-  recv_info.type = type;
+  recv_list.back().type = type;
 
   /*
    * Find a message that has been sent to us.
@@ -383,10 +383,20 @@ int Sub_domain::look_for_data_to_receive(
    */
   int err = 0;
   if (*from_rank >= 0) {
-    err = MPI_Probe(*from_rank, comm_tag, cart_comm, &(recv_info.status));
+    spdlog::debug(
+        "looking to receive from rank {} with tag {}", *from_rank, comm_tag);
+    err =
+        MPI_Probe(*from_rank, comm_tag, cart_comm, &(recv_list.back().status));
   }
   else {
-    err = MPI_Probe(MPI_ANY_SOURCE, comm_tag, cart_comm, &(recv_info.status));
+#ifndef NDEBUG
+    spdlog::debug(
+        "Sub_domain::look_for_data_to_receive() calling MPI_Probe, any src: {}",
+        comm_tag);
+#endif  // TEST_COMMS
+
+    err = MPI_Probe(
+        MPI_ANY_SOURCE, comm_tag, cart_comm, &(recv_list.back().status));
   }
   if (err) {
     spdlog::error("{}: {}", "mpi probe failed", err);
@@ -394,8 +404,8 @@ int Sub_domain::look_for_data_to_receive(
   }
 
   /* Now get the size and source of the data */
-  *from_rank = recv_info.status.MPI_SOURCE;
-  *recv_tag  = recv_info.status.MPI_TAG;
+  *from_rank = recv_list.back().status.MPI_SOURCE;
+  *recv_tag  = recv_list.back().status.MPI_TAG;
 
   /* create communication id */
   ostringstream temp;
@@ -405,10 +415,9 @@ int Sub_domain::look_for_data_to_receive(
   temp.str("");
 
   /* Set record of where data is coming from */
-  recv_info.id        = recv_id;
-  recv_info.comm_tag  = *recv_tag;
-  recv_info.from_rank = *from_rank;
-  recv_list.push_back(move(recv_info));
+  recv_list.back().id        = recv_id;
+  recv_list.back().comm_tag  = *recv_tag;
+  recv_list.back().from_rank = *from_rank;
 
 #ifndef NDEBUG
   spdlog::debug("Sub_domain::look_for_data_to_receive: returning");
@@ -434,9 +443,10 @@ int Sub_domain::receive_cell_data(
   spdlog::debug("Sub_domain::receive_cell_data: starting");
 #endif  // TEST_COMMS
 
-  auto info = find_if(
-      recv_list.begin(), recv_list.end(),
-      [recv_id](const struct Recv_info &ri) { return ri.id == recv_id; });
+  auto info =
+      find_if(recv_list.begin(), recv_list.end(), [recv_id](const auto &ri) {
+        return ri.id == recv_id;
+      });
 
   if (info == recv_list.end()) {
     spdlog::error("{}: {}", "Failed to find recv with id:", recv_id);
@@ -592,15 +602,13 @@ int Sub_domain::send_double_data(
   }
   int err = 0;
 
+  send_list.emplace_back();
+  send_list.back().comm_tag  = comm_tag;
+  send_list.back().from_rank = myrank;
+  send_list.back().to_rank   = to_rank;
+  send_list.back().type      = COMM_DOUBLEDATA;
   /* store vector in member variable so it is not freed out of scope */
-  m_send_buff_double = std::move(data);
-
-  struct Send_info send_info;
-  send_info.comm_tag  = comm_tag;
-  send_info.from_rank = myrank;
-  send_info.to_rank   = to_rank;
-  send_info.data      = reinterpret_cast<void *>(m_send_buff_double.data());
-  send_info.type      = COMM_DOUBLEDATA;
+  send_list.back().send_buff_double = std::move(data);
 
   /* create send tag */
   ostringstream temp;
@@ -608,14 +616,16 @@ int Sub_domain::send_double_data(
   temp << "from " << myrank << " to " << to_rank << " tag=" << comm_tag;
   send_id = temp.str();
   temp.str("");
-  send_info.id = send_id;
+  send_list.back().id = send_id;
 
+  spdlog::debug(
+      "sending to {} with tag {}", send_list.back().to_rank,
+      send_list.back().comm_tag);
   /* Non-blocking send of data */
   err += MPI_Isend(
-      send_info.data, num_elements, MPI_DOUBLE, send_info.to_rank,
-      send_info.comm_tag, cart_comm, &(send_info.request));
-
-  send_list.push_back(move(send_info));
+      send_list.back().send_buff_double.data(), num_elements, MPI_DOUBLE,
+      send_list.back().to_rank, send_list.back().comm_tag, cart_comm,
+      &(send_list.back().request));
 
   return err;
 }
@@ -638,9 +648,10 @@ int Sub_domain::receive_double_data(
   spdlog::debug("Sub_domain::receive_double_data: starting");
 #endif  // TEST_COMMS
 
-  auto info = find_if(
-      recv_list.begin(), recv_list.end(),
-      [recv_id](const struct Recv_info &ri) { return ri.id == recv_id; });
+  auto info =
+      find_if(recv_list.begin(), recv_list.end(), [recv_id](const auto &ri) {
+        return ri.id == recv_id;
+      });
 
   if (info == recv_list.end()) {
     spdlog::error("{}: {}", "Failed to find recv with id:", recv_id);

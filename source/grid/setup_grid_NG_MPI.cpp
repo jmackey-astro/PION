@@ -92,7 +92,10 @@ void setup_grid_NG_MPI::setup_NG_grid_levels(
           SimPM.ndim, SimPM.levels[l], SimPM.get_pbc_bools());
     }
     else {
-      err = SimPM.levels[l].sub_domain.decomposeDomain(
+      // err = SimPM.levels[l].sub_domain.decomposeDomain(
+      //    SimPM.ndim, SimPM.levels[l]);
+      SimPM.levels[l].sub_domain = SimPM.levels[0].sub_domain;
+      err                        = SimPM.levels[l].sub_domain.decomposeDomain(
           SimPM.ndim, SimPM.levels[l]);
     }
     if (0 != err)

@@ -215,7 +215,8 @@ int main(int argc, char **argv)
   SimPM.levels[0].multiplier             = 1;
 #ifdef PARALLEL
   class setup_fixed_grid_pllel *SimSetup = new setup_fixed_grid_pllel();
-  err = SimPM.levels[0].sub_domain.decomposeDomain(SimPM.ndim, SimPM.levels[0]);
+  err = SimPM.levels[0].sub_domain.decomposeDomain(
+      SimPM.ndim, SimPM.levels[0], SimPM.get_pbc_bools());
   if (0 != err)
     spdlog::error(
         "{}: Expected {} but got {}", "Couldn't Decompose Domain!", 0, err);
@@ -357,9 +358,6 @@ int main(int argc, char **argv)
   spdlog::info("icgen-ng: updating C2F boundaries");
 #endif /* NDEBUG */
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-#ifndef NDEBUG
-    spdlog::debug("icgen-ng updating C2F boundaries for level {}", l);
-#endif /* NDEBUG */
     if (l < SimPM.grid_nlevels - 1) {
       for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
         if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) {
@@ -368,9 +366,6 @@ int main(int argc, char **argv)
         }
       }
     }
-#ifndef NDEBUG
-    spdlog::info("icgen-ng: updating C2F boundaries, sent, now recv");
-#endif /* NDEBUG */
     if (l > 0) {
       for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
         if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
@@ -378,20 +373,20 @@ int main(int argc, char **argv)
               SimPM, solver, l, grid[l]->BC_bd[i], SimPM.levels[l].step);
         }
       }
+      SimSetup->BC_COARSE_TO_FINE_SEND_clear_sends(
+          SimPM.levels[l - 1].sub_domain);
     }
-#ifndef NDEBUG
-    spdlog::info("icgen-ng: updating C2F boundaries: done with level");
-#endif /* NDEBUG */
   }
   spdlog::info("icgen-ng: updating C2F boundaries done");
-  SimSetup->BC_COARSE_TO_FINE_SEND_clear_sends(SimPM.levels[0].sub_domain);
-  if (0 != err)
+  if (err) {
     spdlog::error(
-        "{}: Expected {} but got {}", "icgen-ng: error from boundary update", 0,
-        err);
-    // ----------------------------------------------------------------
+        "{}: Expected {} but got {}", "NG_MPI INIT: error from bounday update",
+        0, err);
+    exit(err);
+  }
+  // ----------------------------------------------------------------
 
-    // ----------------------------------------------------------------
+  // ----------------------------------------------------------------
 #ifndef NDEBUG
   spdlog::info("icgen-ng: updating external boundaries");
 #endif /* NDEBUG */
@@ -444,14 +439,23 @@ int main(int argc, char **argv)
               SimPM, solver, l, grid[l]->BC_bd[i], 2, 2);
         }
       }
+#ifndef NDEBUG
+      spdlog::debug("CLEAR F2C send from {} to {}...", l + 1, l);
+#endif
+      SimSetup->BC_FINE_TO_COARSE_SEND_clear_sends(
+          SimPM.levels[l + 1].sub_domain);
+#ifndef NDEBUG
+      spdlog::debug("  ... done");
+#endif
     }
   }
-  SimSetup->BC_FINE_TO_COARSE_SEND_clear_sends(SimPM.levels[0].sub_domain);
-  if (0 != err)
+  if (err) {
     spdlog::error(
-        "{}: Expected {} but got {}", "icgen-ng: error from boundary update", 0,
-        err);
-    // ----------------------------------------------------------------
+        "{}: Expected {} but got {}", "NG_MPI INIT: error from bounday update",
+        0, err);
+    exit(err);
+  }
+  // ----------------------------------------------------------------
 #endif /* PARALLEL */
 #endif /* PION_NESTED */
 
@@ -477,6 +481,8 @@ int main(int argc, char **argv)
   }
   // ----------------------------------------------------------------
 
+  // Default to silo I/O if nothing selected
+  if (icftype == "") icftype = "silo";
   spdlog::debug("IC file-type is ", icftype);
   seek          = "OutputFile";
   string icfile = rp->find_parameter(seek);

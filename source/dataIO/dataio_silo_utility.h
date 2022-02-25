@@ -47,12 +47,6 @@ public:
 
   ~dataio_silo_utility() {}
 
-  int serial_read_any_data(
-      string,                          ///< file to read from
-      class SimParams &,               ///< pointer to simulation parameters
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
-  );
-
   ///
   /// Parallel code to read any data.
   ///

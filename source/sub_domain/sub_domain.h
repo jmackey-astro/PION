@@ -55,9 +55,9 @@ struct Send_info {
   int comm_tag;         ///< the tag used to describe the send.
   int from_rank;        ///< sender.
   int to_rank;          ///< recipient
-  void *data;           ///< pointer to data.
   int type;             ///< type of data: COMM_CELLDATA=char array;
-                        ///< COMM_DOUBLEDATA=double array.
+  std::vector<char> send_buff;
+  std::vector<double> send_buff_double;
 };
 
 struct Recv_info {
@@ -68,7 +68,6 @@ struct Recv_info {
   int to_rank;        ///< recipient
   void *data;         ///< pointer to data.
   int type;           ///< type of data: COMM_CELLDATA=char array;
-                      ///< COMM_DOUBLEDATA=double array.
 };
 
 // ##################################################################
@@ -423,7 +422,7 @@ private:
   /// decomposition
   MPI_Comm cart_comm = MPI_COMM_WORLD;
   /// whether the cartesion communicator has been created
-  bool m_is_cart_comm = false;
+  bool m_is_cartcomm = false;
 
   /* MPI communication */
 public:
@@ -586,8 +585,6 @@ private:
   std::list<struct Send_info> send_list;
   std::list<struct Recv_info> recv_list;
 
-  std::vector<char> m_send_buff;
-  std::vector<double> m_send_buff_double;
   long int m_num_send_cells = 0;
 
 #ifdef SILO
