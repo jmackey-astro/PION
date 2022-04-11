@@ -30,7 +30,7 @@ export WGET='wget'
 # Unset this to use gcc as compiler on kay.ichec.ie
 # Leaving KAY_INTEL=yes uses Intel compilers, should
 # give better performance
-KAY_INTEL=yes
+KAY_INTEL=no
 #####################################################
 
 case $HOSTNAME in
@@ -52,6 +52,7 @@ case $HOSTNAME in
       ######### gcc #########
       module load cmake3
       module load gcc
+      module load openmpi/gcc
       ######### gcc #########
     fi
     module load conda

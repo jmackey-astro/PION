@@ -146,17 +146,23 @@ int main(int argc, char **argv)
     args[i] = argv[i];
   for (int i = 0; i < argc; ++i) {
     if (args[i].find("redirect=") != string::npos) {
-      ostringstream path;
-      path << args[i].substr(9);
-#ifdef PARALLEL
-      path << "_" << r;
+#if defined NDEBUG && defined PARALLEL
+      if (r == 0) {
 #endif
-      path << ".log";
+        ostringstream path;
+        path << args[i].substr(9);
+#ifdef PARALLEL
+        path << "_" << r;
+#endif
+        path << ".log";
 
-      auto max_logfile_size = 1048576 * 5;
-      auto max_logfiles     = 3;
-      spdlog::set_default_logger(spdlog::rotating_logger_mt(
-          "icgen", path.str(), max_logfile_size, max_logfiles));
+        auto max_logfile_size = 1048576 * 5;
+        auto max_logfiles     = 3;
+        spdlog::set_default_logger(spdlog::rotating_logger_mt(
+            "icgen", path.str(), max_logfile_size, max_logfiles));
+#if defined NDEBUG && defined PARALLEL
+      }
+#endif
     }
   }
 #ifdef PION_OMP

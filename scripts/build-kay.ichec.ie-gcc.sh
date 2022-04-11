@@ -12,7 +12,7 @@
 
 script="${BASH_SOURCE[0]:-${(%):-%x}}"
 script_dir="$( cd "$( dirname "${script}" )" >/dev/null 2>&1 && pwd )"
-deps_dir="${script_dir}/extra_libraries"
+deps_dir="${HOME}/.local/"
 build_dir="${script_dir}/build"
 
 # load modules needed for PION
