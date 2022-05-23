@@ -623,9 +623,14 @@ void MPv10::setup_local_vectors()
   nvl         = N_species + 1;  // two local variables to integrate
   N_extradata = 0;
   N_equations = nvl;
-  y_in        = N_VNew_Serial(N_equations);
-  y_out       = N_VNew_Serial(N_equations);
-  lv_eint     = N_species;
+#if defined(CVODE6)
+  y_in  = N_VNew_Serial(N_equations, sunctx);
+  y_out = N_VNew_Serial(N_equations, sunctx);
+#else
+  y_in  = N_VNew_Serial(N_equations);
+  y_out = N_VNew_Serial(N_equations);
+#endif
+  lv_eint = N_species;
   // cout<<"!!!!!!!!!!!!!!!!!! nvl="<<nvl<<"\n";
   return;
 }

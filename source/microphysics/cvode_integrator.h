@@ -75,6 +75,25 @@
 #include <sunlinsol/sunlinsol_dense.h>
 #endif
 
+#elif defined CVODE6
+
+#include <cvode/cvode.h>             // prototypes for CVODE
+#include <nvector/nvector_serial.h>  // serial N_Vector types
+
+#include <cvode/cvode_direct.h>
+#include <sundials/sundials_types.h>
+#include <sunmatrix/sunmatrix_dense.h>
+
+#define CVMatrix SUNMatrix
+
+#ifdef LAPACK
+// LAPACK SOLVER
+#include <sunlinsol/sunlinsol_lapackdense.h>
+#else
+// NON-LAPACK SOLVER
+#include <sunlinsol/sunlinsol_dense.h>
+#endif
+
 #else
 #error "must define a CVODE version"
 #endif
@@ -163,6 +182,11 @@ private:
   int n_eq;                ///< number of equations to solve.
   int n_xd;                ///< number of elements in user-data array.
   bool have_setup_cvodes;  ///< flag to make sure we only set up CVODES once.
+
+protected:
+#if defined(CVODE6)
+  SUNContext sunctx;
+#endif
 
   //---------------------------------------------------------------------------
   //------------ STUFF TO BE DEFINED IN DERVIED CLASS FOLLOWS

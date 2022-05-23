@@ -138,8 +138,13 @@ void MPv4::setup_local_vectors()
   //
   N_VDestroy_Serial(y_in);
   N_VDestroy_Serial(y_out);
-  y_in    = N_VNew_Serial(N_equations);
-  y_out   = N_VNew_Serial(N_equations);
+#if defined(CVODE6)
+  y_in  = N_VNew_Serial(N_equations, sunctx);
+  y_out = N_VNew_Serial(N_equations, sunctx);
+#else
+  y_in  = N_VNew_Serial(N_equations);
+  y_out = N_VNew_Serial(N_equations);
+#endif
   lv_H0   = 0;  // x(H0) is the first element in the array
   lv_eint = 1;  // E_{int} is the second element.
   lv_dtau = 2;  // integrated photon transmission fraction.

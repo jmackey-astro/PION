@@ -156,7 +156,9 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
     double DivVr = CI.get_DivV(Cr);
     double Gradl = CI.get_MagGradP(Cl);
     double Gradr = CI.get_MagGradP(Cr);
-    if ((DivVl < 0. && Gradl > 5.) || (DivVr < 0. && Gradr > 5.)) {
+    double dr = Pl[RO] / Pr[RO], drlim = 4.0;
+    if ((DivVl < 0. && Gradl > 5.) || (DivVr < 0. && Gradr > 5.) || (dr > drlim)
+        || (dr < 1.0 / drlim)) {
       // compressive motion & strong-gradient zones check
       // Migone et al 2012
       // HLL solver -- Miyoshi and Kusano (2005) (m05)

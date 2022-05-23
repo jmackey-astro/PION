@@ -559,10 +559,15 @@ void MPv3::setup_local_vectors()
   nvl         = 2;  // two local variables to integrate
   N_extradata = 0;
   N_equations = 2;
-  y_in        = N_VNew_Serial(N_equations);
-  y_out       = N_VNew_Serial(N_equations);
-  lv_H0       = 0;  // x(H0) is the first element in the array
-  lv_eint     = 1;  // E_{int} is the second element.
+#if defined(CVODE6)
+  y_in  = N_VNew_Serial(N_equations, sunctx);
+  y_out = N_VNew_Serial(N_equations, sunctx);
+#else
+  y_in  = N_VNew_Serial(N_equations);
+  y_out = N_VNew_Serial(N_equations);
+#endif
+  lv_H0   = 0;  // x(H0) is the first element in the array
+  lv_eint = 1;  // E_{int} is the second element.
   // cout<<"!!!!!!!!!!!!!!!!!! nvl="<<nvl<<"\n";
   return;
 }
@@ -702,7 +707,7 @@ int MPv3::set_multifreq_source_properties(
   //
   Emax = 24.59 * 1.602e-12;
 #else
-  Emax = 54.41778 * 1.602e-12;  // assume nothing doubly-ionized He.
+  Emax  = 54.41778 * 1.602e-12;  // assume nothing doubly-ionized He.
   // Emax = 100.0*1.602e-12;  // This is better for cosmology RT tests.
 #endif  // HE_INERT
 

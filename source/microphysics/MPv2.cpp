@@ -1549,15 +1549,25 @@ int MPv2::setup_cvodes_solver_without_Jacobian()
   //
   // Allocate memory for CVodes y-vectors, and err-tol vector.
   //
-  y_in   = N_VNew_Serial(n_eq);
-  y_out  = N_VNew_Serial(n_eq);
-  abstol = N_VNew_Serial(n_eq);
+#if defined(CVODE6)
+  y_in   = N_VNew_Serial(n_eq, sunctx);
+  y_out  = N_VNew_Serial(n_eq, sunctx);
+  abstol = N_VNew_Serial(n_eq, sunctx);
+#else
+  y_in      = N_VNew_Serial(n_eq);
+  y_out     = N_VNew_Serial(n_eq);
+  abstol    = N_VNew_Serial(n_eq);
+#endif
 
   //
   // Call CVodeCreate to create the solver memory and specify the
   // Backward Differentiation Formula and the use of a Newton iteration.
   //
+#if defined(CVODE6)
+  cvode_mem = CVodeCreate(CV_BDF, CV_NEWTON, sunctx, sunctx);
+#else
   cvode_mem = CVodeCreate(CV_BDF, CV_NEWTON);
+#endif
   if (!cvode_mem) {
     spdlog::error("setup_cvodes_solver() error: cvode_mem={}", cvode_mem);
     return 2;
