@@ -925,22 +925,22 @@ int cyl_FV_solver_mhd_ideal_adi::MHDsource(
   // The Powell source terms from Powell's paper (1999)
   // called by time_integrator::dynamics_dU_column()
   double dx = grid->DX(), rp = 0.0, rn = 0.0;
-  double bm   = 0.5 * (Cr.Ph[eqBX] + Cr.Ph[eqBX]);
-  double uB_l = Cr.Ph[eqBX] * Cr.Ph[eqVX] + Cr.Ph[eqBY] * Cr.Ph[eqVY]
-                + Cr.Ph[eqBZ] * Cr.Ph[eqVZ];
+  double bm   = 0.5 * (Cl.Ph[eqBX] + Cr.Ph[eqBX]);
+  double uB_l = Cl.Ph[eqBX] * Cl.Ph[eqVX] + Cl.Ph[eqBY] * Cl.Ph[eqVY]
+                + Cl.Ph[eqBZ] * Cl.Ph[eqVZ];
   double uB_r = Cr.Ph[eqBX] * Cr.Ph[eqVX] + Cr.Ph[eqBY] * Cr.Ph[eqVY]
                 + Cr.Ph[eqBZ] * Cr.Ph[eqVZ];
   pion_flt Powell_l[eq_nvar], Powell_r[eq_nvar];
   for (int v = 0; v < eq_nvar; v++) {
     Powell_l[v] = Powell_r[v] = 0.0;
   }
-  Powell_l[eqMMX] = Cr.Ph[eqBX];
-  Powell_l[eqMMY] = Cr.Ph[eqBY];
-  Powell_l[eqMMZ] = Cr.Ph[eqBZ];
+  Powell_l[eqMMX] = Cl.Ph[eqBX];
+  Powell_l[eqMMY] = Cl.Ph[eqBY];
+  Powell_l[eqMMZ] = Cl.Ph[eqBZ];
   Powell_l[eqERG] = uB_l;
-  Powell_l[eqBBX] = Cr.Ph[eqVX];
-  Powell_l[eqBBY] = Cr.Ph[eqVY];
-  Powell_l[eqBBZ] = Cr.Ph[eqVZ];
+  Powell_l[eqBBX] = Cl.Ph[eqVX];
+  Powell_l[eqBBY] = Cl.Ph[eqVY];
+  Powell_l[eqBBZ] = Cl.Ph[eqVZ];
 
   Powell_r[eqMMX] = Cr.Ph[eqBX];
   Powell_r[eqMMY] = Cr.Ph[eqBY];
@@ -953,7 +953,7 @@ int cyl_FV_solver_mhd_ideal_adi::MHDsource(
   switch (d) {
     case Zcyl:
       for (int v = 0; v < eq_nvar; v++) {
-        Cr.dU[v] -= dt * bm * (Powell_l[v]) / dx;
+        Cl.dU[v] -= dt * bm * (Powell_l[v]) / dx;
         Cr.dU[v] += dt * bm * (Powell_r[v]) / dx;
       }
       break;
@@ -961,7 +961,7 @@ int cyl_FV_solver_mhd_ideal_adi::MHDsource(
       rp = CI.get_dpos(Cl, Rcyl) + dx * 0.5;
       rn = rp - dx;
       for (int v = 0; v < eq_nvar; v++) {
-        Cr.dU[v] -= dt * bm * (Powell_l[v]) * 2.0 * rp / (rp * rp - rn * rn);
+        Cl.dU[v] -= dt * bm * (Powell_l[v]) * 2.0 * rp / (rp * rp - rn * rn);
       }
       rn = rp;
       rp += dx;
@@ -1105,7 +1105,7 @@ int cyl_FV_solver_mhd_mixedGLM_adi::MHDsource(
   psi_r[eqPSI] = Cr.Ph[eqVX];
 
   for (int v = 0; v < eq_nvar; v++) {
-    Cr.dU[v] -= dt * sm * psi_l[v] / dx;
+    Cl.dU[v] -= dt * sm * psi_l[v] / dx;
     Cr.dU[v] += dt * sm * psi_r[v] / dx;
   }
   return 0;

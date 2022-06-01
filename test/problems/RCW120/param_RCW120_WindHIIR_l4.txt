@@ -5,9 +5,9 @@
 ndim 2
 coordinates cylindrical
 eqn  euler
-solver 3
+solver 4
 GAMMA 1.666666666666667
-CFL 0.3
+CFL 0.2
 ArtificialViscosity 1
 EtaViscosity 0.15
 OrderOfAccSpace 2

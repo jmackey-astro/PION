@@ -340,8 +340,9 @@ int calc_timestep::set_thermal_conduction_Edot(
           cpt          = grid->get_cell_all(index[0], index[1], index[2]);
           cell *npt    = grid->NextPt(*cpt, posdirs[idim]);
           cell *lpt    = 0;
-          double q_neg = 0.0, q_pos = 0.0, gradT = 0.0;
+          double q_neg = 0.0, q_pos = 0.0, gradT = 0.0, qsat = 0.0, qcls = 0.0;
           double dx = grid->DX();
+          int sgn   = 0;
           if (npt == 0)
             spdlog::error("{}: {}", "Couldn't find two cells in column", 0);
           q_neg = 0.0;  // no flux coming in from non-existent boundary data.
@@ -352,16 +353,22 @@ int calc_timestep::set_thermal_conduction_Edot(
             // Calculate saturated heat flux from cpt to npt in direction
             // posdir[idim].  Only depends on sign of gradT, so no need
             // to get normalisation correct with denominator:
-            gradT = (npt->dU[RHO] - cpt->dU[RHO]);
+            gradT = (npt->dU[RHO] - cpt->dU[RHO]) / dx;
             // if gradT>0, then T2>T1, flow from 2->1 in the *negative*
             // direction.
-            if (gradT > 0.0)
-              c2 = npt;
-            else
-              c2 = cpt;
+            if (gradT > 0.0) {
+              c2  = npt;
+              sgn = 1;
+            }
+            else {
+              c2  = cpt;
+              sgn = -1;
+            }
             // For saturated Q we follow S&C(1992) and use phi_s=0.3
-            q_pos = 1.5 * c2->Ph[RO] * pow(c2->Ph[PG] / c2->Ph[RO], 1.5);
-            if (gradT > 0.0) q_pos *= -1.0;
+            qsat  = -sgn * 1.5 * c2->Ph[RO] * pow(c2->Ph[PG] / c2->Ph[RO], 1.5);
+            qcls  = -6.0e-7 * exp(2.5 * log(c2->dU[RHO])) * gradT;
+            q_pos = qsat * (1.0 - exp(-qcls / qsat));
+            // if (gradT > 0.0) q_pos *= -1.0;
             q_pos *= par.EP.tc_strength;
             if (!c2->isdomain) q_pos = 0.0;  // don't update wind cells
             // Finally cpt needs an updated -div(q) value from the
@@ -387,9 +394,10 @@ int calc_timestep::set_thermal_conduction_Edot(
             // if we are on the half-step update.
             if (oa == OA1) {
               // saturated flux is hyperbolic
-              cpt->dU[VX] =
-                  max(cpt->dU[VX],
-                      4.0 * spatial_solver->maxspeed(c2->Ph, par.gamma));
+              // cpt->dU[VX] =
+              //    max(cpt->dU[VX],
+              //        4.0 * spatial_solver->maxspeed(c2->Ph, par.gamma));
+              cpt->dU[VX] = 2.0 * fabs(q_pos);
             }
             // Set npt to cpt, set current q_pos to q_neg for next cell.
             // Move to next cell.

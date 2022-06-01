@@ -489,18 +489,20 @@ int stellar_wind_bc::BC_update_STWIND(
       }
     }
     // Set new source position
-    outf << simtime << "  " << dt << "  ";
-    for (unsigned long i = 0; i < stars.size(); i++) {
-      for (int v = 0; v < ndim; v++)
-        SWP.params[stars[i].id]->dpos[v] = stars[i].pos[v];
-      for (int v = 0; v < ndim; v++)
-        SWP.params[stars[i].id]->velocity[v] = stars[i].vel[v];
-      for (int v = 0; v < ndim; v++)
-        outf << SWP.params[i]->dpos[v] << "  ";
-      for (int v = 0; v < ndim; v++)
-        outf << SWP.params[i]->velocity[v] << "  ";
+    if (stars.size() >= 1) {
+      outf << simtime << "  " << dt << "  ";
+      for (unsigned long i = 0; i < stars.size(); i++) {
+        for (int v = 0; v < ndim; v++)
+          SWP.params[stars[i].id]->dpos[v] = stars[i].pos[v];
+        for (int v = 0; v < ndim; v++)
+          SWP.params[stars[i].id]->velocity[v] = stars[i].vel[v];
+        for (int v = 0; v < ndim; v++)
+          outf << SWP.params[i]->dpos[v] << "  ";
+        for (int v = 0; v < ndim; v++)
+          outf << SWP.params[i]->velocity[v] << "  ";
+      }
+      outf << "\n";
     }
-    outf << "\n";
   }
 
   for (int i = 0; i < SWP.Nsources; i++) {

@@ -39,6 +39,8 @@ EP_Max_Temperature 1.0e10
 EP_Hydrogen_MassFrac 0.714  # n(He)/n(H)=1/10
 EP_Helium_MassFrac 0.286    # n(He)/n(H)=1/10
 EP_Metal_MassFrac  0.0142   # solar metallicity
+EP_sat_thermal_cond 0
+EP_tc_strength 0.0
 ########################
 
 
@@ -144,12 +146,17 @@ WIND_NSRC 1
 WIND_0_pos0  0.0e18
 WIND_0_pos1  0.0e18
 WIND_0_pos2  0.0e18
+WIND_0_moving_star 0
+WIND_0_velocity0  0.0e18
+WIND_0_velocity1  0.0e18
+WIND_0_velocity2  0.0e18
 WIND_0_radius 0.96e18  # 20 cells for 128^2 and 3 levels
 WIND_0_type   0
 WIND_0_mdot   1.0e-7     # 10^(-7) solar masses per year mass-loss rate
 WIND_0_vinf   1500.0     # 1500 km/s wind terminal velocity
 WIND_0_vrot   100.0      # 100 km/s surface equatorial rotation velocity
 WIND_0_temp   3.5e4      # 35 kK effective temperature
+WIND_0_mass   20.0
 WIND_0_Rstr   6.96e11    # 10 solar radii
 WIND_0_Bsrf   10.0       # 10 Gauss surface field
 WIND_0_TR0    1.0
@@ -159,6 +166,11 @@ WIND_0_t_scalefac 1.0  # Accelerates evolution by this factor (for MS phase).
 WIND_0_updatefreq 1.0   # in (unscaled) years
 WIND_0_enhance_mdot 0
 WIND_0_xi 0.0
+WIND_0_orbital_period 0.0
+WIND_0_periastron_vec_x 0.0
+WIND_0_periastron_vec_y 0.0
+WIND_0_periastron_vec_z 0.0
+WIND_0_eccentricity 0.0
 
 N_JET 0
 

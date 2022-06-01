@@ -375,8 +375,10 @@ void hydrogen_photoion::Setup_photoionisation_rate_table(
   // calculated from 4Pi*R^2 sigma*T^4
   //
   // cout <<Tstar<<"  "<<Rstar<<"  "<<Lstar<<"\n";
-  if (Tstar < 1000.0)
+  if (Tstar < 1000.0) {
     spdlog::error("{}: {}", "T<1000K.  Object is not a star!", Tstar);
+    exit(1);
+  }
   double L = pconst.StefanBoltzmannConst() * pow(Tstar, 4.0) * 4.0 * M_PI
              * Rstar * Rstar;
   if (fabs(1.0 - L / Lstar) > 0.05 && !pconst.equalD(Lstar, 1.0)) {
@@ -450,13 +452,6 @@ void hydrogen_photoion::Setup_photoionisation_rate_table(
     // phr="<<exp(LOGTEN*PIheat[v])<<"\n";
   }
 
-  // GSL:
-  // Fit a cubic spline to the Photoionisation and Photoheating rates.
-  // Large values in the 4th,5th args tell it to use natural boundary
-  // conditions, which means set the second derivative to zero at the
-  // endpoints. A small value (<1.0e30) indicates that this is the actual
-  // value of the first derivative at the boundary values (4th is lower limit,
-  // 5th is upper limit).
   // BOOST:
   // 4th and 5th args are the first derivatives at the endpoints.  As
   // far as I can tell the makima() method is continuous and
@@ -485,25 +480,17 @@ double hydrogen_photoion::photoion_rate_source_integrand(
 {
   if (E < 2.18e-11) return 0.0;
 
-  //
   // First the E^2 term;
-  //
   double ans = E * E;
-  //
   // Then exp(-tau), where tau = tau0*sigma(E)/sigma(E0).
-  //
   ans *= exp(-Tau0 * Hi_monochromatic_photo_ion_xsection_fractional(E));
-  //
   // Then 1/(exp(E/kT)-1)
-  //
   ans /= (exp(E / (1.38e-16 * Tstar)) - 1.0);
   //#ifdef HACK_MODIFY_BB
   //  // multiply high energy emission by exp(-(0.03(E/eV))^5)
   //  ans *= exp(-pow(1.87e10*E,5));
   //#endif
-  //
   // Then the prefactor: 8.pi^2.Rstar^2/(c^2.h^3)
-  //
   ans *= 3.020e59 * Rstar * Rstar;
 
   return ans;

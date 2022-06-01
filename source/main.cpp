@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 #endif
         path << ".log";
         auto max_logfile_size = 1048576 * 5;
-        auto max_logfiles     = 3;
+        auto max_logfiles     = 20;
         spdlog::set_default_logger(spdlog::rotating_logger_mt(
             "pion", path.str(), max_logfile_size, max_logfiles));
 #if defined NDEBUG && defined PARALLEL

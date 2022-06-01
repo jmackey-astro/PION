@@ -809,6 +809,7 @@ int setup_fixed_grid::update_evolving_RT_sources(
     if (i == (istar->Nlines - 1)) {
       spdlog::warn(
           "update_evolving_RT_sources(): Last line, assuming constant Lum from now on!");
+      SimPM.maxtime = true;  // flag to end the simulation
       return 0;
     }
     // Check if we have moved forward one line in table, in which

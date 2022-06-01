@@ -1128,9 +1128,17 @@ void stellar_wind_evolution::update_source(
   }
 
   if (t_now < wd->tstart) {
-    spdlog::error(
+    spdlog::warn(
         "{}: {}", "Updating source, not yet active!", wd->tstart - t_now);
+    return;
   }
+  else if (t_now >= wd->tfinish) {
+    spdlog::warn(
+        "{}: {}", "Updating source: source no longer active!",
+        wd->tstart - t_now);
+    return;
+  }
+
 
   wd->t_next_update = t_now;  // (We update every timestep now)
   wd->t_next_update = min(wd->t_next_update, wd->tfinish);
