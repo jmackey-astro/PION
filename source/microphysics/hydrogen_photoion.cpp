@@ -377,7 +377,7 @@ void hydrogen_photoion::Setup_photoionisation_rate_table(
   // cout <<Tstar<<"  "<<Rstar<<"  "<<Lstar<<"\n";
   if (Tstar < 1000.0) {
     spdlog::error("{}: {}", "T<1000K.  Object is not a star!", Tstar);
-    exit(1);
+    return;
   }
   double L = pconst.StefanBoltzmannConst() * pow(Tstar, 4.0) * 4.0 * M_PI
              * Rstar * Rstar;

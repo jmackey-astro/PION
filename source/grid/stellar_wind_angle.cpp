@@ -497,7 +497,8 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   double x = 0.0, y = 0.0, z = 0.0, xf = 0.0, yf = 0.0;
   switch (ndim) {
     case 1:
-      x = grid->difference_vertex2cell(WP->dpos, *c, XX);
+      // in 1D, v_r = v_infty, so need x = wc->dist.
+      x = wc->dist;
       y = 0.0;
       z = 0.0;
       break;

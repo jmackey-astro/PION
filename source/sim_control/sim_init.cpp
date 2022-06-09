@@ -837,9 +837,9 @@ int sim_init::output_data(vector<class GridBaseClass *>
   // call return(0) if we decide we don't need to ouput, so if we get
   // past them then just output the current timestep.
   //
-  // Always output at the start
+  // Always output at the start or the end.
   //
-  if (SimPM.timestep == 0) {
+  if (SimPM.timestep == 0 || SimPM.maxtime == true) {
   }
   //
   // If outputting every nth step, see if we are on an output step.

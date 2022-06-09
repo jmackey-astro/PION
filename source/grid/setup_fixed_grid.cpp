@@ -805,18 +805,28 @@ int setup_fixed_grid::update_evolving_RT_sources(
     istar->t_now       = time;
     size_t i           = istar->last_line;
 
-    // Check if we have reached the last line of the file!
-    if (i == (istar->Nlines - 1)) {
-      spdlog::warn(
+    // Check if we have reached the last line of the file
+    if (i >= (istar->Nlines - 1)) {
+      spdlog::info(
           "update_evolving_RT_sources(): Last line, assuming constant Lum from now on!");
       SimPM.maxtime = true;  // flag to end the simulation
       return 0;
     }
+
     // Check if we have moved forward one line in table, in which
-    // case we need to increment i.
+    // case we need to increment i (can be more than 1 increment depending on
+    // timestep)
     while (istar->t_now > istar->time[i + 1]) {
       i++;
       istar->last_line = i;
+    }
+
+    // Check if we have reached the last line of the file
+    if (i >= (istar->Nlines - 1)) {
+      spdlog::info(
+          "update_evolving_RT_sources(): Last line v2, setting end of simulation");
+      SimPM.maxtime = true;  // flag to end the simulation
+      return 0;
     }
 
     // The star properties are bracketed by line i and line i+1,

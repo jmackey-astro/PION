@@ -102,7 +102,7 @@ UniformGridParallel::UniformGridParallel(
 {
 
 #ifndef NDEBUG
-  spdlog::info("UniformGridParallel constructor");
+  spdlog::debug("UniformGridParallel constructor");
   spdlog::debug("Local Xmin : {}", xn);
   spdlog::debug("Local Xmax : {}", xp);
   spdlog::debug("Local Npt  : {}", nc);
@@ -115,7 +115,7 @@ UniformGridParallel::UniformGridParallel(
   spdlog::debug("SIM iXmax  : {}", Sim_ixmax);
   spdlog::debug("SIM iRange : {}", Sim_irange);
 
-  spdlog::info("UniformGridParallel constructor done");
+  spdlog::debug("UniformGridParallel constructor done");
 #endif
 
   return;
@@ -173,7 +173,7 @@ uniform_grid_cyl_parallel::uniform_grid_cyl_parallel(
 
 uniform_grid_cyl_parallel::~uniform_grid_cyl_parallel()
 {
-  spdlog::info("uniform_grid_cyl_parallel destructor. Present and correct!");
+  spdlog::debug("uniform_grid_cyl_parallel destructor. Present and correct!");
 }
 
 // ##################################################################
@@ -245,7 +245,7 @@ uniform_grid_sph_parallel::uniform_grid_sph_parallel(
 
 uniform_grid_sph_parallel::~uniform_grid_sph_parallel()
 {
-  spdlog::info("uniform_grid_sph_parallel destructor. Present and correct!");
+  spdlog::debug("uniform_grid_sph_parallel destructor. Present and correct!");
 }
 
 // ##################################################################
