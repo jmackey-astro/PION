@@ -548,7 +548,7 @@ int setup_fixed_grid::setup_raytracing(
     class GridBaseClass *grid  ///< pointer to grid
 )
 {
-  if (!SimPM.EP.raytracing) {
+  if (!SimPM.EP.raytracing || SimPM.RS.Nsources == 0) {
     return 0;
   }
   spdlog::info("(pion)  Setting up raytracing on level");

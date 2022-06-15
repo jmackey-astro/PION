@@ -172,14 +172,16 @@ int setup_fixed_grid_pllel::setup_raytracing(
   // This function is identical to the serial setup function, except
   // that it sets up MPI-aware versions of the raytracers.
   //
-  if (!SimPM.EP.raytracing) {
+  if (!SimPM.EP.raytracing || SimPM.RS.Nsources == 0) {
     return 0;
   }
   spdlog::debug("(pion-mpi)  Setting up raytracing on leve");
 
-  if (!MP)
+  if (!MP) {
     spdlog::error(
         "{}: {}", "can't do raytracing without microphysics", fmt::ptr(MP));
+    exit(1);
+  }
   grid->RT = 0;
   //
   // If the ionising source is at infinity then set up the simpler parallel
@@ -215,9 +217,11 @@ int setup_fixed_grid_pllel::setup_raytracing(
     //
     grid->RT = new raytracer_USC_infinity(
         grid, MP, SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ftr);
-    if (!grid->RT)
+    if (!grid->RT) {
       spdlog::error(
           "{}: {}", "init pllel-rays raytracer error", fmt::ptr(grid->RT));
+      exit(1);
+    }
   }
   else {
     //

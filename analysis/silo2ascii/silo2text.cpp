@@ -25,7 +25,12 @@
 
 #include "tools/timer.h"
 
+#ifdef PION_NESTED
+#include "grid/setup_grid_NG_MPI.h"
+#else
 #include "grid/setup_fixed_grid_MPI.h"
+#endif /* PION_NESTED */
+
 #include "grid/uniform_grid.h"
 #include "sub_domain/sub_domain.h"
 
@@ -61,11 +66,11 @@ int main(int argc, char **argv)
   auto max_logfile_size = 1048576 * 5;
   auto max_logfiles     = 3;
 #ifdef PARALLEL
-  spdlog::set_default_logger(spdlog::rotating_logger_mt(
-      "silo2text_pre_mpi", "silo2text.log", max_logfile_size, max_logfiles));
+//  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+//      "silo2text_pre_mpi", "silo2text.log", max_logfile_size, max_logfiles));
 #else
-  spdlog::set_default_logger(spdlog::rotating_logger_mt(
-      "silo2text", "silo2text.log", max_logfile_size, max_logfiles));
+//  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+//      "silo2text", "silo2text.log", max_logfile_size, max_logfiles));
 #endif /* PARALLEL */
 
 #ifdef NDEBUG
@@ -76,23 +81,18 @@ int main(int argc, char **argv)
   spdlog::flush_on(spdlog::level::trace);
 #endif
 
-  //
-  // Also initialise the sub_domain class with myrank and nproc.
-  //
-  //
-  // get a setup_grid class, to set up the grid, and a grid pointer.
-  //
-  class setup_fixed_grid *SimSetup = 0;
-  SimSetup                         = new setup_fixed_grid_pllel();
   class SimParams SimPM;
-
   int myrank = SimPM.levels[0].sub_domain.get_myrank();
   int nproc  = SimPM.levels[0].sub_domain.get_nproc();
 
+  // get a setup_grid class, to set up the grid, and a grid pointer.
+  class setup_fixed_grid *SimSetup = 0;
+  SimSetup                         = new setup_fixed_grid_pllel();
+
 #ifdef PARALLEL
-  spdlog::set_default_logger(spdlog::rotating_logger_mt(
-      "silo2text", "silo2text_process" + to_string(myrank) + ".log",
-      max_logfile_size, max_logfiles));
+//  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+//      "silo2text", "silo2text_process" + to_string(myrank) + ".log",
+//      max_logfile_size, max_logfiles));
 #endif /* PARALLEL */
 
   spdlog::info("Projection3D: myrank={}, nproc={}", myrank, nproc);
@@ -104,6 +104,7 @@ int main(int argc, char **argv)
     spdlog::error(
         "Error: must call as follows...\nsilo2text: <silo2text> <source-dir> <file-base>  <output-file> <op-freq>\n  op-freq: if this is e.g. 10, we only convert every 10th input file to a text file");
     spdlog::error("{}: {}", "Bad number of args", argc);
+    exit(1);
   }
   string fdir        = argv[1];
   string firstfile   = argv[2];
