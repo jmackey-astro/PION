@@ -52,6 +52,7 @@ struct wind_cell {
   pion_flt *p;    ///< primitive vector with wind properties for this cell.
   double dist;    ///< distance of cell centre to wind src.
   double theta;   ///< polar angle in radians of cell from source.
+  double cfac;    ///< wind correction factor for density (curvilinear coords)
 };
 
 // ##################################################################

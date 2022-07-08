@@ -229,7 +229,8 @@ int stellar_wind::add_cell(
     wpos[v] = WP->dpos[v];
   struct wind_cell *wc = 0;
   wc                   = mem.myalloc(wc, 1);
-  wc->dist             = grid->distance(wpos, cpos);
+  // wc->dist             = grid->distance(wpos, cpos);
+  wc->dist = grid->distance_vertex2cell(wpos, c);
   if (wc->dist > WP->radius) {
     spdlog::warn(
         "{}: Expected {} but got {}",
@@ -250,6 +251,8 @@ int stellar_wind::add_cell(
     c.timestep = true;
   wc->c = &c;
 
+  wc->cfac = 1.0;  // correction factor for curvilinear coords
+
   //
   // Calculate the polar angle theta
   //
@@ -258,6 +261,13 @@ int stellar_wind::add_cell(
   // exit if angle + 1D)
   if (ndim == 1) {
     wc->theta = 0;
+    // correction factor for distance should be set here
+    // should be (3*(i+0.5)^2)/((i+1)^3-i^3)
+    double i = (grid->distance(wpos, cpos) - 0.5 * grid->DX()) / grid->DX();
+    // wc->cfac = pow((pow(i+1.0,3) - pow(i,3)) / (3.0*(i+0.5)*(i+0.5)), 1.0);
+    // This is a bit of a hack, correcting the wind density in cells near the
+    // origin, obtained by trial and error.
+    if (i <= 10.0) wc->cfac = 1.0 + 0.24 * exp(-pow(i, 0.7));
   }
 
   // Polar angle in 2D
@@ -403,7 +413,7 @@ void stellar_wind::set_wind_cell_reference_state(
     // rho = Mdot/(4.pi.R^2.v_inf)
     //
     if (set_rho) {
-      wc->p[RO] = 1.0 / (wc->dist);
+      wc->p[RO] = 1.0 / (wc->dist * wc->cfac);
       wc->p[RO] *= wc->p[RO];
       wc->p[RO] *= WP->Mdot / (WP->Vinf * 4.0 * M_PI);
       //
