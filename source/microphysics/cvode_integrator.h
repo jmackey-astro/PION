@@ -185,7 +185,8 @@ private:
 
 protected:
 #if defined(CVODE6)
-  SUNContext sunctx;
+  // SUNContext sunctx;
+  sundials::Context sunctx;
 #endif
 
   //---------------------------------------------------------------------------

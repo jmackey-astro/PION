@@ -44,6 +44,8 @@ EP_Max_Temperature 1.0e9
 EP_Hydrogen_MassFrac 0.715
 EP_Helium_MassFrac 0.285
 EP_Metal_MassFrac  0.0142
+EP_sat_thermal_cond 0
+EP_tc_strength 0.0
 
 
 # Smooth Data by n cells? (n<=0 means no).
@@ -174,6 +176,7 @@ WIND_0_velocity1    0.0
 WIND_0_velocity2    0.0
 WIND_0_radius       1.2055e17
 WIND_0_type         0
+WIND_0_mass         20.0
 WIND_0_mdot         1.55e-7
 WIND_0_vinf         2000.0
 WIND_0_vrot         100.0
@@ -191,6 +194,11 @@ WIND_0_updatefreq   0.0
 WIND_0_t_scalefac   1.0
 WIND_0_enhance_mdot 0
 WIND_0_xi           0
+WIND_0_eccentricity      0.0
+WIND_0_orbital_period    0.0
+WIND_0_periastron_vec_x  0.0
+WIND_0_periastron_vec_y  0.0
+WIND_0_moving_star       0
 
 
 N_JET 0

@@ -82,13 +82,9 @@ int cvode_solver::setup_cvode_solver()
     }
   }
 
-#if defined(CVODE6)
+  int err = 0;
 
-  SUNContext_Create(NULL, &sunctx);
-
-#endif
-
-  int err = setup_cvode_solver_without_Jacobian();
+  err = setup_cvode_solver_without_Jacobian();
   if (err) {
     spdlog::debug("Failed to setup solver without jacobian. err={}", err);
     return err;
@@ -126,8 +122,7 @@ int cvode_solver::setup_cvode_solver()
 int cvode_solver::setup_cvode_solver_without_Jacobian()
 {
   if (have_setup_cvodes) {
-    spdlog::debug(
-        ">>>---- Warning! Setting up CVODES solver twice! will delete and re-init. ----<<<\n");
+    spdlog::debug("Setting up CVODES solver twice! will delete and re-init.");
     if (abstol) {
       N_VDestroy_Serial(abstol);
       abstol = 0;
@@ -263,8 +258,12 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int cvode_solver::integrate_cvode_step(
     N_Vector Y_Input,

@@ -229,8 +229,13 @@ int stellar_wind::add_cell(
     wpos[v] = WP->dpos[v];
   struct wind_cell *wc = 0;
   wc                   = mem.myalloc(wc, 1);
-  // wc->dist             = grid->distance(wpos, cpos);
-  wc->dist = grid->distance_vertex2cell(wpos, c);
+
+  // in 1D we try to account for geometry in setting density
+  if (ndim == 1)
+    wc->dist = grid->distance_vertex2cell(wpos, c);
+  else
+    wc->dist = grid->distance(wpos, cpos);
+
   if (wc->dist > WP->radius) {
     spdlog::warn(
         "{}: Expected {} but got {}",

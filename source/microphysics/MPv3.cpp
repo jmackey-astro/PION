@@ -439,7 +439,11 @@ MPv3::MPv3(
   // --------------------------- CVODES ----------------------------
   // Initialise the CVODES solver memory etc.
   // ----------------------------------------------------------------
-  setup_cvode_solver_without_Jacobian();
+  int err = setup_cvode_solver();
+  if (err) {
+    spdlog::debug("Failed to setup cvode solve: {}", err);
+    exit(1);
+  }
   // ================================================================
   // ================================================================
 
