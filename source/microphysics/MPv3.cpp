@@ -1056,6 +1056,7 @@ void MPv3::get_dtau(
       spdlog::debug("id={}, effect={}", s->s->id, s->s->effect);
       spdlog::error(
           "{}: {}", "Bad source effect in MPv3::get_dtau()", s->s->effect);
+      exit(1);
       break;
   }
   return;
@@ -1535,9 +1536,9 @@ void MPv3::setup_radiation_source_parameters(
   }
   //-------------------- mpv_G0_UV and mpv_G0_IR -----------------------
 
-  spdlog::debug(
-      "MPv3: ionising: ds={}, mpv_Vshell={}: mpv_Tau0={}, mpv_dTau0={}, nH={}",
-      mpv_delta_S, mpv_Vshell, mpv_Tau0, mpv_dTau0, mpv_nH);
+  // spdlog::debug(
+  //    "MPv3: ionising: ds={}, mpv_Vshell={}: mpv_Tau0={}, mpv_dTau0={},
+  //    nH={}", mpv_delta_S, mpv_Vshell, mpv_Tau0, mpv_dTau0, mpv_nH);
   //}
 }
 

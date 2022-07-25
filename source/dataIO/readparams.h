@@ -63,10 +63,6 @@ public:
 
 private:
   std::vector<struct parameter> params;  ///< List of Parameters;
-  /** \todo Make this a vector of strings! */
-  // static const int arraylength=150;   /**< \brief size of array for
-  // parameters (modify if needed).*/ std::string params[arraylength][2]; /**<
-  // \brief array to store parameters in.*/
 };
 
 #endif

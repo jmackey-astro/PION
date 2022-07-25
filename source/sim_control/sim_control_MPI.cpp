@@ -561,8 +561,8 @@ int sim_control_pllel::calculate_timestep(
   t_cond = SimPM.levels[0].sub_domain.global_operation_double(MIN, t_cond);
 #ifndef NDEBUG
   if (t_cond < par.dt) {
-    spdlog::debug(
-        "PARALLEL CONDUCTION IS LIMITING TIMESTEP: t_c={}, t_m={}, t_dyn={}",
+    spdlog::info(
+        "PARALLEL CONDUCTION IS LIMITING TIMESTEP: t_c={12.6e}, t_m={12.6e}, t_dyn={12.6e}",
         t_cond, t_mp, t_dyn);
   }
 #endif

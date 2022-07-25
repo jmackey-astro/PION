@@ -882,6 +882,19 @@ int setup_fixed_grid::update_evolving_RT_sources(
       }
 
       RT->update_RT_source_properties(rs);
+      int err = 0;
+#ifdef PION_OMP
+      #pragma omp parallel private(err)
+      {
+#endif
+        if (rs->effect == RT_EFFECT_MFION) {
+          err = MP->set_multifreq_source_properties(rs, &(rs->strength));
+          if (err)
+            spdlog::error("{}: {}", "update_evolving_RT_sources()", rs->id);
+        }
+#ifdef PION_OMP
+      }
+#endif
       updated = true;
     }
   }

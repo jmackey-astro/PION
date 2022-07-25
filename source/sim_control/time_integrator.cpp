@@ -413,9 +413,9 @@ int time_integrator::calc_RT_microphysics_dU(
           //
           if (!c->isdomain) {
 #ifndef NDEBUG
-            spdlog::debug(
-                "skipping cell {} in calc_RT_microphysics_dU() c->isdomain.\n",
-                c->id);
+            // spdlog::debug(
+            //    "skipping cell {} in calc_RT_microphysics_dU()
+            //    c->isdomain.\n", c->id);
 #endif
           }
           else {
@@ -524,9 +524,9 @@ int time_integrator::calc_noRT_microphysics_dU(
           // boundary data, then we don't want to update anything, so we skip it
           if (!c->isdomain) {
 #ifndef NDEBUG
-            spdlog::debug(
-                "skipping cell {} in calc_noRT_microphysics_dU() c->isdomain.",
-                c->id);
+            // spdlog::debug(
+            //    "skipping cell {} in calc_noRT_microphysics_dU()
+            //    c->isdomain.", c->id);
 #endif
           }
           else {

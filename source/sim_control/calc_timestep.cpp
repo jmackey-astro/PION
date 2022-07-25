@@ -112,7 +112,7 @@ int calc_timestep::calculate_timestep(
   double t_cond = set_conduction_dt_and_Edot(par, grid);
 #ifndef NDEBUG
   if (t_cond < t_dyn && t_cond < t_mp) {
-    spdlog::debug(
+    spdlog::info(
         "CONDUCTION IS LIMITING TIMESTEP: t_c={}, t_m={}, t_dyn={}", t_cond,
         t_mp, t_dyn);
   }
@@ -229,7 +229,7 @@ double calc_timestep::set_conduction_dt_and_Edot(
         do {
           // This is appropriate for saturated TC, where dU[VX] is set to
           // the max speed temporarily in set_thermal_conduction_Edot().
-          tempdt    = min(tempdt, par.CFL * par.dx / c->dU[VX]);
+          tempdt    = min(tempdt, par.CFL * grid->DX() / c->dU[VX]);
           c->dU[VX] = 0.0;
         } while ((c = grid->NextPt(*c, XP)) != 0);
         dt = min(dt, tempdt);
@@ -262,8 +262,10 @@ int calc_timestep::set_thermal_conduction_Edot(
   // First we need to calculate the temperature in every cell.  This
   // is stored in dU[RHO] -- reset to zero at the end of function.
   //
-  if (!MP)
+  if (!MP) {
     spdlog::error("{}: {}", "No Microphysics == No Conduction", fmt::ptr(MP));
+    exit(1);
+  }
   enum axes x1 = XX;
   enum axes x2 = YY;
   enum axes x3 = ZZ;
@@ -343,6 +345,7 @@ int calc_timestep::set_thermal_conduction_Edot(
           double q_neg = 0.0, q_pos = 0.0, gradT = 0.0, qsat = 0.0, qcls = 0.0;
           double dx = grid->DX();
           int sgn   = 0;
+          bool sat  = false;
           if (npt == 0)
             spdlog::error("{}: {}", "Couldn't find two cells in column", 0);
           q_neg = 0.0;  // no flux coming in from non-existent boundary data.
@@ -365,8 +368,9 @@ int calc_timestep::set_thermal_conduction_Edot(
               sgn = -1;
             }
             // For saturated Q we follow S&C(1992) and use phi_s=0.3
-            qsat  = -sgn * 1.5 * c2->Ph[RO] * pow(c2->Ph[PG] / c2->Ph[RO], 1.5);
-            qcls  = -6.0e-7 * exp(2.5 * log(c2->dU[RHO])) * gradT;
+            qsat = -sgn * 1.5 * c2->Ph[RO] * pow(c2->Ph[PG] / c2->Ph[RO], 1.5);
+            qcls = -6.0e-7 * exp(2.5 * log(c2->dU[RHO])) * gradT;
+            if (fabs(qsat / qcls) > 1.0) sat = true;
             q_pos = qsat * (1.0 - exp(-qcls / qsat));
             // if (gradT > 0.0) q_pos *= -1.0;
             q_pos *= par.EP.tc_strength;
@@ -394,10 +398,17 @@ int calc_timestep::set_thermal_conduction_Edot(
             // if we are on the half-step update.
             if (oa == OA1) {
               // saturated flux is hyperbolic
-              // cpt->dU[VX] =
-              //    max(cpt->dU[VX],
-              //        4.0 * spatial_solver->maxspeed(c2->Ph, par.gamma));
-              cpt->dU[VX] = 2.0 * fabs(q_pos);
+              if (sat) {
+                cpt->dU[VX] =
+                    max(cpt->dU[VX],
+                        4.0 * spatial_solver->maxspeed(c2->Ph, par.gamma));
+              }
+              else {
+                // unsaturated fluxes: return 2*D/dx
+                cpt->dU[VX] = fabs(
+                    4.0 * q_pos * 1.0e-24
+                    / (3.0 * pconst.kB() * c2->Ph[RO] * dx * gradT));
+              }
             }
             // Set npt to cpt, set current q_pos to q_neg for next cell.
             // Move to next cell.
@@ -708,9 +719,9 @@ double calc_timestep::get_mp_timescales_no_radiation(
           // If cell is boundary data then we skip it.
           if (c->isbd || !c->isleaf || !c->isdomain) {
 #ifndef NDEBUG
-            spdlog::debug(
-                "skipping cell {} in get_mp_timescales_no_radiation() c->isbd",
-                c->id);
+            // spdlog::debug(
+            //    "skipping cell {} in get_mp_timescales_no_radiation()
+            //    c->isbd", c->id);
 #endif
           }
           else {
@@ -776,11 +787,11 @@ double calc_timestep::get_mp_timescales_no_radiation(
   if ((par.timestep == 0) && (par.RS.Nsources > 0)) {
     c = grid->FirstPt();
 #ifdef DEBUG_MP
-    spdlog::debug("rho={}, old dt={}", c->Ph[RO], dt);
+    // spdlog::debug("rho={}, old dt={}", c->Ph[RO], dt);
 #endif
     dt = min(dt, 3.009e-12 / c->Ph[RO]);
 #ifdef DEBUG_MP
-    spdlog::debug(", updated dt={}", dt);
+    // spdlog::debug(", updated dt={}", dt);
 #endif
   }
 #endif  // RT_TEST_PROBS
@@ -820,30 +831,30 @@ double calc_timestep::get_mp_timescales_with_radiation(
   // RT source properties are already in structs for the microphysics calls.
   // So now we need to go through every cell and see what the limit is.
   //
-  double tempdt = 0.0, dt = 1.0e99, t = 0.0;
-  class cell *c = grid->FirstPt_All();
-  int index[3];
+  double dt = 1.0e99, t = 0.0;
+  // class cell *c = grid->FirstPt_All();
   // copies of the source data (one copy for each thread)
   // seems to be memory issues when using class member data.
-  vector<struct rt_source_data> heating;
-  vector<struct rt_source_data> ionize;
   int nx2 = grid->NG_All(YY);
   int nx3 = grid->NG_All(ZZ);
 
 #ifdef PION_OMP
   #pragma omp parallel
   {
-    #pragma omp for collapse(2) private(c,tempdt,index,t,heating,ionize) reduction(min:dt)
+    #pragma omp for collapse(2) private(t) reduction(min:dt)
 #endif
     for (int ax3 = 0; ax3 < nx3; ax3++) {
       for (int ax2 = 0; ax2 < nx2; ax2++) {
+        int index[3];
         index[0] = 0;
         index[1] = ax2;
         index[2] = ax3;
-        c        = grid->get_cell_all(index[0], index[1], index[2]);
-        heating  = FVI_heating_srcs;
-        ionize   = FVI_ionising_srcs;
-        tempdt   = 1.0e100;
+        cell *c  = grid->get_cell_all(index[0], index[1], index[2]);
+        vector<struct rt_source_data> heating = FVI_heating_srcs;
+        vector<struct rt_source_data> ionize  = FVI_ionising_srcs;
+        // heating  = FVI_heating_srcs;
+        // ionize   = FVI_ionising_srcs;
+        double tempdt = 1.0e100;
         // get to first non-boundary cell:
         while (c && !c->isgd)
           c = grid->NextPt(*c, XP);
@@ -857,9 +868,9 @@ double calc_timestep::get_mp_timescales_with_radiation(
           // skip it.
           if (c->isbd || !c->isleaf || !c->isdomain) {
 #ifndef NDEBUG
-            spdlog::debug(
-                "skipping cell {} in get_mp_timescales_with_radiation() c->isbd.\n",
-                c->id);
+            // spdlog::debug(
+            //    "skipping cell {} in get_mp_timescales_with_radiation()
+            //    c->isbd.\n", c->id);
 #endif
           }
           else {
@@ -897,11 +908,11 @@ double calc_timestep::get_mp_timescales_with_radiation(
             t = MP->timescales_RT(
                 c->Ph, FVI_nheat, heating, FVI_nion, ionize, par.gamma);
 #ifndef NDEBUG
-            if (t < dt) {
-              spdlog::debug(
-                  "(get_min_timestep) id={}:  dt={}, min-dt={}.\t 1-x={}, pg={}",
-                  c->id, tempdt, dt, 1.0 - c->Ph[par.ftr], c->Ph[PG]);
-            }
+            // if (t < tempdt) {
+            //  spdlog::debug(
+            //      "(get_min_timestep) id={}:  dt={}, min-dt={}.\t 1-x={},
+            //      pg={}", c->id, tempdt, dt, 1.0 - c->Ph[par.ftr], c->Ph[PG]);
+            //}
 #endif
             if (t <= 0.0) {
               spdlog::error(

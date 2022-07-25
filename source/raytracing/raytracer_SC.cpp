@@ -482,11 +482,13 @@ void raytracer_USC_infinity::update_RT_source_properties(
   // src->s->opacity_var = rs->opacity_var;
   // src->s->EvoFile = rs->EvoFile;
 
-  int err = 0;
-  if (src->s->effect == RT_EFFECT_MFION) {
-    err += mpptr->set_multifreq_source_properties(src->s, src->data.strength);
-    if (err) spdlog::error("{}: {}", "update_evolving_RT_sources()", rs->id);
-  }
+  // the following lines moved to setup_fixed_grid.cpp function because
+  // the mpptr is not multithreaded/threadprivate.
+  // int err = 0;
+  // if (src->s->effect == RT_EFFECT_MFION) {
+  //  err += mpptr->set_multifreq_source_properties(src->s, src->data.strength);
+  //  if (err) spdlog::error("{}: {}", "update_evolving_RT_sources()", rs->id);
+  //}
 
   return;
 }

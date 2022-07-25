@@ -110,6 +110,7 @@ double hydrogen_photoion::Hi_discrete_multifreq_photoion_rate(
   //
   // else use normal discretised integration.
   //
+  // spdlog::info("tau {}, dtau {}, mintau {}",Tau0,dTau0,MinTau);
   double dtau = dTau0;
   double ans = 0.0, ans2 = 0.0;
 

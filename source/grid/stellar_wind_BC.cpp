@@ -958,9 +958,9 @@ int stellar_wind_evolution::read_evolution_file(
         &time, &mass, &lumi, &teff, &mdot, &vrot, &vcrt, &vinf, &xh, &xhe, &xc,
         &xn, &xo, &xz, &xd);
 
-    spdlog::debug(
-        "{} {} {} {} {} {} {} {}", time, mass, lumi, teff, mdot, vrot, vcrt,
-        vinf);
+    // spdlog::debug(
+    //    "{} {} {} {} {} {} {} {}", time, mass, lumi, teff, mdot, vrot, vcrt,
+    //    vinf);
 
     // Set vector value
     data->time_evo.push_back(time);

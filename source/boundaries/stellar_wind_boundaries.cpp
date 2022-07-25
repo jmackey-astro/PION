@@ -271,7 +271,7 @@ int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
   do {
     CI.get_dpos(*c, cpos);
 #ifndef NDEBUG
-    spdlog::debug("cell: {}", grid->distance_vertex2cell(srcpos, *c));
+    // spdlog::debug("cell: {}", grid->distance_vertex2cell(srcpos, *c));
 #endif
     if (grid->distance(srcpos, cpos) <= srcrad) {
       ncell++;
