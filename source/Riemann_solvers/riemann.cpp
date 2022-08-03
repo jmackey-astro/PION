@@ -908,8 +908,9 @@ int riemann_Euler::solve_rarerare()
   rs_pstar[eqVX] = rs_left[eqVX]
                    + 2. * cl / (eq_gamma - 1.)
                          * (1.
-                            - exp((eq_gamma - 1.) / 2. / eq_gamma
-                                  * log(rs_pstar[eqPG] / rs_left[eqPG])));
+                            - exp(
+                                (eq_gamma - 1.) / 2. / eq_gamma
+                                * log(rs_pstar[eqPG] / rs_left[eqPG])));
   //
   // Density equation: use rho*L/R depending on sign of v*
   // Solve by assuming adiabatic gas, and get answer from p*,rho_0,p_0

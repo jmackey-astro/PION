@@ -245,8 +245,8 @@ int eqns_Euler::HydroWave(
     // it is a left of right wave
     *u = c0 * (pratio - 1.)
          / sqrt(
-               gamma * (gamma - 1.) / 2.
-               * (1. + pratio * (gamma + 1.) / (gamma - 1.)));
+             gamma * (gamma - 1.) / 2.
+             * (1. + pratio * (gamma + 1.) / (gamma - 1.)));
     if (lr == XN)  // Left moving shock has u*-u0 <0
       *u = prewave[eqVX] - (*u);
     else  // Right moving has u*-u0 >0

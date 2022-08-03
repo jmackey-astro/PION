@@ -261,7 +261,7 @@ public:
   virtual double DX(
       const cell &,    ///< cell to get dx for
       const enum axes  ///< axis along which to get dx.
-      ) const
+  ) const
   {
     return G_dx;
   }
@@ -275,7 +275,7 @@ public:
   /// Returns number of grid cells along given axis, excluding
   /// boundary cells.
   virtual int NG(const enum axes ax  ///< axis of grid.
-                 ) const
+  ) const
   {
     return G_ng[ax];
   }
@@ -283,7 +283,7 @@ public:
   /// Returns number of grid cells along given axis, including
   /// boundary cells.
   virtual int NG_All(const enum axes ax  ///< axis of grid.
-                     ) const
+  ) const
   {
     return G_ng_all[ax];
   }

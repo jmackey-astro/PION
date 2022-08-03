@@ -238,7 +238,7 @@ double stellar_wind_latdep::interp_v_inf(
   input[1] = Omega;
   return v_inf
          * interpolate.root_find_bilinear_vec(
-               theta_vec, Omega_vec, vinf_vec, vinf_vsize, input);
+             theta_vec, Omega_vec, vinf_vec, vinf_vsize, input);
   ;
 }
 

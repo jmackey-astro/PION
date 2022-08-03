@@ -1558,8 +1558,9 @@ int dataio_text::add_noise2data(
             && cpt->P[PG] < avg) {  // Don't want to alter any edge cells.
           // cout <<"PG before : "<<cpt->P[PG];
           temp = frac
-                 * sin(2. * M_PI * (CI.get_dpos(*cpt, YY) / SimPM.Range[YY])
-                       * (SimPM.NG[YY] / 50));
+                 * sin(
+                     2. * M_PI * (CI.get_dpos(*cpt, YY) / SimPM.Range[YY])
+                     * (SimPM.NG[YY] / 50));
           cpt->P[PG] *= 1 + temp;
           cpt->P[RO] *= exp(log(1 + temp) / SimPM.gamma);
           // cout <<"\tPG after : "<<cpt->P[PG]<<"\n";

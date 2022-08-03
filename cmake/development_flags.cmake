@@ -1,6 +1,6 @@
 add_library(development_flags INTERFACE)
 
-option(PION_ENABLE_SANITIZERS "Enable address and undefined behavior sanitizers." ON)
+option(PION_ENABLE_SANITIZERS "Enable address and undefined behavior sanitizers." OFF)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(

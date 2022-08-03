@@ -33,7 +33,7 @@ int Sub_domain::get_rank_from_grid_location(
     const class SimParams &par,  ///< simulation parameters
     const vector<double> &loc,   ///< location sought
     const int l                  ///< grid level
-    ) const
+) const
 {
   int grid_coordinates[par.ndim];
   for (int i = 0; i < par.ndim; i++) {

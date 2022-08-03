@@ -847,8 +847,8 @@ void image::find_surrounding_cells(
     int pos[4][2] = {{0, 0}, {sim_dxI, 0}, {0, sim_dxI}, {sim_dxI, sim_dxI}};
     // for (int i=0;i<2;i++)
     //  cout <<"i="<<i<<" and pos[i] = ["<<pos[i][0]<<","<<pos[i][1]<<"]\n";
-    int offset[2] = {seek->pos[sa[XX]] - pos[ct][0],
-                     seek->pos[sa[ZZ]] - pos[ct][1]};
+    int offset[2] = {
+        seek->pos[sa[XX]] - pos[ct][0], seek->pos[sa[ZZ]] - pos[ct][1]};
     for (int v = 0; v < 4; v++) {
       pos[v][0] += offset[0];
       pos[v][1] += offset[1];
@@ -1299,8 +1299,8 @@ void image::calculate_pixel(
         wt = 6 - wt;
         ans += wt
                * get_point_StokesQ(
-                     &(px->int_pts.p[v]), SimPM.ftr, bx, by, bz, signx, signy,
-                     signz, st, ct);
+                   &(px->int_pts.p[v]), SimPM.ftr, bx, by, bz, signx, signy,
+                   signz, st, ct);
       }
       ans += get_point_StokesQ(
           &(px->int_pts.p[npt - 1]), SimPM.ftr, bx, by, bz, signx, signy, signz,
@@ -1317,8 +1317,8 @@ void image::calculate_pixel(
         wt = 6 - wt;
         ans += wt
                * get_point_StokesU(
-                     &(px->int_pts.p[v]), SimPM.ftr, bx, by, bz, signx, signy,
-                     signz, st, ct);
+                   &(px->int_pts.p[v]), SimPM.ftr, bx, by, bz, signx, signy,
+                   signz, st, ct);
       }
       ans += get_point_StokesU(
           &(px->int_pts.p[npt - 1]), SimPM.ftr, bx, by, bz, signx, signy, signz,
@@ -1335,8 +1335,8 @@ void image::calculate_pixel(
         wt = 6 - wt;
         ans += wt
                * get_point_BXabs(
-                     &(px->int_pts.p[v]), SimPM.ftr, bx, by, bz, signx, signy,
-                     signz, st, ct);
+                   &(px->int_pts.p[v]), SimPM.ftr, bx, by, bz, signx, signy,
+                   signz, st, ct);
       }
       ans += get_point_BXabs(
           &(px->int_pts.p[npt - 1]), SimPM.ftr, bx, by, bz, signx, signy, signz,
@@ -1353,8 +1353,8 @@ void image::calculate_pixel(
         wt = 6 - wt;
         ans += wt
                * get_point_BYabs(
-                     &(px->int_pts.p[v]), SimPM.ftr, bx, by, bz, signx, signy,
-                     signz, st, ct);
+                   &(px->int_pts.p[v]), SimPM.ftr, bx, by, bz, signx, signy,
+                   signz, st, ct);
       }
       ans += get_point_BYabs(
           &(px->int_pts.p[npt - 1]), SimPM.ftr, bx, by, bz, signx, signy, signz,
@@ -1375,7 +1375,7 @@ void image::calculate_pixel(
         wt = 6 - wt;
         ans += wt
                * get_point_RotationMeasure(
-                     &(px->int_pts.p[v]), bx, bz, signx, signz, st, ct);
+                   &(px->int_pts.p[v]), bx, bz, signx, signz, st, ct);
       }
       ans += get_point_RotationMeasure(
           &(px->int_pts.p[npt - 1]), bx, bz, signx, signz, st, ct);

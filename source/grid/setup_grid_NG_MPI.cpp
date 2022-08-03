@@ -330,14 +330,14 @@ int setup_grid_NG_MPI::setup_boundary_structs(
       for (int i = 0; i < par.ndim; i++) {
         if (!pconst.equalD(par.levels[l - 1].Xmin[i], par.levels[l].Xmin[i])
             && pconst.equalD(
-                   par.levels[l].Xmin[i], grid->Xmin(static_cast<axes>(i)))) {
+                par.levels[l].Xmin[i], grid->Xmin(static_cast<axes>(i)))) {
           spdlog::debug("reassigning neg. bc for axis {} to COARSE_TO_FINE", i);
           grid->BC_bd[2 * i]->itype = COARSE_TO_FINE_RECV;
           grid->BC_bd[2 * i]->type  = "COARSE_TO_FINE_RECV";
         }
         if (!pconst.equalD(par.levels[l - 1].Xmax[i], par.levels[l].Xmax[i])
             && pconst.equalD(
-                   par.levels[l].Xmax[i], grid->Xmax(static_cast<axes>(i)))) {
+                par.levels[l].Xmax[i], grid->Xmax(static_cast<axes>(i)))) {
           spdlog::debug("reassigning pos. bc for axis {} to COARSE_TO_FINE", i);
           grid->BC_bd[2 * i + 1]->itype = COARSE_TO_FINE_RECV;
           grid->BC_bd[2 * i + 1]->type  = "COARSE_TO_FINE_RECV";

@@ -1015,6 +1015,10 @@ void dataio_silo_utility::get_quadmesh_integer_extents(
         mesh_xmax[v] *= (1.0 + buffer);
     }
   }
+  for (int v = 0; v < MAX_DIM; v++) {
+    iXmin[v] = 0;
+    iXmax[v] = 0;
+  }
   CI.get_ipos_vec(mesh_xmin, iXmin);
   CI.get_ipos_vec(mesh_xmax, iXmax);
 

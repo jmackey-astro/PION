@@ -65,7 +65,7 @@ stages:
 
 Format:
   <<: *default_job
-  image: debian:10.10-slim
+  image: debian:11-slim
   stage: static analysis
   variables:
     <<: *default_cmake_variables

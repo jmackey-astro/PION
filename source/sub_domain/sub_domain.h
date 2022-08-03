@@ -165,7 +165,7 @@ public:
       const int current_dimension,  ///< current dimension to traverse
       const int
           neighbour_dimension  ///< the dimension to search for neighbours in
-      ) const;
+  ) const;
 
   ///
   /// Determine the neighbours of this processes' children on level + 1
@@ -185,7 +185,7 @@ public:
           &children,                ///< resultant set of child process ranks
       std::vector<double> &cursor,  ///< cursor for exploring domain
       const int current_dimension   ///< current dimension to traverse
-      ) const;
+  ) const;
 
   ///
   /// Create a vector of child grids of this processes on level + 1
@@ -218,7 +218,7 @@ public:
   void get_domain_coordinates(
       const int,  ///< rank coordinates requested for.
       int *       ///< array to put coordinates into.
-      ) const;
+  ) const;
 
   ///
   /// Return rank of process that has grid that contains the
@@ -228,7 +228,7 @@ public:
       const class SimParams &,      ///< simulation parameters
       const std::vector<double> &,  ///< location sought
       const int                     ///< grid level
-      ) const;
+  ) const;
 
   /// get num_subdomains[] array of subdomains
   void get_num_subdomains(int *) const;
@@ -452,7 +452,7 @@ public:
   double global_operation_double(
       const mpi_op,  ///< MAX,MIN,SUM
       const double   ///< this process's local value.
-      ) const;
+  ) const;
 
   ///
   /// Do a global operation on local data, options are MAX,MIN,SUM.
@@ -465,7 +465,7 @@ public:
       const mpi_op,  ///< MAX,MIN,SUM
       const size_t,  ///< Number of elements in array.
       double *       ///< pointer to this process's data array.
-      ) const;
+  ) const;
 
   /// Broadcast data from one process to all others.
   int broadcast_data(
@@ -473,7 +473,7 @@ public:
       const mpi_type,  ///< Type of data INT,DOUBLE,etc.
       const int,       ///< number of elements
       void *           ///< pointer to data.
-      ) const;
+  ) const;
 
   /// Send cell data to another processor, return immediately, but
   /// keep a record of the send for later to know the send has been
@@ -577,7 +577,7 @@ public:
       const int,       ///< processor rank
       int *,           ///< rank of group processor is in.
       int *            ///< rank of processor within group.
-      ) const;
+  ) const;
 
 #endif
 

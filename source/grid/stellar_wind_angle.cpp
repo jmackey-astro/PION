@@ -312,8 +312,8 @@ double stellar_wind_angle::fn_delta(
 {
   return 2.0
          * pconst.pow_fast(
-               integrate_Simpson(0.001, pconst.pi() / 2.0, 230, omega, Teff),
-               -1.0);
+             integrate_Simpson(0.001, pconst.pi() / 2.0, 230, omega, Teff),
+             -1.0);
 }  // 230 points determined to give sufficient accuracy
 
 

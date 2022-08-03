@@ -964,14 +964,14 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
     enum direction negdir = static_cast<direction>(2 * i);
     if ((srcdir[i] == negdir)
         && (!pconst.equalD(
-               grid->Xmin(static_cast<axes>(i)),
-               grid->level_Xmin(static_cast<axes>(i)))))
+            grid->Xmin(static_cast<axes>(i)),
+            grid->level_Xmin(static_cast<axes>(i)))))
       recv_proc_exists[i] = true;
     else if (
         (srcdir[i] == posdir)
         && (!pconst.equalD(
-               grid->Xmax(static_cast<axes>(i)),
-               grid->level_Xmax(static_cast<axes>(i)))))
+            grid->Xmax(static_cast<axes>(i)),
+            grid->level_Xmax(static_cast<axes>(i)))))
       recv_proc_exists[i] = true;
     else
       recv_proc_exists[i] = false;
@@ -998,8 +998,8 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
     enum direction negdir = static_cast<direction>(2 * i);
     if ((i_srcpos[i] > grid->iXmin(static_cast<axes>(i)))
         && (!pconst.equalD(
-               grid->Xmin(static_cast<axes>(i)),
-               grid->level_Xmin(static_cast<axes>(i)))))
+            grid->Xmin(static_cast<axes>(i)),
+            grid->level_Xmin(static_cast<axes>(i)))))
       send_proc_exists[negdir] = true;
     else
       send_proc_exists[negdir] = false;
@@ -1007,8 +1007,8 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
 
     if ((i_srcpos[i] < grid->iXmax(static_cast<axes>(i)))
         && (!pconst.equalD(
-               grid->Xmax(static_cast<axes>(i)),
-               grid->level_Xmax(static_cast<axes>(i)))))
+            grid->Xmax(static_cast<axes>(i)),
+            grid->level_Xmax(static_cast<axes>(i)))))
       send_proc_exists[posdir] = true;
     else
       send_proc_exists[posdir] = false;

@@ -127,7 +127,7 @@ public:
   virtual double DX(
       const cell &,    ///< cell to get dx for
       const enum axes  ///< axis along which to get dx.
-      ) const = 0;
+  ) const = 0;
 
   virtual int Ndim() const = 0;  ///< Returns dimensionality of grid.
   virtual int Nvar() const = 0;  ///< Returns length of state vectors.
@@ -135,12 +135,12 @@ public:
   /// Returns number of grid cells along given axis, excluding
   /// boundary cells.
   virtual int NG(const enum axes  ///< axis of grid.
-                 ) const = 0;
+  ) const = 0;
 
   /// Returns number of grid cells along given axis, including
   /// boundary cells.
   virtual int NG_All(const enum axes  ///< axis of grid.
-                     ) const = 0;
+  ) const = 0;
 
   /// Returns x/y/z lower boundary of grid in code units.
   virtual double Xmin(enum axes) const = 0;

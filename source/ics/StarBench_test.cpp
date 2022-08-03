@@ -641,29 +641,34 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
           if (ptype == 2) {
             deflection =
                 A
-                * sin(2.0 * M_PI
-                      * (13.0
-                         * ((psub[YY] - phs * dxo2) / SimPM->Range[YY] + 0.5)));
+                * sin(
+                    2.0 * M_PI
+                    * (13.0
+                       * ((psub[YY] - phs * dxo2) / SimPM->Range[YY] + 0.5)));
             deflection +=
                 A
-                * sin(2.0 * M_PI
-                      * (59.0
-                         * ((psub[YY] - phs * dxo2) / SimPM->Range[YY] + 0.5)));
+                * sin(
+                    2.0 * M_PI
+                    * (59.0
+                       * ((psub[YY] - phs * dxo2) / SimPM->Range[YY] + 0.5)));
             deflection +=
                 A
-                * sin(2.0 * M_PI
-                      * (131.0
-                         * ((psub[YY] - phs * dxo2) / SimPM->Range[YY] + 0.5)));
+                * sin(
+                    2.0 * M_PI
+                    * (131.0
+                       * ((psub[YY] - phs * dxo2) / SimPM->Range[YY] + 0.5)));
             deflection +=
                 A
-                * sin(2.0 * M_PI
-                      * (199.0
-                         * ((psub[YY] - phs * dxo2) / SimPM->Range[YY] + 0.5)));
+                * sin(
+                    2.0 * M_PI
+                    * (199.0
+                       * ((psub[YY] - phs * dxo2) / SimPM->Range[YY] + 0.5)));
           }
           else {
-            deflection = A
-                         * sin(2.0 * M_PI * (psub[YY] + 0.5 * SimPM->Range[YY])
-                               / lambda);
+            deflection =
+                A
+                * sin(
+                    2.0 * M_PI * (psub[YY] + 0.5 * SimPM->Range[YY]) / lambda);
           }
 
           if (psub[XX] <= IF_pos + deflection)

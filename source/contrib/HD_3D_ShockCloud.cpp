@@ -313,8 +313,8 @@ void IC_HD_3D_ShockCloud::get_data_vals(
     out[VX] = bulk_V
               - (out[VX] - bulk_V) * dpos[XX]
                     / sqrt(
-                          dpos[ZZ] * dpos[ZZ] + dpos[YY] * dpos[YY]
-                          + dpos[XX] * dpos[XX]);
+                        dpos[ZZ] * dpos[ZZ] + dpos[YY] * dpos[YY]
+                        + dpos[XX] * dpos[XX]);
   }
 
   return;

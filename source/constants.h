@@ -223,14 +223,20 @@ extern class constants pconst;
 ///
 //--------------------------------------------------------
 #define FLUX_LF 0
-#define FLUX_RSlinear 1
-#define FLUX_RSexact 2
-#define FLUX_RShybrid 3
-#define FLUX_RSroe 4
-#define FLUX_RSroe_pv 5
-#define FLUX_FVS 6
-#define FLUX_RS_HLLD 7
+#define FLUX_RSlinear 1  ///< Hydro/MHD: not very robust, not recommended
+#define FLUX_RSexact                                                           \
+  2  ///< Hydro only: exact solver. very slow, not recommended
+#define FLUX_RShybrid 3  ///< Hydro combination of linear/exact solver. good.
+#define FLUX_RSroe 4     ///< Hydro/MHD: Roe conserved vars solver
+#define FLUX_RSroe_pv                                                          \
+  5                 ///< Hydro: Roe solver in primitive vars (not recommended)
+#define FLUX_FVS 6  ///< Hydro: flux vector splitting solver
+#define FLUX_RS_HLLD                                                           \
+  7  ///< MHD: The HLLD solver with switches to HLL for stability
 #define FLUX_RS_HLL 8
+///< Hydro/MHD the diffusive but robust HLL solver
+#define FLUX_RCV_HLL 9
+///< Hydro Roe-CV solver + HLL for large density contrast
 
 //--------------------------------------------------------
 /// \brief Primitive Variables Enum

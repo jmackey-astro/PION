@@ -139,10 +139,8 @@ UniformGrid::UniformGrid(
     std::array<double, MAX_DIM> &sim_xp   // sim xmax
     ) :
     VectorOps_Cart(nd),
-    G_ndim(nd), G_nvar(nv), G_eqntype(eqt)  //,
-// BC_nbc(Nbc)
+    G_ndim(nd), G_nvar(nv), G_eqntype(eqt)
 {
-
   spdlog::debug(
       "Setting up UniformGrid with G_ndim={} and G_nvar={}", G_ndim, G_nvar);
 
@@ -205,6 +203,30 @@ UniformGrid::UniformGrid(
   for (int i = G_ndim; i < MAX_DIM; i++) {
     G_nbc[2 * i]     = 0;
     G_nbc[2 * i + 1] = 0;
+
+    G_ng[i]      = 1;
+    G_ng_all[i]  = 1;
+    G_xmin[i]    = 0.0;
+    G_xmax[i]    = 0.0;
+    G_range[i]   = 0.0;
+    Sim_xmin[i]  = 0.0;
+    Sim_xmax[i]  = 0.0;
+    Sim_range[i] = 0.0;
+    L_xmin[i]    = 0.0;
+    L_xmax[i]    = 0.0;
+    L_range[i]   = 0.0;
+  }
+
+  for (int v = 0; v < MAX_DIM; v++) {
+    G_ixmin[v]      = 0;
+    G_ixmax[v]      = 0;
+    G_irange[v]     = 0;
+    G_ixmin_all[v]  = 0;
+    G_ixmax_all[v]  = 0;
+    G_irange_all[v] = 0;
+    Sim_ixmin[v]    = 0;
+    Sim_ixmax[v]    = 0;
+    Sim_irange[v]   = 0;
   }
 
   spdlog::debug("MIN.MAX for x = {}\t{}", G_xmin[XX], G_xmax[XX]);
@@ -225,6 +247,11 @@ UniformGrid::UniformGrid(
   }
   for (int v = 0; v < G_ndim; v++) {
     G_range_all[v] = G_xmax_all[v] - G_xmin_all[v];
+  }
+  for (int i = G_ndim; i < MAX_DIM; i++) {
+    G_xmin_all[i]  = 0.0;
+    G_xmax_all[i]  = 0.0;
+    G_range_all[i] = 0.0;
   }
 
   // allocate memory for all cells, including boundary cells.
@@ -316,9 +343,9 @@ UniformGrid::UniformGrid(
   spdlog::debug("Sim xmax  : {}", Sim_xmax);
   spdlog::debug("Sim range : {}", Sim_range);
   spdlog::debug("boundary depth : {}", G_nbc);
+  spdlog::debug("Cartesian grid: dr={}", G_dx);
 #endif
 
-  spdlog::debug("Cartesian grid: dr={}", G_dx);
   RT = 0;
 
   spdlog::debug("UniformGrid Constructor done");

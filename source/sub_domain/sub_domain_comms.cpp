@@ -69,7 +69,7 @@ int Sub_domain::barrier() const
 double Sub_domain::global_operation_double(
     const mpi_op op,  ///< Either Max, Min, or Sum
     const double d    ///< this process's max/min value.
-    ) const
+) const
 {
   double global;
   int err = 0;
@@ -110,7 +110,7 @@ void Sub_domain::global_op_double_array(
     const mpi_op op,            ///< MAX,MIN,SUM
     const size_t num_elements,  ///< Number of elements in array.
     double *data                ///< pointer to this process's data array.
-    ) const
+) const
 {
   int err = 0;
   double op_data[num_elements];
@@ -157,7 +157,7 @@ int Sub_domain::broadcast_data(
     const mpi_type type,     ///< Type of data INT,DOUBLE,etc.
     const int num_elements,  ///< number of elements
     void *data               ///< pointer to data.
-    ) const
+) const
 {
   int err = 0;
   switch (type) {
@@ -855,7 +855,7 @@ void Sub_domain::silo_pllel_get_ranks(
     const int proc,        ///< processor rank
     int *group,            ///< rank of group processor is in.
     int *rank              ///< rank of processor within group.
-    ) const
+) const
 {
   if (id != m_silo_id) {
     spdlog::error("{}: {}", id, m_silo_id);

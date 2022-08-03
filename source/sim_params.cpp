@@ -243,8 +243,12 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
     solverType = 7;
   else if (str == "HLL" || str == "hll" || str == "8")
     solverType = 8;
-  else
+  else if (str == "RCV-HLL" || str == "rcv-hll" || str == "9")
+    solverType = 9;
+  else {
     spdlog::error("{}: {}", "what kind of solver is this???", str);
+    exit(1);
+  }
 
   // dimensionality of grid.
   str = rp.find_parameter("ndim");

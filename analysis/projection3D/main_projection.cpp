@@ -927,18 +927,18 @@ int main(int argc, char **argv)
           norm = sqrt(
               img_array[PROJ_B_STOKESQ][ix] * img_array[PROJ_B_STOKESQ][ix]
               + img_array[PROJ_B_STOKESU][ix] * img_array[PROJ_B_STOKESU][ix]);
-          img_array[PROJ_BXabs][ix] =
-              norm
-              * cos(0.5
-                    * atan2(
-                          img_array[PROJ_B_STOKESU][ix],
-                          img_array[PROJ_B_STOKESQ][ix]));
-          img_array[PROJ_BYabs][ix] =
-              norm
-              * sin(0.5
-                    * atan2(
-                          img_array[PROJ_B_STOKESU][ix],
-                          img_array[PROJ_B_STOKESQ][ix]));
+          img_array[PROJ_BXabs][ix] = norm
+                                      * cos(
+                                          0.5
+                                          * atan2(
+                                              img_array[PROJ_B_STOKESU][ix],
+                                              img_array[PROJ_B_STOKESQ][ix]));
+          img_array[PROJ_BYabs][ix] = norm
+                                      * sin(
+                                          0.5
+                                          * atan2(
+                                              img_array[PROJ_B_STOKESU][ix],
+                                              img_array[PROJ_B_STOKESQ][ix]));
         }
       }
       // ***************************************************************

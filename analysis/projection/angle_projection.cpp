@@ -548,8 +548,9 @@ int generate_angle_image(
             //
             integral =
                 invst
-                * abs(sqrt(entry[Rcyl] * entry[Rcyl] - pos[Rcyl] * pos[Rcyl])
-                      - sqrt(exit[Rcyl] * exit[Rcyl] - pos[Rcyl] * pos[Rcyl]));
+                * abs(
+                    sqrt(entry[Rcyl] * entry[Rcyl] - pos[Rcyl] * pos[Rcyl])
+                    - sqrt(exit[Rcyl] * exit[Rcyl] - pos[Rcyl] * pos[Rcyl]));
             // For each emission variable, add to ans[] vector
             add_cell_emission_to_ray(
                 SimPM, MP, integral, ray->P.data(), XR, ans);
@@ -676,8 +677,9 @@ int generate_angle_image(
             //
             integral =
                 invst
-                * abs(sqrt(entry[Rcyl] * entry[Rcyl] - pos[Rcyl] * pos[Rcyl])
-                      - sqrt(exit[Rcyl] * exit[Rcyl] - pos[Rcyl] * pos[Rcyl]));
+                * abs(
+                    sqrt(entry[Rcyl] * entry[Rcyl] - pos[Rcyl] * pos[Rcyl])
+                    - sqrt(exit[Rcyl] * exit[Rcyl] - pos[Rcyl] * pos[Rcyl]));
             // For each emission variable, add to ans[] vector
             add_cell_emission_to_ray(
                 SimPM, MP, integral, ray->P.data(), XR, ans);

@@ -1949,9 +1949,10 @@ void MPv3::gen_mpv3_lookup_tables()
                        / (1.0 + 9.77e-3 * pow(sqrt(lt.T[i]) / lt.ne[j], 0.73));
 
       lt.C_pah[i][j] = 3.02e-30 * METALLICITY
-                       * exp(0.94 * log(lt.T[i])
-                             + 0.74 * pow(lt.T[i], -0.068)
-                                   * log(3.4 * sqrt(lt.T[i]) / lt.ne[j]))
+                       * exp(
+                           0.94 * log(lt.T[i])
+                           + 0.74 * pow(lt.T[i], -0.068)
+                                 * log(3.4 * sqrt(lt.T[i]) / lt.ne[j]))
                        * lt.ne[j];
 
       lt.C_cxce[i][j] =

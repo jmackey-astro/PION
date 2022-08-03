@@ -992,22 +992,22 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
       break;
 
     case YN:
-      n = (ixmin[XX] == fl_xmin[XX]) ? grid->idx() * par.Nbc / 2 :
-                                       grid->idx() * par.Nbc_DD / 2;
+      n  = (ixmin[XX] == fl_xmin[XX]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
       xn = ixmin[XX] - n;
       n  = (ixmax[XX] == fl_xmax[XX]) ? grid->idx() * par.Nbc / 2 :
-                                       grid->idx() * par.Nbc_DD / 2;
+                                        grid->idx() * par.Nbc_DD / 2;
       xp = ixmax[XX] + n;
       yn = ixmin[YY] - bsize;
       yp = ixmin[YY];
       break;
 
     case YP:
-      n = (ixmin[XX] == fl_xmin[XX]) ? grid->idx() * par.Nbc / 2 :
-                                       grid->idx() * par.Nbc_DD / 2;
+      n  = (ixmin[XX] == fl_xmin[XX]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
       xn = ixmin[XX] - n;
       n  = (ixmax[XX] == fl_xmax[XX]) ? grid->idx() * par.Nbc / 2 :
-                                       grid->idx() * par.Nbc_DD / 2;
+                                        grid->idx() * par.Nbc_DD / 2;
       xp = ixmax[XX] + n;
       yn = ixmax[YY];
       yp = ixmax[YY] + bsize;
@@ -1079,11 +1079,11 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
       break;
 
     case YN:
-      n = (ixmin[XX] == fl_xmin[XX]) ? grid->idx() * par.Nbc / 2 :
-                                       grid->idx() * par.Nbc_DD / 2;
+      n  = (ixmin[XX] == fl_xmin[XX]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
       xn = ixmin[XX] - n;
       n  = (ixmax[XX] == fl_xmax[XX]) ? grid->idx() * par.Nbc / 2 :
-                                       grid->idx() * par.Nbc_DD / 2;
+                                        grid->idx() * par.Nbc_DD / 2;
       xp = ixmax[XX] + n;
       xp = ixmax[XX] + n;
       yn = ixmin[YY] - bsize;
@@ -1093,11 +1093,11 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
       break;
 
     case YP:
-      n = (ixmin[XX] == fl_xmin[XX]) ? grid->idx() * par.Nbc / 2 :
-                                       grid->idx() * par.Nbc_DD / 2;
+      n  = (ixmin[XX] == fl_xmin[XX]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
       xn = ixmin[XX] - n;
       n  = (ixmax[XX] == fl_xmax[XX]) ? grid->idx() * par.Nbc / 2 :
-                                       grid->idx() * par.Nbc_DD / 2;
+                                        grid->idx() * par.Nbc_DD / 2;
       xp = ixmax[XX] + n;
       yn = ixmax[YY];
       yp = ixmax[YY] + bsize;
@@ -1106,34 +1106,34 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
       break;
 
     case ZN:
-      n = (ixmin[XX] == fl_xmin[XX]) ? grid->idx() * par.Nbc / 2 :
-                                       grid->idx() * par.Nbc_DD / 2;
+      n  = (ixmin[XX] == fl_xmin[XX]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
       xn = ixmin[XX] - n;
       n  = (ixmax[XX] == fl_xmax[XX]) ? grid->idx() * par.Nbc / 2 :
-                                       grid->idx() * par.Nbc_DD / 2;
+                                        grid->idx() * par.Nbc_DD / 2;
       xp = ixmax[XX] + n;
       n  = (ixmin[YY] == fl_xmin[YY]) ? grid->idx() * par.Nbc / 2 :
-                                       grid->idx() * par.Nbc_DD / 2;
+                                        grid->idx() * par.Nbc_DD / 2;
       yn = ixmin[YY] - n;
       n  = (ixmax[YY] == fl_xmax[YY]) ? grid->idx() * par.Nbc / 2 :
-                                       grid->idx() * par.Nbc_DD / 2;
+                                        grid->idx() * par.Nbc_DD / 2;
       yp = ixmax[YY] + n;
       zn = ixmin[ZZ] - bsize;
       zp = ixmin[ZZ];
       break;
 
     case ZP:
-      n = (ixmin[XX] == fl_xmin[XX]) ? grid->idx() * par.Nbc / 2 :
-                                       grid->idx() * par.Nbc_DD / 2;
+      n  = (ixmin[XX] == fl_xmin[XX]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
       xn = ixmin[XX] - n;
       n  = (ixmax[XX] == fl_xmax[XX]) ? grid->idx() * par.Nbc / 2 :
-                                       grid->idx() * par.Nbc_DD / 2;
+                                        grid->idx() * par.Nbc_DD / 2;
       xp = ixmax[XX] + n;
       n  = (ixmin[YY] == fl_xmin[YY]) ? grid->idx() * par.Nbc / 2 :
-                                       grid->idx() * par.Nbc_DD / 2;
+                                        grid->idx() * par.Nbc_DD / 2;
       yn = ixmin[YY] - n;
       n  = (ixmax[YY] == fl_xmax[YY]) ? grid->idx() * par.Nbc / 2 :
-                                       grid->idx() * par.Nbc_DD / 2;
+                                        grid->idx() * par.Nbc_DD / 2;
       yp = ixmax[YY] + n;
       zn = ixmax[ZZ];
       zp = ixmax[ZZ] + bsize;

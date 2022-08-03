@@ -226,8 +226,9 @@ int IC_spherical_clump::setup_clump()
       case 2:  // Gaussian
         cpt->P[RO] *=
             SC_overdensity
-            * exp(-0.5
-                  * pow(gg->distance_vertex2cell(centre, *cpt) / SC_rad, 2.0));
+            * exp(
+                -0.5
+                * pow(gg->distance_vertex2cell(centre, *cpt) / SC_rad, 2.0));
         break;
 
       default:

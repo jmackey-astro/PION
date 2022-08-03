@@ -1379,10 +1379,9 @@ int MP_Hydrogen::dPdt(
     else
       temp = photons_in * phot_xsection(T) * path_length;  // approx for 1-x<<1
     R[lv_Hp] += temp * (1.0 - P[lv_Hp]);
-    R[lv_eint] +=
-        temp * (1.0 - P[lv_Hp])
-        * phot_ion_energy(
-              T);  // this adds in X.XeV of energy per photo-ionisation.
+    R[lv_eint] += temp * (1.0 - P[lv_Hp])
+                  * phot_ion_energy(
+                      T);  // this adds in X.XeV of energy per photo-ionisation.
     R[lv_dtau] = exp(-R[lv_dtau]);
 #ifdef COUNT_ENERGETICS
     if (!have_counted_ergs) {

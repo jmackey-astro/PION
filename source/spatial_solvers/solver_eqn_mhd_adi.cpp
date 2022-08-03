@@ -188,6 +188,7 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
   else {
     spdlog::error(
         "{}: {}", "what sort of flux solver do you mean???", solve_flag);
+    exit(1);
   }
 
   return err;

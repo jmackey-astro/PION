@@ -419,8 +419,9 @@ int Riemann_Roe_MHD_CV::Roe_get_wavespeeds()
   Roe_a = sqrt(
       (2.0 - eq_gamma) * Roe_CGparamX
       + (eq_gamma - 1.0)
-            * max((Roe_meanp[eqHH] - 0.5 * Roe_V * Roe_V - b2),
-                  1.0e-12 * Roe_V * Roe_V));
+            * max(
+                (Roe_meanp[eqHH] - 0.5 * Roe_V * Roe_V - b2),
+                1.0e-12 * Roe_V * Roe_V));
   double astar2 = Roe_a * Roe_a + b2;
 
   Roe_ca = sqrt(Roe_meanp[eqBX] * Roe_meanp[eqBX] / Roe_meanp[eqRO]);

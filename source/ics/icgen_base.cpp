@@ -403,8 +403,9 @@ int ICsetup_base::AddNoise2Data(
         if (cpt->isedge == 0 && !cpt->isbd
             && cpt->P[PG] < avg) {  // Don't want to alter any edge cells.
           temp = frac
-                 * sin(2. * M_PI * (CI.get_dpos(*cpt, YY) / SimPM.Range[YY])
-                       * (SimPM.NG[YY] / 50));
+                 * sin(
+                     2. * M_PI * (CI.get_dpos(*cpt, YY) / SimPM.Range[YY])
+                     * (SimPM.NG[YY] / 50));
           cpt->P[PG] *= 1 + temp;
           cpt->P[RO] *= exp(log(1 + temp) / SimPM.gamma);
         }

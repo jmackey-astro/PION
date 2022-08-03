@@ -181,6 +181,30 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     PtoFlux(pstar, flux, eq_gamma);
   }
 
+  // This is like the MHD HLLD/HLL solver, including compressive motion check
+  // and strong-gradient zones check (Migone et al. 2011 ), except that it uses
+  // the hydro Roe-CV solver instead of HLLD.  We only check for density ratio
+  // here, to smooth out contact discontinuities that are too strong
+  else if (solve_flag == FLUX_RCV_HLL) {
+    double dr = Pl[RO] / Pr[RO], drlim = 4.0;
+    if ((dr > drlim) || (dr < 1.0 / drlim)) {
+      // strong density jump across the cell
+      // HLL solver -- Miyoshi and Kusano (2005) (m05)
+      err += hydro_HLL_flux_solver(Pl, Pr, eq_gamma, flux, ustar);
+      err += UtoP(ustar, pstar, par.EP.MinTemperature, eq_gamma);
+    }
+    else {
+      // Roe conserved variables flux solver (Toro 1999), using the
+      // symmetric calculation.
+      err +=
+          Roe_flux_solver_symmetric(Pl, Pr, eq_gamma, HC_etamax, pstar, flux);
+    }
+    if (0 != err) {
+      spdlog::error("{}: Expected {} but got {}", "HLL/RoeCV Flux", 0, err);
+      exit(1);
+    }
+  }
+
   // HLL solver, very diffusive 2 wave solver (Migone et al. 2011 )
   else if (solve_flag == FLUX_RS_HLL) {
     err += hydro_HLL_flux_solver(Pl, Pr, eq_gamma, flux, ustar);
@@ -191,6 +215,7 @@ int FV_solver_Hydro_Euler::inviscid_flux(
   else {
     spdlog::error(
         "{}: {}", "what sort of flux solver do you mean???", solve_flag);
+    exit(1);
   }
 
   return err;
@@ -370,8 +395,14 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
   }
 
   if (u1[RHO] < 0.0) {
+#ifndef NDEBUG
     spdlog::debug("celladvancetime, negative density. rho={}", u1[RHO]);
     CI.print_cell(c);
+#endif
+    spdlog::info(
+        "Resetting density from new state: {:12.6e}, to original value: {:12.6e}",
+        u1[RHO], Pin[RO]);
+    u1[RHO] = Pin[RO];
   }
 
   int err;

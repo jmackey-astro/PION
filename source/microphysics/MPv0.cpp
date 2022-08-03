@@ -1396,8 +1396,9 @@ double MPv0::Rad_Recomb_rate(
     a4 = 4.677e6;
     r  = a1
         / (sqrt(temperature / a3)
-           * exp((1. - a2) * log(1. + sqrt(temperature / a3))
-                 + (1. + a2) * log(1. + sqrt(temperature / a4))));
+           * exp(
+               (1. - a2) * log(1. + sqrt(temperature / a3))
+               + (1. + a2) * log(1. + sqrt(temperature / a4))));
     // ******* Mazzotta et al (1998) dielectronic rate.
     r += dielec_recomb(temperature, ci->i);
   }
@@ -1412,8 +1413,9 @@ double MPv0::Rad_Recomb_rate(
     a4 = 2.774e6;
     r  = a1
         / (sqrt(temperature / a3)
-           * exp((1. - a2) * log(1. + sqrt(temperature / a3))
-                 + (1. + a2) * log(1. + sqrt(temperature / a4))));
+           * exp(
+               (1. - a2) * log(1. + sqrt(temperature / a3))
+               + (1. + a2) * log(1. + sqrt(temperature / a4))));
   }
   // recombination for Carbon (from Raga, deColle, et al., 2007, A&A, 465,
   // 879).
@@ -1466,8 +1468,9 @@ double MPv0::Rad_Recomb_rate(
     a4 = 1.479e7;  // a5=; a6=;
     r  = a1
         / (sqrt(temperature / a3)
-           * exp((1. - a2) * log(1. + sqrt(temperature / a3))
-                 + (1. + a2) * log(1. + sqrt(temperature / a4))));
+           * exp(
+               (1. - a2) * log(1. + sqrt(temperature / a3))
+               + (1. + a2) * log(1. + sqrt(temperature / a4))));
     // ******* Mazzotta et al (1998) dielectronic rate.
     r += dielec_recomb(temperature, ci->i);
   }
@@ -1484,8 +1487,9 @@ double MPv0::Rad_Recomb_rate(
     a4 = 2.556e7;  // a5=; a6=;
     r  = a1
         / (sqrt(temperature / a3)
-           * exp((1. - a2) * log(1. + sqrt(temperature / a3))
-                 + (1. + a2) * log(1. + sqrt(temperature / a4))));
+           * exp(
+               (1. - a2) * log(1. + sqrt(temperature / a3))
+               + (1. + a2) * log(1. + sqrt(temperature / a4))));
     // ******* Mazzotta et al (1998) dielectronic rate.
     r += dielec_recomb(temperature, ci->i);
   }
@@ -1502,8 +1506,9 @@ double MPv0::Rad_Recomb_rate(
     a4 = 2.446e7;  // a5=; a6=;
     r  = a1
         / (sqrt(temperature / a3)
-           * exp((1. - a2) * log(1. + sqrt(temperature / a3))
-                 + (1. + a2) * log(1. + sqrt(temperature / a4))));
+           * exp(
+               (1. - a2) * log(1. + sqrt(temperature / a3))
+               + (1. + a2) * log(1. + sqrt(temperature / a4))));
   }
   else
     spdlog::error("{}: {}", "unknown ion in Rad_Recomb_rate()", ii);
@@ -1548,8 +1553,9 @@ double MPv0::rad_recomb(double T, enum species i)
     a4 = 4.677e6;
     r  = a1
         / (sqrt(T / a3)
-           * exp((1. - a2) * log(1. + sqrt(T / a3))
-                 + (1. + a2) * log(1. + sqrt(T / a4))));
+           * exp(
+               (1. - a2) * log(1. + sqrt(T / a3))
+               + (1. + a2) * log(1. + sqrt(T / a4))));
   }
   else if (i == He2p) {
     a1 = 1.891e-10;
@@ -1558,8 +1564,9 @@ double MPv0::rad_recomb(double T, enum species i)
     a4 = 2.774e6;
     r  = a1
         / (sqrt(T / a3)
-           * exp((1. - a2) * log(1. + sqrt(T / a3))
-                 + (1. + a2) * log(1. + sqrt(T / a4))));
+           * exp(
+               (1. - a2) * log(1. + sqrt(T / a3))
+               + (1. + a2) * log(1. + sqrt(T / a4))));
   }
   else if (i == C1p) {
     // 7.651E-09,0.8027,1.193E-03,9.334E+12
@@ -1569,8 +1576,9 @@ double MPv0::rad_recomb(double T, enum species i)
     a4 = 9.334E+12;
     r  = a1
         / (sqrt(T / a3)
-           * exp((1. - a2) * log(1. + sqrt(T / a3))
-                 + (1. + a2) * log(1. + sqrt(T / a4))));
+           * exp(
+               (1. - a2) * log(1. + sqrt(T / a3))
+               + (1. + a2) * log(1. + sqrt(T / a4))));
   }
   else if (i == C2p) {
     // 8.577E-10,0.7837,7.286E-01,1.140E+07
@@ -1580,8 +1588,9 @@ double MPv0::rad_recomb(double T, enum species i)
     a4 = 1.140E+07;
     r  = a1
         / (sqrt(T / a3)
-           * exp((1. - a2) * log(1. + sqrt(T / a3))
-                 + (1. + a2) * log(1. + sqrt(T / a4))));
+           * exp(
+               (1. - a2) * log(1. + sqrt(T / a3))
+               + (1. + a2) * log(1. + sqrt(T / a4))));
   }
   else if (i == C3p) {
     // 2.020E-09,0.7798,6.690E-01,2.425E+06
@@ -1591,8 +1600,9 @@ double MPv0::rad_recomb(double T, enum species i)
     a4 = 2.425E+06;
     r  = a1
         / (sqrt(T / a3)
-           * exp((1. - a2) * log(1. + sqrt(T / a3))
-                 + (1. + a2) * log(1. + sqrt(T / a4))));
+           * exp(
+               (1. - a2) * log(1. + sqrt(T / a3))
+               + (1. + a2) * log(1. + sqrt(T / a4))));
   }
   else if (i == C4p) {
     // 8.540e-11,0.5247,5.014e+02,1.479e+07
@@ -1602,8 +1612,9 @@ double MPv0::rad_recomb(double T, enum species i)
     a4 = 1.479e7;
     r  = a1
         / (sqrt(T / a3)
-           * exp((1. - a2) * log(1. + sqrt(T / a3))
-                 + (1. + a2) * log(1. + sqrt(T / a4))));
+           * exp(
+               (1. - a2) * log(1. + sqrt(T / a3))
+               + (1. + a2) * log(1. + sqrt(T / a4))));
   }
   else if (i == C5p) {
     // 2.765e-10,0.6858,1.535e+02,2.556e+07
@@ -1613,8 +1624,9 @@ double MPv0::rad_recomb(double T, enum species i)
     a4 = 2.556e7;
     r  = a1
         / (sqrt(T / a3)
-           * exp((1. - a2) * log(1. + sqrt(T / a3))
-                 + (1. + a2) * log(1. + sqrt(T / a4))));
+           * exp(
+               (1. - a2) * log(1. + sqrt(T / a3))
+               + (1. + a2) * log(1. + sqrt(T / a4))));
   }
   else if (i == C6p) {
     // 6.556e-10,0.7567,6.523e+01,2.446e+07
@@ -1624,8 +1636,9 @@ double MPv0::rad_recomb(double T, enum species i)
     a4 = 2.446e7;
     r  = a1
         / (sqrt(T / a3)
-           * exp((1. - a2) * log(1. + sqrt(T / a3))
-                 + (1. + a2) * log(1. + sqrt(T / a4))));
+           * exp(
+               (1. - a2) * log(1. + sqrt(T / a3))
+               + (1. + a2) * log(1. + sqrt(T / a4))));
   }
   else
     spdlog::error("{}: {}", "unknown ion in Rad_Recomb_rate()", ii);
