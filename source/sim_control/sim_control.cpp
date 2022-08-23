@@ -360,21 +360,21 @@ void sim_control::calculate_blastwave_radius(
   cell *c = grid->LastPt();
   if (fabs(c->P[VX]) >= 1.0e4) {
     spdlog::info("grid does not contain shock");
-    shockpos = CI.get_dpos(c, Rsph);
+    shockpos = CI.get_dpos(*c, Rsph);
   }
   else {
     do {
-      c = grid->NextPt(c, RNsph);
+      c = grid->NextPt(*c, RNsph);
       // cout <<c->id<<", vx="<<c->P[VX]<<"\n";
     } while (c != 0 && fabs(c->P[VX]) < 1.0e4);
     if (c && fabs(c->P[VX] >= 1.0e4)) {
-      shockpos = CI.get_dpos(c, Rsph);
+      shockpos = CI.get_dpos(*c, Rsph);
       // shock_found=true;
     }
   }
 
   if (pconst.equalD(old_pos, 0.0)) old_pos = shockpos;
-  spdlog::debug("{}\t{}", SimPM.simtime, shockpos);
+  spdlog::info("{}\t{}", SimPM.simtime, shockpos);
   old_pos = shockpos;
 }
 #endif  // BLAST_WAVE_CHECK

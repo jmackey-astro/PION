@@ -152,16 +152,20 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
   // HLLD/HLL solver, including compressive motion check and
   // strong-gradient zones check (Migone et al. 2011 )
   else if (solve_flag == FLUX_RS_HLLD) {
-    double DivVl = CI.get_DivV(Cl);
-    double DivVr = CI.get_DivV(Cr);
-    double Gradl = CI.get_MagGradP(Cl);
-    double Gradr = CI.get_MagGradP(Cr);
-    double dr = Pl[RO] / Pr[RO], drlim = 4.0;
-    if ((DivVl < 0. && Gradl > 5.) || (DivVr < 0. && Gradr > 5.) || (dr > drlim)
-        || (dr < 1.0 / drlim)) {
+    // double DivVl = CI.get_DivV(Cl);
+    // double DivVr = CI.get_DivV(Cr);
+    // double Gradl = CI.get_MagGradP(Cl);
+    // double Gradr = CI.get_MagGradP(Cr);
+    // double dr = Pl[RO] / Pr[RO], drlim = 4.0;
+    // if ((DivVl < 0. && Gradl > 5.) || (DivVr < 0. && Gradr > 5.) || (dr >
+    // drlim)
+    //    || (dr < 1.0 / drlim)) {
+    if (Cl.hll || Cr.hll) {
       // compressive motion & strong-gradient zones check
       // Migone et al 2012
       // HLL solver -- Miyoshi and Kusano (2005) (m05)
+      // spdlog::info("MHD HLL! Cl {} {}, Cr {} {}",Cl.id, Cl.hll, Cr.id,
+      // Cr.hll);
       err += MHD_HLL_flux_solver(Pl, Pr, eq_gamma, flux, ustar);
     }
     else {

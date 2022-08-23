@@ -457,6 +457,12 @@ int sim_control_pllel::Time_Int(
 #endif  // NDEBUG
     }
 
+#ifdef TEST_CONSERVATION
+    if ((SimPM.timestep % log_freq) == 0) {
+      err += check_energy_cons(grid[0]);
+    }
+#endif
+
     //
     // check if we are at time limit yet.
     //
@@ -634,7 +640,122 @@ int sim_control_pllel::calculate_timestep(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
+
+int sim_control_pllel::initial_conserved_quantities(class GridBaseClass *grid)
+{
+  // Energy, and Linear Momentum in x-direction.
+#ifdef TEST_CONSERVATION
+  std::vector<pion_flt> u(SimPM.nvar);
+  initERG = 0.;
+  initMMX = initMMY = initMMZ = 0.;
+  initMASS                    = 0.0;
+  double dx                   = grid->DX();
+  double dv                   = 0.0;
+  class cell *c               = grid->FirstPt();
+  do {
+    if (c->isgd) {
+      // cout <<"*** LEVEL "<<l<<", cell is a leaf: "<<c->isdomain<<"
+      dv = spatial_solver->CellVolume(*c, dx);
+      spatial_solver->PtoU(c->P.data(), u.data(), SimPM.gamma);
+      initERG += u[ERG] * dv;
+      initMMX += u[MMX] * dv;
+      initMMY += u[MMY] * dv;
+      initMMZ += u[MMZ] * dv;
+      initMASS += u[RHO] * dv;
+    }
+    else {
+      // cout <<"level "<<l<<", cell is not leaf: "<<c->isdomain<<"
+      // "<<c->isleaf<<": "; rep.printVec("pos",c->pos,SimPM.ndim);
+    }
+  } while ((c = grid->NextPt(*c)) != 0);
+
+  // cout <<"(local quantities) ["<< initERG <<", ";
+  // cout << initMMX <<", ";
+  // cout << initMMY <<", ";
+  // cout << initMMZ <<", ";
+  // cout << initMASS <<"]\n";
+
+  initERG  = SimPM.levels[0].sub_domain.global_operation_double(SUM, initERG);
+  initMMX  = SimPM.levels[0].sub_domain.global_operation_double(SUM, initMMX);
+  initMMY  = SimPM.levels[0].sub_domain.global_operation_double(SUM, initMMY);
+  initMMZ  = SimPM.levels[0].sub_domain.global_operation_double(SUM, initMMZ);
+  initMASS = SimPM.levels[0].sub_domain.global_operation_double(SUM, initMASS);
+
+  spdlog::info(
+      "(conserved quantities) [{}, {}, {}, {}, {}]", initERG, initMMX, initMMY,
+      initMMZ, initMASS);
+
+#endif  // TEST_CONSERVATION
+  return (0);
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int sim_control_pllel::check_energy_cons(class GridBaseClass *grid)
+{
+#ifdef TEST_CONSERVATION
+  // Energy, and Linear Momentum in x-direction.
+  std::vector<pion_flt> u(SimPM.nvar);
+  double nowERG  = 0.;
+  double nowMMX  = 0.;
+  double nowMMY  = 0.;
+  double nowMMZ  = 0.;
+  double nowMASS = 0.0;
+  double totmom  = 0.0;
+  double dx      = grid->DX();
+  double dv      = 0.0;
+  class cell *c  = grid->FirstPt();
+  do {
+    if (c->isgd) {
+      dv = spatial_solver->CellVolume(*c, dx);
+      spatial_solver->PtoU(c->P.data(), u.data(), SimPM.gamma);
+      nowERG += u[ERG] * dv;
+      nowMMX += u[MMX] * dv;
+      nowMMY += u[MMY] * dv;
+      nowMMZ += u[MMZ] * dv;
+      nowMASS += u[RHO] * dv;
+      totmom += sqrt(u[MMX] * u[MMX] + u[MMY] * u[MMY] + u[MMZ] * u[MMZ]) * dv;
+    }
+  } while ((c = grid->NextPt(*c)) != 0);
+
+  // cout <<"(local quantities) ["<< nowERG <<", ";
+  // cout << nowMMX <<", ";
+  // cout << nowMMY <<", ";
+  // cout << nowMMZ <<", ";
+  // cout << nowMASS <<"]\n";
+
+  nowERG  = SimPM.levels[0].sub_domain.global_operation_double(SUM, nowERG);
+  nowMMX  = SimPM.levels[0].sub_domain.global_operation_double(SUM, nowMMX);
+  nowMMY  = SimPM.levels[0].sub_domain.global_operation_double(SUM, nowMMY);
+  nowMMZ  = SimPM.levels[0].sub_domain.global_operation_double(SUM, nowMMZ);
+  nowMASS = SimPM.levels[0].sub_domain.global_operation_double(SUM, nowMASS);
+  totmom  = SimPM.levels[0].sub_domain.global_operation_double(SUM, totmom);
+  // cout <<" totmom="<<totmom<<" initMMX="<<initMMX;
+  // cout <<", nowMMX="<<nowMMX<<"\n";
+
+  spdlog::info(
+      "(conserved quantities) [{}, {}, {}, {}, {}]", nowERG, nowMMX, nowMMY,
+      nowMMZ, nowMASS);
+  spdlog::info(
+      "(relative error      ) [{}, {}, {}, {}, {}]",
+      (nowERG - initERG) / (initERG), (nowMMX - initMMX) / (totmom),
+      (nowMMY - initMMY) / (totmom), (nowMMZ - initMMZ) / (totmom),
+      (nowMASS - initMASS) / initMASS);
+#endif  // TEST_CONSERVATION
+  return (0);
+}
+
+
 
 #endif  // PARALLEL

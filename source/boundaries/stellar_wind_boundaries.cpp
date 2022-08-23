@@ -533,6 +533,10 @@ int stellar_wind_bc::BC_update_STWIND(
         grid->Wind->Nsources());
 #endif
     err += grid->Wind->set_cell_values(grid, id, simtime);
+    if (err) {
+      spdlog::info("Star reached end of life? set_cell_values {}", err);
+      par.maxtime = true;
+    }
   }
 #ifndef NDEBUG
   spdlog::debug("stellar_wind_bc: finished updating wind boundaries");

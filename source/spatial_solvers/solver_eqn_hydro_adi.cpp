@@ -186,10 +186,12 @@ int FV_solver_Hydro_Euler::inviscid_flux(
   // the hydro Roe-CV solver instead of HLLD.  We only check for density ratio
   // here, to smooth out contact discontinuities that are too strong
   else if (solve_flag == FLUX_RCV_HLL) {
-    double dr = Pl[RO] / Pr[RO], drlim = 4.0;
-    if ((dr > drlim) || (dr < 1.0 / drlim)) {
+    // double dr = Pl[RO] / Pr[RO], drlim = 4.0;
+    // if ((dr > drlim) || (dr < 1.0 / drlim)) {
+    if (Cl.hll || Cr.hll) {
       // strong density jump across the cell
       // HLL solver -- Miyoshi and Kusano (2005) (m05)
+      // spdlog::info("HLL! Cl {} {}, Cr {} {}",Cl.id, Cl.hll, Cr.id, Cr.hll);
       err += hydro_HLL_flux_solver(Pl, Pr, eq_gamma, flux, ustar);
       err += UtoP(ustar, pstar, par.EP.MinTemperature, eq_gamma);
     }
@@ -221,8 +223,12 @@ int FV_solver_Hydro_Euler::inviscid_flux(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void FV_solver_Hydro_Euler::PtoU(const pion_flt *p, pion_flt *u, const double g)
 {
@@ -232,8 +238,12 @@ void FV_solver_Hydro_Euler::PtoU(const pion_flt *p, pion_flt *u, const double g)
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int FV_solver_Hydro_Euler::UtoP(
     const pion_flt *u,
@@ -247,8 +257,12 @@ int FV_solver_Hydro_Euler::UtoP(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void FV_solver_Hydro_Euler::PUtoFlux(
     const pion_flt *p, const pion_flt *u, pion_flt *f)
@@ -259,8 +273,12 @@ void FV_solver_Hydro_Euler::PUtoFlux(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void FV_solver_Hydro_Euler::UtoFlux(
     const pion_flt *u, pion_flt *f, const double g)
@@ -271,8 +289,12 @@ void FV_solver_Hydro_Euler::UtoFlux(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int FV_solver_Hydro_Euler::AVFalle(
     const pion_flt *Pl,

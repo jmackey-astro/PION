@@ -237,11 +237,16 @@ int stellar_wind::add_cell(
     wc->dist = grid->distance(wpos, cpos);
 
   if (wc->dist > WP->radius) {
-    spdlog::warn(
-        "{}: Expected {} but got {}",
-        "stellar_wind::add_cell() cell is outside radius", WP->radius,
-        wc->dist);
-    CI.print_cell(c);
+    if (ndim > 1) {
+      // only print warning messages if ndim>1. This happens with
+      // cells near the origin in 1D where we use the distance to the
+      // cell centre-of-volume, not the midpoing.
+      spdlog::warn(
+          "{}: Expected {} but got {}",
+          "stellar_wind::add_cell() cell is outside radius", WP->radius,
+          wc->dist);
+      CI.print_cell(c);
+    }
     return 1;
   }
   //
@@ -1125,7 +1130,7 @@ int stellar_wind_evolution::add_evolving_source(
 
 
 
-void stellar_wind_evolution::update_source(
+int stellar_wind_evolution::update_source(
     class GridBaseClass *grid,
     struct evolving_wind_data *wd,
     const double t_now,
@@ -1146,13 +1151,13 @@ void stellar_wind_evolution::update_source(
   if (t_now < wd->tstart) {
     spdlog::warn(
         "{}: {}", "Updating source, not yet active!", wd->tstart - t_now);
-    return;
+    return 0;
   }
   else if (t_now >= wd->tfinish) {
     spdlog::warn(
         "{}: {}", "Updating source: source no longer active!",
         wd->tstart - t_now);
-    return;
+    return 1;
   }
 
 
@@ -1215,7 +1220,7 @@ void stellar_wind_evolution::update_source(
     set_wind_cell_reference_state(grid, wd->ws->wcells[i], wd->ws, gamma);
   }
 
-  return;
+  return 0;
 }
 
 // ##################################################################
@@ -1239,7 +1244,11 @@ int stellar_wind_evolution::set_cell_values(
   //
   if (t_now >= wd->t_next_update) {
     /// NB: This function has hardcoded EOS Gamma to 5/3
-    update_source(grid, wd, t_now, 5. / 3.);
+    err = update_source(grid, wd, t_now, 5. / 3.);
+    if (err) {
+      spdlog::error("update_source() returned error {}", err);
+      return err;
+    }
   }
 
   //

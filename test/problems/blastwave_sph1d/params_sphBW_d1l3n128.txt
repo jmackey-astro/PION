@@ -2,23 +2,17 @@
 # tuned for photoevaporation problem with random clumps
 
 ## Basic Properties
-# Dimensionality of Grid {1,2,3}
 ndim 1
 coordinates spherical
-
-# Type of Equations to Solve {hd, mhd, glm-mhd, ...}
 eqn euler
-solver 3
+solver 9
 
 # Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
 # MHDShockCloud ShockTube...}
 ics BlastWave
 
-
-# IC filename
-ICfilename IC_BW1D_phys_n512
 # Output FileName Base
-OutputFile    BW1D_phys_n512
+OutputFile    BW1D_phys_d1l3n128
 
 
 # Number and type of tracers.
@@ -41,6 +35,9 @@ EP_Max_Temperature 1.0e99
 EP_Hydrogen_MassFrac 1.0
 EP_Helium_MassFrac   0.0
 EP_Metal_MassFrac    0.0
+EP_sat_thermal_cond 0
+EP_tc_strength 0.0
+
 
 
 # Smooth Data by n cells? (n<=0 means no).
@@ -51,8 +48,8 @@ noise -1 #0.5
 ## Grid Parameters
 # Number of gridpoints in each direction (note cells must be cubic!)
 # INT
-NGridX  512
-NGridY  512
+NGridX  128
+NGridY  128
 NGridZ  64
 
 # Boundaries of Simulation box:
@@ -64,17 +61,29 @@ Xmax  30.86e18
 #Xmax 1.0
 Ymax  6.172e18 
 Zmax  4.629e18
+########################
+# Nested grid
+grid_nlevels 3
+grid_aspect_ratio_XX 1
+grid_aspect_ratio_YY 1
+grid_aspect_ratio_ZZ 1
+NG_centre_XX 0.0e18
+NG_centre_YY 0.0e18
+NG_centre_ZZ 0.0e18
+NG_refine_XX 1
+NG_refine_YY 1
+NG_refine_ZZ 1
+########################
 
 
 # Data Output Path
-OutputPath ../results
+OutputPath silo/
 # Output File Type = {text,fits,ftab,both,...}
-OutputFileType silo
+OutputFileType silo  #fits #both
 # Output data to file every nth timestep. (n=0 means only at the end).
 OutputFrequency 25
 OutputCriterion 1    # output per n-years=1, per step=0
 OPfreqTime 6.32e10   # in seconds
-
 
 # Start time
 StartTime 0.0

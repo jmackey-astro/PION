@@ -83,6 +83,20 @@ protected:
       const int               ///< level in NG grid (if applicable)
   );
 
+  ///
+  /// Calculates total values of conserved quantities.
+  ///
+  virtual int initial_conserved_quantities(
+      class GridBaseClass *  ///< grid pointers.
+  );
+
+  ///
+  /// Checks Total energy relative to initial value, and prints a
+  /// message if not.
+  ///
+  virtual int check_energy_cons(class GridBaseClass *  ///< grid pointers.
+  );
+
 };  // sim_control_pllel
 
 #endif  // PARALLEL

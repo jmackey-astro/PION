@@ -131,8 +131,7 @@ protected:
   /// Checks Total energy relative to initial value, and prints a
   /// message if not.
   ///
-  int check_energy_cons(
-      class GridBaseClass *  ///< address of vector of grid pointers.
+  int check_energy_cons(class GridBaseClass *  ///< address of grid pointer.
   );
 
 };  // sim_control

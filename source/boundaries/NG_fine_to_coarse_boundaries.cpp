@@ -73,8 +73,12 @@ int NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void NG_fine_to_coarse_bc::add_cells_to_avg(
     int ndim,                           ///< grid dimension
@@ -173,8 +177,12 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
     class SimParams &par,          ///< pointer to simulation parameters
@@ -237,8 +245,12 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int NG_fine_to_coarse_bc::average_cells(
     class SimParams &par,          ///< pointer to simulation parameters
@@ -347,8 +359,12 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void NG_fine_to_coarse_bc::get_F2C_TauAvg_1D(
     class SimParams &par,    // pointer to simulation parameters
@@ -401,8 +417,12 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_1D(
   }
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void NG_fine_to_coarse_bc::get_F2C_TauAvg_2D(
     class SimParams &par,    // pointer to simulation parameters
@@ -570,8 +590,12 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_2D(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void NG_fine_to_coarse_bc::get_F2C_TauAvg_3D(
     class SimParams &par,    // pointer to simulation parameters
@@ -655,6 +679,8 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_3D(
   }
   // rep.printVec("*** T ***",T,F2C_Nxd);
 }
+
+
 
 // ##################################################################
 // ##################################################################

@@ -674,9 +674,9 @@ int sim_init::override_params(int narg, string *args)
       spdlog::info(
           "\tOVERRIDE PARAMS: resetting solver: 0=LF,1=RSlin,2=RSexact,3=RShybrid,4=RSroe,5=RSroePV,6=FVS,7=HLLD,8=HLL:");
       int c = atoi((args[i].substr(7)).c_str());
-      if (c < 0 || c > 8) {
+      if (c < 0 || c > 9) {
         spdlog::error(
-            "{}: {}", "Bad solver flag (only 0,1,2,3,4,5,6,7,8 allowed", c);
+            "{}: {}", "Bad solver flag (only 0,1,2,3,4,5,6,7,8,9 allowed", c);
         exit(1);
       }
       spdlog::info(" solver from {}", SimPM.solverType);
@@ -895,9 +895,9 @@ int sim_init::output_data(vector<class GridBaseClass *>
 
 int sim_init::initial_conserved_quantities(class GridBaseClass *grid)
 {
-  // Energy, and Linear Momentum in x-direction.
 #ifdef TEST_CONSERVATION
-  pion_flt u[SimPM.nvar];
+  // Energy, and Linear Momentum in x-direction.
+  std::vector<pion_flt> u(SimPM.nvar);
   double dx = grid->DX();
   double dv = 0.0;
   initERG   = 0.;
@@ -906,8 +906,8 @@ int sim_init::initial_conserved_quantities(class GridBaseClass *grid)
   class cell *cpt             = grid->FirstPt();
   do {
     if (cpt->isdomain) {
-      spatial_solver->PtoU(cpt->P, u, SimPM.gamma);
-      dv = spatial_solver->CellVolume(cpt, dx);
+      spatial_solver->PtoU(cpt->P.data(), u.data(), SimPM.gamma);
+      dv = spatial_solver->CellVolume(*cpt, dx);
       initERG += u[ERG] * dv;
       initMMX += u[MMX] * dv;
       initMMY += u[MMY] * dv;
@@ -915,7 +915,7 @@ int sim_init::initial_conserved_quantities(class GridBaseClass *grid)
       initMASS += u[RHO] * dv;
     }
   } while ((cpt = grid->NextPt(*cpt)) != 0);
-  spdlog::debug(
+  spdlog::info(
       "(sim_init::InitialconservedQuantities) [{}, {}, {}, {}, {}]\n", initERG,
       initMMX, initMMY, initMMZ, initMASS);
 #endif  // TEST_CONSERVATION

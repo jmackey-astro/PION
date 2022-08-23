@@ -291,7 +291,7 @@ int sim_control_NG::initial_conserved_quantities(
 {
   // Energy, and Linear Momentum in x-direction.
 #ifdef TEST_CONSERVATION
-  pion_flt u[SimPM.nvar];
+  std::vector<pion_flt> u(SimPM.nvar);
   initERG = 0.;
   initMMX = initMMY = initMMZ = 0.;
   initMASS                    = 0.0;
@@ -301,8 +301,8 @@ int sim_control_NG::initial_conserved_quantities(
     class cell *c = grid[l]->FirstPt();
     do {
       if (c->isdomain && c->isleaf) {
-        dv = spatial_solver->CellVolume(c, dx);
-        spatial_solver->PtoU(c->P, u, SimPM.gamma);
+        dv = spatial_solver->CellVolume(*c, dx);
+        spatial_solver->PtoU(c->P.data(), u.data(), SimPM.gamma);
         initERG += u[ERG] * dv;
         initMMX += u[MMX] * dv;
         initMMY += u[MMY] * dv;
@@ -312,7 +312,7 @@ int sim_control_NG::initial_conserved_quantities(
     } while ((c = grid[l]->NextPt(*c)) != 0);
   }
 
-  spdlog::debug(
+  spdlog::info(
       "(conserved quantities) [{}, {}, {}, {}, {}]\n", initERG, initMMX,
       initMMY, initMMZ, initMASS);
 
@@ -535,23 +535,23 @@ void sim_control_NG::calculate_blastwave_radius(
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l++) {
 
     if (shock_found) continue;
-    cell *c = grid->LastPt();
+    cell *c = grid[l]->LastPt();
     if (fabs(c->P[VX]) >= 1.0e4) {
       spdlog::debug("level {} does not contain shock.", l);
     }
     else {
       do {
-        c = grid->NextPt(*c, RNsph);
+        c = grid[l]->NextPt(*c, RNsph);
         // cout <<c->id<<", vx="<<c->P[VX]<<"\n";
       } while (c != 0 && fabs(c->P[VX]) < 1.0e4);
       if (c && (c->P[VX] >= 1.0e4)) {
-        shockpos    = CI.get_dpos(c, Rsph);
+        shockpos    = CI.get_dpos(*c, Rsph);
         shock_found = true;
       }
     }
   }
   if (pconst.equalD(old_pos, 0.0)) old_pos = shockpos;
-  spdlog::debug("{}\t{}", SimPM.simtime, shockpos);
+  spdlog::info("{}\t{}", SimPM.simtime, shockpos);
   // cout <<"\t"<<(shockpos-old_pos)/(SimPM.dt+TINYVALUE);
   old_pos = shockpos;
   return;

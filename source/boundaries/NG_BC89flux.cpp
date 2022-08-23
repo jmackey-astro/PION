@@ -503,7 +503,7 @@ int NG_BC89flux::add_cells_to_face(
       spdlog::debug("ixmax : {}", ixmax);
       // rep.printVec("G_xmin",G_xmin,par.ndim);
       // rep.printVec("G_xmax",G_xmax,par.ndim);
-      spdlog::error("{}: {}", "lost on grid", c);
+      spdlog::error("{}: {}", "lost on grid", c->id);
     }
 #endif
     if (nface[perpaxis] != static_cast<int>(flux.fi.size())) {

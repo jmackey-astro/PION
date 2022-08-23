@@ -34,7 +34,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
 )
 {
 #ifdef TEST_MPI_NG_F2C
-  spdlog::debug("***F2C F2C F2C*** Adding F2C SEND for l={}", l);
+  spdlog::info("***F2C F2C F2C*** Adding F2C SEND for l={}", l);
 #endif
   // Check if parent grid is on my MPI process
   int pproc                    = par.levels[l].sub_domain.get_parent_proc();
@@ -52,7 +52,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
     F2C_tauoff[isrc] = F2C_Nxd;
     F2C_Nxd += 2 * s->NTau;  // Need col2cell and cell_col for each Tau.
 #ifdef TEST_MPI_NG_F2C
-    spdlog::debug(
+    spdlog::info(
         "F2C_MPI_BC: RT Source {}: adding {} cols, running total = {}", isrc,
         2 * s->NTau, F2C_Nxd);
 #endif
@@ -63,7 +63,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
   // this grid.
   if (sub_domain->get_myrank() == pproc) {
 #ifdef TEST_MPI_NG_F2C
-    spdlog::debug(
+    spdlog::info(
         "my rank == parent rank, not setting up FINE_TO_COARSE_SEND\n");
 #endif
   }
@@ -86,7 +86,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
     // add cells from this grid to the avg vectors.
     add_cells_to_avg(par.ndim, grid, nel, b->avg);
 #ifdef TEST_MPI_NG_F2C
-    spdlog::debug("***F2C added {} avg cells to this grid\n", nel);
+    spdlog::info("***F2C added {} avg cells to this grid\n", nel);
 #endif
 
   }  // if parent is not on a different MPI process
@@ -116,7 +116,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   // this grid.
   if (sub_domain->get_myrank() == pproc) {
 #ifdef TEST_MPI_NG_F2C
-    spdlog::debug(
+    spdlog::info(
         "my rank == parent rank, no need to send anything FINE_TO_COARSE_SEND\n");
 #endif
     return 0;
@@ -164,20 +164,20 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   int comm_tag = BC_MPI_NGF2C_tag + l;
   // id <<"F2C_"<<sub_domain->get_myrank()<<"_to_"<<pproc;
 #ifdef TEST_MPI_NG_F2C
-  spdlog::debug(
+  spdlog::info(
       "BC_update_FINE_TO_COARSE_SEND: Sending {} doubles from proc {} to parent proc {}, tag={}",
       ct, sub_domain->get_myrank(), pproc, comm_tag);
 #endif
   err += sub_domain->send_double_data(pproc, ct, data, id, comm_tag);
   if (err) spdlog::error("{}: {}", "Send_F2C send_data failed.", err);
 #ifdef TEST_MPI_NG_F2C
-  spdlog::debug("BC_update_FINE_TO_COARSE_SEND: returned with id={}", id);
+  spdlog::info("BC_update_FINE_TO_COARSE_SEND: returned with id={}", id);
 #endif
 
   // store ID to clear the send later (and delete the MPI temp data)
   sub_domain->NG_F2C_send_list.push_back(id);
 #ifdef TEST_MPI_NG_F2C
-  spdlog::debug(
+  spdlog::info(
       "F2C_Send: id=[ {} ]  size={}", id, sub_domain->NG_F2C_send_list.size());
 #endif
 
@@ -192,14 +192,14 @@ void NG_MPI_fine_to_coarse_bc::BC_FINE_TO_COARSE_SEND_clear_sends(
 {
   for (unsigned int i = 0; i < sub_domain.NG_F2C_send_list.size(); i++) {
 #ifdef TEST_MPI_NG_F2C
-    spdlog::debug(
+    spdlog::info(
         "F2C_send: clearing send # {} of {}, id={}...", i + 1,
         sub_domain.NG_F2C_send_list.size(), sub_domain.NG_F2C_send_list[i]);
 #endif
     // cout <<"waiting for send : "<<sub_domain.NG_F2C_send_list[i]<<"\n";
     sub_domain.wait_for_send_to_finish(sub_domain.NG_F2C_send_list[i]);
 #ifdef TEST_MPI_NG_F2C
-    spdlog::debug(" ... done!");
+    spdlog::info(" ... done!");
 #endif
     // cout <<"cleared F2C send "<<i<<"\n";
   }
@@ -229,7 +229,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
   sub_domain->get_child_grid_info(cg);
   int nchild = cg.size();
 #ifdef TEST_MPI_NG_F2C
-  spdlog::debug("level = {}, nchild={}", l, nchild);
+  spdlog::info("level = {}, nchild={}", l, nchild);
 #endif
   b->NGrecvF2C.resize(nchild);
   b->NGrecvF2C_ranks.resize(nchild);
@@ -240,7 +240,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
   // loop over children:
   for (int i = 0; i < nchild; i++) {
 #ifdef TEST_MPI_NG_F2C
-    spdlog::debug("child = {}, processing.", i);
+    spdlog::info("child = {}, processing.", i);
 #endif
 
     // get dimensions of child grid from struct
@@ -249,8 +249,8 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
     CI.get_ipos_vec(cg[i].Xmax, ixmax);
 
 #ifdef TEST_MPI_NG_F2C
-    spdlog::debug("F2C MPI: child xmin : {}", ixmin);
-    spdlog::debug("F2C MPI: child xmax : {}", ixmax);
+    spdlog::info("F2C MPI: child xmin : {}", ixmin);
+    spdlog::info("F2C MPI: child xmax : {}", ixmax);
 #endif
 
     class GridBaseClass *grid = par.levels[l].grid;
@@ -265,7 +265,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
         // c->isbd = true;
         // c->isleaf = false;
 #ifdef TEST_MPI_NG_F2C
-        spdlog::debug("cell over fine grid : {}", c->pos);
+        spdlog::info("cell over fine grid : {}", c->pos);
 #endif
         b->NGrecvF2C[i].push_back(c);
         ct++;
@@ -273,7 +273,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
     } while ((c = grid->NextPt(*c)) != 0);
 
 #ifdef TEST_MPI_NG_F2C
-    spdlog::debug(
+    spdlog::info(
         "i={} added {} cells to boundary, Ncell/2^ndim={}", i, ct,
         grid->Ncell() / pow(2, par.ndim));
 #endif
@@ -283,9 +283,9 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
       // directly from the child grid, and puts them onto the local
       // grid.
 #ifdef TEST_MPI_NG_F2C
-      spdlog::debug(
-          "my rank == child rank, calling serial FINE_TO_COARSE\nlevel {}: my grid={}, child grid={}",
-          l, par.levels[l].grid, par.levels[l].child);
+      spdlog::info(
+          "my rank == child rank, calling serial FINE_TO_COARSE\nlevel {} {}",
+          l, l + 1);
 #endif
       err = NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
           par, par.levels[l].grid, b, par.levels[l].child, i);
@@ -338,7 +338,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
   // MPI process, and once for grids that on other processes
   for (int i = 0; i < nchild; i++) {
 #ifdef TEST_MPI_NG_F2C
-    spdlog::debug("F2C_RECV: child {}, receiving...", i);
+    spdlog::info("F2C_RECV: child {}, receiving...", i);
 #endif
 
     if (sub_domain->get_myrank() == cg[i].rank) {
@@ -346,7 +346,8 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       // directly from the child grid.
 #ifdef TEST_MPI_NG_F2C
       spdlog::info(
-          "my rank == child rank, calling serial FINE_TO_COARSE update");
+          "my rank == child rank {}, calling serial FINE_TO_COARSE update",
+          cg[i].rank);
 #endif
       err = NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
           par, solver, l, b, i, cstep, maxstep);
@@ -379,14 +380,14 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       );
       if (err) spdlog::error("{}: {}", "look for double data failed", err);
 #ifdef TEST_MPI_NG_F2C
-      spdlog::debug(
+      spdlog::info(
           "BC_update_FINE_TO_COARSE_RECV: found data from rank {}", from_rank);
 #endif
 
       // check association of data with the child grid:
       if (b->NGrecvF2C_ranks[i] == from_rank) {
 #ifdef TEST_MPI_NG_F2C
-        spdlog::debug(
+        spdlog::info(
             "getting data from rank {} associated with child grid {}",
             from_rank, i);
 #endif
@@ -395,7 +396,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
         spdlog::error("{}: {}", "data from wrong child", from_rank);
       }
 #ifdef TEST_MPI_NG_F2C
-      spdlog::debug(
+      spdlog::info(
           "Found data to receive from {} associated with child grid {}",
           from_rank, i);
 #endif
@@ -411,7 +412,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
 
       vector<pion_flt> buf(ct);
 #ifdef TEST_MPI_NG_F2C
-      spdlog::debug("BC_update_FINE_TO_COARSE_RECV: get {} cells.\n", nel);
+      spdlog::info("BC_update_FINE_TO_COARSE_RECV: get {} cells.\n", nel);
 #endif
       //
       // Receive data into buffer.
@@ -441,8 +442,8 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
         }
         if (errors) {
           spdlog::error("ERROR in positions! ");
-          spdlog::debug("cell pos : {}", pos);
-          spdlog::debug("recv pos : {}", &(buf[i_el]));
+          spdlog::info("cell pos : {}", pos);
+          spdlog::info("recv pos : {}", &(buf[i_el]));
         }
         i_el += par.ndim;
 #endif
@@ -477,7 +478,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       }  // loop over cells
 
 #ifdef TEST_MPI_NG_F2C
-      spdlog::debug(
+      spdlog::info(
           "(BC_update_F2C_RECV) i_el={} of {} total elements.\n", i_el, ct);
 #endif
       count++;

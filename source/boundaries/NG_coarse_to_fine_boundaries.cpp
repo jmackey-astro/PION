@@ -427,40 +427,30 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
   std::vector<double> fU(par.nvar), f1U(par.nvar), f2U(par.nvar), cU(par.nvar);
   double f_vol[2];
   double dx = fine->DX();  // dx
-  //
-  // In 1D the geometry is very easy.
-  //
+  // Set fine-cell values based on slope, linear interpolation to cell centre
   for (int v = 0; v < par.nvar; v++)
-    f1.Ph[v] = P[v] * (1.0 - 0.5 * dx * sx[v]);
+    f1.P[v] = P[v] - 0.5 * dx * sx[v];
   for (int v = 0; v < par.nvar; v++)
-    f1.P[v] = f1.Ph[v];
-  for (int v = 0; v < par.nvar; v++)
-    f1.dU[v] = 0.0;
+    f2.P[v] = P[v] + 0.5 * dx * sx[v];
 
-  for (int v = 0; v < par.nvar; v++)
-    f2.Ph[v] = P[v] * (1.0 + 0.5 * dx * sx[v]);
-  for (int v = 0; v < par.nvar; v++)
-    f2.P[v] = f2.Ph[v];
-  for (int v = 0; v < par.nvar; v++)
-    f2.dU[v] = 0.0;
-
-  // Now need to check mass/momentum/energy conservation between
-  // coarse and fine levels (Berger & Colella, 1989)
-  // sum energy of fine cells.
-  solver->PtoU(f1.Ph, f1U.data(), par.gamma);
+  // Check mass/momentum/energy conservation between coarse and fine levels
+  solver->PtoU(f1.P.data(), f1U.data(), par.gamma);
+  solver->PtoU(f2.P.data(), f2U.data(), par.gamma);
   f_vol[0] = fine->CellVolume(f1, 0);
-  solver->PtoU(f2.Ph, f2U.data(), par.gamma);
   f_vol[1] = fine->CellVolume(f2, 0);
+
   for (int v = 0; v < par.nvar; v++)
     fU[v] = f1U[v] * f_vol[0] + f2U[v] * f_vol[1];
   // compare with coarse cell.
   solver->PtoU(P, cU.data(), par.gamma);
   for (int v = 0; v < par.nvar; v++)
     cU[v] *= c_vol;
+
 #ifdef TEST_C2F
   spdlog::debug("1D coarse : {}", cU);
   spdlog::debug("1D fine   : {}", fU);
 #endif
+
   // scale f1U, f2U by ratio of coarse to fine energy.
   // scale fine conserved vec by adding the difference between
   // conserved quantities on the fine and coarse grids.
@@ -475,12 +465,27 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
     fU[v] = f1U[v] + f2U[v];
   spdlog::debug("1D fine 2 : {}", fU);
 #endif
-  solver->UtoP(f2U.data(), f2.Ph, par.EP.MinTemperature, par.gamma);
-  for (int v = 0; v < par.nvar; v++)
-    f2.P[v] = f2.Ph[v];
   solver->UtoP(f1U.data(), f1.Ph, par.EP.MinTemperature, par.gamma);
   for (int v = 0; v < par.nvar; v++)
     f1.P[v] = f1.Ph[v];
+  solver->UtoP(f2U.data(), f2.Ph, par.EP.MinTemperature, par.gamma);
+  for (int v = 0; v < par.nvar; v++)
+    f2.P[v] = f2.Ph[v];
+
+  for (int v = 0; v < par.nvar; v++)
+    f1.dU[v] = 0.0;
+  for (int v = 0; v < par.nvar; v++)
+    f2.dU[v] = 0.0;
+
+#ifdef DEBUG_NG
+  for (int v = 0; v < par.nvar; v++) {
+    if (!isfinite(f1.P[v]) || !isfinite(f2.P[v])) {
+      spdlog::error(
+          "{}: {} {}", "1D C2F: fine 1,2 not finite", f1.P[v], f2.P[v]);
+      exit(1);
+    }
+  }
+#endif
 }
 
 // ##################################################################
@@ -491,7 +496,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
     class GridBaseClass *fine,     ///< pointer to fine grid
     class FV_solver_base *solver,  ///< pointer to equations
     const pion_flt *P,             ///< state vector of coarse cell.
-    const int *cpos,               ///< position of coarse cell.
+    const int *,                   ///< position of coarse cell.
     const pion_flt c_vol,          ///< volume of coarse cell.
     pion_flt *sx,                  ///< dP/dx in coarse cell.
     pion_flt *sy,                  ///< dP/dy in coarse cell.
@@ -565,8 +570,8 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
   for (int i = 0; i < 8; i++) {
     for (int v = 0; v < par.nvar; v++) {
       if (!isfinite(fU[i][v])) {
-        spdlog::debug("error in 3D C2F interpolation: i={}v={}", i, v);
-        spdlog::debug("Unscaled fine : {}", fU[i]);
+        spdlog::debug("error in 3D C2F interpolation: i={}, v={}", i, v);
+        spdlog::debug("Unscaled fine : {}", fU[i][v]);
       }
     }
   }
@@ -596,8 +601,8 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
   for (int i = 0; i < 8; i++) {
     for (int v = 0; v < par.nvar; v++) {
       if (!isfinite(fU[i][v])) {
-        spdlog::debug("error in 3D C2F interpolation: i={}v={}", i, v);
-        spdlog::error("{}: {}", "C2F fine cell not finite", fU[i], par.nvar);
+        spdlog::debug("error in 3D C2F interpolation: i={}, v={}", i, v);
+        spdlog::error("{}: {}", "C2F fine cell not finite", fU[i][v], par.nvar);
       }
     }
   }
@@ -616,7 +621,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
     class GridBaseClass *fine,     ///< pointer to fine grid
     class FV_solver_base *solver,  ///< pointer to equations
     const pion_flt *P,             ///< state vector of coarse cell.
-    const int *cpos,               ///< position of coarse cell.
+    const int *,                   ///< position of coarse cell.
     const pion_flt c_vol,          ///< volume of coarse cell.
     pion_flt *sx,                  ///< dP/dx in coarse cell.
     pion_flt *sy,                  ///< dP/dy in coarse cell.
@@ -662,7 +667,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   f_vol[3] = fine->CellVolume(f4, 0);
 
   for (int v = 0; v < par.nvar; v++)
-    fU[v] = f1U[v] * f_vol[0] + f3U[v] * f_vol[1] + f2U[v] * f_vol[2]
+    fU[v] = f1U[v] * f_vol[0] + f2U[v] * f_vol[1] + f3U[v] * f_vol[2]
             + f4U[v] * f_vol[3];
   // compare with coarse cell.
   solver->PtoU(P, cU.data(), par.gamma);
@@ -719,8 +724,11 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
 
 #ifdef DEBUG_NG
   for (int v = 0; v < par.nvar; v++) {
-    if (!isfinite(f3->P[v]) || !isfinite(f4->P[v]))
-      spdlog::error("{}: {}", "fine 3,4 not finite", f3->P[v]);
+    if (!isfinite(f3.P[v]) || !isfinite(f4.P[v])) {
+      spdlog::error(
+          "{}: {} {}", "2D C2F fine 3,4 not finite", f3.P[v], f4.P[v]);
+      exit(1);
+    }
   }
 #endif
 }

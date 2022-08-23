@@ -679,7 +679,69 @@ int time_integrator::preprocess_data(
             for (int i = 0; i < SimPM.ndim; i++)
               gradp += spatial_solver->GradZone(grid, *c, i, 1, PG);
             CI.set_MagGradP(*c, gradp);
+
+            // If on half-step, decide now whether to use HLL for the full step
+            // Based on (Migone et al. 2011) strong-gradient test, and also an
+            // extra test for density jumps more than factor of 10 (central
+            // diff)
+            if (csp == OA1) {
+              c->hll = false;
+              double flags[3], drlim = 5.0, drho = 0.0;
+              flags[0] = CI.get_DivV(*c);
+              flags[1] = CI.get_MagGradP(*c);
+              for (int d = 0; d < SimPM.ndim; d++) {
+                drho =
+                    max(drho,
+                        fabs(spatial_solver->CentralDiff(grid, *c, d, 0, RO)));
+              }
+              flags[2] = (drho + c->P[RO]) / c->P[RO];
+              // check for strongly converging flow or large density gradient
+              if ((flags[0] < 0.0 && flags[1] > 5.0) || flags[2] > drlim
+                  || flags[2] < 1.0 / drlim) {
+                c->hll = true;
+              }
+            }
+
           } while ((c = grid->NextPt(*c, XP)) != 0);
+        }  // ax2
+      }    // ax3
+#ifdef PION_OMP
+    }
+#endif
+  }
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+  // RCV/HLL has a switch based on density gradient, where accuracy can
+  // reduce to HLL near strong shocks.  So set flag here.
+  if (SimPM.solverType == FLUX_RCV_HLL && csp == OA1) {
+    class cell *c = grid->FirstPt_All();
+    int index[3];
+    int nx2 = grid->NG_All(YY);
+    int nx3 = grid->NG_All(ZZ);
+#ifdef PION_OMP
+    #pragma omp parallel
+    {
+      #pragma omp for collapse(2) private(c,index)
+#endif
+      for (int ax3 = 0; ax3 < nx3; ax3++) {
+        for (int ax2 = 0; ax2 < nx2; ax2++) {
+          index[0]    = 0;
+          index[1]    = ax2;
+          index[2]    = ax3;
+          c           = grid->get_cell_all(index[0], index[1], index[2]);
+          double drho = 0.0;
+          do {
+            c->hll = false;
+            drho   = 0.0;
+            for (int d = 0; d < SimPM.ndim; d++) {
+              drho = max(
+                  drho, fabs(spatial_solver->CentralDiff(grid, *c, d, 0, RO)));
+            }
+            drho = (drho + c->P[RO]) / c->P[RO];
+            if (drho > 10.0 || drho < 0.1) c->hll = true;
+            c = grid->NextPt(*c, XP);
+          } while (c != 0);
         }  // ax2
       }    // ax3
 #ifdef PION_OMP
@@ -1086,7 +1148,7 @@ int time_integrator::dynamics_dU_column(
 #ifdef TEST_CONSERVATION
     // Track energy, momentum entering/leaving domain, if outside
     // boundary
-    double dA = spatial_solver->CellInterface(cpt, posdir, dx);
+    double dA = spatial_solver->CellInterface(*cpt, posdir, dx);
     if (csp == SimPM.tmOOA && pconst.equalD(grid->Xmin(axis), SimPM.Xmin[axis])
         && !(cpt->isdomain) && npt->isgd && npt->isleaf) {
       dM += Fr_this[RHO] * dt * dA;
@@ -1149,7 +1211,7 @@ int time_integrator::dynamics_dU_column(
 #ifdef TEST_CONSERVATION
   // Track energy, momentum entering/leaving domain, if outside
   // boundary
-  double dA = spatial_solver->CellInterface(cpt, posdir, dx);
+  double dA = spatial_solver->CellInterface(*cpt, posdir, dx);
   if (csp == SimPM.tmOOA && pconst.equalD(grid->Xmax(axis), SimPM.Xmax[axis])
       && cpt->isgd && cpt->isleaf && !npt->isdomain) {
     dM -= Fr_this[RHO] * dt * dA;

@@ -1,0 +1,221 @@
+# Parameter file for Initial Condition Generation for GLM96 35 Msun WR nebula model.
+
+####################
+ndim 1
+coordinates spherical
+eqn euler
+solver 9
+GAMMA 1.666666666666666666666
+CFL 0.4
+ArtificialViscosity 1
+EtaViscosity 0.15
+OrderOfAccSpace 2
+OrderOfAccTime  2
+
+# Which ICs to set up
+ics Uniform
+smooth -1
+noise -1
+
+##########################
+## Output File Properties
+OutputFile Galrot_test_1.700_0.0_d1l4n0128
+OutputPath silo/
+OutputFileType silo
+OutputFrequency 4096
+OutputCriterion 0
+OPfreqTime      1e11
+StartTime  0.0e14
+FinishTime 0.4e14
+
+# Which physics to use
+chem_code NONE
+ntracer 9
+InitIons LEAVE
+Tracer000 X_H
+Tracer001 X_He
+Tracer002 X_C
+Tracer003 X_N
+Tracer004 X_O
+Tracer005 X_Z
+Tracer006 X_D
+Tracer007 H1+
+Tracer008 WIND
+Tracer001 Trace
+EP_dynamics             1
+EP_raytracing           0
+EP_phot_ionisation      0
+EP_cooling              0
+EP_chemistry            0
+EP_coll_ionisation      0
+EP_rad_recombination    0
+EP_update_erg           1
+EP_MP_timestep_limit    0
+EP_Min_Temperature      0.0
+EP_Max_Temperature      1.0e10
+EP_Hydrogen_MassFrac    0.714 
+EP_Helium_MassFrac      0.286
+EP_Metal_MassFrac       0.014
+EP_sat_thermal_cond 0
+EP_tc_strength 0.0
+
+###################
+## Grid Parameters
+# Number of gridpoints in each direction on coarsest level
+NGridX  128
+NGridY  256
+NGridZ  256
+Xmin   0.0
+Ymin   0.0e18
+Zmin   0.0e18
+Xmax   1.024e20
+Ymax   0.0e18
+Zmax   0.0e18
+############################################
+# Boundary Conditions
+BC_XN reflecting
+BC_XP reflecting
+BC_YN outflow
+BC_YP outflow
+BC_ZN outflow
+BC_ZP outflow
+BC_Ninternal 1
+BC_INTERNAL_000 stellar-wind
+########################
+# Nested grid
+grid_nlevels 4
+grid_aspect_ratio_XX 1
+grid_aspect_ratio_YY 1
+grid_aspect_ratio_ZZ 1
+NG_centre_XX 0.0e18
+NG_centre_YY 0.0e18
+NG_centre_ZZ 0.0e18
+NG_refine_XX 1
+NG_refine_YY 1
+NG_refine_ZZ 1
+########################
+
+###############
+## Code Units
+# Reference systems of units are MKS (i.e. SI), CGS, others?
+units 
+# One code unit is this number of reference units.
+rhoval 1
+lenval 1
+velval 1
+magval 1
+
+
+## Ambient Medium Parameters #
+##############################
+# This core part is not used here, can set up an overdense cloud with it.
+# radial slope away from source in background density, rho~r^{-slope}
+UNIFORM_radial_slope 0.0
+# Not sure what this does, just leave at zero
+UNIFORM_radial_velocity 0.0
+# If slope != 0, then this sets radius of constant density core to
+# prevent diverging density.
+UNIFORM_core_radius 0.0
+# Location of core, in cm.
+UNIFORM_core_centre_XX 1.1e200
+UNIFORM_core_centre_YY 1.1e200
+UNIFORM_core_centre_ZZ 1.1e200
+
+# Ambient medium density, pressure, velocity, B-field, etc.
+# We set up a simulation where the star is at rest in the ISM.
+
+UNIFORM_ambRO 2.338e-23 # 10 H atom per c.c.
+UNIFORM_ambPG 6.072e-12 # ~4000 K. constant T? change together with density to keep constant T
+UNIFORM_ambVX 0.0e5 # star's space velocity
+UNIFORM_ambVY 0.0
+UNIFORM_ambVZ 0.0
+UNIFORM_ambBX 0.0
+UNIFORM_ambBY 0.0
+UNIFORM_ambBZ 0.0
+UNIFORM_ambTR0 0.71     # H
+UNIFORM_ambTR1 0.27     # He
+UNIFORM_ambTR2 0.00172  # C
+UNIFORM_ambTR3 0.00050  # N
+UNIFORM_ambTR4 0.00468  # O
+UNIFORM_ambTR5 0.00310  # Z (all other metals)
+UNIFORM_ambTR6 0.01     # Dust
+UNIFORM_ambTR7 0.5     # H+ fraction
+UNIFORM_ambTR8 0.0      # Wind fraction
+
+########################
+# radiation source list
+########################
+RT_Nsources 0
+
+# This source is time varying, reading in the 15msun model.
+RT_position_0_0  0.0e18
+RT_position_0_1  0.0e18
+RT_position_0_2  0.0e18
+RT_strength_0    1.21072e39  # erg/s for multifrequency source.
+RT_Rstar____0    15.3  # Radius of star in solar radii.
+RT_Tstar____0    35.0e3  # Stellar effective temperature.
+RT_src_type_0    1  # 1=single src, 2=diffuse-radiation.
+RT_at_infty_0    0  # 0=no, 1=yes.
+RT_update___0    2  # 1=C2Ray update, 2=New update.
+RT_effect___0    3  # 1=UV heating, 2=mono-photoionisation, 3=multi-photoion
+RT_Tau_src__0    10 # 10=get optical depth from microphysics class
+RT_Tau_var__0    0  # opacity variably y_i (this is its index in tracers)
+RT_Nbins____1    1
+RT_EVO_FILE_0    NOFILE
+# We want one source of stellar wind.
+WIND_NSRC 1
+
+# locate the source at the origin.
+WIND_0_pos0  0.0e18
+WIND_0_pos1  0.0e18
+WIND_0_pos2  0.0e18
+WIND_0_radius 8.0e17
+WIND_0_type   0
+WIND_0_mdot   1.0e-6
+WIND_0_vinf   2500.0
+WIND_0_vrot   0.0
+WIND_0_temp   3.0e4
+WIND_0_Rstr   1.0e12
+WIND_0_Bsrf   0.0
+WIND_0_TR0 0.71     # H
+WIND_0_TR1 0.27     # He
+WIND_0_TR2 0.00172  # C
+WIND_0_TR3 0.00050  # N
+WIND_0_TR4 0.00468  # O
+WIND_0_TR5 0.00310  # Z (all other metals)
+WIND_0_TR6 0.01     # Dust
+WIND_0_TR7 0.0      # H+ fraction
+WIND_0_TR8 1.0      # Wind fraction
+WIND_0_evofile      NOFILE
+WIND_0_t_offset     0.0   # in (seconds)
+WIND_0_t_scalefac   1.0  # Accelerates evolution by this factor (for MS phase).
+WIND_0_updatefreq   1.0   # in (seconds)
+WIND_0_enhance_mdot 0
+WIND_0_xi -2.0
+WIND_0_ecentricity_fac 0.0	# Factor for calculation of ecentricity vector from periastron vector 0.0->spherical orbit
+WIND_0_periastron_vec_x 0.0	# Vector pointing from periastron position to focal point of elipse; X-element
+WIND_0_periastron_vec_y 0.0	# Vector pointing from periastron position to focal point of elipse; Y-element
+WIND_0_orbital_period 0.0	# Orbital period in years
+
+# Reference Vector
+refvec0 1.0e-22  # ~10 particles /cc
+refvec1 1.0e-12  # T ~ 10^3K
+refvec2 1.0e6    # v ~ 100 km/s = 1.e7 cm/s
+refvec3 1.0e6    # v 
+refvec4 1.0e6    # v 
+refvec5 1.0e-6   # B (gauss)
+refvec6 1.0e-6
+refvec7 1.0e-6
+refvec8 1.0
+refvec9 1.0
+refvec10 1.0
+refvec11 1.0
+refvec12 1.0
+refvec13 1.0
+refvec14 1.0
+refvec15 1.0
+refvec16 1.0
+refvec17 1.0
+refvec18 1.0
+refvec19 1.0
+refvec20 1.0

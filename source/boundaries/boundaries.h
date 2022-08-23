@@ -26,6 +26,7 @@
 //#define TEST_C2F
 //#define TEST_MPI_NG_F2C
 //#define TEST_MPI_BC
+//#define DEBUG_NG
 
 ///
 /// enum for the types of boundary condition.

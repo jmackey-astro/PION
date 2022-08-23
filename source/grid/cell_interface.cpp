@@ -316,7 +316,7 @@ void cell_interface::set_cell_pointers(
   c.isdomain = false;
   c.rt       = false;
   c.timestep = false;
-
+  c.hll      = false;  // Flag to temporarily use HLL solver on this cell.
   fill(c.isbd_ref.begin(), c.isbd_ref.end(), false);
 
   //

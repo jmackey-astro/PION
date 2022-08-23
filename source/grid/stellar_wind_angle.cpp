@@ -876,7 +876,7 @@ int stellar_wind_angle::add_rotating_source(
 // ##################################################################
 // ##################################################################
 
-void stellar_wind_angle::update_source(
+int stellar_wind_angle::update_source(
     class GridBaseClass *grid,
     struct evolving_wind_data *wd,
     const double t_now,
@@ -900,8 +900,15 @@ void stellar_wind_angle::update_source(
   }
 
   if (t_now < wd->tstart) {
-    spdlog::error(
-        "{}: {}", "Requested updating inactive source", wd->tstart - t_now);
+    spdlog::warn(
+        "{}: {}", "Updating source, not yet active!", wd->tstart - t_now);
+    return 0;
+  }
+  else if (t_now >= wd->tfinish) {
+    spdlog::warn(
+        "{}: {}", "Updating source: source no longer active!",
+        wd->tstart - t_now);
+    return 1;
   }
 
   wd->t_next_update = t_now;  // (We update every timestep now)
@@ -960,7 +967,7 @@ void stellar_wind_angle::update_source(
     set_wind_cell_reference_state(grid, wd->ws->wcells[i], wd->ws, eos_gamma);
   }
 
-  return;
+  return 0;
 }
 
 // ##################################################################

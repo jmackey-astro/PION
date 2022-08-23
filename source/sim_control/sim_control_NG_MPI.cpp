@@ -619,6 +619,12 @@ int sim_control_NG_MPI::Time_Int(
     SimPM.levels[0].sub_domain.barrier();
     spdlog::debug("MPI time_int: finished timestep");
 
+#if defined(CHECK_MAGP)
+    calculate_magnetic_pressure(grid);
+#elif defined(BLAST_WAVE_CHECK)
+    calculate_blastwave_radius(grid);
+#endif
+
     if (SimPM.levels[0].sub_domain.get_myrank() == 0) {
       tsf = clk.time_so_far("time_int");
       spdlog::info(
@@ -969,7 +975,7 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   // --------------------------------------------------------
 
   spdlog::debug(
-      "NG-MPI advance_step_OA1, level={}, returning. t={}, step={}, next dt={} next time={}",
+      "NG-MPI advance_step_OA1, level={}, returning. t={:12.6e}, step={}, next dt={:12.6e} next time={:12.6e}",
       l, SimPM.levels[l].simtime, SimPM.levels[l].step, SimPM.levels[l].dt,
       SimPM.levels[l].simtime + SimPM.levels[l].dt);
 
@@ -1376,7 +1382,7 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   // --------------------------------------------------------
 
   spdlog::debug(
-      "NG-MPI advance_step_OA2, level={}, returning. t={}, step={}, next dt={} next time={}",
+      "NG-MPI advance_step_OA2, level={}, returning. t={:12.6e}, step={}, next dt={:12.6e} next time={:12.6e}",
       l, SimPM.levels[l].simtime, SimPM.levels[l].step, SimPM.levels[l].dt,
       SimPM.levels[l].simtime + SimPM.levels[l].dt);
   return dt2_this + SimPM.levels[l].dt;
@@ -1390,7 +1396,7 @@ int sim_control_NG_MPI::initial_conserved_quantities(
 {
   // Energy, and Linear Momentum in x-direction.
 #ifdef TEST_CONSERVATION
-  pion_flt u[SimPM.nvar];
+  std::vector<pion_flt> u(SimPM.nvar);
   initERG = 0.;
   initMMX = initMMY = initMMZ = 0.;
   initMASS                    = 0.0;
@@ -1401,8 +1407,8 @@ int sim_control_NG_MPI::initial_conserved_quantities(
     do {
       if (c->isdomain && c->isleaf) {
         // cout <<"*** LEVEL "<<l<<", cell is a leaf: "<<c->isdomain<<"
-        dv = spatial_solver->CellVolume(c, dx);
-        spatial_solver->PtoU(c->P, u, SimPM.gamma);
+        dv = spatial_solver->CellVolume(*c, dx);
+        spatial_solver->PtoU(c->P.data(), u.data(), SimPM.gamma);
         initERG += u[ERG] * dv;
         initMMX += u[MMX] * dv;
         initMMY += u[MMY] * dv;
@@ -1413,7 +1419,7 @@ int sim_control_NG_MPI::initial_conserved_quantities(
         // cout <<"level "<<l<<", cell is not leaf: "<<c->isdomain<<"
         // "<<c->isleaf<<": "; rep.printVec("pos",c->pos,SimPM.ndim);
       }
-    } while ((c = grid[l]->NextPt(c)) != 0);
+    } while ((c = grid[l]->NextPt(*c)) != 0);
   }
 
   // cout <<"(local quantities) ["<< initERG <<", ";
@@ -1428,7 +1434,7 @@ int sim_control_NG_MPI::initial_conserved_quantities(
   initMMZ  = SimPM.levels[0].sub_domain.global_operation_double(SUM, initMMZ);
   initMASS = SimPM.levels[0].sub_domain.global_operation_double(SUM, initMASS);
 
-  spdlog::debug(
+  spdlog::info(
       "(conserved quantities) [{}, {}, {}, {}, {}]", initERG, initMMX, initMMY,
       initMMZ, initMASS);
 
@@ -1441,6 +1447,7 @@ int sim_control_NG_MPI::initial_conserved_quantities(
 
 int sim_control_NG_MPI::check_energy_cons(vector<class GridBaseClass *> &grid)
 {
+#ifdef TEST_CONSERVATION
   // Energy, and Linear Momentum in x-direction.
   std::vector<pion_flt> u(SimPM.nvar);
   double nowERG  = 0.;
@@ -1483,13 +1490,15 @@ int sim_control_NG_MPI::check_energy_cons(vector<class GridBaseClass *> &grid)
   // cout <<" totmom="<<totmom<<" initMMX="<<initMMX;
   // cout <<", nowMMX="<<nowMMX<<"\n";
 
-  // spdlog::debug(
-  //    "(conserved quantities) [{}, {}, {}, {}, {}]\n"
-  //    "(relative error      ) [{}, {}, {}, {}, {}]" nowERG,
-  //    nowMMX, nowMMY, nowMMZ, nowMASS, (nowERG - initERG) / (initERG),
-  //    (nowMMX - initMMX) / (totmom), (nowMMY - initMMY) / (totmom),
-  //    (nowMMZ - initMMZ) / (totmom), (nowMASS - initMASS) / initMASS);
-
+  spdlog::info(
+      "(conserved quantities) [{}, {}, {}, {}, {}]", nowERG, nowMMX, nowMMY,
+      nowMMZ, nowMASS);
+  spdlog::info(
+      "(relative error      ) [{}, {}, {}, {}, {}]",
+      (nowERG - initERG) / (initERG), (nowMMX - initMMX) / (totmom),
+      (nowMMY - initMMY) / (totmom), (nowMMZ - initMMZ) / (totmom),
+      (nowMASS - initMASS) / initMASS);
+#endif  // TEST_CONSERVATION
   return (0);
 }
 

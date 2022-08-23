@@ -163,7 +163,7 @@ protected:
   /// Update both the wind properties and the state vectors of all of
   /// the wind cells, for rotating star with latitude-dependent wind.
   ///
-  virtual void update_source(
+  virtual int update_source(
       class GridBaseClass *,
       struct evolving_wind_data *,  ///< source to update.
       const double,                 ///< current simulation time.
