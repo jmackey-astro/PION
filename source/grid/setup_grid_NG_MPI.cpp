@@ -199,6 +199,8 @@ int setup_grid_NG_MPI::setup_grid(
       spdlog::error(
           "{}: {}", "(setup_grid_NG_MPI::setup_grid)", fmt::ptr(grid[l]));
 
+    grid[l]->set_level(l);
+
     spdlog::debug(
         "(setup_grid_NG_MPI::setup_grid) Done. &grid={}, and grid={}, DX={}",
         fmt::ptr(&(grid[l])), fmt::ptr(grid[l]), (grid[l])->DX());

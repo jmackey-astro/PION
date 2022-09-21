@@ -769,6 +769,19 @@ int sim_init::override_params(int narg, string *args)
       spdlog::info("{} K.", SimPM.EP.MaxTemperature);
     }
 
+    else if (args[i].find("min_T=") != string::npos) {
+      spdlog::info(
+          "\tOVERRIDE PARAMS: resetting MinTemperature from {} K to ",
+          SimPM.EP.MinTemperature);
+      double c = atof((args[i].substr(6)).c_str());
+      if (c < 0.0 || c > 1.e50) {
+        spdlog::error("{}: {}", "Bad Min_T flag:", c);
+        exit(1);
+      }
+      SimPM.EP.MinTemperature = c;
+      spdlog::info("{} K.", SimPM.EP.MinTemperature);
+    }
+
     else if (args[i].find("wind_radius=") != string::npos) {
       if (SWP.Nsources < 1) {
         spdlog::error(

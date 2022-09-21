@@ -251,10 +251,12 @@ int sim_control_pllel::Init(
   // Now assign data to the grid, either from file, or via some function.
   //
   err = dataio->ReadData(infile, grid, SimPM);
-  if (0 != err)
+  if (0 != err) {
     spdlog::error(
         "{}: Expected {} but got {}",
         "(INIT::assign_initial_data) err!=0 Something went wrong", 0, err);
+    exit(1);
+  }
   //  cout <<"Read data finished\n";
 
   //

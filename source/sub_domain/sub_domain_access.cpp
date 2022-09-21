@@ -147,6 +147,7 @@ void Sub_domain::gather_ncells(int *recv_buffer, const int &root) const
 
 void Sub_domain::allgather_ncells(vector<int> &ncells_list) const
 {
+  // spdlog::info("allgather_ncells nproc {}",nproc);
   ncells_list.resize(nproc);
   MPI_Allgather(&Ncell, 1, MPI_INT, &ncells_list[0], 1, MPI_INT, cart_comm);
 }

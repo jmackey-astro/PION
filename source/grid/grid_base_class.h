@@ -207,6 +207,11 @@ public:
   ///< get pointer to cell associated with i,j,k (including boundary data)
   virtual cell *get_cell_all(const int, const int, const int) = 0;
 
+  ///< get the level of this grid in hierarchy
+  virtual int level() const = 0;
+
+  ///< set the level of this grid in hierarchy
+  virtual void set_level(int) = 0;
 
   // ---------- QUERY BASIC GRID PROPERTIES -------------------------
 

@@ -146,21 +146,21 @@ int stellar_wind::add_source(
       break;
   }
 
-  /*
-    // calculate initial velocity:
-    double r = sqrt(
-        wp->PeriastronX * wp->PeriastronX + wp->PeriastronY * wp->PeriastronY);
-    double v =
-        2 * pconst.pi() * sqrt(1.0 - wp->eccentricity * wp->eccentricity)
-        / (wp->OrbPeriod * (1.0 - wp->eccentricity) * (1.0 - wp->eccentricity));
-    wp->velocity[XX] = v * wp->PeriastronY;
-    wp->velocity[YY] = -v * wp->PeriastronX;
-    wp->velocity[ZZ] = 0.0;
-    for (int v = 0; v < ndim; v++)
-      ws->dpos_init[v] = wp->dpos[v];
-    for (int v = ndim; v < MAX_DIM; v++)
-      ws->dpos_init[v] = 0.0;
-  */
+#ifdef ANALYTIC_ORBITS
+  // calculate initial velocity:
+  double r = sqrt(
+      wp->PeriastronX * wp->PeriastronX + wp->PeriastronY * wp->PeriastronY);
+  double v =
+      2 * pconst.pi() * sqrt(1.0 - wp->eccentricity * wp->eccentricity)
+      / (wp->OrbPeriod * (1.0 - wp->eccentricity) * (1.0 - wp->eccentricity));
+  wp->velocity[XX] = v * wp->PeriastronY;
+  wp->velocity[YY] = -v * wp->PeriastronX;
+  wp->velocity[ZZ] = 0.0;
+  for (int v = 0; v < ndim; v++)
+    ws->dpos_init[v] = wp->dpos[v];
+  for (int v = ndim; v < MAX_DIM; v++)
+    ws->dpos_init[v] = 0.0;
+#endif  // ANALYTIC_ORBITS
 
   // if using microphysics, find H+ tracer variable, if it exists.
   ws->Hplus  = -1;
@@ -224,6 +224,7 @@ int stellar_wind::add_cell(
   // Setup a wind_cell struct
   //
   array<double, MAX_DIM> cpos, wpos;
+  double dx = grid->DX();
   CI.get_dpos(c, cpos);
   for (int v = 0; v < MAX_DIM; v++)
     wpos[v] = WP->dpos[v];
@@ -236,14 +237,14 @@ int stellar_wind::add_cell(
   else
     wc->dist = grid->distance(wpos, cpos);
 
-  if (wc->dist > WP->radius) {
+  if (wc->dist > WP->current_radius) {
     if (ndim > 1) {
       // only print warning messages if ndim>1. This happens with
       // cells near the origin in 1D where we use the distance to the
       // cell centre-of-volume, not the midpoing.
       spdlog::warn(
           "{}: Expected {} but got {}",
-          "stellar_wind::add_cell() cell is outside radius", WP->radius,
+          "stellar_wind::add_cell() cell is outside radius", WP->current_radius,
           wc->dist);
       CI.print_cell(c);
     }
@@ -255,7 +256,7 @@ int stellar_wind::add_cell(
   //
   c.isbd     = true;
   c.isdomain = false;
-  if (wc->dist < 0.8 * WP->radius)
+  if (wc->dist < 0.75 * WP->current_radius)
     c.timestep = false;
   else
     c.timestep = true;
@@ -273,7 +274,7 @@ int stellar_wind::add_cell(
     wc->theta = 0;
     // correction factor for distance should be set here
     // should be (3*(i+0.5)^2)/((i+1)^3-i^3)
-    double i = (grid->distance(wpos, cpos) - 0.5 * grid->DX()) / grid->DX();
+    double i = (grid->distance(wpos, cpos) - 0.5 * dx) / dx;
     // wc->cfac = pow((pow(i+1.0,3) - pow(i,3)) / (3.0*(i+0.5)*(i+0.5)), 1.0);
     // This is a bit of a hack, correcting the wind density in cells near the
     // origin, obtained by trial and error.
@@ -383,13 +384,6 @@ void stellar_wind::set_wind_cell_reference_state(
   // values for the reference state of the cell.  Every timestep the
   // cell-values will be reset to this reference state.
   //
-  bool set_rho = true;
-  if (wc->dist < 0.75 * WP->radius && ndim > 1) {
-    wc->p[RO] = 1.0e-31;
-    wc->p[PG] = 1.0e-31;
-    set_rho   = false;
-  }
-
   std::array<double, MAX_DIM> pp;
   CI.get_dpos(*wc->c, pp);
   //
@@ -422,26 +416,24 @@ void stellar_wind::set_wind_cell_reference_state(
     // 3D geometry, so either 3D-cartesian, 2D-axisymmetry, or 1D-spherical.
     // rho = Mdot/(4.pi.R^2.v_inf)
     //
-    if (set_rho) {
-      wc->p[RO] = 1.0 / (wc->dist * wc->cfac);
-      wc->p[RO] *= wc->p[RO];
-      wc->p[RO] *= WP->Mdot / (WP->Vinf * 4.0 * M_PI);
-      //
-      // Set pressure based on wind density/temperature at the stellar
-      // radius, assuming adiabatic expansion outside Rstar, and that we
-      // don't care what the temperature is inside Rstar (because this
-      // function will make it hotter than Teff, which is not realistic):
-      //
-      // rho_star = Mdot/(4.pi.R_star^2.v_inf),
-      //   p_star = rho_star.k.T_star/(mu.m_p)
-      // So then p(r) = p_star (rho(r)/rho_star)^gamma
-      //
-      wc->p[PG] = pconst.kB() * WP->Tstar / pconst.m_p();
-      wc->p[PG] *=
-          exp((gamma - 1.0)
-              * log(4.0 * M_PI * WP->Rstar * WP->Rstar * WP->Vinf / WP->Mdot));
-      wc->p[PG] *= exp((gamma)*log(wc->p[RO]));
-    }
+    wc->p[RO] = 1.0 / (wc->dist * wc->cfac);
+    wc->p[RO] *= wc->p[RO];
+    wc->p[RO] *= WP->Mdot / (WP->Vinf * 4.0 * M_PI);
+    //
+    // Set pressure based on wind density/temperature at the stellar
+    // radius, assuming adiabatic expansion outside Rstar, and that we
+    // don't care what the temperature is inside Rstar (because this
+    // function will make it hotter than Teff, which is not realistic):
+    //
+    // rho_star = Mdot/(4.pi.R_star^2.v_inf),
+    //   p_star = rho_star.k.T_star/(mu.m_p)
+    // So then p(r) = p_star (rho(r)/rho_star)^gamma
+    //
+    wc->p[PG] = pconst.kB() * WP->Tstar / pconst.m_p();
+    wc->p[PG] *=
+        exp((gamma - 1.0)
+            * log(4.0 * M_PI * WP->Rstar * WP->Rstar * WP->Vinf / WP->Mdot));
+    wc->p[PG] *= exp((gamma)*log(wc->p[RO]));
   }
 
   // Velocities and magnetic fields: get coordinates relative to star
@@ -693,6 +685,7 @@ void stellar_wind::get_src_posn(
 
 
 
+#ifdef ANALYTIC_ORBITS
 void stellar_wind::get_src_orbit(
     const int id,  ///< src id
     int *moving,   ///< is star moving? 1=yes, 0=no (output)
@@ -711,6 +704,7 @@ void stellar_wind::get_src_orbit(
     w[v] = wlist[id]->dpos_init[v];
   *moving = wlist[id]->pars->moving_star;
 }
+#endif  // ANALYTIC_ORBITS
 
 
 // ##################################################################

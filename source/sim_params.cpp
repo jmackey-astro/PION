@@ -905,8 +905,10 @@ int SimParams::read_wind_sources()
     int type   = 0;
     string evofile;
     int enhance_mdot = 0;
-    double time_offset, update_freq, time_scalefac, eccentricity, OrbPeriod,
-        PeriastronX, PeriastronY;
+    double time_offset, update_freq, time_scalefac;
+#ifdef ANALYTIC_ORBITS
+    double eccentricity, OrbPeriod, PeriastronX, PeriastronY;
+#endif  // ANALYTIC_ORBITS
 
     for (int v = 0; v < ndim; v++) {
       temp.str("");
@@ -1047,6 +1049,7 @@ int SimParams::read_wind_sources()
       time_scalefac = 1.0;  // default value
     }
 
+#ifdef ANALYTIC_ORBITS
     temp.str("");
     temp << "WIND_" << i << "_eccentricity";
     if ((a = rp.find_parameter(temp.str())) != "") {
@@ -1084,6 +1087,7 @@ int SimParams::read_wind_sources()
           "No periastron_vec_y in pfile for wind {}, setting to 0.0", i);
       PeriastronY = 0.0;
     }
+#endif  // ANALYTIC_ORBITS
 
     temp.str("");
     temp << "WIND_" << i << "_xi";
@@ -1142,10 +1146,12 @@ int SimParams::read_wind_sources()
     wind->time_offset        = time_offset;
     wind->update_freq        = update_freq;
     wind->t_scalefactor      = time_scalefac;
-    wind->eccentricity       = eccentricity;
-    wind->OrbPeriod          = OrbPeriod;
-    wind->PeriastronX        = PeriastronX;
-    wind->PeriastronY        = PeriastronY;
+#ifdef ANALYTIC_ORBITS
+    wind->eccentricity = eccentricity;
+    wind->OrbPeriod    = OrbPeriod;
+    wind->PeriastronX  = PeriastronX;
+    wind->PeriastronY  = PeriastronY;
+#endif  // ANALYTIC_ORBITS
     // cout <<"\tgot parameters, adding source! rad="<<rad<<"\n";
     SWP.params.push_back(wind);
     // cout <<"\tadded WIND source. returning.\n";

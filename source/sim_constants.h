@@ -19,4 +19,7 @@
 ///
 #define MAX_NVAR 70
 
+/// Minimum number of cells radius for the stellar-wind boundary
+#define MIN_WIND_RAD 7
+
 #endif  // SIM_CONSTANTS_H

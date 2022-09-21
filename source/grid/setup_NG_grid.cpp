@@ -247,6 +247,8 @@ int setup_NG_grid::setup_grid(
           "{}: {}", "(setup_NG_grid::setup_grid) Couldn't assign data!",
           fmt::ptr(grid[l]));
 
+    grid[l]->set_level(l);
+
 #ifndef NDEBUG
     spdlog::debug(
         "(setup_NG_grid::setup_grid) Done. &grid={}, and grid={}, DX={}",

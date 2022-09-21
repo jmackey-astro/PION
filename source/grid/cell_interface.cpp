@@ -573,7 +573,7 @@ void cell_interface::print_cell(const cell &c)
         std::vector<double>(c.extra_data, c.extra_data + N_extra_data));
   }
   spdlog::info("pos[] : {}", c.pos);
-  std::array<double, MAX_DIM> p;
+  std::array<double, MAX_DIM> p = {0.0, 0.0, 0.0};
   get_dpos(c, p);
   spdlog::info("dpos[] : {}", p);
   spdlog::info("P[]   : {}", c.P);

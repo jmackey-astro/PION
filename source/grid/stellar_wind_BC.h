@@ -192,6 +192,7 @@ public:
       std::array<double, MAX_DIM> &  ///< position vector (output)
   );
 
+#ifdef ANALYTIC_ORBITS
   void get_src_orbit(
       const int,  ///< src id
       int *,      ///< is star moving? 1=yes, 0=no (output)
@@ -200,6 +201,7 @@ public:
       double *,
       double *,
       double *);
+#endif  // ANALYTIC_ORBITS
 
   void set_src_posn(
       const int,  ///< src id

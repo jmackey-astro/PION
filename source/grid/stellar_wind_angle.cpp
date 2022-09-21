@@ -447,14 +447,14 @@ void stellar_wind_angle::set_wind_cell_reference_state(
     const double eos_gamma  ///< EOS gamma
 )
 {
+  struct stellarwind_params *WP = WS->pars;
   //
   // In this function we set the density, pressure, velocity, and tracer
   // values for the reference state of the cell.  Every timestep the
   // cell-values will be reset to this reference state.
   //
-  bool set_rho                  = true;
-  struct stellarwind_params *WP = WS->pars;
-  if (wc->dist < 0.75 * WP->radius && ndim > 1) {
+  bool set_rho = true;
+  if (wc->dist < 0.75 * WP->current_radius && ndim > 1) {
     wc->p[RO] = 1.0e-31;
     wc->p[PG] = 1.0e-31;
     set_rho   = false;

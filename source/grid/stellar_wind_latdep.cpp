@@ -294,7 +294,7 @@ void stellar_wind_latdep::set_wind_cell_reference_state(
   // timestep the cell-values will be reset to this reference state.
   //
   bool set_rho = true;
-  if (wc->dist < 0.75 * WP->radius && ndim > 1) {
+  if (wc->dist < 0.75 * WP->current_radius && ndim > 1) {
     wc->p[RO] = 1.0e-31;
     wc->p[PG] = 1.0e-31;
     set_rho   = false;

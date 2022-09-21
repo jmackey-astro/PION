@@ -190,6 +190,7 @@ protected:
   std::vector<pion_flt> griddata_Ph;  ///< array for Ph of all cells
   std::vector<pion_flt> griddata_xd;  ///< array for extra data of all cells
   std::vector<class cell> gridcells;  ///< array of grid cells
+  int G_level;                        ///< level of this grid in the hierarchy
 
 
   ///
@@ -382,10 +383,20 @@ public:
     return VectorOps_Cart::CellInterface(c, dir, G_dx);
   }
 
-  ///< get pointer to cell associated with i,j,k (including boundary data)
+  /// get pointer to cell associated with i,j,k (including boundary data)
   virtual cell *get_cell_all(const int i, const int j, const int k)
   {
     return &(gridcells[G_ng_all[YY] * G_ng_all[XX] * k + G_ng_all[XX] * j + i]);
+  }
+
+  /// Return level of this grid in nested grid
+  int level() const { return G_level; }
+
+  /// Set level of this grid in nested grid
+  void set_level(int l)
+  {
+    G_level = l;
+    return;
   }
 
   // ---------- QUERY BASIC GRID PROPERTIES -------------------------

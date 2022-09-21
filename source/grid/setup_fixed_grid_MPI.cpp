@@ -150,6 +150,8 @@ int setup_fixed_grid_pllel::setup_grid(
     spdlog::error("{}: {}", "Bad Geometry in setup_grid()", SimPM.coord_sys);
   }
 
+  (*grid)->set_level(0);
+
   if (*grid == 0)
     spdlog::error(
         "{}: {}", "(setup_fixed_grid_pllel::setup_grid) Couldn't assign data!",

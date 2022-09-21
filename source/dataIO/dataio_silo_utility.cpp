@@ -97,7 +97,8 @@ int dataio_silo_utility::SRAD_get_nproc_numfiles(string fname, int *np, int *nf)
   if (err) {
 #ifdef TEST_SILO_IO
     spdlog::error(
-        "must be serial file -- failed to find NUM_FILES and MPI_nproc\ncontinuing assuming serial file....");
+        "must be serial file -- failed to find NUM_FILES and MPI_nproc")
+        spdlog::error("continuing assuming serial file....");
 #endif
     // spdlog::error("{}: {}", "error reading params from file",fname);
     nproc    = 1;
@@ -539,10 +540,12 @@ int dataio_silo_utility::ReadData(
 
     // now call the code that works for each level:
     err = ReadLevelData(silofile, gp, SimPM, l);
-    if (0 != err)
+    if (0 != err) {
       spdlog::error(
           "{}: Expected {} but got {}", "IO_silo_utility:: ReadLevelData", 0,
           err);
+      exit(1);
+    }
 #ifdef TEST_SILO_IO
     spdlog::debug(
         "Finished reading data on level {} of {}", l, SimPM.grid_nlevels);
@@ -649,10 +652,12 @@ int dataio_silo_utility::ReadLevelData(
         err = parallel_read_parallel_silodata(
             firstfile, ggg, SimPM, numfiles, groupsize, nproc, l,
             cells_per_file);
-        if (0 != err)
+        if (0 != err) {
           spdlog::error(
               "{}: Expected {} but got {}", "Failed to read parallel data", 0,
               err);
+          exit(1);
+        }
       }
       else {
 #ifdef TEST_SILO_IO
@@ -792,7 +797,9 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
     // int ng=min(nmesh-ifile*groupsize, groupsize);
 
     for (int igroup = 0; igroup < ng; igroup++) {
-      // cout << "DBSetDir 1" << std::endl;
+#ifdef TEST_SILO_IO
+      spdlog::info("igroup {}, ngroup {}", igroup, ng);
+#endif
       DBSetDir(dbfile, "/");
       //
       // choose pseudo-rank for reading file.
@@ -802,7 +809,6 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
         if (ifile < R)
           pseudo_rank = ifile * groupsize + igroup;
         else
-
           pseudo_rank =
               (R * groupsize) + (ifile - R) * (groupsize - 1) + igroup;
       }
@@ -862,18 +868,18 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
 
       if (!get_data) {
 #ifdef TEST_SILO_IO
-        spdlog::debug(
+        spdlog::info(
             "*** skipping mesh {} because not on local domain", qm_name);
 #endif
       }
       else {
 #ifdef TEST_SILO_IO
-        spdlog::debug(
+        spdlog::info(
             "**** reading mesh {} because it is on local domain", qm_name);
-        spdlog::debug("mesh_iXmin : {}", mesh_iXmin);
-        spdlog::debug("mesh_iXmax : {}", mesh_iXmax);
-        spdlog::debug("local iXmin : {}", localmin);
-        spdlog::debug("local iXmax : {}", localmax);
+        spdlog::info("mesh_iXmin : {}", mesh_iXmin);
+        spdlog::info("mesh_iXmax : {}", mesh_iXmax);
+        spdlog::info("local iXmin : {}", localmin);
+        spdlog::info("local iXmax : {}", localmax);
 #endif
         //
         // set variables to read: (from dataio_silo class)
@@ -886,6 +892,11 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
         //
         for (std::vector<string>::iterator i = readvars.begin();
              i != readvars.end(); ++i) {
+#ifdef TEST_SILO_IO
+          spdlog::info(
+              "reading var {} to grid, pdeudorank {}, cells-per-file {}", *i,
+              pseudo_rank, cells_per_file);
+#endif
           err = PP_read_var2grid(
               dbfile, ggg, SimPM, (*i), cells_per_file[pseudo_rank],
               &mesh_iXmin[0], &mesh_iXmax[0]);
@@ -894,6 +905,9 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
       }
     }  // loop over domains within a file.
 
+#ifdef TEST_SILO_IO
+    spdlog::info("finished reading domains, parallel_read_parallel_silodata");
+#endif
     DBClose(dbfile);
     dbfile = 0;
   }  // loop over files

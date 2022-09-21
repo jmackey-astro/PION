@@ -15,6 +15,8 @@
 #ifndef TESTING_FLAGS_H
 #define TESTING_FLAGS_H
 
+//#define ANALYTIC_ORBITS
+
 #define REPORT_RANK0  // only reports stdout from rank 0.
 #define C2F_FULLSTEP  // Coarse-to-fine boundaries updated every 2 steps
 

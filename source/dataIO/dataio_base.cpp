@@ -1088,6 +1088,7 @@ int DataIOBase::read_simulation_parameters(
       // cout<<nm.str()<<" = "<<wind->moving_star<<"\n";
       iter++;
 
+#ifdef ANALYTIC_ORBITS
       nm.str("");
       nm << "WIND_" << isw << "_eccentricity";
       if ((*iter)->name.compare(nm.str()) != 0) {
@@ -1160,6 +1161,7 @@ int DataIOBase::read_simulation_parameters(
         err               = 0;
       }
       ++iter;
+#endif  // ANALYTIC_ORBITS
 
       nm.str("");
       nm << "WIND_" << isw << "_velocity";
@@ -1339,6 +1341,7 @@ void DataIOBase::set_windsrc_params()
     temp21 << "WIND_" << n << "_moving_star";
     ostringstream temp17;
     temp17.str("");
+#ifdef ANALYTIC_ORBITS
     temp17 << "WIND_" << n << "_eccentricity";
     ostringstream temp18;
     temp18.str("");
@@ -1349,6 +1352,7 @@ void DataIOBase::set_windsrc_params()
     ostringstream temp20;
     temp20.str("");
     temp20 << "WIND_" << n << "_periastron_vec_y";
+#endif  // ANALYTIC_ORBITS
     ostringstream temp22;
     temp22.str("");
     temp22 << "WIND_" << n << "_velocity";
@@ -1438,6 +1442,7 @@ void DataIOBase::set_windsrc_params()
     w021->set_default_val(static_cast<void *>(mv));
     windsrc.push_back(w021);
 
+#ifdef ANALYTIC_ORBITS
     // eccentricity (default must be 1, parameter must not be critical).
     pm_double *w017 = new pm_double(temp17.str());
     w017->critical  = false;  // dv=1.0;
@@ -1461,6 +1466,7 @@ void DataIOBase::set_windsrc_params()
     w020->critical  = false;  // dv=1.0;
     // w020->set_default_val(static_cast<void *>(&dv));
     windsrc.push_back(w020);
+#endif  // ANALYTIC_ORBITS
 
     double vel[MAX_DIM] = {0.0, 0.0, 0.0};
     pm_ddimarr *w022 = new pm_ddimarr(temp22.str());  // velocity of source (cm)
@@ -2107,6 +2113,7 @@ int DataIOBase::write_simulation_parameters(
       ++iter;
       // cout<<nm.str()<<" = "<<wind->moving_star<<"\n";
 
+#ifdef ANALYTIC_ORBITS
       nm.str("");
       nm << "WIND_" << isw << "_eccentricity";
       if ((*iter)->name.compare(nm.str()) != 0) {
@@ -2161,6 +2168,7 @@ int DataIOBase::write_simulation_parameters(
       if (err)
         spdlog::error("{}: {}", "Error writing parameter", (*iter)->name);
       ++iter;
+#endif  // ANALYTIC_ORBITS
 
       nm.str("");
       nm << "WIND_" << isw << "_velocity";

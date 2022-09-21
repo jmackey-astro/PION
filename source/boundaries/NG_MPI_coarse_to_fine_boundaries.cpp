@@ -89,6 +89,14 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
           "C2F_SEND: child {}, my rank != child rank ({}, {}) running parallel COARSE_TO_FINE_SEND\n",
           i, sub_domain->get_myrank(), fg[i].rank);
 #endif
+
+      // PION-NG only works with 1 MPI proc in 1D (unfortunately)
+      if (par.ndim == 1) {
+        spdlog::error("Trying to do 1D nested grids with nproc>1... Error");
+        spdlog::error("There is a bug that gives incorrect results. Sorry!");
+        exit(1);
+      }
+
       // get dimensions of child grid from struct
       CI.get_ipos_vec(fg[i].Xmin, fg_ixmin);
       CI.get_ipos_vec(fg[i].Xmax, fg_ixmax);
