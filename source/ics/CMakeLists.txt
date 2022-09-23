@@ -10,12 +10,13 @@ add_library(
 	photoevaporating_clump.cpp               
 	photoevaporating_multiclumps.cpp         
 	photoevaporating_random_clumps.cpp       
-	radiative_shock.cpp                      
-	read_1Dto2D.cpp                          
-	shock_cloud.cpp                          
-	shock_tube.cpp                           
-	spherical_clump.cpp                      
-	StarBench_test.cpp                       
+	radiative_shock.cpp
+	read_1Dto2D.cpp
+	shock_cloud.cpp
+	shock_tube.cpp
+	spherical_clump.cpp
+	StarBench_test.cpp
+        overwrite-snapshot.cpp
 )
 
 target_link_libraries(ics PRIVATE spdlog::spdlog)

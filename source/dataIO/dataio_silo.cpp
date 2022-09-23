@@ -92,7 +92,7 @@ dataio_silo::dataio_silo(
   dataio_silo::mp  = 0;
   dataio_silo::gp  = 0;
   silofile.erase();
-  ndim                 = -1;
+  ndim                 = SimPM.ndim;
   nodedims             = 0;
   zonedims             = 0;
   have_setup_gridinfo  = false;

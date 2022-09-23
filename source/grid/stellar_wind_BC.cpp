@@ -598,27 +598,6 @@ void stellar_wind::set_wind_cell_reference_state(
   return;
 }
 
-// ##################################################################
-// ##################################################################
-
-int stellar_wind::set_num_cells(
-    const int id,  ///< src id
-    const int nc   ///< number of cells.
-)
-{
-  if (id < 0 || id >= nsrc) spdlog::error("{}: {}", "bad src id", id);
-
-  if (nc != wlist[id]->ncell) {
-    spdlog::warn(
-        "{}: Expected {} but got {}",
-        "stellar_wind::set_num_cells() COUNTING PROBLEM!!", nc,
-        wlist[id]->ncell);
-    return 1;
-  }
-  return 0;
-}
-
-
 
 // ##################################################################
 // ##################################################################

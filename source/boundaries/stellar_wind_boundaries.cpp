@@ -188,9 +188,11 @@ int stellar_wind_bc::BC_assign_STWIND(
       //
       err = grid->Wind->add_source(SWP.params[isw]);
 #ifndef NDEBUG
+#ifdef ANALYTIC_ORBITS
       spdlog::debug(
           "add_source call: {},{}", SWP.params[isw]->PeriastronX,
           SWP.params[isw]->PeriastronY);
+#endif
 #endif
     }
     else {
@@ -320,8 +322,6 @@ int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
     }
   }
 
-  err += grid->Wind->set_num_cells(id, ncell);
-
 #ifndef NDEBUG
   spdlog::debug(
       "BC_assign_STWIND_add_cells2src: Added {} cells to wind boundary for WS {}",
@@ -381,7 +381,6 @@ int stellar_wind_bc::BC_update_STWIND(
 #endif
       // delete wind-cell list
       err += grid->Wind->remove_cells(grid, id);
-      err += grid->Wind->set_num_cells(id, 0);
       // Update positions
       // Elipse needs to be rotated -> get rotation matrix entries
       if (periastron_vec[0] != 0) {
@@ -463,7 +462,6 @@ int stellar_wind_bc::BC_update_STWIND(
       // delete wind-cell list (we have to movet the star, so everything
       // gets rewritten)
       err += grid->Wind->remove_cells(grid, i);
-      err += grid->Wind->set_num_cells(i, 0);
     }
   }
 

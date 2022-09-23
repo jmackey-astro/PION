@@ -729,4 +729,20 @@ protected:
   );
 };
 
+
+///
+/// This reads in a snapshot and adds a supernova to the data.
+///
+class IC_overwrite_snapshot : public ICsetup_base {
+public:
+  IC_overwrite_snapshot();
+  ~IC_overwrite_snapshot();
+  int setup_data(
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *  ///< pointer to grid
+  );
+};
+
+
+
 #endif  //  ICGEN_H

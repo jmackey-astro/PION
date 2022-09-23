@@ -158,16 +158,6 @@ public:
   );
 
   ///
-  /// Set the total number of cells for this source; function
-  /// checks with internal counting to make sure we got all the
-  /// cells in the internal list.
-  ///
-  int set_num_cells(
-      const int,  ///< src id
-      const int   ///< number of cells.
-  );
-
-  ///
   /// Return total number of cells for this source.
   ///
   int get_num_cells(const int  ///< src id

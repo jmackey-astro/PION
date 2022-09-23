@@ -42,6 +42,7 @@ using namespace std;
 #ifdef PARALLEL
 
 //#define TEST_INT
+//#define SAVEFLUX
 
 // ##################################################################
 // ##################################################################
@@ -405,8 +406,12 @@ int sim_control_NG_MPI::Init(
   return (err);
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int sim_control_NG_MPI::Time_Int(
     vector<class GridBaseClass *> &grid  ///< grid pointers.
@@ -436,6 +441,10 @@ int sim_control_NG_MPI::Time_Int(
     SimPM.levels[l].dt      = 0.0;
     SimPM.levels[l].simtime = SimPM.simtime;
   }
+
+#ifdef SAVEFLUX
+  ofstream flux("flux-data.txt");
+#endif
 
   // --------------------------------------------------------------
   // Update internal and external boundaries.
@@ -642,6 +651,24 @@ int sim_control_NG_MPI::Time_Int(
       // spdlog::debug("\t runtime: {}s", tsf);
     }
     // --------------------------------------------------------------
+
+#ifdef SAVEFLUX
+    double d = 3.086e18 * 10.0, distance = 0.0;  // flux at 10 pc.
+    std::array<double, MAX_DIM> dpos;
+
+    for (int l = 0; l < SimPM.grid_nlevels; l++) {
+      cell *c      = grid[l]->FirstPt();
+      double delta = 0.5 * grid[l]->DX() * ONE_PLUS_EPS;
+      do {
+        CI.get_dpos(*c, dpos);
+        if (c->isleaf && c->isgd && fabs(dpos[XX] - d) <= delta) {
+          flux << dpos[XX] << "  " << c->P[RO] << "  " << c->P[PG] << "  "
+               << c->P[VX] << "\n";
+        }
+
+      } while ((c = grid[l]->NextPt(*c)) != 0);
+    }  // loop over levels
+#endif
 
     err += output_data(grid);
     if (err) {

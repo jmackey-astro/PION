@@ -124,6 +124,10 @@ void setup_ics_type(
     *ic = new IC_read_1Dto2D();
   }
 
+  else if (ics == "Supernova") {
+    *ic = new IC_overwrite_snapshot();
+  }
+
   else
     spdlog::error("{}: {}", "BAD IC identifier", ics);
   if (!*ic) spdlog::error("{}: {}", "failed to init", ics);

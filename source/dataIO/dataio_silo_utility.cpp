@@ -724,7 +724,6 @@ int dataio_silo_utility::parallel_read_serial_silodata(
   std::array<int, MAX_DIM> mesh_iXmin, mesh_iXmax;
   get_quadmesh_integer_extents(
       dbfile, ggg, SimPM, qm_dir, qm_name, mesh_iXmin, mesh_iXmax);
-  // if (err) spdlog::error("{}: {}", "Failed to get quadmesh extents!",qm_dir);
 
   //
   // now read each variable in turn from the mesh, using the parallel
@@ -938,7 +937,10 @@ void dataio_silo_utility::get_quadmesh_extents(
   //
   DBquadmesh *qm = 0;
   qm             = DBGetQuadmesh(dbfile, qm_name.c_str());
-  if (!qm) spdlog::error("{}: {}", "failed to get quadmesh", qm_name);
+  if (!qm) {
+    spdlog::error("{}: {}", "failed to get quadmesh", qm_name);
+    exit(1);
+  }
 
   //
   // Check that datatype is what we are expecting!  If not, then
@@ -1002,7 +1004,6 @@ void dataio_silo_utility::get_quadmesh_integer_extents(
   std::array<double, MAX_DIM> mesh_xmin, mesh_xmax;
   get_quadmesh_extents(
       dbfile, mesh_dir, qm_name, &mesh_xmin[0], &mesh_xmax[0], SimPM);
-
   //
   // Now use the cell interface to get the integer extents (Note that
   // this will fail and bug out if the global grid class isn't set up,

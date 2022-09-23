@@ -237,16 +237,24 @@ int main(int argc, char **argv)
   vector<class GridBaseClass *> grid(SimPM.grid_nlevels);
   err      = SimSetup->setup_grid(grid, SimPM);
   SimPM.dx = grid[0]->DX();
-  if (!grid[0]) spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid[0]));
+  if (!grid[0]) {
+    spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid[0]));
+    exit(1);
+  }
 
   //
   // read in what kind of ICs we are setting up.
   //
   rp = new ReadParams;
-  if (!rp) spdlog::error("{}: {}", "icgen:: initialising RP", fmt::ptr(rp));
-  ;
+  if (!rp) {
+    spdlog::error("{}: {}", "icgen:: initialising RP", fmt::ptr(rp));
+    exit(1);
+  }
   err += rp->read_paramfile(pfile);
-  if (err) spdlog::error("{}: {}", "Error reading parameterfile", pfile);
+  if (err) {
+    spdlog::error("{}: {}", "Error reading parameterfile", pfile);
+    exit(1);
+  }
   string seek = "ics";
   string ics  = rp->find_parameter(seek);
   setup_ics_type(ics, &ic);
@@ -268,6 +276,34 @@ int main(int argc, char **argv)
   SimSetup->setup_microphysics(SimPM);
   MP = SimSetup->get_mp_ptr();
   ic->set_mp_pointer(MP);
+  // ----------------------------------------------------------------
+
+
+  // ----------------------------------------------------------------
+  // If we need to read in a snapshot to set the initial conditions, do
+  // it here.
+#ifdef PION_NESTED
+#ifdef PARALLEL
+
+  if (ics == "Supernova") {
+    // read filename from list of parameters
+    seek             = "SN-snapshot-file";
+    string inputfile = rp->find_parameter(seek);
+    if (inputfile == "") {
+      spdlog::error("{}: {}", "didn't find parameter", seek);
+      exit(1);
+    }
+
+    // read data from the input file onto the grid
+    class dataio_silo_utility dd(SimPM, "DOUBLE", &SimPM.levels[0].sub_domain);
+    err = dd.ReadData(inputfile, grid, SimPM);
+    if (err) {
+      spdlog::error("main_icgen: failed to read data.", err);
+      exit(err);
+    }
+  }
+#endif
+#endif
   // ----------------------------------------------------------------
 
   // have to setup jet simulation before setting up boundary
@@ -325,13 +361,18 @@ int main(int argc, char **argv)
 
 #ifndef PARALLEL
   err = SimSetup->assign_boundary_data(SimPM, 0, grid[0], MP);
-  if (0 != err)
+  if (0 != err) {
     spdlog::error(
         "{}: Expected {} but got {}", "icgen::assign_boundary_data", 0, err);
+    exit(1);
+  }
 #endif /* PARALLEL */
 #else
   err += SimSetup->setup_raytracing(SimPM, grid);
-  if (err) spdlog::error("{}: {}", "icgen-ng: Failed to setup raytracer", err);
+  if (err) {
+    spdlog::error("{}: {}", "icgen-ng: Failed to setup raytracer", err);
+    exit(1);
+  }
 
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     // cout <<"icgen_NG: assigning boundary data for level "<<l<<"\n";
@@ -339,10 +380,12 @@ int main(int argc, char **argv)
 #ifdef PARALLEL
     SimPM.levels[0].sub_domain.barrier();
 #endif /* PARALLEL */
-    if (0 != err)
+    if (0 != err) {
       spdlog::error(
           "{}: Expected {} but got {}", "icgen-ng::assign_boundary_data", 0,
           err);
+      exit(1);
+    }
   }
   // ----------------------------------------------------------------
 
@@ -352,14 +395,16 @@ int main(int argc, char **argv)
     err += SimSetup->TimeUpdateExternalBCs(
         SimPM, l, grid[l], solver, SimPM.simtime, SimPM.tmOOA, SimPM.tmOOA);
   }
-  if (0 != err)
+  if (0 != err) {
     spdlog::error(
         "{}: Expected {} but got {}", "icgen-ng: error from bounday update", 0,
         err);
-    // ----------------------------------------------------------------
+    exit(1);
+  }
+  // ----------------------------------------------------------------
 
 #ifdef PARALLEL
-    // ----------------------------------------------------------------
+  // ----------------------------------------------------------------
 #ifndef NDEBUG
   spdlog::info("icgen-ng: updating C2F boundaries");
 #endif /* NDEBUG */
@@ -471,16 +516,21 @@ int main(int argc, char **argv)
   //
   if (SimPM.ntracer > 0 && (SimPM.EP.chemistry)) {
     spdlog::info("MAIN: equilibrating the chemical species.");
-    if (!MP) spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+    if (!MP) {
+      spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+      exit(1);
+    }
 
     // first avoid cooling the gas in getting to equilbrium, by
     // setting update_erg to false.
     bool uerg           = SimPM.EP.update_erg;
     SimPM.EP.update_erg = false;
     err                 = ic->equilibrate_MP(grid[0], MP, rp, SimPM);
-    if (err)
+    if (err) {
       spdlog::error(
           "{}: {}", "setting chemical states to equilibrium failed", err);
+      exit(1);
+    }
 
     SimPM.EP.update_erg = uerg;
     spdlog::info("MAIN: finished equilibrating the chemical species.");
