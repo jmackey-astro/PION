@@ -117,6 +117,54 @@ void setup_grid_NG_MPI::setup_NG_grid_levels(
 // ##################################################################
 // ##################################################################
 
+void setup_grid_NG_MPI::setup_NG_grid_levels(
+    const enum axes daxis,  ///< Axis to decompose domain along.
+    class SimParams &SimPM  ///< pointer to simulation parameters
+)
+{
+  // call serial version to set global properties of each level.
+  int err = 0;
+  setup_NG_grid::setup_NG_grid_levels(SimPM);
+
+  // For each level, do a domain decomposition
+  for (int l = 0; l < SimPM.grid_nlevels; l++) {
+#ifndef NDEBUG
+    spdlog::info("decomposeDomain level {}", l);
+#endif
+    if (l == 0) {
+      err = SimPM.levels[l].sub_domain.decomposeDomain(
+          daxis, SimPM.ndim, SimPM.levels[l], SimPM.get_pbc_bools());
+    }
+    else {
+      // err = SimPM.levels[l].sub_domain.decomposeDomain(
+      //    SimPM.ndim, SimPM.levels[l]);
+      SimPM.levels[l].sub_domain = SimPM.levels[0].sub_domain;
+      err                        = SimPM.levels[l].sub_domain.decomposeDomain(
+          daxis, SimPM.ndim, SimPM.levels[l]);
+    }
+#ifndef NDEBUG
+    spdlog::info("decomposeDomain level {} finished", l);
+#endif
+    if (0 != err) {
+      spdlog::error(
+          "{}: Expected {} but got {}", "PLLEL Init():Decompose Domain!", 0,
+          err);
+      exit(1);
+    }
+    SimPM.levels[l].sub_domain.set_ReadSingleFile(true);  // legacy option.
+  }
+
+  // For each level, get rank of process for parent grid and each
+  // child grid.
+  for (int l = 0; l < SimPM.grid_nlevels; l++) {
+    SimPM.levels[l].sub_domain.set_NG_hierarchy(SimPM, l);
+  }
+
+  return;
+}
+// ##################################################################
+// ##################################################################
+
 int setup_grid_NG_MPI::setup_grid(
     vector<class GridBaseClass *> &grid,  ///< grid pointers.
     class SimParams &SimPM                ///< pointer to simulation parameters

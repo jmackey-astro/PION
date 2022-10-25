@@ -42,7 +42,7 @@ ${mpi} ../pion-ng \
   outfile=BW_NGcrt3Dpbc_NR032_new omp-nthreads=${nt} \
   redirect=pion-3d-ng-pbc-bw || exit 1
 
-REF_FILE=BW_NGcrt3Dpbc_NR032_REF_level00_0000.00000608.silo
+REF_FILE=BW_NGcrt3Dpbc_NR032_REF_level00_0000.00000604.silo
 NEW_FILE=`ls BW_NGcrt3Dpbc_NR032_new_level00_0000.*.silo | tail -n1`
 ../silocompare . $NEW_FILE ${script_dir}/data $REF_FILE 0 cmp 2 > tmp.txt
 

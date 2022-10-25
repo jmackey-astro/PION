@@ -454,15 +454,16 @@ int dataio_silo::ReadHeader(
   *db_ptr = DBOpen(temp, DB_UNKNOWN, DB_READ);
   if (!(*db_ptr)) {
     spdlog::error("{}: {}", "open silo file failed.", fmt::ptr(*db_ptr));
+    exit(1);
   }
 
   DBSetDir(*db_ptr, "/header");
   err = read_simulation_parameters(SimPM);
   if (err) {
     spdlog::error(
-        "{}: {}", "dataio_silo::ReadHeader() error reading header \
-               from silo file",
+        "dataio_silo::ReadHeader() error reading header from silo file: {}",
         err);
+    exit(1);
   }
   dataio_silo::ndim = SimPM.ndim;
 

@@ -99,7 +99,9 @@ void setup_NG_grid::setup_NG_grid_levels(
   //
   // populate "levels" struct in SimPM based on NG grid parameters.
   //
-
+  spdlog::debug(
+      "nlevels = {}, size of levels[] = {}", SimPM.grid_nlevels,
+      SimPM.levels.size());
   for (int i = 0; i < SimPM.grid_nlevels; i++) {
     SimPM.levels[i].parent = 0;
     SimPM.levels[i].child  = 0;
@@ -171,6 +173,21 @@ void setup_NG_grid::setup_NG_grid_levels(
 
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+void setup_NG_grid::setup_NG_grid_levels(
+    const enum axes daxis,  ///< Axis to decompose domain along.
+    class SimParams &SimPM  ///< pointer to simulation parameters
+)
+{
+  setup_NG_grid_levels(SimPM);
+  return;
+}
+
 
 // ##################################################################
 // ##################################################################

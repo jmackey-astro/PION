@@ -429,7 +429,7 @@ double point_quantities::get_point_RotationMeasure(
     }
   }
   return val;
-};
+}
 
 
 
@@ -581,7 +581,7 @@ double point_quantities::get_point_EmissionMeasure(
     }
   }
   return val;
-};
+}
 
 
 

@@ -31,6 +31,8 @@ EP_Max_Temperature 1e100
 EP_Hydrogen_MassFrac 1.0
 EP_Helium_MassFrac 0.0
 EP_Metal_MassFrac 0.0
+EP_sat_thermal_cond 0
+EP_tc_strength 0.0
 
 # Smooth Data by n cells? (n<=0 means no).
 smooth -1

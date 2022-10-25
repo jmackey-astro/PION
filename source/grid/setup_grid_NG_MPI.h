@@ -51,6 +51,14 @@ public:
   );
 
   ///
+  /// Populate the array SimPM.levels with Xmin,Xmax,Range,dx,etc.
+  /// This only splits domain along the specified axis.
+  void setup_NG_grid_levels(
+      const enum axes,   ///< Axis to decompose domain along.
+      class SimParams &  ///< pointer to simulation parameters
+  );
+
+  ///
   /// Sets up a NG grid.
   ///
   int setup_grid(

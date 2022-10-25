@@ -54,6 +54,7 @@
 /// - 2015.08.20 JM: Changed image coordinates, so that the origin of
 ///    the simulation is projected onto the image origin.
 /// - 2015.10.13 JM: added 6GHz Bremsstrahlung and Emission measure
+/// - 2022.10.05 JM: fixing it to not crash with nested grids
 
 
 ///
@@ -157,15 +158,16 @@ int main(int argc, char **argv)
 {
   int err = 0;
 
-  auto max_logfile_size = 1048576 * 5;
-  auto max_logfiles     = 3;
-#ifdef PARALLEL
-  spdlog::set_default_logger(spdlog::rotating_logger_mt(
-      "projection_pre_mpi", "projection.log", max_logfile_size, max_logfiles));
-#else
-  spdlog::set_default_logger(spdlog::rotating_logger_mt(
-      "projection", "projection.log", max_logfile_size, max_logfiles));
-#endif /* PARALLEL */
+  /*
+    auto max_logfile_size = 1048576 * 5;
+    auto max_logfiles     = 3;
+    #ifdef PARALLEL
+    spdlog::set_default_logger(spdlog::rotating_logger_mt(
+          "projection3d_pre_mpi", "projection3d.log", max_logfile_size,
+    max_logfiles)); #else spdlog::set_default_logger(spdlog::rotating_logger_mt(
+          "projection3d", "projection3d.log", max_logfile_size, max_logfiles));
+    #endif // PARALLEL
+  */
 
 #ifdef NDEBUG
   spdlog::set_level(spdlog::level::info);
@@ -184,10 +186,10 @@ int main(int argc, char **argv)
   int nproc  = SimPM.levels[0].sub_domain.get_nproc();
 
 #ifdef PARALLEL
-  spdlog::set_default_logger(spdlog::rotating_logger_mt(
-      "projection_process_" + to_string(myrank), "projection.log",
-      max_logfile_size, max_logfiles));
-#endif /* PARALLEL */
+//  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+//        "projection_process_" + to_string(myrank), "projection.log",
+//        max_logfile_size, max_logfiles));
+#endif  // PARALLEL
 
   spdlog::info("Projection3D: myrank={}, nproc={}", myrank, nproc);
 
@@ -196,20 +198,54 @@ int main(int argc, char **argv)
   //
   // Get input files and an output file.
   //
-  if (argc < 11) {
-    spdlog::error("{}: {}", "Bad number of args", argc);
-    spdlog::error(
-        "Use as follows:\nprojection: <projection> <input-path> <input-silo-file-base>\n\t\t <output-file> <op-file-type> <multi-opfiles> \n\t\t <normalvec> <fixed_dir> <theta> <what2integrate>  <skip> +[optional velocity args] \n******************************************\ninput path:   path to input files.\ninput file:   base filename of sequence of filesn.\noutput file:  filename for output file(s).\nop-file-type: integer. 0=text, 1=fits, 3=vtk.\nmuti-opfiles: integer. 0=only one output file. 1=one output file per step.\nnormal-vec:   string direction for LOS viewing normal to calculate angle from: XN,XP,YN,YP,ZN,ZP.\nfixed-dir:    string direction for axis which we rotate view around (XN,XP mean same thing).\ntheta:        angle (DEGREES, in [-89,89]) which LOS makes with normal-vec (staying perp. to fixed dir).\nwhat2integrate: integer: 0=density, 1=neutral num.density, 2=los velocity, 3=VX, 4=Halpha\n                         5=StokesQ,6=StokesU, 7=All-scalars, 8=|B|(LOS), 9=|B|(perp)\nskip:         will skip this number of input files each loop. (0 means it will calculate every file)\nOPTIONAL VELOCITY ARGS:\nNbins:        integer number of bins in velocity profile.\nv_min:        minimum velocity to measure (in same units as output files!)\nv_max:        maximum velocity to measure (in same units as output files!)\nsmooth:       integer =1 for constant broadening, =2 for doppler broadening by temperature.\nsmoooth-val:  float for the velocity by which to smooth, if constant broadening (FWHM)\n");
+  if (argc < 13) {
+    spdlog::info("{}: {}", "Bad number of args", argc);
+    spdlog::info("Use as follows:");
+    spdlog::info(
+        "projection: <projection> <input-path> <input-silo-file-base>");
+    spdlog::info("\t\t <output-file> <op-file-type> <multi-opfiles>");
+    spdlog::info(
+        "\t\t <normalvec> <fixed_dir> <theta> <what2integrate>  <skip> <start-level> +[optional velocity args] ");
+    spdlog::info("******************************************");
+    spdlog::info("input path:   path to input files.");
+    spdlog::info("input file:   base filename of sequence of filesn.");
+    spdlog::info("output file:  filename for output file(s).");
+    spdlog::info("op-file-type: integer. 0=text, 1=fits, 3=vtk.");
+    spdlog::info(
+        "muti-opfiles: integer. 0=only one output file. 1=one output file per step.");
+    spdlog::info(
+        "normal-vec:   string direction for LOS viewing normal to calculate angle from: XN,XP,YN,YP,ZN,ZP.");
+    spdlog::info(
+        "fixed-dir:    string direction for axis which we rotate view around (XN,XP mean same thing).");
+    spdlog::info(
+        "theta:        angle (DEGREES, in [-89,89]) which LOS makes with normal-vec (staying perp. to fixed dir).");
+    spdlog::info(
+        "what2integrate: integer: 0=density, 1=neutral num.density, 2=los velocity, 3=VX, 4=Halpha");
+    spdlog::info(
+        "                         5=StokesQ,6=StokesU, 7=All-scalars, 8=|B|(LOS), 9=|B|(perp)");
+    spdlog::info(
+        "skip:         will skip this number of input files each loop. (0 means it will calculate every file)");
+    spdlog::info(
+        "start-level:  will ignore levels coarser than this one (zero offset)");
+    spdlog::info(
+        "finish-level: will ignore levels finer than this one (zero offset)");
+    spdlog::info("OPTIONAL VELOCITY ARGS:");
+    spdlog::info("Nbins:        integer number of bins in velocity profile.");
+    spdlog::info(
+        "v_min:        minimum velocity to measure (in same units as output files!)");
+    spdlog::info(
+        "v_max:        maximum velocity to measure (in same units as output files!)");
+    spdlog::info(
+        "smooth:       integer =1 for constant broadening, =2 for doppler broadening by temperature.");
+    spdlog::info(
+        "smoooth-val:  float for the velocity by which to smooth, if constant broadening (FWHM)");
+    exit(1);
   }
 
 
-  spdlog::info(
-      "argv[0] = command = {}\nargv[1] = input path = {}\nargv[2] = input file = {}\nargv[3] = image file = {}\nargv[4] = image filetype = {}  (3=vtk)\nargv[5] = multi_opfiles = {}\nargv[6] = Normal dir = {}\nargv[7] = Perpendicular dir = {}\nargv[8] = Angle to normal = {}\nargv[9] = what-to-integrate = {}\nargv[10] = skip = {}\n",
-      argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7],
-      argv[8], argv[9], argv[10]);
-  /*
-    cout <<"argv[] =  = "<< argv[] <<"\n";
-  */
+  for (int v = 0; v < argc; v++) {
+    spdlog::info("argv[{}] = command = {}", v, argv[v]);
+  }
 
   string input_path = argv[1];
   string input_file = argv[2];
@@ -238,6 +274,7 @@ int main(int argc, char **argv)
       break;
     default:
       spdlog::error("{}: {}", "Bad outfile format", op_filetype);
+      exit(1);
   }
 
   int multi_opfiles = atoi(argv[5]);
@@ -250,6 +287,7 @@ int main(int argc, char **argv)
       break;
     default:
       spdlog::error("{}: {}", "Bad multi-files value", multi_opfiles);
+      exit(1);
   }
 
   //
@@ -269,8 +307,10 @@ int main(int argc, char **argv)
     normal = ZN;
   else if (n == "ZP")
     normal = ZP;
-  else
+  else {
     spdlog::error("{}: {}", "Bad normal direction", n);
+    exit(1);
+  }
   //
   // Perpendicular direction, around which to rotate the view.
   //
@@ -288,33 +328,38 @@ int main(int argc, char **argv)
     perpdir = ZN;
   else if (n == "ZP")
     perpdir = ZP;
-  else
+  else {
     spdlog::error("{}: {}", "Bad perp direction", n);
+    exit(1);
+  }
   //
   // Angle to normal direction, and perp. to perp. direction.
   //
   int th = atoi(argv[8]);
-  if (th < -89 || th > 89 || isnan(th) || isinf(th))
+  if (th < -89 || th > 89 || isnan(th) || isinf(th)) {
     spdlog::error(
         "{}: {}", "Input angle is not on [-89,89]. please input a valid angle.",
         th);
-  bool zero_angle;
-  if (th == 0)
-    zero_angle = true;
-  else
-    zero_angle = false;
+    exit(1);
+  }
   int angle = th;
 
   th = atoi(argv[9]);
-  if (th < 0 || isnan(th) || isinf(th))
+  if (th < 0 || isnan(th) || isinf(th)) {
     spdlog::error(
         "{}: {}", "Input what-to-integrate is not in [0,1,2,3,4,7,8,9]", th);
+    exit(1);
+  }
   int what_to_integrate = th;
   // 0=density, 1=neutral density, 2=LOS velocity, 3=VX, 4=emission,
   // 7=all_scalars, [5,6]=stokesQU, [8,9]=|B|(LOS,PERP)
 
   // how sparsely to sample the data files.
   size_t skip = static_cast<size_t>(atoi(argv[10]));
+
+  // ignore coarser levels than this.
+  int begin_lev = atoi(argv[11]);
+  int finishlev = atoi(argv[12]);
 
   //
   // Number of bins for each pixel value -- if getting velocity profiles we
@@ -328,14 +373,16 @@ int main(int argc, char **argv)
   vps.smooth = smooth;
 
   if (what_to_integrate == I_VEL_LOS || what_to_integrate == I_VX) {
-    if (argc < 13)
+    if (argc < 13) {
       spdlog::error(
           "{}: {}", "Need at least 13 args for velocity profiling", argc);
-    Nbins      = atoi(argv[11]);
-    v_min      = atof(argv[12]);
-    v_max      = atof(argv[13]);
-    smooth     = atoi(argv[14]);
-    broadening = atof(argv[15]);
+      exit(1);
+    }
+    Nbins      = atoi(argv[13]);
+    v_min      = atof(argv[14]);
+    v_max      = atof(argv[15]);
+    smooth     = atoi(argv[16]);
+    broadening = atof(argv[17]);
     bin_size   = (v_max - v_min) / Nbins;
     spdlog::debug(
         "Velocity info: max={}, min={}, binsize={}, Nb={}, smooth={}, broaden by {} cm/s",
@@ -349,8 +396,8 @@ int main(int argc, char **argv)
   //*******************************************************************
   // Get input files, read header, setup grid
   //*******************************************************************
-  spdlog::info(
-      "-------------------------------------------------------\n--------------- Getting List of Files to read ---------");
+  spdlog::info("-------------------------------------------------------");
+  spdlog::info("--------------- Getting List of Files to read ---------");
 
   //
   // set up dataio_utility class
@@ -363,7 +410,10 @@ int main(int argc, char **argv)
   //
   list<string> files;
   err += dataio.get_files_in_dir(input_path, input_file, &files);
-  if (err) spdlog::error("{}: {}", "failed to get list of files", err);
+  if (err) {
+    spdlog::error("{}: {}", "failed to get list of files", err);
+    exit(1);
+  }
   //
   // Remove non-SILO files from list
   //
@@ -384,15 +434,18 @@ int main(int argc, char **argv)
   list<string>::iterator ff = files.begin();
 
   unsigned int nfiles = files.size();
-  if (nfiles < 1)
+  if (nfiles < 1) {
     spdlog::error("{}: {}", "Need at least one file, but got none", nfiles);
+    exit(1);
+  }
 
   mltsf = clk.time_so_far("mainloop");
-  spdlog::debug(
-      "*-*-*-* Files read,\t total time so far = {} secs or {} hours. *-*-*-*\n",
-      mltsf, mltsf / 3600.0);
   spdlog::info(
-      "--------------- Got list of Files ---------------------\n-------------------------------------------------------\n--------------- Setting up Grid -----------------------");
+      "*-*-*-* Files read,\t total time so far = {} secs or {} hours. *-*-*-*",
+      mltsf, mltsf / 3600.0);
+  spdlog::info("--------------- Got list of Files ---------------------");
+  spdlog::info("-------------------------------------------------------");
+  spdlog::info("--------------- Setting up Grid -----------------------");
 
   //
   // Set low-memory cells
@@ -406,13 +459,18 @@ int main(int argc, char **argv)
   temp << input_path << "/" << *ff;
   string first_file = temp.str();
   temp.str("");
+  spdlog::info("Reading header from file: {}", first_file);
   err = dataio.ReadHeader(first_file, SimPM);
-  if (err) spdlog::error("{}: {}", "Didn't read header", err);
+  if (err) {
+    spdlog::error("{}: {}", "Didn't read header", err);
+    exit(1);
+  }
+  spdlog::info("Header read from file: {}", first_file);
 
-    //
-    // ------------------------------------------------------------------------
-    // MODIFYING XMIN/XMAX SO THAT I ONLY READ IN A SUBDOMAIN OF THE FULL GRID
-    //
+  //
+  // ------------------------------------------------------------------------
+  // MODIFYING XMIN/XMAX SO THAT I ONLY READ IN A SUBDOMAIN OF THE FULL GRID
+  //
 #ifdef RESET_DOMAIN
   reset_domain(&(SimPM.levels[0].sub_domain));
 #endif
@@ -427,35 +485,46 @@ int main(int argc, char **argv)
   // Get axis corresponding to perpdir, and decompose only along
   // this axis.
   //
+  // have to re-do the domain decomposition because we only split
+  // the domain on one axis.
+  enum axes perpaxis = static_cast<axes>(static_cast<int>(perpdir) / 2);
+  spdlog::info("*** perpendicular axis = {}", perpaxis);
+
 #ifdef PION_NESTED
-  SimPM.levels.resize(SimPM.grid_nlevels);
+  spdlog::info("setting up grid properties on all levels");
+  spdlog::info(
+      "nlevels = {}, size of levels[] = {}", SimPM.grid_nlevels,
+      SimPM.levels.size());
   class setup_grid_NG_MPI *SimSetup = new setup_grid_NG_MPI();
-  SimSetup->setup_NG_grid_levels(SimPM);
+  SimSetup->setup_NG_grid_levels(perpaxis, SimPM);
 #else
   class setup_fixed_grid_pllel *SimSetup = new setup_fixed_grid_pllel();
 #endif
 
-  // have to re-do the domain decomposition because we only split
-  // the domain on one axis.
-  enum axes perpaxis = static_cast<axes>(static_cast<int>(perpdir) / 2);
-  spdlog::debug("*** perpendicular axis = {}", perpaxis);
-
-  for (int l = 0; l < SimPM.grid_nlevels; l++) {
-    SimPM.levels[l].sub_domain.decomposeDomain(
-        perpaxis, SimPM.ndim, SimPM.levels[l]);
-  }
-  for (int l = 0; l < SimPM.grid_nlevels; l++) {
-    SimPM.levels[l].sub_domain.set_NG_hierarchy(SimPM, l);
-  }
-  if (err) spdlog::error("{}: {}", "main: failed to decompose domain!", err);
+  //  for (int l = 0; l < SimPM.grid_nlevels; l++) {
+  //    SimPM.levels[l].sub_domain.decomposeDomain(
+  //        perpaxis, SimPM.ndim, SimPM.levels[l]);
+  //  }
+  //  for (int l = 0; l < SimPM.grid_nlevels; l++) {
+  //    SimPM.levels[l].sub_domain.set_NG_hierarchy(SimPM, l);
+  //  }
+  //  if (err) {
+  //    spdlog::error("{}: {}", "main: failed to decompose domain!", err);
+  //    exit(1);
+  //  }
   // setup grids
   vector<class GridBaseClass *> G;
+  SimPM.grid_nlevels = finishlev;
+  // SimPM.levels.resize(finishlev);
   G.resize(SimPM.grid_nlevels);
   SimSetup->setup_grid(G, SimPM);
   class GridBaseClass *grid = G[0];
-  if (!grid) spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid));
+  if (!grid) {
+    spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid));
+    exit(1);
+  }
   SimPM.dx = grid->DX();
-  spdlog::debug("\t\tg={}\tDX = {}", fmt::ptr(grid), grid->DX());
+  spdlog::info("\t\tg={}\tDX = {}", fmt::ptr(grid), grid->DX());
 
   //
   // May need to setup extra data in each cell for ray-tracing optical
@@ -468,8 +537,10 @@ int main(int argc, char **argv)
   reset_radiation_sources(SimPM);
 
   // This code needs 3d data to project...
-  if (SimPM.ndim != 3)
+  if (SimPM.ndim != 3) {
     spdlog::error("{}: {}", "projection needs 3D data", SimPM.ndim);
+    exit(1);
+  }
 
   //
   // If doing MHD we may want to project the field components, but
@@ -480,15 +551,20 @@ int main(int argc, char **argv)
     SIMeqns = 1;
   else if (SIMeqns == EQMHD || SIMeqns == EQGLM || SIMeqns == EQFCD)
     SIMeqns = 2;
-  else
+  else {
     spdlog::error("{}: {}", "Bad equations", SIMeqns);
+    exit(1);
+  }
 
   //
   // Now setup microphysics and raytracing classes
   //
   err += SimSetup->setup_microphysics(SimPM);
   // err += setup_raytracing();
-  if (err) spdlog::error("{}: {}", "Setup of microphysics and raytracing", err);
+  if (err) {
+    spdlog::error("{}: {}", "Setup of microphysics and raytracing", err);
+    exit(1);
+  }
   class microphysics_base *MP = SimSetup->get_mp_ptr();
 
   // Assign boundary conditions to boundary points.
@@ -496,12 +572,13 @@ int main(int argc, char **argv)
   // if (err) spdlog::error("{}: {}", "boundary_conditions setup",err);
 
   mltsf = clk.time_so_far("mainloop");
-  spdlog::debug(
+  spdlog::info(
       "*-*-*-* Grid setup,\t total time so far = {} secs or {} hours. *-*-*-*\n",
       mltsf, mltsf / 3600.0);
 
-  spdlog::info(
-      "--------------- Finished Setting up Grid --------------\n-------------------------------------------------------\n--------------- Starting Image Setup ------------------");
+  spdlog::info("--------------- Finished Setting up Grid --------------");
+  spdlog::info("-------------------------------------------------------");
+  spdlog::info("--------------- Starting Image Setup ------------------");
 
 
   //*******************************************************************
@@ -512,9 +589,11 @@ int main(int argc, char **argv)
   // Npix_max, 			     SimPM.Xmin.data(), SimPM.Xmax, SimPM.Range,
   // grid->DX());
 
-  std::vector<class image *> IMG(SimPM.grid_nlevels);
-  for (int v = 0; v < SimPM.grid_nlevels; v++) {
-    IMG[v] = new class image(normal, angle, perpdir, G[v]);
+  // image may have fewer levels than grid:
+  int img_nlevels = finishlev - begin_lev;
+  std::vector<class image *> IMG(img_nlevels);
+  for (int v = 0; v < img_nlevels; v++) {
+    IMG[v] = new class image(normal, angle, perpdir, G[v + begin_lev]);
     IMG[v]->SetMicrophysics(MP);
   }
 
@@ -522,7 +601,7 @@ int main(int argc, char **argv)
   int num_pixels          = 0;
   IMG[0]->get_npix(npix);  // all levels are topologically the same.
   num_pixels = npix[0] * npix[1];
-  spdlog::debug("npix = [{}, {}] and total={}", npix[0], npix[1], num_pixels);
+  spdlog::info("npix = [{}, {}] and total={}", npix[0], npix[1], num_pixels);
 
   // If getting velocity profiles, velocity is the third image dim.
   npix[2] = Nbins;
@@ -530,26 +609,25 @@ int main(int argc, char **argv)
     vps.npix[ii] = npix[ii];
 
   // setup rays for each level
-  for (int v = 0; v < SimPM.grid_nlevels; v++) {
-    spdlog::debug(
-        "<----- LEVEL {}: setting up rays        ----->\n<----- Setting cell positions in Image ----->\n",
-        v);
+  for (int v = 0; v < img_nlevels; v++) {
+    spdlog::info("<----- LEVEL {}: setting up rays        ----->", v);
+    spdlog::info("<----- Setting cell positions in Image ----->");
     IMG[v]->set_cell_positions_in_image();
     mltsf = clk.time_so_far("mainloop");
-    spdlog::debug(
+    spdlog::info(
         "*-*-*-* ... ,\t total time so far = {} secs or {} hours. *-*-*-*",
         mltsf, mltsf / 3600.0);
     spdlog::info("<----- Adding cells to pixels...       ----->");
     IMG[v]->add_cells_to_pixels();
     mltsf = clk.time_so_far("mainloop");
-    spdlog::debug(
-        "*-*-*-* ... ,\t total time so far = {} secs or {} hours. *-*-*-*\n",
+    spdlog::info(
+        "*-*-*-* ... ,\t total time so far = {} secs or {} hours. *-*-*-*",
         mltsf, mltsf / 3600.0);
     spdlog::info("<----- Adding Integration points to px ----->");
     IMG[v]->add_integration_pts_to_pixels();
     mltsf = clk.time_so_far("mainloop");
-    spdlog::debug(
-        "*-*-*-* ... ,\t total time so far = {} secs or {} hours. *-*-*-*\n",
+    spdlog::info(
+        "*-*-*-* ... ,\t total time so far = {} secs or {} hours. *-*-*-*",
         mltsf, mltsf / 3600.0);
     spdlog::info("<----- Finished setting up pixels      ----->");
   }
@@ -682,16 +760,18 @@ int main(int argc, char **argv)
   vector<vector<vector<double> > > imgmaster;
   imgmaster.resize(n_images);
   for (int im = 0; im < n_images; im++) {
-    imgmaster[im].resize(SimPM.grid_nlevels);
-    for (int lv = 0; lv < SimPM.grid_nlevels; lv++) {
+    imgmaster[im].resize(img_nlevels);
+    for (int lv = 0; lv < img_nlevels; lv++) {
       imgmaster[im][lv].resize(nels);
     }
   }
   spdlog::info("done!");
 
 
-  spdlog::info(
-      "--------------- Finished Image Setup/Coordinates ------\n-------------------------------------------------------\n--------------- Starting Loop over all input files ----\n-------------------------------------------------------");
+  spdlog::info("--------------- Finished Image Setup/Coordinates ------");
+  spdlog::info("-------------------------------------------------------");
+  spdlog::info("--------------- Starting Loop over all input files ----");
+  spdlog::info("-------------------------------------------------------");
 
   //*******************************************************************
   // loop over all files:
@@ -700,12 +780,9 @@ int main(int argc, char **argv)
 
   for (ifile = 0; ifile < static_cast<unsigned int>(nfiles);
        ifile += 1 + skip) {
-    spdlog::debug(
-        "--------------- Starting Next Loop: ifile={}------\n", ifile);
-#ifndef NDEBUG
-    spdlog::info(
-        "-------------------------------------------------------\n--------------- Reading Simulation data to grid -------");
-#endif
+    spdlog::info("--------------- Starting Next Loop: ifile={}------", ifile);
+    spdlog::info("-------------------------------------------------------");
+    spdlog::info("--------------- Reading Simulation data to grid -------");
     //*******************
     //* Read Input Data *
     //*******************
@@ -725,22 +802,30 @@ int main(int argc, char **argv)
 #ifdef RESET_DOMAIN
     reset_domain(&(SimPM.levels[0].sub_domain));
 #endif
-    if (err) spdlog::error("{}: {}", "Didn't read header", err);
+    if (err) {
+      spdlog::error("{}: {}", "Didn't read header", err);
+      exit(1);
+    }
+    SimPM.grid_nlevels = finishlev;
+    // SimPM.levels.resize(finishlev);
 
     spdlog::info(
-        "############ SIMULATION TIME: {} yrs for step={}   ############\n",
+        "############ SIMULATION TIME: {:12.6e} yrs for step={}   ############",
         SimPM.simtime / 3.156e7, ifile);
 
     // Read data (this reader can read serial or parallel data.
     err = dataio.ReadData(infile, G, SimPM);
-    if (0 != err)
+    if (0 != err) {
       spdlog::error(
           "{}: Expected {} but got {}", "(main) Failed to read data", 0, err);
+      exit(1);
+    }
 
-#ifndef NDEBUG
-    spdlog::info(
-        "--------------- Finished Reading Data  ----------------\n-------------------------------------------------------\n--------------- Starting Data Analysis ----------------");
-#endif
+    //#ifndef NDEBUG
+    spdlog::info("--------------- Finished Reading Data  ----------------");
+    spdlog::info("-------------------------------------------------------");
+    spdlog::info("--------------- Starting Data Analysis ----------------");
+    //#endif
     //********************
     //* Analyse the Data *
     //********************
@@ -758,18 +843,22 @@ int main(int argc, char **argv)
     //
     // Initialize image arrays to zero
     //
+#ifndef NDEBUG
     spdlog::info("setting images to zero");
+#endif  // NDEBUG
     for (int im = 0; im < n_images; im++) {
-      for (int lv = 0; lv < SimPM.grid_nlevels; lv++) {
+      for (int lv = 0; lv < img_nlevels; lv++) {
         for (int v = 0; v < nels; v++)
           imgmaster[im][lv][v] = 0.0;
       }
     }
 
     // Loop over levels to save images for each level
-    for (int lv = 0; lv < SimPM.grid_nlevels; lv++) {
-      spdlog::debug("analysis for level {} starting", lv);
-      grid = G[lv];
+    for (int lv = 0; lv < img_nlevels; lv++) {
+#ifndef NDEBUG
+      spdlog::info("analysis for level {} starting", lv + begin_lev);
+#endif  // NDEBUG
+      grid = G[lv + begin_lev];
       // cout <<"grid pointer="<<grid<<"\n";
 
       switch (what_to_integrate) {
@@ -800,6 +889,7 @@ int main(int argc, char **argv)
         default:
           spdlog::error(
               "{}: {}", "bad what-to-integrate integer...", what_to_integrate);
+          exit(1);
       }
       // cout <<"set image to zero...\n";
 
@@ -813,7 +903,7 @@ int main(int argc, char **argv)
       // loop over images.
       for (int outputs = 0; outputs < n_images; outputs++) {
 #ifndef NDEBUG
-        spdlog::debug("starting image {} calculation", outputs);
+        spdlog::info("starting image {} calculation", outputs);
 #endif  // NDEBUG
         w2i      = what2int[outputs];
         tot_mass = 0.0;
@@ -830,7 +920,7 @@ int main(int argc, char **argv)
         }
         tsf = clk.time_so_far("makeimage");
 #ifndef NDEBUG
-        spdlog::debug("\t time = {} secs.", tsf);
+        spdlog::info("\t time = {} secs.", tsf);
 #endif  // NDEBUG
         clk.stop_timer("makeimage");
 
@@ -843,7 +933,10 @@ int main(int argc, char **argv)
           // allocate buffer to receive data.
           //
           // cout <<"RANK 0: RECEIVING DATA\n";
-          // double *buf =0;
+#ifndef NDEBUG
+          spdlog::info("RANK {}: RECEIVING DATA", myrank);
+#endif  // NDEBUG
+        // double *buf =0;
           long int ct = nels / nproc;
           // buf = mem.myalloc(buf,ct);
           //
@@ -861,13 +954,18 @@ int main(int argc, char **argv)
                 BC_RTtag,
                 COMM_DOUBLEDATA  ///< type of data we want.
             );
-            if (err) spdlog::error("{}: {}", "look for cell data failed", err);
+            if (err) {
+              spdlog::error("{}: {}", "look for DOUBLE data failed", err);
+              exit(1);
+            }
 
             //
             // Receive data into buffer.
             //
-            // cout <<"receiving from "<<from_rank<<"  ";
-            // cout <<recv_id<<"  "<<recv_tag<<"\n";
+#ifndef NDEBUG
+            cout << "receiving from " << from_rank << "  ";
+            cout << recv_id << "  " << recv_tag << "\n";
+#endif  // NDEBUG
             std::vector<double> recv_buf(ct);
             err = SimPM.levels[0].sub_domain.receive_double_data(
                 from_rank, recv_tag, recv_id, ct, recv_buf);
@@ -879,6 +977,7 @@ int main(int argc, char **argv)
                   "{}\t{}\t{}\t{}\t{}", from_rank, recv_tag, recv_id, ct,
                   irank);
               spdlog::error("{}: {}", "Receive image getdata failed", err);
+              exit(1);
             }
 
             //
@@ -892,7 +991,9 @@ int main(int argc, char **argv)
           //
           // send data to rank 0
           //
+#ifndef NDEBUG
           spdlog::info("RANK {}: SENDING DATA", myrank);
+#endif  // NDEBUG
           string id;
           // cout <<"sending "<<nels<<" to rank 0.\n";
           // cout.flush();
@@ -903,16 +1004,23 @@ int main(int argc, char **argv)
               id,       ///< identifier for send, for tracking delivery later.
               BC_RTtag  ///< comm_tag, to say what kind of send this is.
           );
-          if (err) spdlog::error("{}: {}", "Send image failed.", err);
+          if (err) {
+            spdlog::error("{}: {}", "Send image failed.", err);
+            exit(1);
+          }
 
           err = SimPM.levels[0].sub_domain.wait_for_send_to_finish(id);
-          if (err)
+          if (err) {
             spdlog::error("{}: {}", "wait for send to finish failed", err);
+            exit(1);
+          }
         }  // if myrank !=0
         // ------------------------------------------------------------
         // ------------------------------------------------------------
         SimPM.levels[0].sub_domain.barrier();
-
+#ifndef NDEBUG
+        spdlog::info("end iteration {}: loop over output images", outputs);
+#endif   // NDEBUG
       }  // loop over output images
 
 
@@ -947,21 +1055,24 @@ int main(int argc, char **argv)
       // Now see if we got all the mass in the simulation domain:
       //
       tot_mass *= cell_area;
-      // cout <<"\t\tANGLE, TOTAL MASS FROM PROJECTION, SUMMATION:
-      // "<<angle<<"\t"<<tot_mass; tot_mass=0;
-      //  //double posIMG[3], posSIM[3];
-      // cell *c=grid->FirstPt();
-      // do {
-      //  tot_mass += c->P[RO];
-      //  //IMG.get_image_Ipos(c->pos,posIMG);
-      //  //IMG.get_sim_Dpos(posIMG, posSIM);
-      //  //rep.printVec("CELL POS:",c->pos,3);
-      //  //rep.printVec("IMG  POS:",posIMG,3);
-      //  //rep.printVec("SIM  POS:",posSIM,3);
-      //  //rep.printVec("IMG OOOO:",IMG.s_origin_img,2);
-      //} while ( (c=grid->NextPt(c))!=0);
-      // tot_mass *= grid->DV();
-      // cout <<"\t"<<tot_mass<<endl;
+#ifndef NDEBUG
+      spdlog::info("myrank {}: totmass", myrank);
+#endif  // NDEBUG
+        // cout <<"\t\tANGLE, TOTAL MASS FROM PROJECTION, SUMMATION:
+        // "<<angle<<"\t"<<tot_mass; tot_mass=0;
+        //  //double posIMG[3], posSIM[3];
+        // cell *c=grid->FirstPt();
+        // do {
+        //  tot_mass += c->P[RO];
+        //  //IMG.get_image_Ipos(c->pos,posIMG);
+        //  //IMG.get_sim_Dpos(posIMG, posSIM);
+        //  //rep.printVec("CELL POS:",c->pos,3);
+        //  //rep.printVec("IMG  POS:",posIMG,3);
+        //  //rep.printVec("SIM  POS:",posSIM,3);
+        //  //rep.printVec("IMG OOOO:",IMG.s_origin_img,2);
+        //} while ( (c=grid->NextPt(c))!=0);
+        // tot_mass *= grid->DV();
+        // cout <<"\t"<<tot_mass<<endl;
 
 #ifdef SUBTRACT_MEAN
       //
@@ -1053,18 +1164,25 @@ int main(int argc, char **argv)
         }
       }  // if myrank==0
 
+#ifndef NDEBUG
+      spdlog::info("myrank {}: save imgmaster", myrank);
+#endif  // NDEBUG
       // save image data for this level in imgmaster.
       for (int im = 0; im < n_images; im++) {
         for (int v = 0; v < nels; v++)
           imgmaster[im][lv][v] = img_array[im][v];
       }
 
-    }  // loop over levels.
-
 #ifndef NDEBUG
-    spdlog::info(
-        "--------------- Finished Analysing this step ----------\n-------------------------------------------------------\n--------------- Writing image and getting next Im-file");
-#endif
+      spdlog::info("Rank {} End loop over levels {}", myrank, lv);
+#endif  // NDEBUG
+    }   // loop over levels.
+
+    //#ifndef NDEBUG
+    spdlog::info("--------------- Finished Analysing this step ----------");
+    spdlog::info("-------------------------------------------------------");
+    spdlog::info("--------------- Writing image and getting next Im-file");
+    //#endif
 
     // double posIMG[3], posSIM[3];
     // IMG.get_image_Ipos(grid->FirstPt()->pos,posIMG);
@@ -1078,9 +1196,9 @@ int main(int argc, char **argv)
     // Rank 0 always has local Xmin equal to global Xmin, so it works
     // for multiple cores.
     //
-    grid = G[0];
+    grid = G[begin_lev];
     std::array<double, MAX_DIM> im_xmin, o2;
-    std::array<pion_flt, 3> origin;
+    std::array<pion_flt, MAX_DIM> origin;
     for (int v = 0; v < 3; v++) {
       im_xmin[v] = 0.0;  // posSIM[v] - (posIMG[v]+0.5)*grid->DX();
       origin[v]  = 0.0;
@@ -1093,18 +1211,18 @@ int main(int argc, char **argv)
     for (int v = 0; v < 3; v++)
       im_xmin[v] = -origin[v] * grid->DX();
 #ifndef NDEBUG
-    spdlog::debug("sim origin in units of dx : {}", origin);
+    spdlog::info("sim origin in units of dx : {}", origin);
 #endif  // NDEBUG
 
-    grid                        = G[SimPM.grid_nlevels - 1];
+    grid                        = G[finishlev - 1];
     std::array<double, 3> im_dx = {grid->DX(), grid->DX(), grid->DX()};
     if (what_to_integrate == I_VEL_LOS || what_to_integrate == I_VX) {
       im_xmin[2] = v_min;
       im_dx[2]   = bin_size;
     }
 #ifndef NDEBUG
-    spdlog::debug("IMG XMIN: : {}", im_xmin);
-    spdlog::debug("IMG DX:   : {}", im_dx);
+    spdlog::info("IMG XMIN: : {}", im_xmin);
+    spdlog::info("IMG DX:   : {}", im_dx);
 #endif  // NDEBUG
 
 
@@ -1119,7 +1237,10 @@ int main(int argc, char **argv)
       this_outfile = imio.get_output_filename(
           outfile, multi_opfiles, op_filetype, SimPM.timestep);
       err = imio.open_image_file(this_outfile, op_filetype, &filehandle);
-      if (err) spdlog::error("{}: {}", "failed to open output file", err);
+      if (err) {
+        spdlog::error("{}: {}", "failed to open output file", err);
+        exit(1);
+      }
 
       string *im_name = 0;
       im_name         = mem.myalloc(im_name, n_images);
@@ -1212,6 +1333,7 @@ int main(int argc, char **argv)
                 break;
               default:
                 spdlog::error("{}: {}", "Bad image count", im);
+                exit(1);
                 break;
             }
           }
@@ -1220,6 +1342,7 @@ int main(int argc, char **argv)
         default:
           spdlog::error(
               "{}: {}", "bad what-to-integrate integer...", what_to_integrate);
+          exit(1);
       }
 
       //
@@ -1230,7 +1353,7 @@ int main(int argc, char **argv)
       int ipx        = 1;  // num level-pixels per full-img pixel.
       for (int i = 0; i < 3; i++)
         gnpix[i] = rank0_npix[i];
-      for (int lv = 1; lv < SimPM.grid_nlevels; lv++) {
+      for (int lv = 1; lv < img_nlevels; lv++) {
         gnumpix *= 4;
         ipx *= 2;
         for (int i = 0; i < 3; i++)
@@ -1245,8 +1368,8 @@ int main(int argc, char **argv)
       for (int outputs = 0; outputs < n_images; outputs++) {
         // Make a global image by summing results from all levels.
 #ifndef NDEBUG
-        spdlog::debug(
-            "ipx={}, npix= [{}, {}], \nbig-img pix= [{}, {}], tot={}", ipx,
+        spdlog::info(
+            "ipx={}, npix= [{}, {}], big-img pix= [{}, {}], tot={}", ipx,
             rank0_npix[0], rank0_npix[1], gnpix[0], gnpix[1], gnumpix);
 #endif  // NDEBUG
         // level 0 first: populate the grid.
@@ -1262,14 +1385,14 @@ int main(int argc, char **argv)
           }
         }
         int sz = ipx;
-        for (int lv = 1; lv < SimPM.grid_nlevels; lv++) {
+        for (int lv = 1; lv < img_nlevels; lv++) {
 #ifndef NDEBUG
-          spdlog::debug("populating level {} data onto image", lv);
+          spdlog::info("populating level {} data onto image", lv + begin_lev);
 #endif  // NDEBUG
         // find lower-left corner of nested grid.
-          grid = G[lv];
+          grid = G[lv + begin_lev];
           sz /= 2;
-          double lv_xmin[3];
+          std::array<double, 3> lv_xmin;
           std::array<int, 3> corner;
           for (int v = 0; v < 3; v++)
             origin[v] = o2[v];
@@ -1277,21 +1400,17 @@ int main(int argc, char **argv)
           for (int v = 0; v < 3; v++)
             lv_xmin[v] = -origin[v] * grid->DX();
 #ifndef NDEBUG
-          spdlog::debug("sim origin in units of dx : {}", origin);
-          spdlog::debug("level origin in units of dx : {}", origin);
-          spdlog::debug("sim xmin : {}", im_xmin);
-          spdlog::debug("level xmin : {}", lv_xmin);
+          spdlog::info("sim origin in units of dx : {}", origin);
+          spdlog::info("level origin in units of dx : {}", origin);
+          spdlog::info("sim xmin : {}", im_xmin);
+          spdlog::info("level xmin : {}", lv_xmin);
 #endif  // NDEBUG
           for (int v = 0; v < 3; v++) {
             corner[v] = static_cast<int>(round(
                 (lv_xmin[v] - im_xmin[v]) * sz * ONE_PLUS_EPS / grid->DX()));
-            // corner[v] = static_cast<int>(
-            //                  (lv_xmin[v]-im_xmin[v])*sz*ONE_PLUS_EPS/grid->DX());
-            // cout<<(lv_xmin[v]-im_xmin[v])*sz*ONE_PLUS_EPS/grid->DX() <<" , ";
           }
-          // cout <<"\n";
 #ifndef NDEBUG
-          spdlog::debug("corner for level : {}", corner);
+          spdlog::info("corner for level : {}", corner);
 #endif  // NDEBUG
           for (int j = 0; j < rank0_npix[1]; j++) {
             for (int i = 0; i < rank0_npix[0]; i++) {
@@ -1311,6 +1430,9 @@ int main(int argc, char **argv)
           }
         }  // loop over levels 1->n-1
 
+#ifndef NDEBUG
+        spdlog::info("writing image to file");
+#endif  // NDEBUG
         switch (what_to_integrate) {
           case I_D:
           case I_NtD:
@@ -1325,9 +1447,9 @@ int main(int argc, char **argv)
           case I_VX:
             spdlog::error(
                 "{}: {}", "Code no longer works for PPV datacubes", 1);
+            exit(1);
             err = imio.write_image_to_file(
-                filehandle, op_filetype,
-                imgmaster[outputs][SimPM.grid_nlevels].data(),
+                filehandle, op_filetype, imgmaster[outputs][img_nlevels].data(),
                 rank0_num_pixels * Nbins, 3, rank0_npix, im_name[outputs],
                 im_xmin.data(), im_dx.data(), SimPM.simtime, SimPM.timestep);
             break;
@@ -1335,8 +1457,12 @@ int main(int argc, char **argv)
             spdlog::error(
                 "{}: {}", "bad what-to-integrate integer...",
                 what_to_integrate);
+            exit(1);
         }
-        if (err) spdlog::error("{}: {}", "Failed to write image to file", err);
+        if (err) {
+          spdlog::error("{}: {}", "Failed to write image to file", err);
+          exit(1);
+        }
       }  // loop over images
       global_image = mem.myfree(global_image);
 
@@ -1368,7 +1494,10 @@ int main(int argc, char **argv)
       //*********************************************
       if (multi_opfiles) {
         err = imio.close_image_file(filehandle);
-        if (err) spdlog::error("{}: {}", "failed to close output file", err);
+        if (err) {
+          spdlog::error("{}: {}", "failed to close output file", err);
+          exit(1);
+        }
       }
       im_name = mem.myfree(im_name);
     }  // if myrank==0
@@ -1385,7 +1514,10 @@ int main(int argc, char **argv)
   //
   if (!multi_opfiles) {
     err = imio.close_image_file(filehandle);
-    if (err) spdlog::error("{}: {}", "failed to close output file", err);
+    if (err) {
+      spdlog::error("{}: {}", "failed to close output file", err);
+      exit(1);
+    }
   }
 
   spdlog::info(
@@ -1399,7 +1531,7 @@ int main(int argc, char **argv)
 #endif  // SUBTRACT_MEAN
 
   // Need to delete extra cell position before deleting grids
-  for (int i = 0; i < SimPM.grid_nlevels; i++)
+  for (int i = 0; i < img_nlevels; i++)
     IMG[i]->delete_cell_positions();
 
   // if(grid!=0) {

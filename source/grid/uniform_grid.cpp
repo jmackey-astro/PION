@@ -744,21 +744,25 @@ int UniformGrid::set_cell_size()
   G_dx = G_range[0] / (G_ng[0]);
 
   if (G_ndim > 1) {
-    if (!pconst.equalD(G_range[1] / G_dx, static_cast<double>(G_ng[1])))
+    if (!pconst.equalD(G_range[1] / G_dx, static_cast<double>(G_ng[1]))) {
       spdlog::error(
-          "{}: {}",
+          "{}: {} {} {}",
           "Cells must be same length in each direction! Set the range "
           "and number of points appropriately.",
-          G_range[1] / G_dx / G_ng[1]);
+          G_range[1], G_dx, G_ng[1]);
+      exit(1);
+    }
   }
 
   if (G_ndim > 2) {
-    if (!pconst.equalD(G_range[2] / G_dx, static_cast<double>(G_ng[2])))
+    if (!pconst.equalD(G_range[2] / G_dx, static_cast<double>(G_ng[2]))) {
       spdlog::error(
-          "{}: {}",
+          "{}: {} {} {}",
           "Cells must be same length in each direction! Set the range "
           "and number of points appropriately.",
-          G_range[2] / G_dx / G_ng[2]);
+          G_range[2], G_dx, G_ng[2]);
+      exit(1);
+    }
   }
 
   //

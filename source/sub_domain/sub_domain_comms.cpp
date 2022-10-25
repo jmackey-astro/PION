@@ -608,7 +608,9 @@ int Sub_domain::send_double_data(
   send_list.back().to_rank   = to_rank;
   send_list.back().type      = COMM_DOUBLEDATA;
   /* store vector in member variable so it is not freed out of scope */
-  send_list.back().send_buff_double = std::move(data);
+  // send_list.back().send_buff_double = std::move(data); // <-- causes
+  // seg-fault in projection3D
+  send_list.back().send_buff_double = data;
 
   /* create send tag */
   ostringstream temp;

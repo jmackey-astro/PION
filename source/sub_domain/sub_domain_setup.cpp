@@ -136,9 +136,10 @@ int Sub_domain::decomposeDomain(
 )
 {
 #ifndef NDEBUG
-  spdlog::debug(
+  spdlog::info(
       "---Sub_domain::decomposeDomain() decomposing domain.  Nproc={}, myrank={}",
       nproc, myrank);
+  spdlog::info("num_subdomains: {}", num_subdomains);
 #endif
 
   Ncell           = 1;
@@ -200,7 +201,7 @@ int Sub_domain::decomposeDomain(
     num_subdomains[i] = 1;
   }
   /* do decompose in daxis dimension */
-  num_subdomains[daxis] = 0;
+  num_subdomains[daxis] = nproc;
 
   return decomposeDomain(ndim, level);
 }
@@ -264,6 +265,13 @@ int Sub_domain::decomposeDomain(
   spdlog::debug("periodic : {}", periodic);
 #endif
   m_ndim = ndim;
+
+  for (int i = 0; i < ndim; i++) {
+    /* don't decompose domain by default */
+    num_subdomains[i] = 1;
+  }
+  /* do decompose in daxis dimension */
+  num_subdomains[daxis] = nproc;
 
   /*
    * the following sets num_subdomains to application topology aware values

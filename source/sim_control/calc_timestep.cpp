@@ -486,9 +486,14 @@ void calc_timestep::timestep_checking_and_limiting(
 
   //
   // So that we don't increase the timestep by more than 30% over last step:
+  // If we have >1 grid levels, the timestep is only re-calculated every
+  // coarse step, so this can be relaxed (assuming the finest levels are
+  // the ones where the timestep is being set).
   //
 #ifdef TIMESTEP_LIMITING
-  par.dt = min(par.dt, 1.3 * par.levels[l].last_dt);
+  double fac = 1.0 + (0.3 * sqrt(par.grid_nlevels));
+  par.dt     = min(par.dt, fac * par.levels[l].last_dt);
+  // par.dt = min(par.dt, 1.3 * par.levels[l].last_dt);
 #endif  // TIMESTEP_LIMITING
 
   //

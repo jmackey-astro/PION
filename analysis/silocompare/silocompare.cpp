@@ -66,10 +66,10 @@ int main(int argc, char **argv)
 {
   int err = 0;
 
-  auto max_logfile_size = 1048576 * 5;
-  auto max_logfiles     = 3;
-  spdlog::set_default_logger(spdlog::rotating_logger_mt(
-      "silocompare", "silocompare.log", max_logfile_size, max_logfiles));
+  // auto max_logfile_size = 1048576 * 5;
+  // auto max_logfiles     = 3;
+  // spdlog::set_default_logger(spdlog::rotating_logger_mt(
+  //    "silocompare", "silocompare.log", max_logfile_size, max_logfiles));
 
 #ifdef NDEBUG
   spdlog::set_level(spdlog::level::info);
@@ -83,16 +83,21 @@ int main(int argc, char **argv)
   // Initialise the sub_domain class with myrank and nproc.
   //
   class SimParams SimPM;
+  int r  = SimPM.levels[0].sub_domain.get_myrank();
+  int np = SimPM.levels[0].sub_domain.get_nproc();
 
-  int r = SimPM.levels[0].sub_domain.get_myrank();
-
+  spdlog::info("silocompare: myrank={}, nproc={}", r, np);
   //
   // Get an input file and an output file.
   //
   if (argc != 8) {
     spdlog::error(
-        "Error: must call as follows...\nsilocompare: <silocompare> <first-dir> <first-file>  <comp-dir> <comp-file> <level> <outfile> <fabs/plus-minus/L1/L2>\n\t 0: Diff image is relative error for rho/p_g (abs.val)\n\t 1: Diff image is relative error for rho/p_g (+/-)\n\t 2: Just calculate L1+L2 error, no difference image");
+        "Error: must call as follows...\nsilocompare: <silocompare> <first-dir> <first-file>  <comp-dir> <comp-file> <level> <outfile> <fabs/plus-minus/L1/L2>");
+    spdlog::error("\t 0: Diff image is relative error for rho/p_g (abs.val)");
+    spdlog::error("\t 1: Diff image is relative error for rho/p_g (+/-)");
+    spdlog::error("\t 2: Just calculate L1+L2 error, no difference image");
     spdlog::error("{}: {}", "Bad number of args", argc);
+    exit(1);
   }
   string fdir        = argv[1];
   string firstfile   = argv[2];
@@ -102,12 +107,13 @@ int main(int argc, char **argv)
   string outfilebase = argv[6];
   string outfile;
   int optype = atoi(argv[7]);
-  if (optype < 0 || optype > 2)
+  if (optype < 0 || optype > 2) {
     spdlog::error(
-        "{}: {}",
-        "Please set optype to 0 (abs val.) or 1 (+- val.) or 2 (L1/L2)",
+        "Please set optype to 0 (abs val.) or 1 (+- val.) or 2 (L1/L2): {}",
         optype);
-  spdlog::debug(
+    exit(1);
+  }
+  spdlog::info(
       "fdir={}\tsdir={}first file: {}\tsecond file: {}\toutput file: {}", fdir,
       sdir, firstfile, secondfile, outfilebase);
 
@@ -125,10 +131,16 @@ int main(int argc, char **argv)
   //
   list<string> ffiles, sfiles;
   err += dataio.get_files_in_dir(fdir, firstfile, &ffiles);
-  if (err) spdlog::error("{}: {}", "failed to get first list of files", err);
+  if (err) {
+    spdlog::error("{}: {}", "failed to get first list of files", err);
+    exit(1);
+  }
   err += dataio.get_files_in_dir(sdir, secondfile, &sfiles);
-  ;
-  if (err) spdlog::error("{}: {}", "failed to get second list of files", err);
+  if (err) {
+    spdlog::error("{}: {}", "failed to get second list of files", err);
+    exit(1);
+  }
+
 
   for (list<string>::iterator s = ffiles.begin(); s != ffiles.end(); s++) {
     // If file is not a .silo file, then remove it from the list.
@@ -164,8 +176,11 @@ int main(int argc, char **argv)
   //
   unsigned int nfiles = ffiles.size();
   nfiles = std::min(nfiles, static_cast<unsigned int>(sfiles.size()));
-  if (nfiles < 1)
+  if (nfiles < 1) {
     spdlog::error("{}: {}", "Need at least one file, but got none", nfiles);
+    exit(1);
+  }
+
 
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
@@ -178,10 +193,17 @@ int main(int argc, char **argv)
   oo << fdir << "/" << *ff;
   firstfile = oo.str();
   err       = dataio.ReadHeader(firstfile, SimPM);
-  if (err) spdlog::error("{}: {}", "Didn't read header", err);
+  if (err) {
+    spdlog::error("{}: {}", "Didn't read header", err);
+    exit(1);
+  }
 
-  if (lev >= SimPM.grid_nlevels)
+
+  if (lev >= SimPM.grid_nlevels) {
     spdlog::error("{}: {}", "Level doesn't exist", lev);
+    exit(1);
+  }
+
 #ifdef PION_NESTED
   SimPM.levels.resize(SimPM.grid_nlevels);
   class setup_grid_NG_MPI *SimSetup = new setup_grid_NG_MPI();
@@ -236,7 +258,10 @@ int main(int argc, char **argv)
   vector<class GridBaseClass *> g(SimPM.grid_nlevels);
   SimSetup->setup_grid(g, SimPM);
   class GridBaseClass *grid = g[0];
-  if (!grid) spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid));
+  if (!grid) {
+    spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid));
+    exit(1);
+  }
   SimPM.dx = grid->DX();
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
@@ -267,6 +292,7 @@ int main(int argc, char **argv)
       spdlog::debug(
           "first file: {}\tand second file: {}", firstfile, secondfile);
       spdlog::error("{}: {}", "First or second file doesn't exist", secondfile);
+      exit(1);
     }
 
     //
@@ -281,7 +307,10 @@ int main(int argc, char **argv)
     // Read in first code header so i know how to setup grid.
     //
     err = dataio.ReadHeader(firstfile, SimPM);
-    if (err) spdlog::error("{}: {}", "Didn't read header", err);
+    if (err) {
+      spdlog::error("{}: {}", "Didn't read header", err);
+      exit(1);
+    }
     SimPM.grid_nlevels     = 1;
     SimPM.levels[0].parent = 0;
     SimPM.levels[0].child  = 0;
@@ -313,10 +342,11 @@ int main(int argc, char **argv)
     // Read data (this reader can read serial or parallel data).
     //
     err = dataio.ReadData(firstfile, g, SimPM);
-    if (0 != err)
-      spdlog::error(
-          "{}: Expected {} but got {}",
-          "(silocompare) Failed to read firstfile", 0, err);
+    if (0 != err) {
+      spdlog::error("(silocompare) Failed to read firstfile, error {}", err);
+      exit(1);
+    }
+
 
     // ----------------------------------------------------------------
     // ----------------------------------------------------------------
@@ -340,11 +370,10 @@ int main(int argc, char **argv)
     // Read data (this reader can read serial or parallel data).
     //
     err = dataio.ReadData(secondfile, g, SimPM);
-    if (0 != err)
-      spdlog::error(
-          "{}: Expected {} but got {}",
-          "(silocompare) Failed to read secondfile", 0, err);
-
+    if (0 != err) {
+      spdlog::error("(silocompare) Failed to read secondfile, error {}", err);
+      exit(1);
+    }
     spdlog::info("FINISHED reading second file: {}", secondfile);
 
     // c = grid->FirstPt();
@@ -472,8 +501,8 @@ int main(int argc, char **argv)
         break;
       default:
         spdlog::error(
-            "{}: {}", "Input a valid optype!!! (should have caught this!)",
-            optype);
+            "Input a valid optype!!! (should have caught this!) {}", optype);
+        exit(1);
         break;
     }
 
@@ -526,8 +555,8 @@ int main(int argc, char **argv)
         break;
       default:
         spdlog::error(
-            "{}: {}", "Input a valid optype!!! (should have caught this!)",
-            optype);
+            "Input a valid optype!!! (should have caught this!) {}", optype);
+        exit(1);
         break;
     }
 

@@ -94,15 +94,17 @@ int main(int argc, char **argv)
 {
   int err = 0;
 
-  auto max_logfile_size = 1048576 * 5;
-  auto max_logfiles     = 3;
-#ifdef PARALLEL
-  spdlog::set_default_logger(spdlog::rotating_logger_mt(
-      "project2D_pre_mpi", "project2D.log", max_logfile_size, max_logfiles));
-#else
-  spdlog::set_default_logger(spdlog::rotating_logger_mt(
-      "project2D", "project2D.log", max_logfile_size, max_logfiles));
-#endif /* PARALLEL */
+  /*
+    auto max_logfile_size = 1048576 * 5;
+    auto max_logfiles     = 3;
+  #ifdef PARALLEL
+    spdlog::set_default_logger(spdlog::rotating_logger_mt(
+        "project2D_pre_mpi", "project2D.log", max_logfile_size, max_logfiles));
+  #else
+    spdlog::set_default_logger(spdlog::rotating_logger_mt(
+        "project2D", "project2D.log", max_logfile_size, max_logfiles));
+  #endif
+  */
 
 #ifdef NDEBUG
   spdlog::set_level(spdlog::level::info);
@@ -116,15 +118,14 @@ int main(int argc, char **argv)
   // Also initialise the sub_domain class with myrank and nproc.
   //
   class SimParams SimPM;
-
   class Sub_domain *sub_domain = &(SimPM.levels[0].sub_domain);
-
-  int myrank = sub_domain->get_myrank();
+  int myrank                   = sub_domain->get_myrank();
+  int nproc                    = SimPM.levels[0].sub_domain.get_nproc();
 
 #ifdef PARALLEL
-  spdlog::set_default_logger(spdlog::rotating_logger_mt(
-      "project2D", "project2D_process_" + to_string(myrank) + ".log",
-      max_logfile_size, max_logfiles));
+//  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+//      "project2D", "project2D_process_" + to_string(myrank) + ".log",
+//      max_logfile_size, max_logfiles));
 #endif /* PARALLEL */
 
 #ifdef PROJ_OMP
@@ -138,9 +139,20 @@ int main(int argc, char **argv)
   // Get input files and an output file.
   //
   if (argc < 6) {
-    spdlog::error("{}: {}", "Bad number of args", argc);
-    spdlog::error(
-        "Use as follows:\nexecutable-filename: <executable-filename> <input-path> <input-silo-file-base> <angle>\n\t\t <output-file> <op-file-type> <skip>\n******************************************\ninput path:   path to input files.\ninput file:   base filename of sequence of files.\nangle:        Angle with respect to symmetry-axis for projection (degrees, float)\noutput file:  filename for output file(s).\nop-file-type: integer/string [1,fits,FITS], [3,vtk,VTK]\nskip:         will skip this number of input files each loop. (0 means it will calculate every file)");
+    spdlog::info("{}: {}", "Bad number of args", argc);
+    spdlog::info(
+        "Use as follows:\nexecutable-filename: <executable-filename> <input-path> <input-silo-file-base> <angle>");
+    spdlog::info("\t\t <output-file> <op-file-type> <skip>");
+    spdlog::info("******************************************");
+    spdlog::info("input path:   path to input files.");
+    spdlog::info("input file:   base filename of sequence of files.");
+    spdlog::info(
+        "angle:        Angle with respect to symmetry-axis for projection (degrees, float)");
+    spdlog::info("output file:  filename for output file(s).");
+    spdlog::info("op-file-type: integer/string [1,fits,FITS], [3,vtk,VTK]");
+    spdlog::info(
+        "skip:         will skip this number of input files each loop. (0 means it will calculate every file)");
+    exit(1);
   }
 
   //
@@ -181,17 +193,17 @@ int main(int argc, char **argv)
   }
   else if (optype == "2" || optype == "silo" || optype == "SILO") {
     op_filetype = OP_SILO;
-    spdlog::info("\t\tsaving data to silo files");
-    spdlog::error(
-        "{}: {}", "don't know how to output silo files yet... fix me please!",
-        "sorry");
+    spdlog::error("silo output files not implemented yet... fix me please!");
+    exit(1);
   }
   else if (optype == "3" || optype == "vtk" || optype == "VTK") {
     op_filetype = OP_VTK;
     spdlog::info("\t\tsaving data to vtk files");
   }
-  else
+  else {
     spdlog::error("{}: {}", "What sort of output is this?", optype);
+    exit(1);
+  }
 
   // write one image file for each snapshot
   int multi_opfiles = 1.0;
@@ -203,8 +215,8 @@ int main(int argc, char **argv)
   //*******************************************************************
   // Get input files, read header, setup grid
   //*******************************************************************
-  spdlog::info(
-      "-------------------------------------------------------\n--------------- Getting List of Files to read ---------");
+  spdlog::info("-------------------------------------------------------");
+  spdlog::info("--------------- Getting List of Files to read ---------");
 
   //
   // set up dataio_utility class
@@ -232,8 +244,9 @@ int main(int argc, char **argv)
   if (nfiles < 1)
     spdlog::error("{}: {}", "Need at least one file, but got none", nfiles);
 
-  spdlog::info(
-      "--------------- Got list of Files ---------------------\n-------------------------------------------------------\n--------------- Setting up Grid -----------------------");
+  spdlog::info("--------------- Got list of Files ---------------------");
+  spdlog::info("-------------------------------------------------------");
+  spdlog::info("--------------- Setting up Grid -----------------------");
   //
   // Set up an iterator to run through all the files.
   //
@@ -272,7 +285,10 @@ int main(int argc, char **argv)
   SimPM.levels[0].multiplier = 1;
   err                        = sub_domain->decomposeDomain(
       SimPM.ndim, SimPM.levels[0], SimPM.get_pbc_bools());
-  if (err) spdlog::error("{}: {}", "main: failed to decompose domain!", err);
+  if (err) {
+    spdlog::error("{}: {}", "main: failed to decompose domain!", err);
+    exit(1);
+  }
 
   //
   // get a setup_grid class, and use it to set up the grid.
@@ -284,18 +300,24 @@ int main(int argc, char **argv)
   cg.resize(1);
   SimSetup->setup_grid(cg, SimPM);
   class GridBaseClass *grid = cg[0];
-  if (!grid) spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid));
+  if (!grid) {
+    spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid));
+    exit(1);
+  }
   spdlog::debug("\t\tg={}\tDX = {}", fmt::ptr(grid), grid->DX());
   err += SimSetup->setup_microphysics(SimPM);
-  if (err) spdlog::error("{}: {}", "Setup of microphysics and raytracing", err);
+  if (err) {
+    spdlog::error("{}: {}", "Setup of microphysics and raytracing", err);
+    exit(1);
+  }
   class microphysics_base *MP = SimSetup->get_mp_ptr();
 
   //
   // This code needs 2d data to project...
   //
   if (SimPM.ndim != 2 || SimPM.coord_sys != COORD_CYL) {
-    spdlog::error(
-        "{}: {}", "projection needs 2D axisymmetric data", SimPM.ndim);
+    spdlog::error("projection needs 2D axisymmetric data: {}", SimPM.ndim);
+    exit(1);
   }
 
   //
@@ -303,8 +325,8 @@ int main(int argc, char **argv)
   //
   class Xray_emission XR;
 
-  spdlog::info(
-      "--------------- Finished Setting up Grid --------------\n-------------------------------------------------------");
+  spdlog::info("--------------- Finished Setting up Grid --------------");
+  spdlog::info("-------------------------------------------------------");
 
   //
   // Output file: if multiple files, we will append _xxx to the name.
@@ -391,6 +413,7 @@ int main(int argc, char **argv)
         break;
       default:
         spdlog::error("{}: {}", "Bad image count", im);
+        exit(1);
         break;
     }
   }
@@ -401,8 +424,9 @@ int main(int argc, char **argv)
   // loop over all files:
   // *******************************************************************
 
-  spdlog::info(
-      "-------------------------------------------------------\n--------------- Starting Loop over all input files ----\n-------------------------------------------------------");
+  spdlog::info("-------------------------------------------------------");
+  spdlog::info("--------------- Starting Loop over all input files ----");
+  spdlog::info("-------------------------------------------------------");
   unsigned int ifile = 0;
   clk.start_timer("total");
   double ttsf = 0.0;
@@ -433,9 +457,11 @@ int main(int argc, char **argv)
     // Read header to get timestep info.
     //
     err = dataio.ReadHeader(infile, SimPM);
-    if (0 != err)
+    if (0 != err) {
       spdlog::error(
           "{}: Expected {} but got {}", "(main) Didn't read header", 0, err);
+      exit(1);
+    }
     SimPM.grid_nlevels = 1;
     spdlog::debug("!! time = {}, step={}", SimPM.simtime, SimPM.timestep);
 
@@ -444,11 +470,11 @@ int main(int argc, char **argv)
     //
     spdlog::debug("reading from input file: {}", infile);
     err = dataio.ReadData(infile, cg, SimPM);
-    if (0 != err)
+    if (0 != err) {
       spdlog::error(
           "{}: Expected {} but got {}", "(main) Failed to read data", 0, err);
-
-
+      exit(1);
+    }
 
     // cout <<"--------------- Finished Reading Data  ----------------\n";
     // cout <<"-------------------------------------------------------\n";
@@ -485,8 +511,9 @@ int main(int argc, char **argv)
     spdlog::debug("\tFinished loop {}: loop time = {}", ifile, tsf);
     ttsf = clk.time_so_far("total");
     spdlog::debug(",\t total runtime={}\n", ttsf);
-    spdlog::info(
-        "--------------- Finished Analysing this step ----------\n-------------------------------------------------------\n--------------- Writing image and getting next Im-file");
+    spdlog::info("--------------- Finished Analysing this step ----------");
+    spdlog::info("-------------------------------------------------------");
+    spdlog::info("--------------- Writing image and getting next Im-file");
 
     //
     // **********************
@@ -496,7 +523,10 @@ int main(int argc, char **argv)
     this_outfile = imio.get_output_filename(
         outfile, multi_opfiles, op_filetype, SimPM.timestep);
     err = imio.open_image_file(this_outfile, op_filetype, &filehandle);
-    if (err) spdlog::error("{}: {}", "failed to open output file", err);
+    if (err) {
+      spdlog::error("{}: {}", "failed to open output file", err);
+      exit(1);
+    }
     //
     // Write N images, here it is one for each variable.
     //
@@ -512,17 +542,25 @@ int main(int argc, char **argv)
       err = imio.write_image_to_file(
           filehandle, op_filetype, img_array[outputs], num_pix, 2, npix,
           im_name[outputs], Xmin, im_dx, SimPM.simtime, SimPM.timestep);
-      if (err) spdlog::error("{}: {}", "Failed to write image to file", err);
+      if (err) {
+        spdlog::error("{}: {}", "Failed to write image to file", err);
+        exit(1);
+      }
     }
     err = imio.close_image_file(filehandle);
-    if (err) spdlog::error("{}: {}", "failed to close output file", err);
+    if (err) {
+      spdlog::error("{}: {}", "failed to close output file", err);
+      exit(1);
+    }
 
 
   }  // Loop over all files.
 
 
-  spdlog::info(
-      "-------------------------------------------------------\n-------------- Finished Analysing all Files -----------\n-------------------------------------------------------\n--------------- Clearing up and Exiting ---------------");
+  spdlog::info("-------------------------------------------------------");
+  spdlog::info("-------------- Finished Analysing all Files -----------");
+  spdlog::info("-------------------------------------------------------");
+  spdlog::info("--------------- Clearing up and Exiting ---------------");
 
   //
   // free memory for images.
