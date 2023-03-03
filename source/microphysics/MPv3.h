@@ -100,9 +100,9 @@
 #define EULER_CUTOFF 0.05
 
 #define JM_RELTOL                                                              \
-  1.0e-4  ///< relative-error tolerance (actual error can be larger).
-#define JM_MINNEU 1.0e-14  ///< minimum neutral fraction i care about.
-#define JM_MINERG 1.0e-17  ///< Minimum internal energy density I care about.
+  1.0e-5  ///< relative-error tolerance (actual error can be larger).
+#define JM_MINNEU 1.0e-10  ///< minimum neutral fraction i care about.
+#define JM_MINERG 1.0e-27  ///< Minimum internal energy density I care about.
 
 // ##################################################################
 // ##################################################################

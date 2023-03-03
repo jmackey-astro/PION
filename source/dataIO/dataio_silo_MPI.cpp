@@ -737,8 +737,10 @@ int dataio_silo_pllel::SaveLevelData(
         *db_ptr, "level_xmax", &(SimPM.levels[level].Xmax), dim1, 1, DB_DOUBLE);
     //    err = write_header(*db_ptr);
     err = write_simulation_parameters(SimPM);
-    if (err)
-      spdlog::error("{}: {}", "dataio_silo_pllel::SaveLevelData() header", err);
+    if (err) {
+      spdlog::error("dataio_silo_pllel::SaveLevelData() header: {}", err);
+      exit(1);
+    }
 
     DBSetDir(*db_ptr, "/");
     DBSetDir(*db_ptr, datadir);
@@ -919,9 +921,10 @@ int dataio_silo_pllel::SaveLevelData(
 
       err = DBPutMultivar(
           *db_ptr, vname.c_str(), nmesh, mm_names, meshtypes, mm_opts);
-      if (err)
-        spdlog::error(
-            "{}: {}", "dataio_silo_pllel::SaveLevelData() variable", (*i));
+      if (err) {
+        spdlog::error("dataio_silo_pllel::SaveLevelData() variable {}", (*i));
+        exit(1);
+      }
       DBClearOptlist(mm_opts);
     }
 
@@ -1390,10 +1393,12 @@ int dataio_silo_pllel::write_multimeshadj(
     //
     for (int i = 0; i < Nngb[v]; i++) {
       off1 = Sk[v] + i;
-      if (off1 > Stot)
+      if (off1 > Stot) {
         spdlog::error(
-            "{}: {}", "Counting error in loop over neighbours for mesh v",
+            "Counting error in loop over neighbours for mesh v: {}",
             off1 - Stot);
+        exit(1);
+      }
       //
       // Local nodelist is the same for all of v's nodelists.
       //
@@ -1442,6 +1447,7 @@ int dataio_silo_pllel::write_multimeshadj(
         // spdlog::debug("ngb_ix : {}", ngb_ix);
         spdlog::error(
             "{}: {}", "domains don't touch (X-dir)!", my_ix[XX] - ngb_ix[XX]);
+        exit(1);
       }
 
       //
@@ -1525,9 +1531,10 @@ int dataio_silo_pllel::write_multimeshadj(
   err = DBPutMultimeshadj(
       dbfile, mma_name.c_str(), nmesh, meshtypes, Nngb, ngb, back, nnodes,
       nodelist, 0, 0, mma_opts);
-  if (err)
-    spdlog::error(
-        "{}: {}", "dataio_silo_pllel::OutputData() multimesh info", err);
+  if (err) {
+    spdlog::error("dataio_silo_pllel::OutputData() multimesh info: {}", err);
+    exit(1);
+  }
 
   DBClearOptlist(mma_opts);
   DBFreeOptlist(mma_opts);

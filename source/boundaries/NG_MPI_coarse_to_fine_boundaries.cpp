@@ -334,7 +334,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
       for (int v = 0; v < par.nvar; v++)
         buf[ibuf + v] = c->Ph[v];
       ibuf += par.nvar;
-      buf[ibuf] = grid->CellVolume(*c, 0);
+      buf[ibuf] = grid->CellVolume(*c, grid->DX());
       ibuf++;
       CI.get_dpos(*c, cpos);
       for (int v = 0; v < par.ndim; v++)

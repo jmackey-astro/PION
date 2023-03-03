@@ -269,6 +269,8 @@ int NG_fine_to_coarse_bc::average_cells(
   //
   double sum_vol = 0.0, vol = 0.0;
   vector<cell *>::iterator c_iter;
+  for (int v = 0; v < par.nvar; v++)
+    cd[v] = 0.0;
 
   // DEBUG
   /*
@@ -287,7 +289,7 @@ int NG_fine_to_coarse_bc::average_cells(
     // cout <<"cell "<<f->id<<" averaging. ";
     // get conserved vars for cell in fine grid, *cellvol.
     solver->PtoU(f->Ph, u.data(), par.gamma);
-    vol = grid->CellVolume(*f, 0);
+    vol = grid->CellVolume(*f, grid->DX());
     sum_vol += vol;
 
     // DEBUG

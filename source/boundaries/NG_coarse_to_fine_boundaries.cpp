@@ -287,7 +287,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         f2 = (*f_iter);
         // coarse cell properties:
         c     = f1->npt;
-        c_vol = coarse->CellVolume(*c, 0);
+        c_vol = coarse->CellVolume(*c, coarse->DX());
         solver->SetSlope(*c, XX, par.nvar, sx.data(), OA2, coarse);
         interpolate_coarse2fine1D(
             par, fine, solver, c->Ph, c_vol, sx.data(), *f1, *f2);
@@ -311,7 +311,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       for (f_iter = b->data.begin(); f_iter != b->data.end(); ++f_iter) {
         cell *f1, *f2, *f3, *f4, *c;
         c     = (*f_iter)->npt;
-        c_vol = coarse->CellVolume(*c, 0);
+        c_vol = coarse->CellVolume(*c, coarse->DX());
         solver->SetSlope(*c, XX, par.nvar, sx.data(), OA2, coarse);
         solver->SetSlope(*c, YY, par.nvar, sy.data(), OA2, coarse);
         // for (int v=0;v<par.nvar;v++) sx[v] = 0.0;
@@ -376,7 +376,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
           continue;
         }
 
-        c_vol = coarse->CellVolume(*c, 0);
+        c_vol = coarse->CellVolume(*c, coarse->DX());
         solver->SetSlope(*c, XX, par.nvar, sx.data(), OA2, coarse);
         solver->SetSlope(*c, YY, par.nvar, sy.data(), OA2, coarse);
         solver->SetSlope(*c, ZZ, par.nvar, sz.data(), OA2, coarse);
@@ -436,8 +436,8 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
   // Check mass/momentum/energy conservation between coarse and fine levels
   solver->PtoU(f1.P.data(), f1U.data(), par.gamma);
   solver->PtoU(f2.P.data(), f2U.data(), par.gamma);
-  f_vol[0] = fine->CellVolume(f1, 0);
-  f_vol[1] = fine->CellVolume(f2, 0);
+  f_vol[0] = fine->CellVolume(f1, fine->DX());
+  f_vol[1] = fine->CellVolume(f2, fine->DX());
 
   for (int v = 0; v < par.nvar; v++)
     fU[v] = f1U[v] * f_vol[0] + f2U[v] * f_vol[1];
@@ -553,7 +553,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
   for (int i = 0; i < 8; i++)
     solver->PtoU(fch[i]->P.data(), fU[i], par.gamma);
   for (int i = 0; i < 8; i++)
-    f_vol[i] = fine->CellVolume(*fch[i], 0);
+    f_vol[i] = fine->CellVolume(*fch[i], fine->DX());
 
   for (int v = 0; v < par.nvar; v++)
     Utot[v] = 0.0;
@@ -661,10 +661,10 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   solver->PtoU(f2.P.data(), f2U.data(), par.gamma);
   solver->PtoU(f3.P.data(), f3U.data(), par.gamma);
   solver->PtoU(f4.P.data(), f4U.data(), par.gamma);
-  f_vol[0] = fine->CellVolume(f1, 0);
-  f_vol[1] = fine->CellVolume(f2, 0);
-  f_vol[2] = fine->CellVolume(f3, 0);
-  f_vol[3] = fine->CellVolume(f4, 0);
+  f_vol[0] = fine->CellVolume(f1, fine->DX());
+  f_vol[1] = fine->CellVolume(f2, fine->DX());
+  f_vol[2] = fine->CellVolume(f3, fine->DX());
+  f_vol[3] = fine->CellVolume(f4, fine->DX());
 
   for (int v = 0; v < par.nvar; v++)
     fU[v] = f1U[v] * f_vol[0] + f2U[v] * f_vol[1] + f3U[v] * f_vol[2]

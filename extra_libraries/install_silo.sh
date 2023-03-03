@@ -47,6 +47,18 @@ case $HOSTNAME in
     ;;
 esac
 
+DDD=`uname -a | grep "Darwin"`
+if [ ! -z "$DDD" ]; then
+  #export CXX=g++-12
+  #export CC=gcc-12
+  echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
+  MAKE_UNAME=OSX
+  #NCORES=1
+  path=`pwd`
+  export PYTHON=/usr/local/bin/python3
+fi
+
+
 export NCORES
 CURDIR=`pwd`
 
@@ -61,9 +73,9 @@ then
   echo "********************************"
 #################################
 # Change these for new versions:
-  FILE=silo-4.11-bsd.tgz
+  FILE=silo-4.11-bsd-smalltest.tar.gz
   SRC_DIR=silo-4.11-bsd
-  REMOTE_URL=https://wci.llnl.gov/sites/wci/files/2021-09/silo-4.11-bsd.tgz
+  REMOTE_URL=https://github.com/LLNL/Silo/releases/download/v4.11/silo-4.11-bsd-smalltest.tar.gz
 #################################
 
 
