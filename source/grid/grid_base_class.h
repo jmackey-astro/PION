@@ -287,9 +287,9 @@ public:
   /// the *cell* coordinate minus the *vertex* coordinate.
   ///
   virtual double difference_vertex2cell(
-      const double *,  ///< vertex (double)
-      const cell &,    ///< cell
-      const axes       ///< Axis to calculate.
+      const std::array<double, MAX_DIM> &,  ///< vertex (double)
+      const cell &,                         ///< cell
+      const axes                            ///< Axis to calculate.
       ) = 0;
 
   ///

@@ -145,23 +145,23 @@ public:
   /// calculated gradient for the grid point in question.
   ///
   virtual int SetEdgeState(
-      const cell &,      ///< Current Cell.
-      const direction,   ///< Add or subtract the slope depending on direction.
-      const int,         ///< length of state vectors.
-      const pion_flt *,  ///< Slope vector.
-      pion_flt *,        ///< vector for edge state.
-      const int,         ///< Order of spatial Accuracy.
-      class GridBaseClass *  ///< pointer to computational grid.
+      const cell &,     ///< Current Cell.
+      const direction,  ///< Add or subtract the slope depending on direction.
+      const int,        ///< length of state vectors.
+      const std::vector<pion_flt> &,  ///< Slope vector.
+      std::vector<pion_flt> &,        ///< vector for edge state.
+      const int,                      ///< Order of spatial Accuracy.
+      class GridBaseClass *           ///< pointer to computational grid.
       ) = 0;
 
   /// Calculate the slope (dP/dx) in cell i.
   virtual int SetSlope(
-      const cell &,          ///< Current Cell.
-      const axes,            ///< Which direction to calculate slope in.
-      const int,             ///< length of state vectors.
-      pion_flt *,            ///< Slope vector to be written to.
-      const int,             ///< Order of spatial Accuracy.
-      class GridBaseClass *  ///< pointer to computational grid.
+      const cell &,             ///< Current Cell.
+      const axes,               ///< Which direction to calculate slope in.
+      const int,                ///< length of state vectors.
+      std::vector<pion_flt> &,  ///< Slope vector.
+      const int,                ///< Order of spatial Accuracy.
+      class GridBaseClass *     ///< pointer to computational grid.
       ) = 0;
 
   ///
@@ -351,23 +351,23 @@ public:
   /// calculated gradient for the grid point in question.
   ///
   virtual int SetEdgeState(
-      const cell &,      ///< Current Cell.
-      const direction,   ///< Add or subtract the slope depending on direction.
-      const int,         ///< length of state vectors.
-      const pion_flt *,  ///< Slope vector.
-      pion_flt *,        ///< vector for edge state.
-      const int,         ///< Order of spatial Accuracy.
-      class GridBaseClass *  ///< pointer to computational grid.
+      const cell &,     ///< Current Cell.
+      const direction,  ///< Add or subtract the slope depending on direction.
+      const int,        ///< length of state vectors.
+      const std::vector<pion_flt> &,  ///< Slope vector.
+      std::vector<pion_flt> &,        ///< vector for edge state.
+      const int,                      ///< Order of spatial Accuracy.
+      class GridBaseClass *           ///< pointer to computational grid.
   );
 
   /// Calculate the slope (dP/dx) in cell i.
   virtual int SetSlope(
-      const cell &,          ///< Current Cell.
-      const axes,            ///< Which direction to calculate slope in.
-      const int,             ///< length of state vectors.
-      pion_flt *,            ///< Slope vector to be written to.
-      const int,             ///< Order of spatial Accuracy.
-      class GridBaseClass *  ///< pointer to computational grid.
+      const cell &,             ///< Current Cell.
+      const axes,               ///< Which direction to calculate slope in.
+      const int,                ///< length of state vectors.
+      std::vector<pion_flt> &,  ///< Slope vector.
+      const int,                ///< Order of spatial Accuracy.
+      class GridBaseClass *     ///< pointer to computational grid.
   );
 
   ///
@@ -527,23 +527,23 @@ public:
   /// calculated gradient for the grid point in question.
   ///
   int SetEdgeState(
-      const cell &,      ///< Current Cell.
-      const direction,   ///< Add or subtract the slope depending on direction.
-      const int,         ///< length of state vectors.
-      const pion_flt *,  ///< Slope vector.
-      pion_flt *,        ///< vector for edge state.
-      const int,         ///< Order of spatial Accuracy.
-      class GridBaseClass *  ///< pointer to computational grid.
+      const cell &,     ///< Current Cell.
+      const direction,  ///< Add or subtract the slope depending on direction.
+      const int,        ///< length of state vectors.
+      const std::vector<pion_flt> &,  ///< Slope vector.
+      std::vector<pion_flt> &,        ///< vector for edge state.
+      const int,                      ///< Order of spatial Accuracy.
+      class GridBaseClass *           ///< pointer to computational grid.
   );
 
   /// Calculate the slope (dP/dx) in cell i.
   int SetSlope(
-      const cell &,          ///< Current Cell.
-      const axes,            ///< Which direction to calculate slope in.
-      const int,             ///< length of state vectors.
-      pion_flt *,            ///< Slope vector to be written to.
-      const int,             ///< Order of spatial Accuracy.
-      class GridBaseClass *  ///< pointer to computational grid.
+      const cell &,             ///< Current Cell.
+      const axes,               ///< Which direction to calculate slope in.
+      const int,                ///< length of state vectors.
+      std::vector<pion_flt> &,  ///< Slope vector.
+      const int,                ///< Order of spatial Accuracy.
+      class GridBaseClass *     ///< pointer to computational grid.
   );
 
   ///

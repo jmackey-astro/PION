@@ -69,9 +69,12 @@ struct wind_source {
       Hplus,   ///< index of H+ tracer variable, if present.
       iHplus;  ///< index of H+ tracer variable, offset from 1st tracer.
   double Md0,  ///< Mdot equiv. non-rotating star (lat-dep.wind) (g/s)
-      v_esc,   ///< wind escape velocity (cm/s)
-      dpos_init[MAX_DIM];  /// Initial position of the source (calculated)
-  bool cells_added;        ///< false until we add all cells to the source list.
+      v_esc;   ///< wind escape velocity (cm/s)
+  std::array<double, MAX_DIM> mypos;  ///< current updated position of source
+#ifdef ANALYTIC_ORBITS
+  double dpos_init[MAX_DIM];  /// Initial position of the source (input)
+#endif                        // ANALYTIC_ORBITS
+  bool cells_added;  ///< false until we add all cells to the source list.
   std::vector<struct wind_cell *> wcells;
 };
 
@@ -152,9 +155,7 @@ public:
   /// Remove all cells from the list of boundary cells.
   /// Returns non-zero on error.
   ///
-  int remove_cells(
-      class GridBaseClass *,
-      const int  ///< src id
+  int remove_cells(const int  ///< src id
   );
 
   ///
@@ -199,12 +200,42 @@ public:
   );
 
   /// allows you to set a pointer to a microphysics class
-  void SetMicrophysics(
+  inline void SetMicrophysics(
       class microphysics_base *ptr  ///< pointer to microphysics class
   )
   {
     MP = ptr;
     return;
+  }
+
+  /// returns minimum size of wind boundary region == Rstar + 2*dx
+  double get_min_wind_radius(
+      const int,    ///< src id
+      const double  ///< cell size
+  );
+
+  /// returns the current position of the wind source used by this instance
+  inline void get_this_source_position(
+      const int id,                     ///< source id
+      std::array<double, MAX_DIM> &pos  ///< OUTPUT: last updated position
+  )
+  {
+    for (int v = 0; v < ndim; v++)
+      pos[v] = wlist[id]->mypos[v];
+    for (int v = ndim; v < MAX_DIM; v++)
+      pos[v] = 0.0;
+  }
+
+  /// sets the current position of the wind source to be used by this instance
+  inline void set_this_source_position(
+      const int id,                           ///< source id
+      const std::array<double, MAX_DIM> &pos  ///< INPUT: last updated position
+  )
+  {
+    for (int v = 0; v < ndim; v++)
+      wlist[id]->mypos[v] = pos[v];
+    for (int v = ndim; v < MAX_DIM; v++)
+      wlist[id]->mypos[v] = 0.0;
   }
 
   // --------------------------------------------------------------
@@ -230,6 +261,102 @@ protected:
       const struct wind_source *,
       const double  ///< EOS gamma
   );
+
+  /// set gas properties in boundary cell assuming wind is injected at the
+  /// terminal velocity
+  void set_wind_cell_reference_state_vinf(
+      class GridBaseClass &,       ///< grid class
+      struct wind_cell &,          ///< cell to calculate for
+      const struct wind_source &,  ///< wind source struct
+      const double                 ///< EOS gamma
+  );
+
+  /// set gas properties in boundary cell assuming wind is accelerated to
+  /// terminal velocity using a beta law with beta=1
+  void set_wind_cell_reference_state_acc(
+      class GridBaseClass &,       ///< grid class
+      struct wind_cell &,          ///< cell to calculate for
+      const struct wind_source &,  ///< wind source struct
+      const double                 ///< EOS gamma
+  );
+
+  /// If cell is inside the star, set gas properties to low density and
+  /// pressure.
+  void set_stellar_interior_values(
+      struct wind_cell &,                ///< cell to calculate for
+      const struct stellarwind_params &  ///< wind source struct
+  );
+
+  /// set gas properties in boundary cell assuming wind is accelerated to
+  /// terminal velocity using a beta law with beta=1
+  void set_wind_cell_density_pressure(
+      class GridBaseClass &,              ///< grid class
+      struct wind_cell &,                 ///< cell to calculate for
+      const struct stellarwind_params &,  ///< wind source struct
+      const double,                       ///< radial velocity of wind at cell
+      const double                        ///< EOS gamma
+  );
+
+  /// set tracer values in boundary cell
+  void set_wind_cell_tracers(
+      struct wind_cell &,         ///< cell to calculate for
+      const struct wind_source &  ///< wind source struct
+  );
+
+  // set vector offset of the cell from the star
+  void set_wind_cell_offset(
+      class GridBaseClass &,       ///< grid class
+      struct wind_cell &,          ///< cell to calculate for
+      const struct wind_source &,  ///< wind source struct
+      std::array<double, MAX_DIM>
+          &  ///< vector offset of cell from star (OUTPUT)
+  );
+
+  /// set wind velocity components for the cell, assuming injection at terminal
+  /// velocity
+  void set_wind_cell_velocity_components_vinf(
+      const std::array<double, MAX_DIM> &,  ///< position offset from star
+      struct wind_cell &,                   ///< wind cell struct
+      const struct stellarwind_params &,    ///< wind source struct
+      const double,                         ///< radial velocity of wind at cell
+      const double                          ///< rotation velocity at equator
+  );
+
+  /// set wind B components for the cell, assuming wind injection at terminal
+  /// velocity
+  void set_wind_cell_B_components_vinf(
+      const std::array<double, MAX_DIM> &,  ///< position offset from star
+      struct wind_cell &,                   ///< wind cell struct
+      const struct stellarwind_params &,    ///< wind source struct
+      const double,                         ///< radial velocity of wind at cell
+      const double                          ///< rotation velocity at equator
+  );
+
+  /// set wind velocity components for the cell, assuming acceleration
+  /// according to beta law with beta==1.
+  /// Function returns v_phi - phi component of velocity - which is used for
+  /// calculating B_phi.
+  double set_wind_cell_velocity_components_acc(
+      const std::array<double, MAX_DIM> &,  ///< position offset from star
+      struct wind_cell &,                   ///< wind cell struct
+      const struct stellarwind_params &,    ///< wind source struct
+      const double,                         ///< wind velocity at cell position
+      const double,  ///< Alfven velocity at Alfven radius
+      const double   ///< Alfven radius
+  );
+
+  /// set wind B components for the cell, assuming wind injection at terminal
+  /// velocity
+  void set_wind_cell_B_components_acc(
+      const std::array<double, MAX_DIM> &,  ///< position offset from star
+      struct wind_cell &,                   ///< wind cell struct
+      const struct stellarwind_params &,    ///< wind source struct
+      const double,                         ///< radial velocity of wind at cell
+      const double,  ///< phi component of wind velocity at cell
+      const double,  ///< Alfven velocity at Alfven radius
+      const double   ///< Alfven radius
+  );
+
 
   //
   // Eldridge et al. (2006, MN, 367, 186).

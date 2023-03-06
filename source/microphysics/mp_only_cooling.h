@@ -275,6 +275,13 @@ private:
   double MaxT_allowed;    ///< maximum sensible temperature (from pfile).
   double rho;             ///< mass density for this integration.
   double gamma;           ///< EOS gamma
+  unsigned int wind_tr;   ///< index of stellar-wind tracer in primitive vec
+                          ///< (Eatson cooling)
+  double wc_frac;         ///< fraction of gas from a WC star (Eatson cooling)
+  bool compton;           ///< True if doing Compton cooling, false otherwise
+  double compton_prefactor;  ///< prefactor for Compton cooling rate;
+  double compton_rate;       ///< Compton cooling rate.
+  double compton_urad;  ///< radiation energy density as input for Compton rate.
 
   /// Calculate rate of change of local state vector, for use in the
   /// integrator class with the adaptive CK method.
@@ -363,9 +370,24 @@ private:
       const double   ///< Temperature (K)
   );
 
+  /// Cooling following Eatson et al. (2022,MNRAS,516,6132) for
+  /// two gas components.
+  double Edot_EATSON_CIE_2comp(
+      const double,  ///< mass density (g/cm3)
+      const double,  ///< Temperature (K)
+      const double   ///< Fraction of gas from WC star
+  );
+
   /// setup lookup tables
   void gen_mpoc_lookup_tables();
   struct lkuptab_MPoc lt;
+
+  /// find wind tracer in primitive vector, and assign indes to variable
+  /// 'wind_tr'.
+  void get_wind_tracer(
+      const int ntr,         ///< Number of tracer variables in state vector
+      const std::string *tr  ///< List of tracer variable names.
+  );
 };
 
 /************************ MICROPHYSICS ***************************/

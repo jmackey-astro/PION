@@ -458,6 +458,14 @@ int dataio_text::get_parameters(
   // (set automatically based on order of scheme)
   SimPM.Nbc = -1;
 
+  spdlog::info("READING PARAMETERS!");
+  spdlog::info("READING PARAMETERS!");
+  spdlog::info("READING PARAMETERS!");
+  spdlog::info("READING PARAMETERS!");
+  spdlog::info("READING PARAMETERS!");
+  spdlog::info("READING PARAMETERS!");
+  spdlog::info("READING PARAMETERS!");
+  spdlog::info("READING PARAMETERS!");
   // Physics:
   SimPM.gamma = atof((rp->find_parameter("GAMMA")).c_str());
   SimPM.CFL   = atof((rp->find_parameter("CFL")).c_str());

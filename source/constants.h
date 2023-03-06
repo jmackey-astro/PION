@@ -52,37 +52,42 @@ public:
   inline double h() { return 6.62606957e-27; }
   inline double StefanBoltzmannConst() { return 5.670367e-5; }
   inline double eV() { return 1.6021766208e-12; }
+  inline double ThomsonXSection() { return 6.6524587321e-25; }
   ///
   /// Unified atomic mass unit.
   ///
   inline double uamu() { return 1.660539040e-24; }
   ///
-  /// proton mass (CODATA 2014)
+  /// Electron mass (CODATA 2018) in grams
+  ///
+  inline double m_e() { return 9.1093837015e-28; }
+  ///
+  /// proton mass (CODATA 2014) in grams
   ///
   inline double m_p() { return 1.672621898e-24; }
   ///
-  /// Hydrogen mass (IUPAC value is 1.0080+/-0.0002 * uamu).
+  /// Hydrogen mass (IUPAC value is 1.0080+/-0.0002 * uamu).  in grams
   ///
   inline double m_H() { return 1.6738e-24; }
   ///
-  /// Helium mass (CIAWW online table)
+  /// Helium mass (CIAWW online table) in grams
   ///
   inline double m_He() { return 6.6464768e-24; }
 
   ///
-  /// Carbon mass (CIAWW online table)
+  /// Carbon mass (CIAWW online table) in grams
   /// 0.5*(12.0096 + 12.0116) uamu
   ///
   inline double m_C() { return 1.994374e-23; }
 
   ///
-  /// Nitrogen mass 0.5*(14.00643 + 14.00728) uamu
+  /// Nitrogen mass 0.5*(14.00643 + 14.00728) uamu in grams
   /// (CIAWW online table)
   ///
   inline double m_N() { return 2.325892e-23; }
 
   ///
-  /// Oxygen mass (CIAWW online table)
+  /// Oxygen mass (CIAWW online table) in grams
   /// 0.5*(15.99903 + 15.99977) uamu
   ///
   inline double m_O() { return 2.6567628e-23; }

@@ -219,17 +219,13 @@ int setup_NG_grid::setup_grid(
   else
     spdlog::error("{}: {}", "unhandles spatial order of accuracy", SimPM.spOOA);
 
-  //
   // May need to setup extra data in each cell.
-  //
+  CI.set_ndim(SimPM.ndim);
   setup_cell_extra_data(SimPM);
 
-  //
   // Set values cell interface class.
-  //
   double dx = (SimPM.Xmax[XX] - SimPM.Xmin[XX]) / SimPM.NG[XX];
   CI.set_nlevels(dx, SimPM.grid_nlevels);  // sets dx on all levels.
-  CI.set_ndim(SimPM.ndim);
   CI.set_nvar(SimPM.nvar);
   CI.set_xmin(SimPM.Xmin);
 

@@ -289,7 +289,8 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
         for (int v = 0; v < par.nvar; v++) {
           if (!isfinite(c->Ph[v])) {
             spdlog::debug("NAN c->P  : {}", c->P);
-            spdlog::debug("NAN c->Ph : {}", c->Ph);
+            spdlog::debug(
+                "NAN c->Ph : {}", std::vector<double>(c->Ph, c->Ph + par.nvar));
           }
         }
 #endif
@@ -348,7 +349,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
           // cout <<" idim="<<idim<<" calling setslope on cell ";
           // cout <<c->id<<", isbd="<<c->isbd<<",
           // isgd="<<c->isgd<<"\n";
-          solver->SetSlope(*c, a, par.nvar, &slope[0], OA2, grid);
+          solver->SetSlope(*c, a, par.nvar, slope, OA2, grid);
           for (int v = 0; v < par.nvar; v++)
             buf[ibuf + v] = slope[v];
           ibuf += par.nvar;
@@ -389,8 +390,12 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void NG_MPI_coarse_to_fine_bc::BC_COARSE_TO_FINE_SEND_clear_sends(
     class Sub_domain &sub_domain)

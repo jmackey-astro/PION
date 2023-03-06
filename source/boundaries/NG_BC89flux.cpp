@@ -226,8 +226,12 @@ int NG_BC89flux::setup_flux_recv(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int NG_BC89flux::setup_flux_send(
     class SimParams &par,       ///< simulation params (including BCs)
@@ -390,8 +394,12 @@ int NG_BC89flux::setup_flux_send(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int NG_BC89flux::add_cells_to_face(
     class SimParams &par,       ///< simulation parameters
@@ -720,8 +728,12 @@ int NG_BC89flux::add_cells_to_face(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void NG_BC89flux::save_fine_fluxes(
     class SimParams &par,  ///< simulation parameters
@@ -800,8 +812,12 @@ void NG_BC89flux::save_fine_fluxes(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void NG_BC89flux::save_coarse_fluxes(
     class SimParams &par,  ///< simulation parameters
@@ -850,8 +866,12 @@ void NG_BC89flux::save_coarse_fluxes(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int NG_BC89flux::recv_BC89_fluxes_F2C(
     class FV_solver_base *spatial_solver,  ///< solver, for gradients
@@ -907,8 +927,12 @@ int NG_BC89flux::recv_BC89_fluxes_F2C(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int NG_BC89flux::recv_BC89_flux_boundary(
     class FV_solver_base *spatial_solver,  ///< solver, for gradients
@@ -924,8 +948,8 @@ int NG_BC89flux::recv_BC89_flux_boundary(
 #ifdef SKIP_BC89_FLUX
   return 0;
 #endif
-  struct flux_interface *fc = 0;
-  struct flux_interface *ff = 0;
+  struct flux_interface *fc = 0;  // coarse
+  struct flux_interface *ff = 0;  // fine
   std::vector<double> ftmp(par.nvar), utmp(par.nvar);
   for (int v = 0; v < par.nvar; v++)
     ftmp[v] = 0.0;
@@ -940,6 +964,9 @@ int NG_BC89flux::recv_BC89_flux_boundary(
   for (unsigned int f = 0; f < recv.fi.size(); f++) {
     fc = recv.fi[f];
     ff = send.fi[f];
+    // if one of the cells is not on the domain (i.e. is stellar wind boundary
+    // data), then no need to check the consistency so we move on to next cell.
+    if (!(fc->c[0]->isdomain) || !(ff->c[0]->isdomain)) continue;
 
     for (int v = 0; v < par.nvar; v++)
       fc->flux[v] += ff->flux[v];

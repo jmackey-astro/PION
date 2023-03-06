@@ -991,8 +991,8 @@ double MPv3::Temperature(
 #ifdef TEST_INF
   for (int v = 0; v < nv_prim; v++) {
     if (!isfinite(pv[v])) {
-      spdlog::debug("NAN in MPv3::Temperature(): {} {}", v, pv[v]);
-      spdlog::debug("prim vec : {}", pv);
+      spdlog::error("NAN in MPv3::Temperature(): {} {}", v, pv[v]);
+      spdlog::error("prim vec : {}", std::vector<double>(pv, pv + nv_prim));
       return -1.0e99;
     }
   }

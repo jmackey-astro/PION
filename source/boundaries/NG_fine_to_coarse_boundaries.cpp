@@ -21,7 +21,7 @@ using namespace std;
 
 int NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
     class SimParams &par,        ///< simulation parameters
-    class GridBaseClass *grid,   ///< pointer to grid.
+    class GridBaseClass *,       ///< pointer to grid (unused)
     boundary_data *b,            ///< boundary data
     class GridBaseClass *child,  ///< pointer to child grid.
     const int i                  ///< which element of NGrecvF2C to use
@@ -215,8 +215,7 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
     for (int v = 0; v < nv; v++)
       cd[v] = 0.0;
 
-    average_cells(
-        par, solver, fine, nc, b->avg[i_el].c, b->avg[i_el].cpos, cd.data());
+    average_cells(par, solver, fine, nc, b->avg[i_el].c, b->avg[i_el].cpos, cd);
 
     // set coarse cell optical depths for any radiation sources by
     // taking values from array "cd" (see get_F2C_Tau() for ordering)
@@ -258,17 +257,18 @@ int NG_fine_to_coarse_bc::average_cells(
     class GridBaseClass *grid,     ///< fine-level grid
     const int ncells,              ///< number of fine-level cells
     std::vector<cell *> &c,        ///< list of cells
-    const std::array<pion_flt, MAX_DIM> &cpos,  ///< centre of coarse cell.
-    double *cd  ///< [OUTPUT] averaged data (conserved var).
+    const std::array<double, MAX_DIM> &cpos,  ///< centre of coarse cell.
+    vector<double> &cd  ///< [OUTPUT] averaged data (conserved var).
 )
 {
-  std::vector<pion_flt> u(par.nvar);
+  std::vector<double> u(par.nvar);
   //
   // loop through list, adding conserved var * cell-vol,
   // then divide by coarse cell vol.
   //
   double sum_vol = 0.0, vol = 0.0;
   vector<cell *>::iterator c_iter;
+  int ct = 0;
   for (int v = 0; v < par.nvar; v++)
     cd[v] = 0.0;
 
@@ -283,6 +283,7 @@ int NG_fine_to_coarse_bc::average_cells(
 
   for (c_iter = c.begin(); c_iter != c.end(); ++c_iter) {
     cell *f = (*c_iter);
+    if (!f->isdomain) continue;
 #ifdef TEST_MPI_NG
     if (!f) spdlog::error("{}: {}", "cell doesn't exist average_cells", f);
 #endif
@@ -291,6 +292,7 @@ int NG_fine_to_coarse_bc::average_cells(
     solver->PtoU(f->Ph, u.data(), par.gamma);
     vol = grid->CellVolume(*f, grid->DX());
     sum_vol += vol;
+    ct++;
 
     // DEBUG
     /*
@@ -310,14 +312,25 @@ int NG_fine_to_coarse_bc::average_cells(
       cd[v] += u[v] * vol;
   }
   // cout <<"\n";
-  for (int v = 0; v < par.nvar; v++)
-    cd[v] /= sum_vol;
+  if (ct > 0) {
+    for (int v = 0; v < par.nvar; v++)
+      cd[v] /= sum_vol;
+  }
+  else {
+    // we didn't have any cells on domain --> all wind boundary
+    c_iter = c.begin();
+    solver->PtoU((*c_iter)->Ph, u.data(), par.gamma);
+    for (int v = 0; v < par.nvar; v++)
+      cd[v] = u[v];
+  }
   //
   // If doing RT, we also want to update column densities here.
   //
-  std::array<int, MAX_DIM> pos;
-  CI.get_ipos_vec(cpos, pos);
-  get_F2C_TauAvg(par, ncells, c, pos.data(), &(cd[par.nvar]));
+  if (par.RS.Nsources > 0) {
+    std::array<int, MAX_DIM> pos;
+    CI.get_ipos_vec(cpos, pos);
+    get_F2C_TauAvg(par, ncells, c, pos.data(), &(cd[par.nvar]));
+  }
 
   // DEBUG
   /*
@@ -351,6 +364,9 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg(
     double *T                // [OUTPUT] pointer to optical depths
 )
 {
+  if (par.RS.Nsources < 1) {
+    return;
+  }
 
   if (par.ndim == 1)
     get_F2C_TauAvg_1D(par, ncells, c, cpos, T);
@@ -370,7 +386,7 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg(
 
 void NG_fine_to_coarse_bc::get_F2C_TauAvg_1D(
     class SimParams &par,    // pointer to simulation parameters
-    const int ncells,        // number of fine-level cells
+    const int,               // number of fine-level cells
     std::vector<cell *> &c,  // list of cells
     const int *cpos,         // centre of coarse cell (integer coords)
     double *T                // [OUTPUT] pointer to optical depths
@@ -428,7 +444,7 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_1D(
 
 void NG_fine_to_coarse_bc::get_F2C_TauAvg_2D(
     class SimParams &par,    // pointer to simulation parameters
-    const int ncells,        // number of fine-level cells
+    const int,               // number of fine-level cells
     std::vector<cell *> &c,  // list of cells
     const int *cpos,         // centre of coarse cell (integer coords)
     double *T                // [OUTPUT] pointer to optical depths
@@ -601,9 +617,9 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_2D(
 
 void NG_fine_to_coarse_bc::get_F2C_TauAvg_3D(
     class SimParams &par,    // pointer to simulation parameters
-    const int ncells,        // number of fine-level cells
+    const int,               // number of fine-level cells
     std::vector<cell *> &c,  // list of cells
-    const int *cpos,         // centre of coarse cell (integer coords)
+    const int *,             // centre of coarse cell (integer coords) (unused)
     double *T                // [OUTPUT] pointer to optical depths
 )
 {

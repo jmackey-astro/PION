@@ -35,59 +35,30 @@ path = args.path
 sim = args.fbase
 img_path = args.img_path
 
-# Poor way of checking how many grid levels there are: I always
-# name files with number of dimensions "d" and levels "l"
-if sim.find("d1l2") > 0:
-  files0 = sorted(glob.glob(path+"/"+sim+"_level00_0000.*.silo"))
-  files1 = sorted(glob.glob(path+"/"+sim+"_level01_0000.*.silo"))
-  lev=2
-elif sim.find("d1l1") > 0:
-  files0 = sorted(glob.glob(path+"/"+sim+"_0000.*.silo"))
-  lev=1
-elif sim.find("d1l3") > 0:
-  files0 = sorted(glob.glob(path+"/"+sim+"_level00_0000.*.silo"))
-  files1 = sorted(glob.glob(path+"/"+sim+"_level01_0000.*.silo"))
-  files2 = sorted(glob.glob(path+"/"+sim+"_level02_0000.*.silo"))
-  lev=3
-elif sim.find("d1l4") > 0:
-  files0 = sorted(glob.glob(path+"/"+sim+"_level00_0000.*.silo"))
-  files1 = sorted(glob.glob(path+"/"+sim+"_level01_0000.*.silo"))
-  files2 = sorted(glob.glob(path+"/"+sim+"_level02_0000.*.silo"))
-  files3 = sorted(glob.glob(path+"/"+sim+"_level03_0000.*.silo"))
-  lev=4
-elif sim.find("d1l5") > 0:
-  files0 = sorted(glob.glob(path+"/"+sim+"_level00_0000.*.silo"))
-  files1 = sorted(glob.glob(path+"/"+sim+"_level01_0000.*.silo"))
-  files2 = sorted(glob.glob(path+"/"+sim+"_level02_0000.*.silo"))
-  files3 = sorted(glob.glob(path+"/"+sim+"_level03_0000.*.silo"))
-  files4 = sorted(glob.glob(path+"/"+sim+"_level04_0000.*.silo"))
-  lev=5
-else:
-  files0 = sorted(glob.glob(path+"/"+sim+"_0000.*.silo"))
-  lev=1
+list_of_files=[]
+lev=0
+while True:
+  nm = path+"/"+sim+"_level"+str(lev).zfill(2)+"_0000.*.silo"
+  print(nm)
+  files=sorted(glob.glob(nm))
+  if (len(files)<1):
+    print("run out of levels, lev=",lev)
+    break
+  else:
+    list_of_files.append(files)
+    lev = lev+1
 
-if (len(files0)<1):
+if (len(list_of_files)<1):
   print("can't find requested files")
   quit()
 
+for i in range(0,len(list_of_files[0])):
+  ff = []
+  for ll in range(0,lev):
+    #print("append ", ll, list_of_files[ll][i])
+    ff.append(list_of_files[ll][i])
 
-for i in range(len(files0)):
-  print(i,files0[i])
-  # PyPion needs a list of all files to read:
-  if lev==1:
-    files = [files0[i]]
-  elif lev==2:
-    files =[files0[i],files1[i]]
-  elif lev==3:
-    files = [files0[i],files1[i],files2[i]]
-  elif lev==4:
-    files = [files0[i],files1[i],files2[i],files3[i]]
-  elif lev==5:
-    files = [files0[i],files1[i],files2[i],files3[i],files4[i]]
-  else:
-    print("bad number of levels")
-    quit()
-  dataio = ReadData(files)
+  dataio = ReadData(ff)
 
   n = dataio.nlevels()
   c = dataio.cycle()
@@ -105,19 +76,19 @@ for i in range(len(files0)):
     vM = dataio.get_1Darray("NG_Mask")['data']
   vD = D['data']  # this is an array of arrays, one for each grid level
 
-  time = (D['sim_time'] * u.s).to(u.kyr)
+  time = (D['sim_time'] * u.s).to(u.yr)
   print("time=",time)
-  xmax = (D['max_extents'] * u.cm).to(u.pc)
-  xmin = (D['min_extents'] * u.cm).to(u.pc)
+  xmax = (D['max_extents'] * u.cm).to(u.R_sun)
+  xmin = (D['min_extents'] * u.cm).to(u.R_sun)
   ng  = dataio.ngrid()
 
   fig = plt.figure()
   plt.ylabel("various units",fontsize=16)
-  plt.xlabel("$x$ (pc)",fontsize=16)
-  plt.xlim(0, xmax[0][0].value)
+  plt.xlabel("$x$ (R_sun)",fontsize=16)
+  plt.xlim(0, 0.1*xmax[0][0].value)
   plt.ylim(-4,8.5)
   s = "$t=$" + f"{time:0.03f}"
-  plt.text(0.02,4.4,s,color="black",fontsize=14)
+  plt.text(0.02*xmax[0][0].value,4.4,s,color="black",fontsize=14)
   plt.tick_params(labelsize=16)
   plt.grid()
 
@@ -130,7 +101,7 @@ for i in range(len(files0)):
     xn = lmax[0]-0.5*dx
     x = np.linspace(x0,xn,ng[0])
     
-    if lev>1:
+    if ilev < n-1:
       ro = vD[ilev]*vM[ilev]  # multiply by mask to zero non-leaf cells
       pg = vP[ilev]*vM[ilev]
       vx = vV[ilev]*vM[ilev]
@@ -160,13 +131,15 @@ for i in range(len(files0)):
     
     # add label only for finest level data
     if ilev==n-1:
-      plt.plot(x,np.log10(nh),"k-",label="$n_\mathrm{H}\, \left(\mathrm{cm}^{-3}\\right)$")
-      plt.plot(x,np.log10(np.fabs(vr)),"b--",label="$\left|v_r\\right|\, \left(\mathrm{km\,s}^{-1}\\right)$")
-      plt.plot(x,np.log10(tt),"r-.",label="Temperature (K)")
+      plt.plot(x,np.log10(nh)-4,"k-",label="$\log_{10} n_\mathrm{H}\, \left(\mathrm{cm}^{-3}\\right)$")
+      plt.plot(x,vr*1.0e-3,"b--*",label="$\left|v_r\\right|\, \left(\mathrm{km\,s}^{-1}\\right)$")
+      #plt.plot(x,np.log10(np.fabs(vr)),"b--*",label="$\left|v_r\\right|\, \left(\mathrm{km\,s}^{-1}\\right)$")
+      plt.plot(x,np.log10(tt),"r-.",label="$\log_{10}$ Temperature (K)")
       plt.plot(x,np.log10(hp),"k:",label="$y(\mathrm{H}^{+})$")
     else:
-      plt.plot(x,np.log10(nh),"k-")
-      plt.plot(x,np.log10(np.fabs(vr)),"b--")
+      plt.plot(x,np.log10(nh)-4,"k-")
+      #plt.plot(x,np.log10(np.fabs(vr)),"b--")
+      plt.plot(x,vr*1.0e-3,"b--")
       plt.plot(x,np.log10(tt),"r-.")
       plt.plot(x,np.log10(hp),"k:")
 

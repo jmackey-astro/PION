@@ -1095,9 +1095,6 @@ raytracer_USC::raytracer_USC(
     else
       dir3[i] = ZN;
   }
-  //  rep.printVec("dir1",dir1,8);
-  //  rep.printVec("dir2",dir2,8);
-  //  rep.printVec("dir3",dir3,8);
 
   //
   // Set the source Tau-min values vector to have Nsources elements.
@@ -2438,9 +2435,6 @@ void raytracer_USC::col2cell_2d(
     double *Nc            ///< Column densities.
 )
 {
-#ifdef TEST_INF
-  if (!c) spdlog::error("{}: {}", "col2cell_2d for non-existent cell!", c);
-#endif
   double col1[MAX_TAU], col2[MAX_TAU];
   cell *c1 = gridptr->NextPt(c, entryface);
   if (!c1) {
@@ -2488,9 +2482,6 @@ void raytracer_USC::col2cell_3d(
   spdlog::debug(
       "3D ShortChars:: entrydir = {} and perps = [{}, {}]", entryface,
       perpdir[0], perpdir[1]);
-#endif
-#ifdef TEST_INF
-  if (!c) spdlog::error("{}: {}", "col2cell_3d for non-existent cell!", c);
 #endif
 
   cell *c1 = 0, *c2 = 0, *c3 = 0, *c4 = 0;

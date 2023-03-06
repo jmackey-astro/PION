@@ -88,6 +88,11 @@ struct which_physics {
   /// microphysics (but doesn't contribute to mean mass per particle,
   /// mu).
   double Metal_MassFrac;
+
+  /// If including Compton cooling
+  int compton_cool;
+  /// If including wind acceleration from stars
+  int wind_acceleration;
 };
 // *******************************************************************
 
@@ -123,11 +128,14 @@ struct star {
 /// read this struct and set up the appropriate wind boundary.
 ///
 struct stellarwind_params {
-  double dpos[MAX_DIM];      ///< position of source (input/stored cm).
-  double velocity[MAX_DIM];  ///< velocity vector of star (calculated)
-  // std::array<double,MAX_DIM> dpos;      ///< position of source (input/stored
-  // cm). std::array<double,MAX_DIM> velocity;  ///< velocity vector of star
-  // (calculated)
+  /// time-dep position of source (input/stored cm).
+  std::array<double, MAX_DIM> dpos;
+  /// previous assigned position of source (input/stored cm).
+  std::array<double, MAX_DIM> lastpos;
+  /// current assigned position of source (input/stored cm).
+  std::array<double, MAX_DIM> thispos;
+  /// velocity vector of star (calculated)
+  std::array<double, MAX_DIM> velocity;
   double Mdot;    ///< mass loss rate (input Msun/yr, stored g/s).
   double Mass;    ///< Mass of star (input Msun, stored g).
   double Vinf;    ///< wind terminal velocity (input km/s, stored cm/s)
@@ -161,6 +169,7 @@ struct stellarwind_params {
   int id;            ///< if we have multiple sources, this identifies them.
   int type;          ///< what type of stellar wind?  see stellar_wind.h
   int moving_star;   ///< is the star moving? 1=yes, 0=no
+  int acc;           ///< 0 = launch at vinf; 1 = accelerate with beta=1
   int enhance_mdot;  ///< 0=no, 1=yes, for rapidly rotating stars.
   std::string
       evolving_wind_file;  ///< name of file containing evolving wind data.
@@ -171,7 +180,7 @@ struct stellarwind_list {
   int Nsources;                                     ///< number of sources.
 };
 
-extern struct stellarwind_list SWP;
+extern struct stellarwind_list SWP;  ///< global scope list of wind sources
 // *******************************************************************
 
 // *******************************************************************

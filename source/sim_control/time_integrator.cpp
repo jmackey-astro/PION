@@ -89,8 +89,10 @@ double time_integrator::advance_time(
     //
     // cout <<"First order update\n";
     err += first_order_update(SimPM.dt, SimPM.tmOOA, grid);
-    if (err)
-      spdlog::error("{}: {}", "first_order_update() returned error", err);
+    if (err) {
+      spdlog::error("first_order_update() returned error {}", err);
+      exit(1);
+    }
 
     // Update boundary data to new state
     err += TimeUpdateInternalBCs(
@@ -98,17 +100,20 @@ double time_integrator::advance_time(
         OA1, OA1);
     err += TimeUpdateExternalBCs(
         SimPM, level, grid, spatial_solver, SimPM.simtime + SimPM.dt, OA1, OA1);
-    if (err)
-      spdlog::error(
-          "{}: {}", "second_order_update: error from bounday update", err);
+    if (err) {
+      spdlog::error("second_order_update: error from BC update {}", err);
+      exit(1);
+    }
   }
 
   else if (SimPM.tmOOA == OA2 && SimPM.spOOA == OA2) {
     // cout <<"Second order update\n";
     // take the 1st-order half-step to predict the time-centred state.
     err += first_order_update(0.5 * SimPM.dt, OA2, grid);
-    if (err)
-      spdlog::error("{}: {}", "1st order time-update returned error", err);
+    if (err) {
+      spdlog::error("1st order time-update error {}", err);
+      exit(1);
+    }
 
     // Update boundary data to intermediate state
     err += TimeUpdateInternalBCs(
@@ -117,14 +122,18 @@ double time_integrator::advance_time(
     err += TimeUpdateExternalBCs(
         SimPM, level, grid, spatial_solver, SimPM.simtime + 0.5 * SimPM.dt, OA1,
         OA2);
-    if (err)
-      spdlog::error(
-          "{}: {}", "second_order_update: error from bounday update", err);
+    if (err) {
+      spdlog::error("second_order_update: error from BC update {}", err);
+      exit(1);
+    }
+
 
     // take the time-centred 2nd-order step.
     err += second_order_update(SimPM.dt, OA2, grid);
-    if (err)
-      spdlog::error("{}: {}", "Second order time-update returned error", err);
+    if (err) {
+      spdlog::error("Second order time-update error {}", err);
+      exit(1);
+    }
 
     // Update boundary data to new state.
     err += TimeUpdateInternalBCs(
@@ -133,16 +142,14 @@ double time_integrator::advance_time(
     err += TimeUpdateExternalBCs(
         SimPM, level, grid, spatial_solver, SimPM.simtime + 1.0 * SimPM.dt, OA2,
         OA2);
-    if (err)
-      spdlog::error(
-          "{}: {}", "second_order_update: error from bounday update", err);
+    if (err) {
+      spdlog::error("second_order_update: error from BC update {}", err);
+      exit(1);
+    }
   }
-  //
   // Add in 3rd order PPM at some stage???
-  //
   else {
-    spdlog::error(
-        "{}: {}", "Bad OOA requests; choose (1,1) or (2,2)", SimPM.tmOOA);
+    spdlog::error("Bad OOA requests; choose (1,1) or (2,2): {}", SimPM.tmOOA);
   }
 
   // Update time variables to new values.
@@ -187,8 +194,10 @@ int time_integrator::first_order_update(
     spdlog::debug(" 1st order step doing RT ");
 #endif
     err += RT_all_sources(SimPM, grid, 0);
-    if (err)
-      spdlog::error("{}: {}", "first_order_update: first calc_rt_cols()", err);
+    if (err) {
+      spdlog::error("first_order_update: first calc_rt_cols() {}", err);
+      exit(1);
+    }
   }
 
   //
@@ -197,16 +206,21 @@ int time_integrator::first_order_update(
   err += calc_conduction_dU(dt, OA1, grid);
   err += calc_microphysics_dU(dt, grid);
   err += calc_dynamics_dU(dt, OA1, grid);
-  if (err)
-    spdlog::error("{}: {}", "first_order_update: error from calc_*_dU", err);
+  if (err) {
+    spdlog::error("first_order_update: error from calc_*_dU {}", err);
+    exit(1);
+  }
 
   //
   // Now update Ph[i] to new values (and P[i] also if full step).
   //
   err += grid_update_state_vector(dt, OA1, ooa, grid);
-  if (err) spdlog::error("{}: {}", "first_order_update: state-vec update", err);
+  if (err) {
+    spdlog::error("first_order_update: state-vec update {}", err);
+    exit(1);
+  }
 
-  return 0;
+  return err;
 }
 
 
@@ -237,23 +251,28 @@ int time_integrator::second_order_update(
 
   // Raytracing, to get column densities for microphysics update.
   err += RT_all_sources(SimPM, grid, 0);
-  if (0 != err)
-    spdlog::error(
-        "{}: Expected {} but got {}", "second_order_update: RT", 0, err);
+  if (0 != err) {
+    spdlog::error("second_order_update: RT {}", err);
+    exit(1);
+  }
 
   // Calculate updates for each physics module
   err += calc_conduction_dU(dt, OA2, grid);
   err += calc_microphysics_dU(dt, grid);
   err += calc_dynamics_dU(dt, OA2, grid);
-  if (err)
-    spdlog::error("{}: {}", "second_order_update: error from calc_*_dU", err);
+  if (err) {
+    spdlog::error("second_order_update: error from calc_*_dU {}", err);
+    exit(1);
+  }
 
   // Now update Ph[i] to new values (and P[i] also if full step).
   err += grid_update_state_vector(dt, OA2, ooa, grid);
-  if (err)
-    spdlog::error("{}: {}", "second_order_update: state-vec update", err);
+  if (err) {
+    spdlog::error("second_order_update: state-vec update {}", err);
+    exit(1);
+  }
 
-  return 0;
+  return err;
 }
 
 
@@ -275,10 +294,11 @@ int time_integrator::calc_conduction_dU(
   if (step != OA1) {
     err = set_thermal_conduction_Edot(SimPM, step, grid);
   }
-  if (0 != err)
+  if (0 != err) {
     spdlog::error(
-        "{}: Expected {} but got {}",
-        "calc_conduction_dU: set_thermal_conduction_Edot()", 0, err);
+        "calc_conduction_dU: set_thermal_conduction_Edot() error {}", err);
+    exit(1);
+  }
   enum axes x1 = XX;
   enum axes x2 = YY;
   enum axes x3 = ZZ;
@@ -458,7 +478,7 @@ int time_integrator::calc_RT_microphysics_dU(
               if (!isfinite(c->P[v]) || !isfinite(p[v])
                   || !isfinite(c->dU[v])) {
                 spdlog::error("NAN/INF in calc_RT_microphysics_dU() ");
-                CI.print_cell(c);
+                CI.print_cell(*c);
                 spdlog::error(
                     "{}: {}", "NAN/INF in calc_RT_microphysics_dU()", v);
               }
@@ -475,7 +495,9 @@ int time_integrator::calc_RT_microphysics_dU(
 #ifdef PION_OMP
   }
 #endif
-  //    cout <<"calc_microphysics_dU() Updating MicroPhysics Done!\n";
+#ifndef NDEBUG
+  spdlog::debug("calc_microphysics_dU() Updating MicroPhysics Done");
+#endif
   return 0;
 }  // RT microphysics update.
 
@@ -530,6 +552,32 @@ int time_integrator::calc_noRT_microphysics_dU(
 #endif
           }
           else {
+            // if calculating compton cooling, assign the radiation energy
+            // density to the 'tt' variable.
+            if (SimPM.EP.compton_cool) {
+              tt = 0.0;
+              for (int v = 0; v < SWP.Nsources; v++) {
+                tt += CI.get_compton_urad(*c, SWP.params[v]->id);
+              }
+            }
+#ifdef TEST_INF
+            if (!isfinite(tt)) {
+              spdlog::error(
+                  "nan compton U_rad calc_noRT_microphysics_dU {}", tt);
+              err = 1;
+            }
+            for (int v = 0; v < SimPM.nvar; v++) {
+              if (!isfinite(c->P[v])) {
+                spdlog::error("nan state vector calc_noRT_microphysics_dU");
+                err = 1;
+              }
+            }
+            if (err) {
+              CI.print_cell(*c);
+              exit(1);
+            }
+#endif  // TEST_INF
+
             // integer 5th argument determines type of integration substepping:
             // 0 = adaptive RK5 Cash-Karp method.
             // 1 = adaptive euler integration.
@@ -538,10 +586,11 @@ int time_integrator::calc_noRT_microphysics_dU(
                 c->P.data(), p.data(), delt, SimPM.gamma, 0, &tt);
             if (err) {
               spdlog::error(
-                  "{}: {}", "calc_noRT_microphysics_dU returned error: cell id",
+                  "calc_noRT_microphysics_dU returned error: cell id {}",
                   c->id);
               CI.print_cell(*c);
-              cout << "error code = " << err << "\n";
+              spdlog::info("error code = {}, level {}", err, grid->level());
+              exit(1);
             }
             // New state is p[], old state is c->P[].  Get dU from these.
             spatial_solver->PtoU(c->P.data(), ui.data(), SimPM.gamma);
@@ -556,7 +605,7 @@ int time_integrator::calc_noRT_microphysics_dU(
   }
 #endif
 #ifndef NDEBUG
-  cout << "calc_noRT_microphysics_dU() Updating MicroPhysics Done!\n";
+  spdlog::debug("calc_noRT_microphysics_dU() Updating MicroPhysics Done");
 #endif
   return 0;
 }
@@ -826,10 +875,9 @@ int time_integrator::calc_Hcorrection(
           index[x3] = 0;
           cpt       = grid->get_cell_all(index[0], index[1], index[2]);
           // Slope and edge state temporary arrays
-          pion_flt *slope_cpt = 0, *slope_npt = 0, *temp = 0;
-          slope_cpt = mem.myalloc(slope_cpt, SimPM.nvar);
-          slope_npt = mem.myalloc(slope_npt, SimPM.nvar);
           std::vector<pion_flt> edgeR(SimPM.nvar), edgeL(SimPM.nvar);
+          std::vector<pion_flt> slope_cpt(SimPM.nvar), slope_npt(SimPM.nvar),
+              temp(SimPM.nvar);
 
           // Set three cell pointers (2nd order slopes have a 3-point
           // stencil).
@@ -847,18 +895,17 @@ int time_integrator::calc_Hcorrection(
           // --------------------------------------------------------
           do {
             err += spatial_solver->SetEdgeState(
-                *cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL.data(), csp,
-                grid);
+                *cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp, grid);
             err += spatial_solver->SetSlope(
                 *npt, axis[idim], SimPM.nvar, slope_npt, csp, grid);
             err += spatial_solver->SetEdgeState(
-                *npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR.data(), csp,
-                grid);
+                *npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR, csp, grid);
             spatial_solver->set_Hcorrection(
-                *cpt, axis[idim], edgeL.data(), edgeR.data(), SimPM.gamma);
+                *cpt, axis[idim], edgeL, edgeR, SimPM.gamma);
 
-            cpt       = npt;
-            npt       = n2pt;
+            cpt = npt;
+            npt = n2pt;
+            // TEST IF THIS IS SLOW .... USED TO USE POINTERS COPY BY REFERENCE
             temp      = slope_cpt;
             slope_cpt = slope_npt;
             slope_npt = temp;
@@ -866,21 +913,16 @@ int time_integrator::calc_Hcorrection(
 
           // last cell must be 1st order.
           err += spatial_solver->SetEdgeState(
-              *cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL.data(), csp,
-              grid);
+              *cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp, grid);
           for (int v = 0; v < SimPM.nvar; v++)
             slope_npt[v] = 0.;
           err += spatial_solver->SetEdgeState(
-              *npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR.data(), csp,
-              grid);
+              *npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR, csp, grid);
           spatial_solver->set_Hcorrection(
-              *cpt, axis[idim], edgeL.data(), edgeR.data(), SimPM.gamma);
-
+              *cpt, axis[idim], edgeL, edgeR, SimPM.gamma);
           // --------------------------------------------------------
           // Finished H-correction calculation for the column.
           // --------------------------------------------------------
-          slope_cpt = mem.myfree(slope_cpt);
-          slope_npt = mem.myfree(slope_npt);
         }
       }
 #ifdef PION_OMP
@@ -943,7 +985,7 @@ int time_integrator::set_dynamics_dU(
       if (grid == SimPM.levels[v].grid) level = v;
     }
   }
-  spdlog::debug("*** Calculating DU dynamics on level {}", level);
+  spdlog::info("*** Calculating DU dynamics on level {}", level);
 #endif
 
   //
@@ -1037,7 +1079,7 @@ int time_integrator::dynamics_dU_column(
   if ((SimPM.spOOA > 2) || (SimPM.tmOOA > 2) || (csp > 2)) {
     spdlog::error(
         "(dynamics_dU_column) Error, ooa={}, {}", SimPM.spOOA, SimPM.tmOOA);
-    return (1);
+    return 1;
   }
   // cout <<"dynamics_dU_column: d+="<<posdir<<", d-="<<negdir;
   // cout <<", csp="<<csp<<", OOA="<<SimPM.spOOA<<"\n";
@@ -1050,15 +1092,14 @@ int time_integrator::dynamics_dU_column(
 
   // Calculate Flux at positive (right) boundary of cell for the
   // current cell (Fr_this) and the negative neighbour (Fr_prev).
-  pion_flt *Fr_this = 0, *Fr_prev = 0, *temp = 0, *slope_cpt = 0,
-           *slope_npt = 0, *edgeR = 0, *edgeL = 0, *pstar = 0;
-  Fr_prev   = mem.myalloc(Fr_prev, SimPM.nvar);
-  Fr_this   = mem.myalloc(Fr_this, SimPM.nvar);
-  slope_cpt = mem.myalloc(slope_cpt, SimPM.nvar);
-  slope_npt = mem.myalloc(slope_npt, SimPM.nvar);
-  edgeL     = mem.myalloc(edgeL, SimPM.nvar);
-  edgeR     = mem.myalloc(edgeR, SimPM.nvar);
-  pstar     = mem.myalloc(pstar, SimPM.nvar);
+  std::vector<pion_flt> Fr_prev(SimPM.nvar);
+  std::vector<pion_flt> Fr_this(SimPM.nvar);
+  std::vector<pion_flt> slope_cpt(SimPM.nvar);
+  std::vector<pion_flt> slope_npt(SimPM.nvar);
+  std::vector<pion_flt> edgeL(SimPM.nvar);
+  std::vector<pion_flt> edgeR(SimPM.nvar);
+  std::vector<pion_flt> pstar(SimPM.nvar);
+  std::vector<pion_flt> temp;
 
   //
   // Set starting point, and next two points in the column.
@@ -1066,15 +1107,14 @@ int time_integrator::dynamics_dU_column(
   cell *cpt = &startingPt;
   if (cpt == 0) {
     spdlog::error("(dynamics_dU_column) error finding left boundary cell");
-    return (1);
+    exit(1);
   }
   cell *npt  = grid->NextPt(*cpt, posdir);
   cell *n2pt = grid->NextPt(*npt, posdir);
-#ifdef TEST_INT
-  // cout <<"Column: "<<cpt<<", "<<npt<<", "<<n2pt<<"\n";
-#endif
-  if (npt == 0 || n2pt == 0)
-    spdlog::error("{}: {}", "Couldn't find two real cells in column", 0);
+  if (npt == 0 || n2pt == 0) {
+    spdlog::error("Couldn't find two real cells in column", 0);
+    exit(1);
+  }
 
   //
   // Left Ghost Cell (doesn't get updated)
@@ -1093,12 +1133,6 @@ int time_integrator::dynamics_dU_column(
   // vector.
   //
   do {
-#ifdef TEST_INT
-    cout << "First Cell:";
-    CI.print_cell(cpt);
-    cout << "Next Cell: ";
-    CI.print_cell(npt);
-#endif
     // Get the flux from left and right states, adding artificial
     // viscosity if needed.
     err += spatial_solver->SetEdgeState(
@@ -1130,17 +1164,19 @@ int time_integrator::dynamics_dU_column(
         npt->F[axis][v] = Fr_this[v];
     }
 
-#ifdef TEST_INT
+#ifdef TEST_INF
     for (int v = 0; v < SimPM.nvar; v++) {
       if (!isfinite(cpt->dU[v])) {
-        spdlog::debug("Fl : {}", Fr_prev);
-        spdlog::debug("Fr : {}", Fr_this);
-        spdlog::debug("El : {}", edgeL);
-        spdlog::debug("Er : {}", edgeR);
-        spdlog::debug("dt:{}\tdx={}", dt, dx);
-        CI.print_cell(cpt);
-        CI.print_cell(npt);
-        spdlog::error("{}: {}", "nans!!!", 2);
+        spdlog::error("Flux l : {}", Fr_prev);
+        spdlog::error("Flux r : {}", Fr_this);
+        spdlog::error("Edge l : {}", edgeL);
+        spdlog::error("Edge r : {}", edgeR);
+        spdlog::error("dU : {}", cpt->dU);
+        spdlog::error("dt {}   dx {}", dt, dx);
+        CI.print_cell(*cpt);
+        CI.print_cell(*npt);
+        spdlog::error("nans!!!");
+        exit(1);
       }
     }
 #endif
@@ -1228,18 +1264,10 @@ int time_integrator::dynamics_dU_column(
   cpt = npt;
   for (int v = 0; v < SimPM.nvar; v++)
     cpt->dU[v] += 0.;  // nothing to calculate for it.
-  if (0 != err)
-    spdlog::error(
-        "{}: Expected {} but got {}", "(dU_Column) encountered an error", 0,
-        err);
-
-  Fr_this   = mem.myfree(Fr_this);
-  Fr_prev   = mem.myfree(Fr_prev);
-  slope_cpt = mem.myfree(slope_cpt);
-  slope_npt = mem.myfree(slope_npt);
-  edgeL     = mem.myfree(edgeL);
-  edgeR     = mem.myfree(edgeR);
-  pstar     = mem.myfree(pstar);
+  if (0 != err) {
+    spdlog::error("(dU_Column) encountered an error {}", err);
+    return err;
+  }
 
 #ifdef TEST_CONSERVATION
 #ifdef PARALLEL

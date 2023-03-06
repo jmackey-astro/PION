@@ -148,6 +148,7 @@ int sim_control_NG_MPI::Init(
         err);
     exit(err);
   }
+  spdlog::debug("NG_MPI INIT: read data complete");
 
   // ----------------------------------------------------------------
   // Set Ph[] = P[], and then implement the boundary conditions.
@@ -167,13 +168,14 @@ int sim_control_NG_MPI::Init(
     } while ((c = grid[l]->NextPt(*c)) != 0);
 
     if (SimPM.eqntype == EQGLM && SimPM.timestep == 0) {
-      spdlog::info("Initial state, zero-ing glm variable");
+      spdlog::debug("Initial state, zero-ing glm variable");
       c = grid[l]->FirstPt();
       do {
         c->P[SI] = c->Ph[SI] = 0.;
       } while ((c = grid[l]->NextPt(*c)) != 0);
     }
   }  // loop over levels
+  spdlog::debug("NG_MPI INIT: set initial data complete");
 
   // ----------------------------------------------------------------
   err = boundary_conditions(SimPM, grid);
@@ -183,6 +185,7 @@ int sim_control_NG_MPI::Init(
         "(NG_MPI INIT::boundary_conditions) err!=0", 0, err);
     exit(err);
   }
+  spdlog::debug("NG_MPI INIT: boundary conditions complete");
 
   // ----------------------------------------------------------------
   err += setup_raytracing(SimPM, grid);
@@ -191,6 +194,7 @@ int sim_control_NG_MPI::Init(
         "{}: Expected {} but got {}", "Failed to setup raytracer", 0, err);
     exit(err);
   }
+  spdlog::debug("NG_MPI INIT: raytracing complete");
 
   // ----------------------------------------------------------------
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
@@ -203,71 +207,88 @@ int sim_control_NG_MPI::Init(
     }
     SimPM.levels[0].sub_domain.barrier();
   }
+  spdlog::debug("NG_MPI INIT: assign boundary data complete");
   // ----------------------------------------------------------------
 
-  // ----------------------------------------------------------------
-  for (int l = 0; l < SimPM.grid_nlevels; l++) {
-    spdlog::debug(
-        "NG_MPI updating external boundaries for level {0}\nUPDATING EXTERNAL BOUNDARIES FOR LEVEL {0}",
-        l);
-    err += TimeUpdateExternalBCs(
-        SimPM, l, grid[l], spatial_solver, SimPM.simtime, SimPM.tmOOA,
-        SimPM.tmOOA);
-  }
-  if (err) {
-    spdlog::error(
-        "{}: Expected {} but got {}", "NG_MPI INIT: error from bounday update",
-        0, err);
-    exit(err);
-  }
-  // ----------------------------------------------------------------
+  // update external and C2F boundarien N-1 times to populate corner cells
+  for (int vv = 0; vv < SimPM.grid_nlevels - 1; vv++) {
+    // ----------------------------------------------------------------
+    for (int l = 0; l < SimPM.grid_nlevels; l++) {
+      spdlog::debug("NG_MPI updating external boundaries for level {}", l);
+      err += TimeUpdateExternalBCs(
+          SimPM, l, grid[l], spatial_solver, SimPM.simtime, SimPM.tmOOA,
+          SimPM.tmOOA);
+    }
+    if (err) {
+      spdlog::error(
+          "{}: Expected {} but got {}",
+          "NG_MPI INIT: error from bounday update", 0, err);
+      exit(err);
+    }
+    spdlog::debug("NG_MPI INIT: updated external BCs complete");
+    // ----------------------------------------------------------------
 
-  // ----------------------------------------------------------------
-  for (int l = 0; l < SimPM.grid_nlevels; l++) {
-    spdlog::debug(
-        "NG_MPI updating C2F boundaries for level {0}\nUPDATING C2F BOUNDARIES FOR LEVEL {0}",
-        l);
-    if (l < SimPM.grid_nlevels - 1) {
-      for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
-        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) {
-          err += BC_update_COARSE_TO_FINE_SEND(
-              SimPM, grid[l], spatial_solver, l, grid[l]->BC_bd[i], 2, 2);
+    // ----------------------------------------------------------------
+    for (int l = 0; l < SimPM.grid_nlevels; l++) {
+      spdlog::debug(
+          "{}: NG_MPI updating C2F boundaries for level {}",
+          SimPM.levels[0].sub_domain.get_myrank(), l);
+      if (l < SimPM.grid_nlevels - 1) {
+        for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
+          if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) {
+            err += BC_update_COARSE_TO_FINE_SEND(
+                SimPM, grid[l], spatial_solver, l, grid[l]->BC_bd[i], 2, 2);
+          }
         }
       }
-    }
-    if (l > 0) {
-      for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
-        spdlog::debug(
-            "Init: l={}, C2F recv i={}, type={}", l, i,
-            grid[l]->BC_bd[i]->type);
-        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
-          err += BC_update_COARSE_TO_FINE_RECV(
-              SimPM, spatial_solver, l, grid[l]->BC_bd[i],
-              SimPM.levels[l].step);
+      if (l > 0) {
+        for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
+          spdlog::debug(
+              "Init: l={}, C2F recv i={}, type={}", l, i,
+              grid[l]->BC_bd[i]->type);
+          if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
+            err += BC_update_COARSE_TO_FINE_RECV(
+                SimPM, spatial_solver, l, grid[l]->BC_bd[i],
+                SimPM.levels[l].step);
+          }
         }
+#ifndef NDEBUG
+        spdlog::debug("CLEAR C2F send from {} to {}...", l - 1, l);
+#endif
+        BC_COARSE_TO_FINE_SEND_clear_sends(SimPM.levels[l - 1].sub_domain);
+#ifndef NDEBUG
+        spdlog::debug("  ... done");
+#endif
       }
-#ifndef NDEBUG
-      spdlog::debug("CLEAR C2F send from {} to {}...", l - 1, l);
-#endif
-      BC_COARSE_TO_FINE_SEND_clear_sends(SimPM.levels[l - 1].sub_domain);
-#ifndef NDEBUG
-      spdlog::debug("  ... done");
-#endif
     }
+    if (err) {
+      spdlog::error(
+          "{}: Expected {} but got {}",
+          "NG_MPI INIT: error from bounday update", 0, err);
+      exit(err);
+    }
+    spdlog::info("NG_MPI INIT: updated C2F boundaries complete");
+    // ----------------------------------------------------------------
   }
-  if (err) {
-    spdlog::error(
-        "{}: Expected {} but got {}", "NG_MPI INIT: error from bounday update",
-        0, err);
-    exit(err);
+
+#ifndef NDEBUG
+  cell *c = 0;
+  for (int l = 0; l < SimPM.grid_nlevels - 1; l++) {
+    spdlog::info("LEVEL-ZERO-CHECK L= {}", l);
+    c = (grid[l])->FirstPt_All();
+    do {
+      if (pconst.equalD(c->P[RO], 0.0)) {
+        spdlog::warn("ZERO DATA IN CELL {}", c->id);
+        CI.print_cell(*c);
+        exit(1);
+      }
+    } while ((c = (grid[l])->NextPt_All(*c)) != 0);
   }
-  // ----------------------------------------------------------------
+#endif  // NDEBUG
 
   // ----------------------------------------------------------------
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
-    spdlog::debug(
-        "NG_MPI updating external boundaries for level {0}@@@@@@@@@@@@  UPDATING EXTERNAL BOUNDARIES FOR LEVEL {0}",
-        l);
+    spdlog::debug("NG_MPI updating external boundaries for level {}", l);
     err += TimeUpdateExternalBCs(
         SimPM, l, grid[l], spatial_solver, SimPM.simtime, SimPM.tmOOA,
         SimPM.tmOOA);
@@ -295,6 +316,7 @@ int sim_control_NG_MPI::Init(
         0, err);
     exit(err);
   }
+  spdlog::info("NG_MPI INIT: updated internal BCs complete");
 
   // ----------------------------------------------------------------
   // update fine-to-coarse level boundaries
@@ -330,6 +352,7 @@ int sim_control_NG_MPI::Init(
         0, err);
     exit(err);
   }
+  spdlog::info("NG_MPI INIT: update F2C boundaries complete");
   // ----------------------------------------------------------------
 
   //
@@ -390,19 +413,20 @@ int sim_control_NG_MPI::Init(
   }
 
   // ----------------------------------------------------------------
-  //#ifndef NDEBUG
-  cell *c = 0;
+#ifndef NDEBUG
+  // cell *c = 0;
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
-    // cout <<"LEVEL-ZERO-CHECK L="<<l<<"\n";
+    spdlog::info("LEVEL-ZERO-CHECK L= {}", l);
     c = (grid[l])->FirstPt_All();
     do {
       if (pconst.equalD(c->P[RO], 0.0)) {
-        cout << "ZERO DATA IN CELL: ";
+        spdlog::warn("ZERO DATA IN CELL {}", c->id);
         CI.print_cell(*c);
       }
     } while ((c = (grid[l])->NextPt_All(*c)) != 0);
   }
-  //#endif // NDEBUG
+#endif  // NDEBUG
+  spdlog::info("NG_MPI INIT: complete");
   return (err);
 }
 

@@ -74,15 +74,15 @@ public:
 
   /// calculate Powell and GLM source terms for multi-D MHD
   virtual int MHDsource(
-      class GridBaseClass *,  ///< pointer to grid.
-      class cell &,           ///< pointer to cell of left state
-      class cell &,           ///< pointer to cell of right state
-      pion_flt *,             ///< left edge state
-      pion_flt *,             ///< right edge state
-      const axes,             ///< Which axis we are looking along.
-      enum direction,         ///< positive direction normal to interface
-      enum direction,         ///< negative direction normal to interface
-      const double            ///< timestep dt
+      class GridBaseClass *,    ///< pointer to grid.
+      class cell &,             ///< pointer to cell of left state
+      class cell &,             ///< pointer to cell of right state
+      std::vector<pion_flt> &,  ///< left edge state
+      std::vector<pion_flt> &,  ///< right edge state
+      const axes,               ///< Which axis we are looking along.
+      enum direction,           ///< positive direction normal to interface
+      enum direction,           ///< negative direction normal to interface
+      const double              ///< timestep dt
   )
   {
     return 0;
@@ -111,11 +111,11 @@ public:
   /// calculated left and right edge states at the boundary.
   ///
   void set_Hcorrection(
-      cell &,            ///< cell to assign eta value to.
-      const axes,        ///< axis we are looking along
-      const pion_flt *,  ///< left state (from current cell).
-      const pion_flt *,  ///< right state (from next cell).
-      const double       ///< EOS gamma.
+      cell &,                         ///< cell to assign eta value to.
+      const axes,                     ///< axis we are looking along
+      const std::vector<pion_flt> &,  ///< left state (from current cell).
+      const std::vector<pion_flt> &,  ///< right state (from next cell).
+      const double                    ///< EOS gamma.
   );
 
   ///
@@ -126,9 +126,9 @@ public:
       class GridBaseClass *grid,  ///< pointer to grid
       class cell &,               ///< Left state cell pointer
       class cell &,               ///< Right state cell pointer
-      pion_flt *,                 ///< Left Primitive State Vector.
-      pion_flt *,                 ///< Right Primitive State Vector.
-      pion_flt *,                 ///< Flux Vector. (written to).
+      std::vector<pion_flt> &,    ///< Left Primitive State Vector.
+      std::vector<pion_flt> &,    ///< Right Primitive State Vector.
+      std::vector<pion_flt> &,    ///< Flux Vector. (written to).
       const double,               ///< gas EOS gamma.
       const double                ///< Cell size dx.
   );
@@ -153,14 +153,14 @@ public:
   /// Adds the contribution from flux in the current direction to dU.
   virtual int dU_Cell(
       class GridBaseClass *grid,
-      cell &,            ///< Current cell.
-      const axes,        ///< Which axis we are looking along.
-      const pion_flt *,  ///< Negative direction flux.
-      const pion_flt *,  ///< Positive direction flux.
-      const pion_flt *,  ///< slope vector for cell c.
-      const int,         ///< spatial order of accuracy.
-      const double,      ///< cell length dx.
-      const double       ///< cell TimeStep, dt.
+      cell &,                         ///< Current cell.
+      const axes,                     ///< Which axis we are looking along.
+      const std::vector<pion_flt> &,  ///< Negative direction flux
+      const std::vector<pion_flt> &,  ///< Positive direction flux
+      const std::vector<pion_flt> &,  ///< slope vector for cell c
+      const int,                      ///< spatial order of accuracy.
+      const double,                   ///< cell length dx.
+      const double                    ///< cell TimeStep, dt.
       ) = 0;
 
   /// \brief General Finite volume scheme for updating a cell's
@@ -205,6 +205,15 @@ public:
   {
     return 0;
   }
+
+  /// Calculates source term due to wind acceleration
+  virtual int wind_acceleration_source(
+      class GridBaseClass *,  ///< pointer to grid
+      class cell &,           ///< cell pointer
+      const axes,             ///< Which axis we are looking along.
+      pion_flt *              ///< dU/dt vector
+  );
+
 
 protected:
   const int FV_gndim;  ///< number of spatial directions in grid.

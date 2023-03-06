@@ -79,11 +79,11 @@ int assign_update_bcs_NG_MPI::assign_boundary_data(
         err += BC_assign_ONEWAY_OUT(par, grid, b);
         break;
       case INFLOW:
-#ifdef TEST_MPI_NG
+        //#ifdef TEST_MPI_NG
         spdlog::debug(
             "LEVEL {}: NG_MPI_Assign: assigning bc {} with type {}", level, i,
             b->type);
-#endif
+        //#endif
         err += BC_assign_INFLOW(par, grid, b);
         break;
       case REFLECTING:
@@ -287,11 +287,11 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
         err += BC_update_ONEWAY_OUT(par, grid, b, cstep, maxstep);
         break;
       case INFLOW:
-#ifdef TEST_MPI_NG
+        //#ifdef TEST_MPI_NG
         spdlog::debug(
             "LEVEL {}: update_bcs_NG_MPI: updating bc {} with type {}", level,
             map[i], b->type);
-#endif
+        //#endif
         err += BC_update_INFLOW(par, grid, b, cstep, maxstep);
         break;
       case REFLECTING:

@@ -149,14 +149,14 @@ public:
   ///
   virtual int dU_Cell(
       class GridBaseClass *,
-      cell &,            ///< Current cell.
-      const axes,        ///< Which axis we are looking along.
-      const pion_flt *,  ///< Negative direction flux.
-      const pion_flt *,  ///< Positive direction flux.
-      const pion_flt *,  ///< slope vector for cell c.
-      const int,         ///< spatial order of accuracy.
-      const double,      ///< cell length dx.
-      const double       ///< cell TimeStep, dt.
+      cell &,                         ///< Current cell.
+      const axes,                     ///< Which axis we are looking along.
+      const std::vector<pion_flt> &,  ///< Negative direction flux
+      const std::vector<pion_flt> &,  ///< Positive direction flux
+      const std::vector<pion_flt> &,  ///< slope vector for cell c
+      const int,                      ///< spatial order of accuracy.
+      const double,                   ///< cell length dx.
+      const double                    ///< cell TimeStep, dt.
   );
 
   ///

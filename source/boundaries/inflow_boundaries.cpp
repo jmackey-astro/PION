@@ -5,6 +5,13 @@
 /// Modifications :\n
 /// - 2018.08.08 JM: moved code.
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <fmt/ranges.h>
+
 #include "boundaries/inflow_boundaries.h"
 #include "tools/mem_manage.h"
 using namespace std;
@@ -65,6 +72,11 @@ int inflow_bc::BC_assign_INFLOW(
 
   for (int v = 0; v < par.nvar; v++)
     b->refval[v] = temp->P[v];
+
+  std::vector<pion_flt> tt(par.nvar);
+  for (int v = 0; v < par.nvar; v++)
+    tt[v] = temp->P[v];
+  spdlog::info("INFLOW REF: {}", tt);
 
   if (ct != b->data.size())
     spdlog::error(

@@ -49,8 +49,8 @@ protected:
       class GridBaseClass *,   ///< fine-level grid
       const int,               ///< number of fine-level cells
       std::vector<cell *> &,   ///< list of cells
-      const std::array<pion_flt, MAX_DIM> &,  ///< centre of coarse cell.
-      pion_flt *  ///< [OUTPUT] averaged data (conserved var).
+      const std::array<double, MAX_DIM> &,  ///< centre of coarse cell.
+      std::vector<double> &  ///< [OUTPUT] averaged data (conserved var).
   );
 
   /// Get optical depths for radiation sources from list of cells,

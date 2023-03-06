@@ -86,9 +86,12 @@ cell_interface::cell_interface()
   /// Flag: 0=not doing RT,  N>=1 = N tau values.
   using_RT = 0;
   /// Flag: 0=no Hcorr, N=need N variables (Lapidus=1,Hcorr=Ndim).
-  using_Hcorr = 0;
-  using_DivV  = 0;
-  using_GradP = 0;
+  using_Hcorr        = 0;
+  using_DivV         = 0;
+  using_GradP        = 0;
+  using_compton_cool = 0;
+  using_wind_acc     = 0;
+  star_data.clear();
   /// Size of extra_data array (can be zero).
   N_extra_data = 0;
   //
@@ -173,10 +176,12 @@ void cell_interface::set_xmin(const std::array<double, MAX_DIM> &xm)
 // H-correction needs Ndim doubles, and Lapidus viscosity one double.
 //
 void cell_interface::setup_extra_data(
-    const struct rad_sources &rsi,  ///< Flag for ray-tracing
-    const int hc_flag,              ///< Flag for H-correction
-    const int dv_flag,              ///< Flag for Div(V).
-    const int gp_flag               ///< Flag for |grad(P)|.
+    const struct rad_sources &rsi,      ///< Flag for ray-tracing
+    const int hc_flag,                  ///< Flag for H-correction
+    const int dv_flag,                  ///< Flag for Div(V).
+    const int gp_flag,                  ///< Flag for |grad(P)|.
+    const struct which_physics &ep,     ///< some extra parameters
+    const struct stellarwind_list &swp  ///< list of wind sources.
 )
 {
   spdlog::debug("cell_interface::setup_extra_data()");
@@ -265,11 +270,66 @@ void cell_interface::setup_extra_data(
     spdlog::debug("Adding GRADP: N={}", N_extra_data);
   }
 
+  //
+  // Compton cooling needs a distance and a radiation flux
+  //
+  if (ep.compton_cool != 0) {
+    spdlog::info("CI-xd: compton cooling, Nsrc: {}", swp.Nsources);
+    using_compton_cool = 1;
+    star_data.resize(swp.Nsources);
+    for (int v = 0; v < swp.Nsources; v++) {
+      star_data[v].star_dist = N_extra_data++;
+      star_data[v].star_urad = N_extra_data++;
+    }
+  }
+  else {
+    using_compton_cool = 0;
+  }
+
+  //
+  // wind acceleration also needs distance, and Ndim accelerations
+  //
+  if (ep.wind_acceleration != 0) {
+    using_wind_acc = 1;
+    if (!using_compton_cool) {
+      // need to setup the distance if not already done.
+      spdlog::info("CI-xd: wind acc: nsrc: {}, ndim {}", swp.Nsources, ndim);
+      star_data.resize(swp.Nsources);
+      for (int v = 0; v < swp.Nsources; v++) {
+        star_data[v].star_dist = N_extra_data++;
+      }
+    }
+    // now add accelerations
+    for (int v = 0; v < swp.Nsources; v++) {
+      star_data[v].wind_acc.resize(ndim);
+      for (int d = 0; d < ndim; d++)
+        star_data[v].wind_acc[d] = N_extra_data++;
+    }
+  }
+  else {
+    using_wind_acc = 0;
+  }
+
+  // finished
   have_setup_extra_data = true;
   spdlog::debug("cell_interface::setup_extra_data() finished");
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
+double cell_interface::get_wind_acceleration_el(
+    const cell &c,     ///< cell pointer
+    const int src,     ///< star id.
+    const int element  ///< which axis to return acceleration for
+)
+{
+  // spdlog::info("wa-el: {} {} {}, sd[] {} : DATA
+  // {:12.6e}",c.id,src,element,star_data.size(),c.extra_data[star_data[src].wind_acc[element]]);
+  return c.extra_data[star_data[src].wind_acc[element]];
+}
 
 // ##################################################################
 // ##################################################################

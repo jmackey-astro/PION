@@ -150,18 +150,23 @@ int Integrator_Base::Int_Euler(
     t += h;
   }
   if (!pconst.equalD(t, t0 + dt)) {
-    spdlog::debug(
+    spdlog::error(
         "t: {} dt: {} t0: {} h: {}\t eps: {}", t, dt, t0, h,
         (t - t0 - dt) / (t + t0 + dt));
     spdlog::error(
         "{}: {}", "Int_Euler coding error, h too small??", t - t0 + dt);
+    err += 2;
   }
 
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int Integrator_Base::Int_DumbAdaptive_Euler(
     const int nv,         ///< number of elements in P array.
@@ -177,13 +182,14 @@ int Integrator_Base::Int_DumbAdaptive_Euler(
     spdlog::error("Integrator_Base() nvar not equal to state vector length");
     Set_Nvar(nv);
   }
-  if (errtol < 0)
-    spdlog::error(
-        "{}: {}", "Int_DumbAdaptive_Euler() ErrTol is negative!", errtol);
-  if (errtol < MACHINEACCURACY)
-    spdlog::error(
-        "{}: {}", "errtol beyond machine accuracy.  use more lenient value!\n",
-        errtol);
+  if (errtol < 0) {
+    spdlog::error("Int_DumbAdaptive_Euler() negative {}", errtol);
+    return 2;
+  }
+  else if (errtol < MACHINEACCURACY) {
+    spdlog::error("errtol beyond machine accuracy {}", errtol);
+    return 3;
+  }
   // Dumb adaptive integrator.  Start with 16 subpoints, keep doubling until
   // values differ by less than errtol
   int nsub     = 16;
@@ -195,9 +201,10 @@ int Integrator_Base::Int_DumbAdaptive_Euler(
   *tf      = t + dt;
   double maxerr, tmperr;
   for (int v = 0; v < int_nvar; v++)
-    if (fabs(p0[v]) < 1.e-100)
-      spdlog::error(
-          "Int_DumbAdaptive_Euler() WARNING: tiny values, so error unreliable!");
+    if (fabs(p0[v]) < 1.e-100) {
+      spdlog::error("Int_DumbAdaptive_Euler() WARNING: tiny values");
+      return 4;
+    }
   int err  = Int_Euler(int_nvar, p0, t0, dt, nsub, p1);
   int iter = 0;
 
@@ -221,8 +228,10 @@ int Integrator_Base::Int_DumbAdaptive_Euler(
 
   for (int v = 0; v < int_nvar; v++)
     pf[v] = p1[v];
-  if (iter > max_iter)
+  if (iter > max_iter) {
     spdlog::error("Int_DumbAdaptive_Euler() WARNING: not converged!");
+    err += 5;
+  }
   //  cout <<"iter="<<iter<<" nsub="<<nsub<<" maxerr="<<maxerr<<"\n";
 
   return err;
@@ -400,11 +409,24 @@ int Integrator_Base::Stepper_RKCK(
     double *hdid,
     double *hnext)
 {
+  int rval = 0;
+#ifndef NDEBUG
   if (int_nvar != nv) {
     spdlog::error("Integrator_Base() nvar not equal to state vector length");
     return 1;
   }
-  int rval = 0;
+#endif  // NDEBUG
+#ifdef TEST_INF
+  for (int v = 0; v < int_nvar; v++) {
+    if (!isfinite(p0[v])) {
+      spdlog::error("\tSTEPPER:\t not finite input");
+      spdlog::error("p0       : {}", std::vector<double>(p0, p0 + int_nvar));
+      rval++;
+      return 1;
+    }
+  }
+#endif  // TEST_INF
+
   double h = htry;
   if (h < 0) {
     spdlog::error("Integrator_Base::Stepper_RKCK() positive stepsize please");
@@ -419,14 +441,8 @@ int Integrator_Base::Stepper_RKCK(
   int ct = 0;
 
   std::vector<double> err(int_nvar), ptemp(int_nvar);
-
   for (int v = 0; v < int_nvar; v++) {
     err[v] = 0.0;
-    // if (fabs(p0[v]/eps) <10.0) {
-    //  cerr <<"WARNING: stepper_RKCK() encountered tiny values, accuracy is
-    //  unreliable.\n";
-    //      return 1;
-    //}
   }
 
   do {
@@ -445,8 +461,6 @@ int Integrator_Base::Stepper_RKCK(
       // if we get back NAN or negative values, try a shorter step.
       if (!isfinite(err[v]) || !isfinite(ptemp[v]) || ptemp[v] < 0.0) {
         maxerr = max(maxerr, 1000.0);
-        // cout <<"err["<<v<<"]="<<err[v]<<" and
-        // ptemp["<<v<<"]="<<ptemp[v]<<"\n";
       }
       else {
         err[v] /= fabs(ptemp[v]) + eps;  // converts to relative error.
@@ -465,28 +479,24 @@ int Integrator_Base::Stepper_RKCK(
 #else
     if (maxerr > 1.) {
       htemp = 0.9 * h * exp(-0.25 * log(maxerr));  // NR stepsize shrinker.
-      // cout <<"\tSTEPPER:\t shrinking stepsize: h_old = "<<h<<" and
-      // h_new =
-      // "<<htemp<<"\n";
-      h = max(htemp, 0.1 * h);  // max factor of 10 reduction in stepsize.
+      h     = max(htemp, 0.1 * h);  // max factor of 10 reduction in stepsize.
     }
 #endif
 
     tnew = t0 + h;
     if (tnew == t0) {
       spdlog::error("Stepsize too small in stepper_RKCK()");
-      spdlog::debug("Rel.err. : {}", err);
-      spdlog::debug("p0       : {}", std::vector<double>(p0, p0 + int_nvar));
-      spdlog::debug("ptemp    : {}", ptemp);
+      spdlog::error("Rel.err. : {}", err);
+      spdlog::error("p0       : {}", std::vector<double>(p0, p0 + int_nvar));
+      spdlog::error("ptemp    : {}", ptemp);
       return -2;
     }
     ct++;
-  } while (maxerr > 1.0 && ct < 50);
+  } while (maxerr > 1.0 && ct < 100);
 
   if (maxerr > 1.0) {
-    spdlog::warn(
-        "stepper_RKCK() has large error estimate: ct={} out of max. 50 iterations. rel.err.={}",
-        ct, maxerr * errtol);
+    spdlog::info(
+        "stepper_RKCK() large error: ct={}, rel.err.={}", ct, maxerr * errtol);
     rval += ct + static_cast<int>(fabs(maxerr));
   }
 
@@ -505,12 +515,11 @@ int Integrator_Base::Stepper_RKCK(
   *hdid = h;
   for (int v = 0; v < int_nvar; v++) {
     p1[v] = ptemp[v];
-    if (isnan(p1[v]) || isinf(p1[v])) {
+    if (!isfinite(p1[v])) {
       spdlog::error("\tSTEPPER:\t NANs encountered!");
       spdlog::debug("Rel.err. : {}", err);
-      spdlog::debug("p0       : {}", std::vector<double>(p0, p0 + int_nvar));
+      spdlog::info("p0       : {}", std::vector<double>(p0, p0 + int_nvar));
       spdlog::debug("ptemp    : {}", ptemp);
-      p1[v] = -1.e100;
       rval++;
     }
   }
@@ -530,21 +539,22 @@ int Integrator_Base::Int_Adaptive_RKCK(
     double *tf            ///< pointer to final time.
 )
 {
-  // cout <<"\t\t\tIntegrator: explicit step!\n";
   if (int_nvar != nv) {
     spdlog::error("Integrator_Base() nvar not equal to state vector length");
     Set_Nvar(nv);
   }
-  if (errtol < 0)
-    spdlog::error("{}: {}", "Int_Adaptive_RKCK() ErrTol is negative!", errtol);
-  if (errtol < MACHINEACCURACY)
-    spdlog::error(
-        "{}: {}", "errtol beyond machine accuracy.  use more lenient value!\n",
-        errtol);
-  if (errtol > 2)
-    spdlog::error(
-        "{}: {}", "errtol is too large: relative accuracy required is >1!\n",
-        errtol);
+  if (errtol < 0) {
+    spdlog::error("Int_Adaptive_RKCK() ErrTol is negative {}", errtol);
+    return 1;
+  }
+  else if (errtol < MACHINEACCURACY) {
+    spdlog::error("errtol beyond machine accuracy : {}", errtol);
+    return 4;
+  }
+  else if (errtol > 2) {
+    spdlog::error("errtol is too large: {}", errtol);
+    return 3;
+  }
   double t = t0;
 
   std::vector<double> p1(int_nvar);
@@ -559,16 +569,12 @@ int Integrator_Base::Int_Adaptive_RKCK(
   int ct = 0, ctmax = 25;
 
   do {
-    // rep.printVec("adaptive p1",p1,nv);
     err += Stepper_RKCK(nv, &p1[0], t, h, errtol, &p2[0], &hdid, &hnext);
     t += hdid;
     h = min(hnext, *tf - t);
     ct++;
     for (int v = 0; v < int_nvar; v++)
       p1[v] = p2[v];
-    // cout <<"ADAPTIVE INT:\t t_old="<<t-hdid<<" t_new="<<t<<"
-    // iter="<<ct<<"\n"; cout <<"ADAPTIVE INT:\t ";
-    // rep.printVec("pnew",p1,int_nvar);
   } while (t < *tf && (err == 0) && (ct < ctmax));
 
   if (err || ct > ctmax) {
@@ -576,20 +582,15 @@ int Integrator_Base::Int_Adaptive_RKCK(
       spdlog::error(
           "Int_Adaptive_RKCK() errors encountered. nstep={} and err={}", ct,
           err);
-      spdlog::debug("p1 : {}", p1);
+      spdlog::error("p0: {} p1 : {}", p0[0], p1);
     }
     else {
       err = ct;
       spdlog::error(
           "integration took too many steps!!! ct=err={}\t{}", ct, err);
-      // if (pconst.equalD(t,*tf)) {
-      //        cout<<"took too many steps, but got to end of step, so
-      //        returning normally!\n";
-      //	err=0;
-      //}
+      spdlog::error("p0: {} p1 : {}", p0[0], p1);
     }
   }
-  // if (ct>10) cout <<"IntBase: ADAPTIVE INT: took "<<ct<<" steps!\n";
   for (int v = 0; v < int_nvar; v++)
     pf[v] = p1[v];
   *tf = t;
@@ -597,8 +598,12 @@ int Integrator_Base::Int_Adaptive_RKCK(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int Integrator_Base::Int_Iterative_FC(
     const int nv,      ///< number of elements in P array.
@@ -651,8 +656,10 @@ int Integrator_Base::Int_Iterative_FC(
           max(errmax, fabs(p1[v] - p2[v]) / (fabs(p1[v]) + fabs(p2[v]) + eps));
   } while ((errmax > errtol) && nc <= Nmax);
 
-  if (nc > Nmax)
-    spdlog::error("\t!!! failed to converge after {} steps. ", Nmax);
+  if (nc > Nmax) {
+    spdlog::error("\tfailed to converge after {} steps. ", Nmax);
+    return 2;
+  }
   //  cout <<"\tAccuracy of solution = "<<errmax<<"\n";
   for (int v = 0; v < int_nvar; v++)
     pf[v] = p2[v];
@@ -663,8 +670,12 @@ int Integrator_Base::Int_Iterative_FC(
     return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int Integrator_Base::Int_Subcycle_BDF(
     const int nv,  ///< number of elements in P array.
@@ -721,8 +732,10 @@ int Integrator_Base::Int_Subcycle_BDF(
   } while (t < dt && nc <= Nmax);
 
   //  cout <<"nsteps = "<<nc<<"\n";
-  if (nc > Nmax)
+  if (nc > Nmax) {
     spdlog::error("BDF_subcycling() took more than {} steps. ", Nmax);
+    return 2;
+  }
   for (int v = 0; v < int_nvar; v++)
     pf[v] = pnow[v];
 
@@ -733,6 +746,8 @@ int Integrator_Base::Int_Subcycle_BDF(
   else
     return err;
 }
+
+
 
 // ##################################################################
 // ##################################################################

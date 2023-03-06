@@ -150,13 +150,13 @@ int FV_solver_base::get_LaxFriedrichs_flux(
 int FV_solver_base::InterCellFlux(
     class SimParams &par,  ///< simulation parameters
     class GridBaseClass *grid,
-    class cell &Cl,  ///< Left state cell pointer
-    class cell &Cr,  ///< Right state cell pointer
-    pion_flt *lp,    ///< Left Primitive State Vector.
-    pion_flt *rp,    ///< Right Primitive State Vector.
-    pion_flt *f,     ///< Flux Vector. (written to).
-    const double g,  ///< gas EOS gamma.
-    const double dx  ///< Cell size dx.
+    class cell &Cl,             ///< Left state cell pointer
+    class cell &Cr,             ///< Right state cell pointer
+    std::vector<pion_flt> &lp,  ///< Left Primitive State Vector.
+    std::vector<pion_flt> &rp,  ///< Right Primitive State Vector.
+    std::vector<pion_flt> &f,   ///< Flux Vector. (written to).
+    const double g,             ///< gas EOS gamma.
+    const double dx             ///< Cell size dx.
 )
 {
   // cout <<"FV_solver_base::InterCellFlux() gamma="<<eq_gamma<<" and passed
@@ -173,15 +173,15 @@ int FV_solver_base::InterCellFlux(
   //
   // Get the flux from the flux solver:
   //
-  int err =
-      inviscid_flux(par, grid, dx, Cl, Cr, lp, rp, f, pstar, par.solverType, g);
+  int err = inviscid_flux(
+      par, grid, dx, Cl, Cr, lp.data(), rp.data(), f.data(), pstar,
+      par.solverType, g);
 
 #ifdef DEBUG
   if (fabs(f[0]) > 1.0e-50) {
     spdlog::debug("flux= : {}", f);
     spdlog::debug("left= : {}", lp);
-    spdlog::debug("rght= : {}", fmt::ptr(rp));
-    ;
+    spdlog::debug("rght= : {}", rp);
     spdlog::debug("pstr= : {}", pstar);
   }
 #endif
@@ -190,12 +190,13 @@ int FV_solver_base::InterCellFlux(
   // Post-calculate anthing needed for the viscosity: calls the FKJ98
   // viscosity function which acts after the flux has been calculated
   //
-  post_calc_viscous_terms(Cl, Cr, lp, rp, pstar, f, par.artviscosity);
+  post_calc_viscous_terms(
+      Cl, Cr, lp.data(), rp.data(), pstar, f.data(), par.artviscosity);
 
   //
   // Calculate tracer flux based on whether flow is to left or right.
   //
-  set_interface_tracer_flux(lp, rp, f);
+  set_interface_tracer_flux(lp.data(), rp.data(), f.data());
   // rep.printVec("left=",lp,eq_nvar);
   // rep.printVec("rght=",rp,eq_nvar);
   // rep.printVec("flux",f,eq_nvar);
@@ -296,8 +297,9 @@ void FV_solver_base::set_interface_tracer_flux(
   if (FV_ntr > 0) {
 #ifdef TEST_INF
     if (!isfinite(flux[eqRHO])) {
-      spdlog::debug("FV_solver_base::set_interface_tracer_flux");
-      spdlog::debug("inf flux : {}", flux);
+      spdlog::info("FV_solver_base::set_interface_tracer_flux");
+      spdlog::info("inf flux : {}", std::vector<double>(flux, flux + eq_nvar));
+      exit(1);
     }
 #endif
     if (flux[eqRHO] > 0.0) {
@@ -328,11 +330,11 @@ void FV_solver_base::set_interface_tracer_flux(
 
 
 void FV_solver_base::set_Hcorrection(
-    cell &c,                ///< cell to operate on
-    const axes axis,        ///< axis normal to interface.
-    const pion_flt *edgeL,  ///< Left state
-    const pion_flt *edgeR,  ///< right state
-    const double g          ///< gamma
+    cell &c,                             ///< cell to operate on
+    const axes axis,                     ///< axis normal to interface.
+    const std::vector<pion_flt> &edgeL,  ///< Left state
+    const std::vector<pion_flt> &edgeR,  ///< right state
+    const double g                       ///< gamma
 )
 {
   if (axis != GetDirection()) {
@@ -343,16 +345,21 @@ void FV_solver_base::set_Hcorrection(
   //
   // Sanders, Morano, Druguet, (1998, JCP, 145, 511)  eq. 10
   //
-  double eta = 0.5
-               * (fabs(edgeR[eqVX] - edgeL[eqVX])
-                  + fabs(maxspeed(edgeR, g) - maxspeed(edgeL, g)));
+  double eta =
+      0.5
+      * (fabs(edgeR[eqVX] - edgeL[eqVX])
+         + fabs(maxspeed(edgeR.data(), g) - maxspeed(edgeL.data(), g)));
 
   CI.set_Hcorr(c, axis, eta);
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 double FV_solver_base::select_Hcorr_eta(
     const cell &cl,  ///< cell to left of interface
@@ -420,6 +427,40 @@ double FV_solver_base::select_Hcorr_eta(
 
   return eta;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int FV_solver_base::wind_acceleration_source(
+    class GridBaseClass *grid,  ///< pointer to grid
+    class cell &c,              ///< cell pointer
+    const axes a,               ///< Which axis we are looking along.
+    pion_flt *udot              ///< dU/dt vector
+)
+{
+  // if (!c.isdomain) return 0;
+  // Calculates source term due to wind acceleration
+  double acc;
+  for (int id = 0; id < SWP.Nsources; id++) {
+    // spdlog::info("src {}: acc = {}",id,SWP.params[id]->acc);
+    if (!SWP.params[id]->acc) continue;
+
+    // spdlog::info("solver WA: {} , c.id {} ,c.Ph[RO] {}", id, c.id, c.Ph[RO]);
+    acc = CI.get_wind_acceleration_el(c, id, a);
+    udot[eqERG] += c.Ph[RO] * c.Ph[eqVX] * acc;
+    udot[eqMMX] += c.Ph[RO] * acc;
+    // spdlog::info("{}: ax {} acc {:9.3e}, mmx {:9.3e}, erg
+    // {:9.3e}",id,a,acc,c.Ph[RO] * c.Ph[eqVX] * acc, c.Ph[RO] * acc);
+  }
+
+  return 0;
+}
+
+
 
 // ##################################################################
 // ##################################################################

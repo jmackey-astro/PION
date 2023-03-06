@@ -70,6 +70,21 @@ protected:
       // boundary_data *, ///< boundary ptr.
       const int  ///< source id
   );
+
+  /// set wind radius according to minimum resolution criteria
+  void BC_set_wind_radius(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      const int               ///< source id
+  );
+
+  /// Calculate radiation flux and wind acceleration at each point on the
+  /// grid and store in cell extra_data
+  void BC_set_windacc_radflux(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      const int               ///< source id
+  );
 };
 
 #endif  // STELLAR_WIND_BOUNDARIES_H

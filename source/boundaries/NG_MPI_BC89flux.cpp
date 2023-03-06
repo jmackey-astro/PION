@@ -366,8 +366,12 @@ int NG_MPI_BC89flux::setup_flux_recv(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int NG_MPI_BC89flux::setup_flux_send(
     class SimParams &par,       ///< simulation params (including BCs)
@@ -484,8 +488,12 @@ int NG_MPI_BC89flux::setup_flux_send(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void NG_MPI_BC89flux::clear_sends_BC89_fluxes(class Sub_domain &sub_domain)
 {
@@ -501,8 +509,12 @@ void NG_MPI_BC89flux::clear_sends_BC89_fluxes(class Sub_domain &sub_domain)
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
     class SimParams &par,  ///< simulation params (including BCs)
@@ -598,8 +610,12 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
     class FV_solver_base *spatial_solver,  ///< solver, for gradients
@@ -718,6 +734,12 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
       spdlog::info("f={}:  fine={}, flux =  ", ii, fi);
       spdlog::info("ff->flux : {}", &(buf[iel]));
 #endif
+      // if coarse cell is not on the domain (i.e. is stellar wind boundary
+      // data), then just skipt it and continue.
+      if (!(fi->c[0]->isdomain)) {
+        iel += par.nvar;
+        continue;
+      }
 
       // construct error in flux:
       for (int v = 0; v < par.nvar; v++) {
@@ -774,6 +796,8 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
 
   return 0;
 }
+
+
 
 // ##################################################################
 // ##################################################################

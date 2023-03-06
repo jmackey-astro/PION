@@ -1336,9 +1336,9 @@ double UniformGrid::distance_vertex2cell(
 // the *cell* coordinate minus the *vertex* coordinate.
 //
 double UniformGrid::difference_vertex2cell(
-    const double *v,  ///< vertex (double)
-    const cell &c,    ///< cell
-    const axes a      ///< Axis to calculate.
+    const std::array<double, MAX_DIM> &v,  ///< vertex (double)
+    const cell &c,                         ///< cell
+    const axes a                           ///< Axis to calculate.
 )
 {
   return (CI.get_dpos(c, a) - v[a]);
@@ -1636,9 +1636,9 @@ double uniform_grid_cyl::distance_vertex2cell(
 
 
 double uniform_grid_cyl::difference_vertex2cell(
-    const double *v,  ///< vertex (double)
-    const cell &c,    ///< cell
-    const axes a      ///< Axis to calculate.
+    const std::array<double, MAX_DIM> &v,  ///< vertex (double)
+    const cell &c,                         ///< cell
+    const axes a                           ///< Axis to calculate.
 )
 {
   if (a == Zcyl) {
@@ -1899,9 +1899,9 @@ double uniform_grid_sph::distance_vertex2cell(
 
 
 double uniform_grid_sph::difference_vertex2cell(
-    const double *v,  ///< vertex (double)
-    const cell &c,    ///< cell
-    const axes a      ///< Axis to calculate.
+    const std::array<double, MAX_DIM> &v,  ///< vertex (double)
+    const cell &c,                         ///< cell
+    const axes a                           ///< Axis to calculate.
 )
 {
   if (a == Rsph) {

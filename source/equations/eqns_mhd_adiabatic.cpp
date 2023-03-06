@@ -151,6 +151,7 @@ int eqns_mhd_ideal::check_pressure(
     spdlog::debug("u : {}", std::vector<pion_flt>(u, u + eq_nvar));
     spdlog::debug("p : {}", std::vector<pion_flt>(p, p + eq_nvar));
     spdlog::error("{}: {}", "Negative Density! Bugging out", p[eqRO]);
+    exit(1);
     if (ct_rho < 1000) {
       ct_rho++;
       spdlog::debug("(eqns_mhd_ideal::check_pressure) negative density!");

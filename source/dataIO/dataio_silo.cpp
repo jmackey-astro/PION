@@ -1008,6 +1008,13 @@ int dataio_silo::setup_write_variables(
     varnames.push_back(s);
   }
 
+  // only for debugging Compton cooling
+  // if (SimPM.EP.compton_cool) {
+  //  string s = "Compton_urad";
+  //  varnames.push_back(s);
+  //}
+
+
 #ifndef NDEBUG
   spdlog::debug("list of vars: ");
   for (unsigned int i = 0; i < varnames.size(); i++)
@@ -1510,12 +1517,18 @@ int dataio_silo::get_scalar_data_array(
     }
     v = -20 - tdv;
   }
-  else
-    spdlog::error(
-        "{}: {}",
-        "Bad variable requested for dataio_silo::get_scalar_data_array()",
-        variable);
 #endif  // RT_TESTING_OUTPUTCOL
+
+  else if (variable == "Compton_flux") {
+    v = -12345;
+  }
+
+  else {
+    spdlog::error(
+        "Bad variable request dataio_silo::get_scalar_data_array() {}",
+        variable);
+    exit(1);
+  }
 
   //
   // Now pick out the data requested cell by cell, and put it into
@@ -1807,6 +1820,17 @@ int dataio_silo::get_scalar_data_array(
     }
   }
 #endif  // RT_TESTING_OUTPUTCOL
+
+  // debugging the compton cooling (save flux for star 0)
+  else if (v == -12345) {
+    double flux = 0.0;
+    do {
+      flux     = CI.get_compton_urad(*c, 0);
+      darr[ct] = flux;
+      ct++;
+    } while ((c = gp->NextPt(*c)) != 0);
+  }
+
 
 #ifdef COUNT_ENERGETICS
   else if (v == -105) {

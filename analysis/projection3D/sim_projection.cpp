@@ -2060,7 +2060,7 @@ void point_velocity::get_point_v_los_profile(
 void point_velocity::broaden_profile(
     const struct point_4cellavg *pt,  ///< point to add to profile.
     double *prof,                     ///< velocity bins.
-    const int ifrac,                  ///< index of i-fraction in P.V.
+    const int,                        ///< index of i-fraction in P.V.
     const double gamma,               ///< EOS gamma
     double vel,                       ///< LOS velocity of point.
     double norm                       ///< Normalisation of profile.

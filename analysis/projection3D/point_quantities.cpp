@@ -444,7 +444,7 @@ double point_quantities::get_point_RotationMeasure(
 //
 void point_quantities::get_point_Halpha_params(
     const struct point_4cellavg *pt,  ///< point in question.
-    const int ifrac,     ///< index of Prim.Vector with Ion. fraction.
+    const int,           ///< index of Prim.Vector with Ion. fraction.
     const double gamma,  ///< EOS gamma
     double *alpha,       ///< absorption coefficient (photons/cm)
     double *j            ///< emission coeff (phot/cm^3/s/ster)
@@ -506,7 +506,7 @@ void point_quantities::get_point_Halpha_params(
 ///
 void point_quantities::get_point_NII6584_params(
     const struct point_4cellavg *pt,  ///< point in question.
-    const int ifrac,     ///< index of Prim.Vector with Ion. fraction.
+    const int,           ///< index of Prim.Vector with Ion. fraction.
     const double gamma,  ///< EOS gamma
     double *alpha,       ///< absorption coefficient (/cm)
     double *j            ///< emission coeff (erg/cm^3/s/sq.arcsec)
@@ -624,7 +624,7 @@ double point_quantities::get_point_Bremsstrahlung6GHz(
 ///
 void point_quantities::get_point_Xray_params(
     const struct point_4cellavg *pt,  ///< point in question.
-    const int ifrac,     ///< index of Prim.Vector with Ion. fraction.
+    const int,           ///< index of Prim.Vector with Ion. fraction.
     const int index,     ///< which X-ray emissivity to use (index in array).
     const double gamma,  ///< EOS gamma
     double *alpha,       ///< absorption coefficient (/cm)

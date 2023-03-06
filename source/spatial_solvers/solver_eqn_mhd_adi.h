@@ -79,29 +79,29 @@ public:
   ///
   virtual int dU_Cell(
       class GridBaseClass *,
-      cell &,            ///< Current cell.
-      const axes,        ///< Which axis we are looking along.
-      const pion_flt *,  ///< Negative direction flux.
-      const pion_flt *,  ///< Positive direction flux.
-      const pion_flt *,  ///< slope vector for cell c.
-      const int,         ///< spatial order of accuracy.
-      const double,      ///< cell length dx.
-      const double       ///< cell TimeStep, dt.
+      cell &,                         ///< Current cell.
+      const axes,                     ///< Which axis we are looking along.
+      const std::vector<pion_flt> &,  ///< Negative direction flux.
+      const std::vector<pion_flt> &,  ///< Positive direction flux.
+      const std::vector<pion_flt> &,  ///< slope vector for cell c.
+      const int,                      ///< spatial order of accuracy.
+      const double,                   ///< cell length dx.
+      const double                    ///< cell TimeStep, dt.
   );
 
   ///
   /// calculate Powell and GLM source terms for multi-D MHD
   ///
   virtual int MHDsource(
-      class GridBaseClass *,  ///< pointer to grid.
-      class cell &,           ///< pointer to cell of left state
-      class cell &,           ///< pointer to cell of right state
-      pion_flt *,             ///< left edge state
-      pion_flt *,             ///< right edge state
-      const axes,             ///< Which axis we are looking along.
-      enum direction,         ///< positive direction normal to interface
-      enum direction,         ///< negative direction normal to interface
-      const double            ///< timestep dt
+      class GridBaseClass *,    ///< pointer to grid.
+      class cell &,             ///< pointer to cell of left state
+      class cell &,             ///< pointer to cell of right state
+      std::vector<pion_flt> &,  ///< left edge state
+      std::vector<pion_flt> &,  ///< right edge state
+      const axes,               ///< Which axis we are looking along.
+      enum direction,           ///< positive direction normal to interface
+      enum direction,           ///< negative direction normal to interface
+      const double              ///< timestep dt
   );
 
   ///
@@ -329,15 +329,15 @@ public:
   );
 
   virtual int MHDsource(
-      class GridBaseClass *,  ///< pointer to grid.
-      class cell &,           ///< pointer to cell of left state
-      class cell &,           ///< pointer to cell of right state
-      pion_flt *,             ///< left edge state
-      pion_flt *,             ///< right edge state
-      const axes,             ///< Which axis we are looking along.
-      enum direction,         ///< positive direction normal to interface
-      enum direction,         ///< negative direction normal to interface
-      const double            ///< timestep dt
+      class GridBaseClass *,    ///< pointer to grid.
+      class cell &,             ///< pointer to cell of left state
+      class cell &,             ///< pointer to cell of right state
+      std::vector<pion_flt> &,  ///< left edge state
+      std::vector<pion_flt> &,  ///< right edge state
+      const axes,               ///< Which axis we are looking along.
+      enum direction,           ///< positive direction normal to interface
+      enum direction,           ///< negative direction normal to interface
+      const double              ///< timestep dt
   );
 
   ///
@@ -408,15 +408,15 @@ public:
   /// using the cylindrical coordinate divergence operator
   ///
   virtual int MHDsource(
-      class GridBaseClass *,  ///< pointer to grid.
-      class cell &,           ///< pointer to cell of left state
-      class cell &,           ///< pointer to cell of right state
-      pion_flt *,             ///< left edge state
-      pion_flt *,             ///< right edge state
-      const axes,             ///< Which axis we are looking along.
-      enum direction,         ///< positive direction normal to interface
-      enum direction,         ///< negative direction normal to interface
-      const double            ///< timestep dt
+      class GridBaseClass *,    ///< pointer to grid.
+      class cell &,             ///< pointer to cell of left state
+      class cell &,             ///< pointer to cell of right state
+      std::vector<pion_flt> &,  ///< left edge state
+      std::vector<pion_flt> &,  ///< right edge state
+      const axes,               ///< Which axis we are looking along.
+      enum direction,           ///< positive direction normal to interface
+      enum direction,           ///< negative direction normal to interface
+      const double              ///< timestep dt
   );
 };
 
@@ -463,15 +463,15 @@ public:
   /// Powell terms
   ///
   virtual int MHDsource(
-      class GridBaseClass *,  ///< pointer to grid.
-      class cell &,           ///< pointer to cell of left state
-      class cell &,           ///< pointer to cell of right state
-      pion_flt *,             ///< left edge state
-      pion_flt *,             ///< right edge state
-      const axes,             ///< Which axis we are looking along.
-      enum direction,         ///< positive direction normal to interface
-      enum direction,         ///< negative direction normal to interface
-      const double            ///< timestep dt
+      class GridBaseClass *,    ///< pointer to grid.
+      class cell &,             ///< pointer to cell of left state
+      class cell &,             ///< pointer to cell of right state
+      std::vector<pion_flt> &,  ///< left edge state
+      std::vector<pion_flt> &,  ///< right edge state
+      const axes,               ///< Which axis we are looking along.
+      enum direction,           ///< positive direction normal to interface
+      enum direction,           ///< negative direction normal to interface
+      const double              ///< timestep dt
   );
 };
 

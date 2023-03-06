@@ -94,9 +94,11 @@ int Riemann_FVS_Euler::FVS_flux(
   //
   for (int v = 0; v < rs_nvar; v++) {
     if (!isfinite(pl[v]) || !isfinite(pr[v])) {
-      spdlog::debug("NAN's detected FVS flux solver");
-      rep.printVec("left ", pl, rs_nvar);
-      rep.printVec("right", pr, rs_nvar);
+      spdlog::info("NAN's detected FVS flux solver");
+      spdlog::info(
+          "FVS_flux P left  {}", std::vector<double>(pl, pl + rs_nvar));
+      spdlog::info(
+          "FVS_flux P right {}", std::vector<double>(pr, pr + rs_nvar));
       return 1;
     }
   }
@@ -181,10 +183,13 @@ int Riemann_FVS_Euler::FVS_flux(
   //
   for (int v = 0; v < rs_nvar; v++) {
     if (!isfinite(fpos[v]) || !isfinite(fneg[v]) || !isfinite(flux[v])) {
-      spdlog::debug("NAN's detected!!!");
-      rep.printVec("fpos ", fneg, rs_nvar);
-      rep.printVec("fneg ", fpos, rs_nvar);
-      rep.printVec("flux ", flux, rs_nvar);
+      spdlog::info("NAN's detected!!!");
+      spdlog::info(
+          "FVS_flux fpos  {}", std::vector<double>(fpos, fpos + rs_nvar));
+      spdlog::info(
+          "FVS_flux fneg  {}", std::vector<double>(fneg, fneg + rs_nvar));
+      spdlog::info(
+          "FVS_flux flux  {}", std::vector<double>(flux, flux + rs_nvar));
       return 1;
     }
   }

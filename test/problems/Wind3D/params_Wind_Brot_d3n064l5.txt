@@ -4,17 +4,17 @@
 # 
 
 ########################
-ndim 2
+ndim 3
 coordinates cartesian
-eqn euler
+eqn glm-mhd
 GAMMA 1.6666666666666667
 ########################
 
 ########################
-solver 9
+solver 7
 OrderOfAccSpace 2
 OrderOfAccTime  2
-CFL 0.25
+CFL 0.2
 ArtificialViscosity 1
 EtaViscosity 0.15
 
@@ -28,38 +28,38 @@ InitIons LEAVE
 EP_dynamics     1
 EP_raytracing   0
 EP_phot_ionisation   0
-EP_cooling      0
+EP_cooling      8
 EP_chemistry    0
 EP_coll_ionisation   0
 EP_rad_recombination 0
 EP_update_erg 1
 EP_MP_timestep_limit 1 
 EP_Min_Temperature 5.0e3
-EP_Max_Temperature 1.0e9
-EP_Hydrogen_MassFrac 0.33  # n(He)/n(H)=1/10
-EP_Helium_MassFrac 0.65    # n(He)/n(H)=1/10
-EP_Metal_MassFrac  0.02    # solar metallicity
+EP_Max_Temperature 1.0e10
+EP_Hydrogen_MassFrac 0.714  # n(He)/n(H)=1/10
+EP_Helium_MassFrac 0.286    # n(He)/n(H)=1/10
+EP_Metal_MassFrac  0.0142   # solar metallicity
 EP_sat_thermal_cond 0
-EP_tc_strength 0.0
+EP_tc_strength      0.0
 EP_compton_cool 0
-EP_wind_acceleration 0
+EP_wind_acceleration 1
 ########################
 
 
 ########################
 ## Grid Parameters
-NGridX  128
-NGridY  128
-NGridZ  128
+NGridX  64
+NGridY  64
+NGridZ  64
 
 # Boundaries of Simulation box:
-Xmin  -2.048e13
-Ymin  -2.048e13
-Zmin  -2.048e13
+Xmin  -18.0e+13
+Ymin  -18.0e+13
+Zmin  -18.0e+13
 # Max values of x,y,z
-Xmax   2.048e13
-Ymax   2.048e13
-Zmax   2.048e13
+Xmax   18.0e+13
+Ymax   18.0e+13
+Zmax   18.0e+13
 
 # Nested grid
 grid_nlevels 5
@@ -77,14 +77,14 @@ NG_refine_ZZ 1
 
 ########################
 StartTime  0.000e11
-FinishTime 1.536e11
+FinishTime 1.0e6
 
 OutputPath ./
-OutputFile CWB2Dcrt_d2l5n128
+OutputFile Wind_Brot_d3n064l5
 OutputFileType silo
 OutputCriterion 0
-OutputFrequency 256
-OPfreqTime 1.578e99
+OutputFrequency 128
+OPfreqTime 1.578e10
 ########################
 
 ########################
@@ -92,8 +92,8 @@ BC_XN one-way-outflow
 BC_XP one-way-outflow
 BC_YN one-way-outflow
 BC_YP one-way-outflow
-#BC_ZN one-way-outflow
-#BC_ZP one-way-outflow
+BC_ZN one-way-outflow
+BC_ZP one-way-outflow
 BC_Ninternal 1
 BC_INTERNAL_000 stellar-wind
 ########################
@@ -121,7 +121,7 @@ UNIFORM_ambPG 2.209037632e-08
 UNIFORM_ambVX 0.0
 UNIFORM_ambVY 0.0
 UNIFORM_ambVZ 0.0
-UNIFORM_ambBX 0.0
+UNIFORM_ambBX 1.0e-4
 UNIFORM_ambBY 0.0
 UNIFORM_ambBZ 0.0
 UNIFORM_ambTR0 0.0
@@ -138,30 +138,27 @@ UNIFORM_ambTR6 0.0
 ########################
 RT_Nsources 0
 
-
-
 ########################
 # stellar wind sources #
 ########################
-WIND_NSRC 2
+WIND_NSRC 1
 
-# star 0
-WIND_0_moving_star 1
-WIND_0_pos0  4.0e12
-WIND_0_pos1  0.0e12
-WIND_0_pos2  0.0e12
-WIND_0_velocity0  0.0e8
-WIND_0_velocity1  150.0e5
-WIND_0_velocity2  0.0e8
-WIND_0_radius 6.96e10  # 10 cells
+# locate the source at the origin.
+WIND_0_pos0  0.0e18
+WIND_0_pos1  0.0e18
+WIND_0_pos2  0.0e18
+WIND_0_velocity0          0.0
+WIND_0_velocity1          0.0 
+WIND_0_velocity2          0.0
+WIND_0_radius 1.809e12
 WIND_0_type   0
-WIND_0_mdot   1.0e-18
-WIND_0_vinf   1500.0
-WIND_0_vrot   0.0
-WIND_0_temp   1.0e5
-WIND_0_Rstr   6.96e10
+WIND_0_mass   29.27 # Msun
+WIND_0_mdot   9.0e-7
+WIND_0_vinf   3100.0
+WIND_0_vrot   200.0
+WIND_0_temp   3.58e4
+WIND_0_Rstr   1.809e12
 WIND_0_Bsrf   1.0
-WIND_0_mass   10.0
 WIND_0_TR0    1.0
 WIND_0_evofile NOFILE
 WIND_0_t_offset   0.0000    # in (unscaled) years
@@ -169,31 +166,9 @@ WIND_0_t_scalefac 1.0  # Accelerates evolution by this factor (for MS phase).
 WIND_0_updatefreq 1.0   # in (unscaled) years
 WIND_0_enhance_mdot 0
 WIND_0_xi 0.0
+WIND_0_moving_star        0
+WIND_0_acceleration 	  1
 
-# star 1
-WIND_1_moving_star 1
-WIND_1_pos0 -2.0e12
-WIND_1_pos1  0.0e12
-WIND_1_pos2  0.0e12
-WIND_1_velocity0  0.0e8
-WIND_1_velocity1  -75.0e5
-WIND_1_velocity2  0.0e8
-WIND_1_radius 6.96e10  # 10 cells
-WIND_1_type   0
-WIND_1_mdot   1.5e-18
-WIND_1_vinf   1000.0
-WIND_1_vrot   0.0
-WIND_1_temp   1.0e5
-WIND_1_Rstr   6.96e10
-WIND_1_Bsrf   1.0
-WIND_1_mass   20.0
-WIND_1_TR0    1.0
-WIND_1_evofile NOFILE
-WIND_1_t_offset   0.0000    # in (unscaled) years
-WIND_1_t_scalefac 1.0  # Accelerates evolution by this factor (for MS phase).
-WIND_1_updatefreq 1.0   # in (unscaled) years
-WIND_1_enhance_mdot 0
-WIND_1_xi 0.0
 
 N_JET 0
 

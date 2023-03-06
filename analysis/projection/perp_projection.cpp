@@ -289,12 +289,12 @@ int calculate_column(
 
 
 int get_emission_absorption_data(
-    class SimParams &SimPM,       ///< simulation parameters
+    class SimParams &,            ///< simulation parameters (unused)
     class microphysics_base *MP,  ///< microphysics class
     class GridBaseClass *grid,    ///< pointer to grid.
     class cell &cz,               ///< cell at start of column.
     double const *const *data,    ///< raw data to get variable from
-    const int n_img,              ///< number of images to write
+    const int,                    ///< number of images to write (unused)
     const size_t Nr,              ///< Number of radial data elements
     class Xray_emission &XR,      ///< pointer to X-ray emission class.
     double **ems,                 ///< array for emission[img][rad] data.
@@ -318,8 +318,7 @@ int get_emission_absorption_data(
     n_e  = MP->get_n_elec(c->P.data());
     n_Hp = MP->get_n_Hplus(c->P.data());
     n_H0 = MP->get_n_Hneutral(c->P.data());
-    // T = MP->Temperature(c->P,SimPM.gamma);
-    T = data[DATA_T][i];
+    T    = data[DATA_T][i];
     XR.get_xray_emissivity(T, xr);
     if (MP->Tr("N1p") > 0)
       n_N1p = MP->get_n_ion("N1p", c->P.data());

@@ -66,7 +66,7 @@ using namespace std;
 void setup_image_array(
     double ***img_array,          ///< pointer to be initialised.
     size_t NIMG,                  ///< number of images to make
-    size_t Ncell,                 ///< total number of grid cells
+    size_t,                       ///< total number of grid cells (unused)
     std::array<int, MAX_DIM> NG,  ///< number of Grid Cells in each direction
     int n_extra,                  ///< number of extra pixels in z-direction
     int npix[],     ///< OUTPUT: Number of pixels in each direction
@@ -94,17 +94,15 @@ int main(int argc, char **argv)
 {
   int err = 0;
 
-  /*
-    auto max_logfile_size = 1048576 * 5;
-    auto max_logfiles     = 3;
-  #ifdef PARALLEL
-    spdlog::set_default_logger(spdlog::rotating_logger_mt(
-        "project2D_pre_mpi", "project2D.log", max_logfile_size, max_logfiles));
-  #else
-    spdlog::set_default_logger(spdlog::rotating_logger_mt(
-        "project2D", "project2D.log", max_logfile_size, max_logfiles));
-  #endif
-  */
+  auto max_logfile_size = 1048576 * 5;
+  auto max_logfiles     = 20;
+#ifdef PARALLEL
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "project2D_pre_mpi", "project2D.log", max_logfile_size, max_logfiles));
+#else
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "project2D", "project2D.log", max_logfile_size, max_logfiles));
+#endif
 
 #ifdef NDEBUG
   spdlog::set_level(spdlog::level::info);
@@ -120,12 +118,12 @@ int main(int argc, char **argv)
   class SimParams SimPM;
   class Sub_domain *sub_domain = &(SimPM.levels[0].sub_domain);
   int myrank                   = sub_domain->get_myrank();
-  int nproc                    = SimPM.levels[0].sub_domain.get_nproc();
+  // int nproc                    = SimPM.levels[0].sub_domain.get_nproc();
 
 #ifdef PARALLEL
-//  spdlog::set_default_logger(spdlog::rotating_logger_mt(
-//      "project2D", "project2D_process_" + to_string(myrank) + ".log",
-//      max_logfile_size, max_logfiles));
+  spdlog::set_default_logger(spdlog::rotating_logger_mt(
+      "project2D", "project2D_process_" + to_string(myrank) + ".log",
+      max_logfile_size, max_logfiles));
 #endif /* PARALLEL */
 
 #ifdef PROJ_OMP

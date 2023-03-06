@@ -21,19 +21,19 @@ EtaViscosity 0.15
 
 ########################
 ntracer 1
-chem_code none
+chem_code only-cooling
 Tracer000 colour
 InitIons LEAVE
 
 EP_dynamics     1
 EP_raytracing   0
 EP_phot_ionisation   0
-EP_cooling      0
+EP_cooling      8
 EP_chemistry    0
 EP_coll_ionisation   0
 EP_rad_recombination 0
 EP_update_erg 1
-EP_MP_timestep_limit 1 
+EP_MP_timestep_limit 0
 EP_Min_Temperature 5.0e3
 EP_Max_Temperature 1.0e9
 EP_Hydrogen_MassFrac 0.33  # n(He)/n(H)=1/10
@@ -42,7 +42,7 @@ EP_Metal_MassFrac  0.02    # solar metallicity
 EP_sat_thermal_cond 0
 EP_tc_strength 0.0
 EP_compton_cool 0
-EP_wind_acceleration 0
+EP_wind_acceleration 1
 ########################
 
 
@@ -53,16 +53,16 @@ NGridY  128
 NGridZ  128
 
 # Boundaries of Simulation box:
-Xmin  -2.048e13
-Ymin  -2.048e13
-Zmin  -2.048e13
+Xmin  -1.31072e15
+Ymin  -1.31072e15
+Zmin  -1.31072e15
 # Max values of x,y,z
-Xmax   2.048e13
-Ymax   2.048e13
-Zmax   2.048e13
+Xmax   1.31072e15
+Ymax   1.31072e15
+Zmax   1.31072e15
 
 # Nested grid
-grid_nlevels 5
+grid_nlevels 11
 grid_aspect_ratio_XX 1
 grid_aspect_ratio_YY 1
 grid_aspect_ratio_ZZ 1
@@ -80,10 +80,10 @@ StartTime  0.000e11
 FinishTime 1.536e11
 
 OutputPath ./
-OutputFile CWB2Dcrt_d2l5n128
+OutputFile CWB2Dcrt_acc_d2l11n128
 OutputFileType silo
 OutputCriterion 0
-OutputFrequency 256
+OutputFrequency 2048
 OPfreqTime 1.578e99
 ########################
 
@@ -169,6 +169,7 @@ WIND_0_t_scalefac 1.0  # Accelerates evolution by this factor (for MS phase).
 WIND_0_updatefreq 1.0   # in (unscaled) years
 WIND_0_enhance_mdot 0
 WIND_0_xi 0.0
+WIND_0_acceleration 1
 
 # star 1
 WIND_1_moving_star 1
@@ -194,6 +195,7 @@ WIND_1_t_scalefac 1.0  # Accelerates evolution by this factor (for MS phase).
 WIND_1_updatefreq 1.0   # in (unscaled) years
 WIND_1_enhance_mdot 0
 WIND_1_xi 0.0
+WIND_1_acceleration 1
 
 N_JET 0
 

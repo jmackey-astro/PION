@@ -419,8 +419,13 @@ void cooling_function_SD93CIE::setup_WSS09_CIE_OnlyMetals()
         1);
   }
 #ifdef DEBUG_COOL
+  spdlog::debug("\t\t----------------------------------------------------");
   spdlog::debug(
-      "\t\t----------------------------------------------------\n\t\tSetting up  Wiersma et al. (2009,MNRAS,393,99) CIE cooling function\n\t\tMETALS-ONLY CURVE, resampled onto a 91 point cubic spline interpolation.\n\t\tFile from file http://www.strw.leidenuniv.nl/WSS08/z_collis.txt\n");
+      "\t\tSetting up  Wiersma et al. (2009,MNRAS,393,99) CIE cooling function");
+  spdlog::debug(
+      "\t\tMETALS-ONLY CURVE, resampled onto a 91 point cubic spline interpolation.");
+  spdlog::debug(
+      "\t\tFile from file http://www.strw.leidenuniv.nl/WSS08/z_collis.txt\n");
 #endif
 
   Tarray = mem.myalloc(Tarray, Nspl);
@@ -645,11 +650,125 @@ void cooling_function_SD93CIE::setup_WSS09_CIE()
 // ##################################################################
 
 //
+// Sets up spline interpolation for cooling based on two-component gas
+// following Eatson et al. (2022,MNRAS,516,6132)
+//
+void cooling_function_SD93CIE::setup_Eatson_CIE()
+{
+  if (have_set_cooling) {
+    spdlog::error("setup_Eatson_CIE() already set up!");
+    exit(1);
+  }
+  //#ifdef DEBUG_COOL
+  spdlog::info("\t\t----------------------------------------------------");
+  spdlog::info(
+      "\t\tSetting up Eatson et al. (2022,MNRAS,516,6132) CIE cooling function");
+  //#endif
+
+  int Nint       = 101;
+  double lt[101] = {
+      4.,  4.05, 4.1, 4.15, 4.2, 4.25, 4.3, 4.35, 4.4, 4.45, 4.5, 4.55,
+      4.6, 4.65, 4.7, 4.75, 4.8, 4.85, 4.9, 4.95, 5.,  5.05, 5.1, 5.15,
+      5.2, 5.25, 5.3, 5.35, 5.4, 5.45, 5.5, 5.55, 5.6, 5.65, 5.7, 5.75,
+      5.8, 5.85, 5.9, 5.95, 6.,  6.05, 6.1, 6.15, 6.2, 6.25, 6.3, 6.35,
+      6.4, 6.45, 6.5, 6.55, 6.6, 6.65, 6.7, 6.75, 6.8, 6.85, 6.9, 6.95,
+      7.,  7.05, 7.1, 7.15, 7.2, 7.25, 7.3, 7.35, 7.4, 7.45, 7.5, 7.55,
+      7.6, 7.65, 7.7, 7.75, 7.8, 7.85, 7.9, 7.95, 8.,  8.05, 8.1, 8.15,
+      8.2, 8.25, 8.3, 8.35, 8.4, 8.45, 8.5, 8.55, 8.6, 8.65, 8.7, 8.75,
+      8.8, 8.85, 8.9, 8.95, 9.};
+  double wc[101] = {
+      9.0967e-27, 8.4181e-26, 4.6270e-25, 1.4863e-24, 3.6350e-24, 7.7878e-24,
+      1.5509e-23, 3.1668e-23, 7.7471e-23, 2.2496e-22, 5.8489e-22, 1.2461e-21,
+      2.2666e-21, 3.6814e-21, 5.4117e-21, 7.3538e-21, 9.6613e-21, 1.2436e-20,
+      1.5461e-20, 1.6900e-20, 1.4953e-20, 1.0078e-20, 5.6982e-21, 3.4621e-21,
+      2.5870e-21, 2.2893e-21, 2.2018e-21, 2.1302e-21, 1.8721e-21, 1.2868e-21,
+      6.5834e-22, 3.0314e-22, 1.5669e-22, 1.0137e-22, 8.2737e-23, 8.1645e-23,
+      9.1173e-23, 1.0768e-22, 1.2765e-22, 1.4724e-22, 1.6203e-22, 1.6835e-22,
+      1.6495e-22, 1.5349e-22, 1.3758e-22, 1.1973e-22, 1.0137e-22, 8.5515e-23,
+      7.2538e-23, 6.1860e-23, 5.3125e-23, 4.6113e-23, 4.0632e-23, 3.6440e-23,
+      3.3267e-23, 3.0848e-23, 2.8967e-23, 2.7397e-23, 2.5998e-23, 2.4655e-23,
+      2.3423e-23, 2.2160e-23, 2.0827e-23, 1.9503e-23, 1.8347e-23, 1.7464e-23,
+      1.6842e-23, 1.6449e-23, 1.6234e-23, 1.6173e-23, 1.6232e-23, 1.6378e-23,
+      1.6614e-23, 1.6930e-23, 1.7318e-23, 1.7775e-23, 1.8284e-23, 1.8854e-23,
+      1.9482e-23, 2.0167e-23, 2.0910e-23, 2.1707e-23, 2.2570e-23, 2.3498e-23,
+      2.4492e-23, 2.5553e-23, 2.6684e-23, 2.7885e-23, 2.9143e-23, 3.0449e-23,
+      3.1790e-23, 3.3161e-23, 3.4543e-23, 3.5906e-23, 3.7228e-23, 3.8487e-23,
+      3.9680e-23, 4.0793e-23, 4.1793e-23, 4.2668e-23, 4.3410e-23};
+  double ms[101] = {
+      6.0302e-26, 1.4686e-25, 3.1626e-25, 6.4862e-25, 1.3596e-24, 2.9139e-24,
+      6.1501e-24, 1.3060e-23, 2.8081e-23, 6.0422e-23, 1.1502e-22, 1.8584e-22,
+      2.6879e-22, 3.6621e-22, 4.7682e-22, 5.9365e-22, 7.0378e-22, 7.7032e-22,
+      7.8867e-22, 7.8706e-22, 7.6761e-22, 7.3924e-22, 7.4686e-22, 7.9266e-22,
+      8.4035e-22, 8.6164e-22, 8.6560e-22, 8.5645e-22, 7.7318e-22, 5.6177e-22,
+      3.3377e-22, 2.1076e-22, 1.6712e-22, 1.5690e-22, 1.5429e-22, 1.4236e-22,
+      1.2211e-22, 1.0828e-22, 1.0303e-22, 1.0030e-22, 9.4763e-23, 8.7145e-23,
+      8.1428e-23, 7.7690e-23, 7.2941e-23, 6.4162e-23, 5.1508e-23, 3.9608e-23,
+      3.0979e-23, 2.5384e-23, 2.2055e-23, 2.0175e-23, 1.9210e-23, 1.8830e-23,
+      1.8801e-23, 1.8961e-23, 1.9167e-23, 1.9247e-23, 1.9108e-23, 1.8738e-23,
+      1.8137e-23, 1.7240e-23, 1.6008e-23, 1.4605e-23, 1.3330e-23, 1.2382e-23,
+      1.1779e-23, 1.1460e-23, 1.1352e-23, 1.1404e-23, 1.1583e-23, 1.1857e-23,
+      1.2212e-23, 1.2634e-23, 1.3115e-23, 1.3654e-23, 1.4239e-23, 1.4869e-23,
+      1.5538e-23, 1.6246e-23, 1.7008e-23, 1.7813e-23, 1.8671e-23, 1.9582e-23,
+      2.0551e-23, 2.1604e-23, 2.2720e-23, 2.3904e-23, 2.5146e-23, 2.6440e-23,
+      2.7834e-23, 2.9259e-23, 3.0706e-23, 3.2147e-23, 3.3565e-23, 3.5080e-23,
+      3.6534e-23, 3.7920e-23, 3.9205e-23, 4.0384e-23, 4.1743e-23};
+
+  Tdata.clear();
+  L1data.clear();
+  L2data.clear();
+  for (int v = 0; v < Nint; v++) {
+    Tdata.push_back(exp(pconst.ln10() * lt[v]));
+    L1data.push_back(wc[v]);
+    L2data.push_back(ms[v]);
+  }
+
+  MinTemp = Tdata[0];
+  MaxTemp = Tdata[Nint - 1];
+
+  // logarithmic slope for extrapolation to lower temperatures.
+  MinSlope = 0.0;
+  // logarthmic slope for extrapolation to higher temperatures.
+  MaxSlope = 0.0;
+
+#ifdef DEBUG_COOL
+  spdlog::debug("\t\t min-slope={} max-slope={}", MinSlope, MaxSlope);
+#endif
+
+  spline_vec(Tdata, L1data, 0.0, 0.0, spline_id1);
+  spline_vec(Tdata, L2data, 0.0, 0.0, spline_id2);
+
+  have_set_cooling = true;
+  //#ifndef NDEBUG
+  ofstream outf("cooling_Eatson_2comp.txt");
+  if (!outf.is_open()) spdlog::error("{}: {}", "couldn't open outfile", 1);
+  outf
+      << "Eatson_2comp Cooling: Temperature(K) Rate-O(erg.cm^3/s)  Rate-WC(erg.cm^3/s)\n";
+  outf.setf(ios_base::scientific);
+  outf.precision(6);
+  double t = 10.0;
+  do {
+    outf << t << "  " << cooling_rate_Eatson(t, 0.0) << "  ";
+    outf << cooling_rate_Eatson(t, 1.0) << "\n";
+    t *= 1.1;
+  } while (t < MaxTemp);
+  outf.close();
+//#endif  // NDEBUG
+#ifdef DEBUG_COOL
+  spdlog::debug("\t\t----------------------------------------------------");
+#endif
+  return;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+//
 // Calculate rate for a given temperature.  Result is returned in
 // units of erg.cm^{3}.s^{-1}
 //
-double cooling_function_SD93CIE::cooling_rate_SD93CIE(double T
-                                                      ///< Input Temperature.
+double cooling_function_SD93CIE::cooling_rate_SD93CIE(
+    double T  ///< Input Temperature.
 )
 {
   //
@@ -685,6 +804,40 @@ double cooling_function_SD93CIE::cooling_rate_SD93CIE(double T
   }
 
   return exp(pconst.ln10() * rate);
+}
+
+
+
+// ##################################################################
+// ##################################################################
+//
+// Calculate rate for a given temperature for a two-gas mixture.
+// Result is returned in units of erg.cm^{3}.s^{-1}
+//
+double cooling_function_SD93CIE::cooling_rate_Eatson(
+    double T,       ///< Input Temperature.
+    double wc_frac  ///< Fraction of gas (by mass) from WC star
+)
+{
+  //
+  // Since adaptive integrators can overshoot, we need to be able to
+  // silently deal with negative or infinite temperatures:
+  //
+  if (T < 0.0 || !isfinite(T)) return HUGE_VAL;
+
+  wc_frac      = max(0.0, wc_frac);
+  wc_frac      = min(1.0, wc_frac);
+  T            = max(MinTemp, T);
+  T            = min(MaxTemp, T);
+  double rate1 = 0.0, rate2 = 0.0;
+
+  splint_vec(spline_id1, T, &rate1);
+  splint_vec(spline_id2, T, &rate2);
+  // if (T>3.0e5) {
+  //  spdlog::info("Eatson rate: {:9.3e} {:9.3e} {:9.3e} {:9.3e}
+  //  {:9.3e}",T,wc_frac,rate1,rate2,wc_frac * rate1 + (1.0-wc_frac) * rate2);
+  //}
+  return wc_frac * rate1 + (1.0 - wc_frac) * rate2;
 }
 
 // ##################################################################

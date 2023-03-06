@@ -39,6 +39,10 @@ EP_Max_Temperature 1.0e9
 EP_Hydrogen_MassFrac 0.33  # n(He)/n(H)=1/10
 EP_Helium_MassFrac 0.65    # n(He)/n(H)=1/10
 EP_Metal_MassFrac  0.02    # solar metallicity
+EP_sat_thermal_cond 0
+EP_tc_strength 0.0
+EP_compton_cool 0
+EP_wind_acceleration 0
 ########################
 
 
@@ -49,13 +53,13 @@ NGridY  256
 NGridZ  128
 
 # Boundaries of Simulation box:
-Xmin  -2.048e16
-Ymin  -2.048e16
-Zmin  -2.048e16
+Xmin  -2.048e13
+Ymin  -2.048e13
+Zmin  -2.048e13
 # Max values of x,y,z
-Xmax   2.048e16
-Ymax   2.048e16
-Zmax   2.048e16
+Xmax   2.048e13
+Ymax   2.048e13
+Zmax   2.048e13
 
 # Nested grid
 grid_nlevels 3
@@ -76,7 +80,7 @@ StartTime  0.000e11
 FinishTime 3.156e12
 
 OutputPath ./
-OutputFile CWB2DCRT_d2l3n512
+OutputFile CWB2DCRT_d2l3n256
 OutputFileType silo
 OutputCriterion 0
 OutputFrequency 256
@@ -141,18 +145,23 @@ RT_Nsources 0
 ########################
 WIND_NSRC 2
 
-# locate the source at the origin.
-WIND_0_pos0  4.0e15
-WIND_0_pos1  0.0e15
-WIND_0_pos2  0.0e15
-WIND_0_radius 6.4e14  # 15 cells
+# star 0
+WIND_0_moving_star 1
+WIND_0_pos0  4.0e12
+WIND_0_pos1  0.0e12
+WIND_0_pos2  0.0e12
+WIND_0_velocity0  0.0e8
+WIND_0_velocity1  200.0e5
+WIND_0_velocity2  0.0e8
+WIND_0_radius 6.96e10  # 10 cells
 WIND_0_type   0
 WIND_0_mdot   1.0e-18
-WIND_0_vinf   150.0
+WIND_0_vinf   1500.0
 WIND_0_vrot   0.0
 WIND_0_temp   1.0e5
 WIND_0_Rstr   6.96e10
 WIND_0_Bsrf   1.0
+WIND_0_mass   10.0
 WIND_0_TR0    1.0
 WIND_0_evofile NOFILE
 WIND_0_t_offset   0.0000    # in (unscaled) years
@@ -161,18 +170,23 @@ WIND_0_updatefreq 1.0   # in (unscaled) years
 WIND_0_enhance_mdot 0
 WIND_0_xi 0.0
 
-# locate the source at the origin.
-WIND_1_pos0 -4.0e15
-WIND_1_pos1  0.0e15
-WIND_1_pos2  0.0e15
-WIND_1_radius 6.4e14  # 15 cells
+# star 1
+WIND_1_moving_star 1
+WIND_1_pos0 -2.0e12
+WIND_1_pos1  0.0e12
+WIND_1_pos2  0.0e12
+WIND_1_velocity0  0.0e8
+WIND_1_velocity1  -100.0e5
+WIND_1_velocity2  0.0e8
+WIND_1_radius 6.96e10  # 10 cells
 WIND_1_type   0
 WIND_1_mdot   1.5e-18
-WIND_1_vinf   100.0
+WIND_1_vinf   1000.0
 WIND_1_vrot   0.0
 WIND_1_temp   1.0e5
 WIND_1_Rstr   6.96e10
 WIND_1_Bsrf   1.0
+WIND_1_mass   20.0
 WIND_1_TR0    1.0
 WIND_1_evofile NOFILE
 WIND_1_t_offset   0.0000    # in (unscaled) years

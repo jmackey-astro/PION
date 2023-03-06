@@ -441,236 +441,79 @@ double stellar_wind_angle::fn_density_interp(
 
 
 void stellar_wind_angle::set_wind_cell_reference_state(
-    class GridBaseClass *grid,
-    struct wind_cell *wc,
-    const struct wind_source *WS,
+    class GridBaseClass &grid,
+    struct wind_cell &wc,
+    const struct wind_source &WS,
     const double eos_gamma  ///< EOS gamma
 )
 {
-  struct stellarwind_params *WP = WS->pars;
+  struct stellarwind_params *WP = WS.pars;
   //
   // In this function we set the density, pressure, velocity, and tracer
   // values for the reference state of the cell.  Every timestep the
   // cell-values will be reset to this reference state.
   //
-  bool set_rho = true;
-  if (wc->dist < 0.75 * WP->current_radius && ndim > 1) {
-    wc->p[RO] = 1.0e-31;
-    wc->p[PG] = 1.0e-31;
-    set_rho   = false;
+  if (wc.dist < WP->Rstar && ndim > 1) {
+    set_stellar_interior_values(wc, *WP);
+    return;
   }
-
-  std::array<double, MAX_DIM> pp;
-  CI.get_dpos(*wc->c, pp);
 
   //
   // 3D geometry: either 3D-cartesian, 2D-axisymmetry, or 1D-spherical.
   //
-  if (set_rho) {
-    wc->p[RO] = fn_density_interp(
-        std::min(0.9999, WP->Vrot / WP->Vcrit), WP->Vinf, WP->Mdot, wc->dist,
-        wc->theta, WP->Tstar);
-    //
-    // Set pressure based on wind density/temperature at the stellar radius,
-    // assuming adiabatic expansion outside Rstar, and that we don't care
-    // what the temperature is inside Rstar (because this function will make
-    // it hotter than Teff, which is not realistic):
-    //
-    // rho_star = Mdot/(4.pi.R_star^2.v_inf),
-    //   p_star = rho_star.k.T_star/(mu.m_p)
-    // So then p(r) = p_star (rho(r)/rho_star)^gamma
-    //
-    wc->p[PG] = WP->Tstar * pconst.kB() / pconst.m_p();  // taking mu = 1
-    wc->p[PG] *= pconst.pow_fast(
-        fn_density_interp(
-            std::min(0.9999, WP->Vrot / WP->Vcrit), WP->Vinf, WP->Mdot,
-            WP->Rstar, wc->theta, WP->Tstar),
-        1.0 - eos_gamma);
-    wc->p[PG] *= pconst.pow_fast(wc->p[RO], eos_gamma);
-  }
+  wc.p[RO] = fn_density_interp(
+      std::min(0.9999, WP->Vrot / WP->Vcrit), WP->Vinf, WP->Mdot, wc.dist,
+      wc.theta, WP->Tstar);
+  //
+  // Set pressure based on wind density/temperature at the stellar radius,
+  // assuming adiabatic expansion outside Rstar
+  //
+  wc.p[PG] = WP->Tstar * pconst.kB() / pconst.m_p();  // taking mu = 1
+  wc.p[PG] *= pconst.pow_fast(
+      fn_density_interp(
+          std::min(0.9999, WP->Vrot / WP->Vcrit), WP->Vinf, WP->Mdot, WP->Rstar,
+          wc.theta, WP->Tstar),
+      1.0 - eos_gamma);
+  wc.p[PG] *= pconst.pow_fast(wc.p[RO], eos_gamma);
 
   // calculate terminal wind velocity
   double Vinf =
-      fn_v_inf(std::min(0.9999, WP->Vrot / WP->Vcrit), WP->Vinf, wc->theta);
+      fn_v_inf(std::min(0.9999, WP->Vrot / WP->Vcrit), WP->Vinf, wc.theta);
 
-  cell *c  = wc->c;
-  double x = 0.0, y = 0.0, z = 0.0, xf = 0.0, yf = 0.0;
-  switch (ndim) {
-    case 1:
-      // in 1D, v_r = v_infty, so need x = wc->dist.
-      x = wc->dist;
-      y = 0.0;
-      z = 0.0;
-      break;
-    case 2:
-      x = grid->difference_vertex2cell(WP->dpos, *c, XX);
-      y = grid->difference_vertex2cell(WP->dpos, *c, YY);
-      z = 0.0;
-      break;
-    case 3:
-      x = grid->difference_vertex2cell(WP->dpos, *c, XX);
-      y = grid->difference_vertex2cell(WP->dpos, *c, YY);
-      z = grid->difference_vertex2cell(WP->dpos, *c, ZZ);
-      break;
-    default:
-      spdlog::error(
-          "{}: {}", "bad ndim in set_wind_cell_reference_state", ndim);
-      break;
-  }
-
-  // Velocities: cell-average values, i.e. values at the
-  // centre-of-volume.  Same as for non-latitude-dependent wind, but
-  // with Vinf that varies with latitude, calculated above.
-  //
-  // TODO: for general J vector, what is rotational component.
-  // TODO: Add axi-symmetric BC so that VZ,BZ not reflected at
-  //       symmetry axis.  Otherwise 2D with rotation won't work.
-  switch (ndim) {
-    case 1:
-      wc->p[VX] = Vinf * x / wc->dist;
-      wc->p[VY] = 0.0;
-      wc->p[VZ] = 0.0;
-      break;
-
-    case 2:
-      wc->p[VX] = Vinf * x / wc->dist;
-      wc->p[VY] = Vinf * y / wc->dist;
-      wc->p[VZ] = 0.0;
-      break;
-
-    case 3:
-      wc->p[VX] = Vinf * x / wc->dist;
-      wc->p[VY] = Vinf * y / wc->dist;
-      wc->p[VZ] = Vinf * z / wc->dist;
-
-      // add non-radial component to x/y-dir from rotation.
-      // J is hardcoded to be parallel to z-axis
-      xf = -WP->Vrot * WP->Rstar * y / pconst.pow_fast(wc->dist, 2);
-      yf = WP->Vrot * WP->Rstar * x / pconst.pow_fast(wc->dist, 2);
-      wc->p[VX] += xf;
-      wc->p[VY] += yf;
-      xf /= Vinf * x / wc->dist;  // fraction of x-vel in non-radial dir.
-      yf /= Vinf * y / wc->dist;
-      break;
-
-    default:
-      spdlog::error(
-          "{}: {}", "bad ndim in set_wind_cell_reference_state", ndim);
-      break;
-  }
-  // include stellar space velocity if appropriate
-  if (WP->moving_star) {
-    for (int v = 0; v < ndim; v++)
-      wc->p[VX + v] += WP->velocity[v];
-  }
-
-  // Magnetic field: cell-average values, i.e. values at the
-  // centre-of-volume.
-  // Use a split monopole plus a rotational term adding toroidal
-  // component.
-  // TODO: for general J vector, what is rotational component.
+  cell *c = wc.c;
+  std::array<double, MAX_DIM> r;
+  set_wind_cell_offset(grid, wc, WS, r);
+  set_wind_cell_velocity_components_vinf(r, wc, *WP, Vinf, WP->Vrot);
   if (eqntype == EQMHD || eqntype == EQGLM) {
-    double B_s = WP->Bstar / sqrt(4.0 * M_PI);  // code units for B_surf
-    double D_s = WP->Rstar / wc->dist;          // 1/d in stellar radii
-    double D_2 = D_s * D_s;                     // 1/d^2 in stellar radii
-    // this multiplies the toroidal component:
-    double beta_B_sint = (WP->Vrot / Vinf) * B_s * D_s;
-
-    switch (ndim) {
-      case 1:
-        spdlog::error("{}: {}", "1D spherical but MHD?", ndim);
-        break;
-      case 2:
-        // split monopole
-        wc->p[BX] = B_s * D_2 * fabs(x) / wc->dist;
-        wc->p[BY] = B_s * D_2 / wc->dist;
-        wc->p[BY] = (x > 0.0) ? y * wc->p[BY] : -y * wc->p[BY];
-        // toroidal component
-        beta_B_sint = beta_B_sint * y / wc->dist;
-        wc->p[BZ]   = (x > 0.0) ? -beta_B_sint : beta_B_sint;
-        break;
-
-      case 3:
-        // split monopole along z-axis, parallel to J
-        wc->p[BX] = B_s * D_2 / wc->dist;
-        wc->p[BX] = (z > 0.0) ? x * wc->p[BX] : -x * wc->p[BX];
-
-        wc->p[BY] = B_s * D_2 / wc->dist;
-        wc->p[BY] = (z > 0.0) ? y * wc->p[BY] : -y * wc->p[BY];
-
-        wc->p[BZ] = B_s * D_2 * fabs(z) / wc->dist;
-
-        // toroidal component in x-y plane from rotation, such that
-        // we have a Parker spiral, inward winding for z<0 and
-        // outwards for z>0.
-        beta_B_sint *= sqrt(x * x + y * y) / wc->dist;
-        beta_B_sint = (z > 0.0) ? -beta_B_sint : beta_B_sint;
-
-        // NDEBUG
-        // modulate strength near the equator by linearly reducing
-        // torodial component for |theta|<1 degree from equator
-        // See Pogorelov et al (2006,ApJ,644,1299).  This is for
-        // testing the code.
-        // t = fabs(z)/wc->dist * 180.0 / M_PI; // angle in degrees.
-        // if (t < 2.0) beta_B_sint *= 0.5*t;
-        // NDEBUG
-
-        wc->p[BX] += -beta_B_sint * y / wc->dist;
-        wc->p[BY] += beta_B_sint * x / wc->dist;
-        break;
-
-      default:
-        spdlog::error(
-            "{}: {}", "bad ndim in set_wind_cell_reference_state", ndim);
-        break;
-    }
+    set_wind_cell_B_components_vinf(r, wc, *WP, Vinf, WP->Vrot);
   }
-  if (eqntype == EQGLM) {
-    wc->p[SI] = 0.0;
-  }
-
-  //
-  // Set the H+ ion fraction so that it goes from y=1 at T>tp to
-  // y=1.0e-7 at T<tm, with linear interpolation.  //
-  double tm = 1.0e4, tp = 1.5e4;
-  if (WS->Hplus >= 0) {
-    if (WP->Tstar > tp)
-      WP->tr[WS->iHplus] = 1.0;
-    else if (WP->Tstar < tm)
-      WP->tr[WS->iHplus] = 1.0e-10;
-    else
-      WP->tr[WS->iHplus] =
-          1.0e-10 + (WP->Tstar - tm) * (1.0 - 1.0e-10) / (tp - tm);
-  }
-  // update tracers
-  for (int v = 0; v < ntracer; v++)
-    wc->p[ftr + v] = WP->tr[v];
+  set_wind_cell_tracers(wc, WS);
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   //
   // Set the minimum temperature to be Tstar in the wind...
   //
   if (MP) {
-    if (MP->Temperature(wc->p, eos_gamma) < Tmin) {
-      MP->Set_Temp(wc->p, Tmin, eos_gamma);
+    if (MP->Temperature(wc.p, eos_gamma) < Tmin) {
+      MP->Set_Temp(wc.p, Tmin, eos_gamma);
     }
   }
   else {
     // appropriate for a neutral medium, He+M mass fraction 0.285.
-    wc->p[PG] =
-        max(static_cast<double>(wc->p[PG]),
-            Tmin * wc->p[RO] * pconst.kB() * 0.78625 / pconst.m_p());
+    wc.p[PG] =
+        max(static_cast<double>(wc.p[PG]),
+            Tmin * wc.p[RO] * pconst.kB() * 0.78625 / pconst.m_p());
   }
 #endif  // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 
 #ifndef NDEBUG
-  spdlog::debug("wc->p : {}", std::vector<double>(wc->p, wc->p + ndim));
+  spdlog::debug("wc.p : {}", std::vector<double>(wc.p, wc.p + ndim));
 #endif
 #ifdef TEST_INF
   for (int v = 0; v < nvar; v++) {
-    if (!isfinite(wc->p[v])) {
-      spdlog::error("NAN in wind source {} {}", v, wc->p[v]);
-      spdlog::error("{}: {}", "NAN in wind source", wc->p[v]);
+    if (!isfinite(wc.p[v])) {
+      spdlog::error("NAN in wind source {} {}", v, wc.p[v]);
+      spdlog::error("{}: {}", "NAN in wind source", wc.p[v]);
     }
   }
 #endif
@@ -964,7 +807,8 @@ int stellar_wind_angle::update_source(
   // updated values.
   //
   for (int i = 0; i < wd->ws->ncell; i++) {
-    set_wind_cell_reference_state(grid, wd->ws->wcells[i], wd->ws, eos_gamma);
+    set_wind_cell_reference_state(
+        *grid, *(wd->ws->wcells[i]), *(wd->ws), eos_gamma);
   }
 
   return 0;

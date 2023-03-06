@@ -78,10 +78,10 @@ void interpolate_arrays::spline(
 
 
 void interpolate_arrays::splint(
-    const double xa[],
-    const double ya[],
+    const double[],
+    const double[],
     const int id,  ///< reference id for this spline interpolation.
-    const int n,
+    const int,
     const double x,
     double *y)
 {
@@ -103,8 +103,8 @@ void interpolate_arrays::splint(
 void interpolate_arrays::spline_vec(
     vector<double> x,
     vector<double> y,
-    double yp1,
-    double ypn,
+    double,
+    double,
     int &id  ///< reference id for this spline interpolation.
 )
 {

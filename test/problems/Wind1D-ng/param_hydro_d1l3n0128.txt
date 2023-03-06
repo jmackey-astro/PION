@@ -58,6 +58,8 @@ EP_Helium_MassFrac      0.286
 EP_Metal_MassFrac       0.014
 EP_sat_thermal_cond 0
 EP_tc_strength 0.0
+EP_compton_cool 0
+EP_wind_acceleration 0
 
 ###################
 ## Grid Parameters
@@ -170,6 +172,9 @@ WIND_0_pos0  0.0e18
 WIND_0_pos1  0.0e18
 WIND_0_pos2  0.0e18
 WIND_0_radius 8.0e17
+WIND_0_velocity0 0.0
+WIND_0_velocity1 0.0
+WIND_0_velocity2 0.0
 WIND_0_type   0
 WIND_0_mdot   1.0e-6
 WIND_0_vinf   2500.0

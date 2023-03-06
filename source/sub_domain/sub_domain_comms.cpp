@@ -191,8 +191,12 @@ int Sub_domain::broadcast_data(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int Sub_domain::send_cell_data(
     const int to_rank,             ///< rank to send to.
@@ -300,8 +304,12 @@ int Sub_domain::send_cell_data(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int Sub_domain::wait_for_send_to_finish(
     string &send_id  ///< identifier for the send we are waiting on.
@@ -346,8 +354,12 @@ int Sub_domain::wait_for_send_to_finish(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int Sub_domain::look_for_data_to_receive(
     int *from_rank,      ///< rank of sender
@@ -426,8 +438,12 @@ int Sub_domain::look_for_data_to_receive(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int Sub_domain::receive_cell_data(
     const int from_rank,           ///< rank of process we are receiving from.
@@ -585,8 +601,12 @@ int Sub_domain::receive_cell_data(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int Sub_domain::send_double_data(
     const int to_rank,            ///< rank to send to.
@@ -620,20 +640,36 @@ int Sub_domain::send_double_data(
   temp.str("");
   send_list.back().id = send_id;
 
+#ifndef NDEBUG
   spdlog::debug(
-      "sending to {} with tag {}", send_list.back().to_rank,
+      "{}: sending to {} with tag {}", myrank, send_list.back().to_rank,
       send_list.back().comm_tag);
+  spdlog::debug(
+      "{}: {}, {}, {}", myrank, num_elements, send_list.back().to_rank,
+      send_list.back().comm_tag);
+#endif  // NDEBUG
+
   /* Non-blocking send of data */
   err += MPI_Isend(
       send_list.back().send_buff_double.data(), num_elements, MPI_DOUBLE,
       send_list.back().to_rank, send_list.back().comm_tag, cart_comm,
       &(send_list.back().request));
 
+#ifndef NDEBUG
+  spdlog::debug(
+      "{}: sending to {} with tag {}: nonblocking send complete", myrank,
+      send_list.back().to_rank, send_list.back().comm_tag);
+#endif  // NDEBUG
+
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int Sub_domain::receive_double_data(
     const int from_rank,    ///< rank of process we are receiving from.
@@ -737,8 +773,12 @@ int Sub_domain::receive_double_data(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 #ifdef SILO
 int Sub_domain::silo_pllel_init(
@@ -782,8 +822,12 @@ int Sub_domain::silo_pllel_init(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int Sub_domain::silo_pllel_wait_for_file(
     const std::string id,        ///< identifier for this read/write.

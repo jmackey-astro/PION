@@ -127,11 +127,6 @@ int stellar_wind_bc::BC_assign_STWIND(
       }
     }
   }
-  // initialise "current_radius" var to value in parameter file.
-  for (int isw = 0; isw < Ns; isw++) {
-    SWP.params[isw]->current_radius = SWP.params[isw]->radius;
-  }
-
 
   if (Ns > 0) {
     // cout <<"\n----------- SETTING UP STELLAR WIND CLASS ----------\n";
@@ -174,12 +169,35 @@ int stellar_wind_bc::BC_assign_STWIND(
 
   grid->Wind->SetMicrophysics(mp);
 
+  // initialise "current_radius" var to value in parameter file.
+  for (int isw = 0; isw < Ns; isw++) {
+    SWP.params[isw]->current_radius = SWP.params[isw]->radius;
+    for (int v = par.ndim; v < MAX_DIM; v++)
+      SWP.params[isw]->dpos[v] = 0.0;
+    for (int v = 0; v < MAX_DIM; v++)
+      SWP.params[isw]->thispos[v] = SWP.params[isw]->dpos[v];
+    spdlog::debug(
+        "source {}, thispos {} dpos {}", isw, SWP.params[isw]->dpos,
+        SWP.params[isw]->thispos);
+  }
+
+  // check acceleration flag.
+  for (int isw = 0; isw < Ns; isw++) {
+    spdlog::debug(
+        "source {}, acc {}, wind-acc {}", isw, SWP.params[isw]->acc,
+        par.EP.wind_acceleration);
+    if (SWP.params[isw]->acc && !par.EP.wind_acceleration) {
+      spdlog::error("requesting wind acceleration but par not set");
+      exit(1);
+    }
+  }
+
   //
   // Run through sources and add sources.
   //
   for (int isw = 0; isw < Ns; isw++) {
 #ifndef NDEBUG
-    spdlog::debug("\tBC_assign_STWIND: Adding source {}", isw);
+    spdlog::debug("BC_assign_STWIND: Adding source {}", isw);
 #endif
     if (SWP.params[isw]->type == WINDTYPE_CONSTANT) {
       //
@@ -208,22 +226,34 @@ int stellar_wind_bc::BC_assign_STWIND(
       spdlog::error("{}: {}", "Error adding wind source", isw);
       exit(1);
     }
-    // if star is moving, then set initial velocity to values at periastron
-    // if (SWP.params[isw]->moving_star) {
-    //  double pre = 2.0 * pconst.pi() * sqrt(1.0 -
-    //}
   }
 
   //
   // loop over sources, adding cells to boundary data list in order.
   //
-  // Perform only if t=0
-
-  for (int id = 0; id < Ns; id++) {
+  for (int isw = 0; isw < Ns; isw++) {
 #ifndef NDEBUG
-    spdlog::debug("\tBC_assign_STWIND: Adding cells to source {}", id);
+    spdlog::debug("BC_assign_STWIND: Adding cells to source {}", isw);
 #endif
-    BC_assign_STWIND_add_cells2src(par, grid, id);
+    for (int v = 0; v < MAX_DIM; v++)
+      SWP.params[isw]->thispos[v] = SWP.params[isw]->dpos[v];
+    grid->Wind->set_this_source_position(isw, SWP.params[isw]->dpos);
+
+#ifndef NDEBUG
+    spdlog::info(
+        "setting wind radius: {:9.3e}  {:9.3e}",
+        SWP.params[isw]->current_radius, SWP.params[isw]->radius);
+#endif
+
+    BC_set_wind_radius(par, grid, isw);
+
+#ifndef NDEBUG
+    spdlog::info(
+        "setting wind radius: {:9.3e}  {:9.3e}",
+        SWP.params[isw]->current_radius, SWP.params[isw]->radius);
+#endif
+
+    BC_assign_STWIND_add_cells2src(par, grid, isw);
   }
 
   //
@@ -233,7 +263,7 @@ int stellar_wind_bc::BC_assign_STWIND(
   err += BC_update_STWIND(par, 0, grid, par.simtime, 0.0, b, 0, 0);
 #ifndef NDEBUG
   spdlog::info(
-      "\tFinished setting up wind parameters\n------ DONE SETTING UP STELLAR WIND CLASS ----------\n");
+      "Finished setting up wind parameters\n------ DONE SETTING UP STELLAR WIND CLASS ----------\n");
 #endif
   return err;
 }
@@ -259,8 +289,12 @@ int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
   int ncell     = 0;
   double srcrad = SWP.params[id]->current_radius;
   array<double, MAX_DIM> srcpos;
-  grid->Wind->get_src_posn(id, srcpos);
+  grid->Wind->get_this_source_position(id, srcpos);
+  // grid->Wind->get_src_posn(id, srcpos);
+  // for (int v=0;v<MAX_DIM;v++) srcpos[v] = SWP.params[id]->thispos[v];
 
+  // spdlog::info("star id {}, lev {}, radius {:8.2e}, dx
+  // {:8.2e}",id,grid->level(),srcrad,grid->DX());
 
   if (grid->Wind->get_num_cells(id) != 0) {
     spdlog::error(
@@ -275,10 +309,10 @@ int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
   for (int v = 0; v < par.ndim; v++) {
     xmin    = grid->Xmin_all(static_cast<axes>(v));
     xmax    = grid->Xmax_all(static_cast<axes>(v));
-    aneg    = srcpos[v] - srcrad - 0.5 * dx;  // add extra safety factor dx/2
+    aneg    = srcpos[v] - srcrad - dx;  // add extra safety factor dx/2
     aneg    = max(xmin, aneg);
     aneg    = min(xmax, aneg);
-    apos    = srcpos[v] + srcrad + 0.5 * dx;  // add extra safety factor dx/2
+    apos    = srcpos[v] + srcrad + dx;  // add extra safety factor dx/2
     apos    = min(xmax, apos);
     apos    = max(xmin, apos);
     ineg[v] = (aneg - xmin) / dx;
@@ -380,7 +414,7 @@ int stellar_wind_bc::BC_update_STWIND(
            << srcrad << "\n";
 #endif
       // delete wind-cell list
-      err += grid->Wind->remove_cells(grid, id);
+      err += grid->Wind->remove_cells(id);
       // Update positions
       // Elipse needs to be rotated -> get rotation matrix entries
       if (periastron_vec[0] != 0) {
@@ -439,7 +473,7 @@ int stellar_wind_bc::BC_update_STWIND(
       // End of source loop
     }
   }
-#else   // NOT ANALYTIC_ORBITS
+#else  // NOT ANALYTIC_ORBITS
 
   // loop over wind-sources, and calculate the orbital evolution using
   // leapfrog integrator, drift-kick-drift method.
@@ -459,9 +493,6 @@ int stellar_wind_bc::BC_update_STWIND(
       for (int v = 0; v < ndim; v++)
         s.acc[v] = 0.0;
       stars.push_back(s);
-      // delete wind-cell list (we have to movet the star, so everything
-      // gets rewritten)
-      err += grid->Wind->remove_cells(grid, i);
     }
   }
 
@@ -525,63 +556,79 @@ int stellar_wind_bc::BC_update_STWIND(
         stars[i].vel[v] += stars[i].acc[v] * 0.5 * dt;
       }
     }
-    // Set new source position
-    if (stars.size() >= 1) {
-      outf << simtime << "  " << dt << "  ";
-      for (unsigned long i = 0; i < stars.size(); i++) {
-        for (int v = 0; v < ndim; v++)
-          SWP.params[stars[i].id]->dpos[v] = stars[i].pos[v];
-        for (int v = 0; v < ndim; v++)
-          SWP.params[stars[i].id]->velocity[v] = stars[i].vel[v];
-        for (int v = 0; v < ndim; v++)
-          outf << SWP.params[i]->dpos[v] << "  ";
-        for (int v = 0; v < ndim; v++)
-          outf << SWP.params[i]->velocity[v] << "  ";
-      }
-      outf << "\n";
-    }
-    // Determine the radius we need for the wind region based on star location,
-    // imposing a minimum of MIN_WIND_RAD on any grid that the boundary
-    // intersects with.
-    static int count = 0;
+
+    // update star parameters
     for (unsigned long i = 0; i < stars.size(); i++) {
-      int lev    = l;
-      double rad = SWP.params[stars[i].id]->radius;
-      bool fin = false, on = true;
-      do {
-        // check that radius satisfies minimum radius criterion:
-        rad = max(rad, MIN_WIND_RAD * par.levels[lev].dx);
-
-        // see if any part of wind boundary is outside level. If not: break out,
-        // if so: continue to next coarser level.
-        for (int v = 0; v < par.ndim; v++) {
-          if ((stars[i].pos[v] - rad < par.levels[lev].Xmin[v])
-              || (stars[i].pos[v] + rad > par.levels[lev].Xmax[v]))
-            on = false;
-        }
-        if (on) {
-          SWP.params[stars[i].id]->current_radius = rad;
-          fin                                     = true;
-        }
-        else {
-          lev--;
-          on = true;
-        }
-      } while (lev >= 0 && !fin);
-      if (count % 512 == 0)
-        spdlog::info("star {} on level {}, radius = {:12.6e}", i, lev, rad);
+      for (int v = 0; v < ndim; v++)
+        SWP.params[stars[i].id]->dpos[v] = stars[i].pos[v];
+      for (int v = 0; v < ndim; v++)
+        SWP.params[stars[i].id]->velocity[v] = stars[i].vel[v];
     }
+  }
+
+  //
+  // Decide if we need to update star position based on whether its new
+  // position is more than 0.1*dx away from the old position
+  //
+  double dx_fine = par.levels[par.grid_nlevels - 1].dx;
+  static std::array<double, MAX_DIM> my_pos;
+  bool moved = false;
+
+  for (unsigned long i = 0; i < stars.size(); i++) {
+    bool move = false;
+    // if star has moved > 0.1dx
+    grid->Wind->get_this_source_position(stars[i].id, my_pos);
+
+    if (par.grid_nlevels == l + 1) {
+      if ((SWP.params[i]->moving_star > 0)
+          && (grid->distance(SWP.params[i]->dpos, my_pos) > 0.1 * dx_fine)) {
+        move = true;
+        if (!moved) moved = true;
+      }
+    }
+    else {
+      if (!pconst.equalD(0.0, grid->distance(SWP.params[i]->thispos, my_pos))) {
+        move = true;
+      }
+    }
+
+    // if star has moved > 0.1dx
+    if (move || par.timestep == 0) {
+      if (par.grid_nlevels == l + 1) {
+        for (int v = 0; v < MAX_DIM; v++)
+          SWP.params[i]->thispos[v] = SWP.params[i]->dpos[v];
+      }
+
+      // delete wind-cell list (we have to move the star, so everything
+      // gets rewritten)
+      err += grid->Wind->remove_cells(stars[i].id);
+
+      grid->Wind->set_this_source_position(stars[i].id, SWP.params[i]->thispos);
+      BC_set_wind_radius(par, grid, stars[i].id);
+      spdlog::debug(
+          "l {}, source moved >0.1 * {}, updating pos from {} to {}", l,
+          dx_fine, my_pos, SWP.params[i]->thispos);
+
+      // add cells back to wind source, based on new position
+      BC_assign_STWIND_add_cells2src(par, grid, stars[i].id);
+    }  // if move
+  }    // loop over stars to move positions
+
+  static long unsigned int count = 0;
+
+  // write trajectory to file.
+  if (moved && (par.grid_nlevels == l + 1) && (count % 10) == 0) {
+    outf << simtime << "  " << dt << "  ";
+    for (unsigned long i = 0; i < stars.size(); i++) {
+      for (int v = 0; v < ndim; v++)
+        outf << SWP.params[i]->dpos[v] << "  ";
+      for (int v = 0; v < ndim; v++)
+        outf << SWP.params[i]->velocity[v] << "  ";
+    }
+    outf << "\n";
     count++;
-  }
+  }  // print to file
 
-  for (int i = 0; i < SWP.Nsources; i++) {
-    if (SWP.params[i]->moving_star > 0) {
-      // Asign new Boundary cells
-      BC_assign_STWIND_add_cells2src(par, grid, SWP.params[i]->id);
-      // cout<<"end  "<<i<<", "; rep.printVec("star pos",stars[i].pos,3);
-      // cout<<"     "<<i<<", "; rep.printVec("star vel",stars[i].vel,3);
-    }
-  }
 #endif  // ANALYTIC_ORBITS
 
   //
@@ -606,6 +653,8 @@ int stellar_wind_bc::BC_update_STWIND(
       spdlog::info("Star reached end of life? set_cell_values {}", err);
       par.maxtime = true;
     }
+    // set wind acceleration in each cell
+    BC_set_windacc_radflux(par, grid, id);
   }
 #ifndef NDEBUG
   spdlog::debug("stellar_wind_bc: finished updating wind boundaries");
@@ -613,6 +662,308 @@ int stellar_wind_bc::BC_update_STWIND(
 
   return err;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind_bc::BC_set_wind_radius(
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    const int id                ///< source id
+)
+{
+  int lev = par.grid_nlevels - 1;
+  //
+  // Determine the radius we need for the wind region based on star location,
+  // imposing a minimum of MIN_WIND_RAD on any grid that the boundary
+  // intersects with.
+  double rad = SWP.params[id]->radius;
+  if (par.ndim == 1) {
+    if (lev == 0)
+      rad = max(rad, 2.0 * par.dx);
+    else
+      rad = max(rad, 2.0 * par.levels[lev].dx);
+    SWP.params[id]->current_radius = rad;
+    spdlog::info(
+        "1D sim: resetting wind radius {:9.3e} to {:9.3e}",
+        SWP.params[id]->radius, SWP.params[id]->current_radius);
+    return;
+  }
+  // spdlog::info("BC_set_wind_radius 1: {:9.3e}  {:9.3e}", rad,
+  // SWP.params[id]->current_radius);
+
+  // impose that wind radius must be at least 2 cells larger than Rstar
+  // if on finest level
+  rad = max(rad, grid->Wind->get_min_wind_radius(id, par.levels[lev].dx));
+  // spdlog::info("BC_set_wind_radius 2: {:9.3e}  {:9.3e}  {:9.3e}", rad,
+  // SWP.params[id]->current_radius,par.levels[lev].dx);
+
+  bool fin = false, on = true;
+  do {
+    // check that radius satisfies minimum radius criterion:
+    rad = max(rad, MIN_WIND_RAD * par.levels[lev].dx);
+    // spdlog::info("BC_set_wind_radius 3: {:9.3e}  {:9.3e}", rad,
+    //              SWP.params[id]->current_radius);
+
+    // see if any part of wind boundary is outside level. If not: break out,
+    // if so: continue to next coarser level.
+    for (int v = 0; v < par.ndim; v++) {
+      if (par.ndim == 2 && v == 1 && par.coord_sys == COORD_CYL) {
+        continue;
+      }
+      if ((SWP.params[id]->thispos[v] - rad < par.levels[lev].Xmin[v])
+          || (SWP.params[id]->thispos[v] + rad > par.levels[lev].Xmax[v]))
+        on = false;
+    }
+    if (on) {
+      rad = max(rad, grid->Wind->get_min_wind_radius(id, par.levels[lev].dx));
+      // spdlog::info("BC_set_wind_radius 4: {:9.3e}  {:9.3e}", rad,
+      //            SWP.params[id]->current_radius);
+      SWP.params[id]->current_radius = rad;
+      fin                            = true;
+    }
+    else {
+      lev--;
+      on = true;
+    }
+  } while (lev >= 0 && !fin);
+
+  // Now wind radius should be at least MIN_WIND_RAD cells radius on the
+  // coarsest level containing the source, and at least 2 cells larger than
+  // the stellar radius.
+  spdlog::info(
+      "BC_set_wind_radius: orig: {:9.3e} now: {:9.3e}", SWP.params[id]->radius,
+      SWP.params[id]->current_radius);
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind_bc::BC_set_windacc_radflux(
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    const int id                ///< source id
+)
+{
+  //
+  // For each cell, store radiation energy density if compton cooling is needed
+  // For cells at <100 stellar radii, calculate the wind acceleration,
+  // if requested
+  //
+  if (!par.EP.compton_cool && !par.EP.wind_acceleration) {
+    return;
+  }
+
+  int err      = 0;
+  int ncell    = 0;
+  double r_acc = 100.0 * SWP.params[id]->Rstar;
+  // u_prefactor is a prefactor to get the radiation energy density
+  double u_prefactor = 2.0 * pconst.StefanBoltzmannConst()
+                       * pow(SWP.params[id]->Tstar, 4) / pconst.c();
+  array<double, MAX_DIM> srcpos;
+  grid->Wind->get_this_source_position(id, srcpos);
+
+#ifndef NDEBUG
+  spdlog::debug(
+      "star id {}, lev {}, radius {:8.2e}, dx {:8.2e}", id, grid->level(),
+      r_acc, grid->DX());
+#endif
+
+  // find min/max of coordinates of cube that contains spherical wind source
+  double dx = grid->DX(), aneg = 0.0, apos = 0.0, xmin = 0.0, xmax = 0.0;
+  array<int, MAX_DIM> ineg = {0, 0, 0}, ipos = {0, 0, 0};
+  for (int v = 0; v < par.ndim; v++) {
+    xmin    = grid->Xmin_all(static_cast<axes>(v));
+    xmax    = grid->Xmax_all(static_cast<axes>(v));
+    aneg    = srcpos[v] - r_acc - 0.5 * dx;
+    aneg    = max(xmin, aneg);
+    aneg    = min(xmax, aneg);
+    apos    = srcpos[v] + r_acc + 0.5 * dx;
+    apos    = min(xmax, apos);
+    apos    = max(xmin, apos);
+    ineg[v] = (aneg - xmin) / dx;
+    ipos[v] = (apos - xmin) / dx;
+  }
+  for (int v = par.ndim; v < MAX_DIM; v++) {
+    ineg[v] = 0;
+    ipos[v] = 1;
+  }
+
+#ifndef NDEBUG
+  spdlog::info("*** r_acc={}, ineg {}, ipos {}", r_acc, ineg, ipos);
+#endif
+
+  // loop over cube of data and add only cells with position within the
+  // source radius
+  enum axes x1 = XX;
+  enum axes x2 = YY;
+  enum axes x3 = ZZ;
+  double beta  = 0.8;
+  double vinf  = SWP.params[id]->Vinf;
+  // set launching speed to be 4x the sound speed at the star's surface.
+  double v0    = 4.0 * sqrt(pconst.kB() * SWP.params[id]->Tstar / pconst.m_p());
+  double rstar = SWP.params[id]->Rstar;
+
+
+  // we shut off acceleration if T>10^6K
+
+  if (!par.EP.compton_cool) {
+    //#ifdef PION_OMP
+    //  #pragma omp parallel for collapse(2)
+    //#endif
+    for (int ax3 = ineg[x3]; ax3 < ipos[x3]; ax3++) {
+      for (int ax2 = ineg[x2]; ax2 < ipos[x2]; ax2++) {
+        std::array<double, MAX_DIM> cpos;
+        int index[3];
+        index[x1] = ineg[x1];
+        index[x2] = static_cast<int>(ax2);
+        index[x3] = static_cast<int>(ax3);
+        double v = 0.0, dist = 0.0, T = 0.0;
+        std::vector<double> acc;
+        acc.resize(par.ndim);
+        cell *c = grid->get_cell_all(index[0], index[1], index[2]);
+        for (int ax1 = index[x1]; ax1 < ipos[x1]; ax1++) {
+          CI.get_dpos(*c, cpos);
+          if ((dist = grid->distance(srcpos, cpos)) <= r_acc) {
+            // approximate T by assuming mu=1
+            T = c->Ph[PG] * pconst.m_p() / (pconst.kB() * c->Ph[RO]);
+            if (T > 2.0e6) {
+              // For high temperatures switch off acc b/c no ions left.
+              for (int d = 0; d < par.ndim; d++)
+                acc[d] = 0.0;
+            }
+            else {
+              // v = v0 + (vinf-v0)* exp(beta * log(1.0-rstar/dist));
+              // v = v * beta * (vinf-v0) *  exp((beta-1.0) *
+              // log(1.0-rstar/dist))
+              // * rstar / pow(dist,3);
+              // first assume beta==1 for simplicity
+              v = v0 + (vinf - v0) * (1.0 - rstar / dist);
+              v = v * (vinf - v0) * rstar / (dist * dist * dist);
+              // calculate each component.
+              for (int d = 0; d < par.ndim; d++) {
+                acc[d] = v * (cpos[d] - srcpos[d]);
+              }
+              if (T > 1.0e6) {
+                // linearly decrease acc to zero in range 1e6-2e6 K
+                for (int d = 0; d < par.ndim; d++)
+                  acc[d] *= (2.0e6 - T) / 1.0e6;
+              }
+            }
+            CI.set_wind_acceleration(*c, id, acc);
+            // spdlog::info("src id {}, acceleration {}",id,r_acc);
+          }
+          else {
+            for (int d = 0; d < par.ndim; d++) {
+              acc[d] = 0.0;
+            }
+            CI.set_wind_acceleration(*c, id, acc);
+          }
+          c = grid->NextPt(*c, XP);
+          // spdlog::info("src id {} index {}",index[x1]);
+        }
+      }
+    }
+  }
+  else {
+    // do compton cooling in every cell, and wind acceleration too.
+    enum axes x1 = XX;
+    enum axes x2 = YY;
+    enum axes x3 = ZZ;
+    int nx2      = grid->NG_All(x2);
+    int nx3      = grid->NG_All(x3);
+#ifdef PION_OMP
+    #pragma omp parallel for collapse(2)
+#endif
+    for (int ax3 = 0; ax3 < nx3; ax3++) {
+      for (int ax2 = 0; ax2 < nx2; ax2++) {
+        int index[3];
+        index[x1] = 0;
+        index[x2] = static_cast<int>(ax2);
+        index[x3] = static_cast<int>(ax3);
+        double v = 0.0, dist = 0.0, T = 0.0;
+        std::vector<double> acc;
+        acc.resize(par.ndim);
+        std::array<double, MAX_DIM> cpos;
+        cell *c = grid->get_cell_all(index[0], index[1], index[2]);
+        do {
+          CI.get_dpos(*c, cpos);
+          dist = grid->distance(srcpos, cpos);
+          // set wind acceleration
+          if (par.EP.wind_acceleration) {
+            if (dist <= r_acc) {
+              // approximate T by assuming mu=1
+              T = c->Ph[PG] * pconst.m_p() / (pconst.kB() * c->Ph[RO]);
+              if (T > 2.0e6) {
+                // For high temperatures switch off acc b/c no ions left.
+                for (int d = 0; d < par.ndim; d++)
+                  acc[d] = 0.0;
+              }
+              else {
+                // v = v0 + (vinf-v0)* exp(beta * log(1.0-rstar/dist));
+                // v = v * beta * (vinf-v0) *  exp((beta-1.0) *
+                // log(1.0-rstar/dist))
+                // * rstar / pow(dist,3);
+                // first assume beta==1 for simplicity
+                v = v0 + (vinf - v0) * (1.0 - rstar / dist);
+                v = v * (vinf - v0) * rstar / (dist * dist * dist);
+                // calculate each component.
+                for (int d = 0; d < par.ndim; d++) {
+                  acc[d] = v * (cpos[d] - srcpos[d]);
+                }
+                if (T > 1.0e6) {
+                  // linearly decrease acc to zero in range 1e6-2e6 K
+                  for (int d = 0; d < par.ndim; d++)
+                    acc[d] *= (2.0e6 - T) / 1.0e6;
+                }
+              }
+              CI.set_wind_acceleration(*c, id, acc);
+              // spdlog::info("src id {}, acceleration {}",id,r_acc);
+            }
+            else {
+              for (int d = 0; d < par.ndim; d++) {
+                acc[d] = 0.0;
+              }
+              CI.set_wind_acceleration(*c, id, acc);
+            }
+          }
+          // set compton cooling info (radiation density from star, erg/cm3)
+          // U = 2 sigma_SB T^4 /c * (1 - sqrt(1-(R/r)^2))
+          // which includes the dilution factor accounting for finite size of
+          // the star
+          // only do this for leaf cells because coarse-grid cells can have
+          // very outlandish temperatures because of averaging.
+          if (c->isleaf && c->isdomain) {
+            v = SWP.params[id]->Rstar / dist;
+            v *= v;
+            v = u_prefactor * (1.0 - sqrt(1.0 - v));
+          }
+          else {
+            v = 0.0;
+          }
+          CI.set_compton_urad(*c, id, v);
+        } while ((c = grid->NextPt(*c, XP)) != 0);
+      }  // axis 2
+    }    // axis 3
+  }      // if compton cooling
+
+#ifndef NDEBUG
+  spdlog::debug(
+      "BC_assign_STWIND_add_cells2src: Added {} cells to wind boundary for WS {}",
+      ncell, id);
+#endif
+  return;
+}
+
 
 // ##################################################################
 // ##################################################################

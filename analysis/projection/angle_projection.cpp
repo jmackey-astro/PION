@@ -432,7 +432,7 @@ int generate_angle_image(
     class Xray_emission &XR,      ///< pointer to class.
     double angle,       ///< angle between LOS and symmetry axis [1,89]
     int npix[],         ///< Number of pixels in each direction
-    size_t num_pix,     ///< total number of pixels
+    size_t,             ///< total number of pixels
     int n_extra,        ///< number of extra pixels w.r.t. cells.
     size_t NIMG,        ///< number of images to make
     double **img_array  ///< pointer to the image arrays.

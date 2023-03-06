@@ -24,8 +24,12 @@ using namespace std;
 //#define TEST_MPI_NG_F2C
 //#define NG_F2C_POS
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
     class SimParams &par,  ///< pointer to simulation parameters
@@ -94,16 +98,20 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
     class SimParams &par,          ///< pointer to simulation parameters
     class FV_solver_base *solver,  ///< pointer to equations
     const int l,                   ///< level in the NG grid structure
     struct boundary_data *b,
-    const int cstep,
-    const int maxstep)
+    const int,
+    const int)
 {
 
   // Check if parent grid is on my MPI process
@@ -130,9 +138,9 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   // data to send will be ordered as position,conserved-var,X-data
   // for each averaged cell.  Position only needed for testing.
 #ifdef NG_F2C_POS
-  vector<pion_flt> data(nel * (par.nvar + F2C_Nxd + par.ndim));
+  vector<double> data(nel * (par.nvar + F2C_Nxd + par.ndim));
 #else
-  vector<pion_flt> data(nel * (par.nvar + F2C_Nxd));
+  vector<double> data(nel * (par.nvar + F2C_Nxd));
 #endif
 
   // loop through avg vector and add cells and positions to
@@ -144,12 +152,27 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   for (v = 0; v < nel; v++) {
     for (int j = 0; j < nv; j++)
       cd[j] = 0.0;
-    average_cells(
-        par, solver, grid, nc, b->avg[v].c, b->avg[v].cpos, cd.data());
+    average_cells(par, solver, grid, nc, b->avg[v].c, b->avg[v].cpos, cd);
 #ifdef NG_F2C_POS
     for (int i = 0; i < par.ndim; i++)
       data[ct + i] = b->avg[v].cpos[i];
     ct += par.ndim;
+#endif
+#ifdef TEST_INF
+    for (int vv = 0; vv < par.nvar; vv++) {
+      if (!isfinite(cd[vv])) {
+        spdlog::error("NAN F2C send {}", vv);
+        err += 1;
+      }
+    }
+    if (err) {
+      spdlog::info("send primitive var {}", cd);
+      for (int vv = 0; vv < nc; vv++) {
+        spdlog::error("NAN detected.  This is cell {} of {}", vv, nc);
+        CI.print_cell(*(b->avg[v].c[vv]));
+      }
+      exit(1);
+    }
 #endif
     for (int i = 0; i < nv; i++)
       data[ct + i] = cd[i];
@@ -184,8 +207,12 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void NG_MPI_fine_to_coarse_bc::BC_FINE_TO_COARSE_SEND_clear_sends(
     class Sub_domain &sub_domain)
@@ -208,8 +235,12 @@ void NG_MPI_fine_to_coarse_bc::BC_FINE_TO_COARSE_SEND_clear_sends(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
     class SimParams &par,  ///< pointer to simulation parameters
@@ -311,8 +342,12 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
     class SimParams &par,          ///< pointer to simulation parameters
@@ -410,7 +445,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       size_t ct = nel * (par.nvar + F2C_Nxd);
 #endif
 
-      vector<pion_flt> buf(ct);
+      vector<double> buf(ct);
 #ifdef TEST_MPI_NG_F2C
       spdlog::info("BC_update_FINE_TO_COARSE_RECV: get {} cells.\n", nel);
 #endif
@@ -427,9 +462,9 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       list<cell *>::iterator c_iter = b->NGrecvF2C[i].begin();
       cell *c                       = 0;
 #ifdef NG_F2C_POS
-      std::array<pion_flt, MAX_DIM> pos;
+      std::array<double, MAX_DIM> pos;
 #endif
-      std::vector<pion_flt> prim(par.nvar);
+      std::vector<double> prim(par.nvar);
       size_t i_el = 0;
       for (c_iter = b->NGrecvF2C[i].begin(); c_iter != b->NGrecvF2C[i].end();
            ++c_iter) {
@@ -452,8 +487,18 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
         i_el += par.nvar;
 
 #ifdef TEST_INF
-        for (int v = 0; v < par.nvar; v++)
-          if (!isfinite(prim[v])) spdlog::error("{}: {}", "NAN F2C recv", v);
+        for (int v = 0; v < par.nvar; v++) {
+          if (!isfinite(prim[v])) {
+            err += 1;
+            spdlog::error("NAN F2C recv i={}", v);
+          }
+        }
+        if (err) {
+          spdlog::info(
+              "received primitive var from {}  data {}", from_rank, prim);
+          CI.print_cell(*c);
+          exit(1);
+        }
 #endif
 
         for (int v = 0; v < par.nvar; v++)

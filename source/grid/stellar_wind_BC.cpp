@@ -177,9 +177,7 @@ int stellar_wind::add_source(
     spdlog::error(
         "{}: {}", "wind_source: wcells not empty!", ws->wcells.size());
 
-  //
   // Make sure the source position is compatible with the geometry:
-  //
   if (coordsys == COORD_SPH) {
     if (!pconst.equalD(wp->dpos[Rsph], 0.0))
       spdlog::error(
@@ -192,6 +190,12 @@ int stellar_wind::add_source(
           "{}: {}", "Axisymmetry but source not at R=0!", wp->dpos[Rcyl]);
   }
 
+  // initialise mypos for moving sources
+  for (int v = 0; v < ndim; v++)
+    ws->mypos[v] = wp->dpos[v];
+  for (int v = ndim; v < MAX_DIM; v++)
+    ws->mypos[v] = 0.0;
+
   wlist.push_back(ws);
   nsrc++;
   spdlog::debug(
@@ -199,16 +203,24 @@ int stellar_wind::add_source(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int stellar_wind::Nsources()
 {
   return nsrc;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int stellar_wind::add_cell(
     class GridBaseClass *grid,
@@ -227,7 +239,7 @@ int stellar_wind::add_cell(
   double dx = grid->DX();
   CI.get_dpos(c, cpos);
   for (int v = 0; v < MAX_DIM; v++)
-    wpos[v] = WP->dpos[v];
+    wpos[v] = WS->mypos[v];
   struct wind_cell *wc = 0;
   wc                   = mem.myalloc(wc, 1);
 
@@ -237,6 +249,7 @@ int stellar_wind::add_cell(
   else
     wc->dist = grid->distance(wpos, cpos);
 
+  //#ifndef NDEBUG
   if (wc->dist > WP->current_radius) {
     if (ndim > 1) {
       // only print warning messages if ndim>1. This happens with
@@ -246,17 +259,18 @@ int stellar_wind::add_cell(
           "{}: Expected {} but got {}",
           "stellar_wind::add_cell() cell is outside radius", WP->current_radius,
           wc->dist);
+      spdlog::info("wind pos {}", wpos);
       CI.print_cell(c);
     }
     return 1;
   }
-  //
+  //#endif
+
   // Now set wc cell pointer to this one.  Also set c->isbd to indicate
   // that it is now boundary data (while also grid data).
-  //
   c.isbd     = true;
   c.isdomain = false;
-  if (wc->dist < 0.75 * WP->current_radius)
+  if (wc->dist < WP->Rstar)
     c.timestep = false;
   else
     c.timestep = true;
@@ -264,10 +278,7 @@ int stellar_wind::add_cell(
 
   wc->cfac = 1.0;  // correction factor for curvilinear coords
 
-  //
   // Calculate the polar angle theta
-  //
-
   // Set theta to 0 if 1D - no angle dependent wind in this case (should add
   // exit if angle + 1D)
   if (ndim == 1) {
@@ -284,18 +295,18 @@ int stellar_wind::add_cell(
   // Polar angle in 2D
   else if (ndim == 2) {
     // Opposite and adjacent of cell angle
-    double opp = grid->difference_vertex2cell(WP->dpos, c, Rcyl);
-    double adj = grid->difference_vertex2cell(WP->dpos, c, Zcyl);
+    double opp = grid->difference_vertex2cell(wpos, c, Rcyl);
+    double adj = grid->difference_vertex2cell(wpos, c, Zcyl);
     wc->theta  = atan(fabs(opp / adj));
   }
 
   // Polar angle in 3D
   else if (ndim == 3) {
     // Opposite and adjacent in X-Y plane
-    double opp1 = grid->difference_vertex2cell(WP->dpos, c, XX);
-    double adj1 = grid->difference_vertex2cell(WP->dpos, c, YY);
+    double opp1 = grid->difference_vertex2cell(wpos, c, XX);
+    double adj1 = grid->difference_vertex2cell(wpos, c, YY);
     // Opposite and adjacent in Y-Z plane
-    double opp2 = grid->difference_vertex2cell(WP->dpos, c, ZZ);
+    double opp2 = grid->difference_vertex2cell(wpos, c, ZZ);
     double adj2 = sqrt(opp1 * opp1 + adj1 * adj1);
     wc->theta   = atan(fabs(adj2 / opp2));
     // DEBUG
@@ -308,16 +319,12 @@ int stellar_wind::add_cell(
     // DEBUG
   }
 
-  //
   // Allocate memory for wind_cell reference state vector.
-  //
   wc->p = 0;
   wc->p = mem.myalloc(wc->p, nvar);
 
-  //
   // Now assign values to the state vector:
-  //
-  /// NB: This function has the EOS Gamma hardcoded to 5/3
+  // NB: This function has the EOS Gamma hardcoded to 5/3
   set_wind_cell_reference_state(grid, wc, WS, 5. / 3.);
 
   WS->wcells.push_back(wc);
@@ -342,9 +349,7 @@ int stellar_wind::add_cell(
 
 
 
-int stellar_wind::remove_cells(
-    class GridBaseClass *grid,
-    const int id  ///< src id
+int stellar_wind::remove_cells(const int id  ///< src id
 )
 {
   if (id < 0 || id >= nsrc) spdlog::error("{}: {}", "bad src id", id);
@@ -378,117 +383,360 @@ void stellar_wind::set_wind_cell_reference_state(
     const double gamma  ///< EOS gamma
 )
 {
-  struct stellarwind_params *WP = WS->pars;
-  //
+  if (WS->pars->acc) {
+    set_wind_cell_reference_state_acc(*grid, *wc, *WS, gamma);
+  }
+  else {
+    set_wind_cell_reference_state_vinf(*grid, *wc, *WS, gamma);
+  }
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind::set_wind_cell_reference_state_vinf(
+    class GridBaseClass &grid,
+    struct wind_cell &wc,
+    const struct wind_source &WS,
+    const double gamma  ///< EOS gamma
+)
+{
+  struct stellarwind_params *WP = WS.pars;
+
+  // if inside the star, set values to very small values and return
+  if (wc.dist < WP->Rstar) {
+    set_stellar_interior_values(wc, *WP);
+    return;
+  }
+
   // In this function we set the density, pressure, velocity, and tracer
   // values for the reference state of the cell.  Every timestep the
   // cell-values will be reset to this reference state.
-  //
-  std::array<double, MAX_DIM> pp;
-  CI.get_dpos(*wc->c, pp);
-  //
+  cell *c      = wc.c;
+  double vcell = WP->Vinf;
+  set_wind_cell_density_pressure(grid, wc, *WP, vcell, gamma);
+
+  // set velocity and magnetic field components
+  std::array<double, MAX_DIM> r;
+  set_wind_cell_offset(grid, wc, WS, r);
+  set_wind_cell_velocity_components_vinf(r, wc, *WP, vcell, WP->Vrot);
+  if (eqntype == EQMHD || eqntype == EQGLM) {
+    set_wind_cell_B_components_vinf(r, wc, *WP, vcell, WP->Vrot);
+  }
+
+#ifndef NDEBUG
+  spdlog::debug(
+      "Set Wind Ref. State: id {}, dist {:9.3e}, rho {:9.3e}, vx {:9.3e} vcell {:9.3e}, pg {:9.3e}",
+      c->id, wc.dist, wc.p[RO], wc.p[VX], vcell, wc.p[PG]);
+#endif
+
+  set_wind_cell_tracers(wc, WS);
+
+#ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
+  // Set a minimum temperature in the wind
+  if (MP) {
+    if (MP->Temperature(wc.p, gamma) < Tmin) {
+      MP->Set_Temp(wc.p, Tmin, gamma);
+    }
+  }
+  else {
+    // appropriate for a neutral gas, He+M mass fraction 0.285.
+    wc.p[PG] =
+        max(static_cast<double>(wc.p[PG]),
+            Tmin * wc.p[RO] * pconst.kB() * 0.78625 / pconst.m_p());
+  }
+#endif  // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
+
+  return;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind::set_wind_cell_reference_state_acc(
+    class GridBaseClass &grid,
+    struct wind_cell &wc,
+    const struct wind_source &WS,
+    const double gamma  ///< EOS gamma
+)
+{
+  struct stellarwind_params *WP = WS.pars;
+
+  // if inside the star, set values to very small values and return
+  if (wc.dist < WP->Rstar) {
+    set_stellar_interior_values(wc, *WP);
+    return;
+  }
+
+  // hardcode beta=1 for now.  All the following equations assume beta==1
+
+  // hardcode injection velocity to 4x the surface isothermal sound speed
+  double v0 = 4.0 * sqrt(pconst.kB() * WP->Tstar / pconst.m_p());
+
+  // radial component of velocity follows beta law
+  double vcell = v0 + (WP->Vinf - v0) * (1.0 - WP->Rstar / wc.dist);
+
+  // initialise Alfven radius to stellar radius, and Alfven velocity to
+  // small fraction of sound speed.
+  double ra = WP->Rstar;
+  double va = 0.01 * v0;
+  // if MHD, then set ra, va appropriately
+  if (eqntype == EQMHD || eqntype == EQGLM) {
+    // Alfven radius and velocity can be obtained analytically for beta=1 and
+    // assuming v0 << vinf (where v0 is the injection velocity = 4c(Rstar) )
+    ra = 0.5 * WP->Rstar
+         * (1.0
+            + sqrt(
+                1.0
+                + 4.0 * pow(WP->Bstar * WP->Rstar, 2) / (WP->Mdot * WP->Vinf)));
+    // va = Alfven speed at ra == wind speed at ra by definition.
+    va = v0 + (WP->Vinf - v0) * (1.0 - WP->Rstar / ra);
+  }
+
+  // set gas density
+  set_wind_cell_density_pressure(grid, wc, *WP, vcell, gamma);
+
+  // set velocity components
+  std::array<double, MAX_DIM> r;
+  set_wind_cell_offset(grid, wc, WS, r);
+  double vphi =
+      set_wind_cell_velocity_components_acc(r, wc, *WP, vcell, va, ra);
+  // set B-field components
+  if (eqntype == EQMHD || eqntype == EQGLM) {
+    set_wind_cell_B_components_acc(r, wc, *WP, vcell, vphi, va, ra);
+  }
+
+  // set tracer values
+  set_wind_cell_tracers(wc, WS);
+
+#ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
+  // Set a minimum temperature in the wind
+  if (MP) {
+    if (MP->Temperature(wc.p, gamma) < Tmin) {
+      MP->Set_Temp(wc.p, Tmin, gamma);
+    }
+  }
+  else {
+    // appropriate for a neutral gas, He+M mass fraction 0.285.
+    wc.p[PG] =
+        max(static_cast<double>(wc.p[PG]),
+            Tmin * wc.p[RO] * pconst.kB() * 0.78625 / pconst.m_p());
+  }
+#endif  // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
+
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind::set_stellar_interior_values(
+    struct wind_cell &wc,                ///< cell to calculate for
+    const struct stellarwind_params &wp  ///< wind source struct
+)
+{
+  // if inside the star, set values to large values and return
+  wc.p[RO] = 1.0e-9;
+  wc.p[PG] = 1.0e4;
+  wc.p[VX] = 0.0;
+  wc.p[VY] = 0.0;
+  wc.p[VZ] = 0.0;
+  if (eqntype == EQMHD || eqntype == EQGLM) {
+    wc.p[BX] = 0.0;
+    wc.p[BY] = 0.0;
+    wc.p[BZ] = wp.Bstar;
+    if (eqntype == EQGLM) {
+      wc.p[SI] = 0.0;
+    }
+  }
+  // update tracers: should be set already.
+  for (int v = 0; v < ntracer; v++)
+    wc.p[ftr + v] = wp.tr[v];
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind::set_wind_cell_density_pressure(
+    class GridBaseClass &,
+    struct wind_cell &wc,
+    const struct stellarwind_params &wp,
+    const double vcell,  ///< radial velocity of wind at cell
+    const double gamma   ///< EOS gamma
+)
+{
   // Density at cell position: rho = Mdot/(4.pi.R^2.v_inf) (for 3D)
   // or in 2D (slab-symmetry) rho = Mdot/(2.pi.R.v_inf)
-  //
+
   if (ndim == 2 && coordsys == COORD_CRT) {
-    //
     // 2D slab symmetry --> 1/r force laws and density profile
-    //
-    wc->p[RO] = WP->Mdot / (WP->Vinf * 2.0 * M_PI * wc->dist);
-    //
+    wc.p[RO] = wp.Mdot / (vcell * 2.0 * M_PI * wc.dist);
     // Set pressure based on wind density/temperature at the stellar radius:
     // rho_star = Mdot/(2.pi.R_star.v_inf), p_star =
     // rho_star.k.T_star/(mu.m_p) and then p(r) = p_star
     // (rho(r)/rho_star)^gamma
-    // ******************************************************************************
-    // *********** WARNING MU=1 HERE, PROBABLY SHOULD BE O.6 (IONISED) 1.3
-    // (NEUTRAL).
-    // ******************************************************************************
-    //
-    wc->p[PG] = pconst.kB() * WP->Tstar / pconst.m_p();
-    wc->p[PG] *=
-        exp((gamma - 1.0) * log(2.0 * M_PI * WP->Rstar * WP->Vinf / WP->Mdot));
-    wc->p[PG] *= exp((gamma)*log(wc->p[RO]));
+    wc.p[PG] = pconst.kB() * wp.Tstar / pconst.m_p();
+    wc.p[PG] *=
+        exp((gamma - 1.0) * log(2.0 * M_PI * wp.Rstar * vcell / wp.Mdot));
+    wc.p[PG] *= exp((gamma)*log(wc.p[RO]));
   }
 
   else {
-    //
     // 3D geometry, so either 3D-cartesian, 2D-axisymmetry, or 1D-spherical.
     // rho = Mdot/(4.pi.R^2.v_inf)
-    //
-    wc->p[RO] = 1.0 / (wc->dist * wc->cfac);
-    wc->p[RO] *= wc->p[RO];
-    wc->p[RO] *= WP->Mdot / (WP->Vinf * 4.0 * M_PI);
+    wc.p[RO] = 1.0 / (wc.dist * wc.cfac);
+    wc.p[RO] *= wc.p[RO];
+    wc.p[RO] *= wp.Mdot / (vcell * 4.0 * M_PI);
     //
     // Set pressure based on wind density/temperature at the stellar
-    // radius, assuming adiabatic expansion outside Rstar, and that we
-    // don't care what the temperature is inside Rstar (because this
-    // function will make it hotter than Teff, which is not realistic):
-    //
-    // rho_star = Mdot/(4.pi.R_star^2.v_inf),
-    //   p_star = rho_star.k.T_star/(mu.m_p)
-    // So then p(r) = p_star (rho(r)/rho_star)^gamma
-    //
-    wc->p[PG] = pconst.kB() * WP->Tstar / pconst.m_p();
-    wc->p[PG] *=
+    // radius, assuming adiabatic expansion outside Rstar
+    wc.p[PG] = pconst.kB() * wp.Tstar / pconst.m_p();
+    wc.p[PG] *=
         exp((gamma - 1.0)
-            * log(4.0 * M_PI * WP->Rstar * WP->Rstar * WP->Vinf / WP->Mdot));
-    wc->p[PG] *= exp((gamma)*log(wc->p[RO]));
+            * log(4.0 * M_PI * wp.Rstar * wp.Rstar * vcell / wp.Mdot));
+    wc.p[PG] *= exp((gamma)*log(wc.p[RO]));
   }
+  return;
+}
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind::set_wind_cell_tracers(
+    struct wind_cell &wc,         ///< cell to calculate for
+    const struct wind_source &ws  ///< wind source struct
+)
+{
+  // set H+ tracer value based on stellar temperature.
+  if (ws.Hplus >= 0) {
+    if (ws.pars->Tstar < 1.0e4)
+      ws.pars->tr[ws.iHplus] = 1.0e-10;
+    else if (ws.pars->Tstar > 1.5e4)
+      ws.pars->tr[ws.iHplus] = 1.0;
+    else
+      ws.pars->tr[ws.iHplus] =
+          1.0e-10 + (ws.pars->Tstar - 1.0e4) * (1.0 - 1.0e-10) / 0.5e4;
+  }
+  // update tracers: should be set already.
+  for (int v = 0; v < ntracer; v++)
+    wc.p[ftr + v] = ws.pars->tr[v];
+
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind::set_wind_cell_offset(
+    class GridBaseClass &grid,
+    struct wind_cell &wc,
+    const struct wind_source &ws,
+    std::array<double, MAX_DIM> &r)
+{
   // Velocities and magnetic fields: get coordinates relative to star
   // for calculating sin/cos angles in theta and phi.
-  cell *c  = wc->c;
-  double x = 0.0, y = 0.0, z = 0.0;
+  cell *c = wc.c;
+
   switch (ndim) {
     case 1:
-      // in 1D, v_r = v_infty, so need x = wc->dist.
-      x = wc->dist;
-      y = 0.0;
-      z = 0.0;
+      // in 1D, v_r = v_infty, so need r[XX] = wc->dist.
+      r[XX] = wc.dist;
+      r[YY] = 0.0;
+      r[ZZ] = 0.0;
       break;
     case 2:
-      x = grid->difference_vertex2cell(WP->dpos, *c, XX);
-      y = grid->difference_vertex2cell(WP->dpos, *c, YY);
-      z = 0.0;
+      r[XX] = grid.difference_vertex2cell(ws.mypos, *c, XX);
+      r[YY] = grid.difference_vertex2cell(ws.mypos, *c, YY);
+      r[ZZ] = 0.0;
       break;
     case 3:
-      x = grid->difference_vertex2cell(WP->dpos, *c, XX);
-      y = grid->difference_vertex2cell(WP->dpos, *c, YY);
-      z = grid->difference_vertex2cell(WP->dpos, *c, ZZ);
+      r[XX] = grid.difference_vertex2cell(ws.mypos, *c, XX);
+      r[YY] = grid.difference_vertex2cell(ws.mypos, *c, YY);
+      r[ZZ] = grid.difference_vertex2cell(ws.mypos, *c, ZZ);
       break;
     default:
       spdlog::error(
           "{}: {}", "bad ndim in set_wind_cell_reference_state", ndim);
       break;
   }
+  return;
+}
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind::set_wind_cell_velocity_components_vinf(
+    const std::array<double, MAX_DIM> &r,
+    struct wind_cell &wc,
+    const struct stellarwind_params &wp,
+    const double vcell,  ///< radial velocity of wind at cell
+    const double vrot    ///< rotation velocity at equator
+)
+{
   // Velocities: cell-average values, i.e. values at the
   // centre-of-volume.
   // TODO: for general J vector in 3D, what is rotational component.
   switch (ndim) {
     case 1:
-      wc->p[VX] = WP->Vinf * x / wc->dist;
-      wc->p[VY] = 0.0;
-      wc->p[VZ] = 0.0;
+      wc.p[VX] = vcell * r[XX] / wc.dist;
+      wc.p[VY] = 0.0;
+      wc.p[VZ] = 0.0;
       break;
 
     case 2:
-      wc->p[VX] = WP->Vinf * x / wc->dist;
-      wc->p[VY] = WP->Vinf * y / wc->dist;
-      // J is hardcoded to be parallel to positive z-axis
-      wc->p[VZ] = WP->Vrot * WP->Rstar * y / pconst.pow_fast(wc->dist, 2);
+      if (coordsys == COORD_CRT) {
+        wc.p[VX] = vcell * r[XX] / wc.dist;
+        wc.p[VY] = vcell * r[YY] / wc.dist;
+        wc.p[VX] += -vrot * r[YY] / wc.dist;
+        wc.p[VY] += vrot * r[XX] / wc.dist;
+        wc.p[VZ] = 0.0;
+      }
+      else {
+        wc.p[VX] = vcell * r[XX] / wc.dist;
+        wc.p[VY] = vcell * r[YY] / wc.dist;
+        // J is hardcoded to be parallel to positive z-axis
+        wc.p[VZ] = vrot * wp.Rstar * r[YY] / pconst.pow_fast(wc.dist, 2);
+      }
       break;
 
     case 3:
-      wc->p[VX] = WP->Vinf * x / wc->dist;
-      wc->p[VY] = WP->Vinf * y / wc->dist;
-      wc->p[VZ] = WP->Vinf * z / wc->dist;
+      wc.p[VX] = vcell * r[XX] / wc.dist;
+      wc.p[VY] = vcell * r[YY] / wc.dist;
+      wc.p[VZ] = vcell * r[ZZ] / wc.dist;
 
       // add non-radial component to x/y-dir from rotation.
       // J is hardcoded to be parallel to positive z-axis
-      wc->p[VX] += -WP->Vrot * WP->Rstar * y / pconst.pow_fast(wc->dist, 2);
-      wc->p[VY] += WP->Vrot * WP->Rstar * x / pconst.pow_fast(wc->dist, 2);
+      wc.p[VX] += -vrot * wp.Rstar * r[YY] / pconst.pow_fast(wc.dist, 2);
+      wc.p[VY] += vrot * wp.Rstar * r[XX] / pconst.pow_fast(wc.dist, 2);
       break;
 
     default:
@@ -496,105 +744,264 @@ void stellar_wind::set_wind_cell_reference_state(
           "{}: {}", "bad ndim in set_wind_cell_reference_state", ndim);
       break;
   }
+
   // include stellar space velocity if appropriate
-  if (WP->moving_star) {
+  if (wp.moving_star) {
     for (int v = 0; v < ndim; v++)
-      wc->p[VX + v] += WP->velocity[v];
+      wc.p[VX + v] += wp.velocity[v];
   }
 
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+double stellar_wind::set_wind_cell_velocity_components_acc(
+    const std::array<double, MAX_DIM> &r,
+    struct wind_cell &wc,
+    const struct stellarwind_params &wp,
+    const double vcell,  ///< radial velocity of wind at cell
+    const double va,     ///< Alfven velocity at Alfven radius
+    const double ra      ///< Alfven radius
+)
+{
+  // Velocities: cell-average values, i.e. values at the
+  // centre-of-volume.
+  // TODO: for general J vector in 3D, what is rotational component.
+
+  // This is eq. 9.37 in Lamers & Cassinelli (1997), x and u defined in
+  // eq. 9.35
+  double u    = vcell / va;
+  double x2   = pconst.pow_fast(wc.dist / ra, 2);
+  double vphi = wp.Vrot * wc.dist / wp.Rstar * (1.0 - u) / (1.0 - x2 * u);
+
+  switch (ndim) {
+    case 1:
+      // no rotation in 1D
+      wc.p[VX] = vcell * r[XX] / wc.dist;
+      wc.p[VY] = 0.0;
+      wc.p[VZ] = 0.0;
+      break;
+
+    case 2:
+      if (coordsys == COORD_CRT) {
+        wc.p[VX] = vcell * r[XX] / wc.dist;
+        wc.p[VY] = vcell * r[YY] / wc.dist;
+        wc.p[VX] += -vphi * r[YY] / wc.dist;
+        wc.p[VY] += vphi * r[XX] / wc.dist;
+        wc.p[VZ] = 0.0;
+      }
+      else {
+        wc.p[VX] = vcell * r[XX] / wc.dist;
+        wc.p[VY] = vcell * r[YY] / wc.dist;
+        // J is hardcoded to be parallel to positive z-axis
+        wc.p[VZ] = vphi * r[YY] / wc.dist;
+      }
+      break;
+
+    case 3:
+      wc.p[VX] = vcell * r[XX] / wc.dist;
+      wc.p[VY] = vcell * r[YY] / wc.dist;
+      wc.p[VZ] = vcell * r[ZZ] / wc.dist;
+
+      // add non-radial component to x/y-dir from rotation.
+      // J is hardcoded to be parallel to positive z-axis
+      wc.p[VX] += -vphi * r[YY] / wc.dist;
+      wc.p[VY] += vphi * r[XX] / wc.dist;
+      break;
+
+    default:
+      spdlog::error(
+          "{}: {}", "bad ndim in set_wind_cell_reference_state", ndim);
+      break;
+  }
+
+  // include stellar space velocity if appropriate
+  if (wp.moving_star) {
+    for (int v = 0; v < ndim; v++)
+      wc.p[VX + v] += wp.velocity[v];
+  }
+
+  return vphi;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind::set_wind_cell_B_components_vinf(
+    const std::array<double, MAX_DIM> &r,
+    struct wind_cell &wc,
+    const struct stellarwind_params &wp,
+    const double vcell,  ///< radial velocity of wind at cell
+    const double vrot    ///< rotation velocity at equator
+)
+{
   // Magnetic field: cell-average values, i.e. values at the
   // centre-of-volume.
   // Use a split monopole plus a rotational term adding toroidal
   // component.
   // TODO: for general J vector, what is rotational component.
-  if (eqntype == EQMHD || eqntype == EQGLM) {
-    // double t=0.0;
-    double B_s = WP->Bstar / sqrt(4.0 * M_PI);  // code units for B_surf
-    double D_s = WP->Rstar / wc->dist;          // 1/d in stellar radii
-    double D_2 = D_s * D_s;                     // 1/d^2 in stellar radii
-    // this multiplies the toroidal component:
-    double beta_B_sint = (WP->Vrot / WP->Vinf) * B_s * D_s;
+  double B_s = wp.Bstar / sqrt(4.0 * M_PI);  // code units for B_surf
+  double D_s = wp.Rstar / wc.dist;           // 1/d in stellar radii
+  double D_2 = D_s * D_s;                    // 1/d^2 in stellar radii
+  // this multiplies the toroidal component:
+  double beta_B_sint = (vrot / vcell) * B_s * D_s;
 
-    switch (ndim) {
-      case 1:
-        spdlog::error("{}: {}", "1D spherical but MHD?", ndim);
-        break;
-      case 2:
+  switch (ndim) {
+    case 1:
+      spdlog::error("{}: {}", "1D spherical but MHD?", ndim);
+      break;
+    case 2:
+      if (coordsys == COORD_CYL) {
         // split monopole
-        wc->p[BX] = B_s * D_2 * fabs(x) / wc->dist;
-        wc->p[BY] = B_s * D_2 / wc->dist;
-        wc->p[BY] = (x > 0.0) ? y * wc->p[BY] : -y * wc->p[BY];
+        wc.p[BX] = B_s * D_2 * fabs(r[XX]) / wc.dist;
+        wc.p[BY] = B_s * D_2 / wc.dist;
+        wc.p[BY] = (r[XX] > 0.0) ? r[YY] * wc.p[BY] : -r[YY] * wc.p[BY];
         // toroidal component
-        beta_B_sint = beta_B_sint * y / wc->dist;
-        wc->p[BZ]   = (x > 0.0) ? -beta_B_sint : beta_B_sint;
-        break;
+        beta_B_sint = beta_B_sint * r[YY] / wc.dist;
+        wc.p[BZ]    = (r[XX] > 0.0) ? -beta_B_sint : beta_B_sint;
+      }
+      else {
+        // Cartesian: take vertical field in z direction
+        beta_B_sint = wp.Bstar / sqrt(4.0 * M_PI) * D_s;
+        // wc.p[BX]   = -beta_B_sint * r[YY] / wc.dist;
+        // wc.p[BY]   = beta_B_sint * r[XX] / wc.dist;
+        wc.p[BX] = 0.0;
+        wc.p[BY] = 0.0;
+        wc.p[BZ] = beta_B_sint;
+      }
 
-      case 3:
-        // split monopole along z-axis, parallel to J
-        wc->p[BX] = B_s * D_2 / wc->dist;
-        wc->p[BX] = (z > 0.0) ? x * wc->p[BX] : -x * wc->p[BX];
+      break;
 
-        wc->p[BY] = B_s * D_2 / wc->dist;
-        wc->p[BY] = (z > 0.0) ? y * wc->p[BY] : -y * wc->p[BY];
+    case 3:
+      // split monopole along z-axis, parallel to J
+      wc.p[BX] = B_s * D_2 / wc.dist;
+      wc.p[BX] = (r[ZZ] > 0.0) ? r[XX] * wc.p[BX] : -r[XX] * wc.p[BX];
 
-        wc->p[BZ] = B_s * D_2 * fabs(z) / wc->dist;
+      wc.p[BY] = B_s * D_2 / wc.dist;
+      wc.p[BY] = (r[ZZ] > 0.0) ? r[YY] * wc.p[BY] : -r[YY] * wc.p[BY];
 
-        // toroidal component in x-y plane from rotation, such that
-        // we have a Parker spiral, inward winding for z<0 and
-        // outwards for z>0.
-        beta_B_sint *= sqrt(x * x + y * y) / wc->dist;
-        beta_B_sint = (z > 0.0) ? -beta_B_sint : beta_B_sint;
+      wc.p[BZ] = B_s * D_2 * fabs(r[ZZ]) / wc.dist;
 
-        // modulate strength near the equator by linearly reducing
-        // torodial component for |theta|<1 degree from equator
-        // See Pogorelov et al (2006,ApJ,644,1299).  This is for
-        // testing the code.
-        // t = fabs(z)/wc->dist * 180.0 / M_PI; // angle in degrees.
-        // if (t < 2.0) beta_B_sint *= 0.5*t;
+      // toroidal component in r[XX]-y plane from rotation, such that
+      // we have a Parker spiral, inward winding for z<0 and
+      // outwards for z>0.
+      beta_B_sint *= sqrt(r[XX] * r[XX] + r[YY] * r[YY]) / wc.dist;
+      beta_B_sint = (r[ZZ] > 0.0) ? -beta_B_sint : beta_B_sint;
+      wc.p[BX] += -beta_B_sint * r[YY] / wc.dist;
+      wc.p[BY] += beta_B_sint * r[XX] / wc.dist;
+      break;
 
-        wc->p[BX] += -beta_B_sint * y / wc->dist;
-        wc->p[BY] += beta_B_sint * x / wc->dist;
-        break;
-
-      default:
-        spdlog::error(
-            "{}: {}", "bad ndim in set_wind_cell_reference_state", ndim);
-        break;
-    }
+    default:
+      spdlog::error(
+          "{}: {}", "bad ndim in set_wind_cell_reference_state", ndim);
+      break;
   }
+
   if (eqntype == EQGLM) {
-    wc->p[SI] = 0.0;
+    wc.p[SI] = 0.0;
+  }
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind::set_wind_cell_B_components_acc(
+    const std::array<double, MAX_DIM> &r,
+    struct wind_cell &wc,
+    const struct stellarwind_params &wp,
+    const double vcell,  ///< radial velocity of wind at cell
+    const double vphi,   ///< phi component of wind velocity at cell
+    const double va,     ///< Alfven velocity at Alfven radius
+    const double ra      ///< Alfven radius
+)
+{
+  // Magnetic field: cell-average values, i.e. values at the
+  // centre-of-volume.
+  // Use a split monopole plus a rotational term adding toroidal
+  // component.
+  // TODO: for general J vector, what is rotational component.
+  double D_s = wp.Rstar / wc.dist;  // 1/d in stellar radii
+  // convert to code units (divide by sqrt(4pi))  L&C eq. 9.11
+  double Br = wp.Bstar / sqrt(4.0 * M_PI) * D_s * D_s;
+  // From Lamers & Cassinelli (eq. 9.12)
+  // Note Bphi here is always negative for r>Rstar, opposite sign to the term
+  // "beta_B_sint" in the vinf case, so the sign is reversed in the below
+  // expresssions compared with the _vinf() function.
+  // double Bphi = Br * (vphi - wp.Vrot / D_s) / vcell;
+  // L&C eq. 9.38
+  double x    = wc.dist / ra;
+  double u    = vcell / va;
+  double Bphi = -Br * vphi * (1.0 - x * x) / (va * (1.0 - u));
+
+  switch (ndim) {
+    case 1:
+      spdlog::error("{}: {}", "1D spherical but MHD?", ndim);
+      break;
+    case 2:
+      if (coordsys == COORD_CYL) {
+        // split monopole
+        wc.p[BX] = Br * fabs(r[XX]) / wc.dist;
+        wc.p[BY] = Br / wc.dist;
+        wc.p[BY] = (r[XX] > 0.0) ? r[YY] * wc.p[BY] : -r[YY] * wc.p[BY];
+        // toroidal component
+        Bphi     = Bphi * r[YY] / wc.dist;
+        wc.p[BZ] = (r[XX] > 0.0) ? Bphi : -Bphi;
+      }
+      else {
+        // Cartesian: take vertical field in z direction.
+        Bphi = wp.Bstar / sqrt(4.0 * M_PI) * D_s;
+        // wc.p[BX]   = -Bphi * r[YY] / wc.dist;
+        // wc.p[BY]   = Bphi * r[XX] / wc.dist;
+        wc.p[BX] = 0.0;
+        wc.p[BY] = 0.0;
+        wc.p[BZ] = Bphi;
+      }
+
+      break;
+
+    case 3:
+      // split monopole along z-axis, parallel to J
+      wc.p[BX] = Br / wc.dist;
+      wc.p[BX] = (r[ZZ] > 0.0) ? r[XX] * wc.p[BX] : -r[XX] * wc.p[BX];
+
+      wc.p[BY] = Br / wc.dist;
+      wc.p[BY] = (r[ZZ] > 0.0) ? r[YY] * wc.p[BY] : -r[YY] * wc.p[BY];
+
+      wc.p[BZ] = Br * fabs(r[ZZ]) / wc.dist;
+
+      // toroidal component in r[XX]-y plane from rotation, such that
+      // we have a Parker spiral, inward winding for z<0 and
+      // outwards for z>0.
+      Bphi *= sqrt(r[XX] * r[XX] + r[YY] * r[YY]) / wc.dist;
+      Bphi = (r[ZZ] > 0.0) ? Bphi : -Bphi;
+      wc.p[BX] += -Bphi * r[YY] / wc.dist;
+      wc.p[BY] += Bphi * r[XX] / wc.dist;
+      break;
+
+    default:
+      spdlog::error(
+          "{}: {}", "bad ndim in set_wind_cell_reference_state", ndim);
+      break;
   }
 
-  // set H+ tracer value based on stellar temperature.
-  if (WS->Hplus >= 0) {
-    if (WP->Tstar < 1.0e4)
-      WP->tr[WS->iHplus] = 1.0e-10;
-    else if (WP->Tstar > 1.5e4)
-      WP->tr[WS->iHplus] = 1.0;
-    else
-      WP->tr[WS->iHplus] =
-          1.0e-10 + (WP->Tstar - 1.0e4) * (1.0 - 1.0e-10) / 0.5e4;
+  if (eqntype == EQGLM) {
+    wc.p[SI] = 0.0;
   }
-  // update tracers: should be set already.
-  for (int v = 0; v < ntracer; v++)
-    wc->p[ftr + v] = WP->tr[v];
-
-#ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
-  // Set a minimum temperature in the wind
-  if (MP) {
-    if (MP->Temperature(wc->p, gamma) < Tmin) {
-      MP->Set_Temp(wc->p, Tmin, gamma);
-    }
-  }
-  else {
-    // appropriate for a neutral medium, He+M mass fraction 0.285.
-    wc->p[PG] =
-        max(static_cast<double>(wc->p[PG]),
-            Tmin * wc->p[RO] * pconst.kB() * 0.78625 / pconst.m_p());
-  }
-#endif  // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
-
   return;
 }
 
@@ -619,9 +1026,9 @@ int stellar_wind::get_num_cells(const int id  ///< src id
 
 
 int stellar_wind::set_cell_values(
-    class GridBaseClass *grid,
-    const int id,   ///< src id
-    const double t  ///< simulation time
+    class GridBaseClass *,
+    const int id,  ///< src id
+    const double   ///< simulation time
 )
 {
   if (id < 0 || id >= nsrc) spdlog::error("{}: {}", "bad src id", id);
@@ -762,6 +1169,42 @@ double stellar_wind::beta(const double Teff)
 
   return beta;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+double stellar_wind::get_min_wind_radius(
+    const int id,    ///< src id
+    const double dx  ///< cell size
+)
+{
+  // make sure boundary radius is larger than Alfven radius to avoid numerical
+  // problems.
+  // For this we can use Lamers & Cassinelli, ch. 9 equations, assuming
+  // beta-law wind acceleration with beta = 1
+  struct stellarwind_params *p = wlist[id]->pars;
+  double ra                    = p->Rstar;
+  if ((eqntype == EQMHD || eqntype == EQGLM) && p->acc == 1) {
+    ra = 0.5 * p->Rstar
+         * (1.0
+            + sqrt(
+                1.0 + 4.0 * pow(p->Bstar * p->Rstar, 2) / (p->Mdot * p->Vinf)));
+    // spdlog::info("pars: {:12.6e}, {:12.6e}, {:12.6e}, {:12.6e}, {:12.6e}",
+    //            ra, p->Bstar, p->Rstar, p->Mdot, p->Vinf);
+  }
+
+  // wind boundary should be 4 cells larger than R_Alfven, and at least 2 cells
+  // larger than R_star
+  ra = max(ra + 2.0 * dx, wlist[id]->pars->Rstar + 2.0 * dx);
+  // wind boundary should be at least MIN_WIND_RAD cells in radius.
+  return max(ra, MIN_WIND_RAD * dx);
+}
+
+
 
 // ##################################################################
 // ##################################################################
@@ -1113,7 +1556,7 @@ int stellar_wind_evolution::update_source(
   if (!wd->is_active) {
     array<double, MAX_DIM> wpos;
     for (int v = 0; v < MAX_DIM; v++)
-      wpos[v] = wp->dpos[v];
+      wpos[v] = wd->ws->mypos[v];
     spdlog::debug(
         "stellar_wind_evo::update_source activating source id={} at Simulation time t={}",
         wp->id, t_now);

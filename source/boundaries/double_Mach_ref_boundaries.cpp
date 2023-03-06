@@ -18,9 +18,11 @@ using namespace std;
 // ##################################################################
 // ##################################################################
 
+
+
 int double_Mach_ref_bc::BC_assign_DMACH(
-    class SimParams &par,       ///< pointer to simulation parameters
-    class GridBaseClass *grid,  ///< pointer to grid.
+    class SimParams &par,   ///< pointer to simulation parameters
+    class GridBaseClass *,  ///< pointer to grid.
     boundary_data *b)
 {
 #ifndef NDEBUG
@@ -96,8 +98,12 @@ int double_Mach_ref_bc::BC_assign_DMACH(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int double_Mach_ref_bc::BC_assign_DMACH2(
     class SimParams &par,       ///< pointer to simulation parameters
@@ -178,9 +184,9 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
 // ##################################################################
 
 int double_Mach_ref_bc::BC_update_DMACH(
-    class SimParams &par,       ///< pointer to simulation parameters
-    class GridBaseClass *grid,  ///< pointer to grid.
-    const double simtime,       ///< current simulation time
+    class SimParams &par,   ///< pointer to simulation parameters
+    class GridBaseClass *,  ///< pointer to grid (unused)
+    const double simtime,   ///< current simulation time
     struct boundary_data *b,
     const int cstep,
     const int maxstep)
@@ -217,12 +223,16 @@ int double_Mach_ref_bc::BC_update_DMACH(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
+
+
 int double_Mach_ref_bc::BC_update_DMACH2(
-    class SimParams &par,       ///< pointer to simulation parameters
-    class GridBaseClass *grid,  ///< pointer to grid.
+    class SimParams &par,   ///< pointer to simulation parameters
+    class GridBaseClass *,  ///< pointer to grid (unused)
     struct boundary_data *b,
     const int,
     const int)

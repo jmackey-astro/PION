@@ -95,15 +95,20 @@ int main(int argc, char **argv)
 //      max_logfile_size, max_logfiles));
 #endif /* PARALLEL */
 
-  spdlog::info("Projection3D: myrank={}, nproc={}", myrank, nproc);
+  spdlog::info("silo2test: myrank={}, nproc={}", myrank, nproc);
 
   //
   // Get an input file and an output file.
   //
   if (argc != 5) {
+    spdlog::error("Error: must call as follows...");
     spdlog::error(
-        "Error: must call as follows...\nsilo2text: <silo2text> <source-dir> <file-base>  <output-file> <op-freq>\n  op-freq: if this is e.g. 10, we only convert every 10th input file to a text file");
-    spdlog::error("{}: {}", "Bad number of args", argc);
+        "silo2text: <silo2text> <source-dir> <file-base>  <output-file> <op-freq>");
+    spdlog::error(
+        "op-freq: if this is e.g. 10, we only convert every 10th input file to a text file");
+    for (int i = 0; i < argc; i++)
+      spdlog::info("arg {}: {}", i, argv[i]);
+    spdlog::error("Bad number of args {}", argc);
     exit(1);
   }
   string fdir        = argv[1];
@@ -203,7 +208,7 @@ int main(int argc, char **argv)
       // May need to setup extra data in each cell for ray-tracing optical
       // depths and/or viscosity variables (here just set it to zero).
       //
-      CI.setup_extra_data(SimPM.RS, 0, 0, 0);
+      CI.setup_extra_data(SimPM.RS, 0, 0, 0, SimPM.EP, SWP);
       //
       // Setup grid.
       //

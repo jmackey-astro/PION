@@ -56,9 +56,14 @@ using namespace std;
 #define WSS09_CIE_PLUS_HEATING 6
 #define WSS09_CIE_ONLY_COOLING 7
 #define WSS09_CIE_LINE_HEAT_COOL 8
+#define EATSON_CIE_2COMP 9
+
+
 
 // ##################################################################
 // ##################################################################
+
+
 
 mp_only_cooling::mp_only_cooling(
     const int nv,
@@ -94,6 +99,22 @@ mp_only_cooling::mp_only_cooling(
   inv_Mu2        = 1.0 / (Mu * Mu);
   inv_Mu2_elec_H = 1.0 / (Mu_elec * Mu);
 
+  wind_tr = 0;
+  if (EP->compton_cool) {
+    compton           = true;
+    compton_prefactor = pconst.m_e() * pconst.c();
+    compton_prefactor =
+        4.0 * pconst.kB() * pconst.ThomsonXSection() / compton_prefactor;
+    compton_rate = 0.0;
+    compton_urad = 0.0;
+  }
+  else {
+    compton           = false;
+    compton_prefactor = 0.0;
+    compton_rate      = 0.0;
+    compton_urad      = 0.0;
+  }
+
   //
   // Next select which cooling function to set up.
   //
@@ -111,19 +132,41 @@ mp_only_cooling::mp_only_cooling(
       setup_WSS09_CIE();
       break;
     case WSS09_CIE_LINE_HEAT_COOL:
+#ifdef PION_OMP
+      #pragma omp single
+#endif
       spdlog::debug("\tRequested fully ionized gas with WSS09 cooling at high"
                     " temperatures,\n\tand photoionized gas at nebular"
                     " temperatures, with T_eq approx 8000 K.");
       setup_WSS09_CIE_OnlyMetals();
+      // generate lookup tables for WSS09_CIE_LINE_HEAT_COOL function.
+      gen_mpoc_lookup_tables();
+      break;
+    case EATSON_CIE_2COMP:
+#ifdef PION_OMP
+      #pragma omp single
+      {
+#endif
+        spdlog::debug("\tSetting up Eatson et al. 2022 cooling function");
+#ifdef PION_OMP
+      }
+#endif
+      setup_Eatson_CIE();
+#ifdef PION_OMP
+      #pragma omp single
+      {
+#endif
+        spdlog::debug("\tfinding wind tracer");
+#ifdef PION_OMP
+      }
+#endif
+      get_wind_tracer(ntr, tr);
       break;
     default:
       spdlog::error(
           "{}: {}", "Invalid cooling flag in mp_only_cooling", cooling_flag);
       break;
   }
-
-  // generate lookup tables for WSS09_CIE_LINE_HEAT_COOL function.
-  gen_mpoc_lookup_tables();
 
 #ifndef NDEBUG
   ostringstream opfile;
@@ -160,13 +203,21 @@ mp_only_cooling::mp_only_cooling(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 mp_only_cooling::~mp_only_cooling() {}
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int mp_only_cooling::TimeUpdateMP(
     const pion_flt *p_in,  ///< Primitive Vector to be updated
@@ -179,15 +230,24 @@ int mp_only_cooling::TimeUpdateMP(
 {
   mp_only_cooling::rho   = p_in[RO];
   mp_only_cooling::gamma = g;
+
+  // if doing two-component Eatson cooling, set WC wind frac.
+  if (mp_only_cooling::wind_tr != 0) {
+    mp_only_cooling::wc_frac = p_in[wind_tr];
+  }
+
   for (int v = 0; v < nv_prim; v++)
     p_out[v] = p_in[v];
 
+#ifdef TEST_INF
   for (int v = 0; v < nv_prim; v++) {
     if (!isfinite(p_out[v])) {
-      spdlog::debug("pout : {}", std::vector<double>(p_in, p_in + nv_prim));
-      spdlog::error("{}: {}", "p_out[v]", v);
+      spdlog::info("p_in : {}", std::vector<double>(p_in, p_in + nv_prim));
+      spdlog::info("{}: {}", "p_in[v]", v);
+      return 1;
     }
   }
+#endif  // TEST_INF
 
   double Eint0 = p_in[PG] / (gamma - 1.0);
   double T     = p_out[PG] * Mu_tot_over_kB / p_out[RO];
@@ -199,6 +259,22 @@ int mp_only_cooling::TimeUpdateMP(
     Set_Temp(p_out, MaxT_allowed, gamma);
     T = MaxT_allowed;
   }
+
+  // if Compton cooling, set the cooling rate.
+  // Compton cooling only effective if T >> T_*, so limit it to gas with T>4e4K.
+  // This assumes the stars are hot, O/WN type.  Should be modified to take
+  // account of individual stellar temperatures for more general use.
+  if (compton) {
+    compton_urad = *Tf;
+
+    compton_rate = -compton_prefactor * (p_in[RO] / Mu_elec)
+                   * max(0.0, T - 4.0e4) * compton_urad;
+    // spdlog::info("T {:9.3e}, ne {:9.3e}, flux {:9.3e} pref {:9.3e} rate
+    // {:9.3e}",
+    //      T,(p_in[RO] /
+    // Mu_elec),compton_urad,compton_prefactor,compton_rate);
+  }
+
   double Eint = Eint0;
   double tout = 0.0;
 
@@ -219,11 +295,15 @@ int mp_only_cooling::TimeUpdateMP(
     p_out[PG] *= MinT_allowed / (*Tf);
     *Tf = MinT_allowed;
   }
-  return 0;
+  return err;
 }
+
+
 
 // ##################################################################
 // ##################################################################
+
+
 
 int mp_only_cooling::dPdt(
     const int nv,     ///< number of variables we are expecting.
@@ -235,8 +315,12 @@ int mp_only_cooling::dPdt(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int mp_only_cooling::Set_Temp(
     pion_flt *p_in,   ///< primitive vector.
@@ -261,8 +345,12 @@ int mp_only_cooling::Set_Temp(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 double mp_only_cooling::Temperature(
     const pion_flt *p_in,  ///< primitive vector
@@ -272,8 +360,12 @@ double mp_only_cooling::Temperature(
   return p_in[PG] * Mu_tot_over_kB / p_in[RO];
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 double mp_only_cooling::get_n_elec(
     const pion_flt *p_in  ///< primitive state vector.
@@ -283,8 +375,12 @@ double mp_only_cooling::get_n_elec(
   return p_in[RO] / Mu_elec;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 double mp_only_cooling::get_n_Hplus(
     const pion_flt *p_in  ///< primitive state vector.
@@ -294,8 +390,12 @@ double mp_only_cooling::get_n_Hplus(
   return p_in[RO] / Mu;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 double mp_only_cooling::get_n_Hneutral(
     const pion_flt *p_in  ///< primitive state vector.
@@ -305,8 +405,12 @@ double mp_only_cooling::get_n_Hneutral(
   return 1.0e-12 * p_in[RO] / Mu;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 double mp_only_cooling::timescales(
     const pion_flt *p_in,  ///< Current cell.
@@ -382,11 +486,31 @@ double mp_only_cooling::Edot(
       rate = Edot_WSS09CIE_heat_cool_metallines(rho, T);
       break;
 
+    case EATSON_CIE_2COMP:
+      rate = Edot_EATSON_CIE_2comp(rho, T, wc_frac);
+      break;
+
     default:
       spdlog::error(
           "{}: {}", "bad cooling flag in mp_only_cooling::Edot", cooling_flag);
+      exit(1);
       break;
   }
+
+  // if Compton cooling, set the cooling rate.
+  // Compton cooling only effective if T >> T_*, so limit it to gas with T>4e4K.
+  // This assumes the stars are hot, O/WN type.  Should be modified to take
+  // account of individual stellar temperatures for more general use.
+  if (compton) {
+    compton_rate = -compton_prefactor * (rho / Mu_elec) * max(0.0, T - 4.0e4)
+                   * compton_urad;
+    // spdlog::info("T {:9.3e}, ne {:9.3e}, flux {:9.3e} pref {:9.3e} rate
+    // {:9.3e}",
+    //      T,(p_in[RO] /
+    // Mu_elec),compton_urad,compton_prefactor,compton_rate);
+    rate += compton_rate;
+  }
+
   return rate;
 }
 
@@ -447,8 +571,12 @@ double mp_only_cooling::Edot_WSS09CIE_heat_cool(
             - cooling_rate_SD93CIE(T) / Mu / Mu);
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 double mp_only_cooling::Edot_WSS09CIE_heat_cool_metallines(
     const double rho,  ///< mass density (g/cm3)
@@ -484,8 +612,37 @@ double mp_only_cooling::Edot_WSS09CIE_heat_cool_metallines(
   return rate;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
+
+double mp_only_cooling::Edot_EATSON_CIE_2comp(
+    const double rho,     ///< mass density (g/cm3)
+    const double T,       ///< Temperature (K)
+    const double wc_frac  ///< Fraction of gas from WC star
+)
+{
+  double n2 = rho / pconst.m_p();
+  n2 *= n2;
+  // photoionization heating and radiative cooling.
+  n2 *= (2.733e-21 * exp(-0.782991 * log(max(MinT_allowed, T))))
+        - cooling_rate_Eatson(T, wc_frac);
+  // if (T>3.0e5) {
+  //  spdlog::info("rho = {:9.3e}, T = {:9.3e}, Total rate = {:9.3e}",rho, T,
+  //  n2);
+  //}
+  return n2;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 void mp_only_cooling::gen_mpoc_lookup_tables()
 {
@@ -542,6 +699,42 @@ void mp_only_cooling::gen_mpoc_lookup_tables()
   // lt.s_C_dust[lt.NT-1] = 0.0;
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+/// find wind tracer in primitive vector, and assign indes to variable
+/// 'wind_tr'.
+void mp_only_cooling::get_wind_tracer(
+    const int ntr,         ///< Number of tracer variables in state vector
+    const std::string *tr  ///< List of tracer variable names.
+)
+{
+  bool set = false;
+  for (int v = 0; v < ntr; v++) {
+    if (tr[v].find("WIND") != std::string::npos) {
+      set     = true;
+      wind_tr = nv_prim - ntr + v;
+      break;
+    }
+  }
+#ifdef PION_OMP
+  #pragma omp single
+  {
+#endif
+    spdlog::info("found wind tracer? {} {}", set, wind_tr);
+#ifdef PION_OMP
+  }
+#endif
+
+  return;
+}
+
+
 
 // ##################################################################
 // ##################################################################

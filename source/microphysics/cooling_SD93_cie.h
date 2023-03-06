@@ -18,8 +18,13 @@
 /// Class which calculates the Sutherland & Dopita (1993) cooling
 /// rates for collisional ionisation equilibrium.  This is a minimal
 /// class which only sets up a spline interpolation and calculates
-/// interpolated values.  UPDATE 2011.04.12 JM: Added the Wiersma
+/// interpolated values.
+///
+/// UPDATE 2011.04.12 JM: Added the Wiersma
 /// et al. (2009,MN,393,99) CIE cooling function (metals-only and total).
+///
+/// Update 2022.12.22 JM: Added two cooling rates for colliding wind systems
+/// with the winds having different composition
 ///
 /// Two curves can be set up, either the full solar metallicity CIE curve,
 /// or the same curve but with the contribution of Hydrogen and Helium
@@ -86,11 +91,30 @@ public:
   ///
   void setup_WSS09_CIE();
 
+  ///
+  /// Set up spline interpolation for cooling based on Eatson+(2022,MNRAS,516,
+  /// 6132) model for cooling from colliding wind binary system
+  ///
+  void setup_Eatson_CIE();
+
+  /// Calculate rate for a given temperature for a two-gas mixture.
+  /// Eatson+(2022,MNRAS,516,6132)
+  /// Result is returned in units of erg.cm^{3}.s^{-1}
+  double cooling_rate_Eatson(
+      double T,       ///< Input Temperature.
+      double wc_frac  ///< Fraction of gas (by mass) from WC star
+  );
+
 private:
-  const int Nspl;  ///< number of tabulated values in spline table.
-  double *Tarray;  ///< array for tabulated temperatures.
-  double *Larray;  ///< Array for tabulated cooling rates.
-  int spline_id;   ///< id of spline in interpolation class.
+  const int Nspl;         ///< number of tabulated values in spline table.
+  double *Tarray;         ///< array for tabulated temperatures.
+  double *Larray;         ///< Array for tabulated cooling rates.
+  int spline_id;          ///< id of spline in interpolation class.
+  vector<double> Tdata;   ///< vector for temperature data
+  vector<double> L1data;  ///< vector for cooling rate of gas 1 (WC star)
+  vector<double> L2data;  ///< vector for cooling rate of gas 2 (O star)
+  int spline_id1;         ///< id of spline for gas 1.
+  int spline_id2;         ///< id of spline for gas 2.
 
   double MaxTemp;         ///< Max. tabulated temperature.
   double MinTemp;         ///< Min. tabulated temperature.

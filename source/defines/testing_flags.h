@@ -33,7 +33,6 @@
 //
 // Various defines for testing bits of the code (lots of sdtout).
 //
-// ///< Comment this out if not testing the code.
 
 // displays debugging information for time integration.
 //#define TEST_INT
@@ -57,7 +56,7 @@
 /// and disables timestep limiting in first 3 steps.
 ///
 //#define RT_TEST_PROBS
-#define RT_TESTING_OUTPUTCOL  ///< output column density info to files.
+//#define RT_TESTING_OUTPUTCOL  ///< output column density info to files.
 
 /// for the field loop advection test problem only.
 //#define CHECK_MAGP

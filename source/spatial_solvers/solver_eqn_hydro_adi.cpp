@@ -106,12 +106,10 @@ int FV_solver_Hydro_Euler::inviscid_flux(
   //
   if (Pl[eqRO] < TINYVALUE || Pl[eqPG] < TINYVALUE || Pr[eqRO] < TINYVALUE
       || Pr[eqPG] < TINYVALUE) {
-    spdlog::error("left  : {}", Pl);
-    spdlog::error("right : {}", Pr);
+    spdlog::error("left  : {}", std::vector<double>(Pl, Pl + eq_nvar));
+    spdlog::error("left  : {}", std::vector<double>(Pr, Pr + eq_nvar));
     spdlog::error(
-        "{}: {}",
-        "FV_solver_Hydro_Euler::calculate_flux() Density/Pressure too small",
-        Pr[eqPG]);
+        "FV_solver_Hydro_Euler::calculate_flux() rho/P too small {}", Pr[eqPG]);
   }
 
   for (int v = 0; v < eq_nvar; v++)
@@ -160,6 +158,10 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     //
     err += JMs_riemann_solve(Pl, Pr, pstar, solve_flag, eq_gamma);
     PtoFlux(pstar, flux, eq_gamma);
+    if (err != 0) {
+      spdlog::error("Error Flux Riemann Solver: {}", err);
+      exit(1);
+    }
   }
 
   else if (solve_flag == FLUX_RSroe) {
@@ -346,38 +348,48 @@ int FV_solver_Hydro_Euler::AVFalle(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 ///
 /// Adds the contribution from flux in the current direction to dU.
 ///
 int FV_solver_Hydro_Euler::dU_Cell(
     class GridBaseClass *grid,
-    cell &c,                // Current cell.
-    const axes d,           // Which axis we are looking along.
-    const pion_flt *fn,     // Negative direction flux.
-    const pion_flt *fp,     // Positive direction flux.
-    const pion_flt *slope,  // slope vector for cell c.
-    const int ooa,          // spatial order of accuracy.
-    const double dx,        // cell length dx.
-    const double dt         // cell TimeStep, dt.
+    cell &c,                             // Current cell.
+    const axes d,                        // Which axis we are looking along.
+    const std::vector<pion_flt> &fn,     // Negative direction flux.
+    const std::vector<pion_flt> &fp,     // Positive direction flux.
+    const std::vector<pion_flt> &slope,  // slope vector for cell c.
+    const int ooa,                       // spatial order of accuracy.
+    const double dx,                     // cell length dx.
+    const double dt                      // cell TimeStep, dt.
 )
 {
-  pion_flt u1[eq_nvar];
+  std::vector<pion_flt> u1(eq_nvar);
   //
   // This calculates -dF/dx
   //
-  int err = DivStateVectorComponent(c, grid, d, eq_nvar, fn, fp, u1);
+  int err = DivStateVectorComponent(
+      c, grid, d, eq_nvar, fn.data(), fp.data(), u1.data());
   // add source terms
-  geometric_source(c, d, slope, ooa, dx, u1);
+  geometric_source(c, d, slope.data(), ooa, dx, u1.data());
+  wind_acceleration_source(grid, c, d, u1.data());
   for (int v = 0; v < eq_nvar; v++)
     c.dU[v] += dt * u1[v];
   return (err);
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int FV_solver_Hydro_Euler::CellAdvanceTime(
     class cell &c,

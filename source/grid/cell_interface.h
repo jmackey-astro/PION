@@ -42,6 +42,7 @@
 
 #include "constants.h"
 #include "sim_constants.h"
+#include "sim_params.h"
 
 #ifdef SPDLOG_FWD
 #include <spdlog/fwd.h>
@@ -125,6 +126,20 @@ public:
       e;  ///< to count up the energetics properties of the current cell.
 #endif
 };
+
+
+/// struct to hold data on indices for quantities related to distance from
+/// stars
+struct star_indices {
+  /// index for distance to star (in extra_data)
+  int star_dist;
+  /// index for radiation Urad from star (if compton cooling)
+  int star_urad;
+  /// index for net acceleration in the 3 directions (wind acceleration)
+  std::vector<int> wind_acc;
+};
+
+
 
 ///
 /// Cell Interface class, so each cell doesn't need to have a list of
@@ -296,11 +311,12 @@ public:
   /// THIS *MUST* BE SET BEFORE CREATING ANY CELLS ON THE GRID.
   ///
   void setup_extra_data(
-      const struct rad_sources &,  ///< Pointer to (SimPM.RS)
-                                   ///< ray-tracing struct.
+      const struct rad_sources &,  ///< Pointer to (SimPM.RS) ray-tracing struct
       const int,                   ///< Flag for H-correction requirements
       const int,                   ///< Flag for Div(V) variable required.
-      const int                    ///< Flag for |Grad(Pg)| variable required.
+      const int,                   ///< Flag for |Grad(Pg)| variable required.
+      const struct which_physics &,    ///< some extra parameters
+      const struct stellarwind_list &  ///< list of wind sources.
   );
 
   // ##################################################################
@@ -517,6 +533,127 @@ public:
   // ##################################################################
   // ##################################################################
 
+  ///
+  /// Get distance from star for Compton cooling / wind acceleration
+  ///
+  inline double get_star_distance(
+      const cell &c,  ///< cell pointer
+      const int src   ///< star id.
+  )
+  {
+    return c.extra_data[star_data[src].star_dist];
+  }
+
+  // ##################################################################
+  // ##################################################################
+
+  ///
+  /// Set distance from star for Compton cooling / wind acceleration
+  ///
+  inline void set_star_distance(
+      const cell &c,     ///< cell pointer
+      const int src,     ///< star id
+      const double dist  ///< distance from star
+  )
+  {
+    c.extra_data[star_data[src].star_dist] = dist;
+  }
+
+  // ##################################################################
+  // ##################################################################
+
+  ///
+  /// Get radiation flux from star for Compton cooling
+  ///
+  inline double get_compton_urad(
+      const cell &c,  ///< cell pointer
+      const int src   ///< star id.
+  )
+  {
+    return c.extra_data[star_data[src].star_urad];
+  }
+
+  // ##################################################################
+  // ##################################################################
+
+  ///
+  /// Set radiation flux from star for Compton cooling
+  ///
+  inline void set_compton_urad(
+      const cell &c,   ///< cell pointer
+      const int src,   ///< star id
+      const double ur  ///< radiation energy density (erg/cm3)
+  )
+  {
+    c.extra_data[star_data[src].star_urad] = ur;
+  }
+
+  // ##################################################################
+  // ##################################################################
+
+  ///
+  /// Get net (rad+grav) acceleration for cell, for wind acceleration
+  ///
+  inline void get_wind_acceleration(
+      const cell &c,           ///< cell pointer
+      const int src,           ///< star id.
+      std::vector<double> acc  ///< output: wind acceleration
+  )
+  {
+#ifndef NDEBUG
+    if (acc.size() < static_cast<long unsigned int>(ndim)) {
+      spdlog::error("acceleration vector too small {}  {}", acc.size(), ndim);
+      exit(1);
+    }
+#endif
+    for (int d = 0; d < ndim; d++)
+      acc[d] = c.extra_data[star_data[src].wind_acc[d]];
+  }
+
+  // ##################################################################
+  // ##################################################################
+
+  ///
+  /// Get net (rad+grav) acceleration for cell, for wind acceleration
+  ///
+  // inline double get_wind_acceleration_el(
+  double get_wind_acceleration_el(
+      const cell &c,     ///< cell pointer
+      const int src,     ///< star id.
+      const int element  ///< which axis to return acceleration for
+  );
+  //  {
+  //    spdlog::info("wa-el: {} {} {}, sd[]
+  //    {}",c.id,src,element,star_data.size()); return
+  //    c.extra_data[star_data[src].wind_acc[element]];
+  //  }
+
+  // ##################################################################
+  // ##################################################################
+
+  ///
+  /// Set net (rad+grav) acceleration for cell, for wind acceleration
+  ///
+  inline void set_wind_acceleration(
+      const cell &c,                 ///< cell pointer
+      const int src,                 ///< star id
+      const std::vector<double> acc  ///< input: wind acceleration
+  )
+  {
+#ifndef NDEBUG
+    if (acc.size() < static_cast<long unsigned int>(ndim)) {
+      spdlog::error("acceleration vector too small {}  {}", acc.size(), ndim);
+      exit(1);
+    }
+#endif
+    for (int d = 0; d < ndim; d++)
+      c.extra_data[star_data[src].wind_acc[d]] = acc[d];
+  }
+
+
+  // ##################################################################
+  // ##################################################################
+
   // --------- EXTRA DATA FOR RAYTRACING AND H-CORRECTION -----------
 
 private:
@@ -539,6 +676,11 @@ private:
   short unsigned int
       using_GradP;            ///< Flag: 0=don't need |grad(P)|, 1=do need it
   unsigned int N_extra_data;  ///< Size of extra_data array (can be zero).
+
+  short unsigned int using_compton_cool;  ///< if we add Compton cooling
+  short unsigned int using_wind_acc;      ///< if we add wind acceleration
+  /// indices in extra_data[] of compton and wind acc. data.
+  std::vector<struct star_indices> star_data;
 
   ///
   /// array where the value of the 'i'th element is the number of

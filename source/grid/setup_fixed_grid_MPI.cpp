@@ -104,12 +104,11 @@ int setup_fixed_grid_pllel::setup_grid(
     SimPM.Nbc                 = 1;
   }
 
-  //
   // May need to setup extra data in each cell for ray-tracing
   // optical depths and/or viscosity variables.  Cells cannot be
   // created unless this the number of such extra variables has been
   // set.
-  //
+  CI.set_ndim(SimPM.ndim);
   setup_cell_extra_data(SimPM);
 
   //
@@ -117,7 +116,6 @@ int setup_fixed_grid_pllel::setup_grid(
   //
   double dx = (SimPM.Xmax[XX] - SimPM.Xmin[XX]) / SimPM.NG[XX];
   CI.set_nlevels(dx, 1);
-  CI.set_ndim(SimPM.ndim);
   CI.set_nvar(SimPM.nvar);
   CI.set_xmin(SimPM.Xmin);
   //

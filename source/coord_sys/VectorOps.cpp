@@ -543,9 +543,9 @@ int VectorOps_Cart::SetEdgeState(
     const cell &c,      ///< Current Cell.
     const direction d,  ///< Add or subtract the slope depending on direction.
     const int nv,       ///< length of state vectors.
-    const pion_flt *dpdx,  ///< Slope vector.
-    pion_flt *edge,        ///< vector for edge state.
-    const int OA,          ///< Order of spatial Accuracy.
+    const std::vector<pion_flt> &dpdx,  ///< Slope vector.
+    std::vector<pion_flt> &edge,        ///< vector for edge state.
+    const int OA,                       ///< Order of spatial Accuracy.
     class GridBaseClass *grid)
 {
   double VOdx = grid->DX();
@@ -590,11 +590,11 @@ int VectorOps_Cart::SetEdgeState(
 // ##################################################################
 
 int VectorOps_Cart::SetSlope(
-    const cell &c,   ///< Current Cell.
-    const axes d,    ///< Which direction to calculate slope in.
-    const int nv,    ///< length of state vectors.
-    pion_flt *dpdx,  ///< Slope vector to be written to.
-    const int OA,    ///< Order of spatial Accuracy.
+    const cell &c,                ///< Current Cell.
+    const axes d,                 ///< Which direction to calculate slope in.
+    const int nv,                 ///< length of state vectors.
+    std::vector<pion_flt> &dpdx,  ///< Slope vector to be written to.
+    const int OA,                 ///< Order of spatial Accuracy.
     class GridBaseClass *grid)
 {
   if (OA == OA1) {  // first order accurate so zero slope.
@@ -1113,9 +1113,9 @@ int VectorOps_Cyl::SetEdgeState(
     const cell &c,        ///< Current Cell.
     const direction dir,  ///< Add or subtract the slope depending on direction.
     const int nv,         ///< length of state vectors.
-    const pion_flt *dpdx,  ///< Slope vector.
-    pion_flt *edge,        ///< vector for edge state.
-    const int OA,          ///< Order of spatial Accuracy.
+    const std::vector<pion_flt> &dpdx,  ///< Slope vector.
+    std::vector<pion_flt> &edge,        ///< vector for edge state.
+    const int OA,                       ///< Order of spatial Accuracy.
     class GridBaseClass *grid)
 {
   if (OA == OA1) {  // 1st order, constant data.
@@ -1171,11 +1171,11 @@ int VectorOps_Cyl::SetEdgeState(
 // ##################################################################
 
 int VectorOps_Cyl::SetSlope(
-    const cell &c,   ///< Current Cell.
-    const axes d,    ///< Which direction to calculate slope in.
-    const int nv,    ///< length of state vectors.
-    pion_flt *dpdx,  ///< Slope vector to be written to.
-    const int OA,    ///< Order of spatial Accuracy.
+    const cell &c,                ///< Current Cell.
+    const axes d,                 ///< Which direction to calculate slope in.
+    const int nv,                 ///< length of state vectors.
+    std::vector<pion_flt> &dpdx,  ///< Slope vector to be written to.
+    const int OA,                 ///< Order of spatial Accuracy.
     class GridBaseClass *grid)
 {
   double dR  = grid->DX();

@@ -340,35 +340,40 @@ void FV_solver_mhd_ideal_adi::UtoFlux(
 
 int FV_solver_mhd_ideal_adi::dU_Cell(
     class GridBaseClass *grid,
-    cell &c,                // Current cell.
-    const axes d,           // Which axis we are looking along.
-    const pion_flt *fn,     // Negative direction flux.
-    const pion_flt *fp,     // Positive direction flux.
-    const pion_flt *slope,  // slope vector for cell c.
-    const int ooa,          // spatial order of accuracy.
-    const double dx,        // cell length dx.
-    const double dt         // cell TimeStep, dt.
+    cell &c,                             // Current cell.
+    const axes d,                        // Which axis we are looking along.
+    const std::vector<pion_flt> &fn,     // Negative direction flux.
+    const std::vector<pion_flt> &fp,     // Positive direction flux.
+    const std::vector<pion_flt> &slope,  // slope vector for cell c.
+    const int ooa,                       // spatial order of accuracy.
+    const double dx,                     // cell length dx.
+    const double dt                      // cell TimeStep, dt.
 )
 {
-  pion_flt u1[eq_nvar];
+  std::vector<pion_flt> u1(eq_nvar);
   // This calculates -dF/dx
-  int err = DivStateVectorComponent(c, grid, d, eq_nvar, fn, fp, u1);
-  geometric_source(c, d, slope, ooa, dx, u1);
-
+  int err = DivStateVectorComponent(
+      c, grid, d, eq_nvar, fn.data(), fp.data(), u1.data());
+  geometric_source(c, d, slope.data(), ooa, dx, u1.data());
+  wind_acceleration_source(grid, c, d, u1.data());
   for (int v = 0; v < eq_nvar; v++)
     c.dU[v] += FV_dt * u1[v];
   return (err);
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int FV_solver_mhd_ideal_adi::MHDsource(
     class GridBaseClass *grid,  ///< pointer to grid.
     class cell &Cl,             ///< pointer to cell of left state
     class cell &Cr,             ///< pointer to cell of right state
-    pion_flt *Pl,               ///< left edge state
-    pion_flt *Pr,               ///< right edge state
+    std::vector<pion_flt> &Pl,  ///< left edge state
+    std::vector<pion_flt> &Pr,  ///< right edge state
     const axes d,               ///< Which axis we are looking along.
     enum direction pos,         ///< positive normal direction
     enum direction neg,         ///< negative normal direction
@@ -383,7 +388,7 @@ int FV_solver_mhd_ideal_adi::MHDsource(
                 + Cl.Ph[eqBZ] * Cl.Ph[eqVZ];
   double uB_r = Cr.Ph[eqBX] * Cr.Ph[eqVX] + Cr.Ph[eqBY] * Cr.Ph[eqVY]
                 + Cr.Ph[eqBZ] * Cr.Ph[eqVZ];
-  pion_flt Powell_l[eq_nvar], Powell_r[eq_nvar];
+  std::vector<pion_flt> Powell_l(eq_nvar), Powell_r(eq_nvar);
   for (int v = 0; v < eq_nvar; v++) {
     Powell_l[v] = Powell_r[v] = 0.0;
   }
@@ -735,8 +740,8 @@ int FV_solver_mhd_mixedGLM_adi::MHDsource(
     class GridBaseClass *grid,  ///< pointer to grid.
     class cell &Cl,             ///< pointer to cell of left state
     class cell &Cr,             ///< pointer to cell of right state
-    pion_flt *Pl,               ///< left edge state
-    pion_flt *Pr,               ///< right edge state
+    std::vector<pion_flt> &Pl,  ///< left edge state
+    std::vector<pion_flt> &Pr,  ///< right edge state
     const axes d,               ///< Which axis we are looking along.
     enum direction pos,         ///< positive direction normal to interface
     enum direction neg,         ///< negative direction normal to interface
@@ -751,7 +756,7 @@ int FV_solver_mhd_mixedGLM_adi::MHDsource(
   double sm = 0.5 * (Cl.Ph[eqSI] + Cr.Ph[eqSI]);
   FV_solver_mhd_ideal_adi::MHDsource(grid, Cl, Cr, Pl, Pr, d, pos, neg, dt);
 
-  pion_flt psi_l[eq_nvar], psi_r[eq_nvar];
+  std::vector<pion_flt> psi_l(eq_nvar), psi_r(eq_nvar);
   for (int v = 0; v < eq_nvar; v++) {
     psi_l[v] = psi_r[v] = 0.0;
   }
@@ -912,15 +917,19 @@ void cyl_FV_solver_mhd_ideal_adi::geometric_source(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int cyl_FV_solver_mhd_ideal_adi::MHDsource(
     class GridBaseClass *grid,  ///< pointer to grid.
     class cell &Cl,             ///< pointer to cell of left state
     class cell &Cr,             ///< pointer to cell of right state
-    pion_flt *Pl,               ///< left edge state
-    pion_flt *Pr,               ///< right edge state
+    std::vector<pion_flt> &Pl,  ///< left edge state
+    std::vector<pion_flt> &Pr,  ///< right edge state
     const axes d,               ///< Which axis we are looking along.
     enum direction pos,         ///< positive normal direction
     enum direction neg,         ///< negative normal direction
@@ -935,7 +944,7 @@ int cyl_FV_solver_mhd_ideal_adi::MHDsource(
                 + Cl.Ph[eqBZ] * Cl.Ph[eqVZ];
   double uB_r = Cr.Ph[eqBX] * Cr.Ph[eqVX] + Cr.Ph[eqBY] * Cr.Ph[eqVY]
                 + Cr.Ph[eqBZ] * Cr.Ph[eqVZ];
-  pion_flt Powell_l[eq_nvar], Powell_r[eq_nvar];
+  std::vector<pion_flt> Powell_l(eq_nvar), Powell_r(eq_nvar);
   for (int v = 0; v < eq_nvar; v++) {
     Powell_l[v] = Powell_r[v] = 0.0;
   }
@@ -985,8 +994,12 @@ int cyl_FV_solver_mhd_ideal_adi::MHDsource(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 //------------------------------------------------------------------//
 cyl_FV_solver_mhd_mixedGLM_adi::cyl_FV_solver_mhd_mixedGLM_adi(
@@ -1087,8 +1100,8 @@ int cyl_FV_solver_mhd_mixedGLM_adi::MHDsource(
     class GridBaseClass *grid,  ///< pointer to grid.
     class cell &Cl,             ///< pointer to cell of left state
     class cell &Cr,             ///< pointer to cell of right state
-    pion_flt *Pl,               ///< left edge state
-    pion_flt *Pr,               ///< right edge state
+    std::vector<pion_flt> &Pl,  ///< left edge state
+    std::vector<pion_flt> &Pr,  ///< right edge state
     const axes d,               ///< Which axis we are looking along.
     enum direction pos,         ///< positive direction normal to interface
     enum direction neg,         ///< negative direction normal to interface
@@ -1099,7 +1112,7 @@ int cyl_FV_solver_mhd_mixedGLM_adi::MHDsource(
   double sm = 0.5 * (Cr.Ph[eqSI] + Cr.Ph[eqSI]);
   cyl_FV_solver_mhd_ideal_adi::MHDsource(grid, Cl, Cr, Pl, Pr, d, pos, neg, dt);
 
-  pion_flt psi_l[eq_nvar], psi_r[eq_nvar];
+  std::vector<pion_flt> psi_l(eq_nvar), psi_r(eq_nvar);
   for (int v = 0; v < eq_nvar; v++) {
     psi_l[v] = psi_r[v] = 0.0;
   }

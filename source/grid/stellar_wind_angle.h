@@ -153,10 +153,10 @@ protected:
   /// properties and the cell-to-source distance.
   ///
   void set_wind_cell_reference_state(
-      class GridBaseClass *,
-      struct wind_cell *,
-      const struct wind_source *,
-      const double  ///< EOS gamma
+      class GridBaseClass &,       ///< grid class
+      struct wind_cell &,          ///< cell to calculate for
+      const struct wind_source &,  ///< wind source struct
+      const double                 ///< EOS gamma
   );
 
   ///

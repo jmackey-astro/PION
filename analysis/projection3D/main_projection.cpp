@@ -169,14 +169,6 @@ int main(int argc, char **argv)
     #endif // PARALLEL
   */
 
-#ifdef NDEBUG
-  spdlog::set_level(spdlog::level::info);
-  spdlog::flush_on(spdlog::level::err);
-#else
-  spdlog::set_level(spdlog::level::trace);
-  spdlog::flush_on(spdlog::level::trace);
-#endif
-
   //
   // Initialise the sub_domain class with myrank and nproc.
   //
@@ -184,6 +176,20 @@ int main(int argc, char **argv)
 
   int myrank = SimPM.levels[0].sub_domain.get_myrank();
   int nproc  = SimPM.levels[0].sub_domain.get_nproc();
+
+#ifdef NDEBUG
+  if (myrank > 0) {
+    spdlog::set_level(spdlog::level::off);
+    spdlog::flush_on(spdlog::level::off);
+  }
+  else {
+    spdlog::set_level(spdlog::level::info);
+    spdlog::flush_on(spdlog::level::err);
+  }
+#else
+  spdlog::set_level(spdlog::level::trace);
+  spdlog::flush_on(spdlog::level::trace);
+#endif
 
 #ifdef PARALLEL
 //  spdlog::set_default_logger(spdlog::rotating_logger_mt(

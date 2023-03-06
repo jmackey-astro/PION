@@ -561,6 +561,7 @@ double calc_timestep::calc_dynamics_dt(
         index[2] = ax3;
         c        = grid->get_cell_all(index[0], index[1], index[2]);
         tempdt   = 1.0e100;
+        // double xy=0.0;
         // get to first non-boundary cell:
         while (c && !c->isgd)
           c = grid->NextPt(*c, XP);
@@ -569,9 +570,14 @@ double calc_timestep::calc_dynamics_dt(
         }
         // loop over all cells in this x-column.
         do {
-          if (c->timestep && !c->isbd && c->isdomain) {
+          if (c->timestep && !c->isbd && c->isdomain && c->isleaf) {
             tempdt =
                 min(tempdt, spatial_solver->CellTimeStep(*c, par.gamma, dx));
+            // if ((xy = spatial_solver->CellTimeStep(*c, par.gamma, dx))<10.0)
+            // {
+            //  spdlog::info("small timestep dynamics: {:9.3e}", xy);
+            //  CI.print_cell(*c);
+            //}
           }
         } while ((c = grid->NextPt(*c, XP)));
         dt = min(dt, tempdt);
@@ -714,6 +720,7 @@ double calc_timestep::get_mp_timescales_no_radiation(
         index[2] = ax3;
         c        = grid->get_cell_all(index[0], index[1], index[2]);
         tempdt   = 1.0e100;
+        // double xy=0.0;
         // get to first non-boundary cell:
         while (c && !c->isgd)
           c = grid->NextPt(*c, XP);
@@ -752,6 +759,11 @@ double calc_timestep::get_mp_timescales_no_radiation(
                     par.EP.MP_timestep_limit);
                 exit(1);
             }
+            // if ((xy = MP->timescales(c->Ph, par.gamma, true, true,
+            // true))<10.0) {
+            //  spdlog::info("small timestep microphysics: {:9.3e}", xy);
+            //  CI.print_cell(*c);
+            //}
             tempdt = min(tempdt, t);
             // cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<dt<<"\n";
           }  // if not boundary data.

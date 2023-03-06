@@ -45,6 +45,13 @@ JetParams::JetParams()
     jetstate[v] = -1.0e30;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 JetParams::~JetParams()
 {
   if (jetstate) {
@@ -52,6 +59,14 @@ JetParams::~JetParams()
     jetstate = 0;
   }
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 //------------------------------------------------
 
 SimParams::SimParams()
@@ -118,6 +133,9 @@ SimParams::SimParams()
   EP.sat_thermal_cond = 0;
   EP.tc_strength      = 1.0;
 
+  EP.compton_cool      = 0;
+  EP.wind_acceleration = 0;
+
   RS.Nsources = -1;
   RS.sources.clear();
 
@@ -127,8 +145,11 @@ SimParams::SimParams()
   //  cout <<"done!\n";
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
 
 
 SimParams::SimParams(const std::string pfile)
@@ -140,8 +161,11 @@ SimParams::SimParams(const std::string pfile)
   levels.resize(grid_nlevels);
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
 
 
 SimParams::~SimParams()
@@ -171,8 +195,12 @@ SimParams::~SimParams()
 #endif
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int SimParams::read_gridparams(const string pfile  ///< paramfile.
 )
@@ -540,6 +568,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
         * opfreq_time;
     next_optime -= tmp;
   }
+  min_timestep = 0.0;
   // cout <<" and opfreq="<<opfreq_time<<" code time units.\n";
 
   //
@@ -727,6 +756,13 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   return err;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 int SimParams::read_radsources()
 {
   string a;
@@ -887,8 +923,12 @@ int SimParams::read_radsources()
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int SimParams::read_wind_sources()
 {
@@ -1105,6 +1145,13 @@ int SimParams::read_wind_sources()
       moving_star = atoi(a.c_str());
     }
 
+    int acc = 0;
+    temp.str("");
+    temp << "WIND_" << i << "_acceleration";
+    if ((a = rp.find_parameter(temp.str())) != "") {
+      acc = atoi(a.c_str());
+    }
+
     // stellar mass in solar masses
     double mass = 0;
     temp.str("");
@@ -1134,6 +1181,7 @@ int SimParams::read_wind_sources()
     wind->Bstar       = Bstar;
     wind->type        = type;
     wind->moving_star = moving_star;
+    wind->acc         = acc;
     for (int v = 0; v < MAX_NVAR; v++) {
       wind->tr[v] = trcr[v];
     }
@@ -1160,8 +1208,12 @@ int SimParams::read_wind_sources()
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int SimParams::read_extra_physics()
 {
@@ -1262,11 +1314,27 @@ int SimParams::read_extra_physics()
   else
     EP.tc_strength = 1.0;
 
+  // default to not use compton cooling of thermal plasma
+  if ((a = rp.find_parameter("EP_compton_cool")) != "")
+    EP.compton_cool = atoi(a.c_str());
+  else
+    EP.compton_cool = 0;
+
+  // default not to use wind acceleration
+  if ((a = rp.find_parameter("EP_wind_acceleration")) != "")
+    EP.wind_acceleration = atoi(a.c_str());
+  else
+    EP.wind_acceleration = 0;
+
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int SimParams::read_units()
 {
@@ -1309,6 +1377,8 @@ int SimParams::read_units()
   }
   return 0;
 }
+
+
 
 // ##################################################################
 // ##################################################################
@@ -1378,6 +1448,7 @@ int SimParams::read_jet_params(class JetParams &jpar  ///< jet parameters class.
 // ##################################################################
 
 
+
 std::vector<int> SimParams::get_pbc_bools() const
 {
   std::vector<int> pbc(2 * ndim, 0);
@@ -1405,6 +1476,8 @@ std::vector<int> SimParams::get_pbc_bools() const
   }
   return pbc;
 }
+
+
 
 // ##################################################################
 // ##################################################################

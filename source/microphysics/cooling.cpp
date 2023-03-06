@@ -113,10 +113,14 @@ CoolingFn::CoolingFn(int flag)
     WhichFunction = 2;
     Temp          = 0;
     Lamb          = 0;
-    ;
+    spdlog::debug("\t\tFlag = 2 corresponding to Koyami & Inutsuka (2002, ");
+    spdlog::debug("ApJL, 564, L97) cooling function");
+    spdlog::debug("\t\tThis is a double exponential fitting function, using");
+    spdlog::debug(" their equations 4 and 5.");
+    spdlog::debug("\t\tN.B. The KI02 equation had two typos: (1.148e5 instead");
+    spdlog::debug(" of 1.184e5, and 14 instead of 1.4e-2)");
     spdlog::debug(
-        "\t\tFlag = {} corresponding to Koyami & Inutsuka (2002, ApJL, 564, L97) cooling function\n\t\tThis is a double exponential fitting function, using their equations 4 and 5.\n\t\tN.B. The KI02 equation had two typos: (1.148e5 instead of 1.184e5, and 14 instead of 1.4e-2)\n\t\tThese were corrected by Vasquez-Semadeni et al. 2007, ApJ, 657, 870.\n",
-        flag);
+        "\t\tThese were corrected by Vasquez-Semadeni+(2007,ApJ,657,870.");
     MinTemp = 5.0;
     MaxTemp = 5.0e8;
   }  // KI02 function
