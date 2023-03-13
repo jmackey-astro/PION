@@ -336,6 +336,9 @@ enum direction {
 /// For negative density, set rho=BASE_RHO*refvec[RO]
 #define BASE_RHO 1.0e-5
 
+/// Absolute density floor
+#define MIN_DENS 1.0e-30
+
 /// Error code for a function which should not be called!
 #define DONT_CALL_ME 99
 

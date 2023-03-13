@@ -236,16 +236,31 @@ int sim_control_pllel::Init(
     spdlog::error(
         "{}: Expected {} but got {}", "(INIT::set_equations) err!=0 Fix me!", 0,
         err);
-  spatial_solver->SetEOS(SimPM.gamma);
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    spatial_solver->SetEOS(SimPM.gamma);
+#ifdef PION_OMP
+  }
+#endif
 
   //
   // Now setup Microphysics, if needed.
   //
   err = setup_microphysics(SimPM);
-  if (0 != err)
-    spdlog::error(
-        "{}: Expected {} but got {}", "(INIT::setup_microphysics) err!=0", 0,
-        err);
+  if (0 != err) {
+    spdlog::error("(INIT::setup_microphysics) err!=0 {} {}", 0, err);
+    exit(1);
+  }
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    spatial_solver->SetMicrophysics(MP);
+#ifdef PION_OMP
+  }
+#endif
 
   //
   // Now assign data to the grid, either from file, or via some function.

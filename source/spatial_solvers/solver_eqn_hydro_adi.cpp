@@ -113,9 +113,9 @@ int FV_solver_Hydro_Euler::inviscid_flux(
   }
 
   for (int v = 0; v < eq_nvar; v++)
-    if (!isfinite(Pl[v])) spdlog::error("{}: {}", "flux hydro Pl", v);
+    if (!isfinite(Pl[v])) spdlog::error("{}: {} {}", "flux hydro Pl", v, Pl[v]);
   for (int v = 0; v < eq_nvar; v++)
-    if (!isfinite(Pr[v])) spdlog::error("{}: {}", "flux hydro Pr", v);
+    if (!isfinite(Pr[v])) spdlog::error("{}: {} {}", "flux hydro Pr", v, Pr[v]);
 #endif
 
   int err = 0;
@@ -133,29 +133,23 @@ int FV_solver_Hydro_Euler::inviscid_flux(
   // the flux[] and pstar[] arrays.
   //
   if (solve_flag == FLUX_LF) {
-    //
     // Lax-Friedrichs Method, so just get the flux.
-    //
     err += get_LaxFriedrichs_flux(Pl, Pr, flux, dx, eq_gamma);
     for (int v = 0; v < eq_nvar; v++)
       pstar[v] = 0.5 * (Pl[v] + Pr[v]);
   }
 
   else if (solve_flag == FLUX_FVS) {
-    //
     // Flux Vector Splitting (van Leer, 1982): This function takes the
     // left and right state and returns the FVS flux in 'flux' and the
     // Roe-average state in 'pstar'.
-    //
     err += FVS_flux(Pl, Pr, flux, pstar, eq_gamma);
   }
 
   else if (
       solve_flag == FLUX_RSlinear || solve_flag == FLUX_RSexact
       || solve_flag == FLUX_RShybrid) {
-    //
     // These are all Riemann Solver Methods, so call the solver:
-    //
     err += JMs_riemann_solve(Pl, Pr, pstar, solve_flag, eq_gamma);
     PtoFlux(pstar, flux, eq_gamma);
     if (err != 0) {
@@ -165,21 +159,15 @@ int FV_solver_Hydro_Euler::inviscid_flux(
   }
 
   else if (solve_flag == FLUX_RSroe) {
-    //
     // Roe conserved variables flux solver (Toro 1999), using the
     // symmetric calculation.
-    //
     err += Roe_flux_solver_symmetric(Pl, Pr, eq_gamma, HC_etamax, pstar, flux);
   }
 
   else if (solve_flag == FLUX_RSroe_pv) {
-    //
     // Roe primitive variables linear solver:
-    //
     err += Roe_prim_var_solver(Pl, Pr, eq_gamma, pstar);
-    //
     // Convert pstar to a flux:
-    //
     PtoFlux(pstar, flux, eq_gamma);
   }
 
@@ -235,7 +223,7 @@ int FV_solver_Hydro_Euler::inviscid_flux(
 void FV_solver_Hydro_Euler::PtoU(const pion_flt *p, pion_flt *u, const double g)
 {
   for (int t = 0; t < FV_ntr; t++)
-    u[eqTR[t]] = p[eqTR[t]] * p[eqRO];
+    u[eqTR[t]] = p[eqTR[t]] * max(MIN_DENS, p[eqRO]);
   eqns_Euler::PtoU(p, u, g);
   return;
 }
@@ -254,7 +242,7 @@ int FV_solver_Hydro_Euler::UtoP(
     const double g)
 {
   for (int t = 0; t < FV_ntr; t++)
-    p[eqTR[t]] = u[eqTR[t]] / u[eqRHO];
+    p[eqTR[t]] = u[eqTR[t]] / max(MIN_DENS, u[eqRHO]);
   int err = eqns_Euler::UtoP(u, p, MinTemp, g);
   return err;
 }
@@ -430,12 +418,17 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
 
   if (u1[RHO] < 0.0) {
 #ifndef NDEBUG
-    spdlog::debug("celladvancetime, negative density. rho={}", u1[RHO]);
+    spdlog::info(
+        "Pc {}", std::vector<double>(Pintermediate, Pintermediate + eq_nvar));
+    spdlog::info("U  {}", std::vector<double>(u1, u1 + eq_nvar));
+    spdlog::info("dU {}", std::vector<double>(dU, dU + eq_nvar));
     CI.print_cell(c);
 #endif
     spdlog::info(
-        "Resetting density from new state: {:12.6e}, to original value: {:12.6e}",
+        "CellAdvanceTime: Reset -ve density {:12.6e} to original {:12.6e}",
         u1[RHO], Pin[RO]);
+    for (int t = 0; t < FV_ntr; t++)
+      u1[eqTR[t]] *= Pin[RO] / u1[RHO];
     u1[RHO] = Pin[RO];
   }
 
@@ -465,6 +458,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
           v, Pf[v]);
       CI.print_cell(c);
       spdlog::error("{}: {}", "NAN hydro cell update", v);
+      exit(1);
     }
   }
 #endif

@@ -41,6 +41,7 @@ microphysics_base::microphysics_base(
   int offset = nv - ntr;
   n_el       = 0;
   for (int i = 0; i < ntr; i++) {
+    // spdlog::warn("tri {} {}",i,tr[i]);
     tr_map[tr[i]] = i + offset;
     tr_index.push_back(i + offset);
     // second map just for elements.
@@ -50,6 +51,8 @@ microphysics_base::microphysics_base(
       n_el++;
     }
   }
+  // spdlog::warn("el_index {}",el_index);
+  // spdlog::warn("tr_index {}",tr_index);
 
 #ifdef DEBUG_MP
   // for (auto elem : el_map) { // c++11 only (not working with intel compiler
@@ -78,12 +81,15 @@ void microphysics_base::sCMA(
 )
 {
 #ifdef DEBUG_SCMA
-  int print_flagg = 0;
-  double val      = 0.0;
+  int print_flag = 0;
+  double val     = 0.0;
 #endif  // DEBUG_SCMA
-  double corr = 0.0, ptemp[nv_prim];
+  pion_flt corr = 0.0;
+  std::vector<pion_flt> ptemp(nv_prim);
   for (int i = 0; i < nv_prim; i++)
     corrector[i] = 1.0;
+  for (int i = 0; i < nv_prim; i++)
+    ptemp[i] = 0.0;
   // enforce all tracers to be within [0,1]
   for (int v = 0; v < ntracer; v++) {
     ptemp[tr_index[v]] = min(1.0, max(0.0, p_in[tr_index[v]]));
@@ -100,26 +106,47 @@ void microphysics_base::sCMA(
   // is within [0,1] for all tracers, if current value is out of
   // range
   for (int v = 0; v < ntracer; v++) {
-#ifdef DEBUG_SCMA
-    val = ptemp[tr_index[v]] / p_in[tr_index[v]];
-#endif  // DEBUG_SCMA
-        // if p_in[v] is out of range, then set corrector to fix this
+    // if p_in[v] is out of range, then set corrector to fix this
     corrector[tr_index[v]] = (p_in[tr_index[v]] < 0.0) ? 0.0 : 1.0;
-    corrector[tr_index[v]] =
-        (p_in[tr_index[v]] > 1.0) ? 1.0 / p_in[tr_index[v]] : 1.0;
+    // if (p_in[tr_index[v]] < 0.0) corrector[tr_index[v]] = 0.0;
+    corrector[tr_index[v]] = (p_in[tr_index[v]] > 1.0) ?
+                                 1.0 / p_in[tr_index[v]] :
+                                 corrector[tr_index[v]];
+#ifdef DEBUG_SCMA
+    if (p_in[tr_index[v]] < 0.0 || !isfinite(p_in[tr_index[v]])
+        || p_in[tr_index[v]] > 1.0) {
+      spdlog::warn(
+          "LOOP {} {} {} {}", v, tr_index[v], p_in[tr_index[v]],
+          corrector[tr_index[v]]);
+      print_flag = 1;
+    }
+#endif  // DEBUG_SCMA
   }
+#ifdef DEBUG_SCMA
+  if (print_flag)
+    spdlog::warn(
+        "Corrector 1: {}",
+        std::vector<pion_flt>(corrector, corrector + nv_prim));
+#endif  // DEBUG_SCMA
 
   // renormalise element values to sum to 1.
   for (int v = 0; v < n_el; v++) {
     corrector[el_index[v]] *= corr;
   }
+#ifdef DEBUG_SCMA
+  if (print_flag)
+    spdlog::warn(
+        "Corrector 2: {}",
+        std::vector<pion_flt>(corrector, corrector + nv_prim));
+#endif  // DEBUG_SCMA
 
 #ifdef DEBUG_SCMA
-  if (fabs(val - 1.0) > 1.0e-1) {
-    spdlog::debug("------------  sCMA  ---------------");
-    spdlog::debug("p_in     :  : {}", p_in);
-    spdlog::debug("ptemp    :  : {}", ptemp);
-    spdlog::debug("Corrector:  : {}", corrector);
+  if (print_flag) {
+    spdlog::warn("------------  sCMA  ---------------");
+    spdlog::warn("p_in     : {}", std::vector<pion_flt>(p_in, p_in + nv_prim));
+    spdlog::warn("ptemp    : {}", ptemp);
+    spdlog::warn(
+        "Corrector: {}", std::vector<pion_flt>(corrector, corrector + nv_prim));
   }
 #endif  // DEBUG_SCMA
 }

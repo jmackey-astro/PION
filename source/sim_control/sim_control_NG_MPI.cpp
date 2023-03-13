@@ -127,7 +127,14 @@ int sim_control_NG_MPI::Init(
         "{}: Expected {} but got {}", "(NG_MPI INIT::set_equations)", 0, err);
     exit(err);
   }
-  spatial_solver->SetEOS(SimPM.gamma);
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    spatial_solver->SetEOS(SimPM.gamma);
+#ifdef PION_OMP
+  }
+#endif
 
   // set up Microphysics, if needed.
   // ----------------------------------------------------------------
@@ -138,6 +145,14 @@ int sim_control_NG_MPI::Init(
         err);
     exit(err);
   }
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    spatial_solver->SetMicrophysics(MP);
+#ifdef PION_OMP
+  }
+#endif
 
   // assign data to the grid from snapshot file.
   // ----------------------------------------------------------------

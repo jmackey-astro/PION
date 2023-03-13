@@ -255,10 +255,7 @@ int IC_overwrite_snapshot::setup_data(
     if (distance < radius * dx) {
       // distance: center of cell
       test_ejecta_before =
-          test_ejecta_before
-          + (c->P[RO]) * 4.0 * pconst.pi()
-                * (pow(distance + dx / 2, 3.0) - pow(distance - dx / 2, 3.0))
-                / 3.0;
+          test_ejecta_before + (c->P[RO]) * ggg->CellVolume(*c, dx);
     }
 
     for (int v = 0; v < SimPM->nvar; v++)
@@ -290,7 +287,7 @@ int IC_overwrite_snapshot::setup_data(
 
 
       if (distance < radius * dx) {
-        c->P[VX] = distance / T_start;
+        c->P[VX] = (distance - 0.45 * dx) / T_start;
         if (distance / T_start <= v_core) {
           c->P[RO] = F_par * pow(T_start, -3.0);
         }
@@ -336,7 +333,7 @@ int IC_overwrite_snapshot::setup_data(
 
 
       if (distance < radius * dx) {
-        c->P[VX] = (distance - 0.4 * dx) / T_start;
+        c->P[VX] = (distance - 0.45 * dx) / T_start;
         if (distance / T_start <= v_core) {
           c->P[RO] = F_par * pow(T_start, -3.0);
         }

@@ -866,6 +866,10 @@ int MPv3::convert_prim2local(
     f_dust = 0.0;
 #endif
   mpv_nH = p_in[RO] / mean_mass_per_H;
+  if (mpv_nH < 0.0) {
+    spdlog::error("Negative density input to MPv3 {}", p_in[RO]);
+    exit(1);
+  }
 
 #ifdef MPV3_DEBUG
   // Check for negative ion fraction, and set to a minimum value if found.
@@ -885,10 +889,26 @@ int MPv3::convert_prim2local(
   // Set x(H0) to be within the required range (not too close to zero or 1).
   p_local[lv_H0] = max(Min_NeutralFrac, min(Max_NeutralFrac, p_local[lv_H0]));
 
-  // Check for temperature too low.
-  p_local[lv_eint] =
-      max(p_local[lv_eint], get_ntot(mpv_nH, p_in[pv_Hp]) * k_B
-                                * EP->MinTemperature / (gamma_minus_one));
+  // Check for temperature too low/high.
+  double t = get_ntot(mpv_nH, p_in[pv_Hp]) * k_B * EP->MinTemperature
+             / (gamma_minus_one);
+#ifdef MPV3_DEBUG
+  if (t > p_local[lv_eint]) {
+    spdlog::error(
+        "input thermal energy to MPv3 too low: {} {}", t, p_local[lv_eint]);
+  }
+#endif
+  p_local[lv_eint] = max(p_local[lv_eint], t);
+
+  t = get_ntot(mpv_nH, p_in[pv_Hp]) * k_B * EP->MaxTemperature
+      / (gamma_minus_one);
+#ifdef MPV3_DEBUG
+  if (t < p_local[lv_eint]) {
+    spdlog::error(
+        "input thermal energy to MPv3 too high: {} {}", t, p_local[lv_eint]);
+  }
+#endif
+  p_local[lv_eint] = min(p_local[lv_eint], t);
 
 #ifdef MPV3_DEBUG
   // Check for NAN/INF
@@ -1592,39 +1612,27 @@ int MPv3::ydot(
   // that case set rates to be large and return.
   //
   if (NV_Ith_S(y_now, lv_H0) < -0.1 || NV_Ith_S(y_now, lv_H0) > 1.1) {
-    spdlog::debug(
+    spdlog::info(
         "Bad input state y(H+) {} {}", NV_Ith_S(y_now, lv_H0),
         NV_Ith_S(y_now, lv_eint));
-    if (NV_Ith_S(y_now, lv_H0) > 1.1) {
-      NV_Ith_S(y_dot, lv_H0)   = -1.0e20;
-      NV_Ith_S(y_dot, lv_eint) = -1.0e20;
-    }
-    else {
-      NV_Ith_S(y_dot, lv_H0)   = 1.0e20;
-      NV_Ith_S(y_dot, lv_eint) = 1.0e20;
-    }
-    return 0;
   }
   if (NV_Ith_S(y_now, lv_eint) < 0.0) {
-    spdlog::debug(
+    spdlog::info(
         "Bad input state Eint {} {}", NV_Ith_S(y_now, lv_H0),
         NV_Ith_S(y_now, lv_eint));
-    NV_Ith_S(y_dot, lv_H0)   = 1.0e20;
-    NV_Ith_S(y_dot, lv_eint) = 1.0e20;
-    return 0;
   }
 
   double OneMinusX =
       min(Max_NeutralFrac, max(NV_Ith_S(y_now, lv_H0), Min_NeutralFrac));
-  double E_in = max(JM_MINERG, NV_Ith_S(y_now, lv_eint));
   double x_in = 1.0 - OneMinusX;
+  double E_in = max(JM_MINERG, NV_Ith_S(y_now, lv_eint));
   // First get the temperature.
   double T = get_temperature(mpv_nH, E_in, x_in);
-  if (T > 1e10) {
-    NV_Ith_S(y_dot, lv_eint) = 0.0;
-    NV_Ith_S(y_dot, lv_H0)   = 1.0;
-    return 0;
+  if (T < 0.0 || T > EP->MaxTemperature || !isfinite(T)) {
+    spdlog::info("Bad input state T: {} {} {} {}", T, mpv_nH, E_in, x_in);
   }
+  T = max(EP->MinTemperature, min(EP->MaxTemperature, T));
+
 
   // now get electron density
   double ne    = JM_NELEC * x_in * mpv_nH;
@@ -1844,6 +1852,39 @@ int MPv3::ydot(
   // scale the rate to linearly approach zero as we reach Tmin.
   if (Edot < 0.0 && T < 2.0 * EP->MinTemperature) {
     Edot = min(0.0, (Edot) * (T - EP->MinTemperature) / EP->MinTemperature);
+  }
+
+  if (NV_Ith_S(y_now, lv_H0) < 0.0) {
+    if (oneminusx_dot < 0.0) {
+      spdlog::debug(
+          "input HI frac {}, {} <0, but ydot(HI) = {} <0",
+          NV_Ith_S(y_now, lv_H0), OneMinusX, oneminusx_dot);
+      oneminusx_dot = -oneminusx_dot;
+    }
+  }
+  else if (NV_Ith_S(y_now, lv_H0) > 1.0) {
+    if (oneminusx_dot > 0.0) {
+      spdlog::debug(
+          "input HI frac {}, {} >1, but ydot(HI) = {} >0",
+          NV_Ith_S(y_now, lv_H0), OneMinusX, oneminusx_dot);
+      oneminusx_dot = -oneminusx_dot;
+    }
+  }
+  if (NV_Ith_S(y_now, lv_eint) < 0.0) {
+    if (Edot < 0.0) {
+      spdlog::debug(
+          "input E {}, T {} <0, but Edot = {} <0", NV_Ith_S(y_now, lv_eint), T,
+          Edot);
+      Edot = -Edot;
+    }
+  }
+  else if (get_temperature(mpv_nH, E_in, x_in) >= EP->MaxTemperature) {
+    if (Edot > 0.0) {
+      spdlog::debug(
+          "input E {}, T {} >Tmax, but Edot = {} >0", NV_Ith_S(y_now, lv_eint),
+          T, Edot);
+      Edot = -Edot;
+    }
   }
 
   NV_Ith_S(y_dot, lv_H0)   = oneminusx_dot;

@@ -110,15 +110,29 @@ int sim_control_NG::Init(
         "{}: Expected {} but got {}", "(NG_INIT::set_equations)", 0, err);
     exit(1);
   }
-  spatial_solver->SetEOS(SimPM.gamma);
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    spatial_solver->SetEOS(SimPM.gamma);
+#ifdef PION_OMP
+  }
+#endif
 
   // ----------------------------------------------------------------
   err = setup_microphysics(SimPM);
   if (0 != err) {
-    spdlog::error(
-        "{}: Expected {} but got {}", "(NG_INIT::setup_microphysics)", 0, err);
+    spdlog::error("(NG_INIT::setup_microphysics) {} {}", 0, err);
     exit(1);
   }
+#ifdef PION_OMP
+  #pragma omp parallel
+  {
+#endif
+    spatial_solver->SetMicrophysics(MP);
+#ifdef PION_OMP
+  }
+#endif
 
   // assign data to the grid from snapshot file.
   // ----------------------------------------------------------------

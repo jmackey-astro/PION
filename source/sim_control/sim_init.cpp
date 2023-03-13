@@ -166,9 +166,7 @@ int sim_init::Init(
   //
   err = set_equations(SimPM);
   if (err) {
-    spdlog::error(
-        "{}: Expected {} but got {}", "(INIT::set_equations) err!=0 Fix me!", 0,
-        err);
+    spdlog::error("(INIT::set_equations) err!=0 Fix me! {} {}", 0, err);
     exit(1);
   }
 #ifdef PION_OMP
