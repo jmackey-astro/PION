@@ -334,9 +334,6 @@ int NG_fine_to_coarse_bc::average_cells(
       cd[v] += u[v] * vol;
   }
   // cout <<"\n";
-  if (ct != 2) {
-    spdlog::info("warning, didn't have 2 fine cells! {}", ct);
-  }
   if (ct > 0) {
     for (int v = 0; v < par.nvar; v++)
       cd[v] /= sum_vol;

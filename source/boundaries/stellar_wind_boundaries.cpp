@@ -14,6 +14,7 @@
 
 #include <array>
 #include <spdlog/spdlog.h>
+#include <sstream>
 #include <vector>
 /* prevent clang-format reordering */
 #include <fmt/ranges.h>
@@ -33,9 +34,15 @@ struct starpos {
 
 stellar_wind_bc::stellar_wind_bc()
 {
-  outf.open("trajectory.txt");
-  outf.setf(ios_base::scientific);
-  outf.precision(6);
+  return;
+}
+
+stellar_wind_bc::~stellar_wind_bc()
+{
+  if (outf.is_open()) {
+    outf.flush();
+    outf.close();
+  }
   return;
 }
 
@@ -255,6 +262,30 @@ int stellar_wind_bc::BC_assign_STWIND(
 
     BC_assign_STWIND_add_cells2src(par, grid, isw);
   }
+
+  // if any star is moving, then open a file to follow its trajectory
+  bool moving = false;
+  for (int isw = 0; isw < Ns; isw++) {
+    if (SWP.params[isw]->moving_star == 1) moving = true;
+  }
+  if (moving && grid->level() == par.grid_nlevels - 1
+#ifdef PARALLEL
+      && par.levels[0].sub_domain.get_myrank() == 0
+#endif
+  ) {
+    // spdlog::info("OPENING OUTPUT FILE trajectory.txt");
+    outf.open("trajectory.txt", std::ios_base::app);
+    outf.setf(ios_base::scientific);
+    outf.precision(6);
+    if (!outf.is_open()) {
+      spdlog::error("Couldn't open file {}", "trajectory.txt");
+      exit(1);
+    }
+    outf
+        << "\n time         timestep       star 0 x       star 0 y       star 0 vx      star 0 vy      star 1 x       star 1 y        star 1 vx      star1 vy\n";
+    outf.flush();
+  }
+
 
   //
   // Now we should have set everything up, so we assign the boundary
@@ -617,15 +648,26 @@ int stellar_wind_bc::BC_update_STWIND(
   static long unsigned int count = 0;
 
   // write trajectory to file.
-  if (moved && (par.grid_nlevels == l + 1) && (count % 10) == 0) {
-    outf << simtime << "  " << dt << "  ";
-    for (unsigned long i = 0; i < stars.size(); i++) {
-      for (int v = 0; v < ndim; v++)
-        outf << SWP.params[i]->dpos[v] << "  ";
-      for (int v = 0; v < ndim; v++)
-        outf << SWP.params[i]->velocity[v] << "  ";
+  if (moved && (par.grid_nlevels == l + 1)
+#ifdef PARALLEL
+      && par.levels[0].sub_domain.get_myrank() == 0
+#endif
+  ) {
+    spdlog::debug("stars have moved, ct={}", count);
+    if ((count % 10) == 0) {
+      spdlog::debug("writing to trajectory file, ct={}", count);
+      // if (!outf.is_open())
+      //  spdlog::error("output file is not open!");
+      outf << simtime << "  " << dt << "  ";
+      for (unsigned long i = 0; i < stars.size(); i++) {
+        for (int v = 0; v < ndim; v++)
+          outf << SWP.params[i]->dpos[v] << "  ";
+        for (int v = 0; v < ndim; v++)
+          outf << SWP.params[i]->velocity[v] << "  ";
+      }
+      outf << "\n";
+      // outf.flush();
     }
-    outf << "\n";
     count++;
   }  // print to file
 
@@ -735,9 +777,9 @@ void stellar_wind_bc::BC_set_wind_radius(
   // Now wind radius should be at least MIN_WIND_RAD cells radius on the
   // coarsest level containing the source, and at least 2 cells larger than
   // the stellar radius.
-  spdlog::info(
-      "BC_set_wind_radius: orig: {:9.3e} now: {:9.3e}", SWP.params[id]->radius,
-      SWP.params[id]->current_radius);
+  // spdlog::info(
+  //    "BC_set_wind_radius: orig: {:9.3e} now: {:9.3e}",
+  //    SWP.params[id]->radius, SWP.params[id]->current_radius);
   return;
 }
 

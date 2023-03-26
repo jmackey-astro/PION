@@ -24,6 +24,7 @@
 class stellar_wind_bc {
 public:
   stellar_wind_bc();
+  ~stellar_wind_bc();
 
 protected:
   ofstream outf;

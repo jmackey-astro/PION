@@ -471,6 +471,9 @@ int dataio_silo::ReadHeader(
 #ifndef NDEBUG
   spdlog::info("FINISHED reading Header from file: {}", silofile);
 #endif
+
+  SimPM.levels.resize(SimPM.grid_nlevels);
+
   return err;
 }
 

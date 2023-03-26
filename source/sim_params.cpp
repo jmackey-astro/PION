@@ -518,8 +518,8 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   if (str == "") spdlog::error("{}: {}", "outputfile", str);
   temp << str;
   outFileBase = temp.str();
-  str         = rp.find_parameter("OutputFileType");
 
+  str = rp.find_parameter("OutputFileType");
   if (str == "text")
     typeofop = 1;
   else if (str == "fits")
