@@ -220,6 +220,11 @@ int stellar_wind_bc::BC_assign_STWIND(
 #endif
 #endif
     }
+    else if (SWP.params[isw]->evolving_wind_file == "NOFILE") {
+      // star is not evolving, but also not type==0, so must be rotating
+      spdlog::info("Adding rotating source {}", isw);
+      err = grid->Wind->add_rotating_source(SWP.params[isw]);
+    }
     else {
       //
       // This works for spherically symmetric winds and for
@@ -230,7 +235,7 @@ int stellar_wind_bc::BC_assign_STWIND(
       err = grid->Wind->add_evolving_source(par.simtime, SWP.params[isw]);
     }
     if (err) {
-      spdlog::error("{}: {}", "Error adding wind source", isw);
+      spdlog::error("Error adding wind source {}", isw);
       exit(1);
     }
   }
@@ -324,12 +329,13 @@ int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
   // grid->Wind->get_src_posn(id, srcpos);
   // for (int v=0;v<MAX_DIM;v++) srcpos[v] = SWP.params[id]->thispos[v];
 
-  // spdlog::info("star id {}, lev {}, radius {:8.2e}, dx
-  // {:8.2e}",id,grid->level(),srcrad,grid->DX());
+  spdlog::debug(
+      "star id {}, lev {}, radius {:8.2e}, dx {:8.2e}", id, grid->level(),
+      srcrad, grid->DX());
 
   if (grid->Wind->get_num_cells(id) != 0) {
     spdlog::error(
-        "{}: {}", "adding cells to source that already has cells",
+        "adding cells to source that already has cells: {}",
         grid->Wind->get_num_cells(id));
     exit(1);
   }
@@ -379,10 +385,9 @@ int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
         if (grid->distance(srcpos, cpos) <= srcrad) {
           ncell++;
           err += grid->Wind->add_cell(grid, id, *c);
-          // spdlog::info("src id {}, add cell {}",id,index[x1]);
+          // spdlog::info("src id {}, add cell {}",id,c->id);
         }
         c = grid->NextPt(*c, XP);
-        // spdlog::info("src id {} index {}",index[x1]);
       }
     }
   }
@@ -761,7 +766,7 @@ void stellar_wind_bc::BC_set_wind_radius(
           || (SWP.params[id]->thispos[v] + rad > par.levels[lev].Xmax[v]))
         on = false;
     }
-    if (on) {
+    if (on || lev == 0) {
       rad = max(rad, grid->Wind->get_min_wind_radius(id, par.levels[lev].dx));
       // spdlog::info("BC_set_wind_radius 4: {:9.3e}  {:9.3e}", rad,
       //            SWP.params[id]->current_radius);

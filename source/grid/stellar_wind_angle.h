@@ -169,6 +169,13 @@ protected:
       const double,                 ///< current simulation time.
       const double                  ///< EOS Gamma
   );
-};
 
+  /// set values in cells.  This function decides if the wind is evolving or
+  /// not and, if so, updates the source before setting cell values.
+  int set_cell_values(
+      class GridBaseClass *,
+      const int,    ///< src id
+      const double  ///< simulation time
+  );
+};
 #endif

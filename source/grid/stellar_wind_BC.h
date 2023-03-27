@@ -475,7 +475,7 @@ public:
   /// The state vectors P[] and Ph[] are set to wind values, if the source is
   /// active.
   ///
-  int set_cell_values(
+  virtual int set_cell_values(
       class GridBaseClass *,
       const int,    ///< src id
       const double  ///< simulation time

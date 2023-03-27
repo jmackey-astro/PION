@@ -35,8 +35,12 @@
 #include <vector>
 using namespace std;
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 // Constructor
 stellar_wind_angle::stellar_wind_angle(
@@ -70,14 +74,22 @@ stellar_wind_angle::stellar_wind_angle(
   setup_tables();
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 // Destructor
 stellar_wind_angle::~stellar_wind_angle() {}
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 // Generate interpolating tables for wind density function
 void stellar_wind_angle::setup_tables()
@@ -193,8 +205,12 @@ void stellar_wind_angle::setup_tables()
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 // Integrand for integral in delta function
 double stellar_wind_angle::integrand(
@@ -458,6 +474,10 @@ void stellar_wind_angle::set_wind_cell_reference_state(
     return;
   }
 
+  spdlog::debug(
+      "id {}: vinf {:12.6e}, vrot {:12.6e}, vcrit {:12.6e}", WS.pars->id,
+      WP->Vinf, WP->Vrot, WP->Vcrit);
+
   //
   // 3D geometry: either 3D-cartesian, 2D-axisymmetry, or 1D-spherical.
   //
@@ -554,10 +574,10 @@ int stellar_wind_angle::add_evolving_source(
   struct evolving_wind_data *temp = 0;
   temp                            = mem.myalloc(temp, 1);
   int err = read_evolution_file(pars->evolving_wind_file, temp);
-  if (err)
+  if (err) {
     spdlog::error(
-        "{}: {}", "couldn't read wind evolution file",
-        pars->evolving_wind_file);
+        "couldn't read wind evolution file: {}", pars->evolving_wind_file);
+  }
 
   // assign data for v_esc from v_crit.
   for (int i = 0; i < temp->Npt; i++)
@@ -669,8 +689,8 @@ int stellar_wind_angle::add_rotating_source(
       spdlog::debug("\tAdding rotating wind source as id={}", wp->id);
       break;
     default:
-      spdlog::error(
-          "{}: {}", "What type of source is this?  add a new type?", wp->type);
+      spdlog::error("What type of source is this? {}", wp->type);
+      exit(1);
       break;
   }
 
@@ -685,39 +705,46 @@ int stellar_wind_angle::add_rotating_source(
   if (hplus >= 0) ws->iHplus = hplus - nvar + ntracer;
 
   ws->cells_added = false;
-  if (!ws->wcells.empty())
-    spdlog::error(
-        "{}: {}", "wind_source: wcells not empty!", ws->wcells.size());
+  if (!ws->wcells.empty()) {
+    spdlog::error("wind_source: wcells not empty :( {}", ws->wcells.size());
+    exit(1);
+  }
 
   //
   // Make sure the source position is compatible with the geometry:
   //
   if (coordsys == COORD_SPH) {
-    if (!pconst.equalD(wp->dpos[Rsph], 0.0))
+    if (!pconst.equalD(wp->dpos[Rsph], 0.0)) {
       spdlog::error(
-          "{}: {}", "Spherical symmetry but source not at origin!",
-          wp->dpos[Rsph]);
+          "Spherical symmetry but source not at origin {}", wp->dpos[Rsph]);
+      exit(1);
+    }
   }
   if (coordsys == COORD_CYL && ndim == 2) {
     //
     // Axisymmetry
     //
-    if (!pconst.equalD(wp->dpos[Rcyl], 0.0))
-      spdlog::error(
-          "{}: {}", "Axisymmetry but source not at R=0!", wp->dpos[Rcyl]);
+    if (!pconst.equalD(wp->dpos[Rcyl], 0.0)) {
+      spdlog::error("Axisymmetry but source not at R=0 : {}", wp->dpos[Rcyl]);
+      exit(1);
+    }
   }
 
   wlist.push_back(ws);
   nsrc++;
 
   spdlog::debug(
-      "\tAdded wind source id={} to list of {} elements", nsrc - 1, nsrc);
+      "Added wind source id={} to list of {} elements", nsrc - 1, nsrc);
 
-  return wp->id;
+  return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int stellar_wind_angle::update_source(
     class GridBaseClass *grid,
@@ -813,6 +840,64 @@ int stellar_wind_angle::update_source(
 
   return 0;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int stellar_wind_angle::set_cell_values(
+    class GridBaseClass *grid,
+    const int id,       ///< src id
+    const double t_now  ///< simulation time
+)
+{
+  int err = 0;
+  if (id < 0 || id >= nsrc) {
+    spdlog::error("{}: {}", "bad src id", id);
+  }
+
+  // check for evolving source
+  struct wind_source *ws = wlist[id];
+  if (ws->pars->evolving_wind_file != "NOFILE") {
+    struct evolving_wind_data *wd = wdata_evol[id];
+    // Check if the source needs to be updated, and if so, update it
+    if (t_now >= wd->t_next_update) {
+      // NB: This function has hardcoded EOS Gamma to 5/3
+      err = update_source(grid, wd, t_now, 5. / 3.);
+      if (err) {
+        spdlog::error("update_source() returned error {}", err);
+        return err;
+      }
+    }
+    if (!wd->is_active) {
+      return 0;
+    }
+  }
+  else {
+    // if source is not evolving, set the cell state.
+    // spdlog::info("setting wind cell reference state src {}",id);
+    // need to set Vcrit because this is not a parameter.
+    ws->pars->Vcrit = sqrt(pconst.G() * ws->pars->Mass / ws->pars->Rstar);
+    spdlog::debug(
+        "Vcrt {:12.6e}, G {:12.6e}, M {:12.6e}, R {:12.6e}", ws->pars->Vcrit,
+        pconst.G(), ws->pars->Mass, ws->pars->Rstar);
+
+    for (int i = 0; i < ws->ncell; i++) {
+      set_wind_cell_reference_state(*grid, *(ws->wcells[i]), *ws, 5. / 3.);
+    }
+  }
+
+  // Update the wind cell values using the constant wind functions.
+  // spdlog::info("setting cell values src {}",id);
+  err += stellar_wind::set_cell_values(grid, id, t_now);
+
+  return err;
+}
+
+
 
 // ##################################################################
 // ##################################################################

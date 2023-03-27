@@ -1351,8 +1351,7 @@ int stellar_wind_evolution::read_evolution_file(
   FILE *wf = 0;
   wf       = fopen(infile.c_str(), "r");
   if (!wf)
-    spdlog::error(
-        "{}: {}", "can't open wind file, stellar_wind_evo", fmt::ptr(wf));
+    spdlog::error("can't open wind file, stellar_wind_evo", fmt::ptr(wf));
 
   // Skip first two lines
   char line[512];
