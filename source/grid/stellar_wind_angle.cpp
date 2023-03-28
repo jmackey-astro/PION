@@ -421,9 +421,10 @@ double stellar_wind_angle::fn_density_interp(
   alpha_vec_size[2] = npts_Teff;
 
   // Vector for delta input (omega, Teff)
+  // need to limit theta to be <89.9 degrees to avoid a divergence
   vector<double> alpha_input(3);
   alpha_input[0] = omega;
-  alpha_input[1] = theta;
+  alpha_input[1] = std::min(theta, theta_vec.back());
   alpha_input[2] = Teff;
 
   alpha_interp = root_find_trilinear_vec(
