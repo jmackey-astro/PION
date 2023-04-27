@@ -116,6 +116,17 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     if (!isfinite(Pl[v])) spdlog::error("{}: {} {}", "flux hydro Pl", v, Pl[v]);
   for (int v = 0; v < eq_nvar; v++)
     if (!isfinite(Pr[v])) spdlog::error("{}: {} {}", "flux hydro Pr", v, Pr[v]);
+
+  bool problem = false;
+  for (int t = 0; t < FV_ntr; t++) {
+    if (Pl[eqTR[t]] > 1.0 || Pl[eqTR[t]] < 0.0) problem = true;
+    if (Pr[eqTR[t]] > 1.0 || Pr[eqTR[t]] < 0.0) problem = true;
+  }
+  if (problem) {
+    spdlog::error("Tracers out of range in flux solver!");
+    spdlog::error("Pl={}", std::vector<double>(Pl, Pl + eq_nvar));
+    spdlog::error("Pr={}", std::vector<double>(Pr, Pr + eq_nvar));
+  }
 #endif
 
   int err = 0;

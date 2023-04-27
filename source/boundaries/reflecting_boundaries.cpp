@@ -18,8 +18,8 @@ int reflecting_bc::BC_assign_REFLECTING(
     boundary_data *b)
 {
   if (b->data.empty()) {
-    spdlog::error(
-        "{}: {}", "BC_assign_REFLECTING: empty boundary data", b->itype);
+    spdlog::error("BC_assign_REFLECTING: empty boundary data: {}", b->itype);
+    exit(1);
   }
   //
   // set reference state so that it is mostly zeros but has some +/-1
@@ -48,9 +48,11 @@ int reflecting_bc::BC_assign_REFLECTING(
         break;
       case NO:
         spdlog::error("{}: {}", "BAD DIRECTION REFLECTING", b->dir);
+        exit(2);
         break;
       default:
         spdlog::error("{}: {}", "BAD DIRECTION REFLECTING", b->dir);
+        exit(3);
         break;
     }  // Set Normal velocity direction.
 
@@ -73,9 +75,11 @@ int reflecting_bc::BC_assign_REFLECTING(
           break;
         case NO:
           spdlog::error("{}: {}", "BAD DIRECTION REFLECTING", b->dir);
+          exit(4);
           break;
         default:
           spdlog::error("{}: {}", "BAD DIRECTION REFLECTING", b->dir);
+          exit(5);
           break;
       }  // Set normal b-field direction.
     }    // Setting up reference value.
@@ -92,7 +96,10 @@ int reflecting_bc::BC_assign_REFLECTING(
   // ****\n\n";
   do {
     temp = (*bpt);
-    for (int v = 0; v > (*bpt)->isedge; v--) {
+    // partner cell for each boundary cell is is 1 cell away for 1st boundary
+    // cell, 3 for the next, 5 for the next, etc.  "isedge" is an -ve integer
+    // giving how many cells off the boundary we are (for off-grid data).
+    for (int v = -(*bpt)->isedge; v > (*bpt)->isedge; v--) {
       temp = grid->NextPt(*temp, b->ondir);
     }
     if (!temp) {
@@ -107,7 +114,8 @@ int reflecting_bc::BC_assign_REFLECTING(
     (*bpt)->npt = temp;
     // CI.print_cell((*bpt));
     // reflecting boundary is a conformal mapping of the domain, so
-    // isdomain should be true.
+    // isdomain should be true??
+    (*bpt)->isdomain = false;
     ++bpt;
     ct++;
   } while (bpt != b->data.end());

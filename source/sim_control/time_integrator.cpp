@@ -463,6 +463,13 @@ int time_integrator::calc_RT_microphysics_dU(
               }
             }
 
+#ifdef TEST_INF
+            for (int v = SimPM.ftr; v < SimPM.nvar; v++) {
+              if (c->P[v] < 0.0 || c->P[v] > 1.0) {
+                spdlog::error("time-int-MP: bad input ion frac: {}", c->P);
+              }
+            }
+#endif
             // 4th and 5th args are for ionising sources.
             err += MP->TimeUpdateMP_RTnew(
                 c->P.data(), FVI_nheat, heating, FVI_nion, ionize, p.data(),
@@ -1179,6 +1186,14 @@ int time_integrator::dynamics_dU_column(
         exit(1);
       }
     }
+#endif
+#ifdef TEST_INF
+    // TEST-SN
+    bool problem = false;
+    for (int v = SimPM.ftr; v < SimPM.nvar; v++) {
+      if (cpt->Ph[v] > 1.0 || cpt->Ph[v] < 0.0) problem = true;
+    }
+    if (problem) spdlog::error("Tracers out of range! Ph={}", cpt->P);
 #endif
 
 #ifdef TEST_CONSERVATION

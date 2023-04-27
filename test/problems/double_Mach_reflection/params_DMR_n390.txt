@@ -1,27 +1,21 @@
 # parameter file for Initial Condition Generation.
 
-## Basic Properties
 
 ndim 2
 eqn euler
 coordinates cartesian
 solver 4
-
-
-# Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
-# MHDShockCloud ShockTube...}
+OrderOfAccSpace 2
+OrderOfAccTime  2
+CFL 0.4
 
 ics DoubleMachRef
 DMRmach 10.0
 DMRtheta 60
-# ideal gas adiabatic index, gamma {1.667, 1.4, 2.0} limits (1,2]
 GAMMA 1.4
 
-# IC filename
-ICfilename IC_DMRm10t60_n130
-
 # Output FileName Base
-OutputFile    DMRm10t60_n130
+OutputFile    DMRm10t60_n390
 
 
 # Which physics to use
@@ -33,10 +27,9 @@ EP_chemistry    0
 EP_coll_ionisation   0
 EP_rad_recombination 0
 EP_update_erg 0
-
-EP_MP_timestep_limit 0.0
-EP_Min_Temperature   1.0
-EP_Max_Temperature   1.0
+EP_MP_timestep_limit 0
+EP_Min_Temperature   1.0e-99
+EP_Max_Temperature   1.0e99
 EP_Hydrogen_MassFrac 1.0
 EP_Helium_MassFrac   1.0
 EP_Metal_MassFrac    1.0
@@ -46,12 +39,9 @@ EP_tc_strength        0.0
 EP_compton_cool       0
 EP_wind_acceleration  0
 
-
-
 # Number and type of tracers.
 ntracer 0
 chem_code none
-
 
 # Smooth Data by n cells? (n<=0 means no).
 smooth -1
@@ -61,8 +51,8 @@ noise -1.0
 ## Grid Parameters
 # Number of gridpoints in each direction (note cells must be cubic!)
 # INT
-NGridX  130
-NGridY  40
+NGridX  390
+NGridY  120
 NGridZ  1
 # Boundaries of Simulation box:
 Xmin 0.0
@@ -74,33 +64,21 @@ Ymax 1.0
 Zmax 1.0
 
 grid_nlevels 1
-grid_aspect_ratio_XX
-grid_aspect_ratio_YY
-grid_aspect_ratio_ZZ
-NG_centre_XX
-NG_centre_YY
-NG_centre_ZZ
-NG_refine_XX
-NG_refine_YY
-NG_refine_ZZ
+grid_aspect_ratio_XX 13
+grid_aspect_ratio_YY 4
+grid_aspect_ratio_ZZ 1
+NG_centre_XX 0.0
+NG_centre_YY 0.0
+NG_centre_ZZ 0.0
 
-# Data Output Path
 OutputPath test_DMR/
-# Output File Type = {text,fits,ftab,both,...}
 OutputFileType silo
-# Output data to file every nth timestep. (n=0 means only at the end).
 OutputFrequency 0
 OutputCriterion 1
 OPfreqTime 0.05
-
-# Start time
 StartTime 0.0
 FinishTime 0.2
-# Order of Accuracy (1=1st order; 2=2nd order)
-OrderOfAccSpace 2
-OrderOfAccTime  2
 
-# Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
 BC_XN inflow
 BC_XP outflow
 BC_YN reflecting
@@ -108,12 +86,6 @@ BC_YP DMR
 BC_Ninternal 1
 BC_INTERNAL_000 DMR2
 
-
-
-# CFL coefficient 0<cfl<1
-CFL 0.4
-
-# Artificial Viscosity 0=None, 1=Falle's linear viscosity.
 ArtificialViscosity 1
 EtaViscosity 0.1
 
@@ -130,7 +102,6 @@ magval 1.0
 RT_Nsources 0
 WIND_NSRC   0
 N_JET 0
-
 
 # Reference Vector
 refvec0 1.0
@@ -150,4 +121,3 @@ refvec13 1.0
 refvec14 1.0
 refvec15 1.0
 
-# Anything else?  

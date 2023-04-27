@@ -966,7 +966,7 @@ int NG_BC89flux::recv_BC89_flux_boundary(
     ff = send.fi[f];
     // if one of the cells is not on the domain (i.e. is stellar wind boundary
     // data), then no need to check the consistency so we move on to next cell.
-    if (!(fc->c[0]->isdomain) || !(ff->c[0]->isdomain)) continue;
+    // if (!(fc->c[0]->isdomain) || !(ff->c[0]->isdomain)) continue;
 
     for (int v = 0; v < par.nvar; v++)
       fc->flux[v] += ff->flux[v];

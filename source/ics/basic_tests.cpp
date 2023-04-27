@@ -1076,7 +1076,7 @@ int IC_basic_tests::setup_LWImplosion()
     c->P[VX] = 0.0;
     c->P[VY] = 0.0;
     c->P[VZ] = 0.0;
-    if (dpos[XX] < 0.15 && dpos[YY] < (0.15 - dpos[XX])) {
+    if (dpos[XX] < 0.1499 && dpos[YY] < (0.1499 - dpos[XX])) {
       c->P[RO] = 0.125;
       c->P[PG] = 0.140;
     }

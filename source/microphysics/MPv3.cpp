@@ -168,9 +168,6 @@
 /* prevent clang-format reordering */
 #include <fmt/ranges.h>
 
-#ifndef NDEBUG
-#endif  // NDEBUG
-
 #include "microphysics/MPv3.h"
 
 using namespace std;
@@ -792,7 +789,8 @@ double MPv3::get_ntot(
     const double xp   ///< x(H+)
 )
 {
-  return (JM_NION + JM_NELEC * xp) * nH;
+  double x = max(Min_NeutralFrac, min(Max_NeutralFrac, xp));
+  return (JM_NION + JM_NELEC * x) * nH;
 }
 
 // ##################################################################
@@ -880,7 +878,7 @@ int MPv3::convert_prim2local(
         p_local[lv_H0]);
   }
   if (p_local[lv_eint] < 0.0) {
-    spdlog::info(
+    spdlog::debug(
         "MPv3::convert_prim2local: negative pressure = {}, resetting to correspond to T_min",
         p_local[lv_eint]);
   }
@@ -894,7 +892,7 @@ int MPv3::convert_prim2local(
              / (gamma_minus_one);
 #ifdef MPV3_DEBUG
   if (t > p_local[lv_eint]) {
-    spdlog::error(
+    spdlog::debug(
         "input thermal energy to MPv3 too low: {} {}", t, p_local[lv_eint]);
   }
 #endif
@@ -904,7 +902,7 @@ int MPv3::convert_prim2local(
       / (gamma_minus_one);
 #ifdef MPV3_DEBUG
   if (t < p_local[lv_eint]) {
-    spdlog::error(
+    spdlog::debug(
         "input thermal energy to MPv3 too high: {} {}", t, p_local[lv_eint]);
   }
 #endif
@@ -971,7 +969,7 @@ int MPv3::convert_local2prim(
   if (T > 1.001 * EP->MaxTemperature) {
     Set_Temp(p_out, EP->MaxTemperature, 0);
 #ifdef MPV3_DEBUG
-    spdlog::info(
+    spdlog::debug(
         "MPv3::convert_local2prim() HIGH temperature encountered. T={}, obtained from nH={}, eint={}, x={}...  limiting to T={}",
         T, mpv_nH, p_local[lv_eint], p_out[pv_Hp], EP->MaxTemperature);
 #endif  // MPV3_DEBUG
@@ -979,7 +977,7 @@ int MPv3::convert_local2prim(
   if (T < 0.999 * EP->MinTemperature) {
     Set_Temp(p_out, EP->MinTemperature, 0);
 #ifdef MPV3_DEBUG
-    spdlog::error(
+    spdlog::debug(
         "MPv3::convert_local2prim() LOW  temperature encountered. T={}, obtained from nH={}, eint={}, x={}...  limiting to T={}",
         T, mpv_nH, p_local[lv_eint], p_out[pv_Hp], EP->MinTemperature);
 #endif  // MPV3_DEBUG
@@ -1020,6 +1018,7 @@ double MPv3::Temperature(
   //
   // generate vector of (nH,y(H0),Eint), and get Temperature from it.
   //
+  // spdlog::info("y_in {:12.6e}",pv[pv_Hp]);
   double P[nvl];
   convert_prim2local(pv, P);
   return get_temperature(pv[RO] / mean_mass_per_H, P[lv_eint], 1.0 - P[lv_H0]);
@@ -1319,13 +1318,6 @@ double MPv3::timescales_RT(
   //}
 #endif
 
-#ifdef MPV3_DEBUG
-  if (t < 3.16e9) {
-    spdlog::debug(
-        "MP timescales: xdot={}, Edot={} t_x={}", NV_Ith_S(y_out, lv_H0),
-        NV_Ith_S(y_out, lv_eint), t);
-  }
-#endif  // MPV3_DEBUG
 
 #ifdef ENERGY_CHANGE_TIMESTEP_LIMIT
   //
@@ -1335,12 +1327,6 @@ double MPv3::timescales_RT(
       t, DTFRAC * P[lv_eint] / (fabs(NV_Ith_S(y_out, lv_eint)) + TINYVALUE));
 #endif
 
-#ifdef MPV3_DEBUG
-  if (t < 3.16e9) {
-    spdlog::debug(" and min(t_x,t_e)={}", t);
-    spdlog::debug("P[1-x,E] : {}", std::vector<double>(P, P + 2));
-  }
-#endif  // MPV3_DEBUG
   return t;
 }
 
@@ -1441,12 +1427,14 @@ void MPv3::setup_radiation_source_parameters(
     spdlog::error(
         "{}: {}", "Timescales: N_heating_srcs doesn't match vector size in MP3",
         heat_src.size());
+    exit(1);
   }
   if (ion_src.size() != static_cast<unsigned int>(N_ion)) {
     spdlog::error(
         "{}: {}",
         "Timescales: N_ionising_srcs doesn't match vector size in MP3",
         ion_src.size());
+    exit(1);
   }
 #endif  // MPV3_DEBUG
 
@@ -1854,20 +1842,20 @@ int MPv3::ydot(
     Edot = min(0.0, (Edot) * (T - EP->MinTemperature) / EP->MinTemperature);
   }
 
-  if (NV_Ith_S(y_now, lv_H0) < 0.0) {
+  if (NV_Ith_S(y_now, lv_H0) < Min_NeutralFrac) {
     if (oneminusx_dot < 0.0) {
       spdlog::debug(
           "input HI frac {}, {} <0, but ydot(HI) = {} <0",
           NV_Ith_S(y_now, lv_H0), OneMinusX, oneminusx_dot);
-      oneminusx_dot = -oneminusx_dot;
+      oneminusx_dot = 0.0;
     }
   }
-  else if (NV_Ith_S(y_now, lv_H0) > 1.0) {
+  else if (NV_Ith_S(y_now, lv_H0) > Max_NeutralFrac) {
     if (oneminusx_dot > 0.0) {
       spdlog::debug(
           "input HI frac {}, {} >1, but ydot(HI) = {} >0",
           NV_Ith_S(y_now, lv_H0), OneMinusX, oneminusx_dot);
-      oneminusx_dot = -oneminusx_dot;
+      oneminusx_dot = 0.0;
     }
   }
   if (NV_Ith_S(y_now, lv_eint) < 0.0) {
@@ -1875,7 +1863,7 @@ int MPv3::ydot(
       spdlog::debug(
           "input E {}, T {} <0, but Edot = {} <0", NV_Ith_S(y_now, lv_eint), T,
           Edot);
-      Edot = -Edot;
+      Edot = 0.0;
     }
   }
   else if (get_temperature(mpv_nH, E_in, x_in) >= EP->MaxTemperature) {
@@ -1883,7 +1871,7 @@ int MPv3::ydot(
       spdlog::debug(
           "input E {}, T {} >Tmax, but Edot = {} >0", NV_Ith_S(y_now, lv_eint),
           T, Edot);
-      Edot = -Edot;
+      Edot = 0.0;
     }
   }
 
@@ -1906,10 +1894,10 @@ int MPv3::ydot(
 
 #ifdef MPV3_DEBUG
   if (NV_Ith_S(y_now, lv_H0) < -1e-2 || NV_Ith_S(y_now, lv_H0) > 1.0 + 1e-2) {
-    spdlog::info(
+    spdlog::debug(
         "debug last: ynow {} {}", NV_Ith_S(y_now, lv_H0),
         NV_Ith_S(y_now, lv_eint));
-    spdlog::info(
+    spdlog::debug(
         "debug last: ydot {} {}", NV_Ith_S(y_dot, lv_H0),
         NV_Ith_S(y_dot, lv_eint));
   }

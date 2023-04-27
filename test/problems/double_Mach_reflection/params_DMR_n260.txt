@@ -41,6 +41,11 @@ EP_Hydrogen_MassFrac 0.98
 EP_Helium_MassFrac   0.01
 EP_Metal_MassFrac    0.01
 
+EP_sat_thermal_cond   0
+EP_tc_strength        0.0
+EP_compton_cool       0
+EP_wind_acceleration  0
+
 # Number and type of tracers.
 ntracer 0
 chem_code NONE

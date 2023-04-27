@@ -736,10 +736,10 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
 #endif
       // if coarse cell is not on the domain (i.e. is stellar wind boundary
       // data), then just skipt it and continue.
-      if (!(fi->c[0]->isdomain)) {
-        iel += par.nvar;
-        continue;
-      }
+      // if (!(fi->c[0]->isdomain)) {
+      //  iel += par.nvar;
+      //  continue;
+      //}
 
       // construct error in flux:
       for (int v = 0; v < par.nvar; v++) {
