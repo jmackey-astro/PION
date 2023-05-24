@@ -1600,13 +1600,13 @@ int MPv3::ydot(
   // that case set rates to be large and return.
   //
   if (NV_Ith_S(y_now, lv_H0) < -0.1 || NV_Ith_S(y_now, lv_H0) > 1.1) {
-    spdlog::info(
-        "Bad input state y(H+) {} {}", NV_Ith_S(y_now, lv_H0),
+    spdlog::warn(
+        "MPv3 ydot Bad input state y(H+) {} {}", NV_Ith_S(y_now, lv_H0),
         NV_Ith_S(y_now, lv_eint));
   }
   if (NV_Ith_S(y_now, lv_eint) < 0.0) {
-    spdlog::info(
-        "Bad input state Eint {} {}", NV_Ith_S(y_now, lv_H0),
+    spdlog::warn(
+        "MPv3 ydot Bad input state Eint {} {}", NV_Ith_S(y_now, lv_H0),
         NV_Ith_S(y_now, lv_eint));
   }
 
@@ -1616,8 +1616,9 @@ int MPv3::ydot(
   double E_in = max(JM_MINERG, NV_Ith_S(y_now, lv_eint));
   // First get the temperature.
   double T = get_temperature(mpv_nH, E_in, x_in);
-  if (T < 0.0 || T > EP->MaxTemperature || !isfinite(T)) {
-    spdlog::info("Bad input state T: {} {} {} {}", T, mpv_nH, E_in, x_in);
+  if (T < 0.0 || T > ONE_PLUS_EPS * EP->MaxTemperature || !isfinite(T)) {
+    spdlog::warn(
+        "MPv3 ydot Bad input state T: {} {} {} {}", T, mpv_nH, E_in, x_in);
   }
   T = max(EP->MinTemperature, min(EP->MaxTemperature, T));
 

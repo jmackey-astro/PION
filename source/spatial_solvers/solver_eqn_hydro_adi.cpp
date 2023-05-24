@@ -435,9 +435,15 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
     spdlog::info("dU {}", std::vector<double>(dU, dU + eq_nvar));
     CI.print_cell(c);
 #endif
-    spdlog::info(
+    spdlog::warn(
         "CellAdvanceTime: Reset -ve density {:12.6e} to original {:12.6e}",
         u1[RHO], Pin[RO]);
+    spdlog::warn("PION will exit if this is a leaf cell on the domain");
+    if (c.isleaf && c.isdomain && !c.isbd && c.isgd) {
+      spdlog::error("negative density in leaf grid cell, bugging out.");
+      CI.print_cell(c);
+      exit(1);
+    }
     for (int t = 0; t < FV_ntr; t++)
       u1[eqTR[t]] *= Pin[RO] / u1[RHO];
     u1[RHO] = Pin[RO];

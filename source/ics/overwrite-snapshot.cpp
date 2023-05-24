@@ -106,99 +106,59 @@ int IC_overwrite_snapshot::setup_data(
     return 0;
   }
 
-
-  // spdlog::info("Supernova: on finest level");
-  //// simple supernova prescription: uniform density and energy within
-  //// a spherical radius.  Pressure = internal energy * (gamma-1)
-  // double mean_dens, mean_pres;
-  // double dx  = ggg->DX();
-  // double vol = 4.0 * pconst.pi() * pow(radius * dx, 3.0) / 3.0;
-  // mean_dens  = ejecta / vol;
-  // mean_pres  = energy * (SimPM->gamma - 1.0) / vol;
-  // spdlog::info(
-  //"Supernova: dx {} vol {} dens {} pres {}", dx, vol, mean_dens, mean_pres);
-
-  //// find tracer variables for H, He
-  // int tr_xh = 0, tr_xhe = 0, tr_xz = 0;
-  // for (int v = 0; v < SimPM->ntracer; v++) {
-  // if (SimPM->tracers[v] == "X_H")
-  // tr_xh = SimPM->ftr + v;
-  // else if (SimPM->tracers[v] == "X_He")
-  // tr_xhe = SimPM->ftr + v;
-  // else if (SimPM->tracers[v] == "X_Z")
-  // tr_xz = SimPM->ftr + v;
-  //}
-  // if (tr_xh == 0 || tr_xhe == 0 || tr_xz == 0) {
-  // spdlog::error(
-  //"overwrite-snapshot: H {}, He {} or Z {} tracers", tr_xh, tr_xhe,
-  // tr_xz);
-  // exit(1);
-  //}
-  // spdlog::info("Supernova: found required tracers");
-
-  //// hardcode SN position at the origin
-  // std::array<double, MAX_DIM> snpos;
-  // for (int v = 0; v < MAX_DIM; v++)
-  // snpos[v] = 0.0;
-
-  //// loop over cells.  All within r should have values overwritten
-  // cell *c = ggg->FirstPt();
-  // std::array<double, MAX_DIM> dpos;
-  // double distance = 0.0;
-  // do {
-  // CI.get_dpos(*c, dpos);
-  // distance = ggg->distance(snpos, dpos);
-  //// spdlog::info("Supernova: cell id {}, distance =
-  //// {:12.6e}",c->id,distance);
-
-  // if (distance < radius * dx) {
-  //// spdlog::info("\twithin radius {:12.6e}, settting vals {} {} {} {} {}",
-  ////  radius*dx, mean_dens, mean_pres, ejecta_X, ejecta_Y, ejecta_Z);
-  // c->P[RO]     = mean_dens;
-  // c->P[PG]     = mean_pres;
-  // c->P[tr_xh]  = ejecta_X;
-  // c->P[tr_xhe] = ejecta_Y;
-  // c->P[tr_xz]  = ejecta_Z;
-  //}
-  // for (int v = 0; v < SimPM->nvar; v++)
-  // c->Ph[v] = c->P[v];
-  //} while ((c = ggg->NextPt(*c)) != 0);
-
-  // return 0;
-
-
-
   // Edited by Yvonne Fichtner
+
+  if (radius < 1e-5) {
+    spdlog::info("Supernova: SN radius set to 0, no SN created, returning");
+    return 0;
+  }
+
+  // Check if it is a normal SN
+  // or if we have additionally a stellar wind (from a secondary)
+  bool wind_source;
+  double min_radius, max_radius;
+  if (SWP.Nsources > 0) {
+    wind_source = true;
+    min_radius  = 2;  // SWP.params[isw]->radius !?! CHANGE+copy to correct file
+    max_radius  = 2 + radius;  // SWP.params[isw]->radius + radius
+    spdlog::info("Supernova: Creating SN with stellar wind source");
+  }
+  else {
+    wind_source = false;
+    min_radius  = 0;
+    max_radius  = radius;
+  }
+
+
   spdlog::info("Supernova: on finest level");
   // supernova prescription: 2 component from Dan Whalen et al. 2008
   //
   double test_ejecta_before;  //, test_ejecta, test_energy;
   double iter_ejecta, iter_energy, F_par, v_core;
   bool found_v_core;
-  double dx          = ggg->DX();
-  double vol         = 4.0 * pconst.pi() * pow(radius * dx, 3.0) / 3.0;
-  int n_exp          = 9;
-  double v_max       = 3e4 * 1e5;
-  double T_start     = radius * dx / v_max;
-  int steps_per_cell = 1000000;  // 10000;
-  int N_steps        = steps_per_cell * radius;
+  double dx    = ggg->DX();
+  int n_exp    = 9;
+  double v_max = 3e4 * 1e5;
+  // time the ejected needed to reach the outer boundary
+  double T_start     = max_radius * dx / v_max;
+  int steps_per_cell = 1000000;                  // 10000;
+  int N_steps        = steps_per_cell * radius;  // cells SN is build in
   test_ejecta_before = 0;
-  // test_ejecta = 0;
-  // test_energy = 0;
-  iter_ejecta  = 0;
-  iter_energy  = 0;
-  found_v_core = false;
+  iter_ejecta        = 0;
+  iter_energy        = 0;
+  found_v_core       = false;
+
 
   spdlog::info(
-      "Supernova: dx {} vol {}, v_max {}, T_start {}, StartTime {}, SimTime {}",
-      dx, vol, v_max, T_start, SimPM->starttime, SimPM->starttime);
+      "Supernova: dx {} v_max {}, T_start {}, StartTime {}, SimTime {}", dx,
+      v_max, T_start, SimPM->starttime, SimPM->starttime);
 
-  SimPM->starttime = T_start;
-  SimPM->simtime   = T_start;
+  SimPM->starttime = SimPM->starttime + T_start;
+  SimPM->simtime   = SimPM->simtime + T_start;
 
   spdlog::info(
-      "Supernova: dx {} vol {}, v_max {}, T_start {}, StartTime {}, SimTime {}",
-      dx, vol, v_max, T_start, SimPM->starttime, SimPM->starttime);
+      "Supernova: dx {} v_max {}, T_start {}, StartTime {}, SimTime {}", dx,
+      v_max, T_start, SimPM->starttime, SimPM->starttime);
 
 
   // find tracer variables for H, He, Z and wind
@@ -250,10 +210,10 @@ int IC_overwrite_snapshot::setup_data(
   double distance = 0.0;
   do {
     CI.get_dpos(*c, dpos);
-    distance = ggg->distance(snpos, dpos);
+    distance = ggg->distance(snpos, dpos) - min_radius * dx;
 
-    if (distance < radius * dx) {
-      // distance: center of cell
+    if ((distance > 0) && (distance < radius * dx)) {
+      // distance: center of cell from real OR shifted 0 point
       test_ejecta_before =
           test_ejecta_before + (c->P[RO]) * ggg->CellVolume(*c, dx);
     }
@@ -262,7 +222,7 @@ int IC_overwrite_snapshot::setup_data(
       c->Ph[v] = c->P[v];
   } while ((c = ggg->NextPt(*c)) != 0);
 
-  if (test_ejecta_before > 0.01 * ejecta) {
+  if (test_ejecta_before > 0.05 * ejecta) {
     spdlog::error(
         "Supernova: test_ejecta_before {}, SN ejecta {}", test_ejecta_before,
         ejecta);
@@ -283,17 +243,17 @@ int IC_overwrite_snapshot::setup_data(
     distance = 0.0;
     do {
       CI.get_dpos(*c, dpos);
-      distance = ggg->distance(snpos, dpos);
+      distance = ggg->distance(snpos, dpos) - min_radius * dx;
 
 
-      if (distance < radius * dx) {
+      if ((distance > 0) && (distance < radius * dx)) {
         c->P[VX] = (distance - 0.45 * dx) / T_start;
-        if (distance / T_start <= v_core) {
+        if (c->P[VX] <= v_core) {
           c->P[RO] = F_par * pow(T_start, -3.0);
         }
         else {
-          c->P[RO] = F_par * pow(T_start, -3.0)
-                     * pow((distance / T_start) / v_core, -n_exp);
+          c->P[RO] =
+              F_par * pow(T_start, -3.0) * pow(c->P[VX] / v_core, -n_exp);
         }
         mp->Set_Temp(c->P.data(), SimPM->EP.MinTemperature, SimPM->gamma);
         c->P[tr_xh]  = ejecta_X;
@@ -309,7 +269,7 @@ int IC_overwrite_snapshot::setup_data(
       }
 
 
-      if (distance < radius * dx) {
+      if ((distance > 0) && (distance < radius * dx)) {
         iter_ejecta += c->P[RO] * ggg->CellVolume(*c, dx);
         iter_energy +=
             0.5 * c->P[RO] * c->P[VX] * c->P[VX] * ggg->CellVolume(*c, dx);
@@ -329,17 +289,17 @@ int IC_overwrite_snapshot::setup_data(
     distance = 0.0;
     do {
       CI.get_dpos(*c, dpos);
-      distance = ggg->distance(snpos, dpos);
+      distance = ggg->distance(snpos, dpos) - min_radius * dx;
 
 
-      if (distance < radius * dx) {
+      if ((distance > 0) && (distance < radius * dx)) {
         c->P[VX] = (distance - 0.45 * dx) / T_start;
-        if (distance / T_start <= v_core) {
+        if (c->P[VX] <= v_core) {
           c->P[RO] = F_par * pow(T_start, -3.0);
         }
         else {
-          c->P[RO] = F_par * pow(T_start, -3.0)
-                     * pow((distance / T_start) / v_core, -n_exp);
+          c->P[RO] =
+              F_par * pow(T_start, -3.0) * pow(c->P[VX] / v_core, -n_exp);
         }
         mp->Set_Temp(c->P.data(), SimPM->EP.MinTemperature, SimPM->gamma);
         c->P[tr_xh]  = ejecta_X;
@@ -355,7 +315,7 @@ int IC_overwrite_snapshot::setup_data(
       }
 
 
-      if (distance < radius * dx) {
+      if ((distance > 0) && (distance < radius * dx)) {
         iter_ejecta += c->P[RO] * ggg->CellVolume(*c, dx);
         iter_energy +=
             0.5 * c->P[RO] * c->P[VX] * c->P[VX] * ggg->CellVolume(*c, dx);

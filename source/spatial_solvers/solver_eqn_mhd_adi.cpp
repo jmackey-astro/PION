@@ -452,8 +452,19 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
     u1[v] += dU[v];
 
   if (u1[RHO] < 0.0) {
-    spdlog::debug("celladvancetime, negative density. rho={}", u1[RHO]);
-    CI.print_cell(c);
+    spdlog::warn("celladvancetime, negative density. rho={}", u1[RHO]);
+    spdlog::warn(
+        "CellAdvanceTime: Reset -ve density {:12.6e} to original {:12.6e}",
+        u1[RHO], Pin[RO]);
+    spdlog::warn("PION will exit if this is a leaf cell on the domain");
+    if (c.isleaf && c.isdomain && !c.isbd && c.isgd) {
+      spdlog::error("negative density in leaf grid cell, bugging out.");
+      CI.print_cell(c);
+      exit(1);
+    }
+    for (int t = 0; t < FV_ntr; t++)
+      u1[eqTR[t]] *= Pin[RO] / u1[RHO];
+    u1[RHO] = Pin[RO];
   }
 
   if (UtoP(u1, Pf, MinTemp, eq_gamma) != 0) {
