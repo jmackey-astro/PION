@@ -1,0 +1,241 @@
+# parameter file for Initial Condition Generation.
+# 
+# 2018.10.03 JM: test problem for 1D wind including non-equilibrium chemistry
+
+##################################################
+
+#Basic Properties 
+ndim 1
+coordinates cartesian
+eqn euler
+solver 3
+OrderOfAccSpace 2
+OrderOfAccTime  2
+
+##################################################
+
+# Which ICs to set up
+ics TestCIE
+
+##################################################
+
+OutputPath ./Simulation/
+OutputFile   testCIE_mpv10
+OutputFileType silo
+OutputCriterion 0    # save data per n-time-units=1, per n-steps=0
+OutputFrequency 2048  # applies if OutputCriterion=0
+OPfreqTime 5e10      # applies if OutputCriterion=1
+StartTime 0.0e13
+FinishTime 3.156e12
+
+
+##################################################
+# Tracers.
+
+chem_code MPv10
+
+ntracer 29        # Number of tracers
+
+Tracer000 X_H     # H  mass fraction (element)
+Tracer001 X_He
+Tracer002 X_C
+Tracer003 X_N
+Tracer004 X_O
+
+Tracer005 H1+
+Tracer006 He1+
+Tracer007 He2+
+Tracer008 C1+
+Tracer009 C2+
+Tracer010 C3+
+Tracer011 C4+
+Tracer012 C5+
+Tracer013 C6+
+Tracer014 N1+
+Tracer015 N2+
+Tracer016 N3+
+Tracer017 N4+
+Tracer018 N5+
+Tracer019 N6+
+Tracer020 N7+
+Tracer021 O1+
+Tracer022 O2+
+Tracer023 O3+
+Tracer024 O4+
+Tracer025 O5+
+Tracer026 O6+
+Tracer027 O7+
+Tracer028 O8+
+
+# Species abundances are mass fractions with same normalization as element abundances.
+# If X_C    = 0.01, and Y(C1+)=0.02, Then this is an error. 
+# IF Y(C1+) = 0.01, Then all carbon is in C1+ ion.
+
+
+UNIFORM_ambTR0   0.6       # Mass fraction of H
+UNIFORM_ambTR1   0.38      # Mass fraction of He
+UNIFORM_ambTR2   0.01      # Mass fraction of C
+UNIFORM_ambTR3   0.005     # Mass fraction of N
+UNIFORM_ambTR4   0.005     # Mass fraction of O
+
+UNIFORM_ambTR5   0.1       # Mass fraction of H1+
+
+UNIFORM_ambTR6   0.01      # Mass fraction of He1+
+UNIFORM_ambTR7   1.00e-08  # Mass fraction of He2+
+
+UNIFORM_ambTR8   4.00e-03  # Mass fraction of C1+
+UNIFORM_ambTR9   1.00e-04  # Mass fraction of C2+
+UNIFORM_ambTR10  1.00e-08  # Mass fraction of C3+
+UNIFORM_ambTR11  1.00e-12  # Mass fraction of C4+
+UNIFORM_ambTR12  1.00e-18  # Mass fraction of C5+
+UNIFORM_ambTR13  1.00e-18  # Mass fraction of C6+
+
+UNIFORM_ambTR14  1.00e-04  # Mass fraction of N1+
+UNIFORM_ambTR15  5.00e-05  # Mass fraction of N2+
+UNIFORM_ambTR16  1.00e-08  # Mass fraction of N3+
+UNIFORM_ambTR17  1.00e-12  # Mass fraction of N4+
+UNIFORM_ambTR18  1.00e-18  # Mass fraction of N5+
+UNIFORM_ambTR19  1.00e-18  # Mass fraction of N6+
+UNIFORM_ambTR20  1.00e-18  # Mass fraction of N7+
+
+UNIFORM_ambTR21  1.00e-04  # Mass fraction of O1+
+UNIFORM_ambTR22  5.00e-05  # Mass fraction of O2+
+UNIFORM_ambTR23  1.00e-08  # Mass fraction of O3+
+UNIFORM_ambTR24  1.00e-12  # Mass fraction of O4+
+UNIFORM_ambTR25  1.00e-18  # Mass fraction of O5+
+UNIFORM_ambTR26  1.00e-18  # Mass fraction of O6+
+UNIFORM_ambTR27  1.00e-18  # Mass fraction of O7+
+UNIFORM_ambTR28  1.00e-18  # Mass fraction of O8+
+
+
+InitIons LEAVE
+
+##################################################
+
+# Which physics to use
+
+EP_dynamics          0
+EP_raytracing        0
+EP_phot_ionisation   0
+EP_cooling           1
+EP_chemistry         1
+EP_coll_ionisation   1
+EP_rad_recombination 1
+
+EP_update_erg        1
+EP_MP_timestep_limit 1
+
+EP_Min_Temperature   1.0e1
+EP_Max_Temperature   1.0e9
+EP_Hydrogen_MassFrac 0.73
+EP_Helium_MassFrac   0.27
+EP_Metal_MassFrac    0.0075
+
+##################################################
+
+smooth -1
+noise  -1
+
+## Grid Parameters
+# Number of gridpoints in each direction
+# INT
+NGridX  128
+NGridY  1
+NGridZ  1
+# Boundaries of Simulation box:
+Xmin   0.00e18
+Ymin   0.00e19
+Zmin   0.00e19
+# Max values of x,y,z
+Xmax   2.56e18
+Ymax   0.00e18
+Zmax   0.00e18
+# Nested grid
+grid_nlevels 1
+grid_aspect_ratio_XX 1
+grid_aspect_ratio_YY 1
+grid_aspect_ratio_ZZ 1
+NG_centre_XX 0.0e18
+NG_centre_YY 0.0e18
+NG_centre_ZZ 0.0e18
+NG_refine_XX 0
+NG_refine_YY 0
+NG_refine_ZZ 0
+
+
+
+BC_XN           reflecting
+BC_XP           inflow
+BC_Ninternal    0
+#BC_Ninternal    1
+#BC_INTERNAL_000 radiative-shock
+
+# ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
+GAMMA 1.666666666666666666666
+
+# CFL coefficient 0<cfl<1
+CFL 0.1
+# Artificial Viscosity 0=None, 1=Falle's linear viscosity.
+ArtificialViscosity 1
+EtaViscosity 0.15
+
+# Code Units
+# Reference systems of units are MKS (i.e. SI), CGS, others?
+units 
+# One code unit is this number of reference units.
+rhoval 1
+lenval 1
+velval 1
+magval 1
+
+## Parameters specific for various problems
+UNIFORM_ambRO    2.38e-22
+
+
+########################
+# source terms
+########################
+RT_Nsources 0
+WIND_NSRC 0
+N_JET 0
+
+########################
+# Reference Vector
+########################
+refvec0 1.0e-24  # ~1 particles /cc
+refvec1 1.0e-13  # T ~ 10^3K
+refvec2 1.0e6    # v ~ 100 km/s = 1.e7 cm/s
+refvec3 1.0e6    # v 
+refvec4 1.0e6    # v 
+refvec5 1.0e-6   # B (gauss)
+refvec6 1.0e-6
+refvec7 1.0e-6
+refvec8 1.0
+refvec9 1.0
+refvec10 1.0
+refvec11 1.0
+refvec12 1.0
+refvec13 1.0
+refvec14 1.0
+refvec15 1.0
+refvec16 1.0
+refvec17 1.0
+refvec18 1.0
+refvec19 1.0
+refvec20 1.0
+refvec21 1.0
+refvec22 1.0
+refvec23 1.0
+refvec24 1.0
+refvec25 1.0
+
+refvec26 1.0
+refvec27 1.0
+refvec28 1.0
+refvec29 1.0
+refvec30 1.0
+refvec31 1.0
+refvec32 1.0
+refvec33 1.0
+
+# Anything else?  

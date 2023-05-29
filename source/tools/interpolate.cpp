@@ -260,7 +260,7 @@ void interpolate_arrays::root_find_bilinear(
   //
   // Given a vector of (x,y)-values, and corresponding f-values,
   // and an input (x,y) value, find the corresponding f-value by
-  // bisection and then bi-linear interopolation.
+  // bisection and then bi-linear interpolation.
   //
   // First we find the two x/y-points in the array which bracket the requested
   // x/y-value, with bisection.

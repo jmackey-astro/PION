@@ -1,0 +1,261 @@
+# parameter file for Initial Condition Generation.
+
+## Basic Properties
+ndim 1
+eqn i-mhd
+solver 7
+coordinates cartesian
+
+# Which ICs to set up {RadiativeShock, RadiativeShockOutflow
+ics RadiativeShock
+
+# Output FileName Base
+OutputFile    RSH1D_n0512_v100_Ray79E_HHe
+
+# Type of Boundary Condition ('INrsh_' is the left edge density limiter)
+BC_XN reflecting
+BC_XP inflow
+BC_Ninternal 0
+BC_INTERNAL_000 radiative-shock 
+
+# Number and type of tracers.
+chem_code MPv10
+InitIons LEAVE
+
+ntracer 29        # Number of tracers
+
+Tracer000 X_H     # H  mass fraction (element)
+Tracer001 X_He
+Tracer002 X_C
+Tracer003 X_N
+Tracer004 X_O
+
+Tracer005 H1+
+Tracer006 He1+
+Tracer007 He2+
+Tracer008 C1+
+Tracer009 C2+
+Tracer010 C3+
+Tracer011 C4+
+Tracer012 C5+
+Tracer013 C6+
+Tracer014 N1+
+Tracer015 N2+
+Tracer016 N3+
+Tracer017 N4+
+Tracer018 N5+
+Tracer019 N6+
+Tracer020 N7+
+Tracer021 O1+
+Tracer022 O2+
+Tracer023 O3+
+Tracer024 O4+
+Tracer025 O5+
+Tracer026 O6+
+Tracer027 O7+
+Tracer028 O8+
+
+
+## Parameters specific for various problems
+#RADSH_r0 1.67e-23
+RADSH_r0 2.0374e-23
+RADSH_vs 100.0e5
+RADSH_T0 1.00e4
+RADSH_B0 1.0e-6
+RADSH_divisor 0.8
+
+
+#This gives the mass fraction
+RADSH_upTR0   0.71325   # Mass fraction of H
+RADSH_upTR1   0.27575   # Mass fraction of He
+RADSH_upTR2   0.00033   # Mass fraction of C
+RADSH_upTR3   0.00001   # Mass fraction of N
+RADSH_upTR4   0.00066   # Mass fraction of O
+
+RADSH_upTR5   1.00e-18  # Mass fraction of H1+
+
+RADSH_upTR6   1.00e-18  # Mass fraction of He1+
+RADSH_upTR7   1.00e-18  # Mass fraction of He2+
+
+RADSH_upTR8   1.00e-18  # Mass fraction of C1+
+RADSH_upTR9   1.00e-18  # Mass fraction of C2+
+RADSH_upTR10  1.00e-18  # Mass fraction of C3+
+RADSH_upTR11  1.00e-18  # Mass fraction of C4+
+RADSH_upTR12  1.00e-18  # Mass fraction of C5+
+RADSH_upTR13  1.00e-18  # Mass fraction of C6+
+
+RADSH_upTR14  1.00e-18  # Mass fraction of N1+
+RADSH_upTR15  1.00e-18  # Mass fraction of N2+
+RADSH_upTR16  1.00e-18  # Mass fraction of N3+
+RADSH_upTR17  1.00e-18  # Mass fraction of N4+
+RADSH_upTR18  1.00e-18  # Mass fraction of N5+
+RADSH_upTR19  1.00e-18  # Mass fraction of N6+
+RADSH_upTR20  1.00e-18  # Mass fraction of N7+
+
+RADSH_upTR21  1.00e-18  # Mass fraction of O1+
+RADSH_upTR22  1.00e-18  # Mass fraction of O2+
+RADSH_upTR23  1.00e-18  # Mass fraction of O3+
+RADSH_upTR24  1.00e-18  # Mass fraction of O4+
+RADSH_upTR25  1.00e-18  # Mass fraction of O5+
+RADSH_upTR26  1.00e-18  # Mass fraction of O6+
+RADSH_upTR27  1.00e-18  # Mass fraction of O7+
+RADSH_upTR28  1.00e-18  # Mass fraction of O8+
+
+#This gives the mass fraction
+RADSH_dnTR0   0.71325   # Mass fraction of H
+RADSH_dnTR1   0.27575   # Mass fraction of He
+RADSH_dnTR2   0.00033   # Mass fraction of C
+RADSH_dnTR3   0.00001   # Mass fraction of N
+RADSH_dnTR4   0.00066   # Mass fraction of O
+
+RADSH_dnTR5   1.00e-18  # Mass fraction of H1+
+
+RADSH_dnTR6   1.00e-18  # Mass fraction of He1+
+RADSH_dnTR7   1.00e-18  # Mass fraction of He2+
+
+RADSH_dnTR8   1.00e-18  # Mass fraction of C1+
+RADSH_dnTR9   1.00e-18  # Mass fraction of C2+
+RADSH_dnTR10  1.00e-18  # Mass fraction of C3+
+RADSH_dnTR11  1.00e-18  # Mass fraction of C4+
+RADSH_dnTR12  1.00e-18  # Mass fraction of C5+
+RADSH_dnTR13  1.00e-18  # Mass fraction of C6+
+
+RADSH_dnTR14  1.00e-18  # Mass fraction of N1+
+RADSH_dnTR15  1.00e-18  # Mass fraction of N2+
+RADSH_dnTR16  1.00e-18  # Mass fraction of N3+
+RADSH_dnTR17  1.00e-18  # Mass fraction of N4+
+RADSH_dnTR18  1.00e-18  # Mass fraction of N5+
+RADSH_dnTR19  1.00e-18  # Mass fraction of N6+
+RADSH_dnTR20  1.00e-18  # Mass fraction of N7+
+
+RADSH_dnTR21  1.00e-18  # Mass fraction of O1+
+RADSH_dnTR22  1.00e-18  # Mass fraction of O2+
+RADSH_dnTR23  1.00e-18  # Mass fraction of O3+
+RADSH_dnTR24  1.00e-18  # Mass fraction of O4+
+RADSH_dnTR25  1.00e-18  # Mass fraction of O5+
+RADSH_dnTR26  1.00e-18  # Mass fraction of O6+
+RADSH_dnTR27  1.00e-18  # Mass fraction of O7+
+RADSH_dnTR28  1.00e-18  # Mass fraction of O8+
+
+
+# extra physics
+EP_dynamics     1
+EP_raytracing   0
+EP_phot_ionisation   0
+EP_cooling      1
+EP_chemistry    1
+EP_coll_ionisation   1
+EP_rad_recombination 1
+EP_update_erg 1
+EP_MP_timestep_limit 0
+EP_Min_Temperature 200.0
+EP_Max_Temperature 1.0e8
+EP_Hydrogen_MassFrac 0.715
+EP_Helium_MassFrac   0.273
+EP_Metal_MassFrac    0.0142
+EP_sat_thermal_cond 0
+EP_tc_strength 0.0
+
+smooth -1
+noise 0
+
+## Grid Parameters
+# Number of gridpoints in each direction (note cells must be cubic!)
+# INT
+NGridX  512
+NGridY  4
+NGridZ  64
+# Boundaries of Simulation box:
+Xmin 0.0
+Ymin 0.0
+Zmin -32.0
+# Max values of x,y,z
+Xmax 7.68e15
+Ymax 0.04e17
+Zmax 32.0
+
+# Nested grid
+grid_nlevels 1
+grid_aspect_ratio_XX 1
+grid_aspect_ratio_YY 1
+grid_aspect_ratio_ZZ 1
+NG_centre_XX 0.0e18
+NG_centre_YY 0.0e18
+NG_centre_ZZ 0.0e18
+NG_refine_XX 0
+NG_refine_YY 0
+NG_refine_ZZ 0
+
+
+# Data Output Path
+OutputPath ./
+OutputFileType silo
+OutputFrequency 1024
+OutputCriterion 0
+OPfreqTime 3.16e9
+
+StartTime 0.0
+FinishTime 5.0e10
+
+OrderOfAccSpace 2
+OrderOfAccTime  2
+GAMMA 1.6666666666666666666666
+CFL 0.1
+ArtificialViscosity 1
+EtaViscosity 0.15
+
+
+RT_Nsources 0
+WIND_NSRC   0
+N_JET       0
+
+
+# Reference Vector
+refvec0 1.0e-23  # ~10 particles /cc
+refvec1 3.0e-12  # T ~ 10^4K
+refvec2 3.0e6    # v ~ 100 km/s = 1.e7 cm/s
+refvec3 3.0e6    # v ~ 100 km/s
+refvec4 3.0e6    # v ~ 100 km/s
+refvec5 1.0e-6
+refvec6 1.0e-6
+refvec7 1.0e-6
+refvec8 1.0
+refvec9 1.0
+refvec10 1.0
+refvec11 1.0
+refvec12 1.0
+refvec13 1.0
+refvec14 1.0
+refvec15 1.0
+refvec16 1.0
+refvec17 1.0
+refvec18 1.0
+refvec19 1.0
+refvec20 1.0
+refvec21 1.0
+refvec22 1.0
+refvec23 1.0
+refvec24 1.0
+refvec25 1.0
+refvec26 1.0
+refvec27 1.0
+refvec28 1.0
+refvec29 1.0
+refvec30 1.0
+refvec31 1.0
+refvec32 1.0
+refvec33 1.0
+refvec34 1.0
+refvec35 1.0
+refvec36 1.0
+
+# Code Units
+# Reference systems of units are MKS (i.e. SI), CGS, others?
+units cgs
+# One code unit is this number of reference units.
+rhoval 1.7e-19
+lenval 1.0e11
+velval 3.1688e3
+magval 1.3e-6
+
+# Anything else?  

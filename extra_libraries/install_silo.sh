@@ -13,6 +13,9 @@ mkdir share
 mkdir cmake
 
 NCORES=4
+#export CC=gcc-11
+#export CXX=g++-11
+#export FC=gfortran-11
 export CC=gcc
 export CXX=g++
 export FC=gfortran

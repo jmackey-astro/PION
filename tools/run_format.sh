@@ -35,6 +35,6 @@ do
     done
     if [ ! -z "$(find $dir -iname "*.py")" ]
     then
-        yapf -ir $dir
+        yapf3 -ir $dir
     fi
 done

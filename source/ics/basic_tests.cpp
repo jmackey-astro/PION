@@ -131,6 +131,14 @@ int IC_basic_tests::setup_data(
     spdlog::info("Setting up Liska & Wendroff (2003) implosion test");
     err += setup_LWImplosion();
   }
+  else if (ics == "TestCIE") {
+    spdlog::info("Setting up static problem for microphysics integration");
+    err += setup_TestCIE();
+  }
+  else if (ics == "TestMC") {
+    spdlog::info("Setting up static problem for Mellema Cooling");
+    err += setup_TestMC();
+  }
   else {
     spdlog::error("{}: {}", "Don't know what Initial Condition is!", ics);
     exit(1);
@@ -1085,6 +1093,181 @@ int IC_basic_tests::setup_LWImplosion()
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+int IC_basic_tests::setup_TestCIE()
+{
+  // Set up a 1D grid where the gas temperature changes from 10^2K to
+  // 10^8K from the left to the right boundary
+  //
+  int err  = 0;
+  int ndim = gg->Ndim();
+  if (ndim != 1) {
+    spdlog::error("{}: {}", "TestCIE nees 1D problem domain", ndim);
+    exit(1);
+  }
+  if (!mp) {
+    spdlog::error("TestCIE needs a microphysics module");
+    exit(1);
+  }
+
+  SimPM->gamma       = 5. / 3.;
+  SimPM->EP.cooling  = 0;
+  SimPM->EP.dynamics = 0;
+  double pressure    = 1.0e-11;
+  double rho         = 1.0e-22;
+  int ng             = SimPM->NG[XX];
+  double xmin        = SimPM->Xmin[XX];
+  double xmax        = SimPM->Xmax[XX];
+  double dx          = (xmax - xmin) / ng;
+  double logT0 = 1.5, logT1 = 9.0;
+  double dlogT = (logT1 - logT0) / ng;
+  // check for multiple sub-domains
+  if (!pconst.equalD(SimPM->Xmin[XX], gg->Xmin(XX))) {
+    logT0 =
+        logT0
+        + (gg->Xmin(XX) - SimPM->Xmin[XX]) * (logT1 - logT0) / (xmax - xmin);
+  }
+  if (!pconst.equalD(SimPM->Xmax[XX], gg->Xmax(XX))) {
+    logT1 =
+        logT1
+        - (SimPM->Xmax[XX] - gg->Xmax(XX)) * (logT1 - logT0) / (xmax - xmin);
+  }
+  spdlog::info("{} {} {} {}", "logT0=", logT0, ", logT1=", logT1);
+
+  // tracer variables
+  ostringstream temp;
+  string seek, str;
+  double trval[SimPM->ntracer];
+  for (int t = 0; t < SimPM->ntracer; t++) {
+    temp.str("");
+    temp << "UNIFORM_ambTR" << t;
+    seek = temp.str();
+    str  = rp->find_parameter(seek);
+    if (str != "")
+      trval[t] = atof(str.c_str());
+    else
+      trval[t] = -1.0e99;
+  }
+  seek = "UNIFORM_ambRO";
+  str  = rp->find_parameter(seek);
+  if (str == "")
+    rho = 1.0e-22;
+  else
+    rho = atof(str.c_str());
+
+  class cell *c = gg->FirstPt();
+  double dpos[ndim], T = 0;
+  int ct = 0;
+  do {
+    c->P[RO] = rho;
+    c->P[PG] = pressure;
+    c->P[VX] = 0.0;
+    c->P[VY] = 0.0;
+    c->P[VZ] = 0.0;
+    for (int t = 0; t < SimPM->ntracer; t++)
+      c->P[t + SimPM->ftr] = trval[t];
+    T = pow(10.0, logT0 + ct * dlogT);
+    mp->Set_Temp(c->P.data(), T, SimPM->gamma);
+    ct++;
+  } while ((c = gg->NextPt(*c)) != 0);
+  return err;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+int IC_basic_tests::setup_TestMC()
+{
+  // Mellema Cooling Test: Set up a 1D grid with uniform temperature (10^8K)
+  // and density
+
+  int err  = 0;
+  int ndim = gg->Ndim();
+  if (ndim != 1) {
+    spdlog::error("{}: {}", "TestMC nees 1D problem domain", ndim);
+    exit(1);
+  }
+  if (!mp) {
+    spdlog::error("TesMC needs a microphysics module");
+    exit(1);
+  }
+
+  SimPM->gamma       = 5. / 3.;
+  SimPM->EP.cooling  = 1;  // We are doing cooling; Why is this set to zero?
+  SimPM->EP.dynamics = 0;  // Some sort of static. Static in what sense?
+  double pressure    = 1.0e-07;  // Obtained from ideal gas EOS with state
+                                 // quantities given below.
+  double rho  = 3.6595e-24;      // Equivalent to n = 1 cm^-3
+  int ng      = SimPM->NG[XX];
+  double xmin = SimPM->Xmin[XX];
+  double xmax = SimPM->Xmax[XX];
+  double dx   = (xmax - xmin) / ng;
+
+  double logT = 8;  // Initial uniform temperature
+
+  // check for multiple sub-domains
+  /*
+  // Did not understood this part
+  // What is equalD?
+  if (!pconst.equalD(SimPM->Xmin[XX], gg->Xmin(XX))) {
+    logT0 =
+        logT0
+        + (gg->Xmin(XX) - SimPM->Xmin[XX]) * (logT1 - logT0) / (xmax - xmin);
+  }
+  if (!pconst.equalD(SimPM->Xmax[XX], gg->Xmax(XX))) {
+    logT1 =
+        logT1
+        - (SimPM->Xmax[XX] - gg->Xmax(XX)) * (logT1 - logT0) / (xmax - xmin);
+  }
+  spdlog::info("{} {} {} {}", "logT0=", logT0, ", logT1=", logT1);
+*/
+
+  // tracer variables
+  ostringstream temp;
+  string seek, str;
+  double trval[SimPM->ntracer];
+  for (int t = 0; t < SimPM->ntracer; t++) {
+    temp.str("");
+    temp << "UNIFORM_ambTR" << t;
+    seek = temp.str();
+    str  = rp->find_parameter(seek);
+    if (str != "")
+      trval[t] = atof(str.c_str());
+    else
+      trval[t] = -1.0e99;
+  }
+
+  // density
+  seek = "UNIFORM_ambRO";
+  str  = rp->find_parameter(seek);
+  if (str == "")
+    rho = 3.6595e-24;  // Default density
+  else
+    rho = atof(str.c_str());
+
+  // values of the parameters in each cell
+  class cell *c = gg->FirstPt();
+  double dpos[ndim], T = 0;
+  int ct = 0;
+  do {
+    c->P[RO] = rho;
+    c->P[PG] = pressure;
+    c->P[VX] = 0.0;
+    c->P[VY] = 0.0;
+    c->P[VZ] = 0.0;
+    for (int t = 0; t < SimPM->ntracer; t++)
+      c->P[t + SimPM->ftr] = trval[t];
+    T = pow(10.0, logT);
+    mp->Set_Temp(c->P.data(), T, SimPM->gamma);
+    ct++;
+  } while ((c = gg->NextPt(*c)) != 0);
+  return err;
+}
 
 // ##################################################################
 // ##################################################################

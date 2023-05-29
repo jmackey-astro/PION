@@ -42,6 +42,7 @@
 #include "microphysics/MPv3.h"
 #endif
 
+#include "microphysics/MPv10.h"
 #include "microphysics/MPv5.h"
 #include "microphysics/MPv6.h"
 #include "microphysics/MPv7.h"
@@ -486,17 +487,16 @@ int setup_fixed_grid::setup_microphysics(
         }
         break;
 
-#ifdef CODE_EXT_HHE
       case 10:
         spdlog::info("setting up MPv10 module");
-        MP = new mpv9_HHe(
-            SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), SimPM.gamma);
+        MP = new MPv10(
+            SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer,
+            SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
         if (!MP) {
           spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
           exit(1);
         }
         break;
-#endif
 
       default:
         spdlog::error("{}: {}", "unhandled microphysics type", SimPM.chem_code);
@@ -1104,6 +1104,10 @@ int setup_fixed_grid::setup_boundary_structs(
         grid->BC_bd[i]->itype = STWIND;
         grid->BC_bd[i]->type  = "STWIND";
       }
+      else if (grid->BC_bd[i]->type == "radiative-shock") {
+        grid->BC_bd[i]->itype = RADSHOCK;
+        grid->BC_bd[i]->type  = "RADSHOCK";
+      }
       else {
         spdlog::error(
             "{}: {}", "Don't know this BC type", grid->BC_bd[i]->type);
@@ -1183,8 +1187,12 @@ void setup_fixed_grid::setup_dataio_class(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int setup_fixed_grid::set_equations(
     class SimParams &par  ///< simulation parameters

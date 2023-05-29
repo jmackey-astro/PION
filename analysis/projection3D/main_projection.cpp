@@ -1409,7 +1409,7 @@ int main(int argc, char **argv)
           spdlog::info("sim origin in units of dx : {}", origin);
           spdlog::info("level origin in units of dx : {}", origin);
           spdlog::info("sim xmin : {}", im_xmin);
-          spdlog::info("level xmin : {}", lv_xmin);
+          // spdlog::debug("level xmin : {}", lv_xmin);
 #endif  // NDEBUG
           for (int v = 0; v < 3; v++) {
             corner[v] = static_cast<int>(round(

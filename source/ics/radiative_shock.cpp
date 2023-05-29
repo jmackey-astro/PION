@@ -142,12 +142,15 @@ int IC_radiative_shock::setup_data(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int IC_radiative_shock::setup_RadiativeShock()
 {
-
   spdlog::debug(
       "\t\tSetting up radiative shock problem with v={}, rho={}, T={}", vsh,
       rho0, T0);
@@ -194,8 +197,12 @@ int IC_radiative_shock::setup_RadiativeShock()
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int IC_radiative_shock::setup_OutflowRadiativeShock()
 {

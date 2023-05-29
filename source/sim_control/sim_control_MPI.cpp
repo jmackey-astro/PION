@@ -333,7 +333,7 @@ int sim_control_pllel::Init(
   // domain.
   //
   //  cout <<"initial conserved quantities\n";
-  initial_conserved_quantities(grid[0]);
+  initial_conserved_quantities(grid);
 
   err += TimeUpdateInternalBCs(
       SimPM, 0, grid[0], spatial_solver, SimPM.simtime, 0.0, SimPM.tmOOA,
@@ -664,10 +664,12 @@ int sim_control_pllel::calculate_timestep(
 
 
 
-int sim_control_pllel::initial_conserved_quantities(class GridBaseClass *grid)
+int sim_control_pllel::initial_conserved_quantities(
+    vector<class GridBaseClass *> &g)
 {
   // Energy, and Linear Momentum in x-direction.
 #ifdef TEST_CONSERVATION
+  class GridBaseClass *grid = g[0];
   std::vector<pion_flt> u(SimPM.nvar);
   initERG = 0.;
   initMMX = initMMY = initMMZ = 0.;
@@ -719,10 +721,11 @@ int sim_control_pllel::initial_conserved_quantities(class GridBaseClass *grid)
 
 
 
-int sim_control_pllel::check_energy_cons(class GridBaseClass *grid)
+int sim_control_pllel::check_energy_cons(vector<class GridBaseClass *> &g)
 {
 #ifdef TEST_CONSERVATION
   // Energy, and Linear Momentum in x-direction.
+  class GridBaseClass *grid = g[0];
   std::vector<pion_flt> u(SimPM.nvar);
   double nowERG  = 0.;
   double nowMMX  = 0.;

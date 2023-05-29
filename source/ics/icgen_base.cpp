@@ -49,7 +49,7 @@ void setup_ics_type(
       || ics == "AdvectSineWave" || ics == "KelvinHelmholtz"
       || ics == "KelvinHelmholtzStone" || ics == "FieldLoop"
       || ics == "FieldLoopVz" || ics == "FieldLoopStatic"
-      || ics == "LiskaWendroffImplosion")
+      || ics == "LiskaWendroffImplosion" || ics == "TestCIE" || ics == "TestMC")
     *ic = new IC_basic_tests();
 
   else if (ics == "Jet" || ics == "JET" || ics == "jet") {

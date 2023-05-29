@@ -18,6 +18,7 @@ if(PION_PARALLEL)
         reflecting_boundaries.cpp
         RT_MPI_boundaries.cpp
         stellar_wind_boundaries.cpp
+        radiative_shock_test.cpp
     )
     target_link_libraries(boundaries PUBLIC sub_domain)
     if(PION_NESTED_GRID)
@@ -50,6 +51,7 @@ else()
         periodic_boundaries.cpp
         reflecting_boundaries.cpp
         stellar_wind_boundaries.cpp
+        radiative_shock_test.cpp
     )
     if(PION_NESTED_GRID)
         add_library(

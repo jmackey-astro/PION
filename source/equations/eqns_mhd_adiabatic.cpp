@@ -48,11 +48,11 @@ using namespace std;
 eqns_mhd_ideal::eqns_mhd_ideal(int nv) : eqns_base(nv)
 {
 #ifdef FUNCTION_ID
-  spdlog::info("eqns_mhd_ideal::eqns_mhd_ideal ...starting");
+  spdlog::debug("eqns_mhd_ideal::eqns_mhd_ideal ...starting");
 #endif  // FUNCTION_ID
 
 #ifndef NDEBUG
-  spdlog::info(
+  spdlog::debug(
       "(eqns_mhd_ideal::eqns_mhd_ideal) Setting up Ideal MHD Equations class");
 #endif
   if (eq_nvar < 8) {
@@ -61,7 +61,7 @@ eqns_mhd_ideal::eqns_mhd_ideal(int nv) : eqns_base(nv)
   }
 
 #ifdef FUNCTION_ID
-  spdlog::info("eqns_mhd_ideal::eqns_mhd_ideal ...returning.");
+  spdlog::debug("eqns_mhd_ideal::eqns_mhd_ideal ...returning.");
 #endif  // FUNCTION_ID
 }
 
@@ -71,7 +71,7 @@ eqns_mhd_ideal::eqns_mhd_ideal(int nv) : eqns_base(nv)
 eqns_mhd_ideal::~eqns_mhd_ideal()
 {
 #ifndef NDEBUG
-  spdlog::info(
+  spdlog::debug(
       "(eqns_mhd_ideal::~eqns_mhd_ideal) Deleting  Ideal MHD Equations class");
 #endif
 }
@@ -186,6 +186,9 @@ int eqns_mhd_ideal::check_pressure(
     // Set minimum temperature to be 10K
     //
     // cout <<"UtoP() mhd set-neg-press-to-fixed-T.  P<0\n";
+    spdlog::info(
+        "UtoP() mhd set-neg-press-to-fixed-T.  P = {}, Tmin = {}", p[eqPG],
+        MinTemp);
     if (mp) {
       // cout <<"UtoP() mhd set-neg-press-to-fixed-T.  T<Tmin\n";
       mp->Set_Temp(p, MinTemp, gamma);
@@ -201,7 +204,9 @@ int eqns_mhd_ideal::check_pressure(
     //
     // If we have microphysics, just set T=MinTemp
     //
-    // cout <<"UtoP() mhd set-small-press-to-fixed-T.  T<Tmin\n";
+    spdlog::info(
+        "UtoP() mhd set-small-press-to-fixed-T.  T = {}, Tmin = {}",
+        mp->Temperature(p, gamma), MinTemp);
     // rep.printVec("U",u,eq_nvar);
     // rep.printVec("p0",p,eq_nvar);
     mp->Set_Temp(p, MinTemp, gamma);
@@ -212,11 +217,9 @@ int eqns_mhd_ideal::check_pressure(
   if (p[eqPG] <= 0.) {
     if (ct_pg < 1000) {
       ct_pg++;
-      spdlog::debug(
-          ""
-              << "(eqns_mhd_ideal::check_pressure) -ve p_g=, correcting, count={}"
-                     [eqPG],
-          ct_pg);
+      spdlog::info(
+          "(eqns_mhd_ideal::check_pressure) -ve p_g= {} , correcting, count={}",
+          [eqPG], ct_pg);
     }
     p[eqPG] = eq_refvec[eqPG] * 1.0e-6;
     err += 1;

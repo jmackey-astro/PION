@@ -184,7 +184,7 @@ int main(int argc, char **argv)
   // Initialise file handle to empty string.  Will use it later to label output
   // file.
   //
-  int op_filetype;
+  int op_filetype = OP_SILO;
   if (optype == "1" || optype == "fits" || optype == "FITS") {
     op_filetype = OP_FITS;
     spdlog::info("\t\tsaving data to fits files");

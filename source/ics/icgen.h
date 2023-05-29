@@ -86,6 +86,12 @@ protected:
 
   /// Setup Liska & Wendroff (2003) implosion test problem.
   int setup_LWImplosion();
+
+  /// Set up test problem to test equilibrium ion abundances.
+  int setup_TestCIE();
+
+  /// Set up test problem for Mellema Cooling.
+  int setup_TestMC();
 };
 
 // ##################################################################

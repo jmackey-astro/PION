@@ -1271,6 +1271,7 @@ double MPv3::timescales_RT(
   err = convert_prim2local(p_in, P);
   if (err) {
     spdlog::error("{}: {}", "Bad input state to MPv3::timescales_RT()", err);
+    exit(1);
   }
   NV_Ith_S(y_in, lv_H0)   = P[lv_H0];
   NV_Ith_S(y_in, lv_eint) = P[lv_eint];

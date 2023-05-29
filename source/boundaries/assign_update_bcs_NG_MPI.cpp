@@ -150,6 +150,9 @@ int assign_update_bcs_NG_MPI::assign_boundary_data(
 #endif
         err += BC_assign_STWIND(par, grid, b, mp);
         break;
+      case RADSHOCK:
+        err += BC_assign_RADSHOCK(par, grid, grid->BC_bd[i]);
+        break;
       case FINE_TO_COARSE_SEND:
 #ifdef TEST_MPI_NG
         spdlog::debug(
@@ -351,6 +354,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
         err += BC_update_DMACH2(par, grid, b, cstep, maxstep);
         break;
       case STWIND:
+      case RADSHOCK:
       case FINE_TO_COARSE_SEND:
       case FINE_TO_COARSE_RECV:
 #ifdef TEST_MPI_NG
@@ -365,6 +369,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
       default:
         spdlog::error(
             "{}: {}", "Unhandled BC: NG-MPI update external", b->itype);
+        exit(1);
         break;
     }
     par.levels[0].sub_domain.barrier();
@@ -373,7 +378,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
   spdlog::debug("LEVEL {}: updated NG-MPI-grid external BCs", level);
 #endif
 
-  return (0);
+  return err;
 }
 
 // ##################################################################
@@ -434,7 +439,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateInternalBCs(
   cout << "updated NG-grid serial internal BCs\n";
   cout << "assign_update_bcs_NG::TimeUpdateInternalBCs() returns.\n";
 #endif
-  return 0;
+  return err;
 }
 
 // ##################################################################

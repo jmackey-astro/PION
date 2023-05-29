@@ -37,10 +37,12 @@ int assign_update_bcs_NG::assign_boundary_data(
 {
   // first call the Uniform Grid version.
   int err = assign_update_bcs::assign_boundary_data(par, level, grid, mp);
-  if (err != 0)
+  if (err != 0) {
     spdlog::error(
         "{}: Expected {} but got {}", "assign_update_bcs::assign_boundary_data",
         err, 0);
+    exit(1);
+  }
 
   //
   // Then check for NG-grid boundaries and assign data for them.
@@ -107,6 +109,9 @@ int assign_update_bcs_NG::TimeUpdateInternalBCs(
         err +=
             BC_update_STWIND(par, level, grid, simtime, dt, b, cstep, maxstep);
         break;
+      case RADSHOCK:
+        err += BC_update_RADSHOCK(par, grid, b, cstep, maxstep);
+        break;
 
       case PERIODIC:
       case OUTFLOW:
@@ -150,7 +155,7 @@ int assign_update_bcs_NG::TimeUpdateInternalBCs(
 #ifdef TEST_MPI_NG
   spdlog::info("assign_update_bcs_NG::TimeUpdateInternalBCs() returns.");
 #endif
-  return 0;
+  return err;
 }
 
 // ##################################################################
@@ -213,6 +218,7 @@ int assign_update_bcs_NG::TimeUpdateExternalBCs(
 
       // skip these:
       case STWIND:
+      case RADSHOCK:
       case BCMPI:
       case FINE_TO_COARSE:
         break;
@@ -238,7 +244,7 @@ int assign_update_bcs_NG::TimeUpdateExternalBCs(
 #ifdef TEST_NEST
   spdlog::info("updated NG-grid serial external BCs");
 #endif
-  return (0);
+  return err;
 }
 
 // ##################################################################

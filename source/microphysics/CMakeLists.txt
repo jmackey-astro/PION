@@ -1,3 +1,6 @@
+
+
+
 add_library(
     microphysics
 
@@ -20,9 +23,20 @@ add_library(
 	MPv7.cpp
 	MPv8.cpp
 	MPv9.cpp
+	MPv10.cpp
+
+		# The following lines are added by Arun Mathew
+        mellema_cooling.cpp
+		atomic_physics_database.cpp
+		coll_ionise_recomb.cpp
+                chianti_cooling.cpp
+        
 )
+
 
 target_link_libraries(microphysics PUBLIC raytracing)
 target_link_libraries(microphysics PRIVATE tools ${SUNDIALS_LIBRARY})
 target_link_libraries(microphysics PRIVATE spdlog::spdlog)
+
+
 

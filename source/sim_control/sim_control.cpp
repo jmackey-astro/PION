@@ -409,6 +409,7 @@ int sim_control::check_eosim()
 
 int sim_control::check_energy_cons(class GridBaseClass *grid)
 {
+#ifdef TEST_CONSERVATION
   // Energy, and Linear Momentum in x-direction.
   std::vector<pion_flt> u(SimPM.nvar);
   double nowERG  = 0.;
@@ -433,12 +434,13 @@ int sim_control::check_energy_cons(class GridBaseClass *grid)
   } while ((cpt = grid->NextPt(*cpt)) != 0);
   spdlog::debug(
       "(conserved quantities) [{}, {}, {}, {}, {}]", nowERG, nowMMX, nowMMY,
-      nowMMZ, nowMASS);
+      nowMMZ, nowMASS, totmom);
   // spdlog::debug(
   //    "(relative error      ) [{}, {}, {}, {}, {}]",
   //    (nowERG - initERG) / (initERG), (nowMMX - initMMX) / (totmom),
   //    (nowMMY - initMMY) / (totmom), (nowMMZ - initMMZ) / (totmom),
   //    (nowMASS - initMASS) / initMASS);
+#endif
 
   return (0);
 }

@@ -76,6 +76,8 @@ Format:
       git
       clang
       clang-format
+      python3-yapf
+      yapf3
   script:
     - ./tools/run_format.sh
       && git status

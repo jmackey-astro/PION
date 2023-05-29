@@ -26,7 +26,7 @@ cat "${file}" \
 
 if [ ! -s "${tmpfile}" ]
 then
-    echo "Error! Formatted file is empty!"
+    echo "Error! Formatted file is empty!" ${file}
     exit 1
 fi
 

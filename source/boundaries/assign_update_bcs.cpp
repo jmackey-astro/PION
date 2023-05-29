@@ -114,6 +114,9 @@ int assign_update_bcs::assign_boundary_data(
 #endif
         err += BC_assign_STWIND(par, grid, grid->BC_bd[i], mp);
         break;
+      case RADSHOCK:
+        err += BC_assign_RADSHOCK(par, grid, grid->BC_bd[i]);
+        break;
       case BCMPI:
       case FINE_TO_COARSE:
       case COARSE_TO_FINE:
@@ -158,6 +161,9 @@ int assign_update_bcs::TimeUpdateInternalBCs(
         err +=
             BC_update_STWIND(par, level, grid, simtime, dt, b, cstep, maxstep);
         break;
+      case RADSHOCK:
+        err += BC_update_RADSHOCK(par, grid, b, cstep, maxstep);
+        break;
       case PERIODIC:
       case OUTFLOW:
       case ONEWAY_OUT:
@@ -182,11 +188,15 @@ int assign_update_bcs::TimeUpdateInternalBCs(
         break;
     }
   }
-  return (0);
+  return err;
 }
+
+
 
 // ##################################################################
 // ##################################################################
+
+
 
 int assign_update_bcs::TimeUpdateExternalBCs(
     class SimParams &par,          ///< simulation parameters
@@ -254,8 +264,10 @@ int assign_update_bcs::TimeUpdateExternalBCs(
         break;
     }
   }
-  return (0);
+  return err;
 }
+
+
 
 // ##################################################################
 // ##################################################################

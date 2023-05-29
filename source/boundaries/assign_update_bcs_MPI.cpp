@@ -41,10 +41,12 @@ int assign_update_bcs_MPI::assign_boundary_data(
 #endif
   int err = assign_update_bcs::assign_boundary_data(par, level, grid, mp);
 
-  if (err != 0)
+  if (err != 0) {
     spdlog::error(
         "{}: Expected {} but got {}", "assign_update_bcs::assign_boundary_data",
         err, 0);
+    exit(1);
+  }
   //
   // Loop through all boundaries, and assign data to MPI one.
   //
@@ -70,6 +72,7 @@ int assign_update_bcs_MPI::assign_boundary_data(
       case DMACH:
       case DMACH2:
       case STWIND:
+      case RADSHOCK:
       case FINE_TO_COARSE:
       case COARSE_TO_FINE:
       case FINE_TO_COARSE_SEND:
@@ -87,7 +90,7 @@ int assign_update_bcs_MPI::assign_boundary_data(
 #ifdef TEST_MPI_BC
   spdlog::debug("{}: finished assigning boundaries\n", ppar->get_myrank());
 #endif
-  return (err);
+  return err;
 }
 
 
@@ -192,6 +195,7 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
         spdlog::error(
             "{}: {}", "assign_update_bcs_MPI::Unhandled BC: external",
             b->itype);
+        exit(1);
         break;
     }
 
@@ -210,7 +214,7 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
     //}
   }
 
-  return 0;
+  return err;
 }
 
 // ##################################################################

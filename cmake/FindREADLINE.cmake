@@ -8,6 +8,7 @@ if(NOT READLINE_FOUND)
             ${CMAKE_INSTALL_PREFIX}/../
             ${CMAKE_PREFIX_PATH}/
             ${READLINE_DIR}/
+            /usr/local/opt/readline/
         PATH_SUFFIXES include
                     include/readline
                     include/x86_64-linux-gnu
@@ -22,6 +23,7 @@ if(NOT READLINE_FOUND)
             ${CMAKE_INSTALL_PREFIX}/../
             ${CMAKE_PREFIX_PATH}/
             ${READLINE_DIR}/
+            /usr/local/opt/readline/
         PATH_SUFFIXES lib lib64
                     lib/readline lib64/readline
                     lib/x86_64-linux-gnu lib64/x86_64-linux-gnu

@@ -17,7 +17,7 @@
 ///
 /// Maximum length of state vectors.
 ///
-#define MAX_NVAR 70
+#define MAX_NVAR 200
 
 /// Minimum number of cells radius for the stellar-wind boundary
 #define MIN_WIND_RAD 7

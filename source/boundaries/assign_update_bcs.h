@@ -18,6 +18,7 @@
 #include "boundaries/oneway_out_boundaries.h"
 #include "boundaries/outflow_boundaries.h"
 #include "boundaries/periodic_boundaries.h"
+#include "boundaries/radiative_shock_test.h"
 #include "boundaries/reflecting_boundaries.h"
 #include "boundaries/stellar_wind_boundaries.h"
 
@@ -32,7 +33,8 @@ class assign_update_bcs :
     virtual public jet_bc,
     virtual public jetreflect_bc,
     virtual public double_Mach_ref_bc,
-    virtual public stellar_wind_bc {
+    virtual public stellar_wind_bc,
+    virtual public radiative_shock_test {
 public:
   ///
   /// Assigns data to each boundary.

@@ -968,6 +968,7 @@ double sim_control_NG::advance_step_OA2(const int l  ///< level to advance.
 
 int sim_control_NG::check_energy_cons(vector<class GridBaseClass *> &grid)
 {
+#ifdef TEST_CONSERVATION
   // Energy, and Linear Momentum in x-direction.
   std::vector<pion_flt> u(SimPM.nvar);
   double nowERG  = 0.;
@@ -995,13 +996,12 @@ int sim_control_NG::check_energy_cons(vector<class GridBaseClass *> &grid)
     } while ((c = grid[l]->NextPt(*c)) != 0);
   }
 
-  // spdlog::debug(
-  //    "(conserved quantities) [{}, {}, {}, {}, {}]\n(relative error      )
-  //    [{}, {}, {}, {}, {}]", nowERG, nowMMX, nowMMY, nowMMZ, nowMASS, (nowERG
-  //    - initERG) / (initERG), (nowMMX - initMMX) / (totmom), (nowMMY -
-  //    initMMY) / (totmom), (nowMMZ - initMMZ) / (totmom), (nowMASS - initMASS)
-  //    / initMASS);
-
+  spdlog::debug(
+      "(conserved quantities) [{}, {}, {}, {}, {}]\n(relative error      ) [{}, {}, {}, {}, {}]",
+      nowERG, nowMMX, nowMMY, nowMMZ, nowMASS, (nowERG - initERG) / (initERG),
+      (nowMMX - initMMX) / (totmom), (nowMMY - initMMY) / (totmom),
+      (nowMMZ - initMMZ) / (totmom), (nowMASS - initMASS) / initMASS);
+#endif
   return (0);
 }
 
