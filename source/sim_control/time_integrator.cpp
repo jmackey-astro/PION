@@ -651,16 +651,20 @@ int time_integrator::calc_dynamics_dU(
   // multi-dimensional viscosity such as the H-Correction.
   //
   err = preprocess_data(step, SimPM, grid);
+  if (err) {
+    spdlog::error("calc_dynamics_dU() preprocess_data() ret {}", err);
+    exit(err);
+  }
 
   //
   // Now calculate the directionally-unsplit time update for the
   // conserved variables:
   //
   err = set_dynamics_dU(dt, step, grid);  //,time_ooa);
-  if (0 != err)
-    spdlog::error(
-        "{}: Expected {} but got {}",
-        "calc_dynamics_dU() set_dynamics_dU returned error.", 0, err);
+  if (0 != err) {
+    spdlog::error("calc_dynamics_dU() set_dynamics_dU returned {}", err);
+    exit(err);
+  }
 
   //
   // This function is used for refined grids, to make the flux across
@@ -671,11 +675,10 @@ int time_integrator::calc_dynamics_dU(
   // the B-field update.
   //
   err = spatial_solver->PostProcess_dU(dt, step, SimPM, grid);
-  if (0 != err)
-    spdlog::error(
-        "{}: Expected {} but got {}",
-        "calc_dynamics_dU() spatial_solver->PostProcess_dU()", 0, err);
-
+  if (0 != err) {
+    spdlog::error("calc_dynamics_dU() PostProcess_dU() ret {}", err);
+    exit(err);
+  }
   return 0;
 }
 
@@ -1044,10 +1047,10 @@ int time_integrator::set_dynamics_dU(
           cpt          = grid->get_cell_all(index[0], index[1], index[2]);
           return_value = dynamics_dU_column(
               *cpt, posdirs[i], negdirs[i], dt, space_ooa, grid);
-          if (0 != return_value)
-            spdlog::error(
-                "{}: Expected {} but got {}", "set_dynamics_dU: column", 0,
-                return_value);
+          if (0 != return_value) {
+            spdlog::error("set_dynamics_dU: column {}", return_value);
+            exit(return_value);
+          }
         }
       }
 #ifdef PION_OMP

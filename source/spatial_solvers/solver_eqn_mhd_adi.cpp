@@ -152,46 +152,38 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
   // HLLD/HLL solver, including compressive motion check and
   // strong-gradient zones check (Migone et al. 2011 )
   else if (solve_flag == FLUX_RS_HLLD) {
-    // double DivVl = CI.get_DivV(Cl);
-    // double DivVr = CI.get_DivV(Cr);
-    // double Gradl = CI.get_MagGradP(Cl);
-    // double Gradr = CI.get_MagGradP(Cr);
-    // double dr = Pl[RO] / Pr[RO], drlim = 4.0;
-    // if ((DivVl < 0. && Gradl > 5.) || (DivVr < 0. && Gradr > 5.) || (dr >
-    // drlim)
-    //    || (dr < 1.0 / drlim)) {
     if (Cl.hll || Cr.hll) {
       // compressive motion & strong-gradient zones check
       // Migone et al 2012
       // HLL solver -- Miyoshi and Kusano (2005) (m05)
-      // spdlog::info("MHD HLL! Cl {} {}, Cr {} {}",Cl.id, Cl.hll, Cr.id,
-      // Cr.hll);
       err += MHD_HLL_flux_solver(Pl, Pr, eq_gamma, flux, ustar);
     }
     else {
       // HLLD solver -- Miyoshi and Kusano (2005) (m05)
       err += MHD_HLLD_flux_solver(Pl, Pr, eq_gamma, flux, ustar);
     }
-    if (0 != err)
-      spdlog::error("{}: Expected {} but got {}", "HLL/HLLD Flux", 0, err);
-    err = UtoP(ustar, pstar, par.EP.MinTemperature, eq_gamma);
-    if (0 != err)
-      spdlog::error("{}: Expected {} but got {}", "HLL/HLLD UtoP", 0, err);
+    if (err) spdlog::error("HLL/HLLD Flux err {}", err);
+    err += UtoP(ustar, pstar, par.EP.MinTemperature, eq_gamma);
+    // ignore errors from boundary cells because they can contain junk data
+    if (Cl.isbd || Cr.isbd) err = 0;
+    if (err) {
+      spdlog::error("HLL/HLLD UtoP err {}", err);
+      CI.print_cell(Cl);
+      CI.print_cell(Cr);
+    }
   }
 
   // HLL solver, diffusive 2 wave solver (Migone et al. 2011 )
   else if (solve_flag == FLUX_RS_HLL) {
     err += MHD_HLL_flux_solver(Pl, Pr, eq_gamma, flux, ustar);
-    if (0 != err)
-      spdlog::error("{}: Expected {} but got {}", "HLL Flux", 0, err);
-    err = UtoP(ustar, pstar, par.EP.MinTemperature, eq_gamma);
-    if (0 != err)
-      spdlog::error("{}: Expected {} but got {}", "HLL UtoP", 0, err);
+    if (0 != err) spdlog::error("HLL Flux err {}", err);
+    err += UtoP(ustar, pstar, par.EP.MinTemperature, eq_gamma);
+    if (Cl.isbd || Cr.isbd) err = 0;
+    if (0 != err) spdlog::error("HLL UtoP err {}", err);
   }
 
   else {
-    spdlog::error(
-        "{}: {}", "what sort of flux solver do you mean???", solve_flag);
+    spdlog::error("what flux solver? {}", solve_flag);
     exit(1);
   }
 

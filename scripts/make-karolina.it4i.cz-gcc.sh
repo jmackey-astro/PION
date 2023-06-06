@@ -16,11 +16,7 @@ deps_dir="${script_dir}/../libs"
 build_dir="${script_dir}/build"
 
 # load modules
-#source /usr/share/Modules/init/bash
-#module load cmake3
-#module load openmpi/intel
-#module load gcc
-#module list
+ml purge
 ml git
 ml OpenMPI/4.1.1-GCC-10.3.0
 ml HDF5/1.10.7-gompi-2021a
@@ -53,9 +49,10 @@ cmake \
   -DPION_BUILD_TESTS=ON           \
   -DPION_INTEL=OFF                 \
   -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}" \
+  -DON_KAROLINA=ON \
   "${script_dir}"
 
-make -j 12
+make -j 20
 
 popd
 exit

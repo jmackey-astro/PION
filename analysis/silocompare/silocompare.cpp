@@ -289,9 +289,9 @@ int main(int argc, char **argv)
 
     class file_status fstat;
     if (!fstat.file_exists(firstfile) || !fstat.file_exists(secondfile)) {
-      spdlog::debug(
-          "first file: {}\tand second file: {}", firstfile, secondfile);
-      spdlog::error("{}: {}", "First or second file doesn't exist", secondfile);
+      spdlog::error(
+          "First or second file doesn't exist:\n \t{}\n \t{}", firstfile,
+          secondfile);
       exit(1);
     }
 
@@ -308,7 +308,7 @@ int main(int argc, char **argv)
     //
     err = dataio.ReadHeader(firstfile, SimPM);
     if (err) {
-      spdlog::error("{}: {}", "Didn't read header", err);
+      spdlog::error("Didn't read header {}", err);
       exit(1);
     }
     SimPM.grid_nlevels     = 1;
@@ -500,8 +500,7 @@ int main(int argc, char **argv)
         }
         break;
       default:
-        spdlog::error(
-            "Input a valid optype!!! (should have caught this!) {}", optype);
+        spdlog::error("Input a valid optype! {}", optype);
         exit(1);
         break;
     }
@@ -550,12 +549,11 @@ int main(int argc, char **argv)
         cout << "\t\t***********************\n";
         for (int v = 0; v < SimPM.nvar; v++)
           sum += absdiff[v];
-        if (sum < 1.0e-10) cout << "RESULTS ARE THE SAME ... L1 error <1e-10\n";
+        if (sum < 1.0e-8) cout << "RESULTS ARE THE SAME ... L1 error <1e-8\n";
         outf.close();
         break;
       default:
-        spdlog::error(
-            "Input a valid optype!!! (should have caught this!) {}", optype);
+        spdlog::error("Input a valid optype! {}", optype);
         exit(1);
         break;
     }

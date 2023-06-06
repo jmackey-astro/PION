@@ -577,17 +577,19 @@ int VectorOps_Cart::SetEdgeState(
       }       // Which Direction.
       break;  // O2
     default:
-      spdlog::error(
-          "\t(SetEdgeState) Only know 1st and 2nd order spatial accuracy!!!\n\tOA={}",
-          OA);
+      spdlog::error("\t(SetEdgeState) Only know 1st and 2nd order\tOA={}", OA);
       return (1);
       break;
   }  // Order of accuracy.
   return (0);
 }  // SetEdgeState
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int VectorOps_Cart::SetSlope(
     const cell &c,                ///< Current Cell.
