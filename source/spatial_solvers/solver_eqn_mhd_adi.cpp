@@ -468,11 +468,13 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
   }
 
   if (UtoP(u1, Pf, MinTemp, eq_gamma) != 0) {
-    spdlog::warn(
-        "(FV_solver_mhd_ideal_adi::CellAdvanceTime) UtoP complained (maybe about negative pressure...) fixing");
+#ifndef NDEBUG
+    spdlog::warn("(FV_solver_mhd_ideal_adi::CellAdvanceTime) UtoP complained"
+                 "(maybe about negative pressure...) fixing");
     PtoU(Pf, u2, eq_gamma);
     *dE += (u2[ERG] - u1[ERG]);
     UtoP(u2, Pf, MinTemp, eq_gamma);
+#endif
   }
 
   // Reset the dU array for the next timestep.

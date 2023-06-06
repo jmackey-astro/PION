@@ -358,13 +358,13 @@ int setup_fixed_grid::setup_microphysics(
       case 100:
         spdlog::debug(
             "Requested cooling but no chemistry... setting"
-            " up mp_only_cooling() class. \n"
+            " up mp_only_cooling() class. "
             "Timestep limit = {}",
             SimPM.EP.MP_timestep_limit);
         MP = new mp_only_cooling(
             SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
         if (!MP) {
-          spdlog::error("{}: {}", "mp_only_cooling() init", fmt::ptr(MP));
+          spdlog::error("mp_only_cooling() init {}", fmt::ptr(MP));
           exit(1);
         }
         break;
@@ -487,6 +487,7 @@ int setup_fixed_grid::setup_microphysics(
         }
         break;
 
+#ifdef MPV10
       case 10:
         spdlog::info("setting up MPv10 module");
         MP = new MPv10(
@@ -497,6 +498,7 @@ int setup_fixed_grid::setup_microphysics(
           exit(1);
         }
         break;
+#endif
 
       default:
         spdlog::error("{}: {}", "unhandled microphysics type", SimPM.chem_code);

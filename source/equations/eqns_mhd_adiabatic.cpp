@@ -182,29 +182,26 @@ int eqns_mhd_ideal::check_pressure(
   // being too low, and fix that.
   //
   if (p[eqPG] <= 0.0) {
-    //
     // Set minimum temperature to be 10K
-    //
     // cout <<"UtoP() mhd set-neg-press-to-fixed-T.  P<0\n";
-    spdlog::info(
+    spdlog::debug(
         "UtoP() mhd set-neg-press-to-fixed-T.  P = {}, Tmin = {}", p[eqPG],
         MinTemp);
     if (mp) {
-      // cout <<"UtoP() mhd set-neg-press-to-fixed-T.  T<Tmin\n";
       mp->Set_Temp(p, MinTemp, gamma);
     }
     else {
-      //
-      // If not, set p=0.01*rho
-      //
+      // or set p=0.01*rho
+      spdlog::warn(
+          "UtoP() mhd fixing negative pressure from {}  to {}", p[eqPG],
+          0.01 * p[eqRO]);
       p[eqPG] = 0.01 * p[eqRO];
     }
+    err += 1;
   }
   else if (mp && (mp->Temperature(p, gamma) < MinTemp)) {
-    //
     // If we have microphysics, just set T=MinTemp
-    //
-    spdlog::info(
+    spdlog::debug(
         "UtoP() mhd set-small-press-to-fixed-T.  T = {}, Tmin = {}",
         mp->Temperature(p, gamma), MinTemp);
     // rep.printVec("U",u,eq_nvar);
@@ -217,7 +214,7 @@ int eqns_mhd_ideal::check_pressure(
   if (p[eqPG] <= 0.) {
     if (ct_pg < 1000) {
       ct_pg++;
-      spdlog::info(
+      spdlog::debug(
           "(eqns_mhd_ideal::check_pressure) -ve p_g= {} , correcting, count={}",
           [eqPG], ct_pg);
     }

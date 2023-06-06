@@ -520,11 +520,15 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
     cell **fch                     ///< pointer to array of 8 fine cells
 )
 {
-  double **fU = 0;
+#ifndef NDEBUG
+  int err = 0;
+#endif
   std::vector<double> Utot(par.nvar), cU(par.nvar);
-  fU = mem.myalloc(fU, 8);
+  std::vector<vector<double> > fU;
+  fU.resize(8);
   for (int i = 0; i < 8; i++)
-    fU[i] = mem.myalloc(fU[i], par.nvar);
+    fU[i].resize(par.nvar);
+
   double dxo2 = 0.5 * fine->DX();  // dx
   double f_vol[8];
 
@@ -573,7 +577,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
   for (int i = 0; i < 8; i++) {
     for (int v = 0; v < par.nvar; v++)
       fch[i]->P[v] = fU[i][v];
-    solver->PtoU(fch[i]->P.data(), fU[i], par.gamma);
+    solver->PtoU(fch[i]->P.data(), fU[i].data(), par.gamma);
     f_vol[i] = fine->CellVolume(*fch[i], fine->DX());
     for (int v = 0; v < par.nvar; v++)
       Utot[v] += fU[i][v] * f_vol[i];
@@ -590,6 +594,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
       if (!isfinite(fU[i][v])) {
         spdlog::debug("error in 3D C2F interpolation: i={}, v={}", i, v);
         spdlog::debug("Unscaled fine : {}", fU[i][v]);
+        exit(1);
       }
     }
   }
@@ -602,8 +607,20 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
   for (int i = 0; i < 8; i++) {
     for (int v = 0; v < par.nvar; v++)
       fU[i][v] += cU[v];
-    // put scaled conserved variable vectors back into fine cells
-    solver->UtoP(fU[i], fch[i]->Ph, par.EP.MinTemperature, par.gamma);
+      // put scaled conserved variable vectors back into fine cells
+#ifndef NDEBUG
+    err = solver->UtoP(
+        fU[i].data(), fch[i]->Ph, par.EP.MinTemperature, par.gamma);
+    if (err) {
+      spdlog::debug("c2f 3d utop() negative pressure?");
+      for (int v = 0; v < 8; v++) {
+        spdlog::debug("fu {} : {}", v, fU[v]);
+      }
+    }
+#else
+    solver->UtoP(fU[i].data(), fch[i]->Ph, par.EP.MinTemperature, par.gamma);
+#endif
+
     for (int v = 0; v < par.nvar; v++)
       fch[i]->P[v] = fch[i]->Ph[v];
     for (int v = 0; v < par.nvar; v++)
@@ -616,14 +633,13 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
       if (!isfinite(fU[i][v])) {
         spdlog::debug("error in 3D C2F interpolation: i={}, v={}", i, v);
         spdlog::error("{}: {}", "C2F fine cell not finite", fU[i][v], par.nvar);
+        exit(1);
       }
     }
   }
 #endif
 
-  for (int i = 0; i < 8; i++)
-    fU[i] = mem.myfree(fU[i]);
-  mem.myfree(fU);
+  return;
 }
 
 

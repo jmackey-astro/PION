@@ -397,7 +397,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateInternalBCs(
     const int maxstep)
 {
 #ifdef TEST_MPI_NG
-  cout << "assign_update_bcs_NG::TimeUpdateInternalBCs() running.\n";
+  spdlog::debug("assign_update_bcs_NG::TimeUpdateInternalBCs() running.");
 #endif
   struct boundary_data *b;
   int err  = 0;
@@ -436,8 +436,8 @@ int assign_update_bcs_NG_MPI::TimeUpdateInternalBCs(
     }
   }
 #ifdef TEST_MPI_NG
-  cout << "updated NG-grid serial internal BCs\n";
-  cout << "assign_update_bcs_NG::TimeUpdateInternalBCs() returns.\n";
+  spdlog::debug("updated NG-grid serial internal BCs");
+  spdlog::debug("assign_update_bcs_NG::TimeUpdateInternalBCs() returns.");
 #endif
   return err;
 }

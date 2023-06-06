@@ -1,5 +1,16 @@
 
+if(PION_MPV10)
+  add_library(
+    mpv10
 
+    # The following lines are added by Arun Mathew
+    MPv10.cpp
+    mellema_cooling.cpp
+    atomic_physics_database.cpp
+    coll_ionise_recomb.cpp
+    chianti_cooling.cpp
+  )
+endif(PION_MPV10)
 
 add_library(
     microphysics
@@ -22,18 +33,12 @@ add_library(
 	MPv6.cpp
 	MPv7.cpp
 	MPv8.cpp
-	MPv9.cpp
-	MPv10.cpp
-
-		# The following lines are added by Arun Mathew
-        mellema_cooling.cpp
-		atomic_physics_database.cpp
-		coll_ionise_recomb.cpp
-                chianti_cooling.cpp
-        
+	MPv9.cpp    
 )
 
-
+if(PION_MPV10)
+  target_link_libraries(microphysics PUBLIC mpv10)
+endif(PION_MPV10)
 target_link_libraries(microphysics PUBLIC raytracing)
 target_link_libraries(microphysics PRIVATE tools ${SUNDIALS_LIBRARY})
 target_link_libraries(microphysics PRIVATE spdlog::spdlog)

@@ -311,10 +311,11 @@ int stellar_wind::add_cell(
     wc->theta   = atan(fabs(adj2 / opp2));
     // DEBUG
     if (!isfinite(wc->theta)) {
-      spdlog::debug(
-          "inf theta={}, opp1={}, adj1={}, opp2={}, adj2={}, arg={}", wc->theta,
-          opp1, adj1, opp2, adj2, fabs(adj2 / opp2));
+      // spdlog::debug(
+      //    "inf theta={}, opp1={}, adj1={}, opp2={}, adj2={}, arg={}",
+      //    wc->theta, opp1, adj1, opp2, adj2, fabs(adj2 / opp2));
       spdlog::error("{}: {}", "theta is not finite.", wc->theta);
+      exit(1);
     }
     // DEBUG
   }
@@ -331,13 +332,13 @@ int stellar_wind::add_cell(
   WS->ncell += 1;
 
 #ifndef NDEBUG
-  spdlog::debug("*** dist={}", wc->dist);
-  spdlog::debug("Wind BC cell pos : {}", wc->c->pos);
-  spdlog::debug(
-      "Wind BC cell values : {}", std::vector<double>(wc->p, wc->p + nvar));
-  CI.print_cell(c);
-  spdlog::debug(
-      "Added cell: array size={}\tncell={}", WS->wcells.size(), WS->ncell);
+  // spdlog::debug("*** dist={}", wc->dist);
+  // spdlog::debug("Wind BC cell pos : {}", wc->c->pos);
+  // spdlog::debug(
+  //    "Wind BC cell values : {}", std::vector<double>(wc->p, wc->p + nvar));
+  // CI.print_cell(c);
+  // spdlog::debug(
+  //    "Added cell: array size={}\tncell={}", WS->wcells.size(), WS->ncell);
 #endif
   return 0;
 }

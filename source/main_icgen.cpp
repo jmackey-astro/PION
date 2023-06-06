@@ -265,10 +265,10 @@ int main(int argc, char **argv)
 
 #ifdef PION_NESTED
   err = SimSetup->set_equations(SimPM);
-  if (0 != err)
-    spdlog::error(
-        "{}: Expected {} but got {}", "(icgen::set_equations) err!=0 Fix me!",
-        0, err);
+  if (0 != err) {
+    spdlog::error("(icgen::set_equations) err!=0 {}", err);
+    exit(1);
+  }
   class FV_solver_base *solver = SimSetup->get_solver_ptr();
 #endif
 
@@ -276,6 +276,9 @@ int main(int argc, char **argv)
   SimSetup->setup_microphysics(SimPM);
   MP = SimSetup->get_mp_ptr();
   ic->set_mp_pointer(MP);
+#ifdef PION_NESTED
+  solver->SetMicrophysics(MP);
+#endif
   // ----------------------------------------------------------------
 
 

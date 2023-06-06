@@ -105,6 +105,19 @@ option(
     OFF
 )
 
+option(
+    PION_MPV10
+    "Build with the multi-ion microphysics module MPv10"
+    OFF
+)
+
+option(
+    ON_KAROLINA
+    "Build with -mavx2 flax for karolina.it4i.cz"
+    OFF
+)
+
+
 #  This is required on OSX so that the Boost code will compile successfully
 set(CMAKE_CXX_STANDARD 14)
 
@@ -115,10 +128,6 @@ if(NOT PION_SKIP_SOURCE)
     else()
         add_definitions(-DSERIAL)
     endif(PION_PARALLEL)
-
-    if(PION_USE_SILO AND PION_USE_FITS)
-        message("WARNING: building with both Silo and Fits libraries compiled...")
-    endif(PION_USE_SILO AND PION_USE_FITS)
 
     if(NOT PION_USE_SILO AND NOT PION_USE_FITS)
         message("Cannot build without Silo or Fits libraries...")
@@ -143,6 +152,9 @@ if(NOT PION_SKIP_SOURCE)
         add_definitions(-DINTEL)
     endif(PION_INTEL)
 
+    if(ON_KAROLINA)
+        add_compile_options(-mavx2)
+    endif(ON_KAROLINA)
 
     #
     # Find dependant libraries

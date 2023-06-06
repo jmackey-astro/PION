@@ -859,6 +859,9 @@ double sim_control_NG_MPI::advance_step_OA1(const int l  ///< level to advance.
   // We have received interpolated data from the coarser level grid
   // already from the advance_step_OA1() for level l-1, if it exists.
   spdlog::debug("advance_step_OA1: l={} update external BCs", l);
+  err += TimeUpdateInternalBCs(
+      SimPM, l, grid, spatial_solver, SimPM.levels[l].simtime, 0.0, OA1, OA1);
+
   err += TimeUpdateExternalBCs(
       SimPM, l, grid, spatial_solver, SimPM.levels[l].simtime, OA1, OA1);
   // --------------------------------------------------------
@@ -1121,8 +1124,17 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
   // --------------------------------------------------------
 
   // --------------------------------------------------------
-  // 1. Update external boundary conditions on level l
+  // 1. Update external and internal boundary conditions on level l
+  // internal BCs incase wind boundary was overwritten by C2F-RECV
   // --------------------------------------------------------
+  clk.start_timer("ibc");
+#ifdef TEST_INT
+  spdlog::debug("advance_step_OA2: l={} update internal boundaries", l);
+#endif
+  err += TimeUpdateInternalBCs(
+      SimPM, l, grid, spatial_solver, ctime, 0.0, OA2, OA2);
+  clk.pause_timer("ibc");
+
   clk.start_timer("ebc");
 #ifdef TEST_INT
   spdlog::debug("advance_step_OA2: l={} update external BCs", l);

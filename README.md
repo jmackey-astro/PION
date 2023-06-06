@@ -84,6 +84,10 @@ Option | Effect
 `-DPION_SKIP_SOURCE=...`          | Set to `ON` to skip compilation of the Pion source files (default `OFF`).
 `-DPION_BUILD_DOCUMENTATION =...` | Set to `ON` to build Doxygen documentation (default `OFF`).
 `-DPION_BUILD_TESTS=...`          | Set to `ON` to build tests (default `OFF`).
+`-DPION_OMP=...`                  | Set to `ON` to enable OpenMP multithreading (default `OFF`).
+`-DPION_MPV10=...`                | Set to `ON` to build the multi-ion module (experimental) (default `OFF`).
+`-D=ON_KAROLINA...`               | Set to `ON` if building on karolina.it4i.cz (default `OFF`).
+
 
 #### Dependency Helpers
 
@@ -138,6 +142,8 @@ For example, to run the `uniform` test, where the project has been built in dire
 make -C build test-uniform 
 ```
 
+Some of these tests can be run with 16 MPI processes by appending `-large` to the test name.
+
 ### Documentation
 
 The Doxygen documentation can be built with `make -C [build-dir] doc` provided
@@ -147,12 +153,14 @@ the `-DPION_BUILD_DOCUMENTATION=ON` flag was provided to CMake.
 
 The following people have contributed to the development of PION:
 
+* Robert Brose
 * Harpreet Dhanoa
 * Margueritta Goulden
 * Samuel Green
 * Robert Kavanagh
 * Andrew Lim
 * Jonathan Mackey       <jmackey@cp.dias.ie>
+* Arun Mathew
 * Maria Moutzouri
 * Ciarán O'Rourke
 * Davit Zargaryan
