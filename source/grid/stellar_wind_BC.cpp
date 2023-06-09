@@ -1565,14 +1565,12 @@ int stellar_wind_evolution::update_source(
   }
 
   if (t_now < wd->tstart) {
-    spdlog::warn(
-        "{}: {}", "Updating source, not yet active!", wd->tstart - t_now);
+    spdlog::warn("Updating source, not yet active! {} {}", wd->tstart, t_now);
     return 0;
   }
   else if (t_now >= wd->tfinish) {
     spdlog::warn(
-        "{}: {}", "Updating source: source no longer active!",
-        wd->tstart - t_now);
+        "Updating source: source no longer active! {} {}", wd->tfinish, t_now);
     return 1;
   }
 
@@ -1662,8 +1660,8 @@ int stellar_wind_evolution::set_cell_values(
     /// NB: This function has hardcoded EOS Gamma to 5/3
     err = update_source(grid, wd, t_now, 5. / 3.);
     if (err) {
-      spdlog::error("update_source() returned error {}", err);
-      return err;
+      spdlog::info("update_source() star's life is over {}", err);
+      return -1;
     }
   }
 

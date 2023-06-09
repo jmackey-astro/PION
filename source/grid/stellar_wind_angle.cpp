@@ -638,7 +638,7 @@ int stellar_wind_angle::add_evolving_source(
     interpolate.root_find_linear_vec(temp->time_evo, temp->X_Z_evo, t_now, xz);
     interpolate.root_find_linear_vec(temp->time_evo, temp->X_D_evo, t_now, xd);
 
-    spdlog::info("Source is Activ");
+    spdlog::info("Source is Active");
   }
   else {
     spdlog::warn(

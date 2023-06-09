@@ -635,6 +635,18 @@ int sim_init::override_params(int narg, string *args)
       spdlog::info(" to {}", SimPM.EP.dynamics);
     }
 
+    else if (args[i].find("simulation_time=") != string::npos) {
+      spdlog::info("OVERRIDE PARAMS: resetting simulation time");
+      double c = atof((args[i].substr(16)).c_str());
+      if (c < 0 || !isfinite(c)) {
+        spdlog::error("Bad time value: {}", c);
+        exit(1);
+      }
+      spdlog::info("from {}", SimPM.simtime);
+      SimPM.simtime = c;
+      spdlog::info(" to {}", SimPM.simtime);
+    }
+
     else if (args[i].find("raytracing=") != string::npos) {
       spdlog::info("OVERRIDE PARAMS: resetting raytracing");
       int c = atoi((args[i].substr(11)).c_str());
@@ -669,11 +681,10 @@ int sim_init::override_params(int narg, string *args)
 
     else if (args[i].find("solver=") != string::npos) {
       spdlog::info(
-          "OVERRIDE PARAMS: resetting solver: 0=LF,1=RSlin,2=RSexact,3=RShybrid,4=RSroe,5=RSroePV,6=FVS,7=HLLD,8=HLL:");
+          "OVERRIDE PARAMS: resetting solver: 0=LF,1=RSlin,2=RSexact,3=RShybrid,4=RSroe,5=RSroePV,6=FVS,7=HLLD,8=HLL,9=Hydro-hybrid:");
       int c = atoi((args[i].substr(7)).c_str());
       if (c < 0 || c > 9) {
-        spdlog::error(
-            "{}: {}", "Bad solver flag (only 0,1,2,3,4,5,6,7,8,9 allowed", c);
+        spdlog::error("Bad solver flag (only 0,1,2,3,4,5,6,7,8,9 allowed", c);
         exit(1);
       }
       spdlog::info(" solver from {}", SimPM.solverType);
