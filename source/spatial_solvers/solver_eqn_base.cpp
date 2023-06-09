@@ -338,9 +338,11 @@ void FV_solver_base::set_Hcorrection(
 )
 {
   if (axis != GetDirection()) {
-    spdlog::debug("{}\t", GetDirection());
+    spdlog::debug("{}\t", static_cast<int>(GetDirection()));
     spdlog::error(
-        "{}: {}", "bad direction in FV_solver_base::set_Hcorrection()", axis);
+        "bad direction in FV_solver_base::set_Hcorrection()",
+        static_cast<int>(axis));
+    exit(1);
   }
   //
   // Sanders, Morano, Druguet, (1998, JCP, 145, 511)  eq. 10
@@ -423,7 +425,8 @@ double FV_solver_base::select_Hcorr_eta(
   //
   // Will want to comment this out later...
   //
-  spdlog::debug("cell id={} axis={}, eta_max={}", cl.id, axis, eta);
+  spdlog::debug(
+      "cell id={} axis={}, eta_max={}", cl.id, static_cast<int>(axis), eta);
 
   return eta;
 }

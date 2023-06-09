@@ -116,8 +116,10 @@ int NG_BC89flux::setup_flux_recv(
   struct flux_interface *fi = 0;
   int idx                   = grid->idx();
 
-  if (grid != par.levels[lp1].parent)
+  if (grid != par.levels[lp1].parent) {
     spdlog::error("{}: {}", "level lp1 is not my child!", lp1);
+    exit(1);
+  }
 
   CI.get_ipos_vec(par.levels[lp1].Xmin, f_lxmin);
   CI.get_ipos_vec(par.levels[lp1].Xmax, f_lxmax);
@@ -147,7 +149,8 @@ int NG_BC89flux::setup_flux_recv(
     ncell[v] = (ixmax[v] - ixmin[v]) / idx;
     if ((ixmax[v] - ixmin[v]) % idx != 0) {
       spdlog::error(
-          "{}: {}", "interface region not divisible!", ixmax[v] - ixmin[v]);
+          "interface region not divisible! {} {}", ixmax[v], ixmin[v]);
+      exit(2);
     }
   }
   for (int v = 0; v < 2 * par.ndim; v++)
@@ -174,7 +177,8 @@ int NG_BC89flux::setup_flux_recv(
       if (recv[ZP]) nel[ZP] = ncell[XX] * ncell[YY];
       break;
     default:
-      spdlog::error("{}: {}", "bad ndim in setup_flux_recv", par.ndim);
+      spdlog::error("bad ndim in setup_flux_recv {}", par.ndim);
+      exit(3);
       break;
   }
 
@@ -259,8 +263,10 @@ int NG_BC89flux::setup_flux_send(
   int idx                   = grid->idx();
 
 #ifdef TEST_BC89FLUX
-  if (grid != par.levels[lm1].child)
+  if (grid != par.levels[lm1].child) {
     spdlog::error("{}: {}", "level l is not my parent!", lm1);
+    exit(4);
+  }
 #endif
 
   CI.get_ipos_vec(par.levels[lm1].Xmin, c_lxmin);
@@ -296,8 +302,8 @@ int NG_BC89flux::setup_flux_send(
         nface[ax], ixmin[ax], ixmax);
     if ((ixmax[ax] - ixmin[ax]) % 2 * idx != 0) {
       spdlog::error(
-          "{}: {}", "interface region not divisible (send)!",
-          ixmax[ax] - ixmin[ax]);
+          "interface region not divisible (send) {} {}", ixmax[ax], ixmin[ax]);
+      exit(6);
     }
 #endif
   }
@@ -339,6 +345,7 @@ int NG_BC89flux::setup_flux_send(
       break;
     default:
       spdlog::error("{}: {}", "bad ndim in setup_flux_send", par.ndim);
+      exit(7);
       break;
   }
 
@@ -421,8 +428,8 @@ int NG_BC89flux::add_cells_to_face(
 
 #ifdef TEST_BC89FLUX
   spdlog::debug(
-      "add_cells_to_face({}, {}, {}, {}, {}), list-size={}", d, ixmin[a],
-      ixmax[a], nface[a], ncell, flux.fi.size());
+      "add_cells_to_face({}, {}, {}, {}, {}), list-size={}",
+      static_cast<int>(d), ixmin[a], ixmax[a], nface[a], ncell, flux.fi.size());
   spdlog::debug("ixmin : {}", ixmin);
   spdlog::debug("ixmax : {}", ixmax);
   spdlog::debug("nface : {}", nface);
@@ -489,16 +496,12 @@ int NG_BC89flux::add_cells_to_face(
         perpaxis = XX;
         break;
       case ZN:
-        spdlog::error("{}: {}", "bad direction in add_cells_to_face 2D", d);
-        break;
       case ZP:
-        spdlog::error("{}: {}", "bad direction in add_cells_to_face 2D", d);
-        break;
       case NO:
-        spdlog::error("{}: {}", "bad direction in add_cells_to_face 2D", d);
-        break;
       default:
-        spdlog::error("{}: {}", "bad direction in add_cells_to_face 2D", d);
+        spdlog::error(
+            "bad direction in add_cells_to_face 2D {}", static_cast<int>(d));
+        exit(8);
         break;
     }
 
@@ -512,12 +515,14 @@ int NG_BC89flux::add_cells_to_face(
       // rep.printVec("G_xmin",G_xmin,par.ndim);
       // rep.printVec("G_xmax",G_xmax,par.ndim);
       spdlog::error("{}: {}", "lost on grid", c->id);
+      exit(9);
     }
 #endif
     if (nface[perpaxis] != static_cast<int>(flux.fi.size())) {
       spdlog::error(
-          "add_cells_to_face({}, {}, {}, {}, {}), list-size={}", d, ixmin[a],
-          ixmax[a], nface[a], ncell, flux.fi.size());
+          "add_cells_to_face({}, {}, {}, {}, {}), list-size={}",
+          static_cast<int>(d), ixmin[a], ixmax[a], nface[a], ncell,
+          flux.fi.size());
       spdlog::debug("ixmin : {}", ixmin);
       spdlog::debug("ixmax : {}", ixmax);
       spdlog::debug("nface : {}", nface);
@@ -526,13 +531,15 @@ int NG_BC89flux::add_cells_to_face(
           nface[perpaxis], flux.fi.size());
       spdlog::error(
           "{}: {}", "wrong number of cells 2D interface", flux.fi.size());
+      exit(10);
     }
 
     for (int i = 0; i < nface[perpaxis]; i++) {
       for (int ic = 0; ic < ncell; ic++) {
-        if (!c)
-          spdlog::error(
-              "{}: {}", "Cell is null in BC89 add_cells", fmt::ptr(c));
+        if (!c) {
+          spdlog::error("Cell is null in BC89 add_cells {}", fmt::ptr(c));
+          exit(11);
+        }
         flux.fi[i]->c[ic] = c;
         c->F[a].resize(par.nvar);
         c->isbd_ref[d]       = true;
@@ -627,24 +634,28 @@ int NG_BC89flux::add_cells_to_face(
         perpaxis2 = YY;
         break;
       case NO:
-        spdlog::error("{}: {}", "bad direction in add_cells_to_face 2D", d);
-        break;
       default:
-        spdlog::error("{}: {}", "bad direction in add_cells_to_face 3D", d);
+        spdlog::error(
+            "bad direction in add_cells_to_face 3D {}", static_cast<int>(d));
+        exit(12);
+        break;
     }
 
 #ifdef TEST_BC89FLUX
     spdlog::debug(
-        "d={}, perpdir1={}, perpdir2={}, perpaxis1={}, perpaxis2={}", d,
-        perpdir1, perpdir2, perpaxis1, perpaxis2);
+        "d={}, perpdir1={}, perpdir2={}, perpaxis1={}, perpaxis2={}",
+        static_cast<int>(d), static_cast<int>(perpdir1),
+        static_cast<int>(perpdir2), static_cast<int>(perpaxis1),
+        static_cast<int>(perpaxis2));
 #endif
 
     // loop over cells in interface:
     if (nface[perpaxis1] * nface[perpaxis2]
         != static_cast<int>(flux.fi.size())) {
       spdlog::error(
-          "add_cells_to_face({}, {}, {}, {}, {}), list-size={}", d, ixmin[a],
-          ixmax[a], nface[a], ncell, flux.fi.size());
+          "add_cells_to_face({}, {}, {}, {}, {}), list-size={}",
+          static_cast<int>(d), ixmin[a], ixmax[a], nface[a], ncell,
+          flux.fi.size());
       spdlog::debug("ixmin : {}", ixmin);
       spdlog::debug("ixmax : {}", ixmax);
       spdlog::debug("nface : {}", nface);
@@ -653,6 +664,7 @@ int NG_BC89flux::add_cells_to_face(
           nface[perpaxis1] * nface[perpaxis2], flux.fi.size());
       spdlog::error(
           "{}: {}", "wrong number of cells 3D interface", flux.fi.size());
+      exit(13);
     }
 
     marker = c;
@@ -771,8 +783,10 @@ void NG_BC89flux::save_fine_fluxes(
 
       if (fi == 0 && f == 0)
         continue;
-      else if (fi == 0)
+      else if (fi == 0) {
         spdlog::error("{}: {}", "save_fine_fluxes fi=0", d);
+        exit(14);
+      }
 
       // zero the fine fluxes only every 2nd step, because the 2
       // steps sum to a full step on the coarser grid.
@@ -781,27 +795,15 @@ void NG_BC89flux::save_fine_fluxes(
           fi->flux[v] = 0.0;
       }
       for (int i = 0; i < flux_update_send[l][d].Ncells; i++) {
-        if (fi->c[i]->F[a].empty())
+        if (fi->c[i]->F[a].empty()) {
           spdlog::error("{}: {}", "fine flux is not allocated!", f);
-          // Add cell flux to the full flux for this face over 2
-          // steps.
-#ifdef TEST_BC89FLUX
-          // CI.print_cell(fi->c[i]);
-          // CI.print_cell(grid->NextPt(fi->c[i],YP));
-          // cout <<"PRE: flux="; rep.printVec("",fi->flux,par.nvar);
-          // cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
-          // cout <<", f0="<<fi->c[i]->F[a][0]<<",
-          // area="<<fi->area[i]<<", dt="<<dt<<"\n";
-#endif
+          exit(15);
+        }
+        // Add cell flux to the full flux for this face over 2
+        // steps.
         for (int v = 0; v < par.nvar; v++) {
           fi->flux[v] += fi->c[i]->F[a][v] * fi->area[i] * dt;
         }
-#ifdef TEST_BC89FLUX
-        // rep.printVec("cell fine flux",fi->c[i]->F[a],par.nvar);
-        // rep.printVec("cell fine Ph",fi->c[i]->Ph,par.nvar);
-        // cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
-        // cout <<", flux="; rep.printVec("",fi->flux,par.nvar);
-#endif
       }
 #ifdef TEST_BC89FLUX
       spdlog::debug("save_fine_fluxes[{}][{}]: , flux=", d, f);
@@ -847,17 +849,16 @@ void NG_BC89flux::save_coarse_fluxes(
       // if first element is null then list is empty.
       if (fi == 0 && f == 0)
         continue;
-      else if (fi == 0)
+      else if (fi == 0) {
         spdlog::error("{}: {}", "save_fine_fluxes fi=0", d);
-      if (fi->c[0]->F[a].empty())
+        exit(16);
+      }
+      if (fi->c[0]->F[a].empty()) {
         spdlog::error("{}: {}", "coarse flux is not allocated!", f);
+        exit(17);
+      }
 
-        // set face flux to be the negative of the intercell flux
-#ifdef TEST_BC89FLUX
-        // cout <<"save_coarse_fluxes["<<d<<"]["<<f<<"]: i="<<0;
-        // cout <<", f0="<<fi->c[0]->F[a][0]<<", area="<<fi->area[0];
-        // cout <<", dt="<<dt<<"\n";
-#endif
+      // set face flux to be the negative of the intercell flux
       for (int v = 0; v < par.nvar; v++) {
         fi->flux[v] = -fi->c[0]->F[a][v] * fi->area[0] * dt;
       }
@@ -890,6 +891,7 @@ int NG_BC89flux::recv_BC89_fluxes_F2C(
   }
   if (l == par.grid_nlevels - 1) {
     spdlog::error("{}: {}", "finest level trying to receive data from l+1", l);
+    exit(18);
   }
 #ifdef TEST_BC89FLUX
   spdlog::debug("level {}: correcting fluxes from finer grid", l);
@@ -959,6 +961,7 @@ int NG_BC89flux::recv_BC89_flux_boundary(
   if (send.fi.size() != recv.fi.size()) {
     spdlog::debug("send={}, recv={}", send.fi.size(), recv.fi.size());
     spdlog::error("{}: {}", "fine and parent face arrays r different size", 2);
+    exit(19);
   }
 
   for (unsigned int f = 0; f < recv.fi.size(); f++) {

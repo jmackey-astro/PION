@@ -101,9 +101,9 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
     spdlog::debug("left  : {}", std::vector<double>(Pl, Pl + eq_nvar));
     spdlog::debug("right : {}", std::vector<double>(Pr, Pr + eq_nvar));
     spdlog::error(
-        "{}: {}",
-        "FV_solver_mhd_ideal_adi::calculate_flux() Density/Pressure too small",
+        "FV_solver_mhd_ideal_adi::calculate_flux() Density/Pressure too small {}",
         Pl[eqRO]);
+    exit(1);
   }
 #endif  // NDEBUG
   int err = 0;
@@ -162,7 +162,10 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
       // HLLD solver -- Miyoshi and Kusano (2005) (m05)
       err += MHD_HLLD_flux_solver(Pl, Pr, eq_gamma, flux, ustar);
     }
-    if (err) spdlog::error("HLL/HLLD Flux err {}", err);
+    if (err) {
+      spdlog::error("HLL/HLLD Flux err {}", err);
+      exit(2);
+    }
     err += UtoP(ustar, pstar, par.EP.MinTemperature, eq_gamma);
     // ignore errors from boundary cells because they can contain junk data
     if (Cl.isbd || Cr.isbd) err = 0;
@@ -170,16 +173,23 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
       spdlog::error("HLL/HLLD UtoP err {}", err);
       CI.print_cell(Cl);
       CI.print_cell(Cr);
+      exit(3);
     }
   }
 
   // HLL solver, diffusive 2 wave solver (Migone et al. 2011 )
   else if (solve_flag == FLUX_RS_HLL) {
     err += MHD_HLL_flux_solver(Pl, Pr, eq_gamma, flux, ustar);
-    if (0 != err) spdlog::error("HLL Flux err {}", err);
+    if (0 != err) {
+      spdlog::error("HLL Flux err {}", err);
+      exit(4);
+    }
     err += UtoP(ustar, pstar, par.EP.MinTemperature, eq_gamma);
     if (Cl.isbd || Cr.isbd) err = 0;
-    if (0 != err) spdlog::error("HLL UtoP err {}", err);
+    if (0 != err) {
+      spdlog::error("HLL UtoP err {}", err);
+      exit(5);
+    }
   }
 
   else {
@@ -639,10 +649,10 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
     spdlog::debug("left  : {}", std::vector<double>(Pl, Pl + eq_nvar));
     spdlog::debug("right : {}", std::vector<double>(Pr, Pr + eq_nvar));
     spdlog::error(
-        "{}: {}",
         "FV_solver_mhd_mixedGLM_adi::calculate_flux() Density/Pressure "
         "too small",
         Pl[eqRO]);
+    exit(4);
   }
 #endif  // NDEBUG
 
@@ -873,7 +883,10 @@ cyl_FV_solver_mhd_ideal_adi::cyl_FV_solver_mhd_ideal_adi(
     FV_solver_mhd_ideal_adi(nv, nd, cflno, gam, state, avcoeff, ntr),
     VectorOps_Cyl(nd)
 {
-  if (nd != 2) spdlog::error("{}: {}", "Cylindrical coordinates only 2D", nd);
+  if (nd != 2) {
+    spdlog::error("Cylindrical coordinates only 2D {}", nd);
+    exit(nd);
+  }
 }
 
 // ##################################################################
@@ -914,8 +927,9 @@ void cyl_FV_solver_mhd_ideal_adi::geometric_source(
             / CI.get_dpos(c, Rcyl);
         break;
       default:
-        spdlog::error(
-            "{}: {}", "Bad OOA in cyl_IdealMHD_RS::dU, only know 1st,2nd", OA);
+        spdlog::error("Bad OOA in cyl_IdealMHD_RS::geometric source {}", OA);
+        exit(1);
+        break;
     }
   }
 
@@ -989,10 +1003,9 @@ int cyl_FV_solver_mhd_ideal_adi::MHDsource(
       }
       break;
     case Tcyl:
-      spdlog::error("{}: {}", "3D cylindrical GLM-MHD Source", d);
-      break;
     default:
-      spdlog::error("{}: {}", "GLM-MHD Source bad direction", d);
+      spdlog::error("GLM-MHD Source bad direction {}", static_cast<int>(d));
+      exit(7);
       break;
   }
 
@@ -1029,11 +1042,10 @@ cyl_FV_solver_mhd_mixedGLM_adi::cyl_FV_solver_mhd_mixedGLM_adi(
   //  cout <<"cyl_FV_solver_mhd_mixedGLM_adi CONSTRUCTOR\n";
   //  cout <<"glmMHD Equations; Riemann Solver Method; Cylindrical
   //  Coordinates.\n";
-  if (nd != 2)
-    spdlog::error(
-        "{}: {}", "Cylindrical coordinates only implemented for \
-                        2d axial symmetry so far.  Sort it out!",
-        nd);
+  if (nd != 2) {
+    spdlog::error("Cylindrical coordinates only for 2d ... {}", nd);
+    exit(nd);
+  }
 }
 
 // ##################################################################
@@ -1086,8 +1098,9 @@ void cyl_FV_solver_mhd_mixedGLM_adi::geometric_source(
             / CI.get_dpos(c, Rcyl);
         break;
       default:
-        spdlog::error(
-            "{}: {}", "Bad OOA in cyl_glmMHD::dU, only know 1st,2nd", OA);
+        spdlog::error("Bad OOA in cyl_glmMHD::geometric source: {}", OA);
+        exit(1);
+        break;
     }
   }
 

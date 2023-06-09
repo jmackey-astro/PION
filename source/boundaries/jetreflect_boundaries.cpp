@@ -18,7 +18,8 @@ int jetreflect_bc::BC_assign_JETREFLECT(
     boundary_data *b)
 {
   if (b->data.empty()) {
-    spdlog::error("{}: {}", "BC_assign_: empty boundary data", b->itype);
+    spdlog::error("BC_assign_: empty boundary data {}", b->itype);
+    exit(1);
   }
 
   if (!b->refval) {
@@ -44,10 +45,10 @@ int jetreflect_bc::BC_assign_JETREFLECT(
       b->refval[VZ] = -1.0;
       break;
     case NO:
-      spdlog::error("{}: {}", "BAD DIRECTION", b->dir);
-      break;
     default:
-      spdlog::error("{}: {}", "BAD DIRECTION", b->dir);
+      spdlog::error("BAD DIRECTION {}", static_cast<int>(b->dir));
+      exit(2);
+      break;
   }  // Set Normal velocity direction.
   //
   // Set tangential B-field multiplier to -1 for this boundary, to
@@ -68,10 +69,9 @@ int jetreflect_bc::BC_assign_JETREFLECT(
         b->refval[BX] = b->refval[BY] = -1.0;
         break;
       case NO:
-        spdlog::error("{}: {}", "BAD DIRECTION", b->dir);
-        break;
       default:
-        spdlog::error("{}: {}", "BAD DIRECTION", b->dir);
+        spdlog::error("BAD DIRECTION {}", static_cast<int>(b->dir));
+        break;
     }  // Set normal b-field direction.
   }    // if B-field exists
 
@@ -89,8 +89,8 @@ int jetreflect_bc::BC_assign_JETREFLECT(
       temp = grid->NextPt(*temp, b->ondir);
     }
     if (!temp) {
-      spdlog::error(
-          "{}: {}", "Got lost assigning jet-reflecting bcs.", temp->id);
+      spdlog::error("Got lost assigning jet-reflecting bcs. {}", temp->id);
+      exit(2);
     }
     for (int v = 0; v < par.nvar; v++)
       (*bpt)->P[v] = temp->P[v] * b->refval[v];
@@ -104,8 +104,8 @@ int jetreflect_bc::BC_assign_JETREFLECT(
   } while (bpt != b->data.end());
 
   if (ct != b->data.size()) {
-    spdlog::error(
-        "{}: {}", "BC_assign_: missed some cells!", ct - b->data.size());
+    spdlog::error("BC_assign_: missed some cells {} {}", ct, b->data.size());
+    exit(3);
   }
   return 0;
 }

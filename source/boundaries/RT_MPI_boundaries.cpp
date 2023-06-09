@@ -141,9 +141,10 @@ int RT_MPI_bc::Setup_RT_Boundaries(
   for (int v = 0; v < static_cast<int>(RT_source_list.size()); v++) {
     if (RT_source_list[v].source_id == src_id) sle = v;
   }
-  if (sle >= 0)
-    spdlog::error(
-        "{}: {}", "source is already present in RT_source_list!", sle);
+  if (sle >= 0) {
+    spdlog::error("source is already present in RT_source_list {}", sle);
+    exit(1);
+  }
   // ----------------------- SANITY CHECKS --------------------------
 
   // ------------------------ SETUP BOUNDARIES ----------------------
@@ -222,8 +223,10 @@ int RT_MPI_bc::Receive_RT_Boundaries(
       if (RT_source_list[v].source_id == src_id) sle = v;
     }
   }
-  if (sle < 0)
-    spdlog::error("{}: {}", "source not found in RT_source_list", sle);
+  if (sle < 0) {
+    spdlog::error("source not found in RT_source_list {}", sle);
+    exit(2);
+  }
 #ifdef RT_TESTING
   else
     spdlog::debug("\tRecv_RT_Boundaries() src={}: receiving data.\n", src_id);
@@ -284,10 +287,13 @@ int RT_MPI_bc::Receive_RT_Boundaries(
       from_rank = -1;
       err       = par.levels[0].sub_domain.look_for_data_to_receive(
           &from_rank, id, &comm_tag, BC_RTtag, COMM_DOUBLEDATA);
-      if (err)
-        spdlog::error("{}: {}", "Receive_RT_Boundaries() look4data", err);
+      if (err) {
+        spdlog::error("Receive_RT_Boundaries() look4data {}", err);
+        exit(2);
+      }
       if (comm_tag != BC_RTtag) {
-        spdlog::error("{}: {}", "Getting data, but not RT", comm_tag);
+        spdlog::error("Getting data, but not RT {}", comm_tag);
+        exit(3);
       }
 
       // Set pointer to boundary we are receiving, and note which one
@@ -301,21 +307,24 @@ int RT_MPI_bc::Receive_RT_Boundaries(
           i_recv = v;
           if (!test)
             test = true;
-          else
-            spdlog::error(
-                "{}: {}", "2 boundaries from same rank!!!", from_rank);
+          else {
+            spdlog::error("2 boundaries from same rank: {}", from_rank);
+            exit(4);
+          }
         }
       }
-      if (!b)
-        spdlog::error(
-            "{}: {}", "No Receive Boundary for this proc!", from_rank);
-      if (r_dirs[i_recv] != i_src->RT_recv_list[i_recv].dir) {
-        spdlog::error(
-            "{}: {}", "direction mismatch",
-            i_recv);  // this is paranoid checking!
+      if (!b) {
+        spdlog::error("No Receive Boundary for this proc {}", from_rank);
+        exit(5);
       }
-      if (r_done[i_recv])
-        spdlog::error("{}: {}", "This boundary already received!!!", i_recv);
+      if (r_dirs[i_recv] != i_src->RT_recv_list[i_recv].dir) {
+        spdlog::error("direction mismatch {}", i_recv);
+        exit(6);
+      }
+      if (r_done[i_recv]) {
+        spdlog::error("This boundary already received: {}", i_recv);
+        exit(7);
+      }
 
       //
       // See how many doubles we are expecting, and allocate memory.
@@ -326,6 +335,7 @@ int RT_MPI_bc::Receive_RT_Boundaries(
       if (ct < 1) {
         spdlog::error("data size = {}, NTau = {}", b->data.size(), RS.NTau);
         spdlog::error("{}: {}", "Empty boundary!", ct);
+        exit(8);
       }
       vector<pion_flt> buf(ct);
 #ifdef RT_TESTING
@@ -347,8 +357,10 @@ int RT_MPI_bc::Receive_RT_Boundaries(
           buf         ///< Pointer to array to write to (must be already
                       ///< initialised).
       );
-      if (err)
-        spdlog::error("{}: {}", "Receive_RT_Boundaries() getdata failed", err);
+      if (err) {
+        spdlog::error("Receive_RT_Boundaries() getdata failed {}", err);
+        exit(9);
+      }
 
       //
       // Loop over cells in boundary and copy received col values into
@@ -362,8 +374,10 @@ int RT_MPI_bc::Receive_RT_Boundaries(
         tau[v] = 0.0;
 
       for (c = b->data.begin(); c != b->data.end(); ++c) {
-        if (count >= ct)
-          spdlog::error("{}: {}", "too many cells!!!", count - ct);
+        if (count >= ct) {
+          spdlog::error("too many cells: {} {}", count, ct);
+          exit(10);
+        }
 #ifdef RT_TESTING
         if (count < 100) {
           spdlog::debug(
@@ -379,8 +393,8 @@ int RT_MPI_bc::Receive_RT_Boundaries(
         for (short unsigned int v = 0; v < RS.NTau; v++) {
           tau[v] = std::max(buf[count], 0.0);
           if (buf[count] < -SMALLVALUE) {
-            spdlog::debug("RECV neg tau cell : {}", (*c)->pos);
-            spdlog::debug("tau={} ... correcting to zero, ", buf[count]);
+            spdlog::warn("RECV neg tau cell : {}", (*c)->pos);
+            spdlog::warn("tau={} ... correcting to zero, ", buf[count]);
             CI.print_cell(**c);
           }
           count++;
@@ -391,8 +405,8 @@ int RT_MPI_bc::Receive_RT_Boundaries(
         for (short unsigned int v = 0; v < RS.NTau; v++) {
           tau[v] = std::max(buf[count], 0.0);
           if (buf[count] < -SMALLVALUE) {
-            spdlog::debug("RECV neg dtau cell : {}", (*c)->pos);
-            spdlog::debug("tau={} ... correcting to zero, ", buf[count]);
+            spdlog::warn("RECV neg dtau cell : {}", (*c)->pos);
+            spdlog::warn("tau={} ... correcting to zero, ", buf[count]);
             CI.print_cell(**c);
           }
           count++;
@@ -411,16 +425,20 @@ int RT_MPI_bc::Receive_RT_Boundaries(
         // HACK
 
       }  // loop over boundary cells.
-      if (count != ct) spdlog::error("{}: {}", "BIG ERROR!", count - ct);
+      if (count != ct) {
+        spdlog::error("BIG ERROR! {} {}", count, ct);
+        exit(10);
+      }
 
       //
       // Record boundary as received, so we know if we get the
       // same data twice.
       //
       r_done[i_recv] = true;
-      if (err)
-        spdlog::error(
-            "{}: {}", "Error receiving boundary data from rank: ", from_rank);
+      if (err) {
+        spdlog::error("Error receiving boundary data from rank: {}", from_rank);
+        exit(11);
+      }
     }  // Loop over boundaries.
   }    // else have boundaries.
 
@@ -465,8 +483,10 @@ int RT_MPI_bc::Send_RT_Boundaries(
       if (RT_source_list[v].source_id == src_id) sle = v;
     }
   }
-  if (sle < 0)
-    spdlog::error("{}: {}", "source not found in RT_source_list", sle);
+  if (sle < 0) {
+    spdlog::error("source not found in RT_source_list {}", sle);
+    exit(12);
+  }
 #ifdef RT_TESTING
   else
     spdlog::debug("\tSend_RT_Boundaries() src={}: sending data.\n", src_id);
@@ -535,18 +555,10 @@ int RT_MPI_bc::Send_RT_Boundaries(
         tau[v] = 0.0;
 
       for (c = b->data.begin(); c != b->data.end(); ++c) {
-        if (count >= nc)
-          spdlog::error("{}: {}", "too many cells!!!", count - nc);
-
-          // HACK
-          /*
-          cell *p=*c;
-          if (grid->idx()==2 && (p->pos[XX]==127 || p->pos[XX]==129))
-          { cout <<"RT MPI BC SEND: dir="<<b->dir<<": ";
-            CI.print_cell(p);
-          }
-          */
-          // HACK
+        if (count >= nc) {
+          spdlog::error("too many cells {} {}", count, nc);
+          exit(13);
+        }
 
 #ifdef RT_TESTING
         if (count < 100) {
@@ -609,7 +621,10 @@ int RT_MPI_bc::Send_RT_Boundaries(
           id[i],    ///< identifier for send, for tracking delivery later.
           BC_RTtag  ///< comm_tag, to say what kind of send this is.
       );
-      if (err) spdlog::error("{}: {}", "Send_BC[] send_data failed.", err);
+      if (err) {
+        spdlog::error("Send_BC[] send_data failed. {}", err);
+        exit(err);
+      }
 #ifdef RT_TESTING
       spdlog::debug("Send_BC[{}]: send returned with id={}", i, id[i]);
 #endif
@@ -671,8 +686,8 @@ int RT_MPI_bc::setup_RT_infinite_src_BD(
   // Make sure src is at infinity, and has the correct type.
   //
   if (!RS.at_infinity) {
-    spdlog::error(
-        "{}: {}", "Source for diffuse radiation is not at infinity", src_id);
+    spdlog::error("Source for diffuse radiation is not at infinity {}", src_id);
+    exit(15);
   }
   //
   // If the previous function returned at all, then the source
@@ -686,11 +701,13 @@ int RT_MPI_bc::setup_RT_infinite_src_BD(
   //
   if (!RT_recv_list.empty()) {
     spdlog::error(
-        "{}: {}", "diffuse radn src recv-list not empty!", RT_recv_list.size());
+        "diffuse radn src recv-list not empty! {}", RT_recv_list.size());
+    exit(16);
   }
   if (!RT_send_list.empty()) {
     spdlog::error(
-        "{}: {}", "diffuse radn src send-list not empty!", RT_send_list.size());
+        "diffuse radn src send-list not empty! {}", RT_send_list.size());
+    exit(17);
   }
 
   //
@@ -698,7 +715,9 @@ int RT_MPI_bc::setup_RT_infinite_src_BD(
   //
   enum direction srcdir = RT_src_at_infty_direction(par, src_id, RS);
   if (srcdir == NO) {
-    spdlog::error("{}: {}", "src position is not at infinity", srcdir);
+    spdlog::error(
+        "src position is not at infinity {}", static_cast<int>(srcdir));
+    exit(18);
   }
   enum direction recv_dir = srcdir;
   enum direction send_dir = grid->OppDir(srcdir);
@@ -736,15 +755,10 @@ int RT_MPI_bc::setup_RT_infinite_src_BD(
       tempR.dir = static_cast<int>(dir_ZP);
       break;
     case NO:
-      spdlog::debug(
-          "\t No processor in receive direction d={}: proc={}", recv_dir,
-          recv_proc);
-      tempR.dir = -1;
-      break;
     default:
       spdlog::debug(
-          "\t No processor in receive direction d={}: proc={}", recv_dir,
-          recv_proc);
+          "\t No process in receive direction d={}: proc={}",
+          static_cast<int>(recv_dir), recv_proc);
       tempR.dir = -1;
       break;
   }
@@ -753,19 +767,20 @@ int RT_MPI_bc::setup_RT_infinite_src_BD(
 #ifdef RT_TESTING
     spdlog::debug(
         "\t\tFound diffuse-recv-proc in dir={} (R.dir={}), rank={}, setting up boundary data.\n",
-        recv_dir, tempR.dir, tempR.rank);
+        static_cast<int>(recv_dir), static_cast<int>(tempR.dir), tempR.rank);
 #endif
     RT_recv_list.push_back(tempR);
     err = setup_RT_recv_boundary(grid, RT_recv_list.front());
-    if (err)
-      spdlog::error(
-          "{}: {}", "failed to set up diffuse radn recv boundary", err);
+    if (err) {
+      spdlog::error("failed to set up diffuse radn recv boundary {}", err);
+      exit(18);
+    }
   }
   else {
 #ifdef RT_TESTING
     spdlog::debug(
-        "\t\tDiffuse-recv-proc doesn't exist in dir={}; I must be at edge of domain.\n",
-        recv_dir);
+        "\t\tDiffuse-recv-proc doesn't exist in dir={}; I must be at edge of domain.",
+        static_cast<int>(recv_dir));
 #endif
   }
 
@@ -797,16 +812,16 @@ int RT_MPI_bc::setup_RT_infinite_src_BD(
     case NO:
 #ifdef RT_TESTING
       spdlog::debug(
-          "\t No processor in send direction d={}: proc={}", send_dir,
-          send_proc);
+          "\t No processor in send direction d={}: proc={}",
+          static_cast<int>(send_dir), send_proc);
 #endif
       tempS.dir = -1;
       break;
     default:
 #ifdef RT_TESTING
       spdlog::debug(
-          "\t No processor in send direction d={}: proc={}", send_dir,
-          send_proc);
+          "\t No processor in send direction d={}: proc={}",
+          static_cast<int>(send_dir), send_proc);
 #endif
       tempS.dir = -1;
       break;
@@ -816,13 +831,14 @@ int RT_MPI_bc::setup_RT_infinite_src_BD(
 #ifdef RT_TESTING
     spdlog::debug(
         "\t\tFound diffuse-send-proc in dir={}, rank={}, setting up boundary data.",
-        send_dir, tempS.rank);
+        static_cast<int>(send_dir), tempS.rank);
 #endif
     RT_send_list.push_back(tempS);
     err = setup_RT_send_boundary(grid, RT_send_list.front());
-    if (err)
-      spdlog::error(
-          "{}: {}", "failed to set up diffuse radn send boundary", err);
+    if (err) {
+      spdlog::error("failed to set up diffuse radn send boundary {}", err);
+      exit(20);
+    }
   }
   else {
 #ifdef RT_TESTING
@@ -892,13 +908,13 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
   //
   if (!RT_recv_list.empty()) {
     spdlog::error(
-        "{}: {}", "Monochromatic point src recv-list not empty!",
-        RT_recv_list.size());
+        "Monochromatic point src recv-list not empty {}", RT_recv_list.size());
+    exit(21);
   }
   if (!RT_send_list.empty()) {
     spdlog::error(
-        "{}: {}", "Monochromatic point src send-list not empty!",
-        RT_send_list.size());
+        "Monochromatic point src send-list not empty {}", RT_send_list.size());
+    exit(22);
   }
 
   //
@@ -1082,10 +1098,15 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
   for (unsigned int i = 0; i < RT_recv_list.size(); i++) {
     if (!(RT_recv_list[i].RT_bd)) {
       spdlog::error(
-          "{}: {}", "Missed out on receive boundary!", RT_recv_list[i].dir);
+          "Missed out on receive boundary {}",
+          static_cast<int>(RT_recv_list[i].dir));
+      exit(23);
     }
   }
-  if (err) spdlog::error("{}: {}", "failed to setup RT recv boundaries", err);
+  if (err) {
+    spdlog::error("failed to setup RT recv boundaries {}", err);
+    exit(err);
+  }
 
   for (unsigned int i = 0; i < RT_send_list.size(); i++) {
     RT_send_list[i].RT_bd = 0;
@@ -1093,10 +1114,14 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
   }
   for (unsigned int i = 0; i < RT_send_list.size(); i++) {
     if (!(RT_send_list[i].RT_bd)) {
-      spdlog::error("{}: {}", "Missed out on send boundary!", i);
+      spdlog::error("Missed out on send boundary {}", i);
+      exit(35);
     }
   }
-  if (err) spdlog::error("{}: {}", "failed to setup RT send boundaries", err);
+  if (err) {
+    spdlog::error("failed to setup RT send boundaries {}", err);
+    exit(err);
+  }
 
 #ifdef RT_TESTING
   spdlog::info("RT_MPI_bc::setup_RT_monochromatic_ptsrc_BD() finished!");
@@ -1117,22 +1142,27 @@ int RT_MPI_bc::setup_RT_recv_boundary(
 )
 {
 #ifdef RT_TESTING
-  spdlog::info("RT_MPI_bc::setup_RT_recv_boundary() starting (dir={}).", b.dir);
+  spdlog::info(
+      "RT_MPI_bc::setup_RT_recv_boundary() starting (dir={}).",
+      static_cast<int>(b.dir));
 #endif
   int err = 0;
 
   //
   // First set up boundary data, since it starts as an uninitialised pointer.
   //
-  if (b.RT_bd)
-    spdlog::error(
-        "{}: {}", "Already set up RT boudary data!", fmt::ptr(b.RT_bd));
+  if (b.RT_bd) {
+    spdlog::error("Already set up RT boudary data {}", fmt::ptr(b.RT_bd));
+    exit(31);
+  }
   b.RT_bd = mem.myalloc(b.RT_bd, 1);
   enum direction d1;
 
-  if (grid->BC_bd.size() == 0)
+  if (grid->BC_bd.size() == 0) {
     spdlog::error(
-        "{}: {}", "setup regular boundaries before RT ones!!!", b.dir);
+        "setup regular boundaries before RT ones {}", static_cast<int>(b.dir));
+    exit(32);
+  }
 
   switch (b.dir) {
       //
@@ -1165,12 +1195,14 @@ int RT_MPI_bc::setup_RT_recv_boundary(
       break;
 
     default:
-      spdlog::error("{}: {}", "bad dir!", b.dir);
+      spdlog::error("bad dir! {}", static_cast<int>(b.dir));
+      exit(33);
   }
 
 #ifdef RT_TESTING
   spdlog::info(
-      "RT_MPI_bc::setup_RT_recv_boundary() returning (dir={}).", b.dir);
+      "RT_MPI_bc::setup_RT_recv_boundary() returning (dir={}).",
+      static_cast<int>(b.dir));
 #endif
   return err;
 }
@@ -1189,14 +1221,17 @@ int RT_MPI_bc::RT_populate_recv_boundary(
 )
 {
   // if (par.ndim==1) return 0; // no connections to make!
-  if (!b || !b2)
+  if (!b || !b2) {
     spdlog::error(
-        "{}: {}", "RT_MPI_bc::RT_populate_recv_boundary() Null b/b2 pointer",
-        fmt::ptr(b));
+        "RT_MPI_bc::RT_populate_recv_boundary() Null b/b2 pointer {} {}",
+        fmt::ptr(b), fmt::ptr(b2));
+    exit(34);
+  }
 
 #ifdef RT_TESTING
   spdlog::debug(
-      "RT_populate_recv_boundary() offdir={},  ondir={}", offdir, b2->ondir);
+      "RT_populate_recv_boundary() offdir={},  ondir={}",
+      static_cast<int>(offdir), static_cast<int>(b2->ondir));
 #endif  // RT_TESTING
 
   //
@@ -1228,7 +1263,8 @@ int RT_MPI_bc::setup_RT_send_boundary(
 {
 #ifdef RT_TESTING
   spdlog::debug(
-      "RT_MPI_bc::setup_RT_send_boundary() starting (dir={}).\n", send_b.dir);
+      "RT_MPI_bc::setup_RT_send_boundary() starting (dir={}).",
+      static_cast<int>(send_b.dir));
 #endif
   int err = 0;
   //
@@ -1237,15 +1273,17 @@ int RT_MPI_bc::setup_RT_send_boundary(
   boundary_data *grid_b = grid->BC_bd[send_b.dir];
   if (!grid_b) {
     spdlog::error(
-        "{}: {}", "RT boundary in dir with no real boundary!", send_b.dir);
+        "RT boundary in dir with no real boundary {}",
+        static_cast<int>(send_b.dir));
+    exit(36);
   }
 
   //
   // Set up boundary data.
   //
   if (send_b.RT_bd) {
-    spdlog::error(
-        "{}: {}", "Already set up RT boudary data!", fmt::ptr(send_b.RT_bd));
+    spdlog::error("Already set up RT boudary data {}", fmt::ptr(send_b.RT_bd));
+    exit(37);
   }
   send_b.RT_bd = mem.myalloc(send_b.RT_bd, 1);
 
@@ -1270,7 +1308,8 @@ int RT_MPI_bc::setup_RT_send_boundary(
 
 #ifdef RT_TESTING
   spdlog::debug(
-      "RT_MPI_bc::setup_RT_send_boundary() returning (dir={}).", send_b.dir);
+      "RT_MPI_bc::setup_RT_send_boundary() returning (dir={}).",
+      static_cast<int>(send_b.dir));
 #endif
   return err;
 }

@@ -59,6 +59,7 @@ if [ ! -z "$DDD" ]; then
   #NCORES=1
   path=`pwd`
   export PYTHON=/usr/local/bin/python3
+  WGET=curl
 fi
 
 
@@ -93,7 +94,7 @@ then
           if [ $? != 0 ]; then
             echo ** failed to download with wget, trying curl instead **
             rm $FILE
-            curl $REMOTE_URL -o $FILE
+            curl -LJO $REMOTE_URL -o $FILE
           fi
           # check it downloaded.
           if [ ! -f $FILE ]; then

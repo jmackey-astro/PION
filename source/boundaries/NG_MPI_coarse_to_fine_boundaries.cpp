@@ -164,6 +164,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
       spdlog::error(
           "{}: {}", "l+1 neigbouring grids vector not set up right",
           fgngb.size());
+      exit(1);
     }
     for (int d = 0; d < par.ndim; d++) {
       // negative direction
@@ -321,8 +322,10 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
       n_el = n_cell * (par.nvar + 1 + par.ndim);
     else if (par.spOOA == OA2)
       n_el = n_cell * ((1 + par.ndim) * par.nvar + 1 + par.ndim);
-    else
-      spdlog::error("{}: {}", "bad spOOA in MPI C2F", par.spOOA);
+    else {
+      spdlog::error("bad spOOA in MPI C2F {}", par.spOOA);
+      exit(2);
+    }
     vector<pion_flt> buf(n_el);
     std::vector<double> slope(par.nvar);
     std::array<double, MAX_DIM> cpos;
@@ -358,7 +361,10 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
 
     }  // loop over cells for this send boundary
 
-    if (ibuf != n_el) spdlog::error("{}: {}", "C2F MPI SEND counting", ibuf);
+    if (ibuf != n_el) {
+      spdlog::error("C2F MPI SEND counting {} {}", ibuf, n_el);
+      exit(4);
+    }
 
     //
     // Send data using a non-blocking MPI send
@@ -380,7 +386,10 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
 #endif
     err += par.levels[l].sub_domain.send_double_data(
         b->NGsendC2F[ib]->rank, n_el, buf, id, comm_tag);
-    if (err) spdlog::error("{}: {}", "Send_C2F send_data failed.", err);
+    if (err) {
+      spdlog::error("{}: {}", "Send_C2F send_data failed.", err);
+      exit(5);
+    }
 #ifdef TEST_C2F
     spdlog::debug("BC_update_COARSE_TO_FINE_SEND: returned with id={}", id);
 #endif
@@ -478,23 +487,24 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
       if (cg_ixmax[ZZ] == fg_ixmax[ZZ]) send2pg = false;
       break;
     case NO:
-      spdlog::error("{}: {}", "bad direction", b->dir);
-      break;
     default:
-      spdlog::error("{}: {}", "bad direction", b->dir);
+      spdlog::error("bad direction {}", static_cast<int>(b->dir));
+      exit(6);
       break;
   }
   if (!send2pg) {
     // must need to receive from neighbour of parent grid
-    if (pgngb[b->dir].rank < 0)
-      spdlog::error("{}: {}", "ngb of parent is null", b->dir);
+    if (pgngb[b->dir].rank < 0) {
+      spdlog::error("ngb of parent is null {}", static_cast<int>(b->dir));
+      exit(7);
+    }
     CI.get_ipos_vec(pgngb[b->dir].Xmin, cg_ixmin);
     CI.get_ipos_vec(pgngb[b->dir].Xmax, cg_ixmax);
     b->NGrecvC2F_parent = pgngb[b->dir].rank;
 #ifdef TEST_C2F
     spdlog::debug(
         "C2F MPI Recv, recv from rank{}, in outward normal direction {}",
-        b->NGrecvC2F_parent, b->dir);
+        b->NGrecvC2F_parent, static_cast<int>(b->dir));
 #endif
   }
   else {
@@ -508,9 +518,10 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
 #endif
     int err = NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
         par, grid, b, par.levels[l].parent);
-    if (0 != err)
-      spdlog::error(
-          "{}: Expected {} but got {}", "serial C2F BC setup", 0, err);
+    if (0 != err) {
+      spdlog::error("serial C2F BC setup {}", err);
+      exit(err);
+    }
   }
   else {
 #ifdef TEST_C2F
@@ -566,9 +577,11 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
           // odd-numbered row, already dealt with.
           continue;
         }
-        else
+        else {
           spdlog::error(
-              "{}: {}", "error in 2d logic C2FR_setup", c->pos[YY] - row_y);
+              "error in 2d logic C2FR_setup {} {}", c->pos[YY], row_y);
+          exit(8);
+        }
       }  // loop over cells
     }    // if 2D
 
@@ -614,9 +627,11 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
           // odd-numbered row/plane, already added cells.
           continue;
         }
-        else
+        else {
           spdlog::error(
-              "{}: {}", "error in 3d logic C2FR_setup", c->pos[YY] - row_y);
+              "error in 3d logic C2FR_setup {} {}", c->pos[YY], row_y);
+          exit(9);
+        }
       }  // loop over cells
     }    // if 3D
   }      // if parent is on other MPI process
@@ -641,7 +656,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
 #ifdef TEST_C2F
   spdlog::debug(
       "C2F_MPI: receiving boundary data to level {}, updating boundary dir = {}",
-      l, b->dir);
+      l, static_cast<int>(b->dir));
 #endif
   int err                      = 0;
   class Sub_domain *sub_domain = &(par.levels[l].sub_domain);
@@ -671,7 +686,10 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
 #endif
     err = par.levels[l].sub_domain.look_for_data_to_receive(
         &from_rank, recv_id, &recv_tag, comm_tag, COMM_DOUBLEDATA);
-    if (err) spdlog::error("{}: {}", "look for double data failed", err);
+    if (err) {
+      spdlog::error("look for double data failed {}", err);
+      exit(10);
+    }
 #ifdef TEST_C2F
     spdlog::debug(
         "BC_update_COARSE_TO_FINE_RECV: found data from rank {}, with tag {} and id {}.  Looked for comm_tag={}",
@@ -687,24 +705,21 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
       n_el = n_cell * (par.nvar + 1 + par.ndim);
     else if (par.spOOA == OA2)
       n_el = n_cell * ((1 + par.ndim) * par.nvar + 1 + par.ndim);
-    else
+    else {
       spdlog::error("{}: {}", "bad spOOA in MPI C2F", par.spOOA);
-    vector<pion_flt> buf(n_el);
-#ifdef TEST_C2F
-    if (1 == 1) {
-      spdlog::debug(
-          "BC_update_COARSE_TO_FINE_RECV: get {} cells, and {} doubles", n_cell,
-          n_el);
+      exit(11);
     }
-#endif
+    vector<pion_flt> buf(n_el);
     //
     // Receive data into buffer.  Data stored for each coarse cell:
     // Ph[nv],cellvol,cellpos[nd],slopeX[nv],slopeY[nv],slopeZ[nv]
     //
     err = par.levels[l].sub_domain.receive_double_data(
         from_rank, recv_tag, recv_id, n_el, buf);
-    if (err)
+    if (err) {
       spdlog::error("{}: {}", "(BC_update_C2F_RECV) getdata failed", err);
+      exit(err);
+    }
 
     //
     // Get Ph and slopes from coarse cells, and interpolate into
@@ -954,7 +969,8 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_1D(
       break;
 
     default:
-      spdlog::error("{}: {}", "bad direction in 1D C2F", bdata->dir);
+      spdlog::error("bad direction in 1D C2F {}", static_cast<int>(bdata->dir));
+      exit(12);
   }
 
   cell *c = grid->FirstPt_All();
@@ -1027,18 +1043,23 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
       break;
 
     default:
-      spdlog::error("{}: {}", "bad direction in 2D C2F", bdata->dir);
+      spdlog::error("bad direction in 2D C2F {}", static_cast<int>(bdata->dir));
+      exit(13);
   }
 
-  // cout <<"boundary: x in ["<<xn<<","<<xp<<"], y in["<<yn<<","<<yp<<"]\n";
+    // cout <<"boundary: x in ["<<xn<<","<<xp<<"], y in["<<yn<<","<<yp<<"]\n";
+#ifdef TEST_C2F
   size_t ct = 0;
-  cell *c   = grid->FirstPt_All();
+#endif
+  cell *c = grid->FirstPt_All();
   do {
     // rep.printVec("cpos",c->pos,par.ndim);
     if (c->pos[XX] > xn && c->pos[XX] < xp && c->pos[YY] > yn
         && c->pos[YY] < yp) {
       bdata->c.push_back(c);
+#ifdef TEST_C2F
       ct++;
+#endif
     }
   } while ((c = grid->NextPt_All(*c)) != 0);
 #ifdef TEST_C2F
@@ -1153,7 +1174,9 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
       break;
 
     default:
-      spdlog::error("{}: {}", "bad direction in 3D C2F", bdata->dir);
+      spdlog::error("bad direction in 3D C2F {}", static_cast<int>(bdata->dir));
+      exit(14);
+      break;
   }
 
 #ifdef TEST_C2F
@@ -1161,7 +1184,9 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
       "xn={}, xp={}\nyn={}, yp={}\nzn={}, zp={}", xn, xp, yn, yp, zn, zp);
 #endif
 
-  int ct  = 0;
+#ifdef TEST_C2F
+  int ct = 0;
+#endif
   cell *c = grid->FirstPt_All();
   do {
     if ((c->pos[XX] > xn && c->pos[XX] < xp)
@@ -1170,7 +1195,9 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
       bdata->c.push_back(c);
       // rep.printVec("c",c->pos,3);
       // cout <<"adding cell "<<ct<<" to list.\n";
+#ifdef TEST_C2F
       ct++;
+#endif
     }
   } while ((c = grid->NextPt_All(*c)) != 0);
 #ifdef TEST_C2F

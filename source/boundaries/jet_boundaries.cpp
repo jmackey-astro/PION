@@ -29,11 +29,14 @@ int jet_bc::BC_assign_JETBC(
     boundary_data *b)
 {
   if (!JP.jetic) {
-    spdlog::error("{}: {}", "BC_assign_JETBC: not a jet simulation!", JP.jetic);
+    spdlog::error("BC_assign_JETBC: not a jet simulation {}", JP.jetic);
+    exit(1);
   }
   if (b->dir != NO) {
     spdlog::error(
-        "{}: {}", "BC_assign_JETBC: boundary is not an internal one!", b->dir);
+        "BC_assign_JETBC: boundary is not an internal one {}",
+        static_cast<int>(b->dir));
+    exit(2);
   }
   cell *c    = grid->FirstPt();
   cell *temp = 0, *cy = 0;
@@ -70,7 +73,8 @@ int jet_bc::BC_assign_JETBC(
     maxnv         = 5;
   }
   else {
-    spdlog::error("{}: {}", "BC_assign_JETBC: bad equation type", par.eqntype);
+    spdlog::error("BC_assign_JETBC: bad equation type {}", par.eqntype);
+    exit(3);
   }
 
   if (par.eqntype == EQMHD || par.eqntype == EQGLM || par.eqntype == EQFCD) {
@@ -82,8 +86,7 @@ int jet_bc::BC_assign_JETBC(
       b->refval[BZ] = JP.jetstate[BY];
     }
     else {
-      spdlog::error(
-          "{}: {}", "Need to code B-field within jet for 3D", par.ndim);
+      spdlog::error("Need to code B-field within jet for 3D {}", par.ndim);
     }
     maxnv = 8;
   }
@@ -98,7 +101,8 @@ int jet_bc::BC_assign_JETBC(
   }
 
   if (!b->data.empty()) {
-    spdlog::error("{}: {}", "BC_assign_JETBC: boundary data exists!", b->itype);
+    spdlog::error("BC_assign_JETBC: boundary data exists {}", b->itype);
+    exit(4);
   }
 
   //
@@ -165,14 +169,15 @@ int jet_bc::BC_assign_JETBC(
           ctot++;
           if (temp->isgd) {
             spdlog::error(
-                "{}: {}", "Looking for Boundary cells! setupjet",
-                fmt::ptr(temp));
+                "Looking for Boundary cells! setupjet {}", fmt::ptr(temp));
+            exit(5);
           }
         }
         ct++;
       } while ((c = grid->NextPt(*c, YP)) && ct < JP.jetradius);
       if (ct != JP.jetradius) {
-        spdlog::error("{}: {}", "Not enough cells for jet", ct);
+        spdlog::error("Not enough cells for jet {} {}", ct, JP.jetradius);
+        exit(6);
       }
       spdlog::debug("Got {} Cells in total for jet boundary", ctot);
     }  // 2D Axial Symmetry
@@ -215,8 +220,8 @@ int jet_bc::BC_assign_JETBC(
               ctot++;
               if (temp->isgd) {
                 spdlog::error(
-                    "{}: {}", "Looking for Boundary cells! setupjet",
-                    fmt::ptr(temp));
+                    "Looking for Boundary cells! setupjet {}", fmt::ptr(temp));
+                exit(7);
               }
             }
           }                                      // if within jet radius
@@ -226,8 +231,8 @@ int jet_bc::BC_assign_JETBC(
     }                                            // 3D Cartesian
 
     else {
-      spdlog::error(
-          "{}: {}", "Only know how to set up jet in 2Dcyl or 3Dcart", par.ndim);
+      spdlog::error("Only know how to set up jet in 2Dcyl or 3Dcart", par.ndim);
+      exit(8);
     }
 
   }  // jetic==1
@@ -267,8 +272,10 @@ int jet_bc::BC_update_JETBC(
           CI.get_dpos(*c, YY) * CI.get_dpos(*c, YY)
           + CI.get_dpos(*c, ZZ) * CI.get_dpos(*c, ZZ));
     }
-    else
-      spdlog::error("{}: {}", "Jet BC, but not 2d or 3d!!!", par.ndim);
+    else {
+      spdlog::error("Jet BC, but not 2d or 3d!!! {}", par.ndim);
+      exit(9);
+    }
     (*c)->P[VX]  = b->refval[VX] * min(1., 4 - 4.0 * dist / jr);
     (*c)->Ph[VX] = (*c)->P[VX];
 #endif  // SOFTJET

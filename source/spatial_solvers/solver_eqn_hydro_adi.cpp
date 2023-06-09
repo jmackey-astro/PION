@@ -110,6 +110,7 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     spdlog::error("left  : {}", std::vector<double>(Pr, Pr + eq_nvar));
     spdlog::error(
         "FV_solver_Hydro_Euler::calculate_flux() rho/P too small {}", Pr[eqPG]);
+    exit(1);
   }
 
   for (int v = 0; v < eq_nvar; v++)
@@ -126,6 +127,7 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     spdlog::error("Tracers out of range in flux solver!");
     spdlog::error("Pl={}", std::vector<double>(Pl, Pl + eq_nvar));
     spdlog::error("Pr={}", std::vector<double>(Pr, Pr + eq_nvar));
+    exit(2);
   }
 #endif
 
@@ -203,7 +205,7 @@ int FV_solver_Hydro_Euler::inviscid_flux(
           Roe_flux_solver_symmetric(Pl, Pr, eq_gamma, HC_etamax, pstar, flux);
     }
     if (0 != err) {
-      spdlog::error("{}: Expected {} but got {}", "HLL/RoeCV Flux", 0, err);
+      spdlog::error("HLL/RoeCV Flux {}", err);
       exit(1);
     }
   }
@@ -216,8 +218,7 @@ int FV_solver_Hydro_Euler::inviscid_flux(
   }
 
   else {
-    spdlog::error(
-        "{}: {}", "what sort of flux solver do you mean???", solve_flag);
+    spdlog::error("what sort of flux solver do you mean? {}", solve_flag);
     exit(1);
   }
 
@@ -460,6 +461,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
     PtoU(Pin, u1, eq_gamma);
     spdlog::debug("Uin : {}", std::vector<double>(u1, u1 + eq_nvar));
     spdlog::debug("Pf  : {}", std::vector<double>(Pf, Pf + eq_nvar));
+    exit(3);
 #endif
   }
 
@@ -474,7 +476,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
           "NAN/INF in FV_solver_Hydro_Euler::CellAdvanceTime: var={}, val={}",
           v, Pf[v]);
       CI.print_cell(c);
-      spdlog::error("{}: {}", "NAN hydro cell update", v);
+      spdlog::error("NAN hydro cell update {} {}", v, Pf[v]);
       exit(1);
     }
   }
@@ -535,6 +537,7 @@ double FV_solver_Hydro_Euler::CellTimeStep(
   if (!isfinite(l_dt) || l_dt <= 0.0) {
     spdlog::error("cell has invalid timestep");
     CI.print_cell(c);
+    exit(5);
   }
 #endif
   return l_dt;
@@ -567,11 +570,10 @@ cyl_FV_solver_Hydro_Euler::cyl_FV_solver_Hydro_Euler(
     FV_solver_Hydro_Euler(nv, nd, cflno, gam, state, avcoeff, ntr),
     VectorOps_Cyl(nd)
 {
-  if (nd != 2)
-    spdlog::error(
-        "{}: {}", "Cylindrical coordinates only implemented for \
-                        2d axial symmetry so far.  Sort it out!",
-        nd);
+  if (nd != 2) {
+    spdlog::error("Cylindrical coordinates only 2d", nd);
+    exit(nd);
+  }
   return;
 }
 
@@ -604,8 +606,9 @@ void cyl_FV_solver_Hydro_Euler::geometric_source(
             / CI.get_dpos(c, Rcyl);
         break;
       default:
-        spdlog::error(
-            "{}: {}", "Bad OOA in cyl_IdealMHD_RS::dU, only know 1st,2nd", OA);
+        spdlog::error("Bad OOA in cyl_IdealMHD_RS::dU: {}", OA);
+        exit(7);
+        break;
     }
   }
 
@@ -639,11 +642,10 @@ sph_FV_solver_Hydro_Euler::sph_FV_solver_Hydro_Euler(
     FV_solver_Hydro_Euler(nv, nd, cflno, gam, state, avcoeff, ntr),
     VectorOps_Cyl(nd), VectorOps_Sph(nd)
 {
-  if (nd != 1)
-    spdlog::error(
-        "{}: {}", "Spherical coordinates only implemented for 1D \
-                        spherical symmetry so far.  Sort it out!",
-        nd);
+  if (nd != 1) {
+    spdlog::error("Spherical coordinates only 1D {}", nd);
+    exit(nd);
+  }
   return;
 }
 
@@ -679,8 +681,9 @@ void sph_FV_solver_Hydro_Euler::geometric_source(
         break;
       //
       default:
-        spdlog::error(
-            "{}: {}", "Bad OOA in sph_hydro_RS::dU, only know 1st,2nd", OA);
+        spdlog::error("Bad OOA in sph_hydro_RS::dU: {}", OA);
+        exit(9);
+        break;
     }
   }
 

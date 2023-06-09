@@ -501,7 +501,6 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   double Vinf =
       fn_v_inf(std::min(0.9999, WP->Vrot / WP->Vcrit), WP->Vinf, wc.theta);
 
-  cell *c = wc.c;
   std::array<double, MAX_DIM> r;
   set_wind_cell_offset(grid, wc, WS, r);
   set_wind_cell_velocity_components_vinf(r, wc, *WP, Vinf, WP->Vrot);

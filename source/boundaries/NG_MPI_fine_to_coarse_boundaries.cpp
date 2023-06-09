@@ -286,7 +286,9 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
 
     class GridBaseClass *grid = par.levels[l].grid;
     cell *c                   = grid->FirstPt();
-    size_t ct                 = 0;
+#ifdef TEST_MPI_NG_F2C
+    size_t ct = 0;
+#endif
     do {
       bool ongrid = true;
       for (int j = 0; j < par.ndim; j++) {
@@ -299,7 +301,9 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
         spdlog::info("cell over fine grid : {}", c->pos);
 #endif
         b->NGrecvF2C[i].push_back(c);
+#ifdef TEST_MPI_NG_F2C
         ct++;
+#endif
       }
     } while ((c = grid->NextPt(*c)) != 0);
 
@@ -367,7 +371,9 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
     spdlog::error(
         "{}: {}", "BC_update_FINE_TO_COARSE_RECV: bad size",
         nchild - cg.size());
+#ifdef TEST_MPI_NG_F2C
   int count = 0;
+#endif
 
   // loop over children twice, once for child grids that are on my
   // MPI process, and once for grids that on other processes
@@ -390,7 +396,9 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
         spdlog::error(
             "{}: Expected {} but got {}",
             "BC_update_FINE_TO_COARSE_RECV serial", 0, err);
+#ifdef TEST_MPI_NG_F2C
       count++;
+#endif
     }
 
     else {
@@ -525,8 +533,8 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
 #ifdef TEST_MPI_NG_F2C
       spdlog::info(
           "(BC_update_F2C_RECV) i_el={} of {} total elements.\n", i_el, ct);
-#endif
       count++;
+#endif
 
     }  // else child is not on my proc
   }    // loop until we got through all child grids.

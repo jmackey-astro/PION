@@ -456,9 +456,11 @@ int dataio_silo_pllel::OutputData(
   // loop over grid refinement levels, save one file per level
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
 
-    if (!cg[l])
+    if (!cg[l]) {
       spdlog::error(
-          "{}: {}", "dataio_silo::OutputData() null pointer!", fmt::ptr(cg[l]));
+          "dataio_silo::OutputData() null pointer {}", fmt::ptr(cg[l]));
+      exit(3);
+    }
     dataio_silo::gp = cg[l];
     mpiPM           = &(SimPM.levels[l].sub_domain);
 
@@ -477,8 +479,13 @@ int dataio_silo_pllel::OutputData(
     }
 
     err = SaveLevelData(fbase, cg[l], SimPM, file_counter);
-    if (0 != err)
-      spdlog::error("{}: Expected {} but got {}", "saveleveldata", 0, err);
+    if (0 != err) {
+      spdlog::error("saveleveldata failed: {}", err);
+      exit(err);
+    }
+#ifndef NDEBUG
+    spdlog::info("Saved data, returning without error");
+#endif
   }
   return err;
 }
@@ -495,15 +502,15 @@ int dataio_silo_pllel::SaveLevelData(
 {
   int err         = 0;
   dataio_silo::gp = cg;
-  if (!gp)
+  if (!gp) {
     spdlog::error(
-        "{}: {}", "dataio_silo_pllel::SaveLevelData() null grid!",
-        fmt::ptr(gp));
+        "dataio_silo_pllel::SaveLevelData() null grid! {}", fmt::ptr(gp));
+    exit(1);
+  }
 
   int level = 0;
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     if (gp == SimPM.levels[l].grid) level = l;
-    // cout <<"saving level "<<level<<"\n";
   }
 
 #ifndef NDEBUG
@@ -545,7 +552,7 @@ int dataio_silo_pllel::SaveLevelData(
   err            = mpiPM->silo_pllel_init(
       numfiles, "WRITE", file_id, &group_rank, &myrank_ingroup);
   if (err) {
-    spdlog::error("{}: {}", "mpiPM->silo_pllel_init() returned err", err);
+    spdlog::error("mpiPM->silo_pllel_init() returned err {}", err);
     exit(1);
   }
 
@@ -582,8 +589,10 @@ int dataio_silo_pllel::SaveLevelData(
   // temp << myrank_ingroup;
   // mydir = temp.str();
   // temp.str("");
-  if (mydir.size() + 1 >= strlength)
-    spdlog::error("{}: {}", "string too large", mydir);
+  if (mydir.size() + 1 >= strlength) {
+    spdlog::error("string too large {}", mydir);
+    exit(2);
+  }
 
   err = 0;
   // set grid properties for quadmesh
@@ -591,9 +600,10 @@ int dataio_silo_pllel::SaveLevelData(
   spdlog::info("----dataio_silo_pllel::SaveLevelData() grid properties");
 #endif
   err = setup_grid_properties(gp, SimPM);
-  if (err)
-    spdlog::error(
-        "{}: {}", "dataio_silo_pllel::SaveLevelData() grid_props", err);
+  if (err) {
+    spdlog::error("dataio_silo_pllel::SaveLevelData() grid_props {}", err);
+    exit(3);
+  }
 #ifndef NDEBUG
   spdlog::info("----dataio_silo_pllel::SaveLevelData() grid props done");
 #endif
@@ -604,9 +614,10 @@ int dataio_silo_pllel::SaveLevelData(
     spdlog::info("----dataio_silo_pllel::SaveLevelData() write variables");
 #endif
     err = setup_write_variables(SimPM);
-    if (err)
-      spdlog::error(
-          "{}: {}", "dataio_silo_pllel::SaveLevelData() write-vars", err);
+    if (err) {
+      spdlog::error("dataio_silo_pllel::SaveLevelData() write-vars {}", err);
+      exit(4);
+    }
 #ifndef NDEBUG
     spdlog::info("----dataio_silo_pllel::SaveLevelData() write vars done");
 #endif
@@ -641,24 +652,27 @@ int dataio_silo_pllel::SaveLevelData(
 
   *db_ptr = 0;
   err     = mpiPM->silo_pllel_wait_for_file(file_id, silofile, mydir, db_ptr);
-  if (err || !(*db_ptr))
-    spdlog::error(
-        "{}: {}", "mpiPM->silo_pllel_wait_for_file() returned err", err);
+  if (err || !(*db_ptr)) {
+    spdlog::error("mpiPM->silo_pllel_wait_for_file() returned err {}", err);
+    exit(5);
+  }
 
-    //
-    // Have got the baton, now, so the file is mine to write to.
-    // local work here... each proc write their part of the grid.
-    //
-    // Generate Mesh in file.
-    //
+  //
+  // Have got the baton, now, so the file is mine to write to.
+  // local work here... each proc write their part of the grid.
+  //
+  // Generate Mesh in file.
+  //
 #ifndef NDEBUG
   spdlog::info("----dataio_silo_pllel::SaveLevelData() generating quadmesh");
 #endif
   string meshname;
   mesh_name(mpiPM->get_myrank(), meshname);
   err = generate_quadmesh(*db_ptr, meshname, SimPM);
-  if (err)
-    spdlog::error("{}: {}", "dataio_silo_pllel::SaveLevelData() quadmesh", err);
+  if (err) {
+    spdlog::error("dataio_silo_pllel::SaveLevelData() quadmesh {}", err);
+    exit(6);
+  }
 #ifndef NDEBUG
   spdlog::info("----dataio_silo_pllel::SaveLevelData() quadmesh generated");
 #endif
@@ -669,13 +683,11 @@ int dataio_silo_pllel::SaveLevelData(
 #ifndef NDEBUG
   spdlog::debug("----dataio_silo_pllel::SaveLevelData() create data arrays");
 #endif
-
   create_data_arrays(SimPM);
 
 #ifndef NDEBUG
   spdlog::debug("----dataio_silo_pllel::SaveLevelData() arrays created");
 #endif
-
   for (std::vector<string>::iterator i = varnames.begin(); i != varnames.end();
        ++i) {
 #ifndef NDEBUG
@@ -683,28 +695,25 @@ int dataio_silo_pllel::SaveLevelData(
 #endif
 
     err = write_variable2mesh(SimPM, *db_ptr, meshname, (*i));
-
 #ifndef NDEBUG
     spdlog::debug("\t\tvariable {} written.", (*i));
 #endif
-
-    if (err)
+    if (err) {
       spdlog::error(
-          "{}: {}", "dataio_silo_pllel::SaveLevelData() writing variable",
-          (*i));
+          "dataio_silo_pllel::SaveLevelData() writing variable {}", (*i));
+      exit(7);
+    }
   }
 
 #ifndef NDEBUG
   spdlog::debug("----dataio_silo_pllel::SaveLevelData() deleting arrays");
 #endif
-
   delete_data_arrays();
-
 #ifndef NDEBUG
   spdlog::debug("----dataio_silo_pllel::SaveLevelData() arrays deleted");
 #endif
 
-  // ONLY DO THIS IF I AM ROOT PROCESSOR *IN EACH GROUP*
+  // ONLY DO THIS IF I AM ROOT PROCESS *IN EACH GROUP*
   // GET CURRENT DIR, MOVE OUT, MAKE HEADER,
   // MOVE BACK TO CURRENT DIR
   if (myrank_ingroup == 0) {
@@ -736,7 +745,7 @@ int dataio_silo_pllel::SaveLevelData(
     err += DBWrite(
         *db_ptr, "level_xmax", &(SimPM.levels[level].Xmax), dim1, 1, DB_DOUBLE);
     //    err = write_header(*db_ptr);
-    err = write_simulation_parameters(SimPM);
+    err += write_simulation_parameters(SimPM);
     if (err) {
       spdlog::error("dataio_silo_pllel::SaveLevelData() header: {}", err);
       exit(1);
@@ -748,9 +757,7 @@ int dataio_silo_pllel::SaveLevelData(
   }  // if root processor of *group*
 
   if (mpiPM->get_myrank() == 0) {
-    //
     // WRITE MULTIMESH DATA NOW TO FIRST PARTIAL FILE IF ROOT PROC.
-    //
     string mm_name   = "MultiMesh";
     string mma_name  = "Domain_Decomposition";
     string mrgt_name = "";  // MRGtree";
@@ -762,11 +769,9 @@ int dataio_silo_pllel::SaveLevelData(
     int err = DBGetDir(*db_ptr, datadir);
     DBSetDir(*db_ptr, "/");
 
-    //
     // Strip the path from outfilebase to get just the filename; do this by
     // reverse finding '/' from outfilebase and taking the substring
     // following its position.  As far as I can tell this is foolproof...
-    //
     string fname;
     string::size_type p = outfilebase.rfind("/");
     if (p != string::npos) {
@@ -789,9 +794,7 @@ int dataio_silo_pllel::SaveLevelData(
     groups = mem.myalloc(groups, nmesh);
     ranks  = mem.myalloc(ranks, nmesh);
 
-    //
     // Assign groups and rank_in_groups to each process:
-    //
     for (int i = 0; i < nmesh; i++) {
       mpiPM->silo_pllel_get_ranks(file_id, i, &(groups[i]), &(ranks[i]));
     }
@@ -804,8 +807,10 @@ int dataio_silo_pllel::SaveLevelData(
       csys = DB_QUAD_RECT;
     else if (SimPM.coord_sys == COORD_SPH)
       csys = DB_QUAD_RECT;
-    else
+    else {
       spdlog::error("{}: {}", "bad coord system", SimPM.coord_sys);
+      exit(8);
+    }
     for (int i = 0; i < nmesh; i++) {
       meshtypes[i] = csys;
       temp.str("");
@@ -829,9 +834,10 @@ int dataio_silo_pllel::SaveLevelData(
       mesh_name(i, tfn);
       temp << "/" << tfn.c_str();
       // temp <<"/unigrid"; temp.width(4); temp<<i;
-      if (temp.str().length() > strlength - 1)
-        spdlog::error(
-            "{}: {}", "directory name too long!!!", temp.str().length());
+      if (temp.str().length() > strlength - 1) {
+        spdlog::error("directory name too long {}", temp.str().length());
+        exit(9);
+      }
       strcpy(mm_names[i], temp.str().c_str());
     }
 
@@ -858,9 +864,10 @@ int dataio_silo_pllel::SaveLevelData(
     // write the multimesh
     err = DBPutMultimesh(
         *db_ptr, mm_name.c_str(), nmesh, mm_names, meshtypes, mm_opts);
-    if (err)
-      spdlog::error(
-          "{}: {}", "dataio_silo_pllel::SaveLevelData()multimesh", err);
+    if (err) {
+      spdlog::error("dataio_silo_pllel::SaveLevelData()multimesh {}", err);
+      exit(10);
+    }
 #ifndef NDEBUG
     spdlog::debug("----dataio_silo_pllel::SaveLevelData() quadmesh written");
 #endif
@@ -900,9 +907,10 @@ int dataio_silo_pllel::SaveLevelData(
         // temp.width(4); temp<<ranks[ii];
         temp << tfn.c_str();
         temp << "/" << vname;
-        if (temp.str().length() > strlength)
-          spdlog::error(
-              "{}: {}", "multivar name too long!!!", temp.str().length());
+        if (temp.str().length() > strlength) {
+          spdlog::error("multivar name too long {}", temp.str().length());
+          exit(11);
+        }
         strcpy(mm_names[ii], temp.str().c_str());
       }
 
@@ -949,9 +957,10 @@ int dataio_silo_pllel::SaveLevelData(
     //
     if (mpiPM->get_nproc() > 1) {
       err = write_multimeshadj(SimPM, *db_ptr, gp, mm_name, mma_name);
-      if (err)
-        spdlog::error(
-            "{}: {}", "Failed to write multimesh Adjacency Object", err);
+      if (err) {
+        spdlog::error("Failed to write multimesh Adjacency Object {}", err);
+        exit(12);
+      }
     }
   }  // if root processor of whole simulation
 
@@ -959,9 +968,10 @@ int dataio_silo_pllel::SaveLevelData(
   // Finished Local work; hand off baton and wait!
   //
   err = mpiPM->silo_pllel_finish_with_file(file_id, db_ptr);
-  if (err)
-    spdlog::error(
-        "{}: {}", "mpiPM->silo_pllel_finish_with_file() returned err", err);
+  if (err) {
+    spdlog::error("mpiPM->silo_pllel_finish_with_file() returned err {}", err);
+    exit(13);
+  }
   mpiPM->barrier();
 
   //   cout <<"Got past barrier... finished outputting silo data.\n\n";
@@ -974,8 +984,12 @@ int dataio_silo_pllel::SaveLevelData(
   return err;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int dataio_silo_pllel::choose_pllel_filename(
     const string fbase,      ///< filebase passed in from main code.
@@ -1003,8 +1017,12 @@ int dataio_silo_pllel::choose_pllel_filename(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int dataio_silo_pllel::setup_grid_properties(
     class GridBaseClass *grid,  ///< pointer to data.
@@ -1013,10 +1031,11 @@ int dataio_silo_pllel::setup_grid_properties(
 {
   // set grid parameters
   // This version is for the local domain of the current processor.
-  if (!grid)
+  if (!grid) {
     spdlog::error(
-        "{}: {}", "dataio_silo::setup_grid_properties() null ptr",
-        fmt::ptr(grid));
+        "dataio_silo::setup_grid_properties() null ptr", fmt::ptr(grid));
+    exit(14);
+  }
   double dx               = grid->DX();
   dataio_silo::ndim       = SimPM.ndim;
   dataio_silo::vec_length = SimPM.eqnNDim;
@@ -1158,8 +1177,10 @@ int dataio_silo_pllel::setup_grid_properties(
     silo_coordsys = DB_CYLINDRICAL;
   else if (SimPM.coord_sys == COORD_SPH)
     silo_coordsys = DB_SPHERICAL;
-  else
-    spdlog::error("{}: {}", "bad coord system", SimPM.coord_sys);
+  else {
+    spdlog::error("bad coord system {}", SimPM.coord_sys);
+    exit(15);
+  }
   DBAddOption(GridOpts, DBOPT_COORDSYS, &silo_coordsys);
   DBAddOption(GridOpts, DBOPT_DTIME, &SimPM.simtime);
   DBAddOption(GridOpts, DBOPT_CYCLE, &SimPM.timestep);
@@ -1172,8 +1193,12 @@ int dataio_silo_pllel::setup_grid_properties(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void dataio_silo_pllel::create_data_arrays(
     class SimParams &SimPM  ///< pointer to simulation parameters
@@ -1267,12 +1292,13 @@ void dataio_silo_pllel::create_data_arrays(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
-//
-// Write a mulitmesh adjacency object
-//
+
+
 int dataio_silo_pllel::write_multimeshadj(
     class SimParams &SimPM,    ///< pointer to simulation parameters
     DBfile *dbfile,            ///< pointer to silo file.
@@ -1307,17 +1333,15 @@ int dataio_silo_pllel::write_multimeshadj(
   // Stot is the total number of neighbours over all meshes.  Sk[v] is
   // the number of meshes in all neighbours up to and including v-1.
   //
-
   std::vector<int> ngb_list;
   mpiPM->gather_abutting_domains(ngb_list, Sk, Nngb, 0);
 
   int Stot = ngb_list.size();
-
   std::vector<int> offsets_list, directional_Ncells_list, ix_list;
   mpiPM->gather_offsets(offsets_list, 0);
   mpiPM->gather_directional_Ncells(directional_Ncells_list, 0);
 
-  /* non-root ranks were only here to share data with root rank */
+  // non-root ranks were only here to share data with root rank
   if (mpiPM->get_myrank() > 0) {
     return 0;
   }
@@ -1335,13 +1359,15 @@ int dataio_silo_pllel::write_multimeshadj(
   // * nodelist = index ranges of each list of nodes..
   // ct       = counter for where we are in neighbour lists.
   //
-  int ngb[Stot], back[Stot], nnodes[Stot], *nodelist[Stot];
+  std::vector<int> ngb(Stot), back(Stot), nnodes(Stot);
+  std::vector<int *> nodelist(Stot);
   //
   // Each nodelist element has 15 elements regardless of ndim, and we
   // set some to Q=-1 if ndim<3
   //
   int Q      = -1;  // for unused values.
   int nl_len = 15;  // size of elements.
+
   for (int s = 0; s < Stot; s++) {
     nnodes[s]   = nl_len;
     ngb[s]      = ngb_list[s];
@@ -1370,10 +1396,11 @@ int dataio_silo_pllel::write_multimeshadj(
     for (int i = 0; i < Nngb[v]; i++) {
       dom2 = ngb[off1 + i];
       off2 = Sk[dom2];
-      if (off2 > Stot)
+      if (off2 > Stot) {
         spdlog::error(
-            "{}: {}", "Counting error in loop to find back array", off2 - Stot);
-
+            "Counting error in loop to find back array {} {}", off2, Stot);
+        exit(15);
+      }
       for (int s = 0; s < Nngb[dom2]; s++) {
         if (ngb[off2 + s] == v) back[off1 + i] = s;
       }  // loop over dom2's neighbours
@@ -1395,8 +1422,8 @@ int dataio_silo_pllel::write_multimeshadj(
       off1 = Sk[v] + i;
       if (off1 > Stot) {
         spdlog::error(
-            "Counting error in loop over neighbours for mesh v: {}",
-            off1 - Stot);
+            "Counting error in loop over neighbours for mesh v: {} {}", off1,
+            Stot);
         exit(1);
       }
       //
@@ -1446,7 +1473,7 @@ int dataio_silo_pllel::write_multimeshadj(
         // spdlog::debug("my_ix : {}", my_ix);
         // spdlog::debug("ngb_ix : {}", ngb_ix);
         spdlog::error(
-            "{}: {}", "domains don't touch (X-dir)!", my_ix[XX] - ngb_ix[XX]);
+            "domains don't touch (X-dir) {} {}", my_ix[XX], ngb_ix[XX]);
         exit(1);
       }
 
@@ -1467,9 +1494,11 @@ int dataio_silo_pllel::write_multimeshadj(
           nodelist[off1][8] = offsets[YY];
           nodelist[off1][9] = offsets[YY] + directional_Ncells[YY];
         }
-        else
+        else {
           spdlog::error(
-              "{}: {}", "domains don't touch! (Y-dir)", my_ix[YY] - ngb_ix[YY]);
+              "domains don't touch! (Y-dir) {} {}", my_ix[YY], ngb_ix[YY]);
+          exit(16);
+        }
       }  // at least 2D
 
       //
@@ -1489,9 +1518,11 @@ int dataio_silo_pllel::write_multimeshadj(
           nodelist[off1][10] = offsets[ZZ];
           nodelist[off1][11] = offsets[ZZ] + directional_Ncells[ZZ];
         }
-        else
+        else {
           spdlog::error(
-              "{}: {}", "domains don't touch! (Z-dir)", my_ix[ZZ] - ngb_ix[ZZ]);
+              "domains don't touch! (Z-dir) {} {}", my_ix[ZZ], ngb_ix[ZZ]);
+          exit(17);
+        }
       }  // 3D
 
       //
@@ -1504,17 +1535,6 @@ int dataio_silo_pllel::write_multimeshadj(
     }  // loop over neighbours for this mesh
   }    // loop over meshes
 
-  // for (int s=0;s<Stot;s++) {
-  //  for (int v=0; v<nl_len; v++) {
-  // cout <<"zonelist["<<s<<"]["<<v<<"] = "<<zonelist[s][v]<<"\n";
-  // cout <<"nodelist["<<s<<"]["<<v<<"] = "<<nodelist[s][v]<<"\n";
-  //  }
-  //}
-
-  //
-  // So now we have set nmesh, meshtypes[], Nngb[], ngb[S], back[S],
-  // nnodes[S], nodelist[S][], and that is all we need.
-  //
   char datadir[strlength];
   err += DBGetDir(dbfile, datadir);
   DBSetDir(dbfile, "/");
@@ -1525,12 +1545,10 @@ int dataio_silo_pllel::write_multimeshadj(
   DBAddOption(mma_opts, DBOPT_DTIME, &SimPM.simtime);
   DBAddOption(mma_opts, DBOPT_CYCLE, &SimPM.timestep);
 
-  //
   // write the multimeshadj
-  //
   err = DBPutMultimeshadj(
-      dbfile, mma_name.c_str(), nmesh, meshtypes, Nngb, ngb, back, nnodes,
-      nodelist, 0, 0, mma_opts);
+      dbfile, mma_name.c_str(), nmesh, meshtypes, Nngb, ngb.data(), back.data(),
+      nnodes.data(), nodelist.data(), 0, 0, mma_opts);
   if (err) {
     spdlog::error("dataio_silo_pllel::OutputData() multimesh info: {}", err);
     exit(1);
@@ -1560,8 +1578,12 @@ int dataio_silo_pllel::write_multimeshadj(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void dataio_silo_pllel::set_dir_in_file(
     std::string &mydir,       ///< directory name.
@@ -1576,26 +1598,26 @@ void dataio_silo_pllel::set_dir_in_file(
   temp << "/rank_";
   temp.width(4);
   temp << my_rank;
-  // temp << "_l"; temp.width(2); temp << level;
   temp << "_domain_";
   temp.width(4);
   temp << my_group_rank;
   mydir = temp.str();
   temp.str("");
-  // cout <<"\t\tdomain: "<<mydir<<"\n";
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void dataio_silo_pllel::mesh_name(
     const int rank,  ///< rank
     string &mesh_name)
 {
-  //
   // Get mesh_name from rank
-  //
   ostringstream temp;
   temp.str("");
   temp.fill('0');
@@ -1605,6 +1627,8 @@ void dataio_silo_pllel::mesh_name(
   mesh_name = temp.str();
   return;
 }
+
+
 
 // ##################################################################
 // ##################################################################

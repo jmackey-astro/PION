@@ -66,9 +66,10 @@ int NG_MPI_BC89flux::setup_flux_recv(
     spdlog::info("setup_flux_recv(): nproc=1, calling serial version");
 #endif
     int err = NG_BC89flux::setup_flux_recv(par, grid, lp1);
-    if (0 != err)
-      spdlog::error(
-          "{}: Expected {} but got {}", "UniformGrid flux setup", 0, err);
+    if (0 != err) {
+      spdlog::error("UniformGrid flux setup {}", err);
+      exit(err);
+    }
     err = flux_update_recv[l].size();
     for (int i = 0; i < err; i++) {
       flux_update_recv[l][i].rank.push_back(0);
@@ -129,8 +130,8 @@ int NG_MPI_BC89flux::setup_flux_recv(
         ncell[ax] = (ixmax[ax] - ixmin[ax]) / idx;
         if ((ixmax[ax] - ixmin[ax]) % idx != 0) {
           spdlog::error(
-              "{}: {}", "interface region not divisible!",
-              ixmax[ax] - ixmin[ax]);
+              "interface region not divisible {} {}", ixmax[ax], ixmin[ax]);
+          exit(2);
         }
       }  // all dimensions
       for (int d = 0; d < 2 * par.ndim; d++)
@@ -160,7 +161,8 @@ int NG_MPI_BC89flux::setup_flux_recv(
           if (recv[off + ZP]) nel[off + ZP] = ncell[XX] * ncell[YY];
           break;
         default:
-          spdlog::error("{}: {}", "bad ndim in setup_flux_recv", par.ndim);
+          spdlog::error("bad ndim in setup_flux_recv {}", par.ndim);
+          exit(3);
           break;
       }  // dims
     }    // all child grids
@@ -241,8 +243,8 @@ int NG_MPI_BC89flux::setup_flux_recv(
     sub_domain->get_level_lp1_ngb_info(cgngb);
     if (cgngb.size() != static_cast<size_t>(2 * par.ndim)) {
       spdlog::error(
-          "{}: {}", "l+1 neigbouring grids vector not set up right",
-          cgngb.size());
+          "l+1 neigbouring grids vector not set up right {}", cgngb.size());
+      exit(4);
     }
 
     // try to find a direction (there is at most one).  If we find
@@ -254,7 +256,9 @@ int NG_MPI_BC89flux::setup_flux_recv(
     for (int d = 0; d < 2 * par.ndim; d++) {
       nsub = cgngb[d].size();
 #ifdef TEST_BC89FLUX
-      spdlog::info("pllel setup_flux_recv(): dir={}, nsub={}", d, nsub);
+      spdlog::info(
+          "pllel setup_flux_recv(): dir={}, nsub={}", static_cast<int>(d),
+          nsub);
 #endif
       if (nsub > 0) {
         flux_update_recv[l].resize(nsub);
@@ -330,7 +334,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
           }
 #ifdef TEST_BC89FLUX
           spdlog::info(
-              "ic={}parallel setup_flux_recv(): adding cells for l+1 neigbouring grids.\n",
+              "ic={} parallel setup_flux_recv(): adding cells for l+1 neigbouring grids.\n",
               ic);
 #endif
           add_cells_to_face(
@@ -346,19 +350,21 @@ int NG_MPI_BC89flux::setup_flux_recv(
   for (int l = 0; l < par.grid_nlevels; l++) {
     for (unsigned int d = 0; d < flux_update_send[l].size(); d++) {
       struct flux_update *fup = &(flux_update_send[l][d]);
-      spdlog::info("l={}, FUP_SEND: d={} info: \n\t ranks: ", l, d);
+      spdlog::info("l={}, FUP_SEND: d={} info: \t ranks: ", l, d);
       for (unsigned int r = 0; r < fup->rank.size(); r++)
         spdlog::info("{}  ", fup->rank[r]);
       spdlog::info(
-          "\t nel = {} dir={}, ax={}", fup->fi.size(), fup->dir, fup->ax);
+          "\t nel = {} dir={}, ax={}", fup->fi.size(),
+          static_cast<int>(fup->dir), static_cast<int>(fup->ax));
     }
     for (unsigned int d = 0; d < flux_update_recv[l].size(); d++) {
       struct flux_update *fup = &(flux_update_recv[l][d]);
-      spdlog::info("l={}, FUP_RECV: d={} info: \n\t ranks: ", l, d);
+      spdlog::info("l={}, FUP_RECV: d={} info: \t ranks: ", l, d);
       for (unsigned int r = 0; r < fup->rank.size(); r++)
         spdlog::info("{}  ", fup->rank[r]);
       spdlog::info(
-          "\t nel = {} dir={}, ax={}", fup->fi.size(), fup->dir, fup->ax);
+          "\t nel = {} dir={}, ax={}", fup->fi.size(),
+          static_cast<int>(fup->dir), static_cast<int>(fup->ax));
     }
   }
 #endif
@@ -386,9 +392,10 @@ int NG_MPI_BC89flux::setup_flux_send(
 #endif
 
   int err = NG_BC89flux::setup_flux_send(par, grid, lm1);
-  if (0 != err)
-    spdlog::error(
-        "{}: Expected {} but got {}", "NG_BC89flux::setup_flux_send", 0, err);
+  if (0 != err) {
+    spdlog::error("NG_BC89flux::setup_flux_send {}", err);
+    exit(10);
+  }
 
   // Add ranks for each send, based on parent rank.
   int l = lm1 + 1;  // my level
@@ -400,7 +407,10 @@ int NG_MPI_BC89flux::setup_flux_send(
 
   // Size of flux_update_send[] is ALWAYS 2*ndim
   int ns = flux_update_send[l].size();
-  if (ns != 2 * par.ndim) spdlog::error("{}: {}", "bad flux send size", ns);
+  if (ns != 2 * par.ndim) {
+    spdlog::error("bad flux send size {}", ns);
+    exit(11);
+  }
 
   if (par.levels[l].sub_domain.get_nproc() == 1) {
     for (int d = 0; d < ns; d++) {
@@ -531,10 +541,12 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
     return 1;
   }
   if (par.levels[l].step % 2 != 0) {
-    spdlog::error("{}: {}", "Don't call BC89 Flux-SEND on odd steps", 1);
+    spdlog::error("Don't call BC89 Flux-SEND on odd steps {}", 1);
+    exit(21);
   }
   if (l == 0) {
     spdlog::error("{}: {}", "Coarsest level trying to send flux data", l);
+    exit(22);
   }
   int err = 0;
 
@@ -596,7 +608,10 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
 #endif
       err += sub_domain->send_double_data(
           fup->rank[ii], n_data, data, id, comm_tag);
-      if (err) spdlog::error("{}: {}", "FLUX_F2C send_data failed.", err);
+      if (err) {
+        spdlog::error("{}: {}", "FLUX_F2C send_data failed.", err);
+        exit(22);
+      }
 #ifdef TEST_BC89FLUX
       spdlog::info("l={}: BC89 FLUX: returned with id={}", l, id);
 #endif
@@ -631,9 +646,11 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
   if (step != ooa) {
     spdlog::error("don't receive fluxes on half step");
     spdlog::error("{}: {}", "trying to receive BC89 flux on half step", l);
+    exit(31);
   }
   if (l == par.grid_nlevels - 1) {
     spdlog::error("{}: {}", "finest level trying to receive data from l+1", l);
+    exit(32);
   }
   int err = 0;
 
@@ -666,8 +683,10 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
       err                       = recv_BC89_flux_boundary(
           spatial_solver, par, grid, dt, *fsend, *fup, d,
           static_cast<axes>(fup->ax));
-      if (0 != err)
+      if (0 != err) {
         spdlog::error("{}: Expected {} but got {}", "serial BC89 call", 0, err);
+        exit(33);
+      }
       continue;
     }
     else {
@@ -710,7 +729,10 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
         comm_tag,
         COMM_DOUBLEDATA  // type of data we want.
     );
-    if (err) spdlog::error("{}: {}", "FLUX look for double data failed", err);
+    if (err) {
+      spdlog::error("{}: {}", "FLUX look for double data failed", err);
+      exit(34);
+    }
 #ifdef TEST_BC89FLUX
     spdlog::info(
         "l={}: BC89 FLUX: found data from rank {}, and ID {}", l, from_rank,
@@ -723,7 +745,10 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
     //
     err = sub_domain->receive_double_data(
         from_rank, recv_tag, recv_id, n_data, buf);
-    if (err) spdlog::error("{}: {}", "(flux BC89) getdata failed", err);
+    if (err) {
+      spdlog::error("{}: {}", "(flux BC89) getdata failed", err);
+      exit(36);
+    }
 
     size_t iel = 0;
     for (size_t ii = 0; ii < n_el; ii++) {
@@ -751,6 +776,7 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
               "l={}: element {} of FLUX C2F RECV:  var {} is {}", l, ii, iel,
               buf[iel]);
           spdlog::error("{}: {}", "infinite", buf[ii]);
+          exit(36);
         }
 #endif
       }
@@ -783,7 +809,10 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
         fi->c[0]->dU[v] += utmp[v];
 
     }  // loop over elements
-    if (iel != n_data) spdlog::error("{}: {}", "ndata", iel - n_data);
+    if (iel != n_data) {
+      spdlog::error("{}: {} {}", "ndata", iel, n_data);
+      exit(37);
+    }
 #ifdef TEST_BC89FLUX
     spdlog::info("l={}: BC89 FLUX: finished with recv ID {}", l, recv_id);
 #endif

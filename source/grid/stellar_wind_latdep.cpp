@@ -667,8 +667,8 @@ int stellar_wind_latdep::add_evolving_source(
 
   // get the mass-loss rate of an equivalent non-rotating star from
   // Brott et al. (2011) recipe
-  double Z   = (xc + xn + xo + xz + xd) / 0.014;
-  double md0 = Mdot_Brott(
+  double Z      = (xc + xn + xo + xz + xd) / 0.014;
+  temp->ws->Md0 = Mdot_Brott(
       Lstar / pconst.Lsun(), Mstar / pconst.Msun(), Twind,
       rstar / pconst.Rsun(), Z);
 

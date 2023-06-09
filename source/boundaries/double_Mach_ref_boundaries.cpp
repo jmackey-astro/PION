@@ -30,7 +30,8 @@ int double_Mach_ref_bc::BC_assign_DMACH(
 #endif  // NDEBUG
 
   if (b->data.empty()) {
-    spdlog::error("{}: {}", "BC_assign_DMACH: empty boundary data", b->itype);
+    spdlog::error("BC_assign_DMACH: empty boundary data {}", b->itype);
+    exit(1);
   }
   //
   // Set reference value to be downstream values.
@@ -89,8 +90,8 @@ int double_Mach_ref_bc::BC_assign_DMACH(
   } while (bpt != b->data.end());
 
   if (ct != b->data.size()) {
-    spdlog::error(
-        "{}: {}", "BC_assign_: missed some cells!", ct - b->data.size());
+    spdlog::error("BC_assign_: missed some cells! {} {}", ct, b->data.size());
+    exit(2);
   }
 #ifndef NDEBUG
   spdlog::info("Setting up DMACH boundary... finished.");
@@ -115,13 +116,15 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
 #endif  // NDEBUG
 
   if (b->dir != NO) {
-    spdlog::error("{}: {}", "DMACH2 not internal boundary!", b->dir);
+    spdlog::error("DMACH2 not internal boundary! {}", static_cast<int>(b->dir));
+    exit(3);
   }
   spdlog::info("DMACH2 boundary, from x=0 to x=1/6 at y=0, fixed bd.");
   if (b->refval) {
     spdlog::error(
-        "{}: {}", "Already initialised memory in DMACH2 boundary refval",
+        "Already initialised memory in DMACH2 boundary refval {}",
         fmt::ptr(b->refval));
+    exit(4);
   }
   b->refval = mem.myalloc(b->refval, par.nvar);
 
@@ -138,8 +141,8 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
   // x<=1/6
   //
   if (!b->data.empty()) {
-    spdlog::error(
-        "{}: {}", "BC_assign_DMACH2: Not empty boundary data", b->itype);
+    spdlog::error("BC_assign_DMACH2: Not empty boundary data {}", b->itype);
+    exit(5);
   }
   cell *c = grid->FirstPt();
   //
@@ -167,8 +170,9 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
         b->data.push_back(temp);
         if (temp->isgd) {
           spdlog::error(
-              "{}: {}", "BC_assign_DMACH2: Looking for Boundary cells!",
+              "BC_assign_DMACH2: Looking for Boundary cells {}",
               fmt::ptr(temp));
+          exit(6);
         }
       }
     }

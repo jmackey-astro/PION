@@ -1007,8 +1007,8 @@ int setup_fixed_grid::setup_boundary_structs(
     grid->BC_bd[i]->ondir = grid->OppDir(grid->BC_bd[i]->dir);
 
     spdlog::debug(
-        "i={}, dir={}, ondir={}", i, grid->BC_bd[i]->dir,
-        grid->BC_bd[i]->ondir);
+        "i={}, dir={}, ondir={}", i, static_cast<int>(grid->BC_bd[i]->dir),
+        static_cast<int>(grid->BC_bd[i]->ondir));
 
     grid->BC_bd[i]->baxis = static_cast<axes>(i / 2);
     //

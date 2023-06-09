@@ -18,12 +18,14 @@ int axisymmetric_bc::BC_assign_AXISYMMETRIC(
     boundary_data *b)
 {
   if (b->data.empty()) {
-    spdlog::error(
-        "{}: {}", "BC_assign_AXISYMMETRIC empty boundary data", b->itype);
+    spdlog::error("BC_assign_AXISYMMETRIC empty boundary data {}", b->itype);
+    exit(1);
   }
 
   if (b->dir != RNcyl) {
-    spdlog::error("{}: {}", "Axisymmetric boundary not at R=0", b->dir);
+    spdlog::error(
+        "Axisymmetric boundary not at R=0 : {}", static_cast<int>(b->dir));
+    exit(2);
   }
 
   //
@@ -65,7 +67,8 @@ int axisymmetric_bc::BC_assign_AXISYMMETRIC(
       temp = grid->NextPt(*temp, b->ondir);
     }
     if (!temp) {
-      spdlog::error("{}: {}", "Got lost assigning axisymmetric bcs.", temp->id);
+      spdlog::error("Got lost assigning axisymmetric bcs. {}", temp->id);
+      exit(3);
     }
     for (int v = 0; v < par.nvar; v++)
       (*bpt)->P[v] = temp->P[v] * b->refval[v];
@@ -83,8 +86,9 @@ int axisymmetric_bc::BC_assign_AXISYMMETRIC(
 
   if (ct != b->data.size()) {
     spdlog::error(
-        "{}: {}", "BC_assign_AXISYMMETRIC: missed some cells!",
-        ct - b->data.size());
+        "{}: {}", "BC_assign_AXISYMMETRIC: missed some cells! {} {}", ct,
+        b->data.size());
+    exit(4);
   }
   return 0;
 }

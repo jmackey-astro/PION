@@ -44,8 +44,10 @@ eqns_base::eqns_base(const int n  ///< Number of Variables in State Vector
   // We assume at least 5 variables in the state vector -- density, pressure,
   // and a 3d velocity
   //
-  if (eq_nvar < 5)
-    spdlog::error("{}: {}", "Bad eq_nvar; must be >=5!", eq_nvar);
+  if (eq_nvar < 5) {
+    spdlog::error("Bad eq_nvar; must be >=5 : {}", eq_nvar);
+    exit(1);
+  }
 
   //
   // These are constants regardless of what way we are looking
@@ -148,7 +150,9 @@ void eqns_base::SetDirection(const enum axes d)
       eqBBZ     = BBY;
       break;
     default:
-      spdlog::error("{}: {}", "bad direction in eqns_base::SetDirection", d);
+      spdlog::error(
+          "bad direction in eqns_base::SetDirection {}", static_cast<int>(d));
+      exit(2);
       break;
   }
   return;

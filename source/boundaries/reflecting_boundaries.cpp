@@ -47,11 +47,9 @@ int reflecting_bc::BC_assign_REFLECTING(
         b->refval[VZ] = -1.0;
         break;
       case NO:
-        spdlog::error("{}: {}", "BAD DIRECTION REFLECTING", b->dir);
-        exit(2);
-        break;
       default:
-        spdlog::error("{}: {}", "BAD DIRECTION REFLECTING", b->dir);
+        spdlog::error(
+            "{}: {}", "BAD DIRECTION REFLECTING", static_cast<int>(b->dir));
         exit(3);
         break;
     }  // Set Normal velocity direction.
@@ -74,11 +72,9 @@ int reflecting_bc::BC_assign_REFLECTING(
           b->refval[BZ] = -1.0;
           break;
         case NO:
-          spdlog::error("{}: {}", "BAD DIRECTION REFLECTING", b->dir);
-          exit(4);
-          break;
         default:
-          spdlog::error("{}: {}", "BAD DIRECTION REFLECTING", b->dir);
+          spdlog::error(
+              "BAD DIRECTION REFLECTING {}", static_cast<int>(b->dir));
           exit(5);
           break;
       }  // Set normal b-field direction.
@@ -103,7 +99,8 @@ int reflecting_bc::BC_assign_REFLECTING(
       temp = grid->NextPt(*temp, b->ondir);
     }
     if (!temp) {
-      spdlog::error("{}: {}", "Got lost assigning reflecting bcs.", temp->id);
+      spdlog::error("Got lost assigning reflecting bcs. {}", temp->id);
+      exit(6);
     }
     for (int v = 0; v < par.nvar; v++)
       (*bpt)->P[v] = temp->P[v] * b->refval[v];
@@ -122,8 +119,8 @@ int reflecting_bc::BC_assign_REFLECTING(
 
   if (ct != b->data.size()) {
     spdlog::error(
-        "{}: {}", "BC_assign_REFLECTING: missed some cells!",
-        ct - b->data.size());
+        "BC_assign_REFLECTING: missed some cells! {} {}", ct, b->data.size());
+    exit(7);
   }
   return 0;
 }

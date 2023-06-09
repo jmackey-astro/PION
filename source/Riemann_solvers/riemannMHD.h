@@ -159,9 +159,9 @@ private:
   std::vector<pion_flt> RS_meanp;
 
   /// The elements of the 7 left eigenvectors... evec[E-val][Element]
-  pion_flt RS_leftevec[7][7];
+  std::array<std::array<pion_flt, 7>, 7> RS_leftevec;
   /// The elements of the 7 right eigenvectors...evec[E-val][Element]
-  pion_flt RS_rightevec[7][7];
+  std::array<std::array<pion_flt, 7>, 7> RS_rightevec;
 
   long int onaxis,  ///< Debugging counters for checking eigenvectors are right.
       offaxis,      ///< Debugging counters for checking eigenvectors are right.

@@ -87,15 +87,13 @@ double Sub_domain::global_operation_double(
     default:
       spdlog::error(
           "Sub_domain:global_operation_double: Bad identifier: {} (0 = MAX, 1 = MIN, 2 = SUM)",
-          op);
+          static_cast<int>(op));
       exit(1);
   }
 
   if (err) {
     spdlog::error(
-        "{}: {}",
-        "Sub_domain:global_operation_double: MPI call returned abnormally",
-        err);
+        "Sub_domain:global_operation_double: MPI call failed {}", err);
     exit(1);
   }
 
@@ -133,15 +131,13 @@ void Sub_domain::global_op_double_array(
       break;
     default:
       spdlog::error(
-          "Sub_domain:global_op_double_array: Bad identifier: {} (0 = MAX, 1 = MIN, 2 = SUM)",
-          op);
+          "Sub_domain:global_op_double_array: Bad identifier: {}",
+          static_cast<int>(op));
       exit(1);
   }
 
   if (err) {
-    spdlog::error(
-        "{}: {}",
-        "Sub_domain:global_op_double_array: MPI call returned abnormally", err);
+    spdlog::error("Sub_domain:global_op_double_array: MPI call failed {}", err);
     exit(1);
   }
 
@@ -179,13 +175,11 @@ int Sub_domain::broadcast_data(
     default:
       spdlog::error(
           "Bad type of data to send: {} (0 = INT, 1 = FLOAT, 2 = DOUBLE)",
-          type);
+          static_cast<int>(type));
       exit(1);
   }
   if (err) {
-    spdlog::error(
-        "{}: {}", "Sub_domain:broadcast_data: MPI call returned abnormally",
-        err);
+    spdlog::error("Sub_domain:broadcast_data: MPI call failed {}", err);
     exit(1);
   }
   return err;
@@ -218,7 +212,7 @@ int Sub_domain::send_cell_data(
     spdlog::error(
         "num_cells={}  nvar={}  id={}  tag={}", m_num_send_cells, nvar, send_id,
         comm_tag);
-    spdlog::error("{}: {}", "to_rank is out of bounds", to_rank);
+    spdlog::error("to_rank {} is out of bounds", to_rank);
     exit(1);
   }
 
@@ -273,7 +267,7 @@ int Sub_domain::send_cell_data(
     exit(1);
   }
   if (err) {
-    spdlog::error("{}: {}", "MPI_Pack returned abnormally", err);
+    spdlog::error("MPI_Pack returned abnormally {}", err);
     exit(1);
   }
 
@@ -297,7 +291,7 @@ int Sub_domain::send_cell_data(
       send_list.back().to_rank, send_list.back().comm_tag, cart_comm,
       &(send_list.back().request));
   if (err) {
-    spdlog::error("{}: {}", "MPI_Send failed", err);
+    spdlog::error("MPI_Send failed {}", err);
     exit(1);
   }
 

@@ -68,15 +68,16 @@ int periodic_pllel_bc::BC_update_PERIODIC(
 #ifndef NDEBUG
     spdlog::debug(
         "BC_update_PERIODIC: non-communicating periodic BC in direction {}",
-        b->dir);
+        static_cast<int>(b->dir));
 #endif
     err = periodic_bc::BC_update_PERIODIC(par, level, grid, b, cstep, maxstep);
   }
   else {
 #ifndef NDEBUG
     spdlog::debug(
-        "BC_update_PERIODIC: communicating periodic BC in direction {}\nBC_update_PERIODIC: calling mpi update BC function",
-        b->dir);
+        "BC_update_PERIODIC: communicating periodic BC in direction {}",
+        static_cast<int>(b->dir));
+    spdlog::debug("BC_update_PERIODIC: calling mpi update BC function");
 #endif
     err = BC_update_BCMPI(par, level, grid, b, cstep, maxstep, BC_PERtag);
   }

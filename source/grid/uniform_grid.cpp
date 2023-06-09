@@ -169,8 +169,10 @@ UniformGrid::UniformGrid(
     G_xmin[i]  = g_xn[i];
     G_xmax[i]  = g_xp[i];
     G_range[i] = G_xmax[i] - G_xmin[i];
-    if (G_range[i] < 0.)
-      spdlog::error("{}: {}", "Negative range in direction i", i);
+    if (G_range[i] < 0.) {
+      spdlog::error("Negative range in direction {} : {}", i, G_range[i]);
+      exit(8);
+    }
 
     //
     // For single static grid, Sim_xmin/xmax/range are the same as
@@ -259,17 +261,20 @@ UniformGrid::UniformGrid(
   spdlog::debug("allocating memory for grid");
 
   int err = allocate_grid_data();
-  if (err != 0)
-    spdlog::error("{}: {}", "Error setting up grid, allocate_grid_data", err);
+  if (err != 0) {
+    spdlog::error("Error setting up grid, allocate_grid_data {}", err);
+    exit(9);
+  }
 
   // assign grid structure on cells, setting positions and ngb
   // pointers.
   spdlog::debug("assigning pointers to neighbours");
 
   err += assign_grid_structure();
-  if (err != 0)
-    spdlog::error(
-        "{}: {}", "Error setting up grid, assign_grid_structure", err);
+  if (err != 0) {
+    spdlog::error("Error setting up grid, assign_grid_structure {}", err);
+    exit(10);
+  }
 
 #ifndef NDEBUG
   spdlog::debug("\tFirst Pt. integer position : {}", FirstPt()->pos);
@@ -622,8 +627,10 @@ int UniformGrid::assign_grid_structure()
 
         if (ctemp) {
           // there is another on-grid point.
-          if (!ctemp->isgd)
-            spdlog::error("{}: {}", "Setting npt error", ctemp->id);
+          if (!ctemp->isgd) {
+            spdlog::error("Setting npt error {}", ctemp->id);
+            exit(12);
+          }
           c.npt = ctemp;
         }
         else {
@@ -635,10 +642,14 @@ int UniformGrid::assign_grid_structure()
       }
     }  // if c->isgd
   }
-  if (!is_lpt_set)
-    spdlog::error("{}: {}", "failed to find last on-grid point", 1);
-  if (!is_fpt_set)
-    spdlog::error("{}: {}", "failed to find first on-grid point", 1);
+  if (!is_lpt_set) {
+    spdlog::error("failed to find last on-grid point {}", 1);
+    exit(13);
+  }
+  if (!is_fpt_set) {
+    spdlog::error("failed to find first on-grid point {}", 1);
+    exit(14);
+  }
   // ----------------------  SET npt POINTERS  ----------------------
   // ----------------------------------------------------------------
 
@@ -811,10 +822,9 @@ enum direction UniformGrid::OppDir(enum direction dir)
     return (ZN);
   else if (dir == ZN)
     return (ZP);
-  else {
-    spdlog::error("{}: {}", "Bad direction given to OppDir", dir);
-    return (NO);
-  }
+  else
+    spdlog::error("Bad direction given to OppDir", static_cast<int>(dir));
+  return (NO);
 }
 
 
@@ -950,7 +960,10 @@ int UniformGrid::SetupBCs(
       // add boundary cells beside the grid.
       for (int v = 0; v < G_nbc[XN]; v++)
         c = NextPt(*c, XN);
-      if (!c) spdlog::error("{}: {}", "Got lost on grid! XN", cy->id);
+      if (!c) {
+        spdlog::error("{}: {}", "Got lost on grid! XN", cy->id);
+        exit(15);
+      }
       for (int v = 0; v < G_nbc[XN]; v++) {
         BC_bd[XN]->data.push_back(c);
         // spdlog::debug(" Adding cell {} to XN boundary", c->id);
@@ -985,6 +998,7 @@ int UniformGrid::SetupBCs(
         if (!c) {
           CI.print_cell(*cy);
           spdlog::error("{}: {}", "Got lost on grid! XP", cy->id);
+          exit(16);
         }
         BC_bd[XP]->data.push_back(c);
         // spdlog::debug(" Adding cell {} to XP boundary", c->id);
@@ -1471,8 +1485,10 @@ uniform_grid_cyl::uniform_grid_cyl(
       "Setting up cylindrical uniform grid with G_ndim={} and G_nvar={}",
       G_ndim, G_nvar);
 
-  if (G_ndim != 2)
-    spdlog::error("{}: {}", "Need to write code for !=2 dimensions", G_ndim);
+  if (G_ndim != 2) {
+    spdlog::error("Need to write code for !=2 dimensions {}", G_ndim);
+    exit(17);
+  }
   G_coordsys = COORD_CYL;  // Cylindrical Coordinate system
 
   spdlog::debug("cylindrical grid: dr={}", G_dx);
@@ -1506,7 +1522,8 @@ double uniform_grid_cyl::iR_cov(const cell &c)
   // integer coord-sys. origin.
   //
 #ifdef PARALLEL
-  spdlog::error("{}: {}", "redefine iR_cov() for parallel grid", "please");
+  spdlog::error("redefine iR_cov() for parallel grid please");
+  exit(18);
 #endif
   return (R_com(c, G_dx) - G_xmin[Rcyl]) / CI.phys_per_int() + G_ixmin[Rcyl];
 }
@@ -1699,10 +1716,12 @@ double uniform_grid_cyl::idifference_vertex2cell(
   else if (a == Rcyl) {
     return (iR_cov(c) - v[a]);
   }
-  else
+  else {
     spdlog::error(
-        "{}: {}", "Bad axis for uniform_grid_cyl::idifference_vertex2cell()",
-        a);
+        "Bad axis for uniform_grid_cyl::idifference_vertex2cell() {}",
+        static_cast<int>(a));
+    exit(2);
+  }
 
   return -1.0;
 }
@@ -1724,9 +1743,12 @@ double uniform_grid_cyl::idifference_cell2cell(
     return (CI.get_ipos(c2, a) - CI.get_ipos(c1, a));
   else if (a == Rcyl)
     return (iR_cov(c2) - iR_cov(c1));
-  else
+  else {
     spdlog::error(
-        "{}: {}", "Bad axis for uniform_grid_cyl::idifference_cell2cell()", a);
+        "Bad axis for uniform_grid_cyl::idifference_cell2cell() {}",
+        static_cast<int>(a));
+    exit(3);
+  }
   return -1.0;
 }
 
@@ -1776,8 +1798,10 @@ uniform_grid_sph::uniform_grid_sph(
   spdlog::debug(
       "Setting up spherical uniform grid with G_ndim={} and G_nvar={}", G_ndim,
       G_nvar);
-  if (G_ndim != 1)
-    spdlog::error("{}: {}", "Need to write code for >1 dimension", G_ndim);
+  if (G_ndim != 1) {
+    spdlog::error("Need to write code for >1 dimension", G_ndim);
+    exit(4);
+  }
   G_coordsys = COORD_SPH;  // Spherical Coordinate system
 
   spdlog::debug("spherical grid: dr=", G_dx);
@@ -1811,7 +1835,8 @@ double uniform_grid_sph::iR_cov(const cell &c)
   // integer coord-sys. origin.
   //
 #ifdef PARALLEL
-  spdlog::error("{}: {}", "redefine iR_cov() for parallel grid", "please");
+  spdlog::error("redefine iR_cov() for parallel grid please");
+  exit(5);
 #endif
   return ((R_com(c, G_dx) - G_xmin[Rsph]) / CI.phys_per_int() + G_ixmin[Rsph]);
 }
@@ -1943,11 +1968,12 @@ double uniform_grid_sph::idifference_vertex2cell(
 {
   if (a == Rsph)
     return (iR_cov(c) - static_cast<double>(v[a]));
-  else
+  else {
     spdlog::error(
-        "{}: {}", "Bad axis for uniform_grid_sph::idifference_vertex2cell()",
-        a);
-
+        "Bad axis for uniform_grid_sph::idifference_vertex2cell() {}",
+        static_cast<int>(a));
+    exit(6);
+  }
   return -1.0;
 }
 
@@ -1966,9 +1992,12 @@ double uniform_grid_sph::idifference_cell2cell(
 {
   if (a == Rsph)
     return (iR_cov(c2) - iR_cov(c1));
-  else
+  else {
     spdlog::error(
-        "{}: {}", "Bad axis for uniform_grid_sph::idifference_cell2cell()", a);
+        "Bad axis for uniform_grid_sph::idifference_cell2cell() {}",
+        static_cast<int>(a));
+    exit(7);
+  }
   return -1.0;
 }
 

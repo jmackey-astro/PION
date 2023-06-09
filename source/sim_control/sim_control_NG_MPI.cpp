@@ -282,7 +282,7 @@ int sim_control_NG_MPI::Init(
           "NG_MPI INIT: error from bounday update", 0, err);
       exit(err);
     }
-    spdlog::info("NG_MPI INIT: updated C2F boundaries complete");
+    spdlog::debug("NG_MPI INIT: updated C2F boundaries complete");
     // ----------------------------------------------------------------
   }
 
@@ -331,7 +331,7 @@ int sim_control_NG_MPI::Init(
         0, err);
     exit(err);
   }
-  spdlog::info("NG_MPI INIT: updated internal BCs complete");
+  spdlog::debug("NG_MPI INIT: updated internal BCs complete");
 
   // ----------------------------------------------------------------
   // update fine-to-coarse level boundaries
@@ -367,7 +367,7 @@ int sim_control_NG_MPI::Init(
         0, err);
     exit(err);
   }
-  spdlog::info("NG_MPI INIT: update F2C boundaries complete");
+  spdlog::debug("NG_MPI INIT: update F2C boundaries complete");
   // ----------------------------------------------------------------
 
   //

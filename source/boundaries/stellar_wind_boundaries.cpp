@@ -68,14 +68,14 @@ int stellar_wind_bc::BC_assign_STWIND(
   // a stellar wind source to set up.
   //
   if (b->dir != NO) {
-    spdlog::error("{}: {}", "STWIND not external boundary!", b->dir);
+    spdlog::error("STWIND not external boundary {}", static_cast<int>(b->dir));
     exit(1);
   }
 #ifndef NDEBUG
   spdlog::debug("Assigning data to STWIND boundary. Nsrc={}", SWP.Nsources);
 #endif
   if (SWP.Nsources < 1) {
-    spdlog::error("{}: {}", "BC_assign_STWIND() No Sources!", SWP.Nsources);
+    spdlog::error("BC_assign_STWIND() No Sources {}", SWP.Nsources);
     exit(1);
   }
 
@@ -83,14 +83,12 @@ int stellar_wind_bc::BC_assign_STWIND(
   // Setup reference state vector and initialise to zero.
   //
   if (b->refval) {
-    spdlog::error(
-        "{}: {}", "Initialised STWIND boundary refval", fmt::ptr(b->refval));
+    spdlog::error("Initialised STWIND boundary refval {}", fmt::ptr(b->refval));
     exit(1);
   }
   b->refval = mem.myalloc(b->refval, par.nvar);
   if (!b->data.empty()) {
-    spdlog::error(
-        "{}: {}", "BC_assign_STWIND: Not empty boundary data", b->itype);
+    spdlog::error("BC_assign_STWIND: Not empty boundary data {}", b->itype);
     exit(1);
   }
   for (int v = 0; v < par.nvar; v++)
@@ -128,8 +126,7 @@ int stellar_wind_bc::BC_assign_STWIND(
     else {
       if (xi != SWP.params[isw]->xi) {
         spdlog::error(
-            "{}: Expected {} but got {}", "wind xi values don't match", xi,
-            SWP.params[isw]->xi);
+            "wind xi values don't match {} {}", xi, SWP.params[isw]->xi);
         exit(1);
       }
     }
@@ -413,7 +410,7 @@ int stellar_wind_bc::BC_update_STWIND(
     class GridBaseClass *grid,  ///< pointer to grid.
     const double simtime,       ///< current simulation time
     const double dt,            ///< timestep
-    boundary_data *b,           ///< Boundary to update.
+    boundary_data *,            ///< Boundary to update (unused)
     const int,                  ///< current fractional step being taken
     const int                   ///< final step
 )
@@ -810,7 +807,6 @@ void stellar_wind_bc::BC_set_windacc_radflux(
     return;
   }
 
-  int err      = 0;
   int ncell    = 0;
   double r_acc = 100.0 * SWP.params[id]->Rstar;
   // u_prefactor is a prefactor to get the radiation energy density
@@ -854,7 +850,6 @@ void stellar_wind_bc::BC_set_windacc_radflux(
   enum axes x1 = XX;
   enum axes x2 = YY;
   enum axes x3 = ZZ;
-  double beta  = 0.8;
   double vinf  = SWP.params[id]->Vinf;
   // set launching speed to be 4x the sound speed at the star's surface.
   double v0    = 4.0 * sqrt(pconst.kB() * SWP.params[id]->Tstar / pconst.m_p());
