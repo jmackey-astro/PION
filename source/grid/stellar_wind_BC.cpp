@@ -565,6 +565,12 @@ void stellar_wind::set_stellar_interior_values(
   // update tracers: should be set already.
   for (int v = 0; v < ntracer; v++)
     wc.p[ftr + v] = wp.tr[v];
+
+  // include stellar space velocity if appropriate
+  if (wp.moving_star) {
+    for (int v = 0; v < ndim; v++)
+      wc.p[VX + v] = wp.velocity[v];
+  }
   return;
 }
 

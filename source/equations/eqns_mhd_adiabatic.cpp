@@ -192,7 +192,7 @@ int eqns_mhd_ideal::check_pressure(
     }
     else {
       // or set p=0.01*rho
-      spdlog::warn(
+      spdlog::debug(
           "UtoP() mhd fixing negative pressure from {}  to {}", p[eqPG],
           0.01 * p[eqRO]);
       p[eqPG] = 0.01 * p[eqRO];

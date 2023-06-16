@@ -447,18 +447,17 @@ int FV_solver_base::wind_acceleration_source(
 {
   // if (!c.isdomain) return 0;
   // Calculates source term due to wind acceleration
-  double acc;
+  double acc = 0.0;
   for (int id = 0; id < SWP.Nsources; id++) {
     // spdlog::info("src {}: acc = {}",id,SWP.params[id]->acc);
     if (!SWP.params[id]->acc) continue;
-
     // spdlog::info("solver WA: {} , c.id {} ,c.Ph[RO] {}", id, c.id, c.Ph[RO]);
-    acc = CI.get_wind_acceleration_el(c, id, a);
-    udot[eqERG] += c.Ph[RO] * c.Ph[eqVX] * acc;
-    udot[eqMMX] += c.Ph[RO] * acc;
-    // spdlog::info("{}: ax {} acc {:9.3e}, mmx {:9.3e}, erg
-    // {:9.3e}",id,a,acc,c.Ph[RO] * c.Ph[eqVX] * acc, c.Ph[RO] * acc);
+    acc += CI.get_wind_acceleration_el(c, id, a);
   }
+  udot[eqERG] += c.Ph[RO] * c.Ph[eqVX] * acc;
+  udot[eqMMX] += c.Ph[RO] * acc;
+  // spdlog::info("{}: ax {} acc {:9.3e}, mmx {:9.3e}, erg
+  // {:9.3e}",id,a,acc,c.Ph[RO] * c.Ph[eqVX] * acc, c.Ph[RO] * acc);
 
   return 0;
 }

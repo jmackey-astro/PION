@@ -107,7 +107,7 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
   }
 #endif  // NDEBUG
   int err = 0;
-  double ustar[eq_nvar];
+  std::vector<double> ustar(eq_nvar);
   for (int v = 0; v < eq_nvar; v++)
     ustar[v] = 0.0;
   for (int v = 0; v < eq_nvar; v++)
@@ -156,39 +156,46 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
       // compressive motion & strong-gradient zones check
       // Migone et al 2012
       // HLL solver -- Miyoshi and Kusano (2005) (m05)
-      err += MHD_HLL_flux_solver(Pl, Pr, eq_gamma, flux, ustar);
+      err += MHD_HLL_flux_solver(Pl, Pr, eq_gamma, flux, ustar.data());
     }
     else {
       // HLLD solver -- Miyoshi and Kusano (2005) (m05)
-      err += MHD_HLLD_flux_solver(Pl, Pr, eq_gamma, flux, ustar);
+      err += MHD_HLLD_flux_solver(Pl, Pr, eq_gamma, flux, ustar.data());
     }
     if (err) {
       spdlog::error("HLL/HLLD Flux err {}", err);
+      spdlog::error("HLL/HLLD Flux ustar 2: {}", ustar);
       exit(2);
     }
-    err += UtoP(ustar, pstar, par.EP.MinTemperature, eq_gamma);
+    err += UtoP(ustar.data(), pstar, par.EP.MinTemperature, eq_gamma);
     // ignore errors from boundary cells because they can contain junk data
     if (Cl.isbd || Cr.isbd) err = 0;
     if (err) {
-      spdlog::error("HLL/HLLD UtoP err {}", err);
-      CI.print_cell(Cl);
-      CI.print_cell(Cr);
-      exit(3);
+      // error means negative pressure.  Negative density will exit already
+      // within UtoP()
+      spdlog::debug("HLL/HLLD UtoP neg. pressure {}", err);
+      // CI.print_cell(Cl);
+      // CI.print_cell(Cr);
+      spdlog::debug("HLL/HLLD Flux ustar 3: {}", ustar);
+      // exit(3);
+      err = 0;
     }
   }
 
   // HLL solver, diffusive 2 wave solver (Migone et al. 2011 )
   else if (solve_flag == FLUX_RS_HLL) {
-    err += MHD_HLL_flux_solver(Pl, Pr, eq_gamma, flux, ustar);
+    err += MHD_HLL_flux_solver(Pl, Pr, eq_gamma, flux, ustar.data());
     if (0 != err) {
       spdlog::error("HLL Flux err {}", err);
       exit(4);
     }
-    err += UtoP(ustar, pstar, par.EP.MinTemperature, eq_gamma);
+    err += UtoP(ustar.data(), pstar, par.EP.MinTemperature, eq_gamma);
     if (Cl.isbd || Cr.isbd) err = 0;
     if (0 != err) {
-      spdlog::error("HLL UtoP err {}", err);
-      exit(5);
+      spdlog::warn("HLL UtoP neg. pressure {}", err);
+      spdlog::warn("HLL/HLLD Flux ustar 5: {}", ustar);
+      // exit(5);
+      err = 0;
     }
   }
 
@@ -1127,15 +1134,15 @@ int cyl_FV_solver_mhd_mixedGLM_adi::MHDsource(
 )
 {
   double dx = grid->DX();
-  double sm = 0.5 * (Cr.Ph[eqSI] + Cr.Ph[eqSI]);
+  double sm = 0.5 * (Cl.Ph[eqSI] + Cr.Ph[eqSI]);
   cyl_FV_solver_mhd_ideal_adi::MHDsource(grid, Cl, Cr, Pl, Pr, d, pos, neg, dt);
 
   std::vector<pion_flt> psi_l(eq_nvar), psi_r(eq_nvar);
   for (int v = 0; v < eq_nvar; v++) {
     psi_l[v] = psi_r[v] = 0.0;
   }
-  psi_l[eqERG] = Cr.Ph[eqVX] * Cr.Ph[eqSI];
-  psi_l[eqPSI] = Cr.Ph[eqVX];
+  psi_l[eqERG] = Cl.Ph[eqVX] * Cl.Ph[eqSI];
+  psi_l[eqPSI] = Cl.Ph[eqVX];
 
   psi_r[eqERG] = Cr.Ph[eqVX] * Cr.Ph[eqSI];
   psi_r[eqPSI] = Cr.Ph[eqVX];

@@ -875,38 +875,38 @@ void stellar_wind_bc::BC_set_windacc_radflux(
         index[x1] = ineg[x1];
         index[x2] = static_cast<int>(ax2);
         index[x3] = static_cast<int>(ax3);
-        double v = 0.0, dist = 0.0, T = 0.0;
+        double v = 0.0, dist = 0.0;  //, T = 0.0;
         std::vector<double> acc;
         acc.resize(par.ndim);
         cell *c = grid->get_cell_all(index[0], index[1], index[2]);
         for (int ax1 = index[x1]; ax1 < ipos[x1]; ax1++) {
           CI.get_dpos(*c, cpos);
-          if ((dist = grid->distance(srcpos, cpos)) <= r_acc) {
+          if ((dist = grid->distance(srcpos, cpos)) <= r_acc && c->isdomain) {
             // approximate T by assuming mu=1
-            T = c->Ph[PG] * pconst.m_p() / (pconst.kB() * c->Ph[RO]);
-            if (T > 2.0e6) {
-              // For high temperatures switch off acc b/c no ions left.
-              for (int d = 0; d < par.ndim; d++)
-                acc[d] = 0.0;
+            // T = c->Ph[PG] * pconst.m_p() / (pconst.kB() * c->Ph[RO]);
+            // if (T > 2.0e6) {
+            //  // For high temperatures switch off acc b/c no ions left.
+            //  for (int d = 0; d < par.ndim; d++)
+            //    acc[d] = 0.0;
+            //}
+            // else {
+            // v = v0 + (vinf-v0)* exp(beta * log(1.0-rstar/dist));
+            // v = v * beta * (vinf-v0) *  exp((beta-1.0) *
+            // log(1.0-rstar/dist))
+            // * rstar / pow(dist,3);
+            // first assume beta==1 for simplicity
+            v = v0 + (vinf - v0) * (1.0 - rstar / dist);
+            v = v * (vinf - v0) * rstar / (dist * dist * dist);
+            // calculate each component.
+            for (int d = 0; d < par.ndim; d++) {
+              acc[d] = v * (cpos[d] - srcpos[d]);
             }
-            else {
-              // v = v0 + (vinf-v0)* exp(beta * log(1.0-rstar/dist));
-              // v = v * beta * (vinf-v0) *  exp((beta-1.0) *
-              // log(1.0-rstar/dist))
-              // * rstar / pow(dist,3);
-              // first assume beta==1 for simplicity
-              v = v0 + (vinf - v0) * (1.0 - rstar / dist);
-              v = v * (vinf - v0) * rstar / (dist * dist * dist);
-              // calculate each component.
-              for (int d = 0; d < par.ndim; d++) {
-                acc[d] = v * (cpos[d] - srcpos[d]);
-              }
-              if (T > 1.0e6) {
-                // linearly decrease acc to zero in range 1e6-2e6 K
-                for (int d = 0; d < par.ndim; d++)
-                  acc[d] *= (2.0e6 - T) / 1.0e6;
-              }
-            }
+            // if (T > 1.0e6) {
+            //  // linearly decrease acc to zero in range 1e6-2e6 K
+            //  for (int d = 0; d < par.ndim; d++)
+            //    acc[d] *= (2.0e6 - T) / 1.0e6;
+            //}
+            //}
             CI.set_wind_acceleration(*c, id, acc);
             // spdlog::info("src id {}, acceleration {}",id,r_acc);
           }

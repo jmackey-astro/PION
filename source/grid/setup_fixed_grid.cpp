@@ -861,8 +861,8 @@ int setup_fixed_grid::update_evolving_RT_sources(
     // leave as they are.
     if (fabs(Lnow - istar->Lnow) / istar->Lnow > 0.01
         || fabs(Tnow - istar->Tnow) / istar->Tnow > 0.01) {
-      spdlog::debug(
-          "update_evolving_RT_sources() NOW: t={}L={}\tT={}\tR={}",
+      spdlog::info(
+          "update_evolving_RT_sources() NOW: t = {:12.7e} s: L = {:12.4e} erg/s, T = {:12.4e} K, R = {:12.4e} Rsun",
           istar->t_now, Lnow, Tnow, Rnow);
 
       istar->Lnow = Lnow;
@@ -891,8 +891,10 @@ int setup_fixed_grid::update_evolving_RT_sources(
 #endif
         if (rs->effect == RT_EFFECT_MFION) {
           err = MP->set_multifreq_source_properties(rs, &(rs->strength));
-          if (err)
-            spdlog::error("{}: {}", "update_evolving_RT_sources()", rs->id);
+          if (err) {
+            spdlog::error("update_evolving_RT_sources() error", rs->id);
+            exit(1);
+          }
         }
 #ifdef PION_OMP
       }
