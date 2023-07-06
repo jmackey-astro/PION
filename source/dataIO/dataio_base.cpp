@@ -171,6 +171,19 @@ void DataIOBase::set_params(
   p->critical  = true;
   params.push_back(p);
 
+  pm_double *p888 = new pm_double(
+      "glm_chyp_multiplier", &SimPM.glm_data.glm_chyp_multiplier, 1.0);
+  p           = p888;
+  p->critical = false;
+  params.push_back(p);
+
+  pm_double *p889 =
+      new pm_double("glm_par_limiter", &SimPM.glm_data.glm_par_limiter, 0.3);
+  p           = p889;
+  p->critical = false;
+  params.push_back(p);
+
+
   //
   // Tracers
   //

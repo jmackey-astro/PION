@@ -31,7 +31,11 @@
 #include "sub_domain/sub_domain.h"
 #endif
 
-// *******************************************************************
+
+// ##################################################################
+// ##################################################################
+
+
 ///
 /// struct with lots of flags for what extra physics we are using.
 ///
@@ -94,9 +98,23 @@ struct which_physics {
   /// If including wind acceleration from stars
   int wind_acceleration;
 };
-// *******************************************************************
 
-// *******************************************************************
+
+
+// ##################################################################
+// ##################################################################
+
+
+/// Struct to hold parameters for the GLM-MHD divergence-cleaning
+/// method
+struct glm_mhd {
+  /// value in [0,1] to scale hyperbolic wave speed by (default=1)
+  double glm_chyp_multiplier;
+  /// max value of exponent for parabolic dissipation of divB (default=0.3)
+  double glm_par_limiter;
+};
+
+
 ///
 /// Star struct, for storing data from a stellar evolution file.
 ///
@@ -120,9 +138,13 @@ struct star {
       Vnow;                  ///< Current wind velocity (cm/s).
 };
 
-// *******************************************************************
-// *******************************************************************
-///
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 /// This struct contains global data for a stellar wind source (for
 /// reading and writing to file).  The grid setup functions should
 /// read this struct and set up the appropriate wind boundary.
@@ -181,9 +203,13 @@ struct stellarwind_list {
 };
 
 extern struct stellarwind_list SWP;  ///< global scope list of wind sources
-// *******************************************************************
 
-// *******************************************************************
+
+// ##################################################################
+// ##################################################################
+
+
+
 ///
 /// Grid data for each level of the NG grid.
 ///
@@ -212,9 +238,14 @@ public:
   class Sub_domain sub_domain;  ///< domain decomposition on this level
 #endif
 };
-// *******************************************************************
 
-// *******************************************************************
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 ///
 /// \brief Simulation Parameters Class
 ///
@@ -303,6 +334,7 @@ public:
       EP;                 ///< flags for what extra physics we are going to use.
   struct rad_sources RS;  ///< list of radiation sources.
   std::vector<struct star> STAR;  ///< Data from stellar evolution file(s).
+  struct glm_mhd glm_data;        ///< parameter for the Dedner mixed-GLM method
 
   // File I/O
   int typeofop;  ///< Output FileType: Integer flag. 1=ascii, 2=fits,

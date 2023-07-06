@@ -1392,13 +1392,22 @@ int setup_fixed_grid::set_equations(
           exit(1);
       }
     }  // spherically symmetric
+
+    // if using GLM-MHD method, set two optional parameters:
+    if (par.eqntype == EQGLM) {
+      spatial_solver->GLM_set_parameters(
+          par.glm_data.glm_chyp_multiplier, par.glm_data.glm_par_limiter);
+#ifndef NDEBUG
+      spdlog::info(
+          "GLM: hyp = {}, par = {}", par.glm_data.glm_chyp_multiplier,
+          par.glm_data.glm_par_limiter);
+#endif
+    }
 #ifdef PION_OMP
   }
 #endif
 
-  //
   // Check that we set up an equations class!
-  //
   if (!spatial_solver) {
     spdlog::error(
         "{}: {}", "setup_fixed_grid::set_equations() Failed",

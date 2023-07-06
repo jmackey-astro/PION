@@ -439,23 +439,31 @@ double FV_solver_base::select_Hcorr_eta(
 
 
 int FV_solver_base::wind_acceleration_source(
-    class GridBaseClass *grid,  ///< pointer to grid
-    class cell &c,              ///< cell pointer
-    const axes a,               ///< Which axis we are looking along.
-    pion_flt *udot              ///< dU/dt vector
+    class GridBaseClass *grid,        ///< pointer to grid
+    class cell &c,                    ///< cell pointer
+    const axes a,                     ///< Which axis we are looking along.
+    const std::vector<pion_flt> &fn,  ///< Negative direction flux
+    const std::vector<pion_flt> &fp,  ///< Positive direction flux
+    std::vector<pion_flt> &udot       ///< dU/dt vector
 )
 {
+  // From Mullen et al. (2021, ApJS, 252, 30) eq. 63, 64
+  // Note we don't have the time-dependence, so only spatially 2nd order,
+  // and 1st order in time.
   // if (!c.isdomain) return 0;
   // Calculates source term due to wind acceleration
-  double acc = 0.0;
+  double acc = 0.0, dacc = 0.0, acc_neg = 0.0, acc_pos = 0.0;
   for (int id = 0; id < SWP.Nsources; id++) {
     // spdlog::info("src {}: acc = {}",id,SWP.params[id]->acc);
     if (!SWP.params[id]->acc) continue;
     // spdlog::info("solver WA: {} , c.id {} ,c.Ph[RO] {}", id, c.id, c.Ph[RO]);
-    acc += CI.get_wind_acceleration_el(c, id, a);
+    acc  = CI.get_wind_acceleration_el(c, id, a);
+    dacc = CI.get_wind_acceleration_el(c, id, a);
+    acc_neg += acc - dacc;
+    acc_pos += acc + dacc;
   }
-  udot[eqERG] += c.Ph[RO] * c.Ph[eqVX] * acc;
-  udot[eqMMX] += c.Ph[RO] * acc;
+  udot[eqERG] += 0.5 * (fn[RHO] * acc_neg - fp[RHO] * acc_pos);
+  udot[eqMMX] += 0.5 * c.Ph[RO] * (acc_neg + acc_pos);
   // spdlog::info("{}: ax {} acc {:9.3e}, mmx {:9.3e}, erg
   // {:9.3e}",id,a,acc,c.Ph[RO] * c.Ph[eqVX] * acc, c.Ph[RO] * acc);
 

@@ -364,7 +364,7 @@ int FV_solver_mhd_ideal_adi::dU_Cell(
   int err = DivStateVectorComponent(
       c, grid, d, eq_nvar, fn.data(), fp.data(), u1.data());
   geometric_source(c, d, slope.data(), ooa, dx, u1.data());
-  wind_acceleration_source(grid, c, d, u1.data());
+  wind_acceleration_source(grid, c, d, fn, fp, u1);
   for (int v = 0; v < eq_nvar; v++)
     c.dU[v] += FV_dt * u1[v];
   return (err);

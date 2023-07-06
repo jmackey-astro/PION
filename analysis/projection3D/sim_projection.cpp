@@ -127,7 +127,8 @@ enum axes axes_directions::get_axis_from_dir(const enum direction dir)
     a = ZZ;
   else {
     a = XX;
-    spdlog::error("{}: {}", "Bad direction to get axis from", dir);
+    spdlog::error(
+        "{}: {}", "Bad direction to get axis from", static_cast<int>(dir));
     exit(1);
   }
   return a;
@@ -212,8 +213,8 @@ enum direction axes_directions::cross_product(
 
   else {
     spdlog::error(
-        "{}: {}", "Unhandled combination of directions in cross_product!!!!",
-        d1);
+        "Unhandled combination of directions in cross_product {} {}",
+        static_cast<int>(d1), static_cast<int>(d2));
     exit(1);
   }
   return NO;
@@ -243,8 +244,7 @@ coordinate_conversion::coordinate_conversion(
   gptr = ggg;
   if (!gptr) {
     spdlog::error(
-        "{}: {}", "Need a valid grid pointer to set up image!!!",
-        fmt::ptr(gptr));
+        "Need a valid grid pointer to set up image: {}", fmt::ptr(gptr));
     exit(1);
   }
   //
@@ -257,7 +257,7 @@ coordinate_conversion::coordinate_conversion(
   }
   sim_dxP = gptr->DX();
   if (gptr->Ndim() != 3) {
-    spdlog::error("{}: {}", "Need 3D sim for projections", gptr->Ndim());
+    spdlog::error("Need 3D sim for projections {}", gptr->Ndim());
     exit(1);
   }
 
@@ -270,8 +270,8 @@ coordinate_conversion::coordinate_conversion(
     // SANITY CHECK!
     if (sim_ncell[v] != gptr->NG(static_cast<axes>(v))) {
       spdlog::error(
-          "{}: {}", "Cells dont match at all!!!",
-          sim_ncell[v] - gptr->NG(static_cast<axes>(v)));
+          "Cells dont match at all {} {}", sim_ncell[v],
+          gptr->NG(static_cast<axes>(v)));
       exit(1);
     }
   }
@@ -292,7 +292,7 @@ coordinate_conversion::coordinate_conversion(
     sa[v] = get_axis_from_dir(sd[v]);
 
     if (sd[v] == NO) {
-      spdlog::error("{}: {}", "one direction is NO in image normals", v);
+      spdlog::error("one direction is NO in image normals {}", v);
       exit(1);
     }
     else if (sd[v] == XN || sd[v] == YN || sd[v] == ZN)
@@ -313,8 +313,8 @@ coordinate_conversion::coordinate_conversion(
 
   if (abs(theta_deg) > 45) {
     spdlog::error(
-        "{}: {}", "Angle must be in range [-45,45].  For larger angle \
-               project along a different axis",
+        "Angle must be in range [-45,45].  For larger angle"
+        "project along a different axis {}",
         theta_deg);
     exit(1);
   }
@@ -342,7 +342,8 @@ coordinate_conversion::coordinate_conversion(
   //
   spdlog::debug(
       "image directions: x={}, y={}, los is {} degrees from direction {}",
-      sd[0], sd[1], theta_deg, sd[2]);
+      static_cast<int>(sd[0]), static_cast<int>(sd[1]), theta_deg,
+      static_cast<int>(sd[2]));
 }
 
 
@@ -661,7 +662,7 @@ void image::add_integration_pts_to_pixels()
 {
   if (!pix) {
     spdlog::error(
-        "{}: {}", "Can't add integration points to uninitialised pixels!",
+        "Can't add integration points to uninitialised pixels {}",
         fmt::ptr(pix));
     exit(1);
   }
@@ -747,8 +748,8 @@ void image::find_surrounding_cells(
     //
     if (!pconst.equalD(x[sa[YY]], c->pos[sa[YY]])) {
       spdlog::error(
-          "{}: {}", "WARNING: find_surrounding_cells() y-values not the same!",
-          x[sa[YY]] - c->pos[sa[YY]]);
+          "WARNING: find_surrounding_cells() y-values not the same {} {}",
+          x[sa[YY]], c->pos[sa[YY]]);
       exit(1);
     }
     cell *seek        = c;
@@ -798,7 +799,7 @@ void image::find_surrounding_cells(
       spdlog::debug("posn : {}", x);
       spdlog::debug("cell : {}", seek->pos);
       spdlog::error(
-          "{}: {}", "Nearest cell is more than root2*dx from point in xz plane",
+          "Nearest cell is more than root2*dx from point in xz plane {}",
           dist2);
       exit(1);
     }
@@ -978,8 +979,7 @@ bool image::cell_is_in_pixel(
 void image::add_cells_to_pixels()
 {
   if (!pix) {
-    spdlog::error(
-        "{}: {}", "Can't add cells to uninitialised pixels!", fmt::ptr(pix));
+    spdlog::error("Can't add cells to uninitialised pixels {}", fmt::ptr(pix));
     exit(1);
   }
 
@@ -1001,8 +1001,7 @@ void image::add_cells_to_pixels()
     iy   = static_cast<int>(c->Ph[YY]);
     ipix = iy * im_npix[XX] + ix;
     if (ipix < 0 || ipix > im_npixels) {
-      spdlog::error(
-          "{}: {}", "cell with id following is outside image!", c->id);
+      spdlog::error("cell with id following is outside image: {}", c->id);
       exit(1);
     }
     else {
@@ -1024,7 +1023,7 @@ void image::add_cells_to_pixels()
     if (pix[v].ncells <= 0) {
       // spdlog::debug("s_xmax_img : {}", s_xmax_img);
       // cout <<" centre of right-most cell="<<TEMP_maxx<<endl;
-      spdlog::error("{}: {}", "Some pixels have no cells in them!", v);
+      spdlog::error("Some pixels have no cells in them {}", v);
       exit(1);
     }
     ct += pix[v].ncells;
@@ -1050,8 +1049,7 @@ void image::set_cell_positions_in_image()
   //
   if (!CI.query_minimal_cells()) {
     spdlog::error(
-        "{}: {}",
-        "image::set_cell_positions_in_image() needs minimal_cells to be set!",
+        "image::set_cell_positions_in_image() needs minimal_cells to be set: {}",
         99);
     exit(1);
   }
@@ -1262,7 +1260,7 @@ void image::calculate_pixel(
     else if (sa[XX] == ZZ)
       bx = BZ;
     else {
-      spdlog::error("{}: {}", "Bad axis from IMG[x]", sa[XX]);
+      spdlog::error("{}: {}", "Bad axis from IMG[x]", static_cast<int>(sa[XX]));
       exit(1);
     }
     if (sa[YY] == XX)
@@ -1272,7 +1270,7 @@ void image::calculate_pixel(
     else if (sa[YY] == ZZ)
       by = BZ;
     else {
-      spdlog::error("{}: {}", "Bad axis from IMG[y]", sa[YY]);
+      spdlog::error("{}: {}", "Bad axis from IMG[y]", static_cast<int>(sa[YY]));
       exit(1);
     }
     if (sa[ZZ] == XX)
@@ -1282,7 +1280,7 @@ void image::calculate_pixel(
     else if (sa[ZZ] == ZZ)
       bz = BZ;
     else {
-      spdlog::error("{}: {}", "Bad axis from IMG[z]", sa[ZZ]);
+      spdlog::error("{}: {}", "Bad axis from IMG[z]", static_cast<int>(sa[ZZ]));
       exit(1);
     }
     int signx = ss[XX], signy = ss[YY], signz = ss[ZZ];
@@ -1385,8 +1383,7 @@ void image::calculate_pixel(
     }
     else {
       spdlog::error(
-          "{}: {}", "Bad what to integrate -- B-field options",
-          what_to_integrate);
+          "Bad what to integrate -- B-field options {}", what_to_integrate);
       exit(1);
     }
   }  // I_STOKES Q/U or BX/BY
@@ -1496,7 +1493,7 @@ void image::calculate_pixel(
     else if (sa[ZZ] == ZZ)
       vz = VZ;
     else {
-      spdlog::error("{}: {}", "Bad axis from IMG[z]", sa[ZZ]);
+      spdlog::error("Bad axis from IMG[z] {}", static_cast<int>(sa[ZZ]));
       exit(1);
     }
     if (sa[XX] == XX)
@@ -1506,7 +1503,7 @@ void image::calculate_pixel(
     else if (sa[XX] == ZZ)
       vx = VZ;
     else {
-      spdlog::error("{}: {}", "Bad axis from IMG[x]", sa[XX]);
+      spdlog::error("Bad axis from IMG[x] {}", static_cast<int>(sa[XX]));
       exit(1);
     }
     // cout <<"using element "<<vz<<" for LOS, and "<<vx<<" for x-component;
@@ -1713,7 +1710,7 @@ void image::calculate_pixel(
   }  // I_X10p0
 
   else {
-    spdlog::error("{}: {}", "don't know what to integrate!", what_to_integrate);
+    spdlog::error("don't know what to integrate! {}", what_to_integrate);
     exit(1);
   }
   //  cout <<"finished pixel "<<i<<" at address "<<px<<"\n";

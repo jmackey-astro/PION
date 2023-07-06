@@ -209,6 +209,12 @@ protected:
       const double);
 };
 
+
+
+// ##################################################################
+// ##################################################################
+
+
 /// \brief Ideal MHD Equations with the GLM method for divergence cleaning.
 ///
 /// \section References
@@ -219,7 +225,8 @@ class eqns_mhd_mixedGLM : virtual public eqns_mhd_ideal {
 public:
   eqns_mhd_mixedGLM(int);
   ~eqns_mhd_mixedGLM();
-  /// \brief Sets the hyperbolic wavespeed ch for the Psi variable.
+
+  /// Sets the hyperbolic wavespeed ch for the Psi variable.
   /// This is set to the maximum magnetosonic speed on the grid.
   ///
   void GLMsetPsiSpeed(
@@ -227,7 +234,21 @@ public:
       const double   ///< c_r, the damping coefficient
   );
 
-  /// \brief Converts from primitive to conserved variables.
+  /// Sets the optional parameters for the GLM scheme: a scale factor <1
+  /// on the hyperbolic speed (needed for some problems), and a limiter
+  /// on the parabolic exponent in the source term, so it doesn't get too
+  /// large for deeply nested grids.
+  void GLM_set_parameters(
+      const double
+          ch_sc,  ///< scaling for hyperbolic speed, in [0,1] (default 1)
+      const double cp_li  ///< limiter for parabolic term in exponent.
+  )
+  {
+    m_chyp_scale = ch_sc;
+    m_cpar_limit = cp_li;
+  };
+
+  /// Converts from primitive to conserved variables.
   ///
   /// Psi conserved variable is same as primitive, so just call
   /// the mhd_ideal function and copy Psi into the conserved variable.
@@ -238,7 +259,7 @@ public:
       const double       ///< Gas constant gamma.
   );
 
-  /// \brief convert from conserved to primitive variables.
+  /// convert from conserved to primitive variables.
   ///
   /// Psi conserved variable is same as primitive, so just call
   /// the eqns_mhd_ideal function and copy Psi into the primitive variable.
@@ -250,7 +271,7 @@ public:
       const double       ///< Gas constant gamma.
   );
 
-  /// \brief Calculates the source term contribution to updating Psi
+  /// Calculates the source term contribution to updating Psi
   ///
   /// The source function is calculated separately via operator-splitting.
   /// Uses Dedner et al., eq.45:
@@ -272,6 +293,11 @@ protected:
   double GLM_chyp;  ///< Hyperbolic Wave speed of Psi, the GLM variable.
   double GLM_cr;    ///< Parameter (below eq.46 in Dedner)
                     ///< \f$ c_r = c_{\mbox{par}}^2/c_{\mbox{hyp}} \f$.
+  double
+      m_chyp_scale;  ///< scaling for hyperbolic speed, in [0,1] (default 1.0)
+  double
+      m_cpar_limit;  ///< limiter for parabolic term in exponent (default 0.3)
 };
+
 
 #endif  // EQNS_MHD_ADIABATIC_H

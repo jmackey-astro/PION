@@ -208,10 +208,12 @@ public:
 
   /// Calculates source term due to wind acceleration
   virtual int wind_acceleration_source(
-      class GridBaseClass *,  ///< pointer to grid
-      class cell &,           ///< cell pointer
-      const axes,             ///< Which axis we are looking along.
-      pion_flt *              ///< dU/dt vector
+      class GridBaseClass *,          ///< pointer to grid
+      class cell &,                   ///< cell pointer
+      const axes,                     ///< Which axis we are looking along.
+      const std::vector<pion_flt> &,  ///< Negative direction flux
+      const std::vector<pion_flt> &,  ///< Positive direction flux
+      std::vector<pion_flt> &         ///< dU/dt vector
   );
 
 

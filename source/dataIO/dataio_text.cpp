@@ -287,6 +287,18 @@ int dataio_text::get_parameters(
   else if (ts == "glm-mhd") {
     SimPM.eqntype = EQGLM;
     SimPM.nvar    = 3 + 2 * SimPM.eqnNDim;
+    // glm-mhd method has two extra optional parameters
+    ts = rp->find_parameter("glm_chyp_multiplier");
+    if (ts == "")
+      SimPM.glm_data.glm_chyp_multiplier = 1.0;  // default
+    else
+      SimPM.glm_data.glm_chyp_multiplier = atof(ts.c_str());
+
+    ts = rp->find_parameter("glm_par_limiter");
+    if (ts == "")
+      SimPM.glm_data.glm_par_limiter = 0.3;  // default
+    else
+      SimPM.glm_data.glm_par_limiter = atof(ts.c_str());
   }
   else if (ts == "fcd-mhd") {
     SimPM.eqntype = EQFCD;

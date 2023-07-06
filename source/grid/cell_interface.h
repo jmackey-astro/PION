@@ -137,6 +137,8 @@ struct star_indices {
   int star_urad;
   /// index for net acceleration in the 3 directions (wind acceleration)
   std::vector<int> wind_acc;
+  /// index for slope in wind acceleration in the 3 directions
+  std::vector<int> wind_dacc;
 };
 
 
@@ -595,9 +597,10 @@ public:
   /// Get net (rad+grav) acceleration for cell, for wind acceleration
   ///
   inline void get_wind_acceleration(
-      const cell &c,           ///< cell pointer
-      const int src,           ///< star id.
-      std::vector<double> acc  ///< output: wind acceleration
+      const cell &c,            ///< cell pointer
+      const int src,            ///< star id.
+      std::vector<double> acc,  ///< output: wind acceleration
+      std::vector<double> dacc  ///< output: wind acceleration gradient
   )
   {
 #ifndef NDEBUG
@@ -608,6 +611,8 @@ public:
 #endif
     for (int d = 0; d < ndim; d++)
       acc[d] = c.extra_data[star_data[src].wind_acc[d]];
+    for (int d = 0; d < ndim; d++)
+      dacc[d] = c.extra_data[star_data[src].wind_dacc[d]];
   }
 
   // ##################################################################
@@ -622,11 +627,17 @@ public:
       const int src,     ///< star id.
       const int element  ///< which axis to return acceleration for
   );
-  //  {
-  //    spdlog::info("wa-el: {} {} {}, sd[]
-  //    {}",c.id,src,element,star_data.size()); return
-  //    c.extra_data[star_data[src].wind_acc[element]];
-  //  }
+
+  ///
+  /// Get gradient of net (rad+grav) acceleration for cell, for wind
+  /// acceleration in direction element.  Returns change in acceleration
+  /// from cell centre to edge.
+  ///
+  double get_wind_dacceleration_el(
+      const cell &c,     ///< cell pointer
+      const int src,     ///< star id.
+      const int element  ///< which axis to return acceleration for
+  );
 
   // ##################################################################
   // ##################################################################
@@ -650,6 +661,24 @@ public:
       c.extra_data[star_data[src].wind_acc[d]] = acc[d];
   }
 
+  ///
+  /// Set net (rad+grav) acceleration for cell, for wind acceleration
+  ///
+  inline void set_wind_dacceleration(
+      const cell &c,                  ///< cell pointer
+      const int src,                  ///< star id
+      const std::vector<double> dacc  ///< output: wind acceleration gradient
+  )
+  {
+#ifndef NDEBUG
+    if (acc.size() < static_cast<long unsigned int>(ndim)) {
+      spdlog::error("acceleration vector too small {}  {}", acc.size(), ndim);
+      exit(1);
+    }
+#endif
+    for (int d = 0; d < ndim; d++)
+      c.extra_data[star_data[src].wind_dacc[d]] = dacc[d];
+  }
 
   // ##################################################################
   // ##################################################################

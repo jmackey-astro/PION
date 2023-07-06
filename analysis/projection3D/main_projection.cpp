@@ -205,7 +205,7 @@ int main(int argc, char **argv)
   // Get input files and an output file.
   //
   if (argc < 13) {
-    spdlog::info("{}: {}", "Bad number of args", argc);
+    spdlog::info("Bad number of args {}", argc);
     spdlog::info("Use as follows:");
     spdlog::info(
         "projection: <projection> <input-path> <input-silo-file-base>");
@@ -344,8 +344,7 @@ int main(int argc, char **argv)
   int th = atoi(argv[8]);
   if (th < -89 || th > 89 || isnan(th) || isinf(th)) {
     spdlog::error(
-        "{}: {}", "Input angle is not on [-89,89]. please input a valid angle.",
-        th);
+        "Input angle is not on [-89,89]. please input a valid angle {}", th);
     exit(1);
   }
   int angle = th;
@@ -353,7 +352,7 @@ int main(int argc, char **argv)
   th = atoi(argv[9]);
   if (th < 0 || isnan(th) || isinf(th)) {
     spdlog::error(
-        "{}: {}", "Input what-to-integrate is not in [0,1,2,3,4,7,8,9]", th);
+        "Input what-to-integrate is not in [0,1,2,3,4,7,8,9]: {}", th);
     exit(1);
   }
   int what_to_integrate = th;
@@ -380,8 +379,7 @@ int main(int argc, char **argv)
 
   if (what_to_integrate == I_VEL_LOS || what_to_integrate == I_VX) {
     if (argc < 13) {
-      spdlog::error(
-          "{}: {}", "Need at least 13 args for velocity profiling", argc);
+      spdlog::error("Need at least 13 args for velocity profiling: {}", argc);
       exit(1);
     }
     Nbins      = atoi(argv[13]);
@@ -494,7 +492,7 @@ int main(int argc, char **argv)
   // have to re-do the domain decomposition because we only split
   // the domain on one axis.
   enum axes perpaxis = static_cast<axes>(static_cast<int>(perpdir) / 2);
-  spdlog::info("*** perpendicular axis = {}", perpaxis);
+  spdlog::info("*** perpendicular axis = {}", static_cast<int>(perpaxis));
 
 #ifdef PION_NESTED
   spdlog::info("setting up grid properties on all levels");
@@ -526,7 +524,7 @@ int main(int argc, char **argv)
   SimSetup->setup_grid(G, SimPM);
   class GridBaseClass *grid = G[0];
   if (!grid) {
-    spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid));
+    spdlog::error("Grid setup failed: {}", fmt::ptr(grid));
     exit(1);
   }
   SimPM.dx = grid->DX();
@@ -544,7 +542,7 @@ int main(int argc, char **argv)
 
   // This code needs 3d data to project...
   if (SimPM.ndim != 3) {
-    spdlog::error("{}: {}", "projection needs 3D data", SimPM.ndim);
+    spdlog::error("projection needs 3D data: {}", SimPM.ndim);
     exit(1);
   }
 
@@ -558,7 +556,7 @@ int main(int argc, char **argv)
   else if (SIMeqns == EQMHD || SIMeqns == EQGLM || SIMeqns == EQFCD)
     SIMeqns = 2;
   else {
-    spdlog::error("{}: {}", "Bad equations", SIMeqns);
+    spdlog::error("Bad equations: {}", SIMeqns);
     exit(1);
   }
 
@@ -568,7 +566,7 @@ int main(int argc, char **argv)
   err += SimSetup->setup_microphysics(SimPM);
   // err += setup_raytracing();
   if (err) {
-    spdlog::error("{}: {}", "Setup of microphysics and raytracing", err);
+    spdlog::error("Setup of microphysics and raytracing {}", err);
     exit(1);
   }
   class microphysics_base *MP = SimSetup->get_mp_ptr();
@@ -747,8 +745,9 @@ int main(int argc, char **argv)
 #endif  // SUBTRACT_MEAN
       break;
     default:
-      spdlog::error(
-          "{}: {}", "bad what-to-integrate integer...", what_to_integrate);
+      spdlog::error("bad what-to-integrate integer... {}", what_to_integrate);
+      exit(1);
+      break;
   }
 
   //
@@ -809,7 +808,7 @@ int main(int argc, char **argv)
     reset_domain(&(SimPM.levels[0].sub_domain));
 #endif
     if (err) {
-      spdlog::error("{}: {}", "Didn't read header", err);
+      spdlog::error("Didn't read header {}", err);
       exit(1);
     }
     SimPM.grid_nlevels = finishlev;
@@ -822,8 +821,7 @@ int main(int argc, char **argv)
     // Read data (this reader can read serial or parallel data.
     err = dataio.ReadData(infile, G, SimPM);
     if (0 != err) {
-      spdlog::error(
-          "{}: Expected {} but got {}", "(main) Failed to read data", 0, err);
+      spdlog::error("(main) Failed to read data: {}", err);
       exit(1);
     }
 
@@ -894,8 +892,9 @@ int main(int argc, char **argv)
 
         default:
           spdlog::error(
-              "{}: {}", "bad what-to-integrate integer...", what_to_integrate);
+              "bad what-to-integrate integer... {}", what_to_integrate);
           exit(1);
+          break;
       }
       // cout <<"set image to zero...\n";
 

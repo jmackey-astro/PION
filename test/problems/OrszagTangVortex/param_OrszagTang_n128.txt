@@ -2,6 +2,8 @@
 
 ndim 2
 eqn glm-mhd
+glm_chyp_multiplier 1.0
+glm_par_limiter 0.3
 solver 4
 coordinates cartesian
 
@@ -38,7 +40,8 @@ EP_Max_Temperature 1.0e99
 EP_Hydrogen_MassFrac 0.0
 EP_Helium_MassFrac 0.0
 EP_Metal_MassFrac  0.0
-
+EP_compton_cool 0
+EP_wind_acceleration 0
 
 ## Grid Parameters
 # Number of gridpoints in each direction (note cells must be cubic!)

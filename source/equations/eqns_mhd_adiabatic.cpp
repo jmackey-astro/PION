@@ -534,6 +534,10 @@ eqns_mhd_mixedGLM::eqns_mhd_mixedGLM(int nv) : eqns_base(nv), eqns_mhd_ideal(nv)
   //  cout <<"eqns_mhd_mixedGLM constructor!\n";
   eqSI  = SI;
   eqPSI = PSI;
+
+  // default values
+  m_chyp_scale = 1.0;
+  m_cpar_limit = 0.3;
 }
 
 // ##################################################################
@@ -546,8 +550,9 @@ eqns_mhd_mixedGLM::~eqns_mhd_mixedGLM() {}
 
 void eqns_mhd_mixedGLM::GLMsetPsiSpeed(const double ch, const double crel)
 {
-  GLM_chyp = ch;    // hyperbolic wavespeed is equal to max. fast speed
-  GLM_cr   = crel;  // crel = 1/(cp^2/ch) has units of 1/length.
+  GLM_chyp =
+      m_chyp_scale * ch;  // hyperbolic wavespeed is equal to max. fast speed
+  GLM_cr = crel;          // crel = 1/(cp^2/ch) has units of 1/length.
   return;
 }
 
@@ -607,9 +612,20 @@ void eqns_mhd_mixedGLM::GLMsource(
     const double delt  ///< timestep
 )
 {
-  // cout <<"cr="<<GLM_cr<<", ch="<<GLM_chyp<<", dt="<<delt;
-  // cout<<"\tglmsource: exp factor="<<-delt*GLM_chyp*GLM_cr<<"\n";
-  *psivar *= exp(-delt * GLM_chyp * GLM_cr);
+#ifndef NDEBUG
+  // TESTING ONLY
+  static double temp = 0.0;
+  if (!pconst.equalD(delt * GLM_chyp * GLM_cr, temp)) {
+    spdlog::info(
+        "glmsource: exp factor = {:12.4e}, lim = {}, scale = {}",
+        delt * GLM_chyp * GLM_cr, m_cpar_limit, m_chyp_scale);
+  }
+  temp = delt * GLM_chyp * GLM_cr;
+#endif
+
+  // need to limit this because the exponent doubles for each coarser
+  // level that we reach
+  *psivar *= exp(-min(delt * GLM_chyp * GLM_cr, m_cpar_limit));
   return;
 }
 

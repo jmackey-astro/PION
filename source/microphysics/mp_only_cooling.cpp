@@ -269,10 +269,12 @@ int mp_only_cooling::TimeUpdateMP(
 
     compton_rate = -compton_prefactor * (p_in[RO] / Mu_elec)
                    * max(0.0, T - 4.0e4) * compton_urad;
-    // spdlog::info("T {:9.3e}, ne {:9.3e}, flux {:9.3e} pref {:9.3e} rate
-    // {:9.3e}",
-    //      T,(p_in[RO] /
-    // Mu_elec),compton_urad,compton_prefactor,compton_rate);
+    // if (T>3.0e7) {
+    //  spdlog::info("T {:9.3e}, ne {:9.3e}, flux {:9.3e} pref {:9.3e} rate "
+    //  "{:9.3e}, timescale: {:9.3e}", T,(p_in[RO] /
+    //  Mu_elec),compton_urad,compton_prefactor,compton_rate,
+    //  1.5* p_in[RO] *pconst.kB() * T / Mu / compton_rate );
+    //}
   }
 
   double Eint = Eint0;

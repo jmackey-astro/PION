@@ -86,6 +86,29 @@ protected:
       class GridBaseClass *,  ///< pointer to grid.
       const int               ///< source id
   );
+
+  /// for a grid cell, calculate wind acceleration from star "id"
+  void BC_set_wind_acc_cell(
+      class SimParams &,              ///< pointer to simulation parameters
+      class GridBaseClass *,          ///< pointer to grid.
+      class cell &,                   ///< pointer to cell
+      const int,                      ///< source id
+      const std::array<double, 4> &,  ///< cell data for wind
+      std::array<double, MAX_DIM> &,  ///< cell position
+      std::array<double, MAX_DIM> &,  ///< source position
+      std::vector<double> &           ///< output: acceleration array for cell.
+  );
+
+  /// for a grid cell, calculate gradient in wind acceleration from
+  /// star "id", i.e., da/dx*0.5*dx, and same for y,z directions.
+  /// Used to get 2nd order spatial accuracy in acceleration source term
+  void BC_set_wind_dacc_cell(
+      class SimParams &par,       ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to grid.
+      class cell &c,              ///< pointer to cell
+      const int id,               ///< source id
+      std::vector<double> &dacc   ///< output: acceleration array for cell.
+  );
 };
 
 #endif  // STELLAR_WIND_BOUNDARIES_H

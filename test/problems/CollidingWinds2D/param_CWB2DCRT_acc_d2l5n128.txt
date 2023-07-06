@@ -83,7 +83,7 @@ OutputPath ./
 OutputFile CWB2Dcrt_acc_d2l5n128
 OutputFileType silo
 OutputCriterion 0
-OutputFrequency 1024
+OutputFrequency 256
 OPfreqTime 1.578e99
 ########################
 

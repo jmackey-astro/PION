@@ -186,6 +186,19 @@ public:
       const double       ///< Gas constant gamma.
       ) = 0;
 
+  /// Sets the optional parameters for the GLM scheme: a scale factor <1
+  /// on the hyperbolic speed (needed for some problems), and a limiter
+  /// on the parabolic exponent in the source term, so it doesn't get too
+  /// large for deeply nested grids.
+  virtual void GLM_set_parameters(
+      const double
+          ch_sc,  ///< scaling for hyperbolic speed, in [0,1] (default 1)
+      const double cp_li  ///< limiter for parabolic term in exponent.
+  )
+  {
+    return;
+  };  // default version does nothing.
+
 protected:
   class microphysics_base *mp;  ///< pointer to microphysics class
   int eq_nvar;       ///< number of elements in state vector (total, including

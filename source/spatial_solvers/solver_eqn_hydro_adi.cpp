@@ -378,7 +378,7 @@ int FV_solver_Hydro_Euler::dU_Cell(
       c, grid, d, eq_nvar, fn.data(), fp.data(), u1.data());
   // add source terms
   geometric_source(c, d, slope.data(), ooa, dx, u1.data());
-  wind_acceleration_source(grid, c, d, u1.data());
+  wind_acceleration_source(grid, c, d, fn, fp, u1);
   for (int v = 0; v < eq_nvar; v++)
     c.dU[v] += dt * u1[v];
   return (err);

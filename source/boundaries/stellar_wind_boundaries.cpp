@@ -813,6 +813,18 @@ void stellar_wind_bc::BC_set_windacc_radflux(
     return;
   }
 
+  // first set all accelerations and dacc to zero;
+  // std::vector<double> t1, t2;
+  // t1.resize(par.ndim);
+  // t2.resize(par.ndim);
+  // for (int n=0; n<par.ndim; n++) t1[n] = 0.0;
+  // for (int n=0; n<par.ndim; n++) t2[n] = 0.0;
+  // cell *k = grid->FirstPt_All();
+  // do {
+  //  CI.set_wind_acceleration(*k,id,t1);
+  //  CI.set_wind_dacceleration(*k,id,t2);
+  //} while ((k = grid->NextPt_All(*k)) !=0);
+
   int ncell    = 0;
   double r_acc = 100.0 * SWP.params[id]->Rstar;
   // u_prefactor is a prefactor to get the radiation energy density
@@ -828,15 +840,17 @@ void stellar_wind_bc::BC_set_windacc_radflux(
 #endif
 
   // find min/max of coordinates of cube that contains spherical wind source
+  // with safety factor of 2 cells to reset accelerations to zero if cell moves
+  // out of acceleration zone in last step.
   double dx = grid->DX(), aneg = 0.0, apos = 0.0, xmin = 0.0, xmax = 0.0;
   array<int, MAX_DIM> ineg = {0, 0, 0}, ipos = {0, 0, 0};
   for (int v = 0; v < par.ndim; v++) {
     xmin    = grid->Xmin_all(static_cast<axes>(v));
     xmax    = grid->Xmax_all(static_cast<axes>(v));
-    aneg    = srcpos[v] - r_acc - 0.5 * dx;
+    aneg    = srcpos[v] - r_acc - 2.5 * dx;
     aneg    = max(xmin, aneg);
     aneg    = min(xmax, aneg);
-    apos    = srcpos[v] + r_acc + 0.5 * dx;
+    apos    = srcpos[v] + r_acc + 2.5 * dx;
     apos    = min(xmax, apos);
     apos    = max(xmin, apos);
     ineg[v] = (aneg - xmin) / dx;
@@ -865,9 +879,9 @@ void stellar_wind_bc::BC_set_windacc_radflux(
   // we shut off acceleration if T>10^6K
 
   if (!par.EP.compton_cool) {
-    //#ifdef PION_OMP
-    //  #pragma omp parallel for collapse(2)
-    //#endif
+#ifdef PION_OMP
+    #pragma omp parallel for collapse(2)
+#endif
     for (int ax3 = ineg[x3]; ax3 < ipos[x3]; ax3++) {
       for (int ax2 = ineg[x2]; ax2 < ipos[x2]; ax2++) {
         std::array<double, MAX_DIM> cpos;
@@ -875,47 +889,26 @@ void stellar_wind_bc::BC_set_windacc_radflux(
         index[x1] = ineg[x1];
         index[x2] = static_cast<int>(ax2);
         index[x3] = static_cast<int>(ax3);
-        double v = 0.0, dist = 0.0;  //, T = 0.0;
+        double v = 0.0, dist = 0.0, dx = 0.0, del = 0.0;  //, T = 0.0;
         std::vector<double> acc;
+        std::vector<double> dacc;
         acc.resize(par.ndim);
+        dacc.resize(par.ndim);
+        std::array<double, 4> cell_data = {v0, vinf, rstar, 0.0};
         cell *c = grid->get_cell_all(index[0], index[1], index[2]);
         for (int ax1 = index[x1]; ax1 < ipos[x1]; ax1++) {
           CI.get_dpos(*c, cpos);
           if ((dist = grid->distance(srcpos, cpos)) <= r_acc && c->isdomain) {
-            // approximate T by assuming mu=1
-            // T = c->Ph[PG] * pconst.m_p() / (pconst.kB() * c->Ph[RO]);
-            // if (T > 2.0e6) {
-            //  // For high temperatures switch off acc b/c no ions left.
-            //  for (int d = 0; d < par.ndim; d++)
-            //    acc[d] = 0.0;
-            //}
-            // else {
-            // v = v0 + (vinf-v0)* exp(beta * log(1.0-rstar/dist));
-            // v = v * beta * (vinf-v0) *  exp((beta-1.0) *
-            // log(1.0-rstar/dist))
-            // * rstar / pow(dist,3);
-            // first assume beta==1 for simplicity
-            v = v0 + (vinf - v0) * (1.0 - rstar / dist);
-            v = v * (vinf - v0) * rstar / (dist * dist * dist);
-            // calculate each component.
-            for (int d = 0; d < par.ndim; d++) {
-              acc[d] = v * (cpos[d] - srcpos[d]);
-            }
-            // if (T > 1.0e6) {
-            //  // linearly decrease acc to zero in range 1e6-2e6 K
-            //  for (int d = 0; d < par.ndim; d++)
-            //    acc[d] *= (2.0e6 - T) / 1.0e6;
-            //}
-            //}
-            CI.set_wind_acceleration(*c, id, acc);
-            // spdlog::info("src id {}, acceleration {}",id,r_acc);
+            cell_data[3] = dist;
+            BC_set_wind_acc_cell(
+                par, grid, *c, id, cell_data, cpos, srcpos, acc);
           }
           else {
             for (int d = 0; d < par.ndim; d++) {
               acc[d] = 0.0;
             }
-            CI.set_wind_acceleration(*c, id, acc);
           }
+          CI.set_wind_acceleration(*c, id, acc);
           c = grid->NextPt(*c, XP);
           // spdlog::info("src id {} index {}",index[x1]);
         }
@@ -942,6 +935,7 @@ void stellar_wind_bc::BC_set_windacc_radflux(
         std::vector<double> acc;
         acc.resize(par.ndim);
         std::array<double, MAX_DIM> cpos;
+        std::array<double, 4> cell_data = {v0, vinf, rstar, 0.0};
         cell *c = grid->get_cell_all(index[0], index[1], index[2]);
         do {
           CI.get_dpos(*c, cpos);
@@ -949,40 +943,16 @@ void stellar_wind_bc::BC_set_windacc_radflux(
           // set wind acceleration
           if (par.EP.wind_acceleration) {
             if (dist <= r_acc) {
-              // approximate T by assuming mu=1
-              T = c->Ph[PG] * pconst.m_p() / (pconst.kB() * c->Ph[RO]);
-              if (T > 2.0e6) {
-                // For high temperatures switch off acc b/c no ions left.
-                for (int d = 0; d < par.ndim; d++)
-                  acc[d] = 0.0;
-              }
-              else {
-                // v = v0 + (vinf-v0)* exp(beta * log(1.0-rstar/dist));
-                // v = v * beta * (vinf-v0) *  exp((beta-1.0) *
-                // log(1.0-rstar/dist))
-                // * rstar / pow(dist,3);
-                // first assume beta==1 for simplicity
-                v = v0 + (vinf - v0) * (1.0 - rstar / dist);
-                v = v * (vinf - v0) * rstar / (dist * dist * dist);
-                // calculate each component.
-                for (int d = 0; d < par.ndim; d++) {
-                  acc[d] = v * (cpos[d] - srcpos[d]);
-                }
-                if (T > 1.0e6) {
-                  // linearly decrease acc to zero in range 1e6-2e6 K
-                  for (int d = 0; d < par.ndim; d++)
-                    acc[d] *= (2.0e6 - T) / 1.0e6;
-                }
-              }
-              CI.set_wind_acceleration(*c, id, acc);
-              // spdlog::info("src id {}, acceleration {}",id,r_acc);
+              cell_data[3] = dist;
+              BC_set_wind_acc_cell(
+                  par, grid, *c, id, cell_data, cpos, srcpos, acc);
             }
             else {
               for (int d = 0; d < par.ndim; d++) {
                 acc[d] = 0.0;
               }
-              CI.set_wind_acceleration(*c, id, acc);
             }
+            CI.set_wind_acceleration(*c, id, acc);
           }
           // set compton cooling info (radiation density from star, erg/cm3)
           // U = 2 sigma_SB T^4 /c * (1 - sqrt(1-(R/r)^2))
@@ -1004,6 +974,42 @@ void stellar_wind_bc::BC_set_windacc_radflux(
     }    // axis 3
   }      // if compton cooling
 
+
+  // loop through again and calculate slopes in acceleration elements
+  // for 2nd-order accurate acceleration source-term.
+  if (par.EP.wind_acceleration) {
+#ifdef PION_OMP
+    #pragma omp parallel for collapse(2)
+#endif
+    for (int ax3 = ineg[x3]; ax3 < ipos[x3]; ax3++) {
+      for (int ax2 = ineg[x2]; ax2 < ipos[x2]; ax2++) {
+        std::array<double, MAX_DIM> cpos;
+        int index[3];
+        index[x1] = ineg[x1];
+        index[x2] = static_cast<int>(ax2);
+        index[x3] = static_cast<int>(ax3);
+        double v = 0.0, dist = 0.0, dx = 0.0, del = 0.0;  //, T = 0.0;
+        std::vector<double> dacc;
+        dacc.resize(par.ndim);
+        cell *c = grid->get_cell_all(index[0], index[1], index[2]);
+        for (int ax1 = index[x1]; ax1 < ipos[x1]; ax1++) {
+          CI.get_dpos(*c, cpos);
+          if ((dist = grid->distance(srcpos, cpos)) <= r_acc && c->isdomain) {
+            BC_set_wind_dacc_cell(par, grid, *c, id, dacc);
+          }
+          else {
+            for (int d = 0; d < par.ndim; d++) {
+              dacc[d] = 0.0;
+            }
+          }
+          CI.set_wind_dacceleration(*c, id, dacc);
+          c = grid->NextPt(*c, XP);
+          // spdlog::info("src id {} index {}",index[x1]);
+        }
+      }
+    }
+  }
+
 #ifndef NDEBUG
   spdlog::debug(
       "BC_assign_STWIND_add_cells2src: Added {} cells to wind boundary for WS {}",
@@ -1011,6 +1017,105 @@ void stellar_wind_bc::BC_set_windacc_radflux(
 #endif
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind_bc::BC_set_wind_acc_cell(
+    class SimParams &par,                 ///< pointer to simulation parameters
+    class GridBaseClass *grid,            ///< pointer to grid.
+    class cell &c,                        ///< pointer to cell
+    const int id,                         ///< source id
+    const std::array<double, 4> &data,    ///< cell data for wind
+    std::array<double, MAX_DIM> &cpos,    ///< cell position
+    std::array<double, MAX_DIM> &srcpos,  ///< source position
+    std::vector<double> &acc  ///< output: acceleration array for cell.
+)
+{
+  double v0 = data[0], vinf = data[1], rstar = data[2], dist = data[3];
+  double v = 0.0;
+  // approximate T by assuming mu=1
+  // T = c->Ph[PG] * pconst.m_p() / (pconst.kB() * c->Ph[RO]);
+  // if (T > 2.0e6) {
+  //  // For high temperatures switch off acc b/c no ions left.
+  //  for (int d = 0; d < par.ndim; d++)
+  //    acc[d] = 0.0;
+  //}
+  // else {
+  // v = v0 + (vinf-v0)* exp(beta * log(1.0-rstar/dist));
+  // v = v * beta * (vinf-v0) *  exp((beta-1.0) *
+  // log(1.0-rstar/dist))
+  // * rstar / pow(dist,3);
+  // first assume beta==1 for simplicity
+  v = v0 + (vinf - v0) * (1.0 - rstar / dist);
+  v = v * (vinf - v0) * rstar / (dist * dist * dist);
+  // calculate each component.
+  for (int d = 0; d < par.ndim; d++) {
+    acc[d] = v * (cpos[d] - srcpos[d]);
+  }
+  // if (T > 1.0e6) {
+  //  // linearly decrease acc to zero in range 1e6-2e6 K
+  //  for (int d = 0; d < par.ndim; d++)
+  //    acc[d] *= (2.0e6 - T) / 1.0e6;
+  //}
+  //}
+  // spdlog::info("src id {}, acceleration {}",id,r_acc);
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind_bc::BC_set_wind_dacc_cell(
+    class SimParams &par,       ///< pointer to simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
+    class cell &c,              ///< pointer to cell
+    const int id,               ///< source id
+    std::vector<double> &dacc   ///< output: acceleration array for cell.
+)
+{
+  double dx = grid->DX(), del = 0.0;
+  cell *cn = 0, *cp = 0;
+  for (int n = 0; n < par.ndim; n++) {
+    // get 2nd order slope from neighbouring cells, if they exist.
+    cn  = &c;
+    cp  = &c;
+    del = 0.0;
+    if ((cn = grid->NextPt(c, static_cast<enum direction>(2 * n))) != 0) {
+      del += dx;
+    }
+    else {
+      cn = &c;
+    }
+    if ((cp = grid->NextPt(c, static_cast<enum direction>(2 * n + 1))) != 0) {
+      del += dx;
+    }
+    else {
+      cp = &c;
+    }
+    if (pconst.equalD(dx, 0.0)) {
+      dacc[n] = 0.0;
+    }
+    else {
+      // this gives d(a_x)/dx
+      dacc[n] = (CI.get_wind_acceleration_el(*cp, id, n)
+                 - CI.get_wind_acceleration_el(*cn, id, n))
+                / del;
+      // this gives delta(a_x) from cell centre to cell edge
+      dacc[n] *= 0.5 * dx;
+    }
+  }
+  return;
+}
+
 
 
 // ##################################################################
