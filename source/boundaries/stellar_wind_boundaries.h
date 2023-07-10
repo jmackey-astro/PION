@@ -84,7 +84,9 @@ protected:
   void BC_set_windacc_radflux(
       class SimParams &,      ///< pointer to simulation parameters
       class GridBaseClass *,  ///< pointer to grid.
-      const int               ///< source id
+      const int,              ///< source id
+      const int cstep,        ///< current fractional step being taken
+      const int fstep         ///< final step
   );
 
   /// for a grid cell, calculate wind acceleration from star "id"

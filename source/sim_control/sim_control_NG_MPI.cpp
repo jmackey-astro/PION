@@ -496,9 +496,7 @@ int sim_control_NG_MPI::Time_Int(
     spdlog::debug("... done");
   }
   if (err) {
-    spdlog::error(
-        "{}: Expected {} but got {}", "sim_control_NG_MPI: internal boundary",
-        0, err);
+    spdlog::error("sim_control_NG_MPI: internal boundary: {}", err);
     exit(err);
   }
   // --------------------------------------------------------------
@@ -1131,8 +1129,8 @@ double sim_control_NG_MPI::advance_step_OA2(const int l  ///< level to advance.
 #ifdef TEST_INT
   spdlog::debug("advance_step_OA2: l={} update internal boundaries", l);
 #endif
-  err += TimeUpdateInternalBCs(
-      SimPM, l, grid, spatial_solver, ctime, 0.0, OA2, OA2);
+  err +=
+      TimeUpdateInternalBCs(SimPM, l, grid, spatial_solver, ctime, 0.0, 0, 0);
   clk.pause_timer("ibc");
 
   clk.start_timer("ebc");

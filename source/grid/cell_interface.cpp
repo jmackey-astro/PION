@@ -301,12 +301,20 @@ void cell_interface::setup_extra_data(
     }
     // now add accelerations
     for (int v = 0; v < swp.Nsources; v++) {
+      // data for current accelerations
       star_data[v].wind_acc.resize(ndim);
       for (int d = 0; d < ndim; d++)
         star_data[v].wind_acc[d] = N_extra_data++;
       star_data[v].wind_dacc.resize(ndim);
       for (int d = 0; d < ndim; d++)
         star_data[v].wind_dacc[d] = N_extra_data++;
+      // data for accelerations at -0.5*dt
+      star_data[v].wind_acc_prev.resize(ndim);
+      for (int d = 0; d < ndim; d++)
+        star_data[v].wind_acc_prev[d] = N_extra_data++;
+      star_data[v].wind_dacc_prev.resize(ndim);
+      for (int d = 0; d < ndim; d++)
+        star_data[v].wind_dacc_prev[d] = N_extra_data++;
     }
   }
   else {
@@ -319,35 +327,6 @@ void cell_interface::setup_extra_data(
 }
 
 
-// ##################################################################
-// ##################################################################
-
-
-double cell_interface::get_wind_acceleration_el(
-    const cell &c,     ///< cell pointer
-    const int src,     ///< star id.
-    const int element  ///< which axis to return acceleration for
-)
-{
-  // spdlog::info("wa-el: {} {} {}, sd[] {} : DATA
-  // {:12.6e}",c.id,src,element,star_data.size(),c.extra_data[star_data[src].wind_acc[element]]);
-  return c.extra_data[star_data[src].wind_acc[element]];
-}
-
-// ##################################################################
-// ##################################################################
-
-
-double cell_interface::get_wind_dacceleration_el(
-    const cell &c,     ///< cell pointer
-    const int src,     ///< star id.
-    const int element  ///< which axis to return acceleration for
-)
-{
-  // spdlog::info("wa-el: {} {} {}, sd[] {} : DATA
-  // {:12.6e}",c.id,src,element,star_data.size(),c.extra_data[star_data[src].wind_acc[element]]);
-  return c.extra_data[star_data[src].wind_dacc[element]];
-}
 
 // ##################################################################
 // ##################################################################

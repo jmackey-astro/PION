@@ -213,6 +213,7 @@ public:
       const axes,                     ///< Which axis we are looking along.
       const std::vector<pion_flt> &,  ///< Negative direction flux
       const std::vector<pion_flt> &,  ///< Positive direction flux
+      const int,                      ///< OA1 (1/2 step), OA2 (full step)
       std::vector<pion_flt> &         ///< dU/dt vector
   );
 

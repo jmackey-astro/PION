@@ -444,26 +444,54 @@ int FV_solver_base::wind_acceleration_source(
     const axes a,                     ///< Which axis we are looking along.
     const std::vector<pion_flt> &fn,  ///< Negative direction flux
     const std::vector<pion_flt> &fp,  ///< Positive direction flux
+    const int cstep,                  ///< OA1 (1/2 step), OA2 (full step)
     std::vector<pion_flt> &udot       ///< dU/dt vector
 )
 {
   // From Mullen et al. (2021, ApJS, 252, 30) eq. 63, 64
-  // Note we don't have the time-dependence, so only spatially 2nd order,
-  // and 1st order in time.
-  // if (!c.isdomain) return 0;
+
+  if (!c.isdomain) return 0;
   // Calculates source term due to wind acceleration
   double acc = 0.0, dacc = 0.0, acc_neg = 0.0, acc_pos = 0.0;
+  double acc_neg_p = 0.0, acc_pos_p = 0.0;
+
+  // first get acceleration at current and previous step (t-0.5*dt)
   for (int id = 0; id < SWP.Nsources; id++) {
     // spdlog::info("src {}: acc = {}",id,SWP.params[id]->acc);
     if (!SWP.params[id]->acc) continue;
     // spdlog::info("solver WA: {} , c.id {} ,c.Ph[RO] {}", id, c.id, c.Ph[RO]);
     acc  = CI.get_wind_acceleration_el(c, id, a);
-    dacc = CI.get_wind_acceleration_el(c, id, a);
+    dacc = CI.get_wind_dacceleration_el(c, id, a);
     acc_neg += acc - dacc;
     acc_pos += acc + dacc;
+    acc  = CI.get_wind_acceleration_prev_el(c, id, a);
+    dacc = CI.get_wind_dacceleration_prev_el(c, id, a);
+    acc_neg_p += acc - dacc;
+    acc_pos_p += acc + dacc;
   }
-  udot[eqERG] += 0.5 * (fn[RHO] * acc_neg - fp[RHO] * acc_pos);
-  udot[eqMMX] += 0.5 * c.Ph[RO] * (acc_neg + acc_pos);
+
+  // these formulae use the time derivative of the acceleration to predict
+  // the value at the new time.
+  switch (cstep) {
+    case OA1:
+      udot[eqERG] += 0.5
+                     * (fn[RHO] * (1.5 * acc_neg - 0.5 * acc_neg_p)
+                        + fp[RHO] * (1.5 * acc_pos - 0.5 * acc_pos_p));
+      // udot[eqERG] += 0.5 * (fn[RHO] * acc_neg + fp[RHO] * acc_pos);
+      udot[eqMMX] += 0.5 * c.Ph[RO] * (acc_neg + acc_pos);
+      break;
+
+    case OA2:
+      udot[eqERG] += 0.5 * (fn[RHO] * acc_neg + fp[RHO] * acc_pos);
+      udot[eqMMX] += 0.5 * c.Ph[RO] * (acc_neg + acc_pos);
+      break;
+
+    default:
+      spdlog::error("source term but invalid step {}", cstep);
+      return 1;
+      break;
+  }
+
   // spdlog::info("{}: ax {} acc {:9.3e}, mmx {:9.3e}, erg
   // {:9.3e}",id,a,acc,c.Ph[RO] * c.Ph[eqVX] * acc, c.Ph[RO] * acc);
 

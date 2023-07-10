@@ -365,7 +365,7 @@ int FV_solver_Hydro_Euler::dU_Cell(
     const std::vector<pion_flt> &fn,     // Negative direction flux.
     const std::vector<pion_flt> &fp,     // Positive direction flux.
     const std::vector<pion_flt> &slope,  // slope vector for cell c.
-    const int ooa,                       // spatial order of accuracy.
+    const int cstep,                     // spatial order of accuracy.
     const double dx,                     // cell length dx.
     const double dt                      // cell TimeStep, dt.
 )
@@ -377,8 +377,8 @@ int FV_solver_Hydro_Euler::dU_Cell(
   int err = DivStateVectorComponent(
       c, grid, d, eq_nvar, fn.data(), fp.data(), u1.data());
   // add source terms
-  geometric_source(c, d, slope.data(), ooa, dx, u1.data());
-  wind_acceleration_source(grid, c, d, fn, fp, u1);
+  geometric_source(c, d, slope.data(), cstep, dx, u1.data());
+  wind_acceleration_source(grid, c, d, fn, fp, cstep, u1);
   for (int v = 0; v < eq_nvar; v++)
     c.dU[v] += dt * u1[v];
   return (err);

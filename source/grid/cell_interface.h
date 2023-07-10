@@ -139,6 +139,11 @@ struct star_indices {
   std::vector<int> wind_acc;
   /// index for slope in wind acceleration in the 3 directions
   std::vector<int> wind_dacc;
+  /// index for net acceleration in the 3 directions at previous time -0.5*dt
+  std::vector<int> wind_acc_prev;
+  /// index for slope in wind acceleration in the 3 directions at previous time
+  /// -0.5*dt
+  std::vector<int> wind_dacc_prev;
 };
 
 
@@ -621,23 +626,60 @@ public:
   ///
   /// Get net (rad+grav) acceleration for cell, for wind acceleration
   ///
-  // inline double get_wind_acceleration_el(
-  double get_wind_acceleration_el(
+  inline double get_wind_acceleration_el(
       const cell &c,     ///< cell pointer
       const int src,     ///< star id.
       const int element  ///< which axis to return acceleration for
-  );
+  )
+  {
+    // spdlog::info("wa-el: {} {} {}, sd[] {} : DATA
+    // {:12.6e}",c.id,src,element,star_data.size(),c.extra_data[star_data[src].wind_acc[element]]);
+    return c.extra_data[star_data[src].wind_acc[element]];
+  }
 
   ///
   /// Get gradient of net (rad+grav) acceleration for cell, for wind
   /// acceleration in direction element.  Returns change in acceleration
   /// from cell centre to edge.
   ///
-  double get_wind_dacceleration_el(
+  inline double get_wind_dacceleration_el(
       const cell &c,     ///< cell pointer
       const int src,     ///< star id.
       const int element  ///< which axis to return acceleration for
-  );
+  )
+  {
+    // spdlog::info("wa-el: {} {} {}, sd[] {} : DATA
+    // {:12.6e}",c.id,src,element,star_data.size(),c.extra_data[star_data[src].wind_acc[element]]);
+    return c.extra_data[star_data[src].wind_dacc[element]];
+  }
+
+  /// Get old value of net (rad+grav) acceleration for cell, for wind
+  /// acceleration
+  inline double get_wind_acceleration_prev_el(
+      const cell &c,     ///< cell pointer
+      const int src,     ///< star id.
+      const int element  ///< which axis to return acceleration for
+  )
+  {
+    // spdlog::info("wa-el: {} {} {}, sd[] {} : DATA
+    // {:12.6e}",c.id,src,element,star_data.size(),c.extra_data[star_data[src].wind_acc[element]]);
+    return c.extra_data[star_data[src].wind_acc_prev[element]];
+  }
+
+  /// Get gradient of old net (rad+grav) acceleration for cell, for wind
+  /// acceleration in direction element.  Returns change in acceleration
+  /// from cell centre to edge.
+  inline double get_wind_dacceleration_prev_el(
+      const cell &c,     ///< cell pointer
+      const int src,     ///< star id.
+      const int element  ///< which axis to return acceleration for
+  )
+  {
+    // spdlog::info("wa-el: {} {} {}, sd[] {} : DATA
+    // {:12.6e}",c.id,src,element,star_data.size(),c.extra_data[star_data[src].wind_acc[element]]);
+    return c.extra_data[star_data[src].wind_dacc_prev[element]];
+  }
+
 
   // ##################################################################
   // ##################################################################
@@ -657,6 +699,11 @@ public:
       exit(1);
     }
 #endif
+    // first reset new value to old value
+    for (int d = 0; d < ndim; d++)
+      c.extra_data[star_data[src].wind_acc_prev[d]] =
+          c.extra_data[star_data[src].wind_acc[d]];
+    // then set new value based on data provided
     for (int d = 0; d < ndim; d++)
       c.extra_data[star_data[src].wind_acc[d]] = acc[d];
   }
@@ -676,6 +723,11 @@ public:
       exit(1);
     }
 #endif
+    // first reset new value to old value
+    for (int d = 0; d < ndim; d++)
+      c.extra_data[star_data[src].wind_dacc_prev[d]] =
+          c.extra_data[star_data[src].wind_dacc[d]];
+    // then set new value based on data provided
     for (int d = 0; d < ndim; d++)
       c.extra_data[star_data[src].wind_dacc[d]] = dacc[d];
   }

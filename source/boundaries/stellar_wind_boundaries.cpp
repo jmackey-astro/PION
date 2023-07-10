@@ -411,8 +411,8 @@ int stellar_wind_bc::BC_update_STWIND(
     const double simtime,       ///< current simulation time
     const double dt,            ///< timestep
     boundary_data *,            ///< Boundary to update (unused)
-    const int,                  ///< current fractional step being taken
-    const int                   ///< final step
+    const int cstep,            ///< current fractional step being taken
+    const int fstep             ///< final step
 )
 {
   int err = 0;
@@ -703,8 +703,11 @@ int stellar_wind_bc::BC_update_STWIND(
           "error in setting cell values for wind src {}: {}", id, err);
       exit(err);
     }
-    // set wind acceleration in each cell
-    BC_set_windacc_radflux(par, grid, id);
+    // set wind acceleration in each cell if dt!=0 (this can be so for
+    // setting timestep and for updating BCs at the start of each step)
+    if (!pconst.equalD(dt, 0.0)) {
+      BC_set_windacc_radflux(par, grid, id, cstep, fstep);
+    }
   }
 #ifndef NDEBUG
   spdlog::debug("stellar_wind_bc: finished updating wind boundaries");
@@ -801,9 +804,16 @@ void stellar_wind_bc::BC_set_wind_radius(
 void stellar_wind_bc::BC_set_windacc_radflux(
     class SimParams &par,       ///< pointer to simulation parameters
     class GridBaseClass *grid,  ///< pointer to grid.
-    const int id                ///< source id
+    const int id,               ///< source id
+    const int cstep,            ///< current fractional step being taken
+    const int fstep             ///< final step
 )
 {
+  // this can get called for a "zeroth" update, but nothing has changed so
+  // we just return in that case.
+  if (cstep == 0) {
+    return;
+  }
   //
   // For each cell, store radiation energy density if compton cooling is needed
   // For cells at <100 stellar radii, calculate the wind acceleration,
@@ -812,18 +822,6 @@ void stellar_wind_bc::BC_set_windacc_radflux(
   if (!par.EP.compton_cool && !par.EP.wind_acceleration) {
     return;
   }
-
-  // first set all accelerations and dacc to zero;
-  // std::vector<double> t1, t2;
-  // t1.resize(par.ndim);
-  // t2.resize(par.ndim);
-  // for (int n=0; n<par.ndim; n++) t1[n] = 0.0;
-  // for (int n=0; n<par.ndim; n++) t2[n] = 0.0;
-  // cell *k = grid->FirstPt_All();
-  // do {
-  //  CI.set_wind_acceleration(*k,id,t1);
-  //  CI.set_wind_dacceleration(*k,id,t2);
-  //} while ((k = grid->NextPt_All(*k)) !=0);
 
   int ncell    = 0;
   double r_acc = 100.0 * SWP.params[id]->Rstar;
@@ -1111,6 +1109,12 @@ void stellar_wind_bc::BC_set_wind_dacc_cell(
                 / del;
       // this gives delta(a_x) from cell centre to cell edge
       dacc[n] *= 0.5 * dx;
+      // spdlog::info("accel: cn {:12.3e}, c {:12.3e}, cp {:12.3e}, dacc
+      // {:12.3e}",
+      //              CI.get_wind_acceleration_el(*cn, id, n),
+      //              CI.get_wind_acceleration_el(c, id, n),
+      //              CI.get_wind_acceleration_el(*cp, id, n),
+      //              dacc[n]);
     }
   }
   return;
