@@ -478,7 +478,7 @@ int FV_solver_base::wind_acceleration_source(
                      * (fn[RHO] * (1.5 * acc_neg - 0.5 * acc_neg_p)
                         + fp[RHO] * (1.5 * acc_pos - 0.5 * acc_pos_p));
       // udot[eqERG] += 0.5 * (fn[RHO] * acc_neg + fp[RHO] * acc_pos);
-      udot[eqMMX] += 0.5 * c.Ph[RO] * (acc_neg + acc_pos);
+      udot[eqMMX] += 0.5 * c.P[RO] * (acc_neg + acc_pos);
       break;
 
     case OA2:

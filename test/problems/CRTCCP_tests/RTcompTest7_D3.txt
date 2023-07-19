@@ -42,6 +42,8 @@ EP_update_erg 1
 EP_MP_timestep_limit 1 
 EP_Min_Temperature 50.0
 EP_Max_Temperature 1.0e6
+EP_compton_cool       0
+EP_wind_acceleration  0
 
 
 # Smooth Data by n cells? (n<=0 means no).

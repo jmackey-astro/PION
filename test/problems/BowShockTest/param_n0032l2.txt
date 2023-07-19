@@ -37,6 +37,8 @@ EP_Max_Temperature 1.0e9
 EP_Hydrogen_MassFrac 0.714
 EP_Helium_MassFrac 0.286
 EP_Metal_MassFrac  0.0142
+EP_compton_cool       0
+EP_wind_acceleration  0
 
 
 # Smooth Data by n cells? (n<=0 means no).
@@ -52,11 +54,11 @@ NGridX  32
 NGridY  32
 NGridZ  32
 # Boundaries of Simulation box:
-Xmin   -6.0e18
+Xmin   -7.0e18
 Ymin   -5.0e18
 Zmin   -5.0e18
 # Max values of x,y,z
-Xmax   4.0e18  
+Xmax   3.0e18  
 Ymax   5.0e18
 Zmax   5.0e18
 
@@ -65,7 +67,7 @@ grid_nlevels 2
 grid_aspect_ratio_XX 1
 grid_aspect_ratio_YY 1
 grid_aspect_ratio_ZZ 1
-NG_centre_XX 4.0e18
+NG_centre_XX 3.0e18
 NG_centre_YY 0.0e18
 NG_centre_ZZ 0.0e18
 NG_refine_XX 1
@@ -73,7 +75,7 @@ NG_refine_YY 1
 NG_refine_ZZ 1
 
 # Data Output Path
-OutputPath ./silo/
+OutputPath ./
 # Output File Type = {text,fits,ftab,both,...}
 OutputFileType silo
 # Output data to file every nth timestep. (n=0 means only at the end).

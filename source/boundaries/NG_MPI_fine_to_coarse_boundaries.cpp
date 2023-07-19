@@ -490,6 +490,12 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
         }
         i_el += par.ndim;
 #endif
+
+        if (!c->isdomain) {
+          i_el += F2C_Nxd + par.nvar;
+          continue;
+        }
+
         solver->UtoP(
             &(buf[i_el]), prim.data(), par.EP.MinTemperature, par.gamma);
         i_el += par.nvar;

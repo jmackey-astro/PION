@@ -120,8 +120,7 @@ int sim_control_pllel::Init(
     int typeOfFile,
     int narg,
     string *args,
-    vector<class GridBaseClass *>
-        &grid  ///< address of vector of grid pointers.
+    vector<class GridBaseClass *> &grid  ///< vector of grids.
 )
 {
 #ifndef NDEBUG
@@ -177,10 +176,10 @@ int sim_control_pllel::Init(
   // should be ok because it only happens during initialisation.
   //
   err = dataio->ReadHeader(infile, SimPM);
-  if (0 != err)
-    spdlog::error(
-        "{}: Expected {} but got {}", "PLLEL Init(): failed to read header", 0,
-        err);
+  if (0 != err) {
+    spdlog::error("PLLEL Init(): failed to read header: {}", err);
+    exit(err);
+  }
 
   // have to do something with SimPM.levels[0] because this
   // is used to set the local domain size in decomposeDomain
@@ -210,10 +209,10 @@ int sim_control_pllel::Init(
 
   // Now see if any commandline args override the Parameters from the file.
   err = override_params(narg, args);
-  if (0 != err)
-    spdlog::error(
-        "{}: Expected {} but got {}",
-        "(INIT::override_params) err!=0 Something went wrong", 0, err);
+  if (0 != err) {
+    spdlog::error("(INIT::override_params) err = {}", err);
+    exit(err);
+  }
 
   // Now set up the grid structure.
   grid.resize(1);
@@ -222,20 +221,20 @@ int sim_control_pllel::Init(
   // cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
   SimPM.dx             = grid[0]->DX();
   SimPM.levels[0].grid = grid[0];
-  if (0 != err)
-    spdlog::error(
-        "{}: Expected {} but got {}",
-        "(INIT::setup_grid) err!=0 Something went wrong", 0, err);
+  if (0 != err) {
+    spdlog::error("(INIT::setup_grid) err = {}g", err);
+    exit(err);
+  }
 
   //
   // All grid parameters are now set, so I can set up the appropriate
   // equations/solver class.
   //
   err = set_equations(SimPM);
-  if (0 != err)
-    spdlog::error(
-        "{}: Expected {} but got {}", "(INIT::set_equations) err!=0 Fix me!", 0,
-        err);
+  if (0 != err) {
+    spdlog::error("(INIT::set_equations) err = {} Fix me!", err);
+    exit(err);
+  }
 #ifdef PION_OMP
   #pragma omp parallel
   {
@@ -267,10 +266,8 @@ int sim_control_pllel::Init(
   //
   err = dataio->ReadData(infile, grid, SimPM);
   if (0 != err) {
-    spdlog::error(
-        "{}: Expected {} but got {}",
-        "(INIT::assign_initial_data) err!=0 Something went wrong", 0, err);
-    exit(1);
+    spdlog::error("(INIT::assign_initial_data) err = {}", err);
+    exit(err);
   }
   //  cout <<"Read data finished\n";
 
@@ -413,18 +410,19 @@ int sim_control_pllel::Time_Int(
     vector<class GridBaseClass *> &grid  ///< vector of grids.
 )
 {
-  spdlog::info(
-      "-------------------------------------------------------(sim_control_pllel::time_int) STARTING TIME INTEGRATION.\n-------------------------------------------------------\n");
+  spdlog::info("------------ (sim_control_pllel::time_int)"
+               "STARTING TIME INTEGRATION ------------");
   int err = 0;
   err     = update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
-  if (0 != err)
-    spdlog::error(
-        "{}: Expected {} but got {}", "TIME_INT:: initial RT src update()", 0,
-        err);
+  if (err) {
+    spdlog::error("TIME_INT:: initial RT src update() err = {}", err);
+    exit(1);
+  }
   err = RT_all_sources(SimPM, grid[0], 0);
-  if (0 != err)
-    spdlog::error(
-        "{}: Expected {} but got {}", "TIME_INT:: initial RT()", 0, err);
+  if (err) {
+    spdlog::error("TIME_INT:: initial RT() err = {}", err);
+    exit(1);
+  }
   int log_freq  = 10;
   SimPM.maxtime = false;
   clk.start_timer("time_int");
@@ -434,24 +432,25 @@ int sim_control_pllel::Time_Int(
     // Update RT sources.
     //
     err = update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
-    if (0 != err)
-      spdlog::error(
-          "{}: Expected {} but got {}", "TIME_INT::update_RT_sources()", 0,
-          err);
+    if (err) {
+      spdlog::error("TIME_INT::update_RT_sources() err = {}", err);
+      exit(1);
+    }
     err = RT_all_sources(SimPM, grid[0], 0);
-    if (0 != err)
-      spdlog::error(
-          "{}: Expected {} but got {}", "TIME_INT:: loop RT()", 0, err);
-
-      // clk.start_timer("advance_time");
+    if (err) {
+      spdlog::error("TIME_INT:: loop RT() err = {}", err);
+      exit(1);
+    }
+    // clk.start_timer("advance_time");
 #ifndef NDEBUG
     spdlog::debug("MPI time_int: calculating dt");
 #endif
     SimPM.levels[0].last_dt = SimPM.last_dt;
     err += calculate_timestep(SimPM, grid[0], 0);
-    if (0 != err)
-      spdlog::error(
-          "{}: Expected {} but got {}", "TIME_INT::calc_timestep()", 0, err);
+    if (err) {
+      spdlog::error("TIME_INT::calc_timestep() err = {}", err);
+      exit(1);
+    }
 
 #ifndef NDEBUG
     spdlog::debug("MPI time_int: stepping forward in time");
@@ -491,13 +490,13 @@ int sim_control_pllel::Time_Int(
     }
 
     err += output_data(grid);
-    if (err != 0) {
+    if (err) {
       spdlog::error("(TIME_INT::output_data) err!=0 Something went bad");
       return (1);
     }
 
     err += check_eosim();
-    if (err != 0) {
+    if (err) {
       spdlog::error("(TIME_INT::) err!=0 Something went bad");
       return (1);
     }
@@ -526,8 +525,7 @@ int sim_control_pllel::Time_Int(
     spdlog::debug("TOTALS RT: active: {} idle: {} total: {}", run, wait, total);
   }
 #endif
-  spdlog::info(
-      "                               **************************************");
+  spdlog::info("**************************************");
   return (0);
 }
 
@@ -649,9 +647,11 @@ int sim_control_pllel::calculate_timestep(
   // an output time or finishtime, then all procs have done this too!
   t_dyn = par.dt;
   t_mp  = SimPM.levels[0].sub_domain.global_operation_double(MIN, t_dyn);
-  if (!pconst.equalD(t_dyn, t_mp))
+  if (!pconst.equalD(t_dyn, t_mp)) {
     spdlog::error(
-        "{}: {}", "synchonisation trouble in timesteps!", t_dyn - t_mp);
+        "synchonisation trouble in timesteps! {:12.6e} {:12.6e}", t_dyn, t_mp);
+    exit(2);
+  }
 #endif  // NDEBUG
 
   return 0;
@@ -670,7 +670,7 @@ int sim_control_pllel::initial_conserved_quantities(
   // Energy, and Linear Momentum in x-direction.
 #ifdef TEST_CONSERVATION
   class GridBaseClass *grid = g[0];
-  std::vector<pion_flt> u(SimPM.nvar);
+  std::vector<pion_flt> u(SimPM.nvar, 0.0);
   initERG = 0.;
   initMMX = initMMY = initMMZ = 0.;
   initMASS                    = 0.0;
@@ -726,7 +726,7 @@ int sim_control_pllel::check_energy_cons(vector<class GridBaseClass *> &g)
 #ifdef TEST_CONSERVATION
   // Energy, and Linear Momentum in x-direction.
   class GridBaseClass *grid = g[0];
-  std::vector<pion_flt> u(SimPM.nvar);
+  std::vector<pion_flt> u(SimPM.nvar, 0.0);
   double nowERG  = 0.;
   double nowMMX  = 0.;
   double nowMMY  = 0.;

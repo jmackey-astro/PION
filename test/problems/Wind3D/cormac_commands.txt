@@ -1,0 +1,21 @@
+
+# -----------------------------------------
+# run stellar wind simulation (constant wind expanding out from a rotating star)
+# setup initial conditions
+mpirun -np 8 ../../../build/icgen-ng params_Wind_test_d3n064l5.txt
+# run wind simulation
+mpirun -np 8 ../../../build/pion-ng Wind_test_d3n064l5_level00_0000.00000384.silo omp-nthreads=5 finishtime=1.0e12
+# -----------------------------------------
+
+# -----------------------------------------
+# edit file params_Wind_test_SN_d3n064l5.txt line 112 to the correct snapshot that
+# you want to add the supernova to.
+# -----------------------------------------
+
+# -----------------------------------------
+# generate SN initial conditions:
+mpirun -np 8 ../../../build/icgen-ng params_Wind_test_SN_d3n064l5.txt
+
+# Run supernova-CSM interaction
+mpirun -np 8 ../../../build/pion-ng Wind_test_SN_d3n064l5_level00_0000.00000000.silo omp-nthreads=5 finishtime=1.0e12
+# -----------------------------------------

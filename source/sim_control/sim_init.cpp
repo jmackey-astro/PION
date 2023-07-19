@@ -104,9 +104,61 @@ void sim_init::print_command_line_options(int argc, char **argv)
   std::stringstream invocation;
   for (int v = 0; v < argc; v++)
     invocation << argv[v] << " ";
+  spdlog::info(invocation.get());
+  spdlog::info("      ************************         ");
+  spdlog::info("{}: must call with at least 1 argument...", argv[0]);
+  spdlog::info(" <main> <icfile> [optional args]");
+  spdlog::info("Parameters:");
+  spdlog::info("<icfile> ");
+  spdlog::info("\tCan be an ASCII parameter-file for 1D and 2D shocktubes.");
+  spdlog::info("\tOtherwise should be a restart-file in FITS or Silo format.");
   spdlog::info(
-      "{}\n      ************************         \n{}: must call with at least 1 argument...\n <main> <icfile> [optional args]\nParameters:\n<icfile> \n\tCan be an ASCII parameter-file for 1D and 2D shocktubes.\n\tOtherwise should be a restart-file in FITS or Silo format.\n\n[optional args] are in the format <name>=<value> with no spaces.\n\n\n*********** DATA I/O OPTIONS ************\n\t redirect=string : filename with path to redirect stdout/stderr to\n\t op_criterion=N  : 0=output every I steps, 1=output every D time units.\n\t opfreq=N        : Save snapshot every Nth timestep  (if op_criterion=0).\n\t opfreq_time=D   : Save snapshot every Dth time unit (if op_criterion=1).\n\t finishtime=D    : set time to finish simulation, in code time units.\n\t optype=S        : Specify type of output file, [1,text]=TEXT,[2,fits]=FITS,[4,both]=FITS+TEXT,[5,silo]=SILO,[6]=SILO+TEXT.\n\t outfile=NAME    : Replacement snapshot filename, with path.\n\n*********** PHYSICS/Grid OPTIONS *************\n\t ooa=N         : modify order of accuracy (either 1 or 2).\n\t AVtype=N      : modify type of artificial viscosity: 0=none, 1=Falle,Komissarov,Joarder(1998), 3=Sanders et al.(1998)[H-correction], 4=both 1+3.\n\t EtaVisc=D     : modify viscosity parameter to the given double precision value.\n\t cfl=D         : change the CFL no. for the simulation, in range (0,1).\n\t cooling=N     : cooling=0 for no cooling, >0 for different prescriptions.\t solver=N      :\n\t\t 0 = Lax-Friedrichs Flux\n\t\t 1 = Linear Riemann Solver : HD/MHD (Falle, Komissarov, Joarder, 1998),\n\t\t 2 = Exact Riemann Solver  : HD (Hirsch (199X), Toro, 1999)\n\t\t 3 = Hybrid Riemann Solver (1+2)         : HD \n\t\t 4 = Roe Conserved Variables flux solver : HD/MHD (e.g. Toro, 1999, Stone, Gardiner et al. 2008)\n\t\t 5 = Roe Primitive Variables flux solver : HD (e.g. Stone, Gardiner et al. 2008)\n\t\t 6 = Flux vector splitting : HD only (van Leer, 1982) \n\t\t 7 = HLLD solver : MHD only \n\t\t 8 = HLL  solver : HD/MHD \n\n*********** PARALLEL CODE ONLY *************\n\t maxwalltime=D : change the max. runtime to D in hours.\n\n\n*********** NESTED GRID CODE ONLY *************\n\t nlevels=N     : modify number of levels in NG grid.\n\t wind_radius_N=D : change radius of boundary for wind source N to value D (in cm)\n\n     *********************************************\n\n",
-      invocation.get(), argv[0]);
+      "[optional args] are in the format <name>=<value> with no spaces.");
+  spdlog::info("*********** DATA I/O OPTIONS ************");
+  spdlog::info(
+      "\t redirect=string : filename with path to redirect stdout/stderr to");
+  spdlog::info(
+      "\t op_criterion=N  : 0=output every I steps, 1=output every D time units.");
+  spdlog::info(
+      "\t opfreq=N        : Save snapshot every Nth timestep  (if op_criterion=0).");
+  spdlog::info(
+      "\t opfreq_time=D   : Save snapshot every Dth time unit (if op_criterion=1).");
+  spdlog::info(
+      "\t finishtime=D    : set time to finish simulation, in code time units.");
+  spdlog::info(
+      "\t optype=S        : Specify type of output file, [1,text]=TEXT,[2,fits]=FITS,[4,both]=FITS+TEXT,[5,silo]=SILO,[6]=SILO+TEXT.");
+  spdlog::info(
+      "\t outfile=NAME    : Replacement snapshot filename, with path.");
+  spdlog::info("*********** PHYSICS/Grid OPTIONS *************");
+  spdlog::info("\t ooa=N         : modify order of accuracy (either 1 or 2).");
+  spdlog::info(
+      "\t AVtype=N      : modify type of artificial viscosity: 0=none, 1=Falle,Komissarov,Joarder(1998), 3=Sanders et al.(1998)[H-correction], 4=both 1+3.");
+  spdlog::info(
+      "\t EtaVisc=D     : modify viscosity parameter to the given double precision value.");
+  spdlog::info(
+      "\t cfl=D         : change the CFL no. for the simulation, in range (0,1).");
+  spdlog::info(
+      "\t cooling=N     : cooling=0 for no cooling, >0 for different prescriptions.\t solver=N      :");
+  spdlog::info("\t\t 0 = Lax-Friedrichs Flux");
+  spdlog::info(
+      "\t\t 1 = Linear Riemann Solver : HD/MHD (Falle, Komissarov, Joarder, 1998),");
+  spdlog::info(
+      "\t\t 2 = Exact Riemann Solver  : HD (Hirsch (199X), Toro, 1999)");
+  spdlog::info("\t\t 3 = Hybrid Riemann Solver (1+2)         : HD ");
+  spdlog::info(
+      "\t\t 4 = Roe Conserved Variables flux solver : HD/MHD (e.g. Toro, 1999, Stone, Gardiner et al. 2008)");
+  spdlog::info(
+      "\t\t 5 = Roe Primitive Variables flux solver : HD (e.g. Stone, Gardiner et al. 2008)");
+  spdlog::info("\t\t 6 = Flux vector splitting : HD only (van Leer, 1982) ");
+  spdlog::info("\t\t 7 = HLLD solver : MHD only");
+  spdlog::info("\t\t 8 = HLL  solver : HD/MHD ");
+  spdlog::info("*********** PARALLEL CODE ONLY *************");
+  spdlog::info("\t maxwalltime=D : change the max. runtime to D in hours.");
+  spdlog::info("*********** NESTED GRID CODE ONLY *************");
+  spdlog::info("\t nlevels=N     : modify number of levels in NG grid.");
+  spdlog::info(
+      "\t wind_radius_N=D : change radius of boundary for wind source N to value D (in cm)");
+  spdlog::info("     *********************************************");
 }
 
 
@@ -919,7 +971,7 @@ int sim_init::initial_conserved_quantities(class GridBaseClass *grid)
 {
 #ifdef TEST_CONSERVATION
   // Energy, and Linear Momentum in x-direction.
-  std::vector<pion_flt> u(SimPM.nvar);
+  std::vector<pion_flt> u(SimPM.nvar, 0.0);
   double dx = grid->DX();
   double dv = 0.0;
   initERG   = 0.;

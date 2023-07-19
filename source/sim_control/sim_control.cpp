@@ -315,7 +315,7 @@ int sim_control::Time_Int(
 /// pressure on the full domain and outputs it to screen
 ///
 void sim_control::calculate_magnetic_pressure(
-    class GridBaseClass *grid  ///< address of vector of grid pointers.
+    class GridBaseClass *grid  ///< vector of grid pointers.
 )
 {
   //
@@ -345,7 +345,7 @@ void sim_control::calculate_magnetic_pressure(
 /// and output to screen.
 ///
 void sim_control::calculate_blastwave_radius(
-    class GridBaseClass *grid  ///< address of vector of grid pointers.
+    class GridBaseClass *grid  ///< vector of grid pointers.
 )
 {
   //
@@ -411,7 +411,7 @@ int sim_control::check_energy_cons(class GridBaseClass *grid)
 {
 #ifdef TEST_CONSERVATION
   // Energy, and Linear Momentum in x-direction.
-  std::vector<pion_flt> u(SimPM.nvar);
+  std::vector<pion_flt> u(SimPM.nvar, 0.0);
   double nowERG  = 0.;
   double nowMMX  = 0.;
   double nowMMY  = 0.;
@@ -451,8 +451,8 @@ int sim_control::check_energy_cons(class GridBaseClass *grid)
 /*****************************************************************/
 /*********************** FINISH SIMULATION ***********************/
 /*****************************************************************/
-int sim_control::Finalise(vector<class GridBaseClass *>
-                              &grid  ///< address of vector of grid pointers.
+int sim_control::Finalise(
+    vector<class GridBaseClass *> &grid  ///< vector of grid pointers.
 )
 {
   int err = 0;

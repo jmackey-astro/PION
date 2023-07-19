@@ -747,6 +747,10 @@ public:
       class ReadParams *,    ///< pointer to parameter list.
       class GridBaseClass *  ///< pointer to grid
   );
+
+protected:
+  int eqns;  ///< set to 1 for euler eqns, 2 for mhd equations
+             ///< (including all divB cleaning methods)
 };
 
 

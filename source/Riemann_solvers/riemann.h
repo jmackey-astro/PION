@@ -31,6 +31,7 @@
 #ifndef RIEMANN_H
 #define RIEMANN_H
 
+#include <array>
 #include <vector>
 
 #include "defines/functionality_flags.h"

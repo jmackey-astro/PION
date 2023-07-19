@@ -411,11 +411,11 @@ int time_integrator::calc_RT_microphysics_dU(
     // x-column of cells associated with each starting cell.
     for (int ax3 = 0; ax3 < nx3; ax3++) {
       for (int ax2 = 0; ax2 < nx2; ax2++) {
-        vector<struct rt_source_data> heating;
-        vector<struct rt_source_data> ionize;
+        std::vector<struct rt_source_data> heating;
+        std::vector<struct rt_source_data> ionize;
         cell *c = 0;
-        std::vector<pion_flt> p(SimPM.nvar);
-        std::vector<pion_flt> ui(SimPM.nvar), uf(SimPM.nvar);
+        std::vector<pion_flt> p(SimPM.nvar, 0.0);
+        std::vector<pion_flt> ui(SimPM.nvar, 0.0), uf(SimPM.nvar, 0.0);
         double tt = 0.0;
         int err   = 0;
         int index[3];
@@ -537,9 +537,8 @@ int time_integrator::calc_noRT_microphysics_dU(
     for (int ax3 = 0; ax3 < nx3; ax3++) {
       for (int ax2 = 0; ax2 < nx2; ax2++) {
         std::vector<pion_flt> p(
-            SimPM.nvar);  // temporary state vector for output state.
-        std::vector<pion_flt> ui(SimPM.nvar),
-            uf(SimPM.nvar);  // conserved variable states.
+            SimPM.nvar, 0.0);  // temporary vec: output state.
+        std::vector<pion_flt> ui(SimPM.nvar, 0.0), uf(SimPM.nvar, 0.0);
         double tt = 0.;  // temperature returned at end of microphysics step.
         cell *c   = grid->FirstPt_All();
         int err   = 0;
@@ -885,9 +884,9 @@ int time_integrator::calc_Hcorrection(
           index[x3] = 0;
           cpt       = grid->get_cell_all(index[0], index[1], index[2]);
           // Slope and edge state temporary arrays
-          std::vector<pion_flt> edgeR(SimPM.nvar), edgeL(SimPM.nvar);
-          std::vector<pion_flt> slope_cpt(SimPM.nvar), slope_npt(SimPM.nvar),
-              temp(SimPM.nvar);
+          std::vector<pion_flt> edgeR(SimPM.nvar, 0.0), edgeL(SimPM.nvar, 0.0);
+          std::vector<pion_flt> slope_cpt(SimPM.nvar, 0.0),
+              slope_npt(SimPM.nvar, 0.0), temp(SimPM.nvar, 0.0);
 
           // Set three cell pointers (2nd order slopes have a 3-point
           // stencil).
@@ -1102,13 +1101,13 @@ int time_integrator::dynamics_dU_column(
 
   // Calculate Flux at positive (right) boundary of cell for the
   // current cell (Fr_this) and the negative neighbour (Fr_prev).
-  std::vector<pion_flt> Fr_prev(SimPM.nvar);
-  std::vector<pion_flt> Fr_this(SimPM.nvar);
-  std::vector<pion_flt> slope_cpt(SimPM.nvar);
-  std::vector<pion_flt> slope_npt(SimPM.nvar);
-  std::vector<pion_flt> edgeL(SimPM.nvar);
-  std::vector<pion_flt> edgeR(SimPM.nvar);
-  std::vector<pion_flt> pstar(SimPM.nvar);
+  std::vector<pion_flt> Fr_prev(SimPM.nvar, 0.0);
+  std::vector<pion_flt> Fr_this(SimPM.nvar, 0.0);
+  std::vector<pion_flt> slope_cpt(SimPM.nvar, 0.0);
+  std::vector<pion_flt> slope_npt(SimPM.nvar, 0.0);
+  std::vector<pion_flt> edgeL(SimPM.nvar, 0.0);
+  std::vector<pion_flt> edgeR(SimPM.nvar, 0.0);
+  std::vector<pion_flt> pstar(SimPM.nvar, 0.0);
   std::vector<pion_flt> temp;
 
   //

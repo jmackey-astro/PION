@@ -212,6 +212,12 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
   for (c_iter = b->NGrecvF2C[i].begin(); c_iter != b->NGrecvF2C[i].end();
        ++c_iter) {
     c = (*c_iter);
+    // if cell is not on the domain (i.e. wind boundary, then ignore it)
+    if (!c->isdomain) {
+      i_el++;
+      continue;
+    }
+
     for (int v = 0; v < nv; v++)
       cd[v] = 0.0;
 
@@ -232,28 +238,6 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
     // values stored in first nvar elements of "cd".
     solver->UtoP(cd.data(), c->Ph, par.EP.MinTemperature, par.gamma);
 
-    if (1 == 0 && level == par.grid_nlevels - 2
-        && (fabs(b->avg[i_el].c[0]->P[PG] - c->P[PG]) / c->P[PG]) > 0.1) {
-      std::vector<pion_flt> d(par.nvar);
-      pion_flt *x;
-      solver->PtoU(b->avg[i_el].c[0]->Ph, d.data(), par.gamma);
-      spdlog::info("file cell 0 U  {}", d);
-      x = b->avg[i_el].c[0]->Ph;
-      spdlog::info("fine cell 0 Ph {}", std::vector<pion_flt>(x, x + par.nvar));
-      spdlog::info("fine cell 0 P  {}", b->avg[i_el].c[0]->P);
-
-      solver->PtoU(b->avg[i_el].c[1]->Ph, d.data(), par.gamma);
-      spdlog::info("file cell 1 U  {}", d);
-      x = b->avg[i_el].c[1]->Ph;
-      spdlog::info("fine cell 1 Ph {}", std::vector<pion_flt>(x, x + par.nvar));
-      spdlog::info("fine cell 1 P  {}", b->avg[i_el].c[1]->P);
-
-      spdlog::info("coarse cell U {}", cd);
-      x = c->Ph;
-      spdlog::info("coarse cell Ph {}", std::vector<pion_flt>(x, x + par.nvar));
-      spdlog::info("coarse cell P {}", c->P);
-      spdlog::info("  ");
-    }
     //
     // if full step then assign to c->P as well as c->Ph.
     //

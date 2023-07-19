@@ -244,17 +244,17 @@ int main(int argc, char **argv)
   for (int i = 0; i < argc; i++) {
     if (args[i].find("maxwalltime=") != string::npos) {
       double tmp = atof((args[i].substr(12)).c_str());
-      if (!isfinite(tmp) || tmp < 0.0)
-        spdlog::error(
-            "{}: {}", "Don't recognise max walltime as a valid runtime!", tmp);
-
+      if (!isfinite(tmp) || tmp < 0.0) {
+        spdlog::error("max walltime not valid: {}", tmp);
+        exit(1);
+      }
       sim_control->set_max_walltime(tmp * 3600.0);
 
 #ifdef PARALLEL
       if (myrank == 0) {
 #endif
         spdlog::info(
-            "\tResetting MAXWALLTIME to {} seconds, or {} hours.\n",
+            "      Resetting MAXWALLTIME to {} seconds, or {} hours.",
             sim_control->get_max_walltime(),
             sim_control->get_max_walltime() / 3600.0);
 #ifdef PARALLEL

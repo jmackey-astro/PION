@@ -370,7 +370,7 @@ int FV_solver_Hydro_Euler::dU_Cell(
     const double dt                      // cell TimeStep, dt.
 )
 {
-  std::vector<pion_flt> u1(eq_nvar);
+  std::vector<pion_flt> u1(eq_nvar, 0.0);
   //
   // This calculates -dF/dx
   //

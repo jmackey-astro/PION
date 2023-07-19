@@ -107,9 +107,7 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
   }
 #endif  // NDEBUG
   int err = 0;
-  std::vector<double> ustar(eq_nvar);
-  for (int v = 0; v < eq_nvar; v++)
-    ustar[v] = 0.0;
+  std::vector<double> ustar(eq_nvar, 0.0);
   for (int v = 0; v < eq_nvar; v++)
     flux[v] = 0.0;
   for (int v = 0; v < eq_nvar; v++)
@@ -359,7 +357,7 @@ int FV_solver_mhd_ideal_adi::dU_Cell(
     const double dt                      // cell TimeStep, dt.
 )
 {
-  std::vector<pion_flt> u1(eq_nvar);
+  std::vector<pion_flt> u1(eq_nvar, 0.0);
   // This calculates -dF/dx
   int err = DivStateVectorComponent(
       c, grid, d, eq_nvar, fn.data(), fp.data(), u1.data());
@@ -397,10 +395,7 @@ int FV_solver_mhd_ideal_adi::MHDsource(
                 + Cl.Ph[eqBZ] * Cl.Ph[eqVZ];
   double uB_r = Cr.Ph[eqBX] * Cr.Ph[eqVX] + Cr.Ph[eqBY] * Cr.Ph[eqVY]
                 + Cr.Ph[eqBZ] * Cr.Ph[eqVZ];
-  std::vector<pion_flt> Powell_l(eq_nvar), Powell_r(eq_nvar);
-  for (int v = 0; v < eq_nvar; v++) {
-    Powell_l[v] = Powell_r[v] = 0.0;
-  }
+  std::vector<pion_flt> Powell_l(eq_nvar, 0.0), Powell_r(eq_nvar, 0.0);
   Powell_l[eqMMX] = Cl.Ph[eqBX];
   Powell_l[eqMMY] = Cl.Ph[eqBY];
   Powell_l[eqMMZ] = Cl.Ph[eqBZ];
@@ -778,10 +773,7 @@ int FV_solver_mhd_mixedGLM_adi::MHDsource(
   double sm = 0.5 * (Cl.Ph[eqSI] + Cr.Ph[eqSI]);
   FV_solver_mhd_ideal_adi::MHDsource(grid, Cl, Cr, Pl, Pr, d, pos, neg, dt);
 
-  std::vector<pion_flt> psi_l(eq_nvar), psi_r(eq_nvar);
-  for (int v = 0; v < eq_nvar; v++) {
-    psi_l[v] = psi_r[v] = 0.0;
-  }
+  std::vector<pion_flt> psi_l(eq_nvar, 0.0), psi_r(eq_nvar, 0.0);
   psi_l[eqERG] = Cl.Ph[eqVX] * Cl.Ph[eqSI];
   psi_l[eqPSI] = Cl.Ph[eqVX];
 
@@ -918,9 +910,9 @@ void cyl_FV_solver_mhd_ideal_adi::geometric_source(
 {
 
   if (d == Rcyl) {
-    double pm = (c.Ph[eqBX] * c.Ph[eqBX] + c.Ph[eqBY] * c.Ph[eqBY]
-                 + c.Ph[eqBZ] * c.Ph[eqBZ])
-                / 2.;
+    double pm = 0.5
+                * (c.Ph[eqBX] * c.Ph[eqBX] + c.Ph[eqBY] * c.Ph[eqBY]
+                   + c.Ph[eqBZ] * c.Ph[eqBZ]);
     switch (OA) {
       case OA1:
         dU[eqMMX] += (c.Ph[eqPG] + pm) / CI.get_dpos(c, Rcyl);
@@ -970,10 +962,7 @@ int cyl_FV_solver_mhd_ideal_adi::MHDsource(
                 + Cl.Ph[eqBZ] * Cl.Ph[eqVZ];
   double uB_r = Cr.Ph[eqBX] * Cr.Ph[eqVX] + Cr.Ph[eqBY] * Cr.Ph[eqVY]
                 + Cr.Ph[eqBZ] * Cr.Ph[eqVZ];
-  std::vector<pion_flt> Powell_l(eq_nvar), Powell_r(eq_nvar);
-  for (int v = 0; v < eq_nvar; v++) {
-    Powell_l[v] = Powell_r[v] = 0.0;
-  }
+  std::vector<pion_flt> Powell_l(eq_nvar, 0.0), Powell_r(eq_nvar, 0.0);
   Powell_l[eqMMX] = Cl.Ph[eqBX];
   Powell_l[eqMMY] = Cl.Ph[eqBY];
   Powell_l[eqMMZ] = Cl.Ph[eqBZ];
@@ -1137,10 +1126,7 @@ int cyl_FV_solver_mhd_mixedGLM_adi::MHDsource(
   double sm = 0.5 * (Cl.Ph[eqSI] + Cr.Ph[eqSI]);
   cyl_FV_solver_mhd_ideal_adi::MHDsource(grid, Cl, Cr, Pl, Pr, d, pos, neg, dt);
 
-  std::vector<pion_flt> psi_l(eq_nvar), psi_r(eq_nvar);
-  for (int v = 0; v < eq_nvar; v++) {
-    psi_l[v] = psi_r[v] = 0.0;
-  }
+  std::vector<pion_flt> psi_l(eq_nvar, 0.0), psi_r(eq_nvar, 0.0);
   psi_l[eqERG] = Cl.Ph[eqVX] * Cl.Ph[eqSI];
   psi_l[eqPSI] = Cl.Ph[eqVX];
 

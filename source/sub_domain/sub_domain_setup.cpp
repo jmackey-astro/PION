@@ -143,7 +143,7 @@ int Sub_domain::decomposeDomain(
 #endif
 
   Ncell           = 1;
-  neighbour_ranks = vector<int>(2 * m_ndim);
+  neighbour_ranks = vector<int>(2 * m_ndim, -1);
 
   for (int i = 0; i < m_ndim; i++) {
     range[i]              = level.Range[i] / num_subdomains[i];
@@ -389,7 +389,7 @@ void Sub_domain::create_abutting_domains_list()
 void Sub_domain::evaluate_parent_process(
     const class SimParams &par, const int level)
 {
-  vector<double> centre(par.ndim);
+  vector<double> centre(par.ndim, 0.0);
   for (int i = 0; i < par.ndim; i++)
     centre[i] = 0.5 * (Xmin[i] + Xmax[i]);
 
@@ -518,7 +518,7 @@ void Sub_domain::determine_child_processes(
   }
 
   unordered_set<int> child_ranks;
-  vector<double> cursor(par.ndim);
+  vector<double> cursor(par.ndim, 0.0);
   determine_child_ranks(par, level, child_ranks, cursor, 0);
 
   if (!child_ranks.empty()) {
@@ -625,7 +625,7 @@ void Sub_domain::evaluate_child_neighbours(
   if (par.ndim == 1) return;
 
   for (int i = 0; i < par.ndim; ++i) { /* per dimension */
-    vector<double> cursor(par.ndim);
+    vector<double> cursor(par.ndim, 0.0);
     /* ranks of neighbours in dimension i in negative and positive directions,
      * neighbours[0] is negative, neighbours[1] is positive */
     array<unordered_set<int>, 2> neighbours;

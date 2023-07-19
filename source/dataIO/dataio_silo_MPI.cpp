@@ -217,10 +217,12 @@ int dataio_silo_pllel::ReadData(
   }
 
   // check numfiles was read from header
-  if (numfiles < 0)
+  if (numfiles < 0) {
     spdlog::error(
-        "{}: {}", "Failed to get numfiles from header! but error not detected!",
+        "Failed to get numfiles from header! but error not detected! {}",
         numfiles);
+    numfiles = 1;
+  }
   //  cout <<"\tnumfiles="<<numfiles<<" and nproc="<<mpiPM->nproc<<"\n";
 
   //
@@ -268,7 +270,7 @@ int dataio_silo_pllel::ReadData(
   string mydir;
   set_dir_in_file(mydir, mpiPM->get_myrank(), myrank_ingroup, 0);
   if (SimPM.grid_nlevels > 0)
-    spdlog::error("{}: {}", "dataio silo MPI levels", SimPM.grid_nlevels);
+    spdlog::info("dataio silo MPI levels", SimPM.grid_nlevels);
   // temp.str("");
   // temp << "level_"; temp.width(4); temp << mpiPM->get_myrank() <<
   // "_domain_"; temp.width(4); temp<<myrank_ingroup; mydir = temp.str();

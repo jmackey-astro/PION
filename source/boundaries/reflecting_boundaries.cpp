@@ -95,13 +95,15 @@ int reflecting_bc::BC_assign_REFLECTING(
     // partner cell for each boundary cell is is 1 cell away for 1st boundary
     // cell, 3 for the next, 5 for the next, etc.  "isedge" is an -ve integer
     // giving how many cells off the boundary we are (for off-grid data).
-    for (int v = -(*bpt)->isedge; v > (*bpt)->isedge; v--) {
+    for (int v = -(*bpt)->isedge; v > (*bpt)->isedge + 1; v--) {
       temp = grid->NextPt(*temp, b->ondir);
     }
     if (!temp) {
       spdlog::error("Got lost assigning reflecting bcs. {}", temp->id);
       exit(6);
     }
+    // spdlog::info("rbc: bpt pos {}, isedge {}, cell pos {}",
+    //              (*bpt)->pos[0],(*bpt)->isedge,temp->pos[0]);
     for (int v = 0; v < par.nvar; v++)
       (*bpt)->P[v] = temp->P[v] * b->refval[v];
     for (int v = 0; v < par.nvar; v++)
@@ -140,6 +142,11 @@ int reflecting_bc::BC_update_REFLECTING(
   //
   list<cell *>::iterator c = b->data.begin();
   for (c = b->data.begin(); c != b->data.end(); ++c) {
+    // if ((*c)->pos[0]==-1) {
+    //  spdlog::info("1. pos {}, vx = {:12.3e}, ngb pos {}, vx = {:12.3e}",
+    //              (*c)->pos[0], (*c)->Ph[VX], (*c)->npt->pos[0],
+    //              (*c)->npt->Ph[VX]);
+    //}
     for (int v = 0; v < par.nvar; v++) {
       (*c)->Ph[v] = (*c)->npt->Ph[v] * b->refval[v];
     }
@@ -150,6 +157,11 @@ int reflecting_bc::BC_update_REFLECTING(
         (*c)->P[v] = (*c)->npt->P[v] * b->refval[v];
       }
     }
+    // if ((*c)->pos[0]==-1) {
+    //  spdlog::info("2. pos {}, vx = {:12.3e}, ngb pos {}, vx = {:12.3e}",
+    //              (*c)->pos[0], (*c)->Ph[VX], (*c)->npt->pos[0],
+    //              (*c)->npt->Ph[VX]);
+    //}
   }  // all cells.
   return 0;
 }

@@ -463,17 +463,23 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
   for (int v = 0; v < par.nvar; v++)
     cU[v] = 0.5 * (cU[v] - fU[v]) / c_vol;
 
-  for (int v = 0; v < par.nvar; v++)
-    f1U[v] += cU[v];
-  solver->UtoP(f1U.data(), f1.Ph, par.EP.MinTemperature, par.gamma);
+  // if fine cell is on domain, then update it:
+  if (f1.isdomain) {
+    for (int v = 0; v < par.nvar; v++)
+      f1U[v] += cU[v];
+    solver->UtoP(f1U.data(), f1.Ph, par.EP.MinTemperature, par.gamma);
+  }
   for (int v = 0; v < par.nvar; v++)
     f1.P[v] = f1.Ph[v];
   for (int v = 0; v < par.nvar; v++)
     f1.dU[v] = 0.0;
 
-  for (int v = 0; v < par.nvar; v++)
-    f2U[v] += cU[v];
-  solver->UtoP(f2U.data(), f2.Ph, par.EP.MinTemperature, par.gamma);
+  // if fine cell is on domain, then update it:
+  if (f2.isdomain) {
+    for (int v = 0; v < par.nvar; v++)
+      f2U[v] += cU[v];
+    solver->UtoP(f2U.data(), f2.Ph, par.EP.MinTemperature, par.gamma);
+  }
   for (int v = 0; v < par.nvar; v++)
     f2.P[v] = f2.Ph[v];
   for (int v = 0; v < par.nvar; v++)
@@ -605,21 +611,24 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
   for (int v = 0; v < par.nvar; v++)
     cU[v] = 0.125 * (cU[v] - Utot[v]) / c_vol;
   for (int i = 0; i < 8; i++) {
-    for (int v = 0; v < par.nvar; v++)
-      fU[i][v] += cU[v];
-      // put scaled conserved variable vectors back into fine cells
+    // if fine cell is on domain, then update it:
+    if (fch[i]->isdomain) {
+      for (int v = 0; v < par.nvar; v++)
+        fU[i][v] += cU[v];
+        // put scaled conserved variable vectors back into fine cells
 #ifndef NDEBUG
-    err = solver->UtoP(
-        fU[i].data(), fch[i]->Ph, par.EP.MinTemperature, par.gamma);
-    if (err) {
-      spdlog::debug("c2f 3d utop() negative pressure?");
-      for (int v = 0; v < 8; v++) {
-        spdlog::debug("fu {} : {}", v, fU[v]);
+      err = solver->UtoP(
+          fU[i].data(), fch[i]->Ph, par.EP.MinTemperature, par.gamma);
+      if (err) {
+        spdlog::debug("c2f 3d utop() negative pressure?");
+        for (int v = 0; v < 8; v++) {
+          spdlog::debug("fu {} : {}", v, fU[v]);
+        }
       }
-    }
 #else
-    solver->UtoP(fU[i].data(), fch[i]->Ph, par.EP.MinTemperature, par.gamma);
+      solver->UtoP(fU[i].data(), fch[i]->Ph, par.EP.MinTemperature, par.gamma);
 #endif
+    }
 
     for (int v = 0; v < par.nvar; v++)
       fch[i]->P[v] = fch[i]->Ph[v];
@@ -736,33 +745,42 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
     cU[v] = 0.25 * (cU[v] - fU[v]) / c_vol;
 
   // put scaled conserved variable vectors back into fine cells
-  for (int v = 0; v < par.nvar; v++)
-    f1U[v] += cU[v];
-  solver->UtoP(f1U.data(), f1.Ph, par.EP.MinTemperature, par.gamma);
+  // if fine cell is on domain, then update it:
+  if (f1.isdomain) {
+    for (int v = 0; v < par.nvar; v++)
+      f1U[v] += cU[v];
+    solver->UtoP(f1U.data(), f1.Ph, par.EP.MinTemperature, par.gamma);
+  }
   for (int v = 0; v < par.nvar; v++)
     f1.P[v] = f1.Ph[v];
   for (int v = 0; v < par.nvar; v++)
     f1.dU[v] = 0.0;
 
-  for (int v = 0; v < par.nvar; v++)
-    f2U[v] += cU[v];
-  solver->UtoP(f2U.data(), f2.Ph, par.EP.MinTemperature, par.gamma);
+  if (f2.isdomain) {
+    for (int v = 0; v < par.nvar; v++)
+      f2U[v] += cU[v];
+    solver->UtoP(f2U.data(), f2.Ph, par.EP.MinTemperature, par.gamma);
+  }
   for (int v = 0; v < par.nvar; v++)
     f2.P[v] = f2.Ph[v];
   for (int v = 0; v < par.nvar; v++)
     f2.dU[v] = 0.0;
 
-  for (int v = 0; v < par.nvar; v++)
-    f3U[v] += cU[v];
-  solver->UtoP(f3U.data(), f3.Ph, par.EP.MinTemperature, par.gamma);
+  if (f3.isdomain) {
+    for (int v = 0; v < par.nvar; v++)
+      f3U[v] += cU[v];
+    solver->UtoP(f3U.data(), f3.Ph, par.EP.MinTemperature, par.gamma);
+  }
   for (int v = 0; v < par.nvar; v++)
     f3.P[v] = f3.Ph[v];
   for (int v = 0; v < par.nvar; v++)
     f3.dU[v] = 0.0;
 
-  for (int v = 0; v < par.nvar; v++)
-    f4U[v] += cU[v];
-  solver->UtoP(f4U.data(), f4.Ph, par.EP.MinTemperature, par.gamma);
+  if (f4.isdomain) {
+    for (int v = 0; v < par.nvar; v++)
+      f4U[v] += cU[v];
+    solver->UtoP(f4U.data(), f4.Ph, par.EP.MinTemperature, par.gamma);
+  }
   for (int v = 0; v < par.nvar; v++)
     f4.P[v] = f4.Ph[v];
   for (int v = 0; v < par.nvar; v++)

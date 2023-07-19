@@ -59,8 +59,7 @@ int sim_control_NG::Init(
     int typeOfFile,
     int narg,
     string *args,
-    vector<class GridBaseClass *>
-        &grid  ///< address of vector of grid pointers.
+    vector<class GridBaseClass *> &grid  ///< vector of grids.
 )
 {
 #ifndef NDEBUG
@@ -305,7 +304,7 @@ int sim_control_NG::initial_conserved_quantities(
 {
   // Energy, and Linear Momentum in x-direction.
 #ifdef TEST_CONSERVATION
-  std::vector<pion_flt> u(SimPM.nvar);
+  std::vector<pion_flt> u(SimPM.nvar, 0.0);
   initERG = 0.;
   initMMX = initMMY = initMMZ = 0.;
   initMASS                    = 0.0;
@@ -575,21 +574,19 @@ void sim_control_NG::calculate_blastwave_radius(
 // ##################################################################
 // ##################################################################
 
-int sim_control_NG::Finalise(vector<class GridBaseClass *>
-                                 &grid  ///< address of vector of grid pointers.
+int sim_control_NG::Finalise(
+    vector<class GridBaseClass *> &grid  ///< vector of grids.
 )
 {
   int err = 0;
-  spdlog::info(
-      "------------------------------------------------------------\n(sim_control::Finalise) FINALISING SIMULATION.");
+  spdlog::info("------------------------------------------------------------");
+  spdlog::info("(sim_control::Finalise) FINALISING SIMULATION.");
 #ifdef TEST_CONSERVATION
   err += check_energy_cons(grid);
 #endif /* TEST_CONSERVATION */
   err += output_data(grid);
   if (0 != err) {
-    spdlog::error(
-        "{}: Expected {} but got {}",
-        "(FINALISE::output_data) Something went wrong", 0, err);
+    spdlog::error("(FINALISE::output_data) error {}", err);
     exit(1);
   }
   spdlog::info(
@@ -970,7 +967,7 @@ int sim_control_NG::check_energy_cons(vector<class GridBaseClass *> &grid)
 {
 #ifdef TEST_CONSERVATION
   // Energy, and Linear Momentum in x-direction.
-  std::vector<pion_flt> u(SimPM.nvar);
+  std::vector<pion_flt> u(SimPM.nvar, 0.0);
   double nowERG  = 0.;
   double nowMMX  = 0.;
   double nowMMY  = 0.;

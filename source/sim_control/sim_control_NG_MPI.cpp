@@ -68,8 +68,7 @@ int sim_control_NG_MPI::Init(
     int typeOfFile,
     int narg,
     string *args,
-    vector<class GridBaseClass *>
-        &grid  ///< address of vector of grid pointers.
+    vector<class GridBaseClass *> &grid  ///< vector of grids.
 )
 {
   spdlog::debug("(pion) Init: infile = {}", infile);
@@ -169,7 +168,7 @@ int sim_control_NG_MPI::Init(
   // Set Ph[] = P[], and then implement the boundary conditions.
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     cell *c = grid[l]->FirstPt();
-    std::vector<double> u(SimPM.nvar);
+    std::vector<double> u(SimPM.nvar, 0.0);
     do {
       // make sure temperature of the gas is reasonable
       if (SimPM.timestep == 0) {
@@ -1472,7 +1471,7 @@ int sim_control_NG_MPI::initial_conserved_quantities(
 {
   // Energy, and Linear Momentum in x-direction.
 #ifdef TEST_CONSERVATION
-  std::vector<pion_flt> u(SimPM.nvar);
+  std::vector<pion_flt> u(SimPM.nvar, 0.0);
   initERG = 0.;
   initMMX = initMMY = initMMZ = 0.;
   initMASS                    = 0.0;
@@ -1525,7 +1524,7 @@ int sim_control_NG_MPI::check_energy_cons(vector<class GridBaseClass *> &grid)
 {
 #ifdef TEST_CONSERVATION
   // Energy, and Linear Momentum in x-direction.
-  std::vector<pion_flt> u(SimPM.nvar);
+  std::vector<pion_flt> u(SimPM.nvar, 0.0);
   double nowERG  = 0.;
   double nowMMX  = 0.;
   double nowMMY  = 0.;

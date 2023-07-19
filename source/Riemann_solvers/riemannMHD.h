@@ -31,6 +31,7 @@
 #include "equations/eqns_mhd_adiabatic.h"
 #include "riemann.h"
 
+#include <array>
 #include <string>
 
 /// \brief MHD Waves Enum */

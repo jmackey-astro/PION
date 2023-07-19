@@ -285,7 +285,6 @@ int main(int argc, char **argv)
   // ----------------------------------------------------------------
   // If we need to read in a snapshot to set the initial conditions, do
   // it here.
-#ifdef PION_NESTED
 #ifdef PARALLEL
 
   if (ics == "Supernova") {
@@ -298,14 +297,18 @@ int main(int argc, char **argv)
     }
 
     // read data from the input file onto the grid
+#ifdef PION_NESTED
     class dataio_silo_utility dd(SimPM, "DOUBLE", &SimPM.levels[0].sub_domain);
+#else
+    class dataio_silo_pllel dd(SimPM, "DOUBLE", &SimPM.levels[0].sub_domain);
+#endif
+
     err = dd.ReadData(inputfile, grid, SimPM);
     if (err) {
       spdlog::error("main_icgen: failed to read data.", err);
       exit(err);
     }
   }
-#endif
 #endif
   // ----------------------------------------------------------------
 

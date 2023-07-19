@@ -44,7 +44,7 @@ ${mpi} ../icgen-ug \
 ${mpi} ../pion-ug DMRm10t60_n160_0000.00000000.silo outfile=DMR_new_n160 \
   omp-nthreads=${nt} redirect=pion-ug-dmr || exit 1
 
-REF_FILE=DMRm10t60_n160_0000.00000370.silo
+REF_FILE=DMRm10t60_n160_0000.00000362.silo
 NEW_FILE=`ls DMR_new_n160_0000.*.silo | tail -n1`
 ../silocompare . $NEW_FILE ${script_dir}/data $REF_FILE 0 cmp 2 > tmp.txt
 
