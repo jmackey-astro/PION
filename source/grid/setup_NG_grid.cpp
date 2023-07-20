@@ -217,7 +217,7 @@ int setup_NG_grid::setup_grid(
     SimPM.Nbc_DD = 2;
   }
   else
-    spdlog::error("{}: {}", "unhandles spatial order of accuracy", SimPM.spOOA);
+    spdlog::error("{}: {}", "unhandled spatial order of accuracy", SimPM.spOOA);
 
   // May need to setup extra data in each cell.
   CI.set_ndim(SimPM.ndim);

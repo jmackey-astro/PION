@@ -456,9 +456,13 @@ int FV_solver_base::wind_acceleration_source(
   double acc_neg_p = 0.0, acc_pos_p = 0.0;
 
   // first get acceleration at current and previous step (t-0.5*dt)
+  bool src = false;
   for (int id = 0; id < SWP.Nsources; id++) {
     // spdlog::info("src {}: acc = {}",id,SWP.params[id]->acc);
-    if (!SWP.params[id]->acc) continue;
+    if (!SWP.params[id]->acc)
+      continue;
+    else
+      src = true;
     // spdlog::info("solver WA: {} , c.id {} ,c.Ph[RO] {}", id, c.id, c.Ph[RO]);
     acc  = CI.get_wind_acceleration_el(c, id, a);
     dacc = CI.get_wind_dacceleration_el(c, id, a);
@@ -468,6 +472,11 @@ int FV_solver_base::wind_acceleration_source(
     dacc = CI.get_wind_dacceleration_prev_el(c, id, a);
     acc_neg_p += acc - dacc;
     acc_pos_p += acc + dacc;
+  }
+
+  if (!src) {
+    // spdlog::info("no source to accelerate");
+    return 0;
   }
 
   // these formulae use the time derivative of the acceleration to predict

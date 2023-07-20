@@ -951,6 +951,10 @@ int UniformGrid::SetupBCs(
   // - cz is a pointer to the cells in increasing z
   //
   cz = FirstPt();
+  while (NextPt(*cz, YN) != 0)
+    cz = NextPt(*cz, YN);
+  while (NextPt(*cz, ZN) != 0)
+    cz = NextPt(*cz, ZN);
   // loop in ZP direction
   do {
     cy = cz;
@@ -970,9 +974,9 @@ int UniformGrid::SetupBCs(
         c = NextPt(*c, XP);
       }
       if (G_ndim > 1) cy = NextPt(*cy, YP);
-    } while (G_ndim > 1 && cy != 0 && cy->isgd);
+    } while (G_ndim > 1 && cy != 0);
     if (G_ndim > 2) cz = NextPt(*cz, ZP);
-  } while (G_ndim > 2 && cz != 0 && cz->isgd);
+  } while (G_ndim > 2 && cz != 0);
 
   spdlog::debug("Setup XN boundary, got {} grid cells", BC_bd[XN]->data.size());
 
@@ -986,6 +990,11 @@ int UniformGrid::SetupBCs(
   cz = FirstPt();
   while (NextPt(*cz, XP)->isgd)
     cz = NextPt(*cz, XP);
+  while (NextPt(*cz, YN) != 0)
+    cz = NextPt(*cz, YN);
+  while (NextPt(*cz, ZN) != 0)
+    cz = NextPt(*cz, ZN);
+
   // loop in ZP direction
   do {
     cy = cz;
@@ -1004,46 +1013,35 @@ int UniformGrid::SetupBCs(
         // spdlog::debug(" Adding cell {} to XP boundary", c->id);
       }
       if (G_ndim > 1) cy = NextPt(*cy, YP);
-    } while (G_ndim > 1 && cy != 0 && cy->isgd);
+    } while (G_ndim > 1 && cy != 0);
     if (G_ndim > 2) cz = NextPt(*cz, ZP);
-  } while (G_ndim > 2 && cz != 0 && cz->isgd);
+  } while (G_ndim > 2 && cz != 0);
   spdlog::debug("Setup XP boundary, got {} grid cells", BC_bd[XP]->data.size());
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
   //
-  // The YN/YP boundaries are different because they have the
-  // corner data too.
+  // The YN/YP boundaries
   //
   if (G_ndim > 1) {
     // --------------------------------------------------------------
     //
     // First YN boundary.
-    // Get to most negative cell, and add cells, progressing to
-    // the next one.
     //
-    cz = FirstPt();
-    while (NextPt(*cz, XN) != 0)
-      cz = NextPt(*cz, XN);
-    while (NextPt(*cz, YN) != 0)
-      cz = NextPt(*cz, YN);
-    //
+    cz = FirstPt_All();
     // loop in ZP-direction, at least once because there must be
     // at least one plane of boundary cells.
-    //
     do {
       cy = cz;
-      //
       // loop in the X-Y plane while we are in the YN boundary
       // region, and add all the cells.
-      //
       do {
         BC_bd[YN]->data.push_back(cy);
         cy = NextPt_All(*cy);
       } while (cy->pos[YY] < G_ixmin[YY]);
 
       if (G_ndim > 2) cz = NextPt(*cz, ZP);
-    } while (G_ndim > 2 && cz != 0 && cz->pos[ZZ] < G_ixmax[ZZ]);
+    } while (G_ndim > 2 && cz != 0);
     spdlog::debug(
         "Setup YN boundary, got {} grid cells", BC_bd[YN]->data.size());
     // --------------------------------------------------------------
@@ -1053,30 +1051,27 @@ int UniformGrid::SetupBCs(
     // Then YP boundary.
     // Get to the first row of YP boundary cells, move to the
     // first cell in the XY plane, and go from there.
-    //
     cz = FirstPt();
     while (cz->isgd)
       cz = NextPt(*cz, YP);
     while (NextPt(*cz, XN) != 0)
       cz = NextPt(*cz, XN);
+    while (NextPt(*cz, ZN) != 0)
+      cz = NextPt(*cz, ZN);
 
-    //
     // loop in ZP-direction, at least once because there must be
     // at least one plane of boundary cells.
-    //
     do {
       cy = cz;
-      //
       // loop in the X-Y plane while we are in the YP boundary
       // region, and add all the cells.
-      //
       do {
         BC_bd[YP]->data.push_back(cy);
         cy = NextPt_All(*cy);
       } while ((cy != 0) && (cy->pos[YY] > G_ixmax[YY]));
 
       if (G_ndim > 2) cz = NextPt(*cz, ZP);
-    } while (G_ndim > 2 && cz != 0 && cz->pos[ZZ] < G_ixmax[ZZ]);
+    } while (G_ndim > 2 && cz != 0);
 
     spdlog::debug(
         "Setup YP boundary, got {} grid cells", BC_bd[YP]->data.size());
@@ -1085,13 +1080,9 @@ int UniformGrid::SetupBCs(
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
-  //
   // Now the Z-boundary
-  //
   if (G_ndim > 2) {
-    //
     // ZN is easy... all points until pos[Z] > xmin[Z]
-    //
     cz = FirstPt_All();
     do {
       BC_bd[ZN]->data.push_back(cz);
@@ -1099,9 +1090,7 @@ int UniformGrid::SetupBCs(
     } while (cz->pos[ZZ] < G_ixmin[ZZ]);
     spdlog::debug(
         "Setup ZN boundary, got {} grid cells", BC_bd[ZN]->data.size());
-    //
     // ZP is also easy... all points with pos[Z] > xmax[Z]
-    //
     cz = LastPt();
     while (cz->pos[ZZ] < G_ixmax[ZZ])
       cz = NextPt_All(*cz);

@@ -906,10 +906,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list(
     const std::array<int, MAX_DIM> &fl_xmax   ///< level xmax of fine grid.
 )
 {
-  // In XN,XP direction we add cells with faces that touch the fine-
-  // level grid from the outside.
-  // In YN,YP direction we also add corner data
-  // In ZN,ZP direction we also add edge data
+  // UPDATE: in all directions we now add face, corner and edge data
   //
   // easier to have a function for different grid dimensions.
 #ifdef TEST_C2F
@@ -943,14 +940,14 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list(
 // ##################################################################
 
 void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_1D(
-    class SimParams &par,             ///< pointer to simulation parameters
-    class GridBaseClass *grid,        ///< pointer to coarse-level grid
-    struct c2f *bdata,                ///< pointer to list of cells
-    std::array<int, MAX_DIM> &ixmin,  ///< child grid xmin (integer)
-    std::array<int, MAX_DIM> &ixmax,  ///< child grid xmax (integer)
-    const int lf,                     ///< level of fine grid.
-    const std::array<int, MAX_DIM> &fl_xmin,  ///< level xmin of fine grid.
-    const std::array<int, MAX_DIM> &fl_xmax   ///< level xmax of fine grid.
+    class SimParams &par,              ///< pointer to simulation parameters
+    class GridBaseClass *grid,         ///< pointer to coarse-level grid
+    struct c2f *bdata,                 ///< pointer to list of cells
+    std::array<int, MAX_DIM> &ixmin,   ///< child grid xmin (integer)
+    std::array<int, MAX_DIM> &ixmax,   ///< child grid xmax (integer)
+    const int,                         ///< level of fine grid.
+    const std::array<int, MAX_DIM> &,  ///< level xmin of fine grid.
+    const std::array<int, MAX_DIM> &   ///< level xmax of fine grid.
 )
 {
   int bsize = grid->idx() * par.Nbc / 2;  // idx is >=2, Nbc is >=1.
@@ -990,7 +987,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
     struct c2f *bdata,                ///< pointer to list of cells
     std::array<int, MAX_DIM> &ixmin,  ///< child grid xmin (integer)
     std::array<int, MAX_DIM> &ixmax,  ///< child grid xmax (integer)
-    const int lf,                     ///< level of fine grid.
+    const int,                        ///< level of fine grid.
     const std::array<int, MAX_DIM> &fl_xmin,  ///< level xmin of fine grid.
     const std::array<int, MAX_DIM> &fl_xmax   ///< level xmax of fine grid.
 )
@@ -1009,8 +1006,12 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
     case XN:
       xn = ixmin[XX] - bsize;
       xp = ixmin[XX];
-      yn = ixmin[YY];
-      yp = ixmax[YY];
+      n  = (ixmin[YY] == fl_xmin[YY]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
+      yn = ixmin[YY] - n;
+      n  = (ixmax[YY] == fl_xmax[YY]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
+      yp = ixmax[YY] + n;
       break;
 
     case XP:
@@ -1078,7 +1079,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
     struct c2f *bdata,                ///< pointer to list of cells
     std::array<int, MAX_DIM> &ixmin,  ///< child grid xmin (integer)
     std::array<int, MAX_DIM> &ixmax,  ///< child grid xmax (integer)
-    const int lf,                     ///< level of fine grid.
+    const int,                        ///< level of fine grid.
     const std::array<int, MAX_DIM> &fl_xmin,  ///< level xmin of fine grid.
     const std::array<int, MAX_DIM> &fl_xmax   ///< level xmax of fine grid.
 )
@@ -1097,19 +1098,35 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
     case XN:
       xn = ixmin[XX] - bsize;
       xp = ixmin[XX];
-      yn = ixmin[YY];
-      yp = ixmax[YY];
-      zn = ixmin[ZZ];
-      zp = ixmax[ZZ];
+      n  = (ixmin[YY] == fl_xmin[YY]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
+      yn = ixmin[YY] - n;
+      n  = (ixmax[YY] == fl_xmax[YY]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
+      yp = ixmax[YY] + n;
+      n  = (ixmin[ZZ] == fl_xmin[ZZ]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
+      zn = ixmin[ZZ] - n;
+      n  = (ixmax[ZZ] == fl_xmax[ZZ]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
+      zp = ixmax[ZZ] + n;
       break;
 
     case XP:
       xn = ixmax[XX];
       xp = ixmax[XX] + bsize;
-      yn = ixmin[YY];
-      yp = ixmax[YY];
-      zn = ixmin[ZZ];
-      zp = ixmax[ZZ];
+      n  = (ixmin[YY] == fl_xmin[YY]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
+      yn = ixmin[YY] - n;
+      n  = (ixmax[YY] == fl_xmax[YY]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
+      yp = ixmax[YY] + n;
+      n  = (ixmin[ZZ] == fl_xmin[ZZ]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
+      zn = ixmin[ZZ] - n;
+      n  = (ixmax[ZZ] == fl_xmax[ZZ]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
+      zp = ixmax[ZZ] + n;
       break;
 
     case YN:
@@ -1119,11 +1136,14 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
       n  = (ixmax[XX] == fl_xmax[XX]) ? grid->idx() * par.Nbc / 2 :
                                         grid->idx() * par.Nbc_DD / 2;
       xp = ixmax[XX] + n;
-      xp = ixmax[XX] + n;
       yn = ixmin[YY] - bsize;
       yp = ixmin[YY];
-      zn = ixmin[ZZ];
-      zp = ixmax[ZZ];
+      n  = (ixmin[ZZ] == fl_xmin[ZZ]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
+      zn = ixmin[ZZ] - n;
+      n  = (ixmax[ZZ] == fl_xmax[ZZ]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
+      zp = ixmax[ZZ] + n;
       break;
 
     case YP:
@@ -1135,8 +1155,12 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
       xp = ixmax[XX] + n;
       yn = ixmax[YY];
       yp = ixmax[YY] + bsize;
-      zn = ixmin[ZZ];
-      zp = ixmax[ZZ];
+      n  = (ixmin[ZZ] == fl_xmin[ZZ]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
+      zn = ixmin[ZZ] - n;
+      n  = (ixmax[ZZ] == fl_xmax[ZZ]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
+      zp = ixmax[ZZ] + n;
       break;
 
     case ZN:

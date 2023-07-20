@@ -1125,12 +1125,16 @@ int DataIOBase::read_simulation_parameters(
       (*iter)->set_ptr(static_cast<void *>(&wind->acc));
       err = read_header_param(*iter);
       if (err) {
-        spdlog::debug(
-            "Error reading parameter {} setting to default value of 0.",
+        spdlog::warn(
+            "Error reading parameter {}, setting to default value of 0.",
             (*iter)->name);
         wind->acc = 0;
         err       = 0;
       }
+      // else {
+      //  spdlog::warn("read parameter  {} with value
+      //  {}",(*iter)->name,wind->acc);
+      //}
       // cout<<nm.str()<<" = "<<wind->acc<<"\n";
       iter++;
 

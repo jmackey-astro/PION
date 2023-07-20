@@ -33,8 +33,44 @@ int inflow_bc::BC_assign_INFLOW(
     b->refval = mem.myalloc(b->refval, par.nvar);
   }
 
+  double edge = 0.0;
+  enum axes a = XX;
+  switch (b->dir) {
+    case XN:
+      edge = grid->Xmin(XX);
+      a    = XX;
+      break;
+    case XP:
+      edge = grid->Xmax(XX);
+      a    = XX;
+      break;
+    case YN:
+      edge = grid->Xmin(YY);
+      a    = YY;
+      break;
+    case YP:
+      edge = grid->Xmax(YY);
+      a    = YY;
+      break;
+    case ZN:
+      edge = grid->Xmin(ZZ);
+      a    = ZZ;
+      break;
+    case ZP:
+      edge = grid->Xmax(ZZ);
+      a    = ZZ;
+      break;
+    case NO:
+    default:
+      spdlog::error("bad direction in inflow boundary");
+      exit(1);
+      break;
+  }
+
   list<cell *>::iterator bpt = b->data.begin();
   cell *temp;
+  std::array<double, MAX_DIM> dpos;
+
   unsigned int ct = 0;
   do {
     //
@@ -50,9 +86,31 @@ int inflow_bc::BC_assign_INFLOW(
     // so we use "isedge" to move 1 or 2 cells on-grid to get the
     // on-grid value.
     //
-    for (int v = 0; v > (*bpt)->isedge; v--) {
+    // for (int v = 0; v > (*bpt)->isedge; v--) {
+    //  temp = grid->NextPt(*temp, ondir);
+    //}
+    bool brk = false;
+    do {
       temp = grid->NextPt(*temp, ondir);
-    }
+      CI.get_dpos(*temp, dpos);
+      switch (b->dir) {
+        case XN:
+        case YN:
+        case ZN:
+          if (dpos[a] > edge) brk = true;
+          break;
+        case XP:
+        case YP:
+        case ZP:
+          if (dpos[a] < edge) brk = true;
+          break;
+        case NO:
+        default:
+          spdlog::error("bad direction in inflow boundary 2");
+          exit(1);
+          break;
+      }
+    } while (!brk);
 
     //
     // Now set inflow data to be the first on-grid cell's values.
@@ -64,6 +122,7 @@ int inflow_bc::BC_assign_INFLOW(
     for (int v = 0; v < par.nvar; v++)
       (*bpt)->dU[v] = 0.0;
 
+    (*bpt)->npt      = temp;
     (*bpt)->isdomain = false;
     // rep.printVec("Setting inflow boundary values:",temp->P,par.nvar);
     ct++;
@@ -73,14 +132,18 @@ int inflow_bc::BC_assign_INFLOW(
   for (int v = 0; v < par.nvar; v++)
     b->refval[v] = temp->P[v];
 
+#ifndef NDEBUG
   std::vector<pion_flt> tt(par.nvar);
   for (int v = 0; v < par.nvar; v++)
     tt[v] = temp->P[v];
   spdlog::info("INFLOW REF: {}", tt);
+#endif  // NDEBUG
 
-  if (ct != b->data.size())
+  if (ct != b->data.size()) {
     spdlog::error(
         "{}: {}", "BC_assign_INFLOW: missed some cells!", ct - b->data.size());
+    exit(1);
+  }
 
   return 0;
 }
@@ -89,8 +152,8 @@ int inflow_bc::BC_assign_INFLOW(
 // ##################################################################
 
 int inflow_bc::BC_update_INFLOW(
-    class SimParams &par,       ///< pointer to simulation parameters
-    class GridBaseClass *grid,  ///< pointer to grid.
+    class SimParams &par,   ///< pointer to simulation parameters
+    class GridBaseClass *,  ///< pointer to grid.
     struct boundary_data *b,
     const int,
     const int)
@@ -103,10 +166,14 @@ int inflow_bc::BC_update_INFLOW(
   for (c = b->data.begin(); c != b->data.end(); ++c) {
     for (int v = 0; v < par.nvar; v++)
       (*c)->dU[v] = 0.0;
-    for (int v = 0; v < par.nvar; v++)
-      (*c)->P[v] = b->refval[v];
-    for (int v = 0; v < par.nvar; v++)
-      (*c)->Ph[v] = b->refval[v];
+    for (int v = 0; v < par.nvar; v++) {
+      (*c)->P[v] = (*c)->npt->P[v];
+      //(*c)->P[v] = b->refval[v];
+    }
+    for (int v = 0; v < par.nvar; v++) {
+      (*c)->Ph[v] = (*c)->npt->Ph[v];
+      //(*c)->Ph[v] = b->refval[v];
+    }
     // rep.printVec("inflow boundary values:",(*c)->P,par.nvar);
   }  // all cells.
   return 0;

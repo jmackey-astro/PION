@@ -718,8 +718,8 @@ public:
   )
   {
 #ifndef NDEBUG
-    if (acc.size() < static_cast<long unsigned int>(ndim)) {
-      spdlog::error("acceleration vector too small {}  {}", acc.size(), ndim);
+    if (dacc.size() < static_cast<long unsigned int>(ndim)) {
+      spdlog::error("acceleration vector too small {}  {}", dacc.size(), ndim);
       exit(1);
     }
 #endif

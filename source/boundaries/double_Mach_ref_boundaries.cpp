@@ -145,6 +145,8 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
     exit(5);
   }
   cell *c = grid->FirstPt();
+  while (grid->NextPt(*c, XN) != 0)
+    c = grid->NextPt(*c, XN);
   //
   // if running in parallel, need to check that YN boundary of grid
   // is also YN boundary of full domain:
