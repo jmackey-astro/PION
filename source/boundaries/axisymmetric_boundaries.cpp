@@ -63,7 +63,7 @@ int axisymmetric_bc::BC_assign_AXISYMMETRIC(
   // ****\n\n";
   do {
     temp = (*bpt);
-    for (int v = 0; v > (*bpt)->isedge; v--) {
+    for (int v = -(*bpt)->isedge; v > (*bpt)->isedge + 1; v--) {
       temp = grid->NextPt(*temp, b->ondir);
     }
     if (!temp) {
@@ -79,7 +79,8 @@ int axisymmetric_bc::BC_assign_AXISYMMETRIC(
     (*bpt)->npt = temp;
     // CI.print_cell((*bpt));
     // axisymmetric boundary is a conformal mapping of the domain, so
-    // isdomain should be true.
+    // isdomain should be true??
+    (*bpt)->isdomain = false;
     ++bpt;
     ct++;
   } while (bpt != b->data.end());

@@ -20,8 +20,12 @@ using namespace std;
 //#define TEST_C2F
 //#define TEST_MPI_NG
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
     class SimParams &par,  ///< simulation parameters
@@ -237,8 +241,12 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     class SimParams &par,          ///< simulation parameters
@@ -427,8 +435,12 @@ void NG_MPI_coarse_to_fine_bc::BC_COARSE_TO_FINE_SEND_clear_sends(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
     class SimParams &par,  ///< simulation parameters
@@ -553,7 +565,8 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
 
     else if (par.ndim == 2) {
       // 4 fine cells per coarse cell
-      f_iter  = b->data.begin();
+      f_iter = b->data.begin();
+      spdlog::debug("2d c2f recv: data size = {}", b->data.size());
       cell *c = (*f_iter), *temp = 0;
       int row_y = c->pos[YY];
       int idx   = grid->idx();
@@ -639,8 +652,12 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
   return 0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     class SimParams &par,          ///< simulation parameters
@@ -706,9 +723,12 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     else if (par.spOOA == OA2)
       n_el = n_cell * ((1 + par.ndim) * par.nvar + 1 + par.ndim);
     else {
-      spdlog::error("{}: {}", "bad spOOA in MPI C2F", par.spOOA);
+      spdlog::error("bad OOA in MPI C2F: {}", par.spOOA);
       exit(11);
     }
+    spdlog::debug(
+        "c2f recv: nel = {}, ncell = {}, ndim = {}, nvar = {}", n_el, n_cell,
+        par.ndim, par.nvar);
     vector<pion_flt> buf(n_el);
     //
     // Receive data into buffer.  Data stored for each coarse cell:
@@ -717,7 +737,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     err = par.levels[l].sub_domain.receive_double_data(
         from_rank, recv_tag, recv_id, n_el, buf);
     if (err) {
-      spdlog::error("{}: {}", "(BC_update_C2F_RECV) getdata failed", err);
+      spdlog::error("(BC_update_C2F_RECV) get data failed: {}", err);
       exit(err);
     }
 
@@ -936,8 +956,12 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_1D(
     class SimParams &par,              ///< pointer to simulation parameters
@@ -978,8 +1002,12 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_1D(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
     class SimParams &par,             ///< pointer to simulation parameters
@@ -1008,37 +1036,49 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
       xp = ixmin[XX];
       n  = (ixmin[YY] == fl_xmin[YY]) ? grid->idx() * par.Nbc / 2 :
                                         grid->idx() * par.Nbc_DD / 2;
+      spdlog::debug("XN add_cells_to_C2F_send_list: YN {}", n);
       yn = ixmin[YY] - n;
       n  = (ixmax[YY] == fl_xmax[YY]) ? grid->idx() * par.Nbc / 2 :
                                         grid->idx() * par.Nbc_DD / 2;
+      spdlog::debug("XN add_cells_to_C2F_send_list: XP {}", n);
       yp = ixmax[YY] + n;
       break;
 
     case XP:
       xn = ixmax[XX];
       xp = ixmax[XX] + bsize;
-      yn = ixmin[YY];
-      yp = ixmax[YY];
+      n  = (ixmin[YY] == fl_xmin[YY]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
+      spdlog::debug("XP add_cells_to_C2F_send_list: YN {}", n);
+      yn = ixmin[YY] - n;
+      n  = (ixmax[YY] == fl_xmax[YY]) ? grid->idx() * par.Nbc / 2 :
+                                        grid->idx() * par.Nbc_DD / 2;
+      spdlog::debug("XP add_cells_to_C2F_send_list: YP {}", n);
+      yp = ixmax[YY] + n;
       break;
 
     case YN:
-      n  = (ixmin[XX] == fl_xmin[XX]) ? grid->idx() * par.Nbc / 2 :
-                                        grid->idx() * par.Nbc_DD / 2;
+      n = (ixmin[XX] == fl_xmin[XX]) ? grid->idx() * par.Nbc / 2 :
+                                       grid->idx() * par.Nbc_DD / 2;
+      spdlog::debug("YN add_cells_to_C2F_send_list: XN {}", n);
       xn = ixmin[XX] - n;
       n  = (ixmax[XX] == fl_xmax[XX]) ? grid->idx() * par.Nbc / 2 :
                                         grid->idx() * par.Nbc_DD / 2;
+      spdlog::debug("YN add_cells_to_C2F_send_list: XP {}", n);
       xp = ixmax[XX] + n;
       yn = ixmin[YY] - bsize;
       yp = ixmin[YY];
       break;
 
     case YP:
-      n  = (ixmin[XX] == fl_xmin[XX]) ? grid->idx() * par.Nbc / 2 :
-                                        grid->idx() * par.Nbc_DD / 2;
+      n = (ixmin[XX] == fl_xmin[XX]) ? grid->idx() * par.Nbc / 2 :
+                                       grid->idx() * par.Nbc_DD / 2;
+      spdlog::debug("YP add_cells_to_C2F_send_list: XN {}", n);
       xn = ixmin[XX] - n;
       n  = (ixmax[XX] == fl_xmax[XX]) ? grid->idx() * par.Nbc / 2 :
                                         grid->idx() * par.Nbc_DD / 2;
       xp = ixmax[XX] + n;
+      spdlog::debug("YP add_cells_to_C2F_send_list: XP {}", n);
       yn = ixmax[YY];
       yp = ixmax[YY] + bsize;
       break;
