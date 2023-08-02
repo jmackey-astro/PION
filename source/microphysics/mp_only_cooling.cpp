@@ -495,7 +495,7 @@ double mp_only_cooling::Edot(
     default:
       spdlog::error(
           "{}: {}", "bad cooling flag in mp_only_cooling::Edot", cooling_flag);
-      exit(1);
+      exit_pion(1);
       break;
   }
 

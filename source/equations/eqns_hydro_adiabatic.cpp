@@ -64,7 +64,7 @@ eqns_Euler::eqns_Euler(int nv) : eqns_base(nv)
 #endif
   if (eq_nvar < 5) {
     spdlog::error("{}: {}", "eqns_Euler initialised with eq_nvar<5.", eq_nvar);
-    exit(1);
+    exit_pion(1);
   }
   // cout <<"Setting Flux functions to X-dir: pu2f(), u2f()\n";
   //  pu2flux = &eqns_Euler::pu2f;
@@ -139,7 +139,7 @@ int eqns_Euler::UtoP(
     spdlog::debug("u : {}", std::vector<double>(u, u + eq_nvar));
     spdlog::debug("p : {}", std::vector<double>(p, p + eq_nvar));
     spdlog::error("{}: {}", "Negative density (eqns_Euler::UtoP)", p[eqRO]);
-    exit(1);
+    exit_pion(1);
     if (ct_rho < 1000) {
       ct_rho++;
       spdlog::debug("(eqns_Euler::UtoP) negative density!");

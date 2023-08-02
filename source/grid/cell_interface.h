@@ -611,7 +611,7 @@ public:
 #ifndef NDEBUG
     if (acc.size() < static_cast<long unsigned int>(ndim)) {
       spdlog::error("acceleration vector too small {}  {}", acc.size(), ndim);
-      exit(1);
+      exit_pion(1);
     }
 #endif
     for (int d = 0; d < ndim; d++)
@@ -696,7 +696,7 @@ public:
 #ifndef NDEBUG
     if (acc.size() < static_cast<long unsigned int>(ndim)) {
       spdlog::error("acceleration vector too small {}  {}", acc.size(), ndim);
-      exit(1);
+      exit_pion(1);
     }
 #endif
     // first reset new value to old value
@@ -720,7 +720,7 @@ public:
 #ifndef NDEBUG
     if (dacc.size() < static_cast<long unsigned int>(ndim)) {
       spdlog::error("acceleration vector too small {}  {}", dacc.size(), ndim);
-      exit(1);
+      exit_pion(1);
     }
 #endif
     // first reset new value to old value

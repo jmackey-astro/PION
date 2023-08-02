@@ -91,7 +91,7 @@ double time_integrator::advance_time(
     err += first_order_update(SimPM.dt, SimPM.tmOOA, grid);
     if (err) {
       spdlog::error("first_order_update() returned error {}", err);
-      exit(1);
+      exit_pion(1);
     }
 
     // Update boundary data to new state
@@ -102,7 +102,7 @@ double time_integrator::advance_time(
         SimPM, level, grid, spatial_solver, SimPM.simtime + SimPM.dt, OA1, OA1);
     if (err) {
       spdlog::error("second_order_update: error from BC update {}", err);
-      exit(1);
+      exit_pion(1);
     }
   }
 
@@ -112,7 +112,7 @@ double time_integrator::advance_time(
     err += first_order_update(0.5 * SimPM.dt, OA2, grid);
     if (err) {
       spdlog::error("1st order time-update error {}", err);
-      exit(1);
+      exit_pion(1);
     }
 
     // Update boundary data to intermediate state
@@ -124,7 +124,7 @@ double time_integrator::advance_time(
         OA2);
     if (err) {
       spdlog::error("second_order_update: error from BC update {}", err);
-      exit(1);
+      exit_pion(1);
     }
 
 
@@ -132,7 +132,7 @@ double time_integrator::advance_time(
     err += second_order_update(SimPM.dt, OA2, grid);
     if (err) {
       spdlog::error("Second order time-update error {}", err);
-      exit(1);
+      exit_pion(1);
     }
 
     // Update boundary data to new state.
@@ -144,7 +144,7 @@ double time_integrator::advance_time(
         OA2);
     if (err) {
       spdlog::error("second_order_update: error from BC update {}", err);
-      exit(1);
+      exit_pion(1);
     }
   }
   // Add in 3rd order PPM at some stage???
@@ -196,7 +196,7 @@ int time_integrator::first_order_update(
     err += RT_all_sources(SimPM, grid, 0);
     if (err) {
       spdlog::error("first_order_update: first calc_rt_cols() {}", err);
-      exit(1);
+      exit_pion(1);
     }
   }
 
@@ -208,7 +208,7 @@ int time_integrator::first_order_update(
   err += calc_dynamics_dU(dt, OA1, grid);
   if (err) {
     spdlog::error("first_order_update: error from calc_*_dU {}", err);
-    exit(1);
+    exit_pion(1);
   }
 
   //
@@ -217,7 +217,7 @@ int time_integrator::first_order_update(
   err += grid_update_state_vector(dt, OA1, ooa, grid);
   if (err) {
     spdlog::error("first_order_update: state-vec update {}", err);
-    exit(1);
+    exit_pion(1);
   }
 
   return err;
@@ -253,7 +253,7 @@ int time_integrator::second_order_update(
   err += RT_all_sources(SimPM, grid, 0);
   if (0 != err) {
     spdlog::error("second_order_update: RT {}", err);
-    exit(1);
+    exit_pion(1);
   }
 
   // Calculate updates for each physics module
@@ -262,14 +262,14 @@ int time_integrator::second_order_update(
   err += calc_dynamics_dU(dt, OA2, grid);
   if (err) {
     spdlog::error("second_order_update: error from calc_*_dU {}", err);
-    exit(1);
+    exit_pion(1);
   }
 
   // Now update Ph[i] to new values (and P[i] also if full step).
   err += grid_update_state_vector(dt, OA2, ooa, grid);
   if (err) {
     spdlog::error("second_order_update: state-vec update {}", err);
-    exit(1);
+    exit_pion(1);
   }
 
   return err;
@@ -297,7 +297,7 @@ int time_integrator::calc_conduction_dU(
   if (0 != err) {
     spdlog::error(
         "calc_conduction_dU: set_thermal_conduction_Edot() error {}", err);
-    exit(1);
+    exit_pion(1);
   }
   enum axes x1 = XX;
   enum axes x2 = YY;
@@ -495,7 +495,7 @@ int time_integrator::calc_RT_microphysics_dU(
         } while ((c = grid->NextPt(*c, XP)) != 0);  // loop over x-column cells
         if (err) {
           spdlog::error("Errors in calc_RT_microphysics_dU() {} {}", ax2, ax3);
-          exit(1);
+          exit_pion(1);
         }
       }  // ax2
     }    // ax3
@@ -580,7 +580,7 @@ int time_integrator::calc_noRT_microphysics_dU(
             }
             if (err) {
               CI.print_cell(*c);
-              exit(1);
+              exit_pion(1);
             }
 #endif  // TEST_INF
 
@@ -596,7 +596,7 @@ int time_integrator::calc_noRT_microphysics_dU(
                   c->id);
               CI.print_cell(*c);
               spdlog::info("error code = {}, level {}", err, grid->level());
-              exit(1);
+              exit_pion(1);
             }
             // New state is p[], old state is c->P[].  Get dU from these.
             spatial_solver->PtoU(c->P.data(), ui.data(), SimPM.gamma);
@@ -652,7 +652,7 @@ int time_integrator::calc_dynamics_dU(
   err = preprocess_data(step, SimPM, grid);
   if (err) {
     spdlog::error("calc_dynamics_dU() preprocess_data() ret {}", err);
-    exit(err);
+    exit_pion(err);
   }
 
   //
@@ -662,7 +662,7 @@ int time_integrator::calc_dynamics_dU(
   err = set_dynamics_dU(dt, step, grid);  //,time_ooa);
   if (0 != err) {
     spdlog::error("calc_dynamics_dU() set_dynamics_dU returned {}", err);
-    exit(err);
+    exit_pion(err);
   }
 
   //
@@ -676,7 +676,7 @@ int time_integrator::calc_dynamics_dU(
   err = spatial_solver->PostProcess_dU(dt, step, SimPM, grid);
   if (0 != err) {
     spdlog::error("calc_dynamics_dU() PostProcess_dU() ret {}", err);
-    exit(err);
+    exit_pion(err);
   }
   return 0;
 }
@@ -1048,7 +1048,7 @@ int time_integrator::set_dynamics_dU(
               *cpt, posdirs[i], negdirs[i], dt, space_ooa, grid);
           if (0 != return_value) {
             spdlog::error("set_dynamics_dU: column {}", return_value);
-            exit(return_value);
+            exit_pion(return_value);
           }
         }
       }
@@ -1116,13 +1116,13 @@ int time_integrator::dynamics_dU_column(
   cell *cpt = &startingPt;
   if (cpt == 0) {
     spdlog::error("(dynamics_dU_column) error finding left boundary cell");
-    exit(1);
+    exit_pion(1);
   }
   cell *npt  = grid->NextPt(*cpt, posdir);
   cell *n2pt = grid->NextPt(*npt, posdir);
   if (npt == 0 || n2pt == 0) {
     spdlog::error("Couldn't find two real cells in column", 0);
-    exit(1);
+    exit_pion(1);
   }
 
   //
@@ -1185,7 +1185,7 @@ int time_integrator::dynamics_dU_column(
         CI.print_cell(*cpt);
         CI.print_cell(*npt);
         spdlog::error("nans!!!");
-        exit(1);
+        exit_pion(1);
       }
     }
 #endif

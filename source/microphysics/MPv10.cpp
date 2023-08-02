@@ -295,7 +295,7 @@ MPv10::MPv10(
           &RS->sources[isrc], rt_data[N_rad_src - 1].strength);
       if (err) {
         spdlog::error("{}: {}", "multifreq photoionisation setup MPv10", err);
-        exit(1);
+        exit_pion(1);
       }
     }
   }
@@ -543,7 +543,7 @@ double MPv10::get_n_ion(
 double MPv10::get_X_H()
 {
   spdlog::error("don't call get_X_H() in MPv10");
-  exit(1);
+  exit_pion(1);
   return 0.0;
 }
 // ##################################################################
@@ -632,7 +632,7 @@ int MPv10::convert_prim2local(
   // function flag 3 -> timescales_RT()
   // function flag 4 -> Temperature()
 
-  if (p_in[PG] > 1.0) exit(0);
+  if (p_in[PG] > 1.0) exit_pion(0);
 
   // make sure that p_in[] is a self-consistent state:
   sCMA(corrector, p_in);
@@ -713,12 +713,12 @@ int MPv10::convert_prim2local(
   for (int v = 0; v < 2; v++) {
     if (!isfinite(p_local[v])) {
       spdlog::error("{}: {}", "INF/NAN input to microphysics", p_local[v]);
-      exit(1);
+      exit_pion(1);
     }
     if (mpv_nH < 0.0 || !isfinite(mpv_nH)) {
       spdlog::error(
           "{}: {}", "Bad density input to MPv10::convert_prim2local", mpv_nH);
-      exit(1);
+      exit_pion(1);
     }
   }
    */
@@ -1129,7 +1129,7 @@ int MPv10::TimeUpdateMP_RTnew(
   err = convert_prim2local(p_in, P, 2);
   if (err) {
     spdlog::error("{}: {}", "Bad input state to MPv10::TimeUpdateMP()", err);
-    exit(1);
+    exit_pion(1);
   }
 
   correct_localvector(P, 1);
@@ -1149,7 +1149,7 @@ int MPv10::TimeUpdateMP_RTnew(
     spdlog::error(
         "{}: {}", "dYdt() returned an error in MPv10::TimeUpdateMP_RTnew()",
         err);
-    exit(1);
+    exit_pion(1);
   }
 
   // Here y_out is y_dot calculating maxdelta.
@@ -1176,7 +1176,7 @@ int MPv10::TimeUpdateMP_RTnew(
     if (err) {
       spdlog::error(
           "{}: {}", "integration failed: MPv10::TimeUpdateMP_RTnew()", err);
-      exit(1);
+      exit_pion(1);
     }
   }
 
@@ -1248,7 +1248,7 @@ int MPv10::correct_localvector(
       }
       // resetting
       y_ion_frac[i] = 1.0;
-      // exit(0);
+      // exit_pion(0);
     }
   }
   // **************************************************************
@@ -1346,7 +1346,7 @@ double MPv10::timescales_RT(
   err = convert_prim2local(p_in, p_local, 3);
   if (err) {
     spdlog::error("{}: {}", "Bad input state to MPv10::timescales_RT()", err);
-    exit(1);
+    exit_pion(1);
   }
 
   // correct local vector
@@ -1363,7 +1363,7 @@ double MPv10::timescales_RT(
   if (err) {
     spdlog::error(
         "{}: {}", "dYdt() returned an error in MPv10::timescales_RT()", err);
-    exit(1);
+    exit_pion(1);
   }
 
   double tt = Temperature(p_in, 0);
@@ -1901,7 +1901,7 @@ int MPv10::set_multifreq_source_properties(
 {
   if (rsi->effect != RT_EFFECT_MFION) {
     spdlog::error("{}: {}", "Wrong source type for id", rsi->id);
-    exit(1);
+    exit_pion(1);
   }
   // Create empty table to store temperature / flux values -- nb There are 65
   // temperatures recorded for logg=4
@@ -1983,7 +1983,7 @@ void MPv10::print_CIR_LUT(
              + ": column-1 = Temperature(K), other columns = Rates(cm^3/s) \n";
   if (!outfile.is_open()) {
     spdlog::error("MPv10 {} : {}", "couldn't open outfile", 1);
-    exit(1);
+    exit_pion(1);
   }
 
   outfile.setf(ios_base::scientific);

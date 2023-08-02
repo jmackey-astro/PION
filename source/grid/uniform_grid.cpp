@@ -171,7 +171,7 @@ UniformGrid::UniformGrid(
     G_range[i] = G_xmax[i] - G_xmin[i];
     if (G_range[i] < 0.) {
       spdlog::error("Negative range in direction {} : {}", i, G_range[i]);
-      exit(8);
+      exit_pion(8);
     }
 
     //
@@ -263,7 +263,7 @@ UniformGrid::UniformGrid(
   int err = allocate_grid_data();
   if (err != 0) {
     spdlog::error("Error setting up grid, allocate_grid_data {}", err);
-    exit(9);
+    exit_pion(9);
   }
 
   // assign grid structure on cells, setting positions and ngb
@@ -273,7 +273,7 @@ UniformGrid::UniformGrid(
   err += assign_grid_structure();
   if (err != 0) {
     spdlog::error("Error setting up grid, assign_grid_structure {}", err);
-    exit(10);
+    exit_pion(10);
   }
 
 #ifndef NDEBUG
@@ -629,7 +629,7 @@ int UniformGrid::assign_grid_structure()
           // there is another on-grid point.
           if (!ctemp->isgd) {
             spdlog::error("Setting npt error {}", ctemp->id);
-            exit(12);
+            exit_pion(12);
           }
           c.npt = ctemp;
         }
@@ -644,11 +644,11 @@ int UniformGrid::assign_grid_structure()
   }
   if (!is_lpt_set) {
     spdlog::error("failed to find last on-grid point {}", 1);
-    exit(13);
+    exit_pion(13);
   }
   if (!is_fpt_set) {
     spdlog::error("failed to find first on-grid point {}", 1);
-    exit(14);
+    exit_pion(14);
   }
   // ----------------------  SET npt POINTERS  ----------------------
   // ----------------------------------------------------------------
@@ -761,7 +761,7 @@ int UniformGrid::set_cell_size()
           "Cells must be same length in each direction! Set the range "
           "and number of points appropriately.",
           G_range[1], G_dx, G_ng[1]);
-      exit(1);
+      exit_pion(1);
     }
   }
 
@@ -772,7 +772,7 @@ int UniformGrid::set_cell_size()
           "Cells must be same length in each direction! Set the range "
           "and number of points appropriately.",
           G_range[2], G_dx, G_ng[2]);
-      exit(1);
+      exit_pion(1);
     }
   }
 
@@ -966,7 +966,7 @@ int UniformGrid::SetupBCs(
         c = NextPt(*c, XN);
       if (!c) {
         spdlog::error("{}: {}", "Got lost on grid! XN", cy->id);
-        exit(15);
+        exit_pion(15);
       }
       for (int v = 0; v < G_nbc[XN]; v++) {
         BC_bd[XN]->data.push_back(c);
@@ -1007,7 +1007,7 @@ int UniformGrid::SetupBCs(
         if (!c) {
           CI.print_cell(*cy);
           spdlog::error("{}: {}", "Got lost on grid! XP", cy->id);
-          exit(16);
+          exit_pion(16);
         }
         BC_bd[XP]->data.push_back(c);
         // spdlog::debug(" Adding cell {} to XP boundary", c->id);
@@ -1476,7 +1476,7 @@ uniform_grid_cyl::uniform_grid_cyl(
 
   if (G_ndim != 2) {
     spdlog::error("Need to write code for !=2 dimensions {}", G_ndim);
-    exit(17);
+    exit_pion(17);
   }
   G_coordsys = COORD_CYL;  // Cylindrical Coordinate system
 
@@ -1512,7 +1512,7 @@ double uniform_grid_cyl::iR_cov(const cell &c)
   //
 #ifdef PARALLEL
   spdlog::error("redefine iR_cov() for parallel grid please");
-  exit(18);
+  exit_pion(18);
 #endif
   return (R_com(c, G_dx) - G_xmin[Rcyl]) / CI.phys_per_int() + G_ixmin[Rcyl];
 }
@@ -1709,7 +1709,7 @@ double uniform_grid_cyl::idifference_vertex2cell(
     spdlog::error(
         "Bad axis for uniform_grid_cyl::idifference_vertex2cell() {}",
         static_cast<int>(a));
-    exit(2);
+    exit_pion(2);
   }
 
   return -1.0;
@@ -1736,7 +1736,7 @@ double uniform_grid_cyl::idifference_cell2cell(
     spdlog::error(
         "Bad axis for uniform_grid_cyl::idifference_cell2cell() {}",
         static_cast<int>(a));
-    exit(3);
+    exit_pion(3);
   }
   return -1.0;
 }
@@ -1789,7 +1789,7 @@ uniform_grid_sph::uniform_grid_sph(
       G_nvar);
   if (G_ndim != 1) {
     spdlog::error("Need to write code for >1 dimension", G_ndim);
-    exit(4);
+    exit_pion(4);
   }
   G_coordsys = COORD_SPH;  // Spherical Coordinate system
 
@@ -1825,7 +1825,7 @@ double uniform_grid_sph::iR_cov(const cell &c)
   //
 #ifdef PARALLEL
   spdlog::error("redefine iR_cov() for parallel grid please");
-  exit(5);
+  exit_pion(5);
 #endif
   return ((R_com(c, G_dx) - G_xmin[Rsph]) / CI.phys_per_int() + G_ixmin[Rsph]);
 }
@@ -1961,7 +1961,7 @@ double uniform_grid_sph::idifference_vertex2cell(
     spdlog::error(
         "Bad axis for uniform_grid_sph::idifference_vertex2cell() {}",
         static_cast<int>(a));
-    exit(6);
+    exit_pion(6);
   }
   return -1.0;
 }
@@ -1985,7 +1985,7 @@ double uniform_grid_sph::idifference_cell2cell(
     spdlog::error(
         "Bad axis for uniform_grid_sph::idifference_cell2cell() {}",
         static_cast<int>(a));
-    exit(7);
+    exit_pion(7);
   }
   return -1.0;
 }

@@ -41,7 +41,7 @@ int assign_update_bcs_NG::assign_boundary_data(
     spdlog::error(
         "{}: Expected {} but got {}", "assign_update_bcs::assign_boundary_data",
         err, 0);
-    exit(1);
+    exit_pion(1);
   }
 
   //

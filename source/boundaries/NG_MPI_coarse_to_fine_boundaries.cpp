@@ -98,7 +98,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
       if (par.ndim == 1) {
         spdlog::error("Trying to do 1D nested grids with nproc>1... Error");
         spdlog::error("There is a bug that gives incorrect results. Sorry!");
-        exit(1);
+        exit_pion(1);
       }
 
       // get dimensions of child grid from struct
@@ -168,7 +168,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
       spdlog::error(
           "{}: {}", "l+1 neigbouring grids vector not set up right",
           fgngb.size());
-      exit(1);
+      exit_pion(1);
     }
     for (int d = 0; d < par.ndim; d++) {
       // negative direction
@@ -332,7 +332,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
       n_el = n_cell * ((1 + par.ndim) * par.nvar + 1 + par.ndim);
     else {
       spdlog::error("bad spOOA in MPI C2F {}", par.spOOA);
-      exit(2);
+      exit_pion(2);
     }
     vector<pion_flt> buf(n_el);
     std::vector<double> slope(par.nvar);
@@ -371,7 +371,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
 
     if (ibuf != n_el) {
       spdlog::error("C2F MPI SEND counting {} {}", ibuf, n_el);
-      exit(4);
+      exit_pion(4);
     }
 
     //
@@ -396,7 +396,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
         b->NGsendC2F[ib]->rank, n_el, buf, id, comm_tag);
     if (err) {
       spdlog::error("{}: {}", "Send_C2F send_data failed.", err);
-      exit(5);
+      exit_pion(5);
     }
 #ifdef TEST_C2F
     spdlog::debug("BC_update_COARSE_TO_FINE_SEND: returned with id={}", id);
@@ -501,14 +501,14 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
     case NO:
     default:
       spdlog::error("bad direction {}", static_cast<int>(b->dir));
-      exit(6);
+      exit_pion(6);
       break;
   }
   if (!send2pg) {
     // must need to receive from neighbour of parent grid
     if (pgngb[b->dir].rank < 0) {
       spdlog::error("ngb of parent is null {}", static_cast<int>(b->dir));
-      exit(7);
+      exit_pion(7);
     }
     CI.get_ipos_vec(pgngb[b->dir].Xmin, cg_ixmin);
     CI.get_ipos_vec(pgngb[b->dir].Xmax, cg_ixmax);
@@ -532,7 +532,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
         par, grid, b, par.levels[l].parent);
     if (0 != err) {
       spdlog::error("serial C2F BC setup {}", err);
-      exit(err);
+      exit_pion(err);
     }
   }
   else {
@@ -593,7 +593,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
         else {
           spdlog::error(
               "error in 2d logic C2FR_setup {} {}", c->pos[YY], row_y);
-          exit(8);
+          exit_pion(8);
         }
       }  // loop over cells
     }    // if 2D
@@ -643,7 +643,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
         else {
           spdlog::error(
               "error in 3d logic C2FR_setup {} {}", c->pos[YY], row_y);
-          exit(9);
+          exit_pion(9);
         }
       }  // loop over cells
     }    // if 3D
@@ -705,7 +705,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
         &from_rank, recv_id, &recv_tag, comm_tag, COMM_DOUBLEDATA);
     if (err) {
       spdlog::error("look for double data failed {}", err);
-      exit(10);
+      exit_pion(10);
     }
 #ifdef TEST_C2F
     spdlog::debug(
@@ -724,7 +724,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
       n_el = n_cell * ((1 + par.ndim) * par.nvar + 1 + par.ndim);
     else {
       spdlog::error("bad OOA in MPI C2F: {}", par.spOOA);
-      exit(11);
+      exit_pion(11);
     }
     spdlog::debug(
         "c2f recv: nel = {}, ncell = {}, ndim = {}, nvar = {}", n_el, n_cell,
@@ -738,7 +738,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
         from_rank, recv_tag, recv_id, n_el, buf);
     if (err) {
       spdlog::error("(BC_update_C2F_RECV) get data failed: {}", err);
-      exit(err);
+      exit_pion(err);
     }
 
     //
@@ -991,7 +991,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_1D(
 
     default:
       spdlog::error("bad direction in 1D C2F {}", static_cast<int>(bdata->dir));
-      exit(12);
+      exit_pion(12);
   }
 
   cell *c = grid->FirstPt_All();
@@ -1085,7 +1085,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
 
     default:
       spdlog::error("bad direction in 2D C2F {}", static_cast<int>(bdata->dir));
-      exit(13);
+      exit_pion(13);
   }
 
     // cout <<"boundary: x in ["<<xn<<","<<xp<<"], y in["<<yn<<","<<yp<<"]\n";
@@ -1239,7 +1239,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
 
     default:
       spdlog::error("bad direction in 3D C2F {}", static_cast<int>(bdata->dir));
-      exit(14);
+      exit_pion(14);
       break;
   }
 

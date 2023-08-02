@@ -17,6 +17,18 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+#ifdef SPDLOG_FWD
+#include <spdlog/fwd.h>
+#endif
+#include <spdlog/spdlog.h>
+/* prevent clang-format reordering */
+#include <fmt/ranges.h>
+
+#ifdef PARALLEL
+// for aborting on error
+#include <mpi.h>
+#endif
+
 //
 // It's a good idea to include cmath here, since nearly every file needs it!
 //
@@ -394,5 +406,18 @@ enum direction {
 // *******************************************************************
 // **************  Constants for Radiative Trasnfer   ****************
 // *******************************************************************
+
+///
+/// Global function to exit PION
+///
+inline int exit_pion(const int i)
+{
+  spdlog::error("PION encountered an error and will now exit: code = {}", i);
+  spdlog::shutdown();  // should flush the logfile buffer to file.
+#ifdef PARALLEL
+  MPI_Abort(MPI_COMM_WORLD, i);
+#endif
+  exit(i);
+}
 
 #endif  // CONSTANTS_H

@@ -110,7 +110,7 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     spdlog::error("left  : {}", std::vector<double>(Pr, Pr + eq_nvar));
     spdlog::error(
         "FV_solver_Hydro_Euler::calculate_flux() rho/P too small {}", Pr[eqPG]);
-    exit(1);
+    exit_pion(1);
   }
 
   for (int v = 0; v < eq_nvar; v++)
@@ -127,7 +127,7 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     spdlog::error("Tracers out of range in flux solver!");
     spdlog::error("Pl={}", std::vector<double>(Pl, Pl + eq_nvar));
     spdlog::error("Pr={}", std::vector<double>(Pr, Pr + eq_nvar));
-    exit(2);
+    exit_pion(2);
   }
 #endif
 
@@ -167,7 +167,7 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     PtoFlux(pstar, flux, eq_gamma);
     if (err != 0) {
       spdlog::error("Error Flux Riemann Solver: {}", err);
-      exit(1);
+      exit_pion(1);
     }
   }
 
@@ -206,7 +206,7 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     }
     if (0 != err) {
       spdlog::error("HLL/RoeCV Flux {}", err);
-      exit(1);
+      exit_pion(1);
     }
   }
 
@@ -219,7 +219,7 @@ int FV_solver_Hydro_Euler::inviscid_flux(
 
   else {
     spdlog::error("what sort of flux solver do you mean? {}", solve_flag);
-    exit(1);
+    exit_pion(1);
   }
 
   return err;
@@ -443,7 +443,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
     if (c.isleaf && c.isdomain && !c.isbd && c.isgd) {
       spdlog::error("negative density in leaf grid cell, bugging out.");
       CI.print_cell(c);
-      exit(1);
+      exit_pion(1);
     }
     for (int t = 0; t < FV_ntr; t++)
       u1[eqTR[t]] *= Pin[RO] / u1[RHO];
@@ -461,7 +461,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
     PtoU(Pin, u1, eq_gamma);
     spdlog::debug("Uin : {}", std::vector<double>(u1, u1 + eq_nvar));
     spdlog::debug("Pf  : {}", std::vector<double>(Pf, Pf + eq_nvar));
-    exit(3);
+    exit_pion(3);
 #endif
   }
 
@@ -477,7 +477,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
           v, Pf[v]);
       CI.print_cell(c);
       spdlog::error("NAN hydro cell update {} {}", v, Pf[v]);
-      exit(1);
+      exit_pion(1);
     }
   }
 #endif
@@ -537,7 +537,7 @@ double FV_solver_Hydro_Euler::CellTimeStep(
   if (!isfinite(l_dt) || l_dt <= 0.0) {
     spdlog::error("cell has invalid timestep");
     CI.print_cell(c);
-    exit(5);
+    exit_pion(5);
   }
 #endif
   return l_dt;
@@ -572,7 +572,7 @@ cyl_FV_solver_Hydro_Euler::cyl_FV_solver_Hydro_Euler(
 {
   if (nd != 2) {
     spdlog::error("Cylindrical coordinates only 2d", nd);
-    exit(nd);
+    exit_pion(nd);
   }
   return;
 }
@@ -607,7 +607,7 @@ void cyl_FV_solver_Hydro_Euler::geometric_source(
         break;
       default:
         spdlog::error("Bad OOA in cyl_IdealMHD_RS::dU: {}", OA);
-        exit(7);
+        exit_pion(7);
         break;
     }
   }
@@ -644,7 +644,7 @@ sph_FV_solver_Hydro_Euler::sph_FV_solver_Hydro_Euler(
 {
   if (nd != 1) {
     spdlog::error("Spherical coordinates only 1D {}", nd);
-    exit(nd);
+    exit_pion(nd);
   }
   return;
 }
@@ -682,7 +682,7 @@ void sph_FV_solver_Hydro_Euler::geometric_source(
       //
       default:
         spdlog::error("Bad OOA in sph_hydro_RS::dU: {}", OA);
-        exit(9);
+        exit_pion(9);
         break;
     }
   }

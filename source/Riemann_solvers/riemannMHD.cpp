@@ -12,8 +12,8 @@
 ///  - 2008-03-03 Fixed a few minor bugs.
 ///  - 2009-10-24 New class structure so that it inherits from the MHD equations
 ///  class.
-///  - 2010-02-10 JM: Replaced exit() calls with spdlog::error("{}: {}", ) calls
-///  so parallel code exits cleanly.
+///  - 2010-02-10 JM: Replaced exit_pion() calls with spdlog::error("{}: {}", )
+///  calls so parallel code exits cleanly.
 ///
 /// This is a linear MHD Riemann Solver for the ideal MHD equations.
 /// It is a "Roe-type" solver (but using an arithmetic aveage instead
@@ -83,7 +83,7 @@ riemann_MHD::riemann_MHD(
   if (eq_nvar < 8) {
     spdlog::error(
         "\tProblem with MHD Riemann Solver... Nelements!=8.  {}", eq_nvar);
-    exit(1);
+    exit_pion(1);
   }
 #endif
 
@@ -164,7 +164,7 @@ int riemann_MHD::JMs_riemann_solve(
       break;
     default:
       spdlog::error("\tMODE i: Don't know what to do {}", RS_mode);
-      exit(2);
+      exit_pion(2);
       break;
   }
   totalsolve++;
@@ -233,7 +233,7 @@ int riemann_MHD::JMs_riemann_solve(
         spdlog::error("{}, ", RS_pstar[v]);
       spdlog::error("{}]", RS_pstar[eq_nvar - 1]);
       spdlog::error("Negative pressure in INPUT STATES {}", RS_pstar[RPG]);
-      exit(1);
+      exit_pion(1);
     }
     if (RS_pstar[RRO] < 0.) {
       RS_pstar[RRO] = eq_refvec[RRO] * BASEPG;  // BASEPG is 1.e-8
@@ -243,7 +243,7 @@ int riemann_MHD::JMs_riemann_solve(
         spdlog::error("{}, ", RS_pstar[v]);
       spdlog::error("]", RS_pstar[eq_nvar - 1]);
       spdlog::error("Negative density in INPUT STATES {}", RS_pstar[RRO]);
-      exit(3);
+      exit_pion(3);
     }
 #endif  // RS_TESTING
 
@@ -272,7 +272,7 @@ int riemann_MHD::JMs_riemann_solve(
       if (err != 0) {
         spdlog::error(
             "riemann_MHD::(get_sound_speeds) returned with error", err);
-        exit(4);
+        exit_pion(4);
       }
       //    cout <<"Speeds: (ch2,ca2,ct2,cs2,cf2): ("<<ch*ch
       //      << " ,"<<ca*ca<<" ,"<< bt*bt<< " ,"
@@ -284,7 +284,7 @@ int riemann_MHD::JMs_riemann_solve(
       if (err != 0) {
         spdlog::error(
             "riemann_MHD::(RoeBalsara_evectors) returned with error", err);
-        exit(5);
+        exit_pion(5);
       }
 
 #ifdef RS_TESTING
@@ -305,7 +305,7 @@ int riemann_MHD::JMs_riemann_solve(
             std::vector<double>(RS_right, RS_right + eq_nvar));
         spdlog::error("Pstar : {}", RS_pstar);
         spdlog::error("{}: {}", "riemann_MHD::(check_evectors)", err);
-        exit(6);
+        exit_pion(6);
       }
 #endif
 
@@ -314,7 +314,7 @@ int riemann_MHD::JMs_riemann_solve(
       err += get_pstar();
       if (err != 0) {
         spdlog::error("riemann_MHD::(get_pstar)  returned with error", err);
-        exit(err);
+        exit_pion(err);
       }
       //  cout << "(riemann_MHD::solve) Got P*..." << "\n";
       //  cout << "P* (Got Solution) rho: " << RS_pstar[RO];
@@ -349,7 +349,7 @@ int riemann_MHD::JMs_riemann_solve(
     default:
       spdlog::debug("MODE not known.  Only know 1.  Please enter a valid mode");
       spdlog::error("{}: {}", "Bad solve mode in riemann_MHD", mode);
-      exit(7);
+      exit_pion(7);
       break;
   }
 
@@ -425,7 +425,7 @@ void riemann_MHD::assign_data(const pion_flt *l, const pion_flt *r)
     spdlog::error(
         "riemann_MHD::assign_data() Density/Pressure too small {} {}", r[eqRO],
         r[eqPG]);
-    exit(1);
+    exit_pion(1);
   }
 #endif  // RS_TESTING
 
@@ -515,7 +515,7 @@ void riemann_MHD::failerror(int err, string text)
   if (err != 0) {
     spdlog::error("riemann_MHD::({}): ERROR code: {} Exiting...\n", text, err);
     spdlog::error("{}: {}", text, err);
-    exit(err);
+    exit_pion(err);
   }
 }
 
@@ -732,7 +732,7 @@ int riemann_MHD::get_sound_speeds()
     spdlog::error("right state : {}", RS_right);
     spdlog::error("Avg.  state : {}", RS_meanp);
     spdlog::error("{}: {}", "Bugging out for now...", 99);
-    exit(8);
+    exit_pion(8);
   }
 
   //

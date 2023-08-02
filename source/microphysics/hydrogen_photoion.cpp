@@ -796,7 +796,7 @@ int main(int argc, char **argv)
 {
   if (argc !=6) {
     cerr <<" Bad args...\n";
-    exit(1);
+    exit_pion(1);
   }
   //
   // Stellar temperature and radius:

@@ -321,7 +321,7 @@ int DataIOFits_pllel::SaveLevelData(
     fits_create_file(&ff, outfile.c_str(), &status);
     if (status) {
       spdlog::error("Creating new file went bad");
-      exit(1);
+      exit_pion(1);
     }
 
     // write fits header
@@ -440,7 +440,7 @@ int DataIOFits_pllel::SaveLevelData(
       if (status) {
         fits_report_error(stderr, status);
         spdlog::error("Creating new file went bad");
-        exit(1);
+        exit_pion(1);
       }
 
       // write fits header

@@ -239,7 +239,7 @@ int main(int argc, char **argv)
   SimPM.dx = grid[0]->DX();
   if (!grid[0]) {
     spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid[0]));
-    exit(1);
+    exit_pion(1);
   }
 
   //
@@ -248,12 +248,12 @@ int main(int argc, char **argv)
   rp = new ReadParams;
   if (!rp) {
     spdlog::error("{}: {}", "icgen:: initialising RP", fmt::ptr(rp));
-    exit(1);
+    exit_pion(1);
   }
   err += rp->read_paramfile(pfile);
   if (err) {
     spdlog::error("{}: {}", "Error reading parameterfile", pfile);
-    exit(1);
+    exit_pion(1);
   }
   string seek = "ics";
   string ics  = rp->find_parameter(seek);
@@ -267,7 +267,7 @@ int main(int argc, char **argv)
   err = SimSetup->set_equations(SimPM);
   if (0 != err) {
     spdlog::error("(icgen::set_equations) err!=0 {}", err);
-    exit(1);
+    exit_pion(1);
   }
   class FV_solver_base *solver = SimSetup->get_solver_ptr();
 #endif
@@ -293,7 +293,7 @@ int main(int argc, char **argv)
     string inputfile = rp->find_parameter(seek);
     if (inputfile == "") {
       spdlog::error("{}: {}", "didn't find parameter", seek);
-      exit(1);
+      exit_pion(1);
     }
 
     // read data from the input file onto the grid
@@ -306,7 +306,7 @@ int main(int argc, char **argv)
     err = dd.ReadData(inputfile, grid, SimPM);
     if (err) {
       spdlog::error("main_icgen: failed to read data.", err);
-      exit(err);
+      exit_pion(err);
     }
   }
 #endif
@@ -369,14 +369,14 @@ int main(int argc, char **argv)
   err = SimSetup->assign_boundary_data(SimPM, 0, grid[0], MP);
   if (0 != err) {
     spdlog::error("icgen::assign_boundary_data : {}", err);
-    exit(1);
+    exit_pion(1);
   }
 #endif /* PARALLEL */
 #else
   err += SimSetup->setup_raytracing(SimPM, grid);
   if (err) {
     spdlog::error("icgen-ng: Failed to setup raytracer: {}", err);
-    exit(1);
+    exit_pion(1);
   }
 
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
@@ -387,7 +387,7 @@ int main(int argc, char **argv)
 #endif /* PARALLEL */
     if (0 != err) {
       spdlog::error("icgen-ng::assign_boundary_data {}", err);
-      exit(1);
+      exit_pion(1);
     }
   }
   // ----------------------------------------------------------------
@@ -403,7 +403,7 @@ int main(int argc, char **argv)
   }
   if (0 != err) {
     spdlog::error("icgen-ng: error from ext bounday update 1: {}", err);
-    exit(1);
+    exit_pion(1);
   }
   // ----------------------------------------------------------------
 
@@ -440,7 +440,7 @@ int main(int argc, char **argv)
     spdlog::error(
         "{}: Expected {} but got {}", "NG_MPI INIT: error from bounday update",
         0, err);
-    exit(err);
+    exit_pion(err);
   }
   // ----------------------------------------------------------------
 
@@ -514,7 +514,7 @@ int main(int argc, char **argv)
     spdlog::error(
         "{}: Expected {} but got {}", "NG_MPI INIT: error from bounday update",
         0, err);
-    exit(err);
+    exit_pion(err);
   }
   // ----------------------------------------------------------------
 #endif /* PARALLEL */
@@ -528,7 +528,7 @@ int main(int argc, char **argv)
     spdlog::info("MAIN: equilibrating the chemical species.");
     if (!MP) {
       spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
-      exit(1);
+      exit_pion(1);
     }
 
     // first avoid cooling the gas in getting to equilbrium, by
@@ -539,7 +539,7 @@ int main(int argc, char **argv)
     if (err) {
       spdlog::error(
           "{}: {}", "setting chemical states to equilibrium failed", err);
-      exit(1);
+      exit_pion(1);
     }
 
     SimPM.EP.update_erg = uerg;

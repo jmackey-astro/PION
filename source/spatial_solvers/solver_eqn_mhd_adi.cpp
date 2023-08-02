@@ -103,7 +103,7 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
     spdlog::error(
         "FV_solver_mhd_ideal_adi::calculate_flux() Density/Pressure too small {}",
         Pl[eqRO]);
-    exit(1);
+    exit_pion(1);
   }
 #endif  // NDEBUG
   int err = 0;
@@ -163,7 +163,7 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
     if (err) {
       spdlog::error("HLL/HLLD Flux err {}", err);
       spdlog::error("HLL/HLLD Flux ustar 2: {}", ustar);
-      exit(2);
+      exit_pion(2);
     }
     err += UtoP(ustar.data(), pstar, par.EP.MinTemperature, eq_gamma);
     // ignore errors from boundary cells because they can contain junk data
@@ -175,7 +175,7 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
       // CI.print_cell(Cl);
       // CI.print_cell(Cr);
       spdlog::debug("HLL/HLLD Flux ustar 3: {}", ustar);
-      // exit(3);
+      // exit_pion(3);
       err = 0;
     }
   }
@@ -185,21 +185,21 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
     err += MHD_HLL_flux_solver(Pl, Pr, eq_gamma, flux, ustar.data());
     if (0 != err) {
       spdlog::error("HLL Flux err {}", err);
-      exit(4);
+      exit_pion(4);
     }
     err += UtoP(ustar.data(), pstar, par.EP.MinTemperature, eq_gamma);
     if (Cl.isbd || Cr.isbd) err = 0;
     if (0 != err) {
       spdlog::warn("HLL UtoP neg. pressure {}", err);
       spdlog::warn("HLL/HLLD Flux ustar 5: {}", ustar);
-      // exit(5);
+      // exit_pion(5);
       err = 0;
     }
   }
 
   else {
     spdlog::error("what flux solver? {}", solve_flag);
-    exit(1);
+    exit_pion(1);
   }
 
   return err;
@@ -464,7 +464,7 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
     if (c.isleaf && c.isdomain && !c.isbd && c.isgd) {
       spdlog::error("negative density in leaf grid cell, bugging out.");
       CI.print_cell(c);
-      exit(1);
+      exit_pion(1);
     }
     for (int t = 0; t < FV_ntr; t++)
       u1[eqTR[t]] *= Pin[RO] / u1[RHO];
@@ -654,7 +654,7 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
         "FV_solver_mhd_mixedGLM_adi::calculate_flux() Density/Pressure "
         "too small",
         Pl[eqRO]);
-    exit(4);
+    exit_pion(4);
   }
 #endif  // NDEBUG
 
@@ -884,7 +884,7 @@ cyl_FV_solver_mhd_ideal_adi::cyl_FV_solver_mhd_ideal_adi(
 {
   if (nd != 2) {
     spdlog::error("Cylindrical coordinates only 2D {}", nd);
-    exit(nd);
+    exit_pion(nd);
   }
 }
 
@@ -927,7 +927,7 @@ void cyl_FV_solver_mhd_ideal_adi::geometric_source(
         break;
       default:
         spdlog::error("Bad OOA in cyl_IdealMHD_RS::geometric source {}", OA);
-        exit(1);
+        exit_pion(1);
         break;
     }
   }
@@ -1001,7 +1001,7 @@ int cyl_FV_solver_mhd_ideal_adi::MHDsource(
     case Tcyl:
     default:
       spdlog::error("GLM-MHD Source bad direction {}", static_cast<int>(d));
-      exit(7);
+      exit_pion(7);
       break;
   }
 
@@ -1040,7 +1040,7 @@ cyl_FV_solver_mhd_mixedGLM_adi::cyl_FV_solver_mhd_mixedGLM_adi(
   //  Coordinates.\n";
   if (nd != 2) {
     spdlog::error("Cylindrical coordinates only for 2d ... {}", nd);
-    exit(nd);
+    exit_pion(nd);
   }
 }
 
@@ -1095,7 +1095,7 @@ void cyl_FV_solver_mhd_mixedGLM_adi::geometric_source(
         break;
       default:
         spdlog::error("Bad OOA in cyl_glmMHD::geometric source: {}", OA);
-        exit(1);
+        exit_pion(1);
         break;
     }
   }

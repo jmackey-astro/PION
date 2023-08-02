@@ -19,7 +19,7 @@ int reflecting_bc::BC_assign_REFLECTING(
 {
   if (b->data.empty()) {
     spdlog::error("BC_assign_REFLECTING: empty boundary data: {}", b->itype);
-    exit(1);
+    exit_pion(1);
   }
   //
   // set reference state so that it is mostly zeros but has some +/-1
@@ -50,7 +50,7 @@ int reflecting_bc::BC_assign_REFLECTING(
       default:
         spdlog::error(
             "{}: {}", "BAD DIRECTION REFLECTING", static_cast<int>(b->dir));
-        exit(3);
+        exit_pion(3);
         break;
     }  // Set Normal velocity direction.
 
@@ -75,7 +75,7 @@ int reflecting_bc::BC_assign_REFLECTING(
         default:
           spdlog::error(
               "BAD DIRECTION REFLECTING {}", static_cast<int>(b->dir));
-          exit(5);
+          exit_pion(5);
           break;
       }  // Set normal b-field direction.
     }    // Setting up reference value.
@@ -100,7 +100,7 @@ int reflecting_bc::BC_assign_REFLECTING(
     }
     if (!temp) {
       spdlog::error("Got lost assigning reflecting bcs. {}", temp->id);
-      exit(6);
+      exit_pion(6);
     }
     // spdlog::info("rbc: bpt pos {}, isedge {}, cell pos {}",
     //              (*bpt)->pos[0],(*bpt)->isedge,temp->pos[0]);
@@ -122,7 +122,7 @@ int reflecting_bc::BC_assign_REFLECTING(
   if (ct != b->data.size()) {
     spdlog::error(
         "BC_assign_REFLECTING: missed some cells! {} {}", ct, b->data.size());
-    exit(7);
+    exit_pion(7);
   }
   return 0;
 }

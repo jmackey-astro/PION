@@ -124,12 +124,14 @@ int main(int argc, char **argv)
   int nproc  = sim_control->SimPM.levels[0].sub_domain.get_nproc();
   /* turn off logging for not root processes for Release build */
 #ifdef NDEBUG
+#ifndef LOG_ALL_PROCS
   if (myrank > 0) {
     spdlog::set_level(spdlog::level::off);
     spdlog::flush_on(spdlog::level::off);
   }
-#endif /* NDEBUG */
-#endif /* PARALLEL */
+#endif  // LOG_ALL_PROCS
+#endif  /* NDEBUG */
+#endif  /* PARALLEL */
 
   //
   // Check that command-line arguments are sufficient.
@@ -142,14 +144,12 @@ int main(int argc, char **argv)
   string *args = new string[argc];
   for (int i = 0; i < argc; ++i)
     args[i] = argv[i];
-#ifndef NDEBUG
   for (int i = 0; i < argc; ++i) {
-    spdlog::info("args: i= {}, arg = {}", i, args[i]);
+    spdlog::info("args: i = {}, arg = {}", i, args[i]);
   }
-#endif
   for (int i = 0; i < argc; ++i) {
     if (args[i].find("redirect=") != string::npos) {
-#if defined NDEBUG && defined PARALLEL
+#if defined NDEBUG && defined PARALLEL && !defined LOG_ALL_PROCS
       if (myrank == 0) {
 #endif
         ostringstream path;
@@ -162,7 +162,7 @@ int main(int argc, char **argv)
         auto max_logfiles     = 20;
         spdlog::set_default_logger(spdlog::rotating_logger_mt(
             "pion", path.str(), max_logfile_size, max_logfiles));
-#if defined NDEBUG && defined PARALLEL
+#if defined NDEBUG && defined PARALLEL && !defined LOG_ALL_PROCS
       }
 #endif
     }
@@ -246,7 +246,7 @@ int main(int argc, char **argv)
       double tmp = atof((args[i].substr(12)).c_str());
       if (!isfinite(tmp) || tmp < 0.0) {
         spdlog::error("max walltime not valid: {}", tmp);
-        exit(1);
+        exit_pion(1);
       }
       sim_control->set_max_walltime(tmp * 3600.0);
 

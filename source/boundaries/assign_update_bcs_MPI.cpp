@@ -45,7 +45,7 @@ int assign_update_bcs_MPI::assign_boundary_data(
     spdlog::error(
         "{}: Expected {} but got {}", "assign_update_bcs::assign_boundary_data",
         err, 0);
-    exit(1);
+    exit_pion(1);
   }
   //
   // Loop through all boundaries, and assign data to MPI one.
@@ -195,7 +195,7 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
         spdlog::error(
             "{}: {}", "assign_update_bcs_MPI::Unhandled BC: external",
             b->itype);
-        exit(1);
+        exit_pion(1);
         break;
     }
 

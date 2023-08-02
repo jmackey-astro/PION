@@ -527,7 +527,7 @@ int DataIOBase::read_simulation_parameters(
     if (err) {
       if (p->critical) {
         spdlog::error("Error reading required parameter {}", p->name);
-        exit(1);
+        exit_pion(1);
       }
       else {
         // cout <<"parameter "<<p->name<<" not found. setting to default

@@ -369,7 +369,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
       default:
         spdlog::error(
             "{}: {}", "Unhandled BC: NG-MPI update external", b->itype);
-        exit(1);
+        exit_pion(1);
         break;
     }
     par.levels[0].sub_domain.barrier();

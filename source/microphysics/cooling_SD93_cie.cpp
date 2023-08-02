@@ -657,7 +657,7 @@ void cooling_function_SD93CIE::setup_Eatson_CIE()
 {
   if (have_set_cooling) {
     spdlog::error("setup_Eatson_CIE() already set up!");
-    exit(1);
+    exit_pion(1);
   }
   //#ifdef DEBUG_COOL
   spdlog::info("\t\t----------------------------------------------------");

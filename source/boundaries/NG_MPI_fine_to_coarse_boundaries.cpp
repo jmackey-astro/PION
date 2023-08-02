@@ -171,7 +171,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
         spdlog::error("NAN detected.  This is cell {} of {}", vv, nc);
         CI.print_cell(*(b->avg[v].c[vv]));
       }
-      exit(1);
+      exit_pion(1);
     }
 #endif
     for (int i = 0; i < nv; i++)
@@ -511,7 +511,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
           spdlog::info(
               "received primitive var from {}  data {}", from_rank, prim);
           CI.print_cell(*c);
-          exit(1);
+          exit_pion(1);
         }
 #endif
 

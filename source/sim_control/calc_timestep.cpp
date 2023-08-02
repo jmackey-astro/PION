@@ -264,7 +264,7 @@ int calc_timestep::set_thermal_conduction_Edot(
   //
   if (!MP) {
     spdlog::error("{}: {}", "No Microphysics == No Conduction", fmt::ptr(MP));
-    exit(1);
+    exit_pion(1);
   }
   enum axes x1 = XX;
   enum axes x2 = YY;
@@ -481,7 +481,7 @@ void calc_timestep::timestep_checking_and_limiting(
     temp << "Timestep too short! dt=" << par.dt
          << "  min-step=" << par.min_timestep;
     spdlog::error("{}: {}", temp.str(), par.dt);
-    exit(1);
+    exit_pion(1);
   }
 
   //
@@ -504,7 +504,7 @@ void calc_timestep::timestep_checking_and_limiting(
     if (par.dt <= 0.0) {
       spdlog::error(
           "{}: {}", "Went past output time without outputting!", par.dt);
-      exit(1);
+      exit_pion(1);
     }
   }
 
@@ -516,7 +516,7 @@ void calc_timestep::timestep_checking_and_limiting(
     spdlog::error(
         "dt={}, finish={}, now={}", par.dt, par.finishtime, par.simtime);
     spdlog::error("{}: {}", "Negative timestep!", par.dt);
-    exit(1);
+    exit_pion(1);
   }
 
   return;
@@ -602,7 +602,7 @@ double calc_timestep::calc_dynamics_dt(
 
   if (dt <= 0.0) {
     spdlog::error("{}: {}", "Got zero timestep!!!", dt);
-    exit(1);
+    exit_pion(1);
   }
 #ifndef NDEBUG
   spdlog::debug("(calc_dynamics_dt)  min-dt={}", dt);
@@ -658,7 +658,7 @@ double calc_timestep::calc_microphysics_dt(
     if (dt <= 0.0) {
       spdlog::error(
           "{}: {}", "get_mp_timescales_with_radiation() returned error", dt);
-      exit(1);
+      exit_pion(1);
     }
   }
   else {
@@ -670,7 +670,7 @@ double calc_timestep::calc_microphysics_dt(
     if (dt <= 0.0) {
       spdlog::error(
           "{}: {}", "get_mp_timescales_no_radiation() returned error", dt);
-      exit(1);
+      exit_pion(1);
     }
   }
 
@@ -757,7 +757,7 @@ double calc_timestep::get_mp_timescales_no_radiation(
                 spdlog::error(
                     "{}: {}", "Bad MP_timestep_limit",
                     par.EP.MP_timestep_limit);
-                exit(1);
+                exit_pion(1);
             }
             // if ((xy = MP->timescales(c->Ph, par.gamma, true, true,
             // true))<10.0) {
@@ -840,7 +840,7 @@ double calc_timestep::get_mp_timescales_with_radiation(
     spdlog::error(
         "{}: {}",
         "calc_timestep::get_mp_timescales_with_radiation() no sources", 1);
-    exit(1);
+    exit_pion(1);
   }
 #endif  // NDEBUG
 
@@ -915,7 +915,7 @@ double calc_timestep::get_mp_timescales_with_radiation(
                 CI.print_cell(c);
                 spdlog::error(
                     "{}: {}", "time_int:calc_RT_microphysics_dU tau<0", 1);
-                exit(1);
+                exit_pion(1);
 #endif
                 for (short unsigned int iC = 0; iC < ionize[v].NTau; iC++)
                   ionize[v].Column[iC] = max(0.0, ionize[v].Column[iC]);
@@ -939,7 +939,7 @@ double calc_timestep::get_mp_timescales_with_radiation(
                   "Ph : {}", std::vector<double>(c->Ph, c->Ph + par.nvar));
               spdlog::error(
                   "{}: {}", "Negative timestep from microphysics with RT!", t);
-              exit(1);
+              exit_pion(1);
             }
 
             tempdt = min(tempdt, t);

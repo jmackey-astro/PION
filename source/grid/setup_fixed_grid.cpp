@@ -179,7 +179,7 @@ int setup_fixed_grid::setup_grid(
 
   if (SimPM.ndim < 1 || SimPM.ndim > 3) {
     spdlog::error("{}: {}", "Only know 1D,2D,3D methods!", SimPM.ndim);
-    exit(1);
+    exit_pion(1);
   }
 
   //
@@ -200,7 +200,7 @@ int setup_fixed_grid::setup_grid(
     spdlog::error(
         "{}: {}", "Spatial order of accuracy unhandled by boundary conditions!",
         SimPM.spOOA);
-    exit(1);
+    exit_pion(1);
   }
 
   // Force Nbc=1 if using Lax-Friedrichs flux.
@@ -229,7 +229,7 @@ int setup_fixed_grid::setup_grid(
   spdlog::debug("(setup_fixed_grid::setup_grid) Setting up grid...");
   if (*grid) {
     spdlog::error("{}: {}", "Grid already set up!", fmt::ptr(*grid));
-    exit(1);
+    exit_pion(1);
   }
 
   if (SimPM.coord_sys == COORD_CRT)
@@ -246,14 +246,14 @@ int setup_fixed_grid::setup_grid(
         SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax, SimPM.Xmin, SimPM.Xmax);
   else {
     spdlog::error("{}: {}", "Bad Geometry in setup_grid()", SimPM.coord_sys);
-    exit(1);
+    exit_pion(1);
   }
 
   if (*grid == 0) {
     spdlog::error(
         "{}: {}", "(setup_fixed_grid::setup_grid) Couldn't assign data!",
         fmt::ptr(*grid));
-    exit(1);
+    exit_pion(1);
   }
 
   (*grid)->set_level(0);
@@ -313,7 +313,7 @@ int setup_fixed_grid::setup_microphysics(
     case 0:
       if (SimPM.EP.MP_timestep_limit < 0 || SimPM.EP.MP_timestep_limit > 5) {
         spdlog::error("{}: {}", "BAD dt LIMIT", SimPM.EP.MP_timestep_limit);
-        exit(1);
+        exit_pion(1);
       }
       break;
     case 2:
@@ -365,7 +365,7 @@ int setup_fixed_grid::setup_microphysics(
             SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
         if (!MP) {
           spdlog::error("mp_only_cooling() init {}", fmt::ptr(MP));
-          exit(1);
+          exit_pion(1);
         }
         break;
 
@@ -377,11 +377,11 @@ int setup_fixed_grid::setup_microphysics(
             &(SimPM.EP), &(SimPM.RS));
         if (SimPM.EP.MP_timestep_limit < 0 || SimPM.EP.MP_timestep_limit > 5) {
           spdlog::error("{}: {}", "BAD dt LIMIT", SimPM.EP.MP_timestep_limit);
-          exit(1);
+          exit_pion(1);
         }
         if (!MP) {
           spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
-          exit(1);
+          exit_pion(1);
         }
         break;
 
@@ -393,7 +393,7 @@ int setup_fixed_grid::setup_microphysics(
             "*-* WARNING, THIS MODULE HAS BEEN SUPERSEDED BY MPv4.*-*");
         if (!MP) {
           spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
-          exit(1);
+          exit_pion(1);
         }
         break;
 
@@ -404,7 +404,7 @@ int setup_fixed_grid::setup_microphysics(
             SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
         if (!MP) {
           spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
-          exit(1);
+          exit_pion(1);
         }
         break;
 
@@ -415,7 +415,7 @@ int setup_fixed_grid::setup_microphysics(
             SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
         if (!MP) {
           spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
-          exit(1);
+          exit_pion(1);
         }
         break;
 
@@ -426,7 +426,7 @@ int setup_fixed_grid::setup_microphysics(
             SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
         if (!MP) {
           spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
-          exit(1);
+          exit_pion(1);
         }
         break;
 #endif  // LEGACY_CODE
@@ -438,7 +438,7 @@ int setup_fixed_grid::setup_microphysics(
             SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
         if (!MP) {
           spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
-          exit(1);
+          exit_pion(1);
         }
         break;
 #endif  // exclude Harpreet's module
@@ -450,7 +450,7 @@ int setup_fixed_grid::setup_microphysics(
             SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
         if (!MP) {
           spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
-          exit(1);
+          exit_pion(1);
         }
         break;
 
@@ -461,7 +461,7 @@ int setup_fixed_grid::setup_microphysics(
             SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
         if (!MP) {
           spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
-          exit(1);
+          exit_pion(1);
         }
         break;
 
@@ -472,7 +472,7 @@ int setup_fixed_grid::setup_microphysics(
             SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
         if (!MP) {
           spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
-          exit(1);
+          exit_pion(1);
         }
         break;
 
@@ -483,7 +483,7 @@ int setup_fixed_grid::setup_microphysics(
             SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
         if (!MP) {
           spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
-          exit(1);
+          exit_pion(1);
         }
         break;
 
@@ -495,14 +495,14 @@ int setup_fixed_grid::setup_microphysics(
             SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
         if (!MP) {
           spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
-          exit(1);
+          exit_pion(1);
         }
         break;
 #endif
 
       default:
         spdlog::error("{}: {}", "unhandled microphysics type", SimPM.chem_code);
-        exit(1);
+        exit_pion(1);
         break;
     }
 #ifdef PION_OMP
@@ -532,7 +532,7 @@ int setup_fixed_grid::setup_microphysics(
 #endif
   if (err) {
     spdlog::error("{}: {}", "Setting multifreq source properties", err);
-    exit(1);
+    exit_pion(1);
   }
 
   return 0;
@@ -558,7 +558,7 @@ int setup_fixed_grid::setup_raytracing(
   if (!MP) {
     spdlog::error(
         "{}: {}", "can't do raytracing without microphysics", fmt::ptr(MP));
-    exit(1);
+    exit_pion(1);
   }
   //
   // If the ionising source is at infinity then set up the simpler parallel
@@ -576,7 +576,7 @@ int setup_fixed_grid::setup_raytracing(
     if (!(grid->RT)) {
       spdlog::error(
           "{}: {}", "init pllel-rays raytracer error", fmt::ptr(grid->RT));
-      exit(1);
+      exit_pion(1);
     }
   }
   else {
@@ -588,7 +588,7 @@ int setup_fixed_grid::setup_raytracing(
         SimPM.RS.Nsources);
     if (!(grid->RT)) {
       spdlog::error("{}: {}", "init raytracer error 2", fmt::ptr(grid->RT));
-      exit(1);
+      exit_pion(1);
     }
   }
 
@@ -640,7 +640,7 @@ int setup_fixed_grid::setup_raytracing(
         "{}: {}",
         "Can only have one ionising source for currently implemented method",
         ion_count);
-    exit(1);
+    exit_pion(1);
   }
   spdlog::debug(
       "Added {} ionising and {} non-ionising radiation sources, of which {} are diffuse radiation",
@@ -733,7 +733,7 @@ int setup_fixed_grid::setup_evolving_RT_sources(
       spdlog::error(
           "{}: {}", "can't open wind evolving radiation source file",
           fmt::ptr(infile));
-      exit(1);
+      exit_pion(1);
     }
     // Skip first two lines
     char line[512];
@@ -741,12 +741,12 @@ int setup_fixed_grid::setup_evolving_RT_sources(
     rval       = fgets(line, 512, infile);
     if (!rval) {
       spdlog::error("{}: {}", "setup_fixed_grid, RS, file read 1", line);
-      exit(1);
+      exit_pion(1);
     }
     rval = fgets(line, 512, infile);
     if (!rval) {
       spdlog::error("{}: {}", "setup_fixed_grid, RS, file read 2", line);
-      exit(1);
+      exit_pion(1);
     }
     // Temporary variables for column values
     // Columns are time, M, L, Teff, Mdot, vrot, vcrit, vinf
@@ -893,7 +893,7 @@ int setup_fixed_grid::update_evolving_RT_sources(
           err = MP->set_multifreq_source_properties(rs, &(rs->strength));
           if (err) {
             spdlog::error("update_evolving_RT_sources() error", rs->id);
-            exit(1);
+            exit_pion(1);
           }
         }
 #ifdef PION_OMP
@@ -933,7 +933,7 @@ int setup_fixed_grid::boundary_conditions(
     spdlog::error(
         "{}: Expected {} but got {}", "sfg::boundary_conditions::sb_structs", 0,
         err);
-    exit(1);
+    exit_pion(1);
   }
 
   //
@@ -944,7 +944,7 @@ int setup_fixed_grid::boundary_conditions(
     spdlog::error(
         "{}: Expected {} but got {}", "sfg::boundary_conditions::SetupBCs", 0,
         err);
-    exit(1);
+    exit_pion(1);
   }
 
   spdlog::debug("(setup_fixed_grid::boundary_conditions) Done");
@@ -1069,14 +1069,14 @@ int setup_fixed_grid::setup_boundary_structs(
     }
     else {
       spdlog::error("{}: {}", "Don't know this BC type", grid->BC_bd[i]->type);
-      exit(1);
+      exit_pion(1);
     }
 
     if (!grid->BC_bd[i]->data.empty()) {
       spdlog::error(
           "{}: {}", "Boundary data not empty in constructor!",
           grid->BC_bd[i]->data.size());
-      exit(1);
+      exit_pion(1);
     }
     grid->BC_bd[i]->refval = 0;
 
@@ -1090,7 +1090,7 @@ int setup_fixed_grid::setup_boundary_structs(
       grid->BC_bd[i]->dir = NO;
       if (par.BC_Nint < i - 2 * par.ndim) {
         spdlog::error("{}: {}", "Bad Number of boundaries", par.BC_Nint);
-        exit(1);
+        exit_pion(1);
       }
       else {
         grid->BC_bd[i]->type = par.BC_INT[i - 2 * par.ndim];
@@ -1115,14 +1115,14 @@ int setup_fixed_grid::setup_boundary_structs(
       else {
         spdlog::error(
             "{}: {}", "Don't know this BC type", grid->BC_bd[i]->type);
-        exit(1);
+        exit_pion(1);
       }
 
       if (!grid->BC_bd[i]->data.empty()) {
         spdlog::error(
             "{}: {}", "Boundary data not empty in constructor!",
             grid->BC_bd[i]->data.size());
-        exit(1);
+        exit_pion(1);
       }
       grid->BC_bd[i]->refval = 0;
 
@@ -1155,7 +1155,7 @@ void setup_fixed_grid::setup_dataio_class(
       dataio = new dataio_text(par);
       if (!dataio) {
         spdlog::error("{}: {}", "dataio_text initialisation", fmt::ptr(dataio));
-        exit(1);
+        exit_pion(1);
       }
       break;
 
@@ -1178,14 +1178,14 @@ void setup_fixed_grid::setup_dataio_class(
       textio = new dataio_text(par);
       if (!textio) {
         spdlog::error("{}: {}", "INIT:: textio initialisation", par.typeofop);
-        exit(1);
+        exit_pion(1);
       }
       break;
 #endif  // if SILO
     default:
       spdlog::error(
           "{}: {}", "setup_fixed_grid::Init unhandled filetype", typeOfFile);
-      exit(1);
+      exit_pion(1);
       break;
   }
   return;
@@ -1207,34 +1207,34 @@ int setup_fixed_grid::set_equations(
   if (par.solverType < 0) {
     spdlog::error(
         "{}: {}", "set_equations: solverType not set yet.", par.solverType);
-    exit(1);
+    exit_pion(1);
   }
   if (par.eqntype <= 0) {
     spdlog::error("{}: {}", "set_equations: eqntype not set yet.", par.eqntype);
-    exit(1);
+    exit_pion(1);
   }
   if (par.eqnNDim != 3) {
     spdlog::error(
         "{}: {}", "set_equations: eqnNDim not set right.", par.eqnNDim);
-    exit(1);
+    exit_pion(1);
   }
   if (par.nvar <= 0) {
     spdlog::error("{}: {}", "set_equations: nvar not set yet.", par.nvar);
-    exit(1);
+    exit_pion(1);
   }
   if (par.ndim <= 0) {
     spdlog::error("{}: {}", "set_equations: ndim not set yet.", par.ndim);
-    exit(1);
+    exit_pion(1);
   }
   if (par.artviscosity < 0) {
     spdlog::error(
         "{}: {}", "set_equations: artviscosity not set yet.", par.artviscosity);
-    exit(1);
+    exit_pion(1);
   }
   if (par.coord_sys < 0) {
     spdlog::error(
         "{}: {}", "set_equations: coordinate system not set.", par.coord_sys);
-    exit(1);
+    exit_pion(1);
   }
 
 #ifdef PION_OMP
@@ -1263,7 +1263,7 @@ int setup_fixed_grid::set_equations(
           if (!spatial_solver) {
             spdlog::error(
                 "{}: {}", "Couldn't set up solver/equations class.", EQEUL);
-            exit(1);
+            exit_pion(1);
           }
           break;
         case EQMHD:
@@ -1277,7 +1277,7 @@ int setup_fixed_grid::set_equations(
           if (!spatial_solver) {
             spdlog::error(
                 "{}: {}", "Couldn't set up solver/equations class.", EQMHD);
-            exit(1);
+            exit_pion(1);
           }
           break;
         case EQGLM:
@@ -1291,7 +1291,7 @@ int setup_fixed_grid::set_equations(
           if (!spatial_solver) {
             spdlog::error(
                 "{}: {}", "Couldn't set up solver/equations class.", EQGLM);
-            exit(1);
+            exit_pion(1);
           }
           break;
         case EQFCD:
@@ -1301,12 +1301,12 @@ int setup_fixed_grid::set_equations(
           spdlog::info("set_equations() Using Field-CD MHD Equations");
           spdlog::error(
               "{}: {}", "Field CD got lost in some code updates", EQFCD);
-          exit(1);
+          exit_pion(1);
           break;
         default:
           spdlog::error(
               "{}: {}", "Don't know the specified equations...", par.eqntype);
-          exit(1);
+          exit_pion(1);
           break;
       }
     }  // cartesian
@@ -1328,7 +1328,7 @@ int setup_fixed_grid::set_equations(
           if (!spatial_solver) {
             spdlog::error(
                 "{}: {}", "Couldn't set up solver/equations class.", EQEUL);
-            exit(1);
+            exit_pion(1);
           }
           break;
         case EQMHD:
@@ -1342,7 +1342,7 @@ int setup_fixed_grid::set_equations(
           if (!spatial_solver) {
             spdlog::error(
                 "{}: {}", "Couldn't set up solver/equations class.", EQMHD);
-            exit(1);
+            exit_pion(1);
           }
           break;
         case EQGLM:
@@ -1356,13 +1356,13 @@ int setup_fixed_grid::set_equations(
           if (!spatial_solver) {
             spdlog::error(
                 "{}: {}", "Couldn't set up solver/equations class.", EQGLM);
-            exit(1);
+            exit_pion(1);
           }
           break;
         default:
           spdlog::error(
               "{}: {}", "not implemented yet for axisymmetry", par.eqntype);
-          exit(1);
+          exit_pion(1);
       }
     }  // axisymmetric
 
@@ -1383,13 +1383,13 @@ int setup_fixed_grid::set_equations(
           if (!spatial_solver) {
             spdlog::error(
                 "{}: {}", "Couldn't set up solver/equations class.", EQEUL);
-            exit(1);
+            exit_pion(1);
           }
           break;
         default:
           spdlog::error(
               "{}: {}", "not implemented yet for spherical", par.eqntype);
-          exit(1);
+          exit_pion(1);
       }
     }  // spherically symmetric
 
@@ -1412,7 +1412,7 @@ int setup_fixed_grid::set_equations(
     spdlog::error(
         "{}: {}", "setup_fixed_grid::set_equations() Failed",
         fmt::ptr(spatial_solver));
-    exit(1);
+    exit_pion(1);
   }
 
   return (0);

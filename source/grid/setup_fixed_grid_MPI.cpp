@@ -180,7 +180,7 @@ int setup_fixed_grid_pllel::setup_raytracing(
   if (!MP) {
     spdlog::error(
         "{}: {}", "can't do raytracing without microphysics", fmt::ptr(MP));
-    exit(1);
+    exit_pion(1);
   }
   grid->RT = 0;
   //
@@ -220,7 +220,7 @@ int setup_fixed_grid_pllel::setup_raytracing(
     if (!grid->RT) {
       spdlog::error(
           "{}: {}", "init pllel-rays raytracer error", fmt::ptr(grid->RT));
-      exit(1);
+      exit_pion(1);
     }
   }
   else {

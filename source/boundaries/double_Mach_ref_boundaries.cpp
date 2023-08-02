@@ -31,7 +31,7 @@ int double_Mach_ref_bc::BC_assign_DMACH(
 
   if (b->data.empty()) {
     spdlog::error("BC_assign_DMACH: empty boundary data {}", b->itype);
-    exit(1);
+    exit_pion(1);
   }
   //
   // Set reference value to be downstream values.
@@ -91,7 +91,7 @@ int double_Mach_ref_bc::BC_assign_DMACH(
 
   if (ct != b->data.size()) {
     spdlog::error("BC_assign_: missed some cells! {} {}", ct, b->data.size());
-    exit(2);
+    exit_pion(2);
   }
 #ifndef NDEBUG
   spdlog::info("Setting up DMACH boundary... finished.");
@@ -117,14 +117,14 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
 
   if (b->dir != NO) {
     spdlog::error("DMACH2 not internal boundary! {}", static_cast<int>(b->dir));
-    exit(3);
+    exit_pion(3);
   }
   spdlog::info("DMACH2 boundary, from x=0 to x=1/6 at y=0, fixed bd.");
   if (b->refval) {
     spdlog::error(
         "Already initialised memory in DMACH2 boundary refval {}",
         fmt::ptr(b->refval));
-    exit(4);
+    exit_pion(4);
   }
   b->refval = mem.myalloc(b->refval, par.nvar);
 
@@ -142,7 +142,7 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
   //
   if (!b->data.empty()) {
     spdlog::error("BC_assign_DMACH2: Not empty boundary data {}", b->itype);
-    exit(5);
+    exit_pion(5);
   }
   cell *c = grid->FirstPt();
   while (grid->NextPt(*c, XN) != 0)
@@ -174,7 +174,7 @@ int double_Mach_ref_bc::BC_assign_DMACH2(
           spdlog::error(
               "BC_assign_DMACH2: Looking for Boundary cells {}",
               fmt::ptr(temp));
-          exit(6);
+          exit_pion(6);
         }
       }
     }

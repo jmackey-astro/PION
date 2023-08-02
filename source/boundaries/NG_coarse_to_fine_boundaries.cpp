@@ -504,7 +504,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
     if (!isfinite(f1.P[v]) || !isfinite(f2.P[v])) {
       spdlog::error(
           "{}: {} {}", "1D C2F: fine 1,2 not finite", f1.P[v], f2.P[v]);
-      exit(1);
+      exit_pion(1);
     }
   }
 #endif
@@ -545,7 +545,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
   if (par.coord_sys != COORD_CRT) {
     spdlog::error("C2F volumes not implemented for non-Cartesian coords");
     spdlog::error("Need to implement correction factor for wind cells");
-    exit(1);
+    exit_pion(1);
   }
 
   // int idx = 2*fine->idx(); // idx of coarse cell
@@ -604,7 +604,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
       if (!isfinite(fU[i][v])) {
         spdlog::debug("error in 3D C2F interpolation: i={}, v={}", i, v);
         spdlog::debug("Unscaled fine : {}", fU[i][v]);
-        exit(1);
+        exit_pion(1);
       }
     }
   }
@@ -646,7 +646,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
       if (!isfinite(fU[i][v])) {
         spdlog::debug("error in 3D C2F interpolation: i={}, v={}", i, v);
         spdlog::error("{}: {}", "C2F fine cell not finite", fU[i][v], par.nvar);
-        exit(1);
+        exit_pion(1);
       }
     }
   }
@@ -807,7 +807,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
     if (!isfinite(f3.P[v]) || !isfinite(f4.P[v])) {
       spdlog::error(
           "{}: {} {}", "2D C2F fine 3,4 not finite", f3.P[v], f4.P[v]);
-      exit(1);
+      exit_pion(1);
     }
   }
 #endif

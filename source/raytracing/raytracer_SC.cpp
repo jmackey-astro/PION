@@ -155,11 +155,11 @@ raytracer_USC_infinity::raytracer_USC_infinity(
       || NO != -1) {
     spdlog::error(
         "direction enums not what is expected, bad stuff will happen.");
-    exit(1);
+    exit_pion(1);
   }
   if (XX != 0 || YY != 1 || ZZ != 2) {
     spdlog::error("axes enums not what is expected, bad stuff will happen.");
-    exit(2);
+    exit_pion(2);
   }
 
   raytracer_USC_infinity::gridptr = 0;
@@ -170,7 +170,7 @@ raytracer_USC_infinity::raytracer_USC_infinity(
     spdlog::error(
         "grid or microphysics null pointers {} {}", fmt::ptr(gridptr),
         fmt::ptr(mpptr));
-    exit(3);
+    exit_pion(3);
   }
 
 #ifdef RT_TESTING
@@ -179,11 +179,11 @@ raytracer_USC_infinity::raytracer_USC_infinity(
 
   if (ndim < 1 || ndim > 3) {
     spdlog::error("bad ndim for raytracing {}", ndim);
-    exit(4);
+    exit_pion(4);
   }
   if (SourceList.size() != 0) {
     spdlog::error("SourceList badly initialised {}", SourceList.size());
-    exit(5);
+    exit_pion(5);
   }
 
   N_ion_srcs     = 0;
@@ -307,7 +307,7 @@ void raytracer_USC_infinity::add_source_to_list(
         "The opacity var will run off the end of the state vector array");
     spdlog::info("OPACITY_VAR IS OFFSET - 1ST TRACER HAS OPACITY_VAR=0");
     spdlog::error("Bad opacity var for source: {}", rs->s->id);
-    exit(7);
+    exit_pion(7);
   }
 
   //
@@ -358,7 +358,7 @@ void raytracer_USC_infinity::add_source_to_list(
   if (dir == NO) {
     spdlog::error(
         "source not at infinity in any direction", static_cast<int>(dir));
-    exit(8);
+    exit_pion(8);
   }
 
   //
@@ -371,7 +371,7 @@ void raytracer_USC_infinity::add_source_to_list(
   if (coord_sys == COORD_CYL) {
     if (dir != ZNcyl && dir != ZPcyl && dir != RPcyl) {
       spdlog::error("Cylindrical coords, src at R<0!", static_cast<int>(dir));
-      exit(9);
+      exit_pion(9);
     }
   }
 
@@ -424,7 +424,7 @@ void raytracer_USC_infinity::set_Vshell_for_source(struct rad_source *this_src)
     err += ProcessCell(*c, Nc, ds, this_src);
     if (err != 0) {
       spdlog::error("rt_inf:Vshell {}", err);
-      exit(10);
+      exit_pion(10);
     }
   } while ((c = gridptr->NextPt_All(*c)) != 0);
 
@@ -478,7 +478,7 @@ void raytracer_USC_infinity::update_RT_source_properties(
     if ((*i).s->id == rs->id) src = &(*i);
   if (!src) {
     spdlog::error("update_RT_source_properties() no source {}", rs->id);
-    exit(11);
+    exit_pion(11);
   }
   //
   // copy parameters.
@@ -527,7 +527,7 @@ int raytracer_USC_infinity::populate_ionising_src_list(
         ion_list.size(), N_ion_srcs);
     spdlog::error(
         "Wrong size rt_USC_infty::populate_ionising_src_list {}", N_ion_srcs);
-    exit(12);
+    exit_pion(12);
   }
 #endif  // RT_TESTING
 
@@ -563,7 +563,7 @@ int raytracer_USC_infinity::populate_UVheating_src_list(
         uvh_list.size(), N_uvh_srcs);
     spdlog::error(
         "Wrong size rt_USC_infty::populate_uvheat_src_list {}", N_uvh_srcs);
-    exit(13);
+    exit_pion(13);
   }
 #endif  // RT_TESTING
 
@@ -691,7 +691,7 @@ int raytracer_USC_infinity::RayTrace_SingleSource(
   if (dir == NO) {
     spdlog::error(
         "source not at infinity in any direction", static_cast<int>(dir));
-    exit(14);
+    exit_pion(14);
   }
 
   int err = trace_parallel_rays(source, dir);
@@ -711,7 +711,7 @@ int raytracer_USC_infinity::trace_parallel_rays(
   // make sure source cell is at the edge of the grid, in direction dir.
   if (gridptr->NextPt(*c, dir) != 0 && gridptr->NextPt(*c, dir)->isgd) {
     spdlog::error("source cell not set up right {}", source->s->id);
-    exit(15);
+    exit_pion(15);
   }
 #ifdef RT_TESTING
   spdlog::info("raytracer_USC_infinity::trace_parallel_rays");
@@ -736,7 +736,7 @@ int raytracer_USC_infinity::trace_parallel_rays(
     else {
       spdlog::error(
           "Source not in xy plane in 2d sim! {}", static_cast<int>(dir));
-      exit(16);
+      exit_pion(16);
     }
     do {
       err += trace_column_parallel(source, c, oppdir);
@@ -760,7 +760,7 @@ int raytracer_USC_infinity::trace_parallel_rays(
     else {
       spdlog::error(
           "bad dir in trace_parallel_rays() {}", static_cast<int>(dir));
-      exit(17);
+      exit_pion(17);
     }
     cell *cp;
     do {
@@ -799,7 +799,7 @@ int raytracer_USC_infinity::trace_column_parallel(
     spdlog::error(
         "{}: {}", "Can't have source on grid for parallel rays!",
         source->s->id);
-    exit(18);
+    exit_pion(18);
   }
 #endif  // RT_TESTING
 
@@ -809,7 +809,7 @@ int raytracer_USC_infinity::trace_column_parallel(
 
     if (c->Ph[PG] < 0.0 || !isfinite(c->Ph[PG])) {
       spdlog::error("ProcessCell() gives negative energy! {}", c->Ph[PG]);
-      exit(19);
+      exit_pion(19);
     }
 
   } while ((c = gridptr->NextPt(*c, dir)) != 0);
@@ -1021,7 +1021,7 @@ int raytracer_USC_infinity::ProcessCell(
 
     default:
       spdlog::error("RT-ProcessCell opacity? {}", source->s->opacity_src);
-      exit(20);
+      exit_pion(20);
       break;
   }
   CI.set_cell_col(c, source->s->id, cell_col);
@@ -1105,11 +1105,11 @@ raytracer_USC::raytracer_USC(
 
   if (ndim < 1 || ndim > 3) {
     spdlog::error("bad ndim for raytracing! {}", ndim);
-    exit(21);
+    exit_pion(21);
   }
   if (coord_sys == COORD_CYL && ndim != 2) {
     spdlog::error("only know 2d cylindrical coords {}", ndim);
-    exit(22);
+    exit_pion(22);
   }
   raytracer_USC::SrcDir = std::vector<enum direction>(ndim, NO);
 
@@ -1269,7 +1269,7 @@ void raytracer_USC::add_source_to_list(
 #ifdef RT_TESTING
   if (TauMin[rs->s->id] < 0) {
     spdlog::error("Duhhh {}", TauMin[rs->s->id]);
-    exit(23);
+    exit_pion(23);
   }
   spdlog::debug(
       "\t\tSource id:{} has TauMin[id]={}", rs->s->id, TauMin[rs->s->id]);
@@ -1293,7 +1293,7 @@ void raytracer_USC::set_TauMin_for_source(const struct rad_source rs)
   if (TauMin.size() <= static_cast<unsigned int>(rs.s->id)) {
     spdlog::error(
         "Source id is larger than Nsources! {}", rs.s->id - TauMin.size());
-    exit(24);
+    exit_pion(24);
   }
   TauMin[rs.s->id] = 0.7;
   if (ndim == 3) TauMin[rs.s->id] *= 6.0 / 7.0;
@@ -1362,7 +1362,7 @@ void raytracer_USC::set_Vshell_for_source(struct rad_source *this_src)
     err += ProcessCell(*c, Nc, ds, this_src);
     if (err != 0) {
       spdlog::error("rt_finite:Vshell {}", err);
-      exit(25);
+      exit_pion(25);
     }
   } while ((c = gridptr->NextPt_All(*c)) != 0);
 
@@ -1461,7 +1461,7 @@ int raytracer_USC::RayTrace_SingleSource(
   if (ct) {
     if (ct > 1) {
       spdlog::error("source at infinity not parallel to axis! {}", ct);
-      exit(26);
+      exit_pion(26);
     }
     enum direction dir = NO;
     for (int i = 0; i < ndim; i++)
@@ -1489,7 +1489,7 @@ int raytracer_USC::RayTrace_SingleSource(
 #ifdef RT_TESTING
   if (sc != temp) {
     spdlog::error("set_startcells() changed sc! {}", sc);  // testing only
-    exit(26);
+    exit_pion(26);
   }
   spdlog::debug("start cells!: ");
   for (int v = 0; v < ndirs; v++)
@@ -1527,7 +1527,7 @@ int raytracer_USC::RayTrace_SingleSource(
         err += trace_column(source, c, dirs[XX]);
       else {
         spdlog::error("bad ndim in RayTrace_SingleSource() {}", ndim);
-        exit(27);
+        exit_pion(27);
       }
     }
 
@@ -1578,12 +1578,12 @@ void raytracer_USC::set_startcells(
             in_my_half = true;
           else {
             spdlog::error("logic error in RayTraceSource() {}", fmt::ptr(c));
-            exit(28);
+            exit_pion(28);
           }
         }
         else {
           spdlog::error("Bad direction {}", static_cast<int>(src_off_grid[XX]));
-          exit(29);
+          exit_pion(29);
         }
         if (in_my_half)
           startcell[i] = c;
@@ -1593,7 +1593,7 @@ void raytracer_USC::set_startcells(
       else {
         spdlog::error(
             "Bad direction in 1D RayTraceSource() {}", static_cast<int>(dir));
-        exit(30);
+        exit_pion(30);
       }
     }  // directions
   }    // 1D
@@ -1684,7 +1684,7 @@ void raytracer_USC::set_startcells(
       }
       else {
         spdlog::error("logic error!! {}", i);
-        exit(31);
+        exit_pion(31);
       }
     }
   }  // 2D
@@ -1736,7 +1736,7 @@ void raytracer_USC::set_startcells(
           else {
             spdlog::error(
                 "RayTracing3D::RayTraceSource logic error OCT2 {}", oct);
-            exit(32);
+            exit_pion(32);
           }
         }
         else if (oct == OCT4) {
@@ -1749,7 +1749,7 @@ void raytracer_USC::set_startcells(
           }
           else {
             spdlog::error("RayTracing3D::RayTraceSource logic error OCT4", oct);
-            exit(33);
+            exit_pion(33);
           }
         }
         else if (oct == OCT3) {
@@ -1778,7 +1778,7 @@ void raytracer_USC::set_startcells(
           else {
             spdlog::error(
                 "RayTracing3D::RayTraceSource logic error OCT3 {}", oct);
-            exit(34);
+            exit_pion(34);
           }
         }
         else if (oct == OCT5) {  // XP,YP,ZN
@@ -1792,7 +1792,7 @@ void raytracer_USC::set_startcells(
           else {
             spdlog::error(
                 "RayTracing3D::RayTraceSource logic error OCT5 {}", oct);
-            exit(35);
+            exit_pion(35);
           }
         }
         else if (oct == OCT6) {  // XN,YP,ZN
@@ -1815,7 +1815,7 @@ void raytracer_USC::set_startcells(
           else {
             spdlog::error(
                 "RayTracing3D::RayTraceSource logic error OCT6 {}", oct);
-            exit(36);
+            exit_pion(36);
           }
         }
         else if (oct == OCT8) {  // XP,YN,ZN
@@ -1838,7 +1838,7 @@ void raytracer_USC::set_startcells(
           else {
             spdlog::error(
                 "RayTracing3D::RayTraceSource logic error OCT8 {}", oct);
-            exit(38);
+            exit_pion(38);
           }
         }
         else if (oct == OCT7) {
@@ -1873,12 +1873,12 @@ void raytracer_USC::set_startcells(
           else {
             spdlog::error(
                 "RayTracing3D::RayTraceSource logic error OCT7 {}", oct);
-            exit(37);
+            exit_pion(37);
           }
         }
         else {
           spdlog::error("RayTracing3D::RayTraceSource bad octant {}", oct);
-          exit(39);
+          exit_pion(39);
         }
 
       }  // octant may have cells, so set the starting cell.
@@ -1890,7 +1890,7 @@ void raytracer_USC::set_startcells(
   }     // 3D
   else {
     spdlog::error("bad ndim in raytracer_USC::set_startcells() {}", ndim);
-    exit(40);
+    exit_pion(40);
   }
   return;
 }
@@ -1984,7 +1984,7 @@ void raytracer_USC::centre_source_on_cell(
   if (!pconst.equalD(dist, 0.0)) {
     if (fabs(dist) > 1.0) {
       spdlog::error("centre_source_on_cell() wrong distance {}", dist);
-      exit(41);
+      exit_pion(41);
     }
     //
     // Source is not at a cell boundary, so find the nearest one.  if
@@ -2009,7 +2009,7 @@ void raytracer_USC::centre_source_on_cell(
       pos[axis] -= dist * dx;
     else {
       spdlog::error("logic failed in centre_source_on_cell() {}", dist);
-      exit(42);
+      exit_pion(42);
     }
 #ifdef RT_TESTING
     spdlog::debug("New Source Location: x = {}", pos[axis]);
@@ -2131,7 +2131,7 @@ int raytracer_USC::get_cell_columns(
   }
   else {
     spdlog::error("bad ndim in get_cell_columns() {}", ndim);
-    exit(43);
+    exit_pion(43);
   }
   return err;
 }
@@ -2234,7 +2234,7 @@ int raytracer_USC::cell_cols_2d(
       Nc[0] = 0.0;
       spdlog::error(
           "Got negative column from a cell when we shouldn't have! {}", Nc[0]);
-      exit(43);
+      exit_pion(43);
     }
 #endif  // RT_TESTING
 
@@ -2391,7 +2391,7 @@ int raytracer_USC::cell_cols_3d(
         if (gridptr->NextPt(c, XP)) CI.print_cell(gridptr->NextPt(c, XP));
         Nc[0] = 0.0;
         spdlog::error("wrongly got negative column from cell! {}", Nc[0]);
-        exit(44);
+        exit_pion(44);
       }
     }
 #endif  // RT_TESTING
@@ -2586,7 +2586,7 @@ void raytracer_USC::col2cell_3d(
       if (!c4) {
         spdlog::error(
             "lost on grid - corner cell doesn't exist {}", fmt::ptr(c4));
-        exit(45);
+        exit_pion(45);
       }
       CI.get_col(*c4, src->s->id, col4);
     }

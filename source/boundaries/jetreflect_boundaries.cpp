@@ -19,7 +19,7 @@ int jetreflect_bc::BC_assign_JETREFLECT(
 {
   if (b->data.empty()) {
     spdlog::error("BC_assign_: empty boundary data {}", b->itype);
-    exit(1);
+    exit_pion(1);
   }
 
   if (!b->refval) {
@@ -47,7 +47,7 @@ int jetreflect_bc::BC_assign_JETREFLECT(
     case NO:
     default:
       spdlog::error("BAD DIRECTION {}", static_cast<int>(b->dir));
-      exit(2);
+      exit_pion(2);
       break;
   }  // Set Normal velocity direction.
   //
@@ -90,7 +90,7 @@ int jetreflect_bc::BC_assign_JETREFLECT(
     }
     if (!temp) {
       spdlog::error("Got lost assigning jet-reflecting bcs. {}", temp->id);
-      exit(2);
+      exit_pion(2);
     }
     for (int v = 0; v < par.nvar; v++)
       (*bpt)->P[v] = temp->P[v] * b->refval[v];
@@ -105,7 +105,7 @@ int jetreflect_bc::BC_assign_JETREFLECT(
 
   if (ct != b->data.size()) {
     spdlog::error("BC_assign_: missed some cells {} {}", ct, b->data.size());
-    exit(3);
+    exit_pion(3);
   }
   return 0;
 }

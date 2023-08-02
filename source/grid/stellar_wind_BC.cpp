@@ -315,7 +315,7 @@ int stellar_wind::add_cell(
       //    "inf theta={}, opp1={}, adj1={}, opp2={}, adj2={}, arg={}",
       //    wc->theta, opp1, adj1, opp2, adj2, fabs(adj2 / opp2));
       spdlog::error("{}: {}", "theta is not finite.", wc->theta);
-      exit(1);
+      exit_pion(1);
     }
     // DEBUG
   }

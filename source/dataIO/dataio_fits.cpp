@@ -1094,7 +1094,7 @@ int DataIOFits::read_fits_image(
   // This creates a new file with name given.  status is non-zero if it fails,
   // which happens if the file exists.
   fits_create_file(&ff, opfile.c_str(), &status);
-  if(status) {cerr<<"file open went bad.\n";exit(1);}
+  if(status) {cerr<<"file open went bad.\n";exit_pion(1);}
   //  cout <<"done.\n";
 
   char temp[256];
@@ -1111,21 +1111,21 @@ int DataIOFits::read_fits_image(
   dimensions in vectors", &status); err += fits_write_key(ff, TINT, "eqnnvar",
   &SimPM.nvar,  "Num. variables in equations", &status);
   //  if(status) {fits_report_error(stderr,status);cout
-  <<"count="<<count<<"\n";exit(1);} else count++; err += fits_write_key(ff,
+  <<"count="<<count<<"\n";exit_pion(1);} else count++; err += fits_write_key(ff,
   TINT, "ntracer",   &SimPM.ntracer, "Num. tracer variables in equations",
   &status);
   //  if(status) {fits_report_error(stderr,status);cout
-  <<"count="<<count<<"\n";exit(1);} else count++; err += fits_write_key(ff,
+  <<"count="<<count<<"\n";exit_pion(1);} else count++; err += fits_write_key(ff,
   TINT, "coordsys",   &SimPM.coord_sys, "Coordinate system, cart=1,cyl=2",
   &status);
   //  if(status) {fits_report_error(stderr,status);cout
-  <<"count="<<count<<"\n";exit(1);} else count++; err += fits_write_key(ff,
+  <<"count="<<count<<"\n";exit_pion(1);} else count++; err += fits_write_key(ff,
   TDOUBLE, "tsim",   &SimPM.simtime, "current time in simulation", &status); err
   += fits_write_key(ff, TDOUBLE, "tstart", &SimPM.starttime, "initial time to
   start simulation", &status); err += fits_write_key(ff, TDOUBLE,
   "tfinish",&SimPM.finishtime, "Time to finish the simulation", &status);
   //  if(status) {fits_report_error(stderr,status);cout
-  <<"count="<<count<<"\n";exit(1);} else count++; err += fits_write_key(ff,
+  <<"count="<<count<<"\n";exit_pion(1);} else count++; err += fits_write_key(ff,
   TINT, "tstep",&SimPM.timestep, "TIMESTEP SINCE START OF SIM", &status); err +=
   fits_write_key(ff, TINT, "ngx",&SimPM.NG[XX], "Number of grid-points in
   X-direction", &status); err += fits_write_key(ff, TINT, "ngy",&SimPM.NG[YY],
@@ -1134,25 +1134,25 @@ int DataIOFits::read_fits_image(
   err += fits_write_key(ff, TINT, "Ncell",&SimPM.Ncell, "Total Number of Grid
   Points", &status);
   //  if(status) {fits_report_error(stderr,status);cout
-  <<"count="<<count<<"\n";exit(1);} else count++; err += fits_write_key(ff,
+  <<"count="<<count<<"\n";exit_pion(1);} else count++; err += fits_write_key(ff,
   TDOUBLE, "xmin",   &SimPM.Xmin[XX], "min. value of X", &status);
   //  if(status) {fits_report_error(stderr,status);cout <<"xmin
-  count="<<count<<"\n";exit(1);} else count++; err += fits_write_key(ff,
+  count="<<count<<"\n";exit_pion(1);} else count++; err += fits_write_key(ff,
   TDOUBLE, "ymin",   &SimPM.Xmin[YY], "min. value of Y", &status);
   //  if(status) {fits_report_error(stderr,status);cout <<"ymin
-  count="<<count<<"\n";exit(1);} else count++; err += fits_write_key(ff,
+  count="<<count<<"\n";exit_pion(1);} else count++; err += fits_write_key(ff,
   TDOUBLE, "zmin",   &SimPM.Xmin[ZZ], "min. value of Z", &status);
   //  if(status) {fits_report_error(stderr,status);cout <<"zmin
-  count="<<count<<"\n";exit(1);} else count++; err += fits_write_key(ff,
+  count="<<count<<"\n";exit_pion(1);} else count++; err += fits_write_key(ff,
   TDOUBLE, "xmax",   &SimPM.Xmax[XX], "max. value of X", &status);
   //  if(status) {fits_report_error(stderr,status);cout
-  <<"count="<<count<<"\n";exit(1);} else count++; err += fits_write_key(ff,
+  <<"count="<<count<<"\n";exit_pion(1);} else count++; err += fits_write_key(ff,
   TDOUBLE, "ymax",   &SimPM.Xmax[YY], "max. value of Y", &status);
   //  if(status) {fits_report_error(stderr,status);cout
-  <<"count="<<count<<"\n";exit(1);} else count++; err += fits_write_key(ff,
+  <<"count="<<count<<"\n";exit_pion(1);} else count++; err += fits_write_key(ff,
   TDOUBLE, "zmax",   &SimPM.Xmax[ZZ], "max. value of Z", &status);
   //  if(status) {fits_report_error(stderr,status);cout
-  <<"count="<<count<<"\n";exit(1);} else count++;
+  <<"count="<<count<<"\n";exit_pion(1);} else count++;
   strcpy(temp,SimPM.typeofbc.c_str());
   err += fits_write_key(ff, TSTRING, "typeofbc", temp, "Type Of Boundary
   Conditions", &status); err += fits_write_key(ff, TINT, "nbc", &SimPM.Nbc,
@@ -1196,7 +1196,7 @@ int DataIOFits::read_fits_image(
   on to data.\n";
   //  err += fits_write_key(ff, TDOUBLE, "", &SimPM., "", &status);
   //  if(status) {fits_report_error(stderr,status);cout
-  <<"count="<<count<<"\n";exit(1);} else count++;
+  <<"count="<<count<<"\n";exit_pion(1);} else count++;
 
   if (flag==2) { // write data to fits images.
     // Now write all the data in sequence, with each variable written to its own

@@ -690,7 +690,7 @@ int stellar_wind_angle::add_rotating_source(
       break;
     default:
       spdlog::error("What type of source is this? {}", wp->type);
-      exit(1);
+      exit_pion(1);
       break;
   }
 
@@ -707,7 +707,7 @@ int stellar_wind_angle::add_rotating_source(
   ws->cells_added = false;
   if (!ws->wcells.empty()) {
     spdlog::error("wind_source: wcells not empty :( {}", ws->wcells.size());
-    exit(1);
+    exit_pion(1);
   }
 
   //
@@ -717,7 +717,7 @@ int stellar_wind_angle::add_rotating_source(
     if (!pconst.equalD(wp->dpos[Rsph], 0.0)) {
       spdlog::error(
           "Spherical symmetry but source not at origin {}", wp->dpos[Rsph]);
-      exit(1);
+      exit_pion(1);
     }
   }
   if (coordsys == COORD_CYL && ndim == 2) {
@@ -726,7 +726,7 @@ int stellar_wind_angle::add_rotating_source(
     //
     if (!pconst.equalD(wp->dpos[Rcyl], 0.0)) {
       spdlog::error("Axisymmetry but source not at R=0 : {}", wp->dpos[Rcyl]);
-      exit(1);
+      exit_pion(1);
     }
   }
 

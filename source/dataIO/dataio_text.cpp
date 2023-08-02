@@ -793,7 +793,7 @@ int dataio_text::assign_initial_data(
       }
       else {
         spdlog::error("please use an angle between 0 and 90 degrees");
-        exit(1);
+        exit_pion(1);
       }
 
       if (fabs(theta) < 1.e-6) {  // If zero slope, then just run a

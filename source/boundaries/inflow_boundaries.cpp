@@ -63,7 +63,7 @@ int inflow_bc::BC_assign_INFLOW(
     case NO:
     default:
       spdlog::error("bad direction in inflow boundary");
-      exit(1);
+      exit_pion(1);
       break;
   }
 
@@ -107,7 +107,7 @@ int inflow_bc::BC_assign_INFLOW(
         case NO:
         default:
           spdlog::error("bad direction in inflow boundary 2");
-          exit(1);
+          exit_pion(1);
           break;
       }
     } while (!brk);
@@ -142,7 +142,7 @@ int inflow_bc::BC_assign_INFLOW(
   if (ct != b->data.size()) {
     spdlog::error(
         "{}: {}", "BC_assign_INFLOW: missed some cells!", ct - b->data.size());
-    exit(1);
+    exit_pion(1);
   }
 
   return 0;

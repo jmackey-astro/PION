@@ -30,13 +30,13 @@ int jet_bc::BC_assign_JETBC(
 {
   if (!JP.jetic) {
     spdlog::error("BC_assign_JETBC: not a jet simulation {}", JP.jetic);
-    exit(1);
+    exit_pion(1);
   }
   if (b->dir != NO) {
     spdlog::error(
         "BC_assign_JETBC: boundary is not an internal one {}",
         static_cast<int>(b->dir));
-    exit(2);
+    exit_pion(2);
   }
   cell *c    = grid->FirstPt();
   cell *temp = 0, *cy = 0;
@@ -74,7 +74,7 @@ int jet_bc::BC_assign_JETBC(
   }
   else {
     spdlog::error("BC_assign_JETBC: bad equation type {}", par.eqntype);
-    exit(3);
+    exit_pion(3);
   }
 
   if (par.eqntype == EQMHD || par.eqntype == EQGLM || par.eqntype == EQFCD) {
@@ -102,7 +102,7 @@ int jet_bc::BC_assign_JETBC(
 
   if (!b->data.empty()) {
     spdlog::error("BC_assign_JETBC: boundary data exists {}", b->itype);
-    exit(4);
+    exit_pion(4);
   }
 
   //
@@ -170,14 +170,14 @@ int jet_bc::BC_assign_JETBC(
           if (temp->isgd) {
             spdlog::error(
                 "Looking for Boundary cells! setupjet {}", fmt::ptr(temp));
-            exit(5);
+            exit_pion(5);
           }
         }
         ct++;
       } while ((c = grid->NextPt(*c, YP)) && ct < JP.jetradius);
       if (ct != JP.jetradius) {
         spdlog::error("Not enough cells for jet {} {}", ct, JP.jetradius);
-        exit(6);
+        exit_pion(6);
       }
       spdlog::debug("Got {} Cells in total for jet boundary", ctot);
     }  // 2D Axial Symmetry
@@ -221,7 +221,7 @@ int jet_bc::BC_assign_JETBC(
               if (temp->isgd) {
                 spdlog::error(
                     "Looking for Boundary cells! setupjet {}", fmt::ptr(temp));
-                exit(7);
+                exit_pion(7);
               }
             }
           }                                      // if within jet radius
@@ -232,7 +232,7 @@ int jet_bc::BC_assign_JETBC(
 
     else {
       spdlog::error("Only know how to set up jet in 2Dcyl or 3Dcart", par.ndim);
-      exit(8);
+      exit_pion(8);
     }
 
   }  // jetic==1
@@ -274,7 +274,7 @@ int jet_bc::BC_update_JETBC(
     }
     else {
       spdlog::error("Jet BC, but not 2d or 3d!!! {}", par.ndim);
-      exit(9);
+      exit_pion(9);
     }
     (*c)->P[VX]  = b->refval[VX] * min(1., 4 - 4.0 * dist / jr);
     (*c)->Ph[VX] = (*c)->P[VX];

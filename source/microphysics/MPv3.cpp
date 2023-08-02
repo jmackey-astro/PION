@@ -442,7 +442,7 @@ MPv3::MPv3(
   int err = setup_cvode_solver();
   if (err) {
     spdlog::debug("Failed to setup cvode solve: {}", err);
-    exit(1);
+    exit_pion(1);
   }
   // ================================================================
   // ================================================================
@@ -866,7 +866,7 @@ int MPv3::convert_prim2local(
   mpv_nH = p_in[RO] / mean_mass_per_H;
   if (mpv_nH < 0.0) {
     spdlog::error("Negative density input to MPv3 {}", p_in[RO]);
-    exit(1);
+    exit_pion(1);
   }
 
 #ifdef MPV3_DEBUG
@@ -913,12 +913,12 @@ int MPv3::convert_prim2local(
   for (int v = 0; v < 2; v++) {
     if (!isfinite(p_local[v])) {
       spdlog::error("INF/NAN input to microphysics {}", p_local[v]);
-      exit(1);
+      exit_pion(1);
     }
   }
   if (mpv_nH < 0.0 || !isfinite(mpv_nH)) {
     spdlog::error("Bad density input to MPv3::convert_prim2local {}", mpv_nH);
-    exit(1);
+    exit_pion(1);
   }
 #endif  // MPV3_DEBUG
 
@@ -1089,7 +1089,7 @@ void MPv3::get_dtau(
       spdlog::debug("id={}, effect={}", s->s->id, s->s->effect);
       spdlog::error(
           "{}: {}", "Bad source effect in MPv3::get_dtau()", s->s->effect);
-      exit(1);
+      exit_pion(1);
       break;
   }
   return;
@@ -1151,7 +1151,7 @@ int MPv3::TimeUpdateMP_RTnew(
     spdlog::error("Bad input state to MPv3::TimeUpdateMP_RTnew() {}", err);
     spdlog::info("P", P);
     spdlog::info("prim", std::vector<double>(p_in, p_in + nv_prim));
-    exit(1);
+    exit_pion(1);
   }
   setup_radiation_source_parameters(
       p_in, &P[0], N_heat, heat_src, N_ion, ion_src);
@@ -1164,7 +1164,7 @@ int MPv3::TimeUpdateMP_RTnew(
   if (err) {
     spdlog::error(
         "dYdt() returned an error in MPv3::TimeUpdateMP_RTnew() {}", err);
-    exit(1);
+    exit_pion(1);
   }
   for (int v = 0; v < nvl; v++) {
     maxdelta = max(maxdelta, fabs(NV_Ith_S(y_out, v) * dt / NV_Ith_S(y_in, v)));
@@ -1190,7 +1190,7 @@ int MPv3::TimeUpdateMP_RTnew(
           mpv_dTau0);
       spdlog::error(
           "integration failed again: MPv3::TimeUpdateMP_RTnew() {}", err);
-      exit(1);
+      exit_pion(1);
     }
   }
 
@@ -1271,7 +1271,7 @@ double MPv3::timescales_RT(
   err = convert_prim2local(p_in, P);
   if (err) {
     spdlog::error("{}: {}", "Bad input state to MPv3::timescales_RT()", err);
-    exit(1);
+    exit_pion(1);
   }
   NV_Ith_S(y_in, lv_H0)   = P[lv_H0];
   NV_Ith_S(y_in, lv_eint) = P[lv_eint];
@@ -1428,14 +1428,14 @@ void MPv3::setup_radiation_source_parameters(
     spdlog::error(
         "{}: {}", "Timescales: N_heating_srcs doesn't match vector size in MP3",
         heat_src.size());
-    exit(1);
+    exit_pion(1);
   }
   if (ion_src.size() != static_cast<unsigned int>(N_ion)) {
     spdlog::error(
         "{}: {}",
         "Timescales: N_ionising_srcs doesn't match vector size in MP3",
         ion_src.size());
-    exit(1);
+    exit_pion(1);
   }
 #endif  // MPV3_DEBUG
 
@@ -1664,7 +1664,7 @@ int MPv3::ydot(
     spdlog::error(
         "NAN in ydot: {}  {}  {}  {}  {}  {}", mpv_nH, mpv_delta_S, mpv_Tau0,
         mpv_Vshell, E_in, OneMinusX);
-    exit(1);
+    exit_pion(1);
   }
 #endif
 

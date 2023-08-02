@@ -68,7 +68,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
     int err = NG_BC89flux::setup_flux_recv(par, grid, lp1);
     if (0 != err) {
       spdlog::error("UniformGrid flux setup {}", err);
-      exit(err);
+      exit_pion(err);
     }
     err = flux_update_recv[l].size();
     for (int i = 0; i < err; i++) {
@@ -131,7 +131,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
         if ((ixmax[ax] - ixmin[ax]) % idx != 0) {
           spdlog::error(
               "interface region not divisible {} {}", ixmax[ax], ixmin[ax]);
-          exit(2);
+          exit_pion(2);
         }
       }  // all dimensions
       for (int d = 0; d < 2 * par.ndim; d++)
@@ -162,7 +162,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
           break;
         default:
           spdlog::error("bad ndim in setup_flux_recv {}", par.ndim);
-          exit(3);
+          exit_pion(3);
           break;
       }  // dims
     }    // all child grids
@@ -244,7 +244,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
     if (cgngb.size() != static_cast<size_t>(2 * par.ndim)) {
       spdlog::error(
           "l+1 neigbouring grids vector not set up right {}", cgngb.size());
-      exit(4);
+      exit_pion(4);
     }
 
     // try to find a direction (there is at most one).  If we find
@@ -394,7 +394,7 @@ int NG_MPI_BC89flux::setup_flux_send(
   int err = NG_BC89flux::setup_flux_send(par, grid, lm1);
   if (0 != err) {
     spdlog::error("NG_BC89flux::setup_flux_send {}", err);
-    exit(10);
+    exit_pion(10);
   }
 
   // Add ranks for each send, based on parent rank.
@@ -409,7 +409,7 @@ int NG_MPI_BC89flux::setup_flux_send(
   int ns = flux_update_send[l].size();
   if (ns != 2 * par.ndim) {
     spdlog::error("bad flux send size {}", ns);
-    exit(11);
+    exit_pion(11);
   }
 
   if (par.levels[l].sub_domain.get_nproc() == 1) {
@@ -542,11 +542,11 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
   }
   if (par.levels[l].step % 2 != 0) {
     spdlog::error("Don't call BC89 Flux-SEND on odd steps {}", 1);
-    exit(21);
+    exit_pion(21);
   }
   if (l == 0) {
     spdlog::error("{}: {}", "Coarsest level trying to send flux data", l);
-    exit(22);
+    exit_pion(22);
   }
   int err = 0;
 
@@ -610,7 +610,7 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
           fup->rank[ii], n_data, data, id, comm_tag);
       if (err) {
         spdlog::error("{}: {}", "FLUX_F2C send_data failed.", err);
-        exit(22);
+        exit_pion(22);
       }
 #ifdef TEST_BC89FLUX
       spdlog::info("l={}: BC89 FLUX: returned with id={}", l, id);
@@ -646,11 +646,11 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
   if (step != ooa) {
     spdlog::error("don't receive fluxes on half step");
     spdlog::error("{}: {}", "trying to receive BC89 flux on half step", l);
-    exit(31);
+    exit_pion(31);
   }
   if (l == par.grid_nlevels - 1) {
     spdlog::error("{}: {}", "finest level trying to receive data from l+1", l);
-    exit(32);
+    exit_pion(32);
   }
   int err = 0;
 
@@ -685,7 +685,7 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
           static_cast<axes>(fup->ax));
       if (0 != err) {
         spdlog::error("{}: Expected {} but got {}", "serial BC89 call", 0, err);
-        exit(33);
+        exit_pion(33);
       }
       continue;
     }
@@ -731,7 +731,7 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
     );
     if (err) {
       spdlog::error("{}: {}", "FLUX look for double data failed", err);
-      exit(34);
+      exit_pion(34);
     }
 #ifdef TEST_BC89FLUX
     spdlog::info(
@@ -747,7 +747,7 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
         from_rank, recv_tag, recv_id, n_data, buf);
     if (err) {
       spdlog::error("{}: {}", "(flux BC89) getdata failed", err);
-      exit(36);
+      exit_pion(36);
     }
 
     size_t iel = 0;
@@ -776,7 +776,7 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
               "l={}: element {} of FLUX C2F RECV:  var {} is {}", l, ii, iel,
               buf[iel]);
           spdlog::error("{}: {}", "infinite", buf[ii]);
-          exit(36);
+          exit_pion(36);
         }
 #endif
       }
@@ -811,7 +811,7 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
     }  // loop over elements
     if (iel != n_data) {
       spdlog::error("{}: {} {}", "ndata", iel, n_data);
-      exit(37);
+      exit_pion(37);
     }
 #ifdef TEST_BC89FLUX
     spdlog::info("l={}: BC89 FLUX: finished with recv ID {}", l, recv_id);

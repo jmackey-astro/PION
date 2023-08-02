@@ -178,7 +178,7 @@ int sim_control_pllel::Init(
   err = dataio->ReadHeader(infile, SimPM);
   if (0 != err) {
     spdlog::error("PLLEL Init(): failed to read header: {}", err);
-    exit(err);
+    exit_pion(err);
   }
 
   // have to do something with SimPM.levels[0] because this
@@ -211,7 +211,7 @@ int sim_control_pllel::Init(
   err = override_params(narg, args);
   if (0 != err) {
     spdlog::error("(INIT::override_params) err = {}", err);
-    exit(err);
+    exit_pion(err);
   }
 
   // Now set up the grid structure.
@@ -223,7 +223,7 @@ int sim_control_pllel::Init(
   SimPM.levels[0].grid = grid[0];
   if (0 != err) {
     spdlog::error("(INIT::setup_grid) err = {}g", err);
-    exit(err);
+    exit_pion(err);
   }
 
   //
@@ -233,7 +233,7 @@ int sim_control_pllel::Init(
   err = set_equations(SimPM);
   if (0 != err) {
     spdlog::error("(INIT::set_equations) err = {} Fix me!", err);
-    exit(err);
+    exit_pion(err);
   }
 #ifdef PION_OMP
   #pragma omp parallel
@@ -250,7 +250,7 @@ int sim_control_pllel::Init(
   err = setup_microphysics(SimPM);
   if (0 != err) {
     spdlog::error("(INIT::setup_microphysics) err!=0 {} {}", 0, err);
-    exit(1);
+    exit_pion(1);
   }
 #ifdef PION_OMP
   #pragma omp parallel
@@ -267,7 +267,7 @@ int sim_control_pllel::Init(
   err = dataio->ReadData(infile, grid, SimPM);
   if (0 != err) {
     spdlog::error("(INIT::assign_initial_data) err = {}", err);
-    exit(err);
+    exit_pion(err);
   }
   //  cout <<"Read data finished\n";
 
@@ -416,12 +416,12 @@ int sim_control_pllel::Time_Int(
   err     = update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
   if (err) {
     spdlog::error("TIME_INT:: initial RT src update() err = {}", err);
-    exit(1);
+    exit_pion(1);
   }
   err = RT_all_sources(SimPM, grid[0], 0);
   if (err) {
     spdlog::error("TIME_INT:: initial RT() err = {}", err);
-    exit(1);
+    exit_pion(1);
   }
   int log_freq  = 10;
   SimPM.maxtime = false;
@@ -434,12 +434,12 @@ int sim_control_pllel::Time_Int(
     err = update_evolving_RT_sources(SimPM, SimPM.simtime, grid[0]->RT);
     if (err) {
       spdlog::error("TIME_INT::update_RT_sources() err = {}", err);
-      exit(1);
+      exit_pion(1);
     }
     err = RT_all_sources(SimPM, grid[0], 0);
     if (err) {
       spdlog::error("TIME_INT:: loop RT() err = {}", err);
-      exit(1);
+      exit_pion(1);
     }
     // clk.start_timer("advance_time");
 #ifndef NDEBUG
@@ -449,7 +449,7 @@ int sim_control_pllel::Time_Int(
     err += calculate_timestep(SimPM, grid[0], 0);
     if (err) {
       spdlog::error("TIME_INT::calc_timestep() err = {}", err);
-      exit(1);
+      exit_pion(1);
     }
 
 #ifndef NDEBUG
@@ -650,7 +650,7 @@ int sim_control_pllel::calculate_timestep(
   if (!pconst.equalD(t_dyn, t_mp)) {
     spdlog::error(
         "synchonisation trouble in timesteps! {:12.6e} {:12.6e}", t_dyn, t_mp);
-    exit(2);
+    exit_pion(2);
   }
 #endif  // NDEBUG
 

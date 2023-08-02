@@ -261,7 +261,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   }
   else {
     spdlog::error("{}: {}", "Don't know what these equations are:", str);
-    exit(7);
+    exit_pion(7);
   }
 
   str = rp.find_parameter("solver");
@@ -289,21 +289,21 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
     solverType = 9;
   else {
     spdlog::error("{}: {}", "what kind of solver is this???", str);
-    exit(1);
+    exit_pion(1);
   }
 
   // dimensionality of grid.
   str = rp.find_parameter("ndim");
   if (str == "") {
     spdlog::error("{}: {}", "Bad ndim in pfile", str);
-    exit(1);
+    exit_pion(1);
   }
   else
     ndim = atoi(str.c_str());
 
   if (isnan(ndim)) {
     spdlog::error("{}: {}", "ndim is not a number", ndim);
-    exit(2);
+    exit_pion(2);
   }
   eqnNDim = 3;
 
@@ -347,13 +347,13 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
 #endif
       if (tracers[i] == "") {
         spdlog::error("{}: {}", "Can't find tracer name for number", i);
-        exit(4);
+        exit_pion(4);
       }
     }
   }
   else {
     spdlog::error("{}: {}", "number of tracers is not finite!", ntracer);
-    exit(5);
+    exit_pion(5);
   }
 
   // coordinate system.
@@ -372,7 +372,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   else {
     spdlog::error(
         "{}: {}", "Don't recognise coordinate system in GetParameters", str);
-    exit(6);
+    exit_pion(6);
   }
 
   // Domain of grid, and number of points.  These must all be present in the
@@ -382,7 +382,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   str  = rp.find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "param not found", seek);
-    exit(7);
+    exit_pion(7);
   }
   NG[XX] = atoi(str.c_str());
   Ncell  = NG[XX];
@@ -391,7 +391,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   str  = rp.find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "param not found", seek);
-    exit(7);
+    exit_pion(7);
   }
   Xmin[XX] = atof(str.c_str());
 
@@ -399,7 +399,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   str  = rp.find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "param not found", seek);
-    exit(7);
+    exit_pion(7);
   }
   Xmax[XX]  = atof(str.c_str());
   Range[XX] = Xmax[XX] - Xmin[XX];
@@ -409,7 +409,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
     str  = rp.find_parameter(seek);
     if (str == "") {
       spdlog::error("{}: {}", "param not found", seek);
-      exit(7);
+      exit_pion(7);
     }
     NG[YY] = atoi(str.c_str());
     Ncell *= NG[YY];
@@ -418,7 +418,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
     str  = rp.find_parameter(seek);
     if (str == "") {
       spdlog::error("{}: {}", "param not found", seek);
-      exit(7);
+      exit_pion(7);
     }
     Xmin[YY] = atof(str.c_str());
 
@@ -426,7 +426,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
     str  = rp.find_parameter(seek);
     if (str == "") {
       spdlog::error("{}: {}", "param not found", seek);
-      exit(7);
+      exit_pion(7);
     }
     Xmax[YY]  = atof(str.c_str());
     Range[YY] = Xmax[YY] - Xmin[YY];
@@ -441,7 +441,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
     str  = rp.find_parameter(seek);
     if (str == "") {
       spdlog::error("{}: {}", "param not found", seek);
-      exit(7);
+      exit_pion(7);
     }
     NG[ZZ] = atoi(str.c_str());
     Ncell *= NG[ZZ];
@@ -450,7 +450,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
     str  = rp.find_parameter(seek);
     if (str == "") {
       spdlog::error("{}: {}", "param not found", seek);
-      exit(7);
+      exit_pion(7);
     }
     Xmin[ZZ] = atof(str.c_str());
 
@@ -458,7 +458,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
     str  = rp.find_parameter(seek);
     if (str == "") {
       spdlog::error("{}: {}", "param not found", seek);
-      exit(7);
+      exit_pion(7);
     }
     Xmax[ZZ]  = atof(str.c_str());
     Range[ZZ] = Xmax[ZZ] - Xmin[ZZ];
@@ -477,7 +477,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
           "SimParams: Cells must be same length in each direction! Set the range "
           "and number of points appropriately.",
           fabs(Range[1] / (NG[1]) / dx - 1.));
-      exit(7);
+      exit_pion(7);
     }
   }
   if (ndim > 2) {
@@ -487,7 +487,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
           "SimParams: Cells must be same length in each direction! Set the range "
           "and number of points appropriately.",
           fabs(Range[2] / (NG[2]) / dx - 1.));
-      exit(7);
+      exit_pion(7);
     }
   }
 
@@ -566,14 +566,14 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   str = rp.find_parameter("OutputPath");
   if (str == "") {
     spdlog::error("{}: {}", "outputpath", str);
-    exit(7);
+    exit_pion(7);
   }
   ostringstream temp;
   temp << str;
   str = rp.find_parameter("OutputFile");
   if (str == "") {
     spdlog::error("{}: {}", "outputfile", str);
-    exit(7);
+    exit_pion(7);
   }
   temp << str;
   outFileBase = temp.str();
@@ -588,7 +588,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
     spdlog::error(
         "{}: {}", "Fits Table not allowed as o/p format.. not implemented",
         str);
-    exit(7);
+    exit_pion(7);
   }
   else if (str == "both")
     typeofop = 4;  // Both means fits and text.
@@ -596,14 +596,14 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
     typeofop = 5;  // Silo output.
   else {
     spdlog::error("{}: {}", "Error, bad type of outputfile in pfile.", str);
-    exit(7);
+    exit_pion(7);
   }
 
   seek = "OutputFrequency";
   str  = rp.find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "param not found", seek);
-    exit(7);
+    exit_pion(7);
   }
   opfreq = atoi(str.c_str());
   // cout <<"\tOutFile: "<<outFileBase<< ".xxx\t Type="<<typeofop;
@@ -715,14 +715,14 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   str  = rp.find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "param not found", seek);
-    exit(7);
+    exit_pion(7);
   }
   gamma = atof(str.c_str());
   seek  = "CFL";
   str   = rp.find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "param not found", seek);
-    exit(7);
+    exit_pion(7);
   }
   CFL = atof(str.c_str());
 
@@ -730,7 +730,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   str  = rp.find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "param not found", seek);
-    exit(7);
+    exit_pion(7);
   }
   if ((artviscosity = atoi(str.c_str())) == 0) {
     etav = 0.;
@@ -740,7 +740,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
     str  = rp.find_parameter(seek);
     if (str == "") {
       spdlog::error("{}: {}", "param not found", seek);
-      exit(7);
+      exit_pion(7);
     }
     etav = atof(str.c_str());
   }
@@ -750,21 +750,21 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
   }
   else {
     spdlog::error("{}: {}", "\tUnknown viscosity requested... fix me.", str);
-    exit(7);
+    exit_pion(7);
   }
   // cout <<"\tArtificial Viscosity: eta="<<etav<<"\n";
   // Which Physics
   err += read_extra_physics();
   if (err) {
     spdlog::error("{}: {}", "read_extra_physics", err);
-    exit(7);
+    exit_pion(7);
   }
 
   // Raytracing
   err += read_radsources();
   if (err) {
     spdlog::error("{}: {}", "read_radsources", err);
-    exit(7);
+    exit_pion(7);
   }
 
   //
@@ -783,7 +783,7 @@ int SimParams::read_gridparams(const string pfile  ///< paramfile.
       err += read_wind_sources();
       if (err) {
         spdlog::error("{}: {}", "read_wind_sources", err);
-        exit(7);
+        exit_pion(7);
       }
     }
   }

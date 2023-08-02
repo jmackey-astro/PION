@@ -28,7 +28,7 @@ int radiative_shock_test::BC_assign_RADSHOCK(
   if (!b->data.empty()) {
     spdlog::error(
         "{} : {}", "BC_assign_RADSHOCK: not empty boundary data", b->itype);
-    exit(1);
+    exit_pion(1);
   }
   // set reference state
   b->refval = mem.myalloc(b->refval, par.nvar);

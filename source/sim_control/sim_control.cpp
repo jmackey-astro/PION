@@ -213,19 +213,19 @@ int sim_control::Time_Int(
     spdlog::error(
         "{}: Expected {} but got {}", "TIME_INT:: initial RT src update()", 0,
         err);
-    exit(1);
+    exit_pion(1);
   }
   err = RT_all_sources(SimPM, grid[0], 0);
   if (0 != err) {
     spdlog::error(
         "{}: Expected {} but got {}", "TIME_INT:: initial RT()", 0, err);
-    exit(1);
+    exit_pion(1);
   }
   err += output_data(grid);
   if (0 != err) {
     spdlog::error(
         "{}: Expected {} but got {}", "TIME_INT:: initial save", 0, err);
-    exit(1);
+    exit_pion(1);
   }
 
   while (SimPM.maxtime == false) {
@@ -243,13 +243,13 @@ int sim_control::Time_Int(
       spdlog::error(
           "{}: Expected {} but got {}", "TIME_INT::update_RT_sources()", 0,
           err);
-      exit(1);
+      exit_pion(1);
     }
     err = RT_all_sources(SimPM, grid[0], 0);
     if (0 != err) {
       spdlog::error(
           "{}: Expected {} but got {}", "TIME_INT:: loop RT()", 0, err);
-      exit(1);
+      exit_pion(1);
     }
 
     // clk.start_timer("advance_time");
@@ -259,7 +259,7 @@ int sim_control::Time_Int(
     if (0 != err) {
       spdlog::error(
           "{}: Expected {} but got {}", "TIME_INT::calc_timestep()", 0, err);
-      exit(1);
+      exit_pion(1);
     }
 
     advance_time(0, grid[0]);
@@ -398,7 +398,7 @@ int sim_control::check_eosim()
     spdlog::debug("finishtime={}", SimPM.finishtime);
     spdlog::error(
         "{}: {}", "Don't know how to check for end of simulation.", 2);
-    exit(1);
+    exit_pion(1);
   }
 
   return (0);
@@ -465,7 +465,7 @@ int sim_control::Finalise(
     spdlog::error(
         "{}: Expected {} but got {}",
         "(FINALISE::output_data) Something went wrong", 0, err);
-    exit(1);
+    exit_pion(1);
   }
   spdlog::info(
       "\tSimTime = {}   #timesteps = {}", SimPM.simtime, SimPM.timestep);

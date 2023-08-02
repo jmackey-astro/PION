@@ -57,7 +57,7 @@ eqns_mhd_ideal::eqns_mhd_ideal(int nv) : eqns_base(nv)
 #endif
   if (eq_nvar < 8) {
     spdlog::error("\tError!! Class expects (at least) 8 MHD variables");
-    exit(1);
+    exit_pion(1);
   }
 
 #ifdef FUNCTION_ID
@@ -151,7 +151,7 @@ int eqns_mhd_ideal::check_pressure(
     spdlog::debug("u : {}", std::vector<pion_flt>(u, u + eq_nvar));
     spdlog::debug("p : {}", std::vector<pion_flt>(p, p + eq_nvar));
     spdlog::error("{}: {}", "Negative Density! Bugging out", p[eqRO]);
-    exit(1);
+    exit_pion(1);
     if (ct_rho < 1000) {
       ct_rho++;
       spdlog::debug("(eqns_mhd_ideal::check_pressure) negative density!");

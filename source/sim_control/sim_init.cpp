@@ -188,7 +188,7 @@ int sim_init::Init(
     spdlog::error(
         "{}: Expected {} but got {}",
         "(INIT::get_parameters) err!=0 Something went wrong", 0, err);
-    exit(1);
+    exit_pion(1);
   }
 #endif  // SERIAL
 
@@ -198,7 +198,7 @@ int sim_init::Init(
     spdlog::error(
         "{}: Expected {} but got {}",
         "(INIT::override_params) err!=0 Something went wrong", 0, err);
-    exit(1);
+    exit_pion(1);
   }
 
   // Now set up the grid structure.
@@ -209,7 +209,7 @@ int sim_init::Init(
     spdlog::error(
         "{}: Expected {} but got {}",
         "(INIT::setup_grid) err!=0 Something went wrong", 0, err);
-    exit(1);
+    exit_pion(1);
   }
 
   //
@@ -219,7 +219,7 @@ int sim_init::Init(
   err = set_equations(SimPM);
   if (err) {
     spdlog::error("(INIT::set_equations) err!=0 Fix me! {} {}", 0, err);
-    exit(1);
+    exit_pion(1);
   }
 #ifdef PION_OMP
   #pragma omp parallel
@@ -238,7 +238,7 @@ int sim_init::Init(
     spdlog::error(
         "{}: Expected {} but got {}", "(INIT::setup_microphysics) err!=0", 0,
         err);
-    exit(1);
+    exit_pion(1);
   }
 #ifdef PION_OMP
   #pragma omp parallel
@@ -257,7 +257,7 @@ int sim_init::Init(
     spdlog::error(
         "{}: Expected {} but got {}",
         "(INIT::assign_initial_data) err!=0 Something went wrong", 0, err);
-    exit(1);
+    exit_pion(1);
   }
 
   //
@@ -291,14 +291,14 @@ int sim_init::Init(
     spdlog::error(
         "{}: Expected {} but got {}", "(INIT::boundary_conditions) err!=0", 0,
         err);
-    exit(1);
+    exit_pion(1);
   }
   err = assign_boundary_data(SimPM, 0, grid[0], MP);
   if (err) {
     spdlog::error(
         "{}: Expected {} but got {}", "(INIT::assign_boundary_data) err!=0", 0,
         err);
-    exit(1);
+    exit_pion(1);
   }
 
   //
@@ -311,7 +311,7 @@ int sim_init::Init(
     spdlog::error(
         "{}: Expected {} but got {}",
         "Failed to setup raytracer and/or microphysics", 0, err);
-    exit(1);
+    exit_pion(1);
   }
 
   //
@@ -329,7 +329,7 @@ int sim_init::Init(
   if (err) {
     spdlog::error(
         "{}: {}", "first_order_update: error from bounday update", err);
-    exit(1);
+    exit_pion(1);
   }
 
   //
@@ -338,7 +338,7 @@ int sim_init::Init(
   if (SimPM.op_criterion == 1) {
     if (SimPM.opfreq_time < TINYVALUE) {
       spdlog::error("{}: {}", "opfreq_time not set right!", SimPM.opfreq_time);
-      exit(1);
+      exit_pion(1);
     }
     SimPM.next_optime = SimPM.simtime + SimPM.opfreq_time;
     double tmp        = ((SimPM.simtime / SimPM.opfreq_time)
@@ -363,7 +363,7 @@ int sim_init::Init(
     setup_dataio_class(SimPM, SimPM.typeofop);
     if (!dataio) {
       spdlog::error("{}: {}", "INIT:: dataio initialisation", SimPM.typeofop);
-      exit(1);
+      exit_pion(1);
     }
   }
   dataio->SetSolver(spatial_solver);
@@ -379,7 +379,7 @@ int sim_init::Init(
     err = output_data(grid);
     if (err) {
       spdlog::error("Failed to write file! maybe dir does not exist?");
-      exit(1);
+      exit_pion(1);
     }
   }
   spdlog::info("-------------------------------------------------------");
@@ -448,7 +448,7 @@ int sim_init::override_params(int narg, string *args)
       else if (v == 2) {
         spdlog::error(
             "{}: {}", "divv viscosity not working, use AVtype=1 or 3", v);
-        exit(1);
+        exit_pion(1);
         spdlog::info(
             "Using Colella and Woodward (1984) AV prescription (Lapidus).****** WARNING, THIS NEEDS TESTING, EXPERIMENTAL CODE )****");
         SimPM.artviscosity = AV_LAPIDUS;  // ==2 (NEEDS TESTING!!!)
@@ -469,7 +469,7 @@ int sim_init::override_params(int narg, string *args)
       else if (v == AV_VonNeuRicht) {
         spdlog::error(
             "{}: {}", "von Neumann & Richtmeyer viscosity not working", v);
-        exit(1);
+        exit_pion(1);
         // AV_VonNeuRicht==5
         spdlog::info(
             "Using Multi-D von Neumann & Richtmeyer (1950) viscosity. See Tscharnuter & Winkler (1979), Stone & Norman (1992).");
@@ -483,7 +483,7 @@ int sim_init::override_params(int narg, string *args)
         SimPM.artviscosity = 1;
         SimPM.etav         = 0.1;
         spdlog::error("{}: {}", "Bad viscosity flag from command-line", v);
-        exit(1);
+        exit_pion(1);
       }
       spdlog::info(
           "OVERRIDE PARAMS: setting AV = {} and eta = {}", SimPM.artviscosity,
@@ -503,7 +503,7 @@ int sim_init::override_params(int narg, string *args)
         spdlog::error(
             "{}: {}", "Error: eta viscosity parameter outside allowed range!",
             visc);
-        exit(1);
+        exit_pion(1);
       }
       SimPM.etav = visc;
     }
@@ -544,7 +544,7 @@ int sim_init::override_params(int narg, string *args)
         now = "silo+text";
       else {
         spdlog::error("{}: {}", "What kind of output is this?", SimPM.typeofop);
-        exit(1);
+        exit_pion(1);
       }
 
       string chg = args[i].substr(7);
@@ -564,7 +564,7 @@ int sim_init::override_params(int narg, string *args)
         tmp = 6;
       else {
         spdlog::error("{}: {}", "What kind of output do you want?", chg);
-        exit(1);
+        exit_pion(1);
       }
       spdlog::info(
           "OVERRIDE PARAMS: Resetting output file type from {} to {}", now,
@@ -626,7 +626,7 @@ int sim_init::override_params(int narg, string *args)
       }
       else {
         spdlog::error("{}: {}", "don't know this coordinate system", t);
-        exit(1);
+        exit_pion(1);
       }
       spdlog::warn("THIS IS DANGEROUS!!!");
     }
@@ -639,7 +639,7 @@ int sim_init::override_params(int narg, string *args)
       double c = atof((args[i].substr(4)).c_str());
       if (c < 0. || !isfinite(c)) {
         spdlog::error("Bad CFL no. {}", c);
-        exit(1);
+        exit_pion(1);
       }
       else if (c > 1.)
         spdlog::warn("WARNING: CFL no. >1, so results will be unstable!!!");
@@ -655,7 +655,7 @@ int sim_init::override_params(int narg, string *args)
       double c = atof((args[i].substr(6)).c_str());
       if (c <= 1.0 || !isfinite(c)) {
         spdlog::error("{}: {}", "Bad EOS gamma no.", c);
-        exit(1);
+        exit_pion(1);
       }
       else if (c > 2.0)
         spdlog::warn("WARNING: gamma >2 ?");
@@ -668,7 +668,7 @@ int sim_init::override_params(int narg, string *args)
       int c = atoi((args[i].substr(8)).c_str());
       if (c < 0 || c > 100) {
         spdlog::error("{}: {}", "Bad cooling flag (only 0-11 allowed", c);
-        exit(1);
+        exit_pion(1);
       }
       spdlog::info(" flag from {}", SimPM.EP.cooling);
       SimPM.EP.cooling = c;
@@ -680,7 +680,7 @@ int sim_init::override_params(int narg, string *args)
       int c = atoi((args[i].substr(9)).c_str());
       if (c < 0 || c > 1) {
         spdlog::error("{}: {}", "Bad dynamics flag (only 0,1, allowed", c);
-        exit(1);
+        exit_pion(1);
       }
       spdlog::info(" flag from {}", SimPM.EP.dynamics);
       SimPM.EP.dynamics = c;
@@ -692,7 +692,7 @@ int sim_init::override_params(int narg, string *args)
       double c = atof((args[i].substr(16)).c_str());
       if (c < 0 || !isfinite(c)) {
         spdlog::error("Bad time value: {}", c);
-        exit(1);
+        exit_pion(1);
       }
       spdlog::info("from {}", SimPM.simtime);
       SimPM.simtime = c;
@@ -704,7 +704,7 @@ int sim_init::override_params(int narg, string *args)
       int c = atoi((args[i].substr(11)).c_str());
       if (c < 0 || c > 1) {
         spdlog::error("{}: {}", "Bad raytracing flag (only 0,1, allowed", c);
-        exit(1);
+        exit_pion(1);
       }
       spdlog::info(" flag from {}", SimPM.EP.raytracing);
       SimPM.EP.raytracing = c;
@@ -716,7 +716,7 @@ int sim_init::override_params(int narg, string *args)
       int c = atoi((args[i].substr(10)).c_str());
       if (c < 0 || c > 1) {
         spdlog::error("{}: {}", "Bad chemistry flag (only 0,1, allowed", c);
-        exit(1);
+        exit_pion(1);
       }
       spdlog::info(" flag from {}", SimPM.EP.chemistry);
       SimPM.EP.chemistry = c;
@@ -737,7 +737,7 @@ int sim_init::override_params(int narg, string *args)
       int c = atoi((args[i].substr(7)).c_str());
       if (c < 0 || c > 9) {
         spdlog::error("Bad solver flag (only 0,1,2,3,4,5,6,7,8,9 allowed", c);
-        exit(1);
+        exit_pion(1);
       }
       spdlog::info(" solver from {}", SimPM.solverType);
       SimPM.solverType = c;
@@ -751,7 +751,7 @@ int sim_init::override_params(int narg, string *args)
       int c = atoi((args[i].substr(13)).c_str());
       if (c < 0 || c > 1) {
         spdlog::error("{}: {}", "Bad op_criterion flag:", c);
-        exit(1);
+        exit_pion(1);
       }
       SimPM.op_criterion = c;
       spdlog::info("{}", SimPM.op_criterion);
@@ -763,7 +763,7 @@ int sim_init::override_params(int narg, string *args)
       double c = atof((args[i].substr(12)).c_str());
       if (c < 0.0 || c > 1.e50) {
         spdlog::error("{}: {}", "Bad opfreq_time flag:", c);
-        exit(1);
+        exit_pion(1);
       }
       SimPM.op_criterion = 1;
       SimPM.opfreq_time  = c;
@@ -784,7 +784,7 @@ int sim_init::override_params(int narg, string *args)
       double c = atof((args[i].substr(13)).c_str());
       if (c < 0.0 || c > 1.e50) {
         spdlog::error("{}: {}", "Bad min_timestep flag:", c);
-        exit(1);
+        exit_pion(1);
       }
       SimPM.min_timestep = c;
       spdlog::info("{} units.", SimPM.min_timestep);
@@ -797,7 +797,7 @@ int sim_init::override_params(int narg, string *args)
       int c = atoi((args[i].substr(15)).c_str());
       if (c < 0 || c > 5) {
         spdlog::error("{}: {}", "Bad MP_timestep_limit flag:", c);
-        exit(1);
+        exit_pion(1);
       }
       SimPM.EP.MP_timestep_limit = c;
       spdlog::info("{}", SimPM.EP.MP_timestep_limit);
@@ -810,7 +810,7 @@ int sim_init::override_params(int narg, string *args)
       int c = atoi((args[i].substr(13)).c_str());
       if (c < 0) {
         spdlog::error("{}: {}", "Bad checkpoint_freq flag:", c);
-        exit(1);
+        exit_pion(1);
       }
       SimPM.checkpoint_freq = c;
       spdlog::info("{}", SimPM.checkpoint_freq);
@@ -823,7 +823,7 @@ int sim_init::override_params(int narg, string *args)
       double c = atof((args[i].substr(6)).c_str());
       if (c < 0.0 || c > 1.e50) {
         spdlog::error("{}: {}", "Bad Max_T flag:", c);
-        exit(1);
+        exit_pion(1);
       }
       SimPM.EP.MaxTemperature = c;
       spdlog::info("{} K.", SimPM.EP.MaxTemperature);
@@ -836,7 +836,7 @@ int sim_init::override_params(int narg, string *args)
       double c = atof((args[i].substr(6)).c_str());
       if (c < 0.0 || c > 1.e50) {
         spdlog::error("{}: {}", "Bad Min_T flag:", c);
-        exit(1);
+        exit_pion(1);
       }
       SimPM.EP.MinTemperature = c;
       spdlog::info("{} K.", SimPM.EP.MinTemperature);
@@ -845,22 +845,22 @@ int sim_init::override_params(int narg, string *args)
     else if (args[i].find("wind_radius=") != string::npos) {
       if (SWP.Nsources < 1) {
         spdlog::error("reset wind radius without a source {}", SWP.Nsources);
-        exit(1);
+        exit_pion(1);
       }
       string q = (args[i].substr(11, 1));
       if (q == "=") {
         spdlog::error("must ID wind source, e.g. wind_radius_0 {}", args[i]);
-        exit(1);
+        exit_pion(1);
       }
       int src = atoi((args[i].substr(12)).c_str());
       if (src < 0 || src > 9 || !isfinite(src)) {
         spdlog::error("expect format wind_radius_0=1.2e17 {}", src);
-        exit(1);
+        exit_pion(1);
       }
       else if (static_cast<size_t>(src) >= SWP.params.size()) {
         spdlog::error(
             "change wind radius for source that doesn't exist {}", src);
-        exit(1);
+        exit_pion(1);
       }
       spdlog::info(
           "OVERRIDE PARAMS: resetting radius of wind src {} from {} cm to ",
@@ -878,7 +878,7 @@ int sim_init::override_params(int narg, string *args)
       double c = atof((args[i].substr(12)).c_str());
       if (c < 0.0 || c > 1.01) {
         spdlog::error("{}: {}", "Bad tc_strength flag:", c);
-        exit(1);
+        exit_pion(1);
       }
       SimPM.EP.tc_strength = c;
       spdlog::info("{}", SimPM.EP.tc_strength);
@@ -888,7 +888,7 @@ int sim_init::override_params(int narg, string *args)
     else {
       spdlog::error(
           "Don't recognise this optional argument, please fix. {}", args[i]);
-      exit(i);
+      exit_pion(i);
     }
   }
   return (0);
@@ -944,7 +944,7 @@ int sim_init::output_data(vector<class GridBaseClass *>
   }
   else {
     spdlog::error("op_criterion must be 0 or 1: {}", SimPM.op_criterion);
-    exit(1);
+    exit_pion(1);
   }
 
   //
@@ -959,7 +959,7 @@ int sim_init::output_data(vector<class GridBaseClass *>
     err += textio->OutputData(SimPM.outFileBase, grid, SimPM, SimPM.timestep);
   if (err) {
     spdlog::error("Error writing data");
-    exit(1);
+    exit_pion(1);
   }
   return (0);
 }
@@ -1018,7 +1018,7 @@ int sim_init::RT_all_sources(
     if (err) {
       spdlog::debug("isrc={}", isrc);
       spdlog::error("calc_raytracing_col_dens step in returned error {}", err);
-      exit(1);
+      exit_pion(1);
     }  // if error
   }    // loop over sources
   return err;

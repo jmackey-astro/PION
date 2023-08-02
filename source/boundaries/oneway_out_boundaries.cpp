@@ -62,13 +62,13 @@ int oneway_out_bc::BC_update_ONEWAY_OUT(
     case NO:
     default:
       spdlog::error("bad dir {}", static_cast<int>(b->dir));
-      exit(1);
+      exit_pion(1);
       break;
   }
   if (Vnorm == RO) {
     spdlog::error(
         "Failed to set normal velocity component {}", static_cast<int>(Vnorm));
-    exit(2);
+    exit_pion(2);
   }
 
   switch (b->dir) {
@@ -85,7 +85,7 @@ int oneway_out_bc::BC_update_ONEWAY_OUT(
     case NO:
     default:
       spdlog::error("bad dir", static_cast<int>(b->dir));
-      exit(2);
+      exit_pion(2);
       break;
   }
 

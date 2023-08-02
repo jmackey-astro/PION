@@ -219,7 +219,7 @@ int dataio_silo::WriteHeader(
 )
 {
   spdlog::error("{}: {}", "dataio_silo::WriteHeader() don't call me!", 1);
-  exit(1);
+  exit_pion(1);
   return 0;
 }
 
@@ -273,7 +273,7 @@ int dataio_silo::OutputData(
     if (!fff) {
       spdlog::error(
           "{}: {}", "!!!**** Can't write file.  directory exists???", silofile);
-      exit(1);
+      exit_pion(1);
     }
     fff.close();
 
@@ -458,7 +458,7 @@ int dataio_silo::ReadHeader(
   *db_ptr = DBOpen(temp, DB_UNKNOWN, DB_READ);
   if (!(*db_ptr)) {
     spdlog::error("{}: {}", "open silo file failed.", fmt::ptr(*db_ptr));
-    exit(1);
+    exit_pion(1);
   }
 
   DBSetDir(*db_ptr, "/header");
@@ -467,7 +467,7 @@ int dataio_silo::ReadHeader(
     spdlog::error(
         "dataio_silo::ReadHeader() error reading header from silo file: {}",
         err);
-    exit(1);
+    exit_pion(1);
   }
   dataio_silo::ndim = SimPM.ndim;
 
@@ -1534,7 +1534,7 @@ int dataio_silo::get_scalar_data_array(
     spdlog::error(
         "Bad variable request dataio_silo::get_scalar_data_array() {}",
         variable);
-    exit(1);
+    exit_pion(1);
   }
 
   //

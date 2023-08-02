@@ -214,7 +214,7 @@ int setup_NG_grid::setup_grid(
   }
   else if (SimPM.spOOA == OA1) {
     SimPM.Nbc    = 4;
-    SimPM.Nbc_DD = 2;
+    SimPM.Nbc_DD = 4;
   }
   else
     spdlog::error("{}: {}", "unhandled spatial order of accuracy", SimPM.spOOA);

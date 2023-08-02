@@ -149,7 +149,7 @@ void setup_grid_NG_MPI::setup_NG_grid_levels(
       spdlog::error(
           "{}: Expected {} but got {}", "PLLEL Init():Decompose Domain!", 0,
           err);
-      exit(1);
+      exit_pion(1);
     }
     SimPM.levels[l].sub_domain.set_ReadSingleFile(true);  // legacy option.
   }
@@ -187,7 +187,7 @@ int setup_grid_NG_MPI::setup_grid(
   }
   else if (SimPM.spOOA == OA1) {
     SimPM.Nbc    = 4;
-    SimPM.Nbc_DD = 2;
+    SimPM.Nbc_DD = 4;
   }
   else
     spdlog::error("{}: {}", "unhandles spatial order of accuracy", SimPM.spOOA);

@@ -45,7 +45,7 @@ VectorOps_Sph::VectorOps_Sph(int n) : VectorOps_Cart(n), VectorOps_Cyl(n)
   spdlog::info("Setting up 1D spherical coordinates with ndim={}", VOnd);
   if (VOnd != 1) {
     spdlog::error("{}: {}", "Spherical coordinates only work in 1D!", VOnd);
-    exit(1);
+    exit_pion(1);
   }
   return;
 }
@@ -92,13 +92,13 @@ double VectorOps_Sph::CellInterface(
         spdlog::error(
             "{}: {}", "Bad direction in 1D spherical coords!",
             static_cast<int>(dir));
-        exit(1);
+        exit_pion(1);
         break;
     }
   }
 
   spdlog::error("{}: {}", "VectorOps_Sph::CellInterface", "fix me");
-  exit(1);
+  exit_pion(1);
   return -1.0;
 }
 
@@ -113,13 +113,13 @@ double VectorOps_Sph::maxGradAbs(
     if (!grid->NextPt(c, static_cast<direction>(i))) {
       spdlog::error(
           "VectorOps_Sph::maxGradAbs: Some neighbour cells don't exist {}", i);
-      exit(1);
+      exit_pion(1);
     }
 #endif  // NDEBUG
 
   if (VOnd != 1) {
     spdlog::error("{}: {}", "Spherical coordinates only work in 1D!", VOnd);
-    exit(1);
+    exit_pion(1);
   }
 
   //
@@ -149,7 +149,7 @@ double VectorOps_Sph::maxGradAbs(
       spdlog::error(
           "Don't know what state vector to use for calculating gradient {}",
           sv);
-      exit(1);
+      exit_pion(1);
       break;
   }
   return (grad);
@@ -170,13 +170,13 @@ void VectorOps_Sph::Gradient(
     if (!grid->NextPt(c, static_cast<direction>(i))) {
       spdlog::error(
           "VectorOps_Cart::maxGradAbs: Some neighbour cells don't exist {}", i);
-      exit(1);
+      exit_pion(1);
     }
 #endif  // NDEBUG
 
   if (VOnd != 1) {
     spdlog::error("Spherical coordinates only work in 1D! {}", VOnd);
-    exit(1);
+    exit_pion(1);
   }
   //
   // 1D gradient in radial direction is just df/dr.  The sign is
@@ -205,7 +205,7 @@ void VectorOps_Sph::Gradient(
       spdlog::error(
           "Don't know what state vector to use for calculating gradient. {}",
           sv);
-      exit(1);
+      exit_pion(1);
       break;
   }
   return;
@@ -220,7 +220,7 @@ double VectorOps_Sph::Divergence(
 
   if (VOnd != 1) {
     spdlog::error("Spherical coordinates only work in 1D! {}", VOnd);
-    exit(1);
+    exit_pion(1);
   }
   //
   // 1D divergence in radial direction is (1/r^2)d/dr(r^2*V_r)
@@ -252,7 +252,7 @@ double VectorOps_Sph::Divergence(
       break;
     default:
       spdlog::error("Don't know what state vector to use for div {}", sv);
-      exit(1);
+      exit_pion(1);
       break;
   }
   return (divv);
@@ -273,16 +273,16 @@ void VectorOps_Sph::Curl(
     if (!grid->NextPt(c, static_cast<direction>(i))) {
       spdlog::error(
           "VectorOps_Sph::Curl: Some neighbour cells don't exist {}", i);
-      exit(1);
+      exit_pion(1);
     }
 #endif  // NDEBUG
   if (!c.isgd) {
     spdlog::error("Not Grid Cell! can't calculate curl. id {}", c.id);
-    exit(1);
+    exit_pion(1);
   }
   if (VOnd != 1) {
     spdlog::error("Spherical coordinates only work in 1D! {}", VOnd);
-    exit(1);
+    exit_pion(1);
   }
 
   //
@@ -308,7 +308,7 @@ int VectorOps_Sph::SetEdgeState(
 
   if (VOnd != 1) {
     spdlog::error("Spherical coordinates only work in 1D! {}", VOnd);
-    exit(1);
+    exit_pion(1);
   }
   double dR = grid->DX();
 
@@ -335,7 +335,7 @@ int VectorOps_Sph::SetEdgeState(
       default:
         spdlog::error(
             "{}: {}", "Bad direction in SetEdgeState", static_cast<int>(dir));
-        exit(1);
+        exit_pion(1);
         break;
     }  // setting del based on direction
 
@@ -356,7 +356,7 @@ int VectorOps_Sph::SetEdgeState(
 
   else {
     spdlog::error("Bad order of accuracy in SetEdgeState {}", OA);
-    exit(1);
+    exit_pion(1);
   }
   return 0;
 }  // SetEdgeState
@@ -403,7 +403,7 @@ int VectorOps_Sph::SetSlope(
         break;
       default:
         spdlog::error("Bad direction in SetSlope", static_cast<int>(d));
-        exit(1);
+        exit_pion(1);
         break;
     }
     cp = grid->NextPt(c, dp);
@@ -411,7 +411,7 @@ int VectorOps_Sph::SetSlope(
 #ifndef NDEBUG
     if (cp == 0 || cn == 0) {
       spdlog::error("No left or right cell in SetSlope {}", fmt::ptr(cp));
-      exit(1);
+      exit_pion(1);
     }
 #endif  // NDEBUG
 
@@ -428,7 +428,7 @@ int VectorOps_Sph::SetSlope(
         break;
       default:
         spdlog::error("Bad axis in SetSlope", static_cast<int>(d));
-        exit(1);
+        exit_pion(1);
         break;
     }  // calculate slope in direction d.
 
@@ -462,7 +462,7 @@ int VectorOps_Sph::SetSlope(
   else {
     spdlog::error(
         "Error: Only know how to do 1st or 2nd order slope calculation");
-    exit(1);
+    exit_pion(1);
   }
 
   return 0;
@@ -506,7 +506,7 @@ int VectorOps_Sph::DivStateVectorComponent(
   }
   else {
     spdlog::error("Bad axis in DivStateVectorComponent", static_cast<int>(d));
-    exit(1);
+    exit_pion(1);
   }
 
   return 0;

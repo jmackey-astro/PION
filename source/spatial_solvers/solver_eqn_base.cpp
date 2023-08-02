@@ -299,7 +299,7 @@ void FV_solver_base::set_interface_tracer_flux(
     if (!isfinite(flux[eqRHO])) {
       spdlog::info("FV_solver_base::set_interface_tracer_flux");
       spdlog::info("inf flux : {}", std::vector<double>(flux, flux + eq_nvar));
-      exit(1);
+      exit_pion(1);
     }
 #endif
     if (flux[eqRHO] > 0.0) {
@@ -342,7 +342,7 @@ void FV_solver_base::set_Hcorrection(
     spdlog::error(
         "bad direction in FV_solver_base::set_Hcorrection()",
         static_cast<int>(axis));
-    exit(1);
+    exit_pion(1);
   }
   //
   // Sanders, Morano, Druguet, (1998, JCP, 145, 511)  eq. 10

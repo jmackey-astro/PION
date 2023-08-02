@@ -466,19 +466,19 @@ double interpolate_arrays::root_find_trilinear_vec(
     spdlog::error("xvec : {}", x_vec);
     spdlog::error("x={}", x);
     spdlog::error("Bug {}", 1);
-    exit(1);
+    exit_pion(1);
   }
   if (y_index <= 0 || y_index >= vec_size[1]) {
     spdlog::error(
         "y out of range: y_index={}, y={}, {}", y_index, y, vec_size[1]);
     spdlog::error("yvec {}", y_vec);
     spdlog::error("Bug {}", 2);
-    exit(2);
+    exit_pion(2);
   }
   if (z_index <= 0 || z_index >= vec_size[2]) {
     spdlog::error("z out of range: z_index={}, {}", z_index, vec_size[2]);
     spdlog::error("Bug {}", 3);
-    exit(3);
+    exit_pion(3);
   }
 
   // Calculate delta x, delta y and delta z terms for trilinear

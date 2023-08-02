@@ -46,7 +46,7 @@ eqns_base::eqns_base(const int n  ///< Number of Variables in State Vector
   //
   if (eq_nvar < 5) {
     spdlog::error("Bad eq_nvar; must be >=5 : {}", eq_nvar);
-    exit(1);
+    exit_pion(1);
   }
 
   //
@@ -152,7 +152,7 @@ void eqns_base::SetDirection(const enum axes d)
     default:
       spdlog::error(
           "bad direction in eqns_base::SetDirection {}", static_cast<int>(d));
-      exit(2);
+      exit_pion(2);
       break;
   }
   return;

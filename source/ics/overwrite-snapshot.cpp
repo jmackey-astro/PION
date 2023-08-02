@@ -48,12 +48,12 @@ int IC_overwrite_snapshot::setup_data(
   ICsetup_base::gg = ggg;
   if (!gg) {
     spdlog::error("{}: {}", "null pointer to grid!", fmt::ptr(ggg));
-    exit(1);
+    exit_pion(1);
   }
   ICsetup_base::rp = rrp;
   if (!rp) {
     spdlog::error("{}: {}", "null pointer to ReadParams", fmt::ptr(rp));
-    exit(1);
+    exit_pion(1);
   }
   string seek, str;
 
@@ -62,7 +62,7 @@ int IC_overwrite_snapshot::setup_data(
   str  = rp->find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "didn't find parameter", seek);
-    exit(1);
+    exit_pion(1);
   }
   // spdlog::info("Radius: {} {}",str, atoi(str.c_str()));
   int radius = atoi(str.c_str());
@@ -71,7 +71,7 @@ int IC_overwrite_snapshot::setup_data(
   str  = rp->find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "didn't find parameter", seek);
-    exit(1);
+    exit_pion(1);
   }
   double energy = atof(str.c_str());
 
@@ -79,7 +79,7 @@ int IC_overwrite_snapshot::setup_data(
   str  = rp->find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "didn't find parameter", seek);
-    exit(1);
+    exit_pion(1);
   }
   double ejecta = atof(str.c_str());
 
@@ -87,7 +87,7 @@ int IC_overwrite_snapshot::setup_data(
   str  = rp->find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "didn't find parameter", seek);
-    exit(1);
+    exit_pion(1);
   }
   double ejecta_X = atof(str.c_str());
 
@@ -95,7 +95,7 @@ int IC_overwrite_snapshot::setup_data(
   str  = rp->find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "didn't find parameter", seek);
-    exit(1);
+    exit_pion(1);
   }
   double ejecta_Y = atof(str.c_str());
 
@@ -205,7 +205,7 @@ int IC_overwrite_snapshot::setup_data(
     spdlog::error(
         "overwrite-snapshot: H {}, He {}, Z {}, C {}, N {}, O {}, H1p {}, wind {} or ZS {} tracers",
         tr_xh, tr_xhe, tr_xz, tr_xc, tr_xn, tr_xo, tr_hp, tr_w, tr_xd);
-    // exit(1);
+    // exit_pion(1);
   }
   spdlog::info(
       "Supernova: H {}, He {}, Z {}, C {}, N {}, O {}, H1p {}, wind {} or ZS {} tracers",
@@ -246,7 +246,7 @@ int IC_overwrite_snapshot::setup_data(
     spdlog::error(
         "Supernova: test_ejecta_before {}, SN ejecta {}", test_ejecta_before,
         ejecta);
-    exit(1);
+    exit_pion(1);
   }
 
   double ejecta_T    = 3000.0;
@@ -468,7 +468,7 @@ int IC_overwrite_snapshot::setup_data(
   spdlog::info("Supernova: found_v_core {}", found_v_core);
   if (found_v_core == false) {
     spdlog::error("No matching vcore and F could be found");
-    exit(1);
+    exit_pion(1);
   }
 
   spdlog::info("Supernova: vcore {} F_par {}", v_core, F_par);

@@ -61,13 +61,13 @@ int IC_basic_tests::setup_data(
   ICsetup_base::gg = ggg;
   if (!gg) {
     spdlog::error("{}: {}", "null pointer to grid!", fmt::ptr(ggg));
-    exit(1);
+    exit_pion(1);
   }
 
   ICsetup_base::rp = rrp;
   if (!rp) {
     spdlog::error("{}: {}", "null pointer to ReadParams", fmt::ptr(rp));
-    exit(1);
+    exit_pion(1);
   }
 
   IC_basic_tests::eqns = SimPM->eqntype;
@@ -77,7 +77,7 @@ int IC_basic_tests::setup_data(
     eqns = 2;
   else {
     spdlog::error("{}: {}", "Bad equations", eqns);
-    exit(1);
+    exit_pion(1);
   }
 
   int ndim   = SimPM->ndim;
@@ -85,7 +85,7 @@ int IC_basic_tests::setup_data(
 
   if (ics == "") {
     spdlog::error("{}: {}", "didn't get any ics to set up.", ics);
-    exit(1);
+    exit_pion(1);
   }
   else if (ics == "Uniform" || ics == "uniform") {
     err += setup_uniformgrid(rrp, ggg);
@@ -96,7 +96,7 @@ int IC_basic_tests::setup_data(
   else if (ics == "Advection") {
     if (ndim != 2 && ndim != 3) {
       spdlog::error("{}: {}", "only know 2d/3d advected grids", ndim);
-      exit(1);
+      exit_pion(1);
     }
     err += setup_advection();
   }
@@ -141,7 +141,7 @@ int IC_basic_tests::setup_data(
   }
   else {
     spdlog::error("{}: {}", "Don't know what Initial Condition is!", ics);
-    exit(1);
+    exit_pion(1);
   }
 
   // Add noise to data?  Smooth data?
@@ -154,7 +154,7 @@ int IC_basic_tests::setup_data(
     noise = -1;
   if (isnan(noise)) {
     spdlog::error("{}: {}", "noise parameter is not a number", noise);
-    exit(1);
+    exit_pion(1);
   }
   if (noise > 0) err += AddNoise2Data(gg, *SimPM, 2, noise);
 
@@ -165,7 +165,7 @@ int IC_basic_tests::setup_data(
     smooth = -1;
   if (isnan(smooth)) {
     spdlog::error("{}: {}", "Smooth parameter not a number", smooth);
-    exit(1);
+    exit_pion(1);
   }
   if (smooth > 0) err += SmoothData(smooth);
 
@@ -195,7 +195,7 @@ int IC_basic_tests::setup_uniformgrid(
   str  = rrp->find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "didn't find parameter", seek);
-    exit(1);
+    exit_pion(1);
   }
   Amb[RO] = atof(str.c_str());
 
@@ -203,7 +203,7 @@ int IC_basic_tests::setup_uniformgrid(
   str  = rrp->find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "didn't find parameter", seek);
-    exit(1);
+    exit_pion(1);
   }
   Amb[PG] = atof(str.c_str());
 
@@ -211,7 +211,7 @@ int IC_basic_tests::setup_uniformgrid(
   str  = rrp->find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "didn't find parameter", seek);
-    exit(1);
+    exit_pion(1);
   }
   Amb[VX] = atof(str.c_str());
 
@@ -219,7 +219,7 @@ int IC_basic_tests::setup_uniformgrid(
   str  = rrp->find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "didn't find parameter", seek);
-    exit(1);
+    exit_pion(1);
   }
   Amb[VY] = atof(str.c_str());
 
@@ -227,7 +227,7 @@ int IC_basic_tests::setup_uniformgrid(
   str  = rrp->find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "didn't find parameter", seek);
-    exit(1);
+    exit_pion(1);
   }
   Amb[VZ] = atof(str.c_str());
 
@@ -237,7 +237,7 @@ int IC_basic_tests::setup_uniformgrid(
     str  = rrp->find_parameter(seek);
     if (str == "") {
       spdlog::error("{}: {}", "didn't find parameter", seek);
-      exit(1);
+      exit_pion(1);
     }
     Amb[BX] = atof(str.c_str());
 
@@ -245,7 +245,7 @@ int IC_basic_tests::setup_uniformgrid(
     str  = rrp->find_parameter(seek);
     if (str == "") {
       spdlog::error("{}: {}", "didn't find parameter", seek);
-      exit(1);
+      exit_pion(1);
     }
     Amb[BY] = atof(str.c_str());
 
@@ -253,7 +253,7 @@ int IC_basic_tests::setup_uniformgrid(
     str  = rrp->find_parameter(seek);
     if (str == "") {
       spdlog::error("{}: {}", "didn't find parameter", seek);
-      exit(1);
+      exit_pion(1);
     }
     Amb[BZ] = atof(str.c_str());
 
@@ -393,7 +393,7 @@ int IC_basic_tests::setup_sinewave_velocity()
   int ndim = gg->Ndim();  // int nvar=gg->Nvar();
   if (ndim != 2 && ndim != 3) {
     spdlog::error("{}: {}", "Bad ndim in setup_sinewave_velocity()", ndim);
-    exit(1);
+    exit_pion(1);
   }
 
   //   if (ndim==2 && !pconst.equalD(thetaXZ,M_PI/2.)) {
@@ -482,21 +482,21 @@ int IC_basic_tests::setup_advection()
   str  = rp->find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "didn't find parameter", seek);
-    exit(1);
+    exit_pion(1);
   }
   double thetaXY = M_PI / 180. * atof(str.c_str());
   seek           = "NDadv_thetaXZ";
   str            = rp->find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "didn't find parameter", seek);
-    exit(1);
+    exit_pion(1);
   }
   double thetaXZ = M_PI / 180. * atof(str.c_str());
 
   int ndim = gg->Ndim();  // int nvar=gg->Nvar();
   if (ndim != 2 && ndim != 3) {
     spdlog::error("{}: {}", "Bad ndim in setupNDadvectionHD", ndim);
-    exit(1);
+    exit_pion(1);
   }
 
   if (ndim == 2 && !pconst.equalD(thetaXZ, M_PI / 2.)) {
@@ -590,7 +590,7 @@ int IC_basic_tests::setup_divBpeak()
   int ndim = gg->Ndim();
   if (ndim != 2) {
     spdlog::error("{}: {}", "divBpeak only works in 2D", ndim);
-    exit(1);
+    exit_pion(1);
   }
   int nvar  = gg->Nvar();
   double *s = new double[nvar];
@@ -616,7 +616,7 @@ int IC_basic_tests::setup_divBpeak()
     spdlog::error(
         "{}: {}", "Set bounds properly for divBpeak!!! x=[-.5,1.5] y=[-.5,1.5]",
         SimPM->Xmin[XX]);
-    exit(1);
+    exit_pion(1);
   }
   class cell *c = gg->FirstPt();
   double r2     = 0;
@@ -660,14 +660,14 @@ int IC_basic_tests::setup_FieldLoop(double vz  ///< Z-velocity of fluid
   int ndim = SimPM->ndim;
   if (ndim != 2) {
     spdlog::error("{}: {}", "Bad ndim in setup_FieldLoop", ndim);
-    exit(1);
+    exit_pion(1);
   }
   if (SimPM->eqntype != EQMHD && SimPM->eqntype != EQGLM
       && SimPM->eqntype != EQFCD) {
     spdlog::error(
         "{}: {}", "Advection of Field Loop must be mhd! bad eqntype",
         SimPM->eqntype);
-    exit(1);
+    exit_pion(1);
   }
   SimPM->gamma = 5. / 3.;  // just to make sure.
   // SimPM->BC_XN = "periodic";
@@ -776,7 +776,7 @@ int IC_basic_tests::setup_OrszagTang()
   str  = rp->find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "didn't find parameter", seek);
-    exit(1);
+    exit_pion(1);
   }
   double otvbeta = atof(str.c_str());
 
@@ -784,7 +784,7 @@ int IC_basic_tests::setup_OrszagTang()
   str  = rp->find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "didn't find parameter", seek);
-    exit(1);
+    exit_pion(1);
   }
   double otvmach = atof(str.c_str());
 
@@ -794,13 +794,13 @@ int IC_basic_tests::setup_OrszagTang()
       otvbeta, otvmach);
   if (ndim != 2) {
     spdlog::error("{}: {}", "Bad ndim in setup_OrszagTang", ndim);
-    exit(1);
+    exit_pion(1);
   }
   if (SimPM->eqntype != EQMHD && SimPM->eqntype != EQGLM
       && SimPM->eqntype != EQFCD) {
     spdlog::error(
         "{}: {}", "O-T vortex must be mhd! bad eqntype", SimPM->eqntype);
-    exit(1);
+    exit_pion(1);
   }
 
   SimPM->gamma = 5. / 3.;                                // just to make sure.
@@ -844,7 +844,7 @@ int IC_basic_tests::setup_DoubleMachRef()
   str  = rp->find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "didn't find parameter", seek);
-    exit(1);
+    exit_pion(1);
   }
   double dmrmach = atof(str.c_str());
 
@@ -852,7 +852,7 @@ int IC_basic_tests::setup_DoubleMachRef()
   str  = rp->find_parameter(seek);
   if (str == "") {
     spdlog::error("{}: {}", "didn't find parameter", seek);
-    exit(1);
+    exit_pion(1);
   }
   double dmrtheta = atof(str.c_str());
 
@@ -860,21 +860,21 @@ int IC_basic_tests::setup_DoubleMachRef()
   spdlog::info("Setting up Double Mach Reflection problem...");
   if (dmrmach <= 1) {
     spdlog::error("{}: {}", "Mach number must be >1", dmrmach);
-    exit(1);
+    exit_pion(1);
   }
   if (dmrtheta < 0.1 || dmrtheta > 89.99) {
     spdlog::error("{}: {}", "Angle must be between 0 and 90 degrees", dmrtheta);
-    exit(1);
+    exit_pion(1);
   }
   spdlog::debug(
       "with mach no. = {} and angle {} degrees to x-axis", dmrmach, dmrtheta);
   if (ndim != 2) {
     spdlog::error("{}: {}", "Bad ndim in setup_DoubleMachRef", ndim);
-    exit(1);
+    exit_pion(1);
   }
   if (SimPM->eqntype != EQEUL) {
     spdlog::error("{}: {}", "DMR must be euler equations!", SimPM->eqntype);
-    exit(1);
+    exit_pion(1);
   }
   // SimPM->BC_XN = "inflow";
   // SimPM->BC_XP = "outflow";
@@ -944,7 +944,7 @@ int IC_basic_tests::setup_KelvinHelmholtz_Stone()
   int ndim = gg->Ndim();
   if (ndim != 2) {
     spdlog::error("{}: {}", "KH needs 2D problem domain", ndim);
-    exit(1);
+    exit_pion(1);
   }
 
   // The following is for Jim Stone's test at:
@@ -1010,7 +1010,7 @@ int IC_basic_tests::setup_KelvinHelmholtz()
   int ndim = gg->Ndim();
   if (ndim != 2) {
     spdlog::error("{}: {}", "KH needs 2D problem domain", ndim);
-    exit(1);
+    exit_pion(1);
   }
 
   // The following is for Frank, Jones, Ryu, \& Gaalaas, 1996, ApJ, 460, 777.
@@ -1068,7 +1068,7 @@ int IC_basic_tests::setup_LWImplosion()
   int ndim = gg->Ndim();
   if (ndim != 2) {
     spdlog::error("{}: {}", "LWI needs 2D problem domain", ndim);
-    exit(1);
+    exit_pion(1);
   }
 
   SimPM->gamma    = 1.4;
@@ -1107,11 +1107,11 @@ int IC_basic_tests::setup_TestCIE()
   int ndim = gg->Ndim();
   if (ndim != 1) {
     spdlog::error("{}: {}", "TestCIE nees 1D problem domain", ndim);
-    exit(1);
+    exit_pion(1);
   }
   if (!mp) {
     spdlog::error("TestCIE needs a microphysics module");
-    exit(1);
+    exit_pion(1);
   }
 
   SimPM->gamma       = 5. / 3.;
@@ -1190,11 +1190,11 @@ int IC_basic_tests::setup_TestMC()
   int ndim = gg->Ndim();
   if (ndim != 1) {
     spdlog::error("{}: {}", "TestMC nees 1D problem domain", ndim);
-    exit(1);
+    exit_pion(1);
   }
   if (!mp) {
     spdlog::error("TesMC needs a microphysics module");
-    exit(1);
+    exit_pion(1);
   }
 
   SimPM->gamma       = 5. / 3.;

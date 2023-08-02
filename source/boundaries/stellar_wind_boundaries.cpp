@@ -69,14 +69,14 @@ int stellar_wind_bc::BC_assign_STWIND(
   //
   if (b->dir != NO) {
     spdlog::error("STWIND not external boundary {}", static_cast<int>(b->dir));
-    exit(1);
+    exit_pion(1);
   }
 #ifndef NDEBUG
   spdlog::debug("Assigning data to STWIND boundary. Nsrc={}", SWP.Nsources);
 #endif
   if (SWP.Nsources < 1) {
     spdlog::error("BC_assign_STWIND() No Sources {}", SWP.Nsources);
-    exit(1);
+    exit_pion(1);
   }
 
   //
@@ -84,12 +84,12 @@ int stellar_wind_bc::BC_assign_STWIND(
   //
   if (b->refval) {
     spdlog::error("Initialised STWIND boundary refval {}", fmt::ptr(b->refval));
-    exit(1);
+    exit_pion(1);
   }
   b->refval = mem.myalloc(b->refval, par.nvar);
   if (!b->data.empty()) {
     spdlog::error("BC_assign_STWIND: Not empty boundary data {}", b->itype);
-    exit(1);
+    exit_pion(1);
   }
   for (int v = 0; v < par.nvar; v++)
     b->refval[v] = 0.0;
@@ -127,7 +127,7 @@ int stellar_wind_bc::BC_assign_STWIND(
       if (xi != SWP.params[isw]->xi) {
         spdlog::error(
             "wind xi values don't match {} {}", xi, SWP.params[isw]->xi);
-        exit(1);
+        exit_pion(1);
       }
     }
   }
@@ -192,7 +192,7 @@ int stellar_wind_bc::BC_assign_STWIND(
         par.EP.wind_acceleration);
     if (SWP.params[isw]->acc && !par.EP.wind_acceleration) {
       spdlog::error("requesting wind acceleration but par not set");
-      exit(1);
+      exit_pion(1);
     }
   }
 
@@ -233,7 +233,7 @@ int stellar_wind_bc::BC_assign_STWIND(
     }
     if (err) {
       spdlog::error("Error adding wind source {}", isw);
-      exit(1);
+      exit_pion(1);
     }
   }
 
@@ -281,7 +281,7 @@ int stellar_wind_bc::BC_assign_STWIND(
     outf.precision(6);
     if (!outf.is_open()) {
       spdlog::error("Couldn't open file {}", "trajectory.txt");
-      exit(1);
+      exit_pion(1);
     }
     outf
         << "\n time         timestep       star 0 x       star 0 y       star 0 vx      star 0 vy      star 1 x       star 1 y        star 1 vx      star1 vy\n";
@@ -334,7 +334,7 @@ int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
     spdlog::error(
         "adding cells to source that already has cells: {}",
         grid->Wind->get_num_cells(id));
-    exit(1);
+    exit_pion(1);
   }
 
   // find min/max of coordinates of cube that contains spherical wind source
@@ -701,7 +701,7 @@ int stellar_wind_bc::BC_update_STWIND(
     else if (err > 0) {
       spdlog::error(
           "error in setting cell values for wind src {}: {}", id, err);
-      exit(err);
+      exit_pion(err);
     }
     // set wind acceleration in each cell if dt!=0 (this can be so for
     // setting timestep and for updating BCs at the start of each step)

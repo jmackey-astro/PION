@@ -117,6 +117,11 @@ option(
     OFF
 )
 
+option(
+    LOG_ALL_PROCS
+    "enable logfiles for all MPI processes"
+    OFF
+)
 
 #  This is required on OSX so that the Boost code will compile successfully
 set(CMAKE_CXX_STANDARD 14)
@@ -155,6 +160,10 @@ if(NOT PION_SKIP_SOURCE)
     if(ON_KAROLINA)
         add_compile_options(-mavx2)
     endif(ON_KAROLINA)
+
+    if(LOG_ALL_PROCS)
+        add_compile_options(-DLOG_ALL_PROCS)
+    endif(LOG_ALL_PROCS)
 
     #
     # Find dependant libraries
@@ -261,3 +270,5 @@ message(STATUS "    PION_TOOLS               = ${PION_TOOLS}")
 message(STATUS "    PION_SKIP_SOURCE         = ${PION_SKIP_SOURCE}")
 message(STATUS "    PION_BUILD_TESTS         = ${PION_BUILD_TESTS}")
 message(STATUS "    PION_BUILD_DOCUMENTATION = ${PION_BUILD_DOCUMENTATION}")
+message(STATUS "    ON_KAROLINA              = ${ON_KAROLINA}")
+message(STATUS "    LOG_ALL_PROCS            = ${LOG_ALL_PROCS}")
