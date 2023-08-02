@@ -90,11 +90,11 @@ int fixed_bc::BC_assign_FIXED(
 // ##################################################################
 
 int fixed_bc::BC_update_FIXED(
-    class SimParams &par,       ///< pointer to simulation parameters
-    class GridBaseClass *grid,  ///< pointer to grid.
+    class SimParams &par,   ///< pointer to simulation parameters
+    class GridBaseClass *,  ///< pointer to grid.
     struct boundary_data *b,
-    const int cstep,
-    const int maxstep)
+    const int,
+    const int)
 {
   //
   // Fixed means all boundary points have same fixed value, stored

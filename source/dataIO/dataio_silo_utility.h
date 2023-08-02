@@ -127,12 +127,12 @@ protected:
   /// Get Xmin[],Xmax[] for a quadmesh, and return them.
   ///
   void get_quadmesh_extents(
-      DBfile *,          ///< pointer to silo file.
-      const string,      ///< directory of mesh
-      const string,      ///< name of mesh
-      double *,          ///< integer Xmin for mesh (output)
-      double *,          ///< integer Xmax for mesh (output)
-      class SimParams &  ///< pointer to simulation parameters
+      DBfile *,                       ///< pointer to silo file.
+      const string,                   ///< directory of mesh
+      const string,                   ///< name of mesh
+      std::array<double, MAX_DIM> &,  ///< integer Xmin for mesh (output)
+      std::array<double, MAX_DIM> &,  ///< integer Xmax for mesh (output)
+      class SimParams &               ///< pointer to simulation parameters
   );
 
   ///

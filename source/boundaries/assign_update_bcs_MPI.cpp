@@ -101,11 +101,11 @@ int assign_update_bcs_MPI::assign_boundary_data(
 
 
 int assign_update_bcs_MPI::TimeUpdateExternalBCs(
-    class SimParams &par,          ///< pointer to sim parameters
-    const int level,               ///< level in grid hierarchy
-    class GridBaseClass *grid,     ///< pointer to grid.
-    class FV_solver_base *solver,  ///< pointer to equations
-    const double simtime,          ///< current simulation time
+    class SimParams &par,       ///< pointer to sim parameters
+    const int level,            ///< level in grid hierarchy
+    class GridBaseClass *grid,  ///< pointer to grid.
+    class FV_solver_base *,     ///< pointer to equations
+    const double simtime,       ///< current simulation time
     const int cstep,
     const int maxstep)
 {

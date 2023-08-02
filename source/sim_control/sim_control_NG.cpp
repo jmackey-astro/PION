@@ -602,8 +602,8 @@ int sim_control_NG::Finalise(
 // ##################################################################
 
 double sim_control_NG::advance_time(
-    const int l,               ///< level to advance.
-    class GridBaseClass *grid  ///< grid pointer
+    const int l,           ///< level to advance.
+    class GridBaseClass *  ///< grid pointer
 )
 {
 #ifndef NDEBUG
@@ -1008,7 +1008,7 @@ int sim_control_NG::check_energy_cons(vector<class GridBaseClass *> &grid)
 int sim_control_NG::do_ongrid_raytracing(
     class SimParams &par,       ///< pointer to simulation parameters
     class GridBaseClass *grid,  ///< Computational grid.
-    const int l                 ///< level in NG
+    const int                   ///< level in NG
 )
 {
   if (!grid->RT) return 0;

@@ -654,7 +654,7 @@ int dataio_silo_utility::ReadLevelData(
         "READING PLLEL DATA: {}  {}  {} {} {}", mpiPM->get_myrank(),
         mpiPM->get_nproc(), numfiles, groupsize, l);
 #endif
-    std::vector<int> cells_per_file;
+    std::vector<int> cells_per_file(1, 0);
     mpiPM->allgather_ncells(cells_per_file);
     for (int count = 0; count < nloops; count++) {
       if ((mpiPM->get_myrank() + nloops) % nloops == count) {
@@ -942,11 +942,11 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
 // ##################################################################
 
 void dataio_silo_utility::get_quadmesh_extents(
-    DBfile *dbfile,         ///< pointer to silo file.
-    const string mesh_dir,  ///< directory of mesh
-    const string qm_name,   ///< name of mesh
-    double *mesh_xmin,      ///< Xmin for mesh (output)
-    double *mesh_xmax,      ///< Xmax for mesh (output)
+    DBfile *dbfile,                          ///< pointer to silo file.
+    const string mesh_dir,                   ///< directory of mesh
+    const string qm_name,                    ///< name of mesh
+    std::array<double, MAX_DIM> &mesh_xmin,  ///< Xmin for mesh (output)
+    std::array<double, MAX_DIM> &mesh_xmax,  ///< Xmax for mesh (output)
     class SimParams &SimPM  ///< pointer to simulation parameters
 )
 {
@@ -998,6 +998,8 @@ void dataio_silo_utility::get_quadmesh_extents(
     double *dqmmax = reinterpret_cast<double *>(qm->max_extents);
     for (int v = 0; v < ndim; v++) {
       mesh_xmin[v] = dqmmin[v];
+    }
+    for (int v = 0; v < ndim; v++) {
       mesh_xmax[v] = dqmmax[v];
 #ifndef NDEBUG
       spdlog::debug(
@@ -1005,6 +1007,11 @@ void dataio_silo_utility::get_quadmesh_extents(
 #endif  // NDEBUG
     }
   }
+  for (int v = ndim; v < MAX_DIM; v++)
+    mesh_xmin[v] = 0.0;
+  for (int v = ndim; v < MAX_DIM; v++)
+    mesh_xmax[v] = 0.0;
+
   DBFreeQuadmesh(qm);  // qm=0;
   return;
 }
@@ -1026,8 +1033,7 @@ void dataio_silo_utility::get_quadmesh_integer_extents(
   // First get the double precision extents
   //
   std::array<double, MAX_DIM> mesh_xmin, mesh_xmax;
-  get_quadmesh_extents(
-      dbfile, mesh_dir, qm_name, &mesh_xmin[0], &mesh_xmax[0], SimPM);
+  get_quadmesh_extents(dbfile, mesh_dir, qm_name, mesh_xmin, mesh_xmax, SimPM);
   //
   // Now use the cell interface to get the integer extents (Note that
   // this will fail and bug out if the global grid class isn't set up,
@@ -1054,10 +1060,10 @@ void dataio_silo_utility::get_quadmesh_integer_extents(
         mesh_xmax[v] *= (1.0 + buffer);
     }
   }
-  for (int v = 0; v < MAX_DIM; v++) {
+  for (int v = 0; v < MAX_DIM; v++)
     iXmin[v] = 0;
+  for (int v = 0; v < MAX_DIM; v++)
     iXmax[v] = 0;
-  }
   CI.get_ipos_vec(mesh_xmin, iXmin);
   CI.get_ipos_vec(mesh_xmax, iXmax);
 
@@ -1090,9 +1096,19 @@ int dataio_silo_utility::PP_read_var2grid(
   DBquadvar *qv = 0;
   qv            = DBGetQuadvar(dbfile, variable.c_str());
   if (!qv) {
-    spdlog::error(
-        "dataio_silo::read_variable2grid() failed to read var {}", variable);
-    exit(11);
+    if (variable == "glmPSI") {
+      spdlog::warn("failed to read GLM Psi field, setting to zero.");
+      cell *c = ggg->FirstPt();
+      do {
+        c->P[SI] = 0.0;
+      } while ((c = ggg->NextPt(*c)) != 0);
+      return 0;
+    }
+    else {
+      spdlog::error(
+          "dataio_silo::read_variable2grid() failed to read var {}", variable);
+      exit(11);
+    }
   }
 
   //

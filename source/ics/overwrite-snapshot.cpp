@@ -272,9 +272,15 @@ int IC_overwrite_snapshot::setup_data(
 
       if ((distance > 0) && (distance < radius * dx)) {
         c->P[VX] = (dpos[XX] - snpos[XX]) / T_start;
-        c->P[VY] = (dpos[YY] - snpos[YY]) / T_start;
-        c->P[VZ] = (dpos[ZZ] - snpos[ZZ]) / T_start;
-        vel      = sqrt(
+        if (SimPM->ndim > 1)
+          c->P[VY] = (dpos[YY] - snpos[YY]) / T_start;
+        else
+          c->P[VY] = 0.0;
+        if (SimPM->ndim > 2)
+          c->P[VZ] = (dpos[ZZ] - snpos[ZZ]) / T_start;
+        else
+          c->P[VZ] = 0.0;
+        vel = sqrt(
             c->P[VX] * c->P[VX] + c->P[VY] * c->P[VY] + c->P[VZ] * c->P[VZ]);
         if (vel <= v_core) {
           c->P[RO] = F_par * pow(T_start, -3.0);
@@ -283,16 +289,16 @@ int IC_overwrite_snapshot::setup_data(
           c->P[RO] = F_par * pow(T_start, -3.0) * pow(vel / v_core, -n_exp);
         }
         mp->Set_Temp(c->P.data(), SimPM->EP.MinTemperature, SimPM->gamma);
-        c->P[SimPM->ftr + tr_xh]  = ejecta_X;
-        c->P[SimPM->ftr + tr_xhe] = ejecta_Y;
+        c->P[tr_xh]  = ejecta_X;
+        c->P[tr_xhe] = ejecta_Y;
         // c->P[tr_xz]  = ejecta_Z;
-        c->P[SimPM->ftr + tr_xz] = 0.0;
-        c->P[SimPM->ftr + tr_xc] = 0.0;
-        c->P[SimPM->ftr + tr_xn] = 0.0;
-        c->P[SimPM->ftr + tr_xo] = 0.0;
-        c->P[SimPM->ftr + tr_hp] = 0.0;
-        c->P[SimPM->ftr + tr_w]  = 0.0;
-        c->P[SimPM->ftr + tr_xd] = ejecta_Z;
+        c->P[tr_xz] = 0.0;
+        c->P[tr_xc] = 0.0;
+        c->P[tr_xn] = 0.0;
+        c->P[tr_xo] = 0.0;
+        c->P[tr_hp] = 0.0;
+        c->P[tr_w]  = 0.0;
+        c->P[tr_xd] = ejecta_Z;
 
         iter_ejecta += c->P[RO] * ggg->CellVolume(*c, dx);
         iter_energy +=
@@ -326,9 +332,15 @@ int IC_overwrite_snapshot::setup_data(
 
       if ((distance > 0) && (distance < radius * dx)) {
         c->P[VX] = (dpos[XX] - snpos[XX]) / T_start;
-        c->P[VY] = (dpos[YY] - snpos[YY]) / T_start;
-        c->P[VZ] = (dpos[ZZ] - snpos[ZZ]) / T_start;
-        vel      = sqrt(
+        if (SimPM->ndim > 1)
+          c->P[VY] = (dpos[YY] - snpos[YY]) / T_start;
+        else
+          c->P[VY] = 0.0;
+        if (SimPM->ndim > 2)
+          c->P[VZ] = (dpos[ZZ] - snpos[ZZ]) / T_start;
+        else
+          c->P[VZ] = 0.0;
+        vel = sqrt(
             c->P[VX] * c->P[VX] + c->P[VY] * c->P[VY] + c->P[VZ] * c->P[VZ]);
         if (vel <= v_core) {
           c->P[RO] = F_par * pow(T_start, -3.0);
@@ -337,16 +349,16 @@ int IC_overwrite_snapshot::setup_data(
           c->P[RO] = F_par * pow(T_start, -3.0) * pow(vel / v_core, -n_exp);
         }
         mp->Set_Temp(c->P.data(), ejecta_T, SimPM->gamma);
-        c->P[SimPM->ftr + tr_xh]  = ejecta_X;
-        c->P[SimPM->ftr + tr_xhe] = ejecta_Y;
+        c->P[tr_xh]  = ejecta_X;
+        c->P[tr_xhe] = ejecta_Y;
         // c->P[tr_xz]  = ejecta_Z;
-        c->P[SimPM->ftr + tr_xz] = 0.0;
-        c->P[SimPM->ftr + tr_xc] = 0.0;
-        c->P[SimPM->ftr + tr_xn] = 0.0;
-        c->P[SimPM->ftr + tr_xo] = 0.0;
-        c->P[SimPM->ftr + tr_hp] = 0.0;
-        c->P[SimPM->ftr + tr_w]  = 0.0;
-        c->P[SimPM->ftr + tr_xd] = ejecta_Z;
+        c->P[tr_xz] = 0.0;
+        c->P[tr_xc] = 0.0;
+        c->P[tr_xn] = 0.0;
+        c->P[tr_xo] = 0.0;
+        c->P[tr_hp] = 0.0;
+        c->P[tr_w]  = 0.0;
+        c->P[tr_xd] = ejecta_Z;
 
         if (eqns == 2 && 1 == 1) {
           // B0 set at r_core to be such that plasma beta == ejecta_beta
@@ -356,30 +368,60 @@ int IC_overwrite_snapshot::setup_data(
           double B0     = sqrt(
               F_par * pow(T_start, -3.0) * pconst.kB() * ejecta_T
               / (pconst.m_p() * 0.5 * ejecta_beta));
-          if (distance <= r_core) {
-            c->P[BX] = B0 * (dpos[XX] - snpos[XX]) / r_core;
-            c->P[BY] = B0 * (dpos[YY] - snpos[YY]) / r_core;
-            if ((dpos[ZZ] - snpos[ZZ]) < 0) {
-              c->P[BX] *= -1.0;
-              c->P[BY] *= -1.0;
+          if (SimPM->ndim == 1) {
+            spdlog::error("need 2d or 3d for magnetic field");
+            exit(1);
+          }
+          else if (SimPM->ndim == 3) {
+            if (distance <= r_core) {
+              c->P[BX] = B0 * (dpos[XX] - snpos[XX]) / r_core;
+              c->P[BY] = B0 * (dpos[YY] - snpos[YY]) / r_core;
+              if ((dpos[ZZ] - snpos[ZZ]) < 0) {
+                c->P[BX] *= -1.0;
+                c->P[BY] *= -1.0;
+              }
+              c->P[BZ] = B0 * fabs(dpos[ZZ] - snpos[ZZ]) / r_core;
             }
-            c->P[BZ] = B0 * fabs(dpos[ZZ] - snpos[ZZ]) / r_core;
+            else {
+              c->P[BX] = B0 * r_core * r_core * (dpos[XX] - snpos[XX])
+                         / pow(distance, 3);
+              c->P[BY] = B0 * r_core * r_core * (dpos[YY] - snpos[YY])
+                         / pow(distance, 3);
+              if ((dpos[ZZ] - snpos[ZZ]) < 0) {
+                c->P[BX] *= -1.0;
+                c->P[BY] *= -1.0;
+              }
+              c->P[BZ] = B0 * r_core * r_core * fabs(dpos[ZZ] - snpos[ZZ])
+                         / pow(distance, 3);
+            }
           }
           else {
-            c->P[BX] = B0 * r_core * r_core * (dpos[XX] - snpos[XX])
-                       / pow(distance, 3);
-            c->P[BY] = B0 * r_core * r_core * (dpos[YY] - snpos[YY])
-                       / pow(distance, 3);
-            if ((dpos[ZZ] - snpos[ZZ]) < 0) {
-              c->P[BX] *= -1.0;
-              c->P[BY] *= -1.0;
+            // 2D cylindrical, so BX is the z-component and BY is the R comp.
+            // Assume no toroidal component in ejecta
+            if (distance <= r_core) {
+              c->P[BX] = B0 * fabs(dpos[XX] - snpos[XX]) / r_core;
+              c->P[BY] = B0 * (dpos[YY] - snpos[YY]) / r_core;
+              if ((dpos[XX] - snpos[XX]) < 0) {
+                c->P[BY] *= -1.0;
+              }
             }
-            c->P[BZ] = B0 * r_core * r_core * fabs(dpos[ZZ] - snpos[ZZ])
-                       / pow(distance, 3);
+            else {
+              c->P[BX] = B0 * r_core * r_core * fabs(dpos[XX] - snpos[XX])
+                         / pow(distance, 3);
+              c->P[BY] = B0 * r_core * r_core * (dpos[YY] - snpos[YY])
+                         / pow(distance, 3);
+              if ((dpos[XX] - snpos[XX]) < 0) {
+                c->P[BY] *= -1.0;
+              }
+            }
           }
         }
         else if (eqns == 2) {
           // 2nd try: dipole with m = Bstar * Rstar^3
+          if (SimPM->ndim != 3) {
+            spdlog::error("only 3d implemented for dipole magnetic field");
+            exit(1);
+          }
           double m    = 1.0 * pow(v_core * T_start, 3);
           double cost = (dpos[ZZ] - snpos[ZZ]) / distance;
           c->P[BX] = 3 * m * cost * (dpos[XX] - snpos[XX]) / pow(distance, 4);

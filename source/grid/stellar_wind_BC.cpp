@@ -418,7 +418,9 @@ void stellar_wind::set_wind_cell_reference_state_vinf(
   // In this function we set the density, pressure, velocity, and tracer
   // values for the reference state of the cell.  Every timestep the
   // cell-values will be reset to this reference state.
-  cell *c      = wc.c;
+#ifndef NDEBUG
+  cell *c = wc.c;
+#endif
   double vcell = WP->Vinf;
   set_wind_cell_density_pressure(grid, wc, *WP, vcell, gamma);
 
@@ -431,9 +433,10 @@ void stellar_wind::set_wind_cell_reference_state_vinf(
   }
 
 #ifndef NDEBUG
-  spdlog::debug(
-      "Set Wind Ref. State: id {}, dist {:9.3e}, rho {:9.3e}, vx {:9.3e} vcell {:9.3e}, pg {:9.3e}",
-      c->id, wc.dist, wc.p[RO], wc.p[VX], vcell, wc.p[PG]);
+  // spdlog::debug(
+  //    "Set Wind Ref. State: id {}, dist {:9.3e}, rho {:9.3e}, vx {:9.3e} vcell
+  //    {:9.3e}, pg {:9.3e}", c->id, wc.dist, wc.p[RO], wc.p[VX], vcell,
+  //    wc.p[PG]);
 #endif
 
   set_wind_cell_tracers(wc, WS);

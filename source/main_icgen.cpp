@@ -368,15 +368,14 @@ int main(int argc, char **argv)
 #ifndef PARALLEL
   err = SimSetup->assign_boundary_data(SimPM, 0, grid[0], MP);
   if (0 != err) {
-    spdlog::error(
-        "{}: Expected {} but got {}", "icgen::assign_boundary_data", 0, err);
+    spdlog::error("icgen::assign_boundary_data : {}", err);
     exit(1);
   }
 #endif /* PARALLEL */
 #else
   err += SimSetup->setup_raytracing(SimPM, grid);
   if (err) {
-    spdlog::error("{}: {}", "icgen-ng: Failed to setup raytracer", err);
+    spdlog::error("icgen-ng: Failed to setup raytracer: {}", err);
     exit(1);
   }
 
@@ -387,24 +386,23 @@ int main(int argc, char **argv)
     SimPM.levels[0].sub_domain.barrier();
 #endif /* PARALLEL */
     if (0 != err) {
-      spdlog::error(
-          "{}: Expected {} but got {}", "icgen-ng::assign_boundary_data", 0,
-          err);
+      spdlog::error("icgen-ng::assign_boundary_data {}", err);
       exit(1);
     }
   }
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
+#ifndef NDEBUG
+  spdlog::info("icgen-ng: updating ext boundaries 1");
+#endif /* NDEBUG */
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     // cout <<"updating external boundaries for level "<<l<<"\n";
     err += SimSetup->TimeUpdateExternalBCs(
         SimPM, l, grid[l], solver, SimPM.simtime, SimPM.tmOOA, SimPM.tmOOA);
   }
   if (0 != err) {
-    spdlog::error(
-        "{}: Expected {} but got {}", "icgen-ng: error from bounday update", 0,
-        err);
+    spdlog::error("icgen-ng: error from ext bounday update 1: {}", err);
     exit(1);
   }
   // ----------------------------------------------------------------
@@ -415,6 +413,9 @@ int main(int argc, char **argv)
   spdlog::info("icgen-ng: updating C2F boundaries");
 #endif /* NDEBUG */
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
+#ifndef NDEBUG
+    spdlog::info(" C2F level {}", l);
+#endif /* NDEBUG */
     if (l < SimPM.grid_nlevels - 1) {
       for (size_t i = 0; i < grid[l]->BC_bd.size(); i++) {
         if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) {
@@ -445,7 +446,7 @@ int main(int argc, char **argv)
 
   // ----------------------------------------------------------------
 #ifndef NDEBUG
-  spdlog::info("icgen-ng: updating external boundaries");
+  spdlog::info("icgen-ng: updating external boundaries 2");
 #endif /* NDEBUG */
   for (int l = 0; l < SimPM.grid_nlevels; l++) {
     err += SimSetup->TimeUpdateExternalBCs(
@@ -458,7 +459,10 @@ int main(int argc, char **argv)
     // ----------------------------------------------------------------
 #endif /* PARALLEL */
 
-  // ----------------------------------------------------------------
+    // ----------------------------------------------------------------
+#ifndef NDEBUG
+  spdlog::info("icgen-ng: updating internal boundaries 1");
+#endif /* NDEBUG */
   for (int l = SimPM.grid_nlevels - 1; l >= 0; l--) {
     // cout <<"updating internal boundaries for level "<<l<<"\n";
     err += SimSetup->TimeUpdateInternalBCs(

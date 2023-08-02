@@ -98,8 +98,8 @@ int axisymmetric_bc::BC_assign_AXISYMMETRIC(
 // ##################################################################
 
 int axisymmetric_bc::BC_update_AXISYMMETRIC(
-    class SimParams &par,       ///< pointer to simulation parameters
-    class GridBaseClass *grid,  ///< pointer to grid.
+    class SimParams &par,   ///< pointer to simulation parameters
+    class GridBaseClass *,  ///< pointer to grid.
     struct boundary_data *b,
     const int cstep,
     const int maxstep)

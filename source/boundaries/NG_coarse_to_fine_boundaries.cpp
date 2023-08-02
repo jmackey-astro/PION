@@ -34,14 +34,15 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
   // onto this (finer) grid external boundary, and then write an
   // alogrithm to interpolate the coarse data onto the finer grid.
   //
-  if (b->data.empty())
-    spdlog::error(
-        "{}: {}", "BC_assign_COARSE_TO_FINE: empty boundary data", b->itype);
+  if (b->data.empty()) {
+    spdlog::error("BC_assign_COARSE_TO_FINE: empty boundary data {}", b->itype);
+    exit(1);
+  }
 
-    //
-    // If we are doing raytracing, then also send the column densities
-    // from coarse to fine grids.  Here we set up the number of them.
-    //
+  //
+  // If we are doing raytracing, then also send the column densities
+  // from coarse to fine grids.  Here we set up the number of them.
+  //
 #ifdef C2F_TAU
   struct rad_src_info *s;
   C2F_Nxd = 0;
@@ -78,7 +79,10 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
       while (fabs(distance = grid->idifference_cell2cell(**bpt, *pc, ax))
              > 0.75 * gidx)
         pc = parent->NextPt(*pc, pos);
-      if (!pc) spdlog::error("{}: {}", "C2F boundaries setup", distance);
+      if (!pc) {
+        spdlog::error("C2F boundaries setup error {}", distance);
+        exit(1);
+      }
     }
 #ifdef TEST_C2F
     // rep.printVec("bpt pos",(*bpt)->pos,par.ndim);
@@ -677,6 +681,18 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   std::vector<double> f3U(par.nvar), f4U(par.nvar), cU(par.nvar);
   double dxo2 = 0.5 * fine->DX();  // dx
   double f_vol[4];
+
+#ifndef NDEBUG
+  if (pconst.equalD(P[RO], 0.0)) {
+    spdlog::error("coarse cell has zero density: {:12.6e}", P[RO]);
+    CI.print_cell(*(f1.npt));
+    CI.print_cell(f1);
+    CI.print_cell(f2);
+    CI.print_cell(f3);
+    CI.print_cell(f4);
+    exit(1);
+  }
+#endif
 
   //
   // Need to do bilinear interpolation, 4 cells at a time.
