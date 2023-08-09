@@ -49,7 +49,7 @@ NG_BC89flux::~NG_BC89flux()
         if (fi) {
           fi->c.clear();
           fi->area.clear();
-          fi->flux = mem.myfree(fi->flux);
+          fi->flux.clear();
           flux_update_recv[l][d].fi[f] =
               mem.myfree(flux_update_recv[l][d].fi[f]);
         }
@@ -64,7 +64,7 @@ NG_BC89flux::~NG_BC89flux()
         if (fi) {
           fi->c.clear();
           fi->area.clear();
-          fi->flux = mem.myfree(fi->flux);
+          fi->flux.clear();
           flux_update_send[l][d].fi[f] =
               mem.myfree(flux_update_send[l][d].fi[f]);
         }
@@ -196,7 +196,7 @@ int NG_BC89flux::setup_flux_recv(
         fi = flux_update_recv[l][d].fi[i];
         fi->c.resize(nc);
         fi->area.resize(nc);
-        fi->flux = mem.myalloc(fi->flux, par.nvar);
+        fi->flux.resize(par.nvar);
         for (int v = 0; v < par.nvar; v++)
           fi->flux[v] = 0.0;
       }
@@ -372,7 +372,7 @@ int NG_BC89flux::setup_flux_send(
         fi = flux_update_send[l][d].fi[i];
         fi->c.resize(nc);
         fi->area.resize(nc);
-        fi->flux = mem.myalloc(fi->flux, par.nvar);
+        fi->flux.resize(par.nvar);
         for (int v = 0; v < par.nvar; v++)
           fi->flux[v] = 0.0;
       }
@@ -952,11 +952,7 @@ int NG_BC89flux::recv_BC89_flux_boundary(
 #endif
   struct flux_interface *fc = 0;  // coarse
   struct flux_interface *ff = 0;  // fine
-  std::vector<double> ftmp(par.nvar), utmp(par.nvar);
-  for (int v = 0; v < par.nvar; v++)
-    ftmp[v] = 0.0;
-  for (int v = 0; v < par.nvar; v++)
-    utmp[v] = 0.0;
+  std::vector<double> ftmp(par.nvar, 0.0), utmp(par.nvar, 0.0);
 
   if (send.fi.size() != recv.fi.size()) {
     spdlog::debug("send={}, recv={}", send.fi.size(), recv.fi.size());
@@ -996,11 +992,11 @@ int NG_BC89flux::recv_BC89_flux_boundary(
     // The other face of the cell is set to zero flux.
     if (d % 2 == 0) {
       spatial_solver->DivStateVectorComponent(
-          *fc->c[0], grid, ax, par.nvar, ftmp.data(), fc->flux, utmp.data());
+          *fc->c[0], grid, ax, par.nvar, ftmp, fc->flux, utmp);
     }
     else {
       spatial_solver->DivStateVectorComponent(
-          *fc->c[0], grid, ax, par.nvar, fc->flux, ftmp.data(), utmp.data());
+          *fc->c[0], grid, ax, par.nvar, fc->flux, ftmp, utmp);
     }
     for (int v = 0; v < par.nvar; v++)
       fc->c[0]->dU[v] += utmp[v];

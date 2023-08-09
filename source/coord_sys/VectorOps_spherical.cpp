@@ -474,11 +474,11 @@ int VectorOps_Sph::SetSlope(
 int VectorOps_Sph::DivStateVectorComponent(
     const cell &c,  ///< current cell.
     class GridBaseClass *grid,
-    const axes d,        ///< current coordinate axis we are looking along.
-    const int nv,        ///< length of state vectors.
-    const pion_flt *fn,  ///< Negative direction flux.
-    const pion_flt *fp,  ///< Positive direction flux.
-    pion_flt *dudt       ///< Vector to assign divergence component to.
+    const axes d,  ///< current coordinate axis we are looking along.
+    const int nv,  ///< length of state vectors.
+    const std::vector<pion_flt> &fn,  ///< Negative direction flux.
+    const std::vector<pion_flt> &fp,  ///< Positive direction flux.
+    std::vector<pion_flt> &dudt       ///< output vector.
 )
 {
   ///

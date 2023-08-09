@@ -1101,14 +1101,27 @@ int time_integrator::dynamics_dU_column(
 
   // Calculate Flux at positive (right) boundary of cell for the
   // current cell (Fr_this) and the negative neighbour (Fr_prev).
-  std::vector<pion_flt> Fr_prev(SimPM.nvar, 0.0);
-  std::vector<pion_flt> Fr_this(SimPM.nvar, 0.0);
-  std::vector<pion_flt> slope_cpt(SimPM.nvar, 0.0);
-  std::vector<pion_flt> slope_npt(SimPM.nvar, 0.0);
+  std::vector<pion_flt> vFr_prev(SimPM.nvar, 0.0);
+  std::vector<pion_flt> vFr_this(SimPM.nvar, 0.0);
+  std::vector<pion_flt> vslope_cpt(SimPM.nvar, 0.0);
+  std::vector<pion_flt> vslope_npt(SimPM.nvar, 0.0);
   std::vector<pion_flt> edgeL(SimPM.nvar, 0.0);
   std::vector<pion_flt> edgeR(SimPM.nvar, 0.0);
   std::vector<pion_flt> pstar(SimPM.nvar, 0.0);
-  std::vector<pion_flt> temp;
+  std::vector<pion_flt> *temp, *Fr_prev, *Fr_this, *slope_cpt, *slope_npt;
+  Fr_prev   = &vFr_prev;
+  Fr_this   = &vFr_this;
+  slope_cpt = &vslope_cpt;
+  slope_npt = &vslope_npt;
+  //  pion_flt *Fr_this = 0, *Fr_prev = 0, *temp = 0, *slope_cpt = 0,
+  //           *slope_npt = 0, *edgeR = 0, *edgeL = 0, *pstar = 0;
+  //  Fr_prev   = mem.myalloc(Fr_prev, SimPM.nvar);
+  //  Fr_this   = mem.myalloc(Fr_this, SimPM.nvar);
+  //  slope_cpt = mem.myalloc(slope_cpt, SimPM.nvar);
+  //  slope_npt = mem.myalloc(slope_npt, SimPM.nvar);
+  //  edgeL     = mem.myalloc(edgeL, SimPM.nvar);
+  //  edgeR     = mem.myalloc(edgeR, SimPM.nvar);
+  //  pstar     = mem.myalloc(pstar, SimPM.nvar);
 
   //
   // Set starting point, and next two points in the column.
@@ -1128,14 +1141,18 @@ int time_integrator::dynamics_dU_column(
   //
   // Left Ghost Cell (doesn't get updated)
   //
-  for (int v = 0; v < SimPM.nvar; v++) {
-    slope_cpt[v] = 0.;
-    slope_npt[v] = 0.;
-    Fr_prev[v]   = 0.;
-    Fr_this[v]   = 0.;
-    edgeL[v]     = 0.;
-    edgeR[v]     = 0.;
-  }
+  for (int v = 0; v < SimPM.nvar; v++)
+    (*slope_cpt)[v] = 0.;
+  for (int v = 0; v < SimPM.nvar; v++)
+    (*slope_npt)[v] = 0.;
+  for (int v = 0; v < SimPM.nvar; v++)
+    (*Fr_prev)[v] = 0.;
+  for (int v = 0; v < SimPM.nvar; v++)
+    (*Fr_this)[v] = 0.;
+  for (int v = 0; v < SimPM.nvar; v++)
+    edgeL[v] = 0.;
+  for (int v = 0; v < SimPM.nvar; v++)
+    edgeR[v] = 0.;
 
   //
   // Now go through all cells in the column and calculate fluxes and add to dU
@@ -1145,39 +1162,39 @@ int time_integrator::dynamics_dU_column(
     // Get the flux from left and right states, adding artificial
     // viscosity if needed.
     err += spatial_solver->SetEdgeState(
-        *cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
+        *cpt, posdir, SimPM.nvar, *slope_cpt, edgeL, csp, grid);
     err +=
-        spatial_solver->SetSlope(*npt, axis, SimPM.nvar, slope_npt, csp, grid);
+        spatial_solver->SetSlope(*npt, axis, SimPM.nvar, *slope_npt, csp, grid);
 #ifdef ZERO_SLOPE_TRACERS
     // not recommended b/c it is diffusive, but it does make the code
     // more symmetric.
     for (int v = SimPM.ftr; v < SimPM.nvar; v++)
-      slope_npt[v] = 0.0;
+      (*slope_npt)[v] = 0.0;
 #endif
     err += spatial_solver->SetEdgeState(
-        *npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
+        *npt, negdir, SimPM.nvar, *slope_npt, edgeR, csp, grid);
     err += spatial_solver->InterCellFlux(
-        SimPM, grid, *cpt, *npt, edgeL, edgeR, Fr_this, SimPM.gamma, dx);
+        SimPM, grid, *cpt, *npt, edgeL, edgeR, *Fr_this, SimPM.gamma, dx);
     err += spatial_solver->MHDsource(
         grid, *cpt, *npt, edgeL, edgeR, axis, posdir, negdir, dt);
     err += spatial_solver->dU_Cell(
-        grid, *cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
+        grid, *cpt, axis, *Fr_prev, *Fr_this, *slope_cpt, csp, dx, dt);
 
     // record flux entering and leaving domain
     if (cpt->isbd_ref[negdir]) {
       for (int v = 0; v < SimPM.nvar; v++)
-        cpt->F[axis][v] = Fr_this[v];
+        cpt->F[axis][v] = (*Fr_this)[v];
     }
     if (npt->isbd_ref[posdir]) {
       for (int v = 0; v < SimPM.nvar; v++)
-        npt->F[axis][v] = Fr_this[v];
+        npt->F[axis][v] = (*Fr_this)[v];
     }
 
 #ifdef TEST_INF
     for (int v = 0; v < SimPM.nvar; v++) {
       if (!isfinite(cpt->dU[v])) {
-        spdlog::error("Flux l : {}", Fr_prev);
-        spdlog::error("Flux r : {}", Fr_this);
+        spdlog::error("Flux l : {}", *Fr_prev);
+        spdlog::error("Flux r : {}", *Fr_this);
         spdlog::error("Edge l : {}", edgeL);
         spdlog::error("Edge r : {}", edgeR);
         spdlog::error("dU : {}", cpt->dU);
@@ -1204,21 +1221,21 @@ int time_integrator::dynamics_dU_column(
     double dA = spatial_solver->CellInterface(*cpt, posdir, dx);
     if (csp == SimPM.tmOOA && pconst.equalD(grid->Xmin(axis), SimPM.Xmin[axis])
         && !(cpt->isdomain) && npt->isgd && npt->isleaf) {
-      dM += Fr_this[RHO] * dt * dA;
-      dE += Fr_this[ERG] * dt * dA;
-      dMX += Fr_this[MMX] * dt * dA;
-      dMY += Fr_this[MMY] * dt * dA;
-      dMZ += Fr_this[MMZ] * dt * dA;
+      dM += (*Fr_this)[RHO] * dt * dA;
+      dE += (*Fr_this)[ERG] * dt * dA;
+      dMX += (*Fr_this)[MMX] * dt * dA;
+      dMY += (*Fr_this)[MMY] * dt * dA;
+      dMZ += (*Fr_this)[MMZ] * dt * dA;
     }
     else if (
         csp == SimPM.tmOOA && pconst.equalD(grid->Xmax(axis), SimPM.Xmax[axis])
         && cpt->isgd && cpt->isleaf && !npt->isdomain) {
       // cout <<"leaving domain\n";
-      dM -= Fr_this[RHO] * dt * dA;
-      dE -= Fr_this[ERG] * dt * dA;
-      dMX -= Fr_this[MMX] * dt * dA;
-      dMY -= Fr_this[MMY] * dt * dA;
-      dMZ -= Fr_this[MMZ] * dt * dA;
+      dM -= (*Fr_this)[RHO] * dt * dA;
+      dE -= (*Fr_this)[ERG] * dt * dA;
+      dMX -= (*Fr_this)[MMX] * dt * dA;
+      dMY -= (*Fr_this)[MMY] * dt * dA;
+      dMZ -= (*Fr_this)[MMZ] * dt * dA;
     }
 #endif  // TEST_CONSERVATION
         //
@@ -1240,25 +1257,25 @@ int time_integrator::dynamics_dU_column(
   //
   // last cell 1st order.
   err += spatial_solver->SetEdgeState(
-      *cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
+      *cpt, posdir, SimPM.nvar, *slope_cpt, edgeL, csp, grid);
   for (int v = 0; v < SimPM.nvar; v++)
-    slope_npt[v] = 0.;
+    (*slope_npt)[v] = 0.;
   err += spatial_solver->SetEdgeState(
-      *npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
+      *npt, negdir, SimPM.nvar, *slope_npt, edgeR, csp, grid);
   err += spatial_solver->InterCellFlux(
-      SimPM, grid, *cpt, *npt, edgeL, edgeR, Fr_this, SimPM.gamma, dx);
+      SimPM, grid, *cpt, *npt, edgeL, edgeR, *Fr_this, SimPM.gamma, dx);
   err += spatial_solver->MHDsource(
       grid, *cpt, *npt, edgeL, edgeR, axis, posdir, negdir, dt);
   err += spatial_solver->dU_Cell(
-      grid, *cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
+      grid, *cpt, axis, *Fr_prev, *Fr_this, *slope_cpt, csp, dx, dt);
   // record flux entering and leaving domain
   if (cpt->isbd_ref[negdir]) {
     for (int v = 0; v < SimPM.nvar; v++)
-      cpt->F[axis][v] = Fr_this[v];
+      cpt->F[axis][v] = (*Fr_this)[v];
   }
   if (npt->isbd_ref[posdir]) {
     for (int v = 0; v < SimPM.nvar; v++)
-      npt->F[axis][v] = Fr_this[v];
+      npt->F[axis][v] = (*Fr_this)[v];
   }
 
 #ifdef TEST_CONSERVATION
@@ -1267,11 +1284,11 @@ int time_integrator::dynamics_dU_column(
   double dA = spatial_solver->CellInterface(*cpt, posdir, dx);
   if (csp == SimPM.tmOOA && pconst.equalD(grid->Xmax(axis), SimPM.Xmax[axis])
       && cpt->isgd && cpt->isleaf && !npt->isdomain) {
-    dM -= Fr_this[RHO] * dt * dA;
-    dE -= Fr_this[ERG] * dt * dA;
-    dMX -= Fr_this[MMX] * dt * dA;
-    dMY -= Fr_this[MMY] * dt * dA;
-    dMZ -= Fr_this[MMZ] * dt * dA;
+    dM -= (*Fr_this)[RHO] * dt * dA;
+    dE -= (*Fr_this)[ERG] * dt * dA;
+    dMX -= (*Fr_this)[MMX] * dt * dA;
+    dMY -= (*Fr_this)[MMY] * dt * dA;
+    dMZ -= (*Fr_this)[MMZ] * dt * dA;
   }
 #endif  // TEST_CONSERVATION
 

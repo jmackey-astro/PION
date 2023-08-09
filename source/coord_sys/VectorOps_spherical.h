@@ -156,9 +156,9 @@ public:
       class GridBaseClass *,  ///< pointer to computational grid.
       const axes,             ///< current coordinate axis we are looking along.
       const int,              ///< length of state vectors.
-      const pion_flt *,       ///< Negative direction flux.
-      const pion_flt *,       ///< Positive direction flux.
-      pion_flt *              ///< Vector to assign divergence component to.
+      const std::vector<pion_flt> &,  ///< Negative direction flux.
+      const std::vector<pion_flt> &,  ///< Positive direction flux.
+      std::vector<pion_flt> &         ///< output vector.
   );
 
 protected:

@@ -108,12 +108,12 @@ public:
   /// Geometric source terms (does nothing for Cartesian geometry).
   ///
   virtual void geometric_source(
-      cell &,            ///< Current cell.
-      const axes,        ///< Which axis we are looking along.
-      const pion_flt *,  ///< slope vector for cell c.
-      const int,         ///< spatial order of accuracy.
-      const double,      ///< cell length dx.
-      pion_flt *         ///< update vector to add source term to [OUTPUT]
+      cell &,                         ///< Current cell.
+      const axes,                     ///< Which axis we are looking along.
+      const std::vector<pion_flt> &,  ///< slope vector for cell c.
+      const int,                      ///< spatial order of accuracy.
+      const double,                   ///< cell length dx.
+      std::vector<pion_flt> &  ///< update vector to add source term to [OUTPUT]
   )
   {
     return;
@@ -221,6 +221,7 @@ protected:
   long int negPGct;
   /// shut off reporting if we get more than 1000 negative densities.
   long int negROct;
+  std::vector<pion_flt> utemp;  ///< temporary array
 };
 
 // **********************************************************************************
@@ -395,12 +396,12 @@ public:
   /// spatial accuracy.
   ///
   virtual void geometric_source(
-      cell &,            ///< Current cell.
-      const axes,        ///< Which axis we are looking along.
-      const pion_flt *,  ///< slope vector for cell c.
-      const int,         ///< spatial order of accuracy.
-      const double,      ///< cell length dx.
-      pion_flt *         ///< update vector to add source term to [OUTPUT]
+      cell &,                         ///< Current cell.
+      const axes,                     ///< Which axis we are looking along.
+      const std::vector<pion_flt> &,  ///< slope vector for cell c.
+      const int,                      ///< spatial order of accuracy.
+      const double,                   ///< cell length dx.
+      std::vector<pion_flt> &  ///< update vector to add source term to [OUTPUT]
   );
 
   ///
@@ -449,12 +450,12 @@ public:
   /// spatial accuracy, and the GLM Psi source terms.
   ///
   virtual void geometric_source(
-      cell &,            ///< Current cell.
-      const axes,        ///< Which axis we are looking along.
-      const pion_flt *,  ///< slope vector for cell c.
-      const int,         ///< spatial order of accuracy.
-      const double,      ///< cell length dx.
-      pion_flt *         ///< update vector to add source term to [OUTPUT]
+      cell &,                         ///< Current cell.
+      const axes,                     ///< Which axis we are looking along.
+      const std::vector<pion_flt> &,  ///< slope vector for cell c.
+      const int,                      ///< spatial order of accuracy.
+      const double,                   ///< cell length dx.
+      std::vector<pion_flt> &  ///< update vector to add source term to [OUTPUT]
   );
 
   ///

@@ -195,7 +195,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
             fi = flux_update_recv[l][el].fi[i];
             fi->c.resize(nc);
             fi->area.resize(nc);
-            fi->flux = mem.myalloc(fi->flux, par.nvar);
+            fi->flux.resize(par.nvar);
             for (int v = 0; v < par.nvar; v++)
               fi->flux[v] = 0.0;
           }
@@ -328,7 +328,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
             fi = flux_update_recv[l][ic].fi[i];
             fi->c.resize(nc);
             fi->area.resize(nc);
-            fi->flux = mem.myalloc(fi->flux, par.nvar);
+            fi->flux.resize(par.nvar);
             for (int v = 0; v < par.nvar; v++)
               fi->flux[v] = 0.0;
           }
@@ -655,9 +655,7 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
   int err = 0;
 
   // loop over all boundaries that we need to receive
-  std::vector<double> ftmp(par.nvar), utmp(par.nvar);
-  for (int v = 0; v < par.nvar; v++)
-    ftmp[v] = 0.0;
+  std::vector<double> ftmp(par.nvar, 0.0), utmp(par.nvar, 0.0);
   class GridBaseClass *grid    = par.levels[l].grid;
   class Sub_domain *sub_domain = &(par.levels[l].sub_domain);
   int n_bd                     = flux_update_recv[l].size();
@@ -790,13 +788,13 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
       // re-calculate dU based on error in flux.
       if (fup->dir % 2 == 0) {
         spatial_solver->DivStateVectorComponent(
-            *fi->c[0], grid, static_cast<axes>(fup->ax), par.nvar, ftmp.data(),
-            fi->flux, utmp.data());
+            *fi->c[0], grid, static_cast<axes>(fup->ax), par.nvar, ftmp,
+            fi->flux, utmp);
       }
       else {
         spatial_solver->DivStateVectorComponent(
             *fi->c[0], grid, static_cast<axes>(fup->ax), par.nvar, fi->flux,
-            ftmp.data(), utmp.data());
+            ftmp, utmp);
       }
 #ifdef TEST_BC89FLUX
       spdlog::info("**********  Error : {}", utmp);

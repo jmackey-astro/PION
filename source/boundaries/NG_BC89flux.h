@@ -32,7 +32,7 @@
 struct flux_interface {
   std::vector<class cell *> c;  ///< list of cells with faces on this interface
   std::vector<double> area;  ///< area of each face for cells c, ordered as is c
-  pion_flt *flux;            ///< flux through interface.
+  std::vector<pion_flt> flux;  ///< flux through interface.
 };
 
 // ##################################################################

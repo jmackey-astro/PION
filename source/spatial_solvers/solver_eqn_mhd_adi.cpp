@@ -65,6 +65,7 @@ FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(
   // cout <<"::FV_solver_mhd_ideal_adi() gamma = "<<eq_gamma<<"\n";
   max_speed = 0.0;
   negPGct = negROct = 0;
+  utemp.resize(nv);
   return;
 }
 
@@ -357,14 +358,12 @@ int FV_solver_mhd_ideal_adi::dU_Cell(
     const double dt                      // cell TimeStep, dt.
 )
 {
-  std::vector<pion_flt> u1(eq_nvar, 0.0);
-  // This calculates -dF/dx
-  int err = DivStateVectorComponent(
-      c, grid, d, eq_nvar, fn.data(), fp.data(), u1.data());
-  geometric_source(c, d, slope.data(), cstep, dx, u1.data());
-  wind_acceleration_source(grid, c, d, fn, fp, cstep, u1);
+  // This calculates -dF/dx, overwriting utemp so no need to init it
+  int err = DivStateVectorComponent(c, grid, d, eq_nvar, fn, fp, utemp);
+  geometric_source(c, d, slope, cstep, dx, utemp);
+  wind_acceleration_source(grid, c, d, fn, fp, cstep, utemp);
   for (int v = 0; v < eq_nvar; v++)
-    c.dU[v] += FV_dt * u1[v];
+    c.dU[v] += FV_dt * utemp[v];
   return (err);
 }
 
@@ -900,12 +899,12 @@ cyl_FV_solver_mhd_ideal_adi::~cyl_FV_solver_mhd_ideal_adi()
 // ##################################################################
 
 void cyl_FV_solver_mhd_ideal_adi::geometric_source(
-    cell &c,               ///< Current cell.
-    const axes d,          ///< Which axis we are looking along.
-    const pion_flt *dpdx,  ///< slope vector for cell c.
-    const int OA,          ///< spatial order of accuracy.
-    const double dR,       ///< cell length dx.
-    pion_flt *dU           ///< add to update vector [OUTPUT]
+    cell &c,                            ///< Current cell.
+    const axes d,                       ///< Which axis we are looking along.
+    const std::vector<pion_flt> &dpdx,  ///< slope vector for cell c.
+    const int OA,                       ///< spatial order of accuracy.
+    const double dR,                    ///< cell length dx.
+    std::vector<pion_flt> &dU  ///< update vector to add source term to [OUTPUT]
 )
 {
 
@@ -1056,12 +1055,12 @@ cyl_FV_solver_mhd_mixedGLM_adi::~cyl_FV_solver_mhd_mixedGLM_adi()
 // ##################################################################
 
 void cyl_FV_solver_mhd_mixedGLM_adi::geometric_source(
-    cell &c,               ///< Current cell.
-    const axes d,          ///< Which axis we are looking along.
-    const pion_flt *dpdx,  ///< slope vector for cell c.
-    const int OA,          ///< spatial order of accuracy.
-    const double dR,       ///< cell length dx.
-    pion_flt *dU           ///< update vector to add source term to [OUTPUT]
+    cell &c,                            ///< Current cell.
+    const axes d,                       ///< Which axis we are looking along.
+    const std::vector<pion_flt> &dpdx,  ///< slope vector for cell c.
+    const int OA,                       ///< spatial order of accuracy.
+    const double dR,                    ///< cell length dx.
+    std::vector<pion_flt> &dU  ///< update vector to add source term to [OUTPUT]
 )
 {
 

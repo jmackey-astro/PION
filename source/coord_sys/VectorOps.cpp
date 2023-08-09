@@ -661,11 +661,11 @@ int VectorOps_Cart::SetSlope(
 int VectorOps_Cart::DivStateVectorComponent(
     const cell &c,  ///< current cell.
     class GridBaseClass *grid,
-    const axes d,        ///< current coordinate axis
-    const int nv,        ///< length of state vectors.
-    const pion_flt *fn,  ///< Negative direction flux.
-    const pion_flt *fp,  ///< Positive direction flux.
-    pion_flt *dudt       ///< output vector.
+    const axes d,                     ///< current coordinate axis
+    const int nv,                     ///< length of state vectors.
+    const std::vector<pion_flt> &fn,  ///< Negative direction flux.
+    const std::vector<pion_flt> &fp,  ///< Positive direction flux.
+    std::vector<pion_flt> &dudt       ///< output vector.
 )
 {
   /// \section Sign
@@ -1310,11 +1310,11 @@ int VectorOps_Cyl::SetSlope(
 int VectorOps_Cyl::DivStateVectorComponent(
     const cell &c,  ///< current cell.
     class GridBaseClass *grid,
-    const axes d,        ///< current coordinate axis
-    const int nv,        ///< length of state vectors.
-    const pion_flt *fn,  ///< Negative direction flux.
-    const pion_flt *fp,  ///< Positive direction flux.
-    pion_flt *dudt       ///< output vector.
+    const axes d,                     ///< current coordinate axis
+    const int nv,                     ///< length of state vectors.
+    const std::vector<pion_flt> &fn,  ///< Negative direction flux.
+    const std::vector<pion_flt> &fp,  ///< Positive direction flux.
+    std::vector<pion_flt> &dudt       ///< output vector.
 )
 {
   /// \section Sign

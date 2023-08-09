@@ -163,12 +163,12 @@ public:
   /// Geometric source terms (does nothing for Cartesian geometry).
   ///
   virtual void geometric_source(
-      cell &,            ///< Current cell.
-      const axes,        ///< Which axis we are looking along.
-      const pion_flt *,  ///< slope vector for cell c.
-      const int,         ///< spatial order of accuracy.
-      const double,      ///< cell length dx.
-      pion_flt *         ///< update vector to add source term to [OUTPUT]
+      cell &,                         ///< Current cell.
+      const axes,                     ///< Which axis we are looking along.
+      const std::vector<pion_flt> &,  ///< slope vector for cell c.
+      const int,                      ///< spatial order of accuracy.
+      const double,                   ///< cell length dx.
+      std::vector<pion_flt> &  ///< update vector to add source term to [OUTPUT]
   )
   {
     return;
@@ -212,6 +212,8 @@ protected:
       const double,      ///< Artificial Viscosity parameter, etav.
       const double       ///< gamma
   );
+
+  std::vector<pion_flt> utemp;  ///< temporary array
 };
 
 /// Solver for Euler equations in cylindrical coordinates with AV
@@ -241,12 +243,12 @@ public:
   /// spatial accuracy.
   ///
   virtual void geometric_source(
-      cell &,            ///< Current cell.
-      const axes,        ///< Which axis we are looking along.
-      const pion_flt *,  ///< slope vector for cell c.
-      const int,         ///< spatial order of accuracy.
-      const double,      ///< cell length dx.
-      pion_flt *         ///< update vector to add source term to [OUTPUT]
+      cell &,                         ///< Current cell.
+      const axes,                     ///< Which axis we are looking along.
+      const std::vector<pion_flt> &,  ///< slope vector for cell c.
+      const int,                      ///< spatial order of accuracy.
+      const double,                   ///< cell length dx.
+      std::vector<pion_flt> &  ///< update vector to add source term to [OUTPUT]
   );
 };
 
@@ -279,12 +281,12 @@ public:
   /// spatial accuracy.
   ///
   virtual void geometric_source(
-      cell &,            ///< Current cell.
-      const axes,        ///< Which axis we are looking along.
-      const pion_flt *,  ///< slope vector for cell c.
-      const int,         ///< spatial order of accuracy.
-      const double,      ///< cell length dx.
-      pion_flt *         ///< update vector to add source term to [OUTPUT]
+      cell &,                         ///< Current cell.
+      const axes,                     ///< Which axis we are looking along.
+      const std::vector<pion_flt> &,  ///< slope vector for cell c.
+      const int,                      ///< spatial order of accuracy.
+      const double,                   ///< cell length dx.
+      std::vector<pion_flt> &  ///< update vector to add source term to [OUTPUT]
   );
 
   ///	Vector for corrector values (used to modify flux according to sCMA)

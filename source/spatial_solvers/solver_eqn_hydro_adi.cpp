@@ -71,6 +71,7 @@ FV_solver_Hydro_Euler::FV_solver_Hydro_Euler(
   spdlog::debug(
       "FV_solver_Hydro_Euler::FV_solver_Hydro_Euler() gamma = {}", eq_gamma);
   counter = 1;
+  utemp.resize(nv);
   return;
 }
 
@@ -370,17 +371,14 @@ int FV_solver_Hydro_Euler::dU_Cell(
     const double dt                      // cell TimeStep, dt.
 )
 {
-  std::vector<pion_flt> u1(eq_nvar, 0.0);
-  //
   // This calculates -dF/dx
-  //
-  int err = DivStateVectorComponent(
-      c, grid, d, eq_nvar, fn.data(), fp.data(), u1.data());
+  // utemp is overwritten, so don't need to initialize
+  int err = DivStateVectorComponent(c, grid, d, eq_nvar, fn, fp, utemp);
   // add source terms
-  geometric_source(c, d, slope.data(), cstep, dx, u1.data());
-  wind_acceleration_source(grid, c, d, fn, fp, cstep, u1);
+  geometric_source(c, d, slope, cstep, dx, utemp);
+  wind_acceleration_source(grid, c, d, fn, fp, cstep, utemp);
   for (int v = 0; v < eq_nvar; v++)
-    c.dU[v] += dt * u1[v];
+    c.dU[v] += dt * utemp[v];
   return (err);
 }
 
@@ -586,12 +584,12 @@ cyl_FV_solver_Hydro_Euler::~cyl_FV_solver_Hydro_Euler() {}
 // ##################################################################
 
 void cyl_FV_solver_Hydro_Euler::geometric_source(
-    cell &c,               ///< Current cell.
-    const axes d,          ///< Which axis we are looking along.
-    const pion_flt *dpdx,  ///< slope vector for cell c.
-    const int OA,          ///< spatial order of accuracy.
-    const double dR,       ///< cell length dx.
-    pion_flt *dU           ///< update vector to add source term to [OUTPUT]
+    cell &c,                            ///< Current cell.
+    const axes d,                       ///< Which axis we are looking along.
+    const std::vector<pion_flt> &dpdx,  ///< slope vector for cell c.
+    const int OA,                       ///< spatial order of accuracy.
+    const double dR,                    ///< cell length dx.
+    std::vector<pion_flt> &dU  ///< update vector to add source term to [OUTPUT]
 )
 {
 
@@ -658,12 +656,12 @@ sph_FV_solver_Hydro_Euler::~sph_FV_solver_Hydro_Euler() {}
 // ##################################################################
 
 void sph_FV_solver_Hydro_Euler::geometric_source(
-    cell &c,               ///< Current cell.
-    const axes d,          ///< Which axis we are looking along.
-    const pion_flt *dpdx,  ///< slope vector for cell c.
-    const int OA,          ///< spatial order of accuracy.
-    const double dR,       ///< cell length dx.
-    pion_flt *dU           ///< update vector to add source term to [OUTPUT]
+    cell &c,                            ///< Current cell.
+    const axes d,                       ///< Which axis we are looking along.
+    const std::vector<pion_flt> &dpdx,  ///< slope vector for cell c.
+    const int OA,                       ///< spatial order of accuracy.
+    const double dR,                    ///< cell length dx.
+    std::vector<pion_flt> &dU  ///< update vector to add source term to [OUTPUT]
 )
 {
 
