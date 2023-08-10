@@ -842,7 +842,7 @@ int sim_init::override_params(int narg, string *args)
       spdlog::info("{} K.", SimPM.EP.MinTemperature);
     }
 
-    else if (args[i].find("wind_radius=") != string::npos) {
+    else if (args[i].find("wind_radius") != string::npos) {
       if (SWP.Nsources < 1) {
         spdlog::error("reset wind radius without a source {}", SWP.Nsources);
         exit_pion(1);
