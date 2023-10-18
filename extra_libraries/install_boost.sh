@@ -20,8 +20,8 @@ case $HOSTNAME in
     #source /usr/share/Modules/init/bash
     module list
 ######### gcc #########
-#    module load cmake3
-#    module load gcc
+    module load cmake3
+    module load gcc
 ######### gcc #########
 ######## intel ########
     #module load cmake3
@@ -48,10 +48,11 @@ if [ "$COMPILE_BOOST" == "yes" ]
 then
 #################################
 # Change these for new versions:
-  FILE=boost_1_75_0.tar.bz2
-  VERSION=1.75.0
+  FVER=1_83_0
+  FILE=boost_${FVER}.tar.bz2
+  VERSION=1.83.0
   BLD_DIR=boost_build
-  REMOTE_URL=https://boostorg.jfrog.io/artifactory/main/release/1.75.0/source/${FILE}
+  REMOTE_URL=https://boostorg.jfrog.io/artifactory/main/release/${VERSION}/source/${FILE}
   echo "********************************"
   echo "*** INSTALLING BOOST FILE=${FILE}****"
   echo "********************************"
@@ -80,7 +81,7 @@ then
   tar --bzip2 -xf $FILE
   BASE_PATH=`pwd`
   echo "Path = $BASE_PATH"
-  cd boost_1_75_0
+  cd boost_${FVER}
   #./bootstrap.sh --show-libraries
   ./bootstrap.sh --prefix=${BASE_PATH}/boost --with-libraries=math
   ./b2 install

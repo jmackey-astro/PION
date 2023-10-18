@@ -3,6 +3,10 @@
 # Authors: Jonathan Mackey, Harpreet Dhanoa, others?
 #
 # - 2012-2020: ongoing development to add options for new machines.
+# - 2023.10.03 JM: updates for new MacOS
+#
+# MacOS: use homebrew, and install:
+# brew install readline python3 numpy scipy gcc git 
 # 
 
 mkdir include
@@ -13,28 +17,28 @@ mkdir share
 mkdir cmake
 
 NCORES=4
-#export CC=gcc-11
-#export CXX=g++-11
-#export FC=gfortran-11
 export CC=gcc
 export CXX=g++
 export FC=gfortran
 SHARED=YES
 HDF5=YES
 HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
+export PYTHON=/usr/bin/python3 
 
 COMPILE_SILO=yes
 
 export WGET='wget'
+BASE_PATH=`pwd`
+PREFIX=$BASE_PATH
 
 case $HOSTNAME in
   login[0-9].kay.ichec.ie)
     echo "Compiling on KAY/ICHEC"
-    #source /usr/share/Modules/init/bash
-    #module purge
+    source /usr/share/Modules/init/bash
+    module purge
 ######### gcc #########
-#    module load cmake3
-#    module load gcc
+    module load cmake3
+    module load gcc
 ######### gcc #########
 ######## intel ########
     #module load cmake3
@@ -47,21 +51,41 @@ case $HOSTNAME in
     HDF5=NO
     SHARED=YES
     module list
+    PREFIX=$BASE_PATH
+    ;;
+esac
+
+case $HOSTNAME in
+  login[0-9].karolina.it4i.cz)
+    echo "Compiling on Karol1na (it4i)"
+    ml OpenMPI/4.1.1-GCC-10.3.0
+    ml git
+    ml HDF5/1.10.7-gompi-2021a
+    ml spdlog/1.9.2-GCCcore-10.3.0
+    ml CMake/3.20.1-GCCcore-10.3.0
+    ml Boost/1.76.0-GCC-10.3.0
+    NCORES=4
+    export CC=mpicc
+    export CXX=mpicxx
+    export FC=mpifort
+    SHARED=YES
+    HDF5=YES
+    HDF5_LIBS="/apps/all/HDF5/1.10.7-gompi-2021a/include,/apps/all/HDF5/1.10.7-gompi-2021a/lib"
+    ml
+    PREFIX=/home/it4i-jmackey/code/libs
     ;;
 esac
 
 DDD=`uname -a | grep "Darwin"`
 if [ ! -z "$DDD" ]; then
-  #export CXX=g++-12
-  #export CC=gcc-12
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
   MAKE_UNAME=OSX
   #NCORES=1
   path=`pwd`
-  export PYTHON=/usr/local/bin/python3
+  export PYTHON=`which python3`
   WGET=curl
+  PREFIX=$HOME/.local/silo
 fi
-
 
 export NCORES
 CURDIR=`pwd`
@@ -77,9 +101,10 @@ then
   echo "********************************"
 #################################
 # Change these for new versions:
-  FILE=silo-4.11-bsd-smalltest.tar.gz
-  SRC_DIR=silo-4.11-bsd
-  REMOTE_URL=https://github.com/LLNL/Silo/releases/download/v4.11/silo-4.11-bsd-smalltest.tar.gz
+  VER=4.11.1
+  REMOTE_URL=https://github.com/LLNL/Silo/releases/download/${VER}/silo-${VER}-bsd-smalltest.tar.xz
+  FILE=silo-${VER}-bsd-smalltest.tar.xz
+  SRC_DIR=silo-${VER}-bsd
 #################################
 
 
@@ -106,7 +131,7 @@ then
 #echo "********************************"
 #echo "*** EXTRACTING SILO LIBRARY ***"
 #echo "********************************"
-  tar zxf $FILE
+  tar --xz -xf $FILE
 #echo "********************************"
 #echo "*** RUNNING CONFIGURE ***"
 #echo "********************************"
@@ -115,11 +140,20 @@ then
   cd $SRC_DIR
   make clean
 
-  ./configure --prefix=${BASE_PATH} \
-    --disable-browser \
-    --disable-fortran \
-    --disable-silex \
-    --disable-pythonmodule --enable-shared
+  if [[ MAKE_UNAME == "OSX" ]]
+    then
+    ./configure --prefix=$HOME/.local/silo \
+      --enable-browser --with-readline=no \
+      --disable-fortran \
+      --disable-silex --disable-fpzip \
+      --enable-pythonmodule --enable-shared
+  else
+    ./configure --prefix=${BASE_PATH} \
+      --enable-browser \
+      --disable-fortran \
+      --disable-silex \
+      --enable-pythonmodule --enable-shared
+  fi
 
   echo "********************************"
   echo "*** RUNNING MAKE ***"
