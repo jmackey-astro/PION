@@ -1,3 +1,4 @@
+#image: jmackey12345/testing:latest
 image: ciaranorourke/superpion:latest
 
 .snippets:
@@ -78,6 +79,8 @@ Format:
       clang-format
       python3-yapf
       yapf3
+      curl
+      libcurl4-nss-dev
   script:
     - ./tools/run_format.sh
       && git status
@@ -95,7 +98,7 @@ Serial:
   artifacts:
     name: serial 
     paths:
-      - "${CMAKE_BUILD_DIR}"
+    #  - "${CMAKE_BUILD_DIR}"
 
 
 Parallel:
@@ -109,7 +112,7 @@ Parallel:
   artifacts:
     name: parallel
     paths:
-      - "${CMAKE_BUILD_DIR}"
+    #  - "${CMAKE_BUILD_DIR}"
 
 
 Uniform_serial:
@@ -123,7 +126,7 @@ Uniform_serial:
   artifacts:
     name: uniform_serial 
     paths:
-      - "${CMAKE_BUILD_DIR}"
+    #  - "${CMAKE_BUILD_DIR}"
   dependencies:
     - Serial
 
@@ -139,7 +142,7 @@ Nested_serial:
   artifacts:
     name: nested_serial 
     paths:
-      - "${CMAKE_BUILD_DIR}"
+    #  - "${CMAKE_BUILD_DIR}"
   dependencies:
     - Serial
 
@@ -156,7 +159,7 @@ Uniform_parallel:
   artifacts:
     name: uniform_parallel 
     paths:
-      - "${CMAKE_BUILD_DIR}"
+    #  - "${CMAKE_BUILD_DIR}"
   dependencies:
     - Parallel
 
@@ -173,7 +176,7 @@ Nested_parallel:
   artifacts:
     name: nested_parallel
     paths:
-      - "${CMAKE_BUILD_DIR}"
+    #  - "${CMAKE_BUILD_DIR}"
   dependencies:
     - Parallel
 
@@ -195,6 +198,10 @@ Uniform_test:
     - make -C "${CMAKE_BUILD_DIR}" test-uniform 
   dependencies:
     - Uniform_parallel 
+  artifacts:
+    name: uniform_test 
+    paths:
+    #  - "${CMAKE_BUILD_DIR}"
 
 
 Nested_test:
@@ -214,6 +221,10 @@ Nested_test:
     - make -C "${CMAKE_BUILD_DIR}" test-nested 
   dependencies:
     - Nested_parallel 
+  artifacts:
+    name: nested_test 
+    paths:
+    #  - "${CMAKE_BUILD_DIR}"
 
 
 Pbc_test:
@@ -233,6 +244,10 @@ Pbc_test:
     - make -C "${CMAKE_BUILD_DIR}" test-pbc 
   dependencies:
     - Uniform_parallel 
+  artifacts:
+    name: pbc_test 
+    paths:
+    #  - "${CMAKE_BUILD_DIR}"
 
 
 3d_test:
@@ -252,6 +267,10 @@ Pbc_test:
     - make -C "${CMAKE_BUILD_DIR}" test-3d-uniform 
   dependencies:
     - Uniform_parallel 
+  artifacts:
+    name: 3d_test 
+    paths:
+    #  - "${CMAKE_BUILD_DIR}"
 
 
 3d_pbc_test:
