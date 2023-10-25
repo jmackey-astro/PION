@@ -17,7 +17,7 @@ if(PION_TOOLS AND PION_PARALLEL AND PION_USE_FITS AND PION_USE_SILO)
 
   if(PION_NESTED_GRID)
       target_link_libraries(silo2fits PRIVATE nested_grid)
-      target_compile_definitions(silocompare PRIVATE PION_NESTED)
+      target_compile_definitions(silo2fits PRIVATE PION_NESTED)
   else()
       target_link_libraries(silo2fits PRIVATE grid)
   endif(PION_NESTED_GRID)

@@ -170,8 +170,6 @@ SimParams::SimParams(const std::string pfile)
 
 SimParams::~SimParams()
 {
-  // cout <<"Deleting SimParams class.\n";
-  // if (RefVec) {delete [] RefVec; RefVec=0;}
   RS.sources.clear();
 
   for (size_t v = 0; v < STAR.size(); v++) {

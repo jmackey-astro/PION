@@ -86,7 +86,9 @@ Option | Effect
 `-DPION_BUILD_TESTS=...`          | Set to `ON` to build tests (default `OFF`).
 `-DPION_OMP=...`                  | Set to `ON` to enable OpenMP multithreading (default `OFF`).
 `-DPION_MPV10=...`                | Set to `ON` to build the multi-ion module (experimental) (default `OFF`).
-`-D=ON_KAROLINA...`               | Set to `ON` if building on karolina.it4i.cz (default `OFF`).
+`-DON_KAROLINA=...`               | Set to `ON` if building on karolina.it4i.cz (default `OFF`).
+`-DINTEL=...`                     | Set to `ON` only if using Intel compilers (default `OFF`).
+`-DLOG_ALL_PROCS=...`             | Set to `ON` only for debugging to enable logging from all MPI processes (default is `OFF` ==> only rank 0)`
 
 
 #### Dependency Helpers
@@ -127,13 +129,17 @@ The following tests are available;
 
 Option | Effect
 ------ | ------
-`uniform`        | Run double Mach reflection on 2d uniform grid.
-`nested`         | Run MHD blastwave problem on a 2d nested grid.
-`pbc`            | Run Orszag-Tang vortex problem on 2d uniform grid with periodic boundary conditions.
-`3d-uniform`     | Run binary problem on 3d uniform grid.
-`3d-uniform-pbc` | Run binary problem on 3d uniform grid with periodic boundary conditions.
-`3d-nested`      | Run binary problem on 3d nested grid.
-`3d-nested-pbc`  | Run binary problem on 3d nested grid with periodic boundary conditions.
+`uniform`              | Run double Mach reflection on 2d uniform grid.
+`nested`               | Run 2D MHD blastwave problem on a 2d nested grid.
+`pbc`                  | Run 2D Orszag-Tang vortex problem on 2d uniform grid with periodic boundary conditions.
+`3d-uniform`           | Run 3D MHD blastwave problem on 3d uniform grid.
+`3d-uniform-pbc`       | Run 3D MHD blastwave problem on 3d uniform grid with periodic boundary conditions.
+`3d-nested`            | Run 3D MHD blastwave problem on 3d nested grid.
+`3d-nested-pbc`        | Run 3D MHD blastwave problem on 3d nested grid with periodic boundary conditions.
+`3d-nested-large`      | Run 3D MHD blastwave problem on 3d nested grid with 16 MPI processes
+`3d-uniform-large`     | Run 3D MHD blastwave problem on 3d unform grid with 16 MPI processes
+`3d-uniform-pbc-large` | Run 3D MHD blastwave problem on 3d unform grid with periodic boundary conditions with 16 MPI processes
+`3d-nested-pbclarge`   | Run 3D MHD blastwave problem on 3d nested grid with periodic boundary conditions with 16 MPI processes
 
 For example, to run the `uniform` test, where the project has been built in directory
 `./build` (relative to project root directory), execute;

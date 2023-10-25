@@ -765,6 +765,7 @@ int DataIOFits::read_header_param(class pm_base *p)
 
 int DataIOFits::write_header_param(class pm_base *p)
 {
+  spdlog::debug("writing header param {}", p->name);
   int err = 0, status = 0;
   char key[128];
   int i = p->type;
@@ -823,16 +824,19 @@ int DataIOFits::write_header_param(class pm_base *p)
       temp2 << p->name << v;
       strcpy(key, (temp2.str()).c_str());
       err += fits_update_key(file_ptr, TDOUBLE, key, &(x[v]), 0, &status);
+      spdlog::debug("{} key {} val {}, err {}", v, key, x[v], err);
     }
   }
 
-  if (status) {
+  if (status || err) {
     spdlog::error(
         "\t{}:  ERROR WRITING VAR! err={} status={}", p->name, err, status);
+    exit_pion(1);
   }
   // else {
   //   cout <<"\t"<<p->name<<":  "; p->show_val(); cout <<"\n";
   // }
+  spdlog::debug("     finished writing header param {}", p->name);
   return status;
 }
 
@@ -897,10 +901,13 @@ int DataIOFits::put_variable_into_data_array(
     v = -5;
   else if (name.find("Col_Src") != string::npos)
     v = -4;
-  else
+  else {
     spdlog::error("{}: {}", "Bad variable index in fits write routine", name);
+    exit_pion(v);
+  }
 
   // cout <<"saving data variable "<<name<<"\n";
+  spdlog::debug("saving data variable {}", name);
 
   long int ct = 0;
   double norm = sqrt(4.0 * M_PI);
@@ -972,9 +979,10 @@ int DataIOFits::put_variable_into_data_array(
   else
     spdlog::error("{}: {}", "Don't understand what variable to write.", v);
 
-  if (ct != ntot)
-    spdlog::error(
-        "{}: {}", "Counting cells in put_variable_into_data()", ct - ntot);
+  if (ct != ntot) {
+    spdlog::error("Counting cells in put_variable_into_data() {} {}", ct, ntot);
+    exit_pion(ntot);
+  }
   return 0;
 }
 
@@ -996,10 +1004,12 @@ int DataIOFits::read_fits_image(
   int err = utility_fitsio::read_fits_image_to_data(
       ff, name, SimPM.ndim, localxmin, globalxmin, gp->DX(), npt, ntot, TDOUBLE,
       static_cast<void *>(data));
-  if (err)
+  if (err) {
     spdlog::error(
-        "{}: {}",
-        " DataIOFits::read_fits_image() Failed to read image from file", err);
+        " DataIOFits::read_fits_image() Failed to read image from file {}",
+        err);
+    exit_pion(err);
+  }
 
   // Choose variable to read to, based on name string, whose hdu is the
   // currently open hdu.
@@ -1046,10 +1056,12 @@ int DataIOFits::read_fits_image(
   //  else if (name=="Ptot")     v=-3;
   else
     spdlog::error("{}: {}", "Bad variable index in fits write routine", name);
-  if (v >= SimPM.nvar)
+  if (v >= SimPM.nvar) {
     spdlog::error(
         "{}: {}", "reading variable, but no element in vector free for it.",
         v - SimPM.nvar);
+    exit_pion(v);
+  }
 
   // assign data to grid points, to the variable determined above.
   double nulval = -1.e99;
@@ -1067,11 +1079,14 @@ int DataIOFits::read_fits_image(
           "(dataio::read data: ERROR: var={} and data={}\n", v, data[ct]);
       spdlog::error(
           "{}: {}", "Read null value from file! pixel count follows", ct);
+      exit_pion(1);
     }
     ct++;
   } while ((c = gp->NextPt(*c)) != 0);
-  if (ct != ntot)
-    spdlog::error("{}: {}", "Counting cells in read_fits_image()", ct - ntot);
+  if (ct != ntot) {
+    spdlog::error("Counting cells in read_fits_image() {} {}", ct, ntot);
+    exit_pion(ntot);
+  }
 
   data = mem.myfree(data);
 

@@ -340,11 +340,14 @@ int DataIOFits_pllel::SaveLevelData(
     // set file pointer for the header writing function.
     //
     file_ptr = ff;
-    err      = write_simulation_parameters(SimPM);
-    if (err)
+    spdlog::debug("fits: writing simulation parameters");
+    err = write_simulation_parameters(SimPM);
+    if (err) {
       spdlog::error(
-          "{}: {}", "DataIOFits_pllel::OutputData() couldn't write fits header",
-          err);
+          "DataIOFits_pllel::OutputData() couldn't write fits header: {}", err);
+      exit_pion(err);
+    }
+    spdlog::debug("     finished: fits: writing simulation parameters");
     ff = file_ptr;
 
     // err = fits_open_file(&ff, outfile.c_str(), READWRITE, &status);
@@ -355,6 +358,7 @@ int DataIOFits_pllel::SaveLevelData(
     if (status) {
       fits_report_error(stderr, status);
       spdlog::error("{}: {}", "NG can't find fits header", status);
+      exit_pion(status);
     }
     char key[128];
     int lev = l;
@@ -378,6 +382,7 @@ int DataIOFits_pllel::SaveLevelData(
     strcpy(key, "level_xmax2");
     err += fits_update_key(
         file_ptr, TDOUBLE, key, &(SimPM.levels[l].Xmax[2]), 0, &status);
+    spdlog::debug("     finished: fits: writing level debug");
 
     // --------------------------------------------------------
 
@@ -388,6 +393,7 @@ int DataIOFits_pllel::SaveLevelData(
     for (int i = 0; i < nvar; i++) {
       if (mpiPM->get_WriteFullImage()) {  // write full image, with only local
                                           // part being non-zero.
+        spdlog::debug("fits: writing full image");
         err += create_fits_image(ff, extname[i], SimPM.ndim, SimPM.NG.data());
         err += put_variable_into_data_array(
             SimPM, extname[i], mpiPM->get_Ncell(), &data);
@@ -397,20 +403,25 @@ int DataIOFits_pllel::SaveLevelData(
             mpiPM->get_directional_Ncells().data(), mpiPM->get_Ncell(), data);
       }
       else {  // Write only part of image that is on local grid.
+        spdlog::debug("fits: writing partial image: {}", extname[i]);
         err += create_fits_image(
             ff, extname[i], SimPM.ndim, mpiPM->get_directional_Ncells().data());
+        spdlog::debug("\tfits: 2: {}", extname[i]);
         err += put_variable_into_data_array(
             SimPM, extname[i], mpiPM->get_Ncell(), &data);
+        spdlog::debug("\tfits: 3: {}", extname[i]);
         err += write_fits_image(
             ff, extname[i], mpiPM->get_Xmin().data(), mpiPM->get_Xmin().data(),
             SimPM.levels[l].dx, SimPM.ndim,
             mpiPM->get_directional_Ncells().data(), mpiPM->get_Ncell(), data);
+        spdlog::debug("\tfits: 4: {}", extname[i]);
       }
     }
-    if (err)
+    if (err) {
       spdlog::error(
-          "{}: {}", "DataIOFits_pllel::OutputData() Image Writing went bad",
-          err);
+          "DataIOFits_pllel::OutputData() Image Writing went bad: {}", err);
+      exit_pion(err);
+    }
     data = mem.myfree(data);
 
     // Close file
@@ -481,11 +492,12 @@ int DataIOFits_pllel::SaveLevelData(
             mpiPM->get_directional_Ncells().data(), mpiPM->get_Ncell(), data);
         data = mem.myfree(data);
       }
-      if (err)
+      if (err) {
         spdlog::error(
-            "{}: {}",
-            "DataIOFits_pllel::OutputData() SingleFile Image Writing went bad",
+            "DataIOFits_pllel::OutputData() SingleFile Image Writing went bad {}",
             err);
+        exit_pion(err);
+      }
       // Close file
       err += fits_close_file(ff, &status);
       release_lock(outfile);
@@ -515,12 +527,13 @@ int DataIOFits_pllel::SaveLevelData(
       }
       err = check_fits_image_dimensions(
           ff, extname[i], SimPM.ndim, SimPM.NG.data());
-      if (err != 0)
+      if (err != 0) {
         spdlog::error(
-            "{}: {}",
             "DataIOFits_pllel::OutputData() SingleFile: image dimensions "
-            "don't match",
+            "don't match {}",
             err);
+        exit_pion(err);
+      }
       // write my portion of image.
       double *data = 0;
       err += put_variable_into_data_array(
@@ -531,11 +544,12 @@ int DataIOFits_pllel::SaveLevelData(
           mpiPM->get_directional_Ncells().data(), mpiPM->get_Ncell(), data);
       data = mem.myfree(data);
     }
-    if (err)
+    if (err) {
       spdlog::error(
-          "{}: {}",
-          "DataIOFits_pllel::OutputData() SingleFile: Error writing image",
+          "DataIOFits_pllel::OutputData() SingleFile: Error writing image {}",
           err);
+      exit_pion(err);
+    }
     // Close file
     err += fits_close_file(ff, &status);
     if (status) {

@@ -1,9 +1,7 @@
 ///
-/// file:    silo2ascii.cpp
+/// file:    silo2fits.cpp
 /// author:  Jonathan Mackey
 /// date:    2013.04.18
-///
-/// Adapted from templates/HIIregion_KineticE.cpp
 ///
 /// Description: This is a template file for analysing simulation
 /// data with N cores, but reading data which may have been written
@@ -73,9 +71,10 @@
 #ifdef SPDLOG_FWD
 #include <spdlog/fwd.h>
 #endif
-#include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
+#include <fmt/ranges.h>
+#include <spdlog/sinks/rotating_file_sink.h>
 
 #include <fitsio.h>
 
@@ -96,8 +95,8 @@ int main(int argc, char **argv)
 
   auto max_logfile_size = 1048576 * 5;
   auto max_logfiles     = 3;
-  spdlog::set_default_logger(spdlog::rotating_logger_mt(
-      "silo2fits", "silo2fits.log", max_logfile_size, max_logfiles));
+  // spdlog::set_default_logger(spdlog::rotating_logger_mt(
+  //    "silo2fits", "silo2fits.log", max_logfile_size, max_logfiles));
 
 #ifdef NDEBUG
   spdlog::set_level(spdlog::level::info);
@@ -124,8 +123,20 @@ int main(int argc, char **argv)
   //
   if (argc < 5) {
     spdlog::error("{}: {}", "Bad number of args", argc);
+    spdlog::error("Use as follows:");
     spdlog::error(
-        "Use as follows:\n<executable-filename> <input-path> <input-silo-file-base> <output-path> <output-fits-file-base> [Nskip] [<xmin> <xmax> [<ymin> <ymax> [<zmin> <zmax>]]]\n******************************************\ninput path:  path to input files.\ninput file:  base filename of sequence of files including _0000 if parallel.\noutput path: directory to write output files to.\noutput file: filename for output FITS file(s).\n[Nskip]:     skip files each iteration.\nxmin/xmax:   optional parameters to resize the domain");
+        "<executable-filename> <input-path> <input-silo-file-base> <output-path> <output-fits-file-base>");
+    spdlog::error(
+        "                [Nskip] [<xmin> <xmax> [<ymin> <ymax> [<zmin> <zmax>]]]");
+    spdlog::error("******************************************");
+    spdlog::error("input path:  path to input files.");
+    spdlog::error(
+        "input file:  base filename of sequence of files including _0000 if parallel.");
+    spdlog::error("output path: directory to write output files to.");
+    spdlog::error("output file: filename for output FITS file(s).");
+    spdlog::error("[Nskip]:     skip files each iteration.");
+    spdlog::error("xmin/xmax:   optional parameters to resize the domain");
+    exit(1);
   }
 
   //
@@ -160,8 +171,8 @@ int main(int argc, char **argv)
   //*******************************************************************
   // Get input files, read header, setup grid
   //*******************************************************************
-  spdlog::info(
-      "-------------------------------------------------------\n--------------- Getting List of Files to read ---------");
+  spdlog::info("-------------------------------------------------------");
+  spdlog::info("--------------- Getting List of Files to read ---------");
 
   //
   // set up dataio_utility class and fits-writer class.
@@ -174,7 +185,10 @@ int main(int argc, char **argv)
   //
   list<string> files;
   err += dataio.get_files_in_dir(input_path, input_file, &files);
-  if (err) spdlog::error("{}: {}", "failed to get list of files", err);
+  if (err) {
+    spdlog::error("{}: {}", "failed to get list of files", err);
+    exit(1);
+  }
   //
   // remove non-silo files
   //
@@ -190,11 +204,21 @@ int main(int argc, char **argv)
     }
   }
   size_t nfiles = files.size();
-  if (nfiles < 1)
+  if (nfiles < 1) {
     spdlog::error("{}: {}", "Need at least one file, but got none", nfiles);
+    exit(1);
+  }
 
   spdlog::info(
-      "--------------- Got list of Files ---------------------\n-------------------------------------------------------\n--------------- Setting up Grid -----------------------");
+      "--------------- Got list of {} Files ---------------------", nfiles);
+  int ct = 0;
+  for (list<string>::iterator s = files.begin(); s != files.end(); s++) {
+    spdlog::info("{}\t{}", ct, *s);
+    ct++;
+  }
+
+  spdlog::info("-------------------------------------------------------");
+  spdlog::info("--------------- Setting up Grid -----------------------");
 
   //
   // Set low-memory cells
@@ -213,8 +237,10 @@ int main(int argc, char **argv)
   string first_file = temp.str();
   temp.str("");
   err = dataio.ReadHeader(first_file, SimPM);
-  if (err) spdlog::error("{}: {}", "Didn't read header", err);
-
+  if (err) {
+    spdlog::error("{}: {}", "Didn't read header", err);
+    exit(1);
+  }
 
   //
   // write simulation xmin/xmax and radiation source position to a
@@ -223,12 +249,16 @@ int main(int argc, char **argv)
   redir.str("");
   redir << op_path << "/data_" << outfile << ".txt";
   ofstream outf;
-  if (outf.is_open())
+  if (outf.is_open()) {
     spdlog::error("{}: {}", "Output text file is already open!", 1);
+    exit(1);
+  }
   outf.open(redir.str().c_str());
-  if (!outf.is_open())
+  if (!outf.is_open()) {
     spdlog::error(
         "{}: {}", "Failed to open text file for writing", redir.str());
+    exit(1);
+  }
   outf.setf(ios_base::scientific);
   outf.precision(6);
   outf << "Text data for simulation " << input_file << "\n\n";
@@ -260,6 +290,7 @@ int main(int argc, char **argv)
   // get a setup_grid class, and use it to set up the grid!
   //
 #ifdef PION_NESTED
+  spdlog::info("setting up grid level info");
   SimPM.levels.resize(SimPM.grid_nlevels);
   class setup_grid_NG_MPI *SimSetup = new setup_grid_NG_MPI();
   SimSetup->setup_NG_grid_levels(SimPM);
@@ -269,11 +300,15 @@ int main(int argc, char **argv)
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
+  spdlog::info("setting up grids");
   vector<class GridBaseClass *> G;
   G.resize(SimPM.grid_nlevels);
   SimSetup->setup_grid(G, SimPM);
   class GridBaseClass *grid = G[0];
-  if (!grid) spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid));
+  if (!grid) {
+    spdlog::error("{}: {}", "Grid setup failed", fmt::ptr(grid));
+    exit(1);
+  }
   SimPM.dx = grid->DX();
   spdlog::debug("\t\tg={}\tDX = {}", fmt::ptr(grid), grid->DX());
 
@@ -282,14 +317,18 @@ int main(int argc, char **argv)
   //
   err += SimSetup->setup_microphysics(SimPM);
   // err += setup_raytracing();
-  if (err) spdlog::error("{}: {}", "Setup of microphysics", err);
+  if (err) {
+    spdlog::error("{}: {}", "Setup of microphysics", err);
+    exit(1);
+  }
   class microphysics_base *MP = SimSetup->get_mp_ptr();
 
-  spdlog::info(
-      "--------------- Finished Setting up Grid --------------\n-------------------------------------------------------");
+  spdlog::info("--------------- Finished Setting up Grid --------------");
+  spdlog::info("-------------------------------------------------------");
 
   size_t ifile = 0;
   class DataIOFits_pllel writer(SimPM, &(SimPM.levels[0].sub_domain));
+  writer.SetMicrophysics(MP);
 
   spdlog::info(
       "-------------------------------------------------------\n--------------- Starting Loop over all input files ----\n-------------------------------------------------------");
@@ -324,19 +363,21 @@ int main(int argc, char **argv)
 
     // Read header to get timestep info.
     err = dataio.ReadHeader(infile, SimPM);
-    if (err) spdlog::error("{}: {}", "Didn't read header", err);
-    // cout.flush();
+    if (err) {
+      spdlog::error("{}: {}", "Didn't read header", err);
+      exit(1);
+    }
 
     // read data onto grid.
     err = dataio.ReadData(infile, G, SimPM);
-    if (0 != err)
-      spdlog::error(
-          "{}: Expected {} but got {}", "(main) Failed to read data", 0, err);
+    if (0 != err) {
+      spdlog::error("(main) Failed to read data {}", err);
+      exit(1);
+    }
 
-    spdlog::info(
-        "--------------- Finished Reading Data  ----------------\n{}",
-        "-------------------------------------------------------\n{}",
-        "--------------- Starting Writing Data  ----------------");
+    spdlog::info("--------------- Finished Reading Data  ----------------");
+    spdlog::info("-------------------------------------------------------");
+    spdlog::info("--------------- Starting Writing Data  ----------------");
 
     temp.str("");
     temp << op_path << "/" << outfile;
@@ -346,9 +387,12 @@ int main(int argc, char **argv)
   }  // Loop over all files.
 
 
+  spdlog::info("-------------------------------------------------------");
   spdlog::info(
-      "-------------------------------------------------------\n---- Finised with all Files: time={}--------\n-------------------------------------------------------\n--------------- Clearing up and Exiting ---------------",
+      "---- Finised with all Files: time={}--------",
       clk.stop_timer("analyse_data"));
+  spdlog::info("-------------------------------------------------------");
+  spdlog::info("--------------- Clearing up and Exiting ---------------");
 
   if (grid != 0) {
     spdlog::info("\t Deleting Grid Data...");

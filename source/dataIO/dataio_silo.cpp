@@ -2095,6 +2095,7 @@ int dataio_silo::read_header_param(class pm_base *p)
     }
     else {
       spdlog::error("\t{}:  ERROR READING VAR!", p->name);
+      exit(err);
     }
   }
 

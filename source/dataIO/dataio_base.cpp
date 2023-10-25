@@ -1501,7 +1501,7 @@ void DataIOBase::set_windsrc_params()
     w025->critical = false;
     int *mv2       = new int;
     *mv2           = 0;
-    w025->set_default_val(static_cast<void *>(mv));
+    w025->set_default_val(static_cast<void *>(mv2));
     windsrc.push_back(w025);
 
 #ifdef ANALYTIC_ORBITS
