@@ -2279,27 +2279,20 @@ int DataIOBase::check_header_parameters(
 {
   // This is where we check that nvar,ndim,ntracer,outfile, etc. are all set
   // to something sensible.
-  if (SimPM.simtime < 0) {
+  if (SimPM.simtime < 0.0) {
     spdlog::warn(
-        "{}: Expected {} but got {}",
-        "(Dataio::check_header_parameters) simtime not set, setting to "
-        "zero. THIS MAY BE A BIG ERROR",
-        1., SimPM.simtime);
-    SimPM.simtime = 0.;
+        "(Dataio::check_header_parameters) simtime <0 : {:12.6e}",
+        SimPM.simtime);
   }
   if (SimPM.starttime < 0) {
     spdlog::warn(
-        "{}: Expected {} but got {}",
-        "(Dataio::check_header_parameters) startime <0, PROBABLY AN ERROR!", 0.,
+        "(Dataio::check_header_parameters) startime <0 : {:12.6e}",
         SimPM.starttime);
-    SimPM.starttime = 0.;
   }
   if (SimPM.finishtime <= 0) {
     spdlog::warn(
-        "{}: Expected {} but got {}",
-        "(Dataio::check_header_parameters) finishtime not set.", 1.,
+        "(Dataio::check_header_parameters) finishtime <0 : {:12.6e}",
         SimPM.finishtime);
-    SimPM.finishtime = -1.;
   }
   if (SimPM.timestep < 0) {
     spdlog::warn(
