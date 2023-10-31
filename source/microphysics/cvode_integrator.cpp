@@ -97,23 +97,23 @@ int cvode_solver::setup_cvode_solver()
   // Set the Jacobian routine to Jac (user-supplied)
   //
 #if defined CVODE2
-  err = CVDlsSetDenseJacFn(cvode_mem, Jacobian_for_cvode);
-  if (err != CVDLS_SUCCESS) {
-    cerr <<"setup_cvode_solver() CVDlsSetDenseJacFn: err="<<err<<"\n";
-    return 6;
-  }
+  //err = CVDlsSetDenseJacFn(cvode_mem, Jacobian_for_cvode);
+  //if (err != CVDLS_SUCCESS) {
+  //  cerr <<"setup_cvode_solver() CVDlsSetDenseJacFn: err="<<err<<"\n";
+  //  return 6;
+  //}
 #elif defined CVODE3
-  err = CVDlsSetJacFn(cvode_mem, Jacobian_for_cvode);
-  if (err != CVDLS_SUCCESS) {
-    cerr <<"setup_cvode_solver() CVDlsSetDenseJacFn: err="<<err<<"\n";
-    return 6;
-  }
+  //err = CVDlsSetJacFn(cvode_mem, Jacobian_for_cvode);
+  //if (err != CVDLS_SUCCESS) {
+  //  cerr <<"setup_cvode_solver() CVDlsSetDenseJacFn: err="<<err<<"\n";
+  //  return 6;
+  //}
 #else
-  err = CVodeSetJacFn(cvode_mem, Jacobian_for_cvode);
-  if (err != CV_SUCCESS) {
-    cerr <<"setup_cvode_solver() CVDlsSetJacFn: err="<<err<<"\n";
-    return 6;
-  }
+  //err = CVodeSetJacFn(cvode_mem, Jacobian_for_cvode);
+  //if (err != CV_SUCCESS) {
+  //  cerr <<"setup_cvode_solver() CVDlsSetJacFn: err="<<err<<"\n";
+  //  return 6;
+  //}
 #endif
   // All done now, so return.
   have_setup_cvodes=true;
@@ -160,7 +160,11 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
     return 1;
   }
 
+#if defined CVODE6
+  abstol = N_VNew_Serial(n_eq, sunctx);
+#else
   abstol = N_VNew_Serial(n_eq);
+#endif
   
 
   //
@@ -169,6 +173,8 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
   //
 #if defined(CVODE2) || defined(CVODE3)
   cvode_mem = CVodeCreate(CV_BDF, CV_NEWTON);
+#elif defined(CVODE6)
+  cvode_mem = CVodeCreate(CV_BDF, sunctx);
 #else
   cvode_mem = CVodeCreate(CV_BDF);
 #endif
@@ -231,6 +237,17 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
   err = CVDlsSetLinearSolver(cvode_mem, LS, msetup);
   if (err != CV_SUCCESS) {
     cerr <<"setup_cvode_solver() CVDlsSetLinearSolver(): err="<<err<<"\n";
+    return 5;
+  }
+
+#elif defined(CVODE6)
+
+  msetup = SUNDenseMatrix(n_eq, n_eq, sunctx);
+  vsetup = N_VNew_Serial(n_eq, sunctx);
+  LS     = SUNLinSol_Dense(vsetup, msetup, sunctx);
+  err    = CVodeSetLinearSolver(cvode_mem, LS, msetup);
+  if (err != CV_SUCCESS) {
+    spdlog::error("setup_cvode_solver() CVDlsSetLinearSolver(): err={}", err);
     return 5;
   }
 

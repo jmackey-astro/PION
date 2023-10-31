@@ -66,14 +66,20 @@ fi
 
 if [ "$LINUX" == "YES" ]; then
 
-  if [ "$id" == "Ubuntu" ] && [ "$ver" == "20.04" ]; then
+  if [ "$id" == "Ubuntu" ] && [ "$ver" == "22.04" ]; then
+    echo "Detected Ubuntu 22.04: using system libraries for SILO, FITS, GSL, SUNDIALS"
+    MAKE_UNAME=debian11
+    export CXX=mpicxx
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE5"
+    export PION_OPTIMISE=HIGH
+    NCORES=$nc
+  elif [ "$id" == "Ubuntu" ] && [ "$ver" == "20.04" ]; then
     echo "Detected Ubuntu 20.04: Note system Silo library has a bug, you must install yourself using the script in PION/extra_libraries"
     MAKE_UNAME=debian10
     export CXX=mpicxx
     export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE3"
     export PION_OPTIMISE=HIGH
     NCORES=$nc
-    #NCORES=1
   elif [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
     echo "Detected Ubuntu 18.04: Note system Silo library has a bug, you must install yourself using the script in PION/extra_libraries"
     MAKE_UNAME=ubuntu18
@@ -81,7 +87,6 @@ if [ "$LINUX" == "YES" ]; then
     export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE5"
     export PION_OPTIMISE=HIGH
     NCORES=$nc
-    #NCORES=1
   elif [  "$id" == "Ubuntu" ] && [ "$ver" == "16.04" ]; then
     echo "Detected Ubuntu 16.04 (xenial): compiling extra libraries"
     MAKE_UNAME=ubuntu16
