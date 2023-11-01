@@ -204,6 +204,10 @@ WIND_0_t_offset   0.0000
 WIND_0_t_scalefac 1.0
 WIND_0_updatefreq 1.0
 WIND_0_enhance_mdot 0.0
+WIND_0_ecentricity_fac 0.0
+WIND_0_orbital_period  0.0
+WIND_0_periastron_vec_x 0.0
+WIND_0_periastron_vec_y 0.0
 
 # Reference Vector
 refvec0 1.0e-24  # ~1 particles /cc

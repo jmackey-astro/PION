@@ -197,6 +197,10 @@ WIND_0_t_offset   0.0   # in (seconds)
 WIND_0_t_scalefac 1.0  # Accelerates evolution by this factor (for MS phase).
 WIND_0_updatefreq 1.0   # in (seconds)
 WIND_0_xi 1.0
+WIND_0_ecentricity_fac 0.0
+WIND_0_orbital_period  0.0
+WIND_0_periastron_vec_x 0.0
+WIND_0_periastron_vec_y 0.0
 
 
 # Reference Vector
