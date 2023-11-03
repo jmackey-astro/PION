@@ -212,8 +212,9 @@ int calculate_column(
     //
     // Get Temperature from microphysics, or set it to sound speed.
     //
-    if (MP)
+    if (MP) {
       raw_data[DATA_T][iy] = MP->Temperature(cy->P.data(), SimPM.gamma);
+    }
     else
       raw_data[DATA_T][iy] = sqrt(SimPM.gamma * cy->P[PG] / cy->P[RO]);
     // increment iy

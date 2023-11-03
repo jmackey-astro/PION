@@ -1,11 +1,18 @@
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 if(PION_TOOLS AND PION_PARALLEL AND PION_USE_SILO AND PION_USE_FITS)
+  add_library(
+    image_io
+
+    image_io.cpp
+  )
+  target_link_libraries(image_io PRIVATE dataio)
+  target_link_libraries(image_io PRIVATE spdlog::spdlog)  
+
   add_executable(
     projection2D
 
     angle_projection.cpp
-    image_io.cpp
     perp_projection.cpp
     project2D.cpp
   )
@@ -15,6 +22,7 @@ if(PION_TOOLS AND PION_PARALLEL AND PION_USE_SILO AND PION_USE_FITS)
   target_link_libraries(projection2D PRIVATE
     global
     dataio
+    image_io
     xray_emission
     spdlog::spdlog
   )
@@ -33,13 +41,5 @@ if(PION_TOOLS AND PION_PARALLEL AND PION_USE_SILO AND PION_USE_FITS)
     ARCHIVE DESTINATION ${PION_INSTALL_LIBDIR}
     INCLUDES DESTINATION ${PION_INSTALL_INCLUDEDIR}
   )
-
-  add_library(
-    image_io
-
-    image_io.cpp
-  )
-  target_link_libraries(image_io PRIVATE dataio)
-  target_link_libraries(image_io PRIVATE spdlog::spdlog)  
 
 endif(PION_TOOLS AND PION_PARALLEL AND PION_USE_SILO AND PION_USE_FITS)

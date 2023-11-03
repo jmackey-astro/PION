@@ -97,11 +97,11 @@ int main(int argc, char **argv)
   auto max_logfile_size = 1048576 * 5;
   auto max_logfiles     = 20;
 #ifdef PARALLEL
-  spdlog::set_default_logger(spdlog::rotating_logger_mt(
-      "project2D_pre_mpi", "project2D.log", max_logfile_size, max_logfiles));
+  // spdlog::set_default_logger(spdlog::rotating_logger_mt(
+  //    "project2D_pre_mpi", "project2D.log", max_logfile_size, max_logfiles));
 #else
-  spdlog::set_default_logger(spdlog::rotating_logger_mt(
-      "project2D", "project2D.log", max_logfile_size, max_logfiles));
+  // spdlog::set_default_logger(spdlog::rotating_logger_mt(
+  //    "project2D", "project2D.log", max_logfile_size, max_logfiles));
 #endif
 
 #ifdef NDEBUG
@@ -116,14 +116,13 @@ int main(int argc, char **argv)
   // Also initialise the sub_domain class with myrank and nproc.
   //
   class SimParams SimPM;
-  class Sub_domain *sub_domain = &(SimPM.levels[0].sub_domain);
-  int myrank                   = sub_domain->get_myrank();
-  // int nproc                    = SimPM.levels[0].sub_domain.get_nproc();
+  int myrank = SimPM.levels[0].sub_domain.get_myrank();
+  // int nproc = SimPM.levels[0].sub_domain.get_nproc();
 
 #ifdef PARALLEL
-  spdlog::set_default_logger(spdlog::rotating_logger_mt(
-      "project2D", "project2D_process_" + to_string(myrank) + ".log",
-      max_logfile_size, max_logfiles));
+  // spdlog::set_default_logger(spdlog::rotating_logger_mt(
+  //    "project2D", "project2D_process_" + to_string(myrank) + ".log",
+  //    max_logfile_size, max_logfiles));
 #endif /* PARALLEL */
 
 #ifdef PROJ_OMP
@@ -136,7 +135,7 @@ int main(int argc, char **argv)
   //
   // Get input files and an output file.
   //
-  if (argc < 6) {
+  if (argc < 7) {
     spdlog::info("{}: {}", "Bad number of args", argc);
     spdlog::info(
         "Use as follows:\nexecutable-filename: <executable-filename> <input-path> <input-silo-file-base> <angle>");
@@ -148,6 +147,7 @@ int main(int argc, char **argv)
         "angle:        Angle with respect to symmetry-axis for projection (degrees, float)");
     spdlog::info("output file:  filename for output file(s).");
     spdlog::info("op-file-type: integer/string [1,fits,FITS], [3,vtk,VTK]");
+    spdlog::info("level:        integer level of NG hierarchy to plot");
     spdlog::info(
         "skip:         will skip this number of input files each loop. (0 means it will calculate every file)");
     exit(1);
@@ -206,8 +206,11 @@ int main(int argc, char **argv)
   // write one image file for each snapshot
   int multi_opfiles = 1.0;
 
+  int level          = atoi(argv[6]);
+  double level_scale = 1.0 / pow(2, level);
+
   // how sparsely to sample the data files.
-  size_t skip = static_cast<size_t>(atoi(argv[6]));
+  size_t skip = static_cast<size_t>(atoi(argv[7]));
 
 
   //*******************************************************************
@@ -219,7 +222,8 @@ int main(int argc, char **argv)
   //
   // set up dataio_utility class
   //
-  class dataio_silo_utility dataio(SimPM, "DOUBLE", sub_domain);
+  class dataio_silo_utility dataio(
+      SimPM, "DOUBLE", &(SimPM.levels[0].sub_domain));
 
   //
   // Get list of files to read:
@@ -265,7 +269,16 @@ int main(int argc, char **argv)
   // grid to set up.  If nproc==1, then this sets the local domain to
   // be the full domain.
   //
-  SimPM.grid_nlevels     = 1;
+  for (int v = 0; v < MAX_DIM; v++)
+    SimPM.Range[v] *= level_scale;
+  for (int v = 0; v < MAX_DIM; v++)
+    SimPM.Xmin[v] *= level_scale;
+  for (int v = 0; v < MAX_DIM; v++)
+    SimPM.Xmax[v] *= level_scale;
+  SimPM.dx *= level_scale;
+
+  SimPM.grid_nlevels = 1;
+  // SimPM.levels.resize(1);
   SimPM.levels[0].parent = 0;
   SimPM.levels[0].child  = 0;
   SimPM.levels[0].Ncell  = SimPM.Ncell;
@@ -281,7 +294,7 @@ int main(int argc, char **argv)
   SimPM.levels[0].simtime    = SimPM.simtime;
   SimPM.levels[0].dt         = 0.0;
   SimPM.levels[0].multiplier = 1;
-  err                        = sub_domain->decomposeDomain(
+  err                        = SimPM.levels[0].sub_domain.decomposeDomain(
       SimPM.ndim, SimPM.levels[0], SimPM.get_pbc_bools());
   if (err) {
     spdlog::error("{}: {}", "main: failed to decompose domain!", err);
@@ -461,6 +474,13 @@ int main(int argc, char **argv)
       exit(1);
     }
     SimPM.grid_nlevels = 1;
+    for (int v = 0; v < MAX_DIM; v++)
+      SimPM.Range[v] *= level_scale;
+    for (int v = 0; v < MAX_DIM; v++)
+      SimPM.Xmin[v] *= level_scale;
+    for (int v = 0; v < MAX_DIM; v++)
+      SimPM.Xmax[v] *= level_scale;
+    SimPM.dx *= level_scale;
     spdlog::debug("!! time = {}, step={}", SimPM.simtime, SimPM.timestep);
 
     //
