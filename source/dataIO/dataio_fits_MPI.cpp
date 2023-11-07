@@ -182,14 +182,7 @@ int DataIOFits_pllel::SaveLevelData(
   int status = 0, err = 0;
 
   // Add variables to list based on what equations we are solving.
-  int nvar        = SimPM.nvar;
-  string *extname = 0;
-  if (SimPM.ntracer > 5)
-    spdlog::error(
-        "{}: {}",
-        "OutputFitsData:: only handles up to 5 tracer variables! Add "
-        "more if needed.",
-        SimPM.ntracer);
+  int nvar = SimPM.nvar;
 
 #ifdef RT_TESTING_OUTPUTCOL
   // output column densities!
@@ -200,96 +193,14 @@ int DataIOFits_pllel::SaveLevelData(
   }
 #endif  // RT_TESTING_OUTPUTCOL
 
-  if (SimPM.eqntype == EQEUL || SimPM.eqntype == EQEUL_ISO
-      || SimPM.eqntype == EQEUL_EINT) {
-    extname         = mem.myalloc(extname, nvar + 1);
-    string pvar[10] = {"GasDens", "GasPres", "GasVX", "GasVY", "GasVZ",
-                       "TR0",     "TR1",     "TR2",   "TR3",   "TR4"};
-    for (int i = 0; i < SimPM.nvar; i++)
-      extname[i] = pvar[i];
-    if (DataIOFits::eqn != 0 && mp == 0) {
-      extname[nvar] = "Eint";
-      nvar += 1;
-    }
-    else if (mp != 0) {
-      extname[nvar] = "Temp";
-      nvar += 1;
-    }
+  std::vector<string> extname;
+  err = get_variable_names(SimPM, extname);
+  if (err) {
+    spdlog::error("get var names outputdata: {}", err);
+    exit_pion(err);
   }
-  else if (SimPM.eqntype == EQMHD || SimPM.eqntype == EQFCD) {
-    extname         = mem.myalloc(extname, nvar + 3);
-    string pvar[13] = {"GasDens", "GasPres", "GasVX", "GasVY", "GasVZ",
-                       "Bx",      "By",      "Bz",    "TR0",   "TR1",
-                       "TR2",     "TR3",     "TR4"};
-    for (int i = 0; i < SimPM.nvar; i++)
-      extname[i] = pvar[i];
-    if (DataIOFits::eqn != 0 && mp == 0) {
-      extname[nvar]     = "Eint";
-      extname[nvar + 1] = "divB";
-      extname[nvar + 2] = "Ptot";
-      nvar += 3;
-    }
-    else if (DataIOFits::eqn != 0 && mp != 0) {
-      extname[nvar]     = "Temp";
-      extname[nvar + 1] = "divB";
-      extname[nvar + 2] = "Ptot";
-      nvar += 3;
-    }
-    else if (mp != 0) {
-      extname[nvar] = "Temp";
-      nvar += 1;
-    }
-  }
-  else if (SimPM.eqntype == EQGLM) {
-    extname         = mem.myalloc(extname, nvar + 3);
-    string pvar[14] = {"GasDens", "GasPres", "GasVX", "GasVY", "GasVZ",
-                       "Bx",      "By",      "Bz",    "psi",   "TR0",
-                       "TR1",     "TR2",     "TR3",   "TR4"};
-    for (int i = 0; i < SimPM.nvar; i++)
-      extname[i] = pvar[i];
-    spdlog::debug("EQN={}, MP={}", fmt::ptr(DataIOFits::eqn), fmt::ptr(mp));
-    if (DataIOFits::eqn != 0 && mp == 0) {
-      extname[nvar]     = "Eint";
-      extname[nvar + 1] = "divB";
-      extname[nvar + 2] = "Ptot";
-      nvar += 3;
-    }
-    else if (DataIOFits::eqn != 0 && mp != 0) {
-      extname[nvar]     = "Temp";
-      extname[nvar + 1] = "divB";
-      extname[nvar + 2] = "Ptot";
-      nvar += 3;
-    }
-    else if (mp != 0) {
-      extname[nvar] = "Temp";
-      nvar += 1;
-    }
-  }
-  else {
-    extname = mem.myalloc(extname, 10);
-    spdlog::error("{}: {}", "What equations?!", SimPM.eqntype);
-  }
-
-#ifdef RT_TESTING_OUTPUTCOL
-  // output column densities!
-  if (gp->RT != 0 && SimPM.RS.Nsources > 0) {
-    if (extname[SimPM.nvar] != "")
-      spdlog::error("{}: {}", "Tau not writeable!", extname[SimPM.nvar]);
-    //
-    // Loop over all sources, and all variables for each source:
-    //
-    ostringstream var;
-    unsigned int ivar = SimPM.nvar;
-    for (int v = 0; v < SimPM.RS.Nsources; v++) {
-      for (int iT = 0; iT < SimPM.RS.sources[v].NTau; iT++) {
-        var.str("");
-        var << "Col_Src_" << v << "_T" << iT;
-        extname[ivar] = var.str();
-        ivar++;
-      }  // loop over Tau variables for source v.
-    }    // loop over Nsources
-  }      // if RT
-#endif   // RT_TESTING_OUTPUTCOL
+  nvar = extname.size();
+  spdlog::debug("write mpi fits, extname: {}", extname);
 
   //
   // Choose filename based on the basename and the counter passed to
@@ -504,8 +415,6 @@ int DataIOFits_pllel::SaveLevelData(
       spdlog::debug(
           "Proc {}: file created, written, and unlocked. err={}",
           mpiPM->get_myrank(), err);
-      delete[] extname;
-      extname = 0;
       return (err);
     }
     //--------------------------------------------------------
@@ -568,8 +477,6 @@ int DataIOFits_pllel::SaveLevelData(
         "{}: {}", "Logic Error in DataIOFits_pllel::OutputData()",
         mpiPM->get_WriteSingleFile());
 
-  extname = mem.myfree(extname);
-
   if (status) {
     fits_report_error(stderr, status);
     fits_clear_errmsg();
@@ -591,44 +498,12 @@ int DataIOFits_pllel::ReadData(
   int err      = 0;
 
   // -------------------------------------------------------
-  int nvar    = SimPM.nvar;
-  string *var = 0;
-  if (SimPM.ntracer > 5) {
-    spdlog::error(
-        "{}: {}", "Fits_pllel::ReadData() too many tracer variables!",
-        SimPM.ntracer);
-  }
-  if (SimPM.eqntype == EQEUL || SimPM.eqntype == EQEUL_ISO
-      || SimPM.eqntype == EQEUL_EINT) {
-    var = mem.myalloc(var, 10);
-    if (SimPM.nvar > 10) {
-      spdlog::error(
-          "{}: {}", "DataIOFits_pllel::ReadData() too many tracers.",
-          SimPM.nvar);
-    }
-    string t[10] = {"GasDens", "GasPres", "GasVX", "GasVY", "GasVZ",
-                    "TR0",     "TR1",     "TR2",   "TR3",   "TR4"};
-    for (int i = 0; i < 10; i++)
-      var[i] = t[i];
-  }
-  else if (
-      SimPM.eqntype == EQMHD || SimPM.eqntype == EQGLM
-      || SimPM.eqntype == EQFCD) {
-    var = mem.myalloc(var, 14);
-    if (SimPM.nvar > 14) {
-      spdlog::error(
-          "{}: {}", "DataIOFits_pllel::ReadData() too many tracers.",
-          SimPM.nvar);
-    }
-    string t[14] = {"GasDens", "GasPres", "GasVX", "GasVY", "GasVZ",
-                    "Bx",      "By",      "Bz",    "psi",   "TR0",
-                    "TR1",     "TR2",     "TR3",   "TR4"};
-    for (int i = 0; i < 14; i++)
-      var[i] = t[i];
-  }
-  else {
-    var = mem.myalloc(var, 10);
-    spdlog::error("{}: {}", "What equations?!", SimPM.eqntype);
+  int nvar = SimPM.nvar;
+  std::vector<string> var;
+  err = get_variable_names(SimPM, var);
+  if (err) {
+    spdlog::error("get var names outputdata: {}", err);
+    exit_pion(err);
   }
   // -------------------------------------------
 
@@ -706,21 +581,19 @@ int DataIOFits_pllel::ReadData(
         v = static_cast<int>(BZ);
       else if (var[i] == "psi")
         v = static_cast<int>(SI);
-      else if (var[i] == "TR0") {
-        v = SimPM.ftr;
-        spdlog::debug("reading from first tracer var: {}", v);
+      // Now loop over up to MAX_NVAR tracers...
+      else if (var[i].substr(0, 2) == "Tr") {
+        int itr = atoi(var[i].substr(2).c_str());
+        if (!isfinite(itr) || itr < 0 || itr >= MAX_NVAR) {
+          spdlog::error("{}: {}", "Bad tracer variable identifier.", var[i]);
+          exit_pion(2);
+        }
+        v = SimPM.ftr + itr;
       }
-      else if (var[i] == "TR1")
-        v = SimPM.ftr + 1;
-      else if (var[i] == "TR2")
-        v = SimPM.ftr + 2;
-      else if (var[i] == "TR3")
-        v = SimPM.ftr + 3;
-      else if (var[i] == "TR4")
-        v = SimPM.ftr + 4;
-      else
-        spdlog::error(
-            "{}: {}", "Bad variable index in fits read routine", var[i]);
+      else {
+        spdlog::error("Bad variable index in fits read routine: {}", var[i]);
+        exit_pion(3);
+      }
       err += fits_movnam_hdu(ff, ANY_HDU, temp, 0, &status);
 
       if (err != 0) {
@@ -786,7 +659,6 @@ int DataIOFits_pllel::ReadData(
 
     }  // Loop over all Primitive Variables
 
-    var = mem.myfree(var);
     //  cout <<"Closing fits file. err="<<err<<"\n";
     fits_close_file(ff, &status);
     if (status) {

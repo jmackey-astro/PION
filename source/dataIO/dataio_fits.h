@@ -213,6 +213,12 @@ protected:
   ///
   int write_header_param(class pm_base *);
 
+  /// Set variable names for writing to file
+  int get_variable_names(
+      class SimParams &,     ///< simulation parameters
+      std::vector<string> &  ///< vector of variable names (output)
+  );
+
   ///
   /// Puts a grid variable into a 1D data array.
   ///
