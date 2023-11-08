@@ -639,6 +639,8 @@ void stellar_wind::set_wind_cell_tracers(
 )
 {
   // set H+ tracer value based on stellar temperature.
+  /*
+  // Here we need some new code to set tracer values based on Saha equation
   if (ws.Hplus >= 0) {
     if (ws.pars->Tstar < 1.0e4)
       ws.pars->tr[ws.iHplus] = 1.0e-10;
@@ -648,6 +650,7 @@ void stellar_wind::set_wind_cell_tracers(
       ws.pars->tr[ws.iHplus] =
           1.0e-10 + (ws.pars->Tstar - 1.0e4) * (1.0 - 1.0e-10) / 0.5e4;
   }
+  */
   // update tracers: should be set already.
   for (int v = 0; v < ntracer; v++)
     wc.p[ftr + v] = ws.pars->tr[v];

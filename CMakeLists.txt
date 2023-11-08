@@ -165,6 +165,10 @@ if(NOT PION_SKIP_SOURCE)
         add_compile_options(-DLOG_ALL_PROCS)
     endif(LOG_ALL_PROCS)
 
+    if(PION_MPV10)
+        add_compile_options(-DPION_MPV10)
+    endif(PION_MPV10)
+
     #
     # Find dependant libraries
     #
@@ -272,3 +276,4 @@ message(STATUS "    PION_BUILD_TESTS         = ${PION_BUILD_TESTS}")
 message(STATUS "    PION_BUILD_DOCUMENTATION = ${PION_BUILD_DOCUMENTATION}")
 message(STATUS "    ON_KAROLINA              = ${ON_KAROLINA}")
 message(STATUS "    LOG_ALL_PROCS            = ${LOG_ALL_PROCS}")
+message(STATUS "    PION_MPV10               = ${PION_MPV10}")

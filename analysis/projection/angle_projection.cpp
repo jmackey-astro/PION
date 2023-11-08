@@ -706,7 +706,7 @@ int generate_angle_image(
       ipix = npix[0] * j + i;
       for (size_t v = 0; v < NIMG; v++)
         img_array[v][ipix] = ans[v];
-#ifdef DEBUG
+#ifndef NDEBUG
       spdlog::debug("ans : {}", ans);
       spdlog::debug("i,j={}, {} ... Ray crossed {} cells.", i, j, ncell);
 #endif

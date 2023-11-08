@@ -375,12 +375,15 @@ enum direction {
 // Effect of source:
 //
 #define RT_EFFECT_UV_HEATING 1  ///< UV heating source.
-#define RT_EFFECT_PION_MONO 2   ///< monochromatic photoion source.
-#define RT_EFFECT_MFION 3       ///< multifrequency photoion source.
-#define RT_EFFECT_PHOTODISS 4   ///< photodissociation of molecules.
-#define RT_EFFECT_PION_EQM 5    ///< Assume photoion. equilibrium.
+#define RT_EFFECT_PHOTODISS 2   ///< photodissociation of molecules.
+#define RT_EFFECT_PION_EQM 3    ///< Assume photoion. equilibrium.
+#define RT_EFFECT_PION_MONO 4   ///< monochromatic photoion source.
+#define RT_EFFECT_MFION 5       ///< multifrequency photoion source.
 #define RT_EFFECT_HHE_MFQ                                                      \
-  9  ///< Frank&Mellema H+He p-ion scheme (not fully implemented)
+  6  ///< Frank&Mellema H+He p-ion scheme (not fully implemented)
+#define RT_EFFECT_MP10_ATLAS_O3V 7  ///< ATLAS models
+#define RT_EFFECT_MP10_POWR_WC 8    ///< POWR WC models
+#define RT_EFFECT_MP10_POWR_WNE 9   ///< POWR WNE models
 
 //
 // Source of opacity

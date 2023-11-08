@@ -188,7 +188,7 @@ int IC_basic_tests::setup_uniformgrid(
   //
   // Get ambient medium properties:
   //
-  double Amb[SimPM->nvar];
+  std::vector<double> Amb(SimPM->nvar, 0.0);
 
   string seek, str;
   seek = "UNIFORM_ambRO";

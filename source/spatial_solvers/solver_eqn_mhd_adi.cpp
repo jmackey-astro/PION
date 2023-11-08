@@ -358,6 +358,7 @@ int FV_solver_mhd_ideal_adi::dU_Cell(
     const double dt                      // cell TimeStep, dt.
 )
 {
+  if (!c.isdomain) return 0;
   // This calculates -dF/dx, overwriting utemp so no need to init it
   int err = DivStateVectorComponent(c, grid, d, eq_nvar, fn, fp, utemp);
   geometric_source(c, d, slope, cstep, dx, utemp);
@@ -432,6 +433,7 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
     const double           // Cell timestep dt.
 )
 {
+  if (!c.isdomain) return 0;
   pion_flt u1[eq_nvar], u2[eq_nvar];
   pion_flt Pintermediate[eq_nvar];
   pion_flt corrector[eq_nvar];

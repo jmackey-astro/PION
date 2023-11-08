@@ -10,6 +10,7 @@
  *  + 2022.12.30: Rewrote the entire class.
  **/
 
+#include "constants.h"
 #include "microphysics/mellema_cooling.h"
 
 
@@ -28,7 +29,7 @@ mellema_cooling::mellema_cooling()
 mellema_cooling::~mellema_cooling()
 {
   std::vector<database_datatype>().swap(species);
-  spdlog::debug("mellema cooling destructor: Done");
+  spdlog::debug("Mellema cooling: Destructor done");
 }
 // END OF DESTRUCTOR ################################################
 
@@ -72,8 +73,8 @@ void mellema_cooling::setup_mellema_cooling(
 
       // If not found in the database, display message "no data"
       if (species_found == false)
-        spdlog::info(
-            "No data, assigning default cooling table for {}",
+        spdlog::warn(
+            "Mellema cooling: No data, assigning default cooling table {}",
             MP_tracer_list[i][j]);
     }
   }
@@ -86,7 +87,7 @@ void mellema_cooling::generate_mellema_table(
     const std::vector<double> &T, const std::vector<double> &ne)
 {
   // Setting up x and y axes for generating lookup table
-  spdlog::info("Setting up mellema cooling LUTs");
+  spdlog::info("Generating up mellema cooling LUTs");
 
   int location;
 
@@ -100,7 +101,7 @@ void mellema_cooling::generate_mellema_table(
       if (log10(T.front()) < species[location].logT.front()
           || log10(T.back()) > species[location].logT.back()) {
         spdlog::error(
-            "mellema cooling: temperature outside the specified range for {:s}",
+            "Mellema cooling: Temperature outside the specified range for {:s}",
             species[location].Name);
         exit_pion(1);
       }
@@ -116,7 +117,7 @@ void mellema_cooling::generate_mellema_table(
       if (log10(ne.front()) < species[location].logne.front()
           || log10(ne.back()) > species[location].logne.back()) {
         spdlog::error(
-            "mellema cooling: electron density outside the specified range for {:s}",
+            "Mellema cooling: Electron density outside the specified range for {:s}",
             species[location].Name);
         exit_pion(1);
       }
@@ -175,7 +176,7 @@ void mellema_cooling::generate_mellema_table(
         mellema_table[mc_species_index].ne_rateslope[i].resize(Nne);
 
       spdlog::debug(
-          "Generating cooling LUT[{}] for {:s}", mc_species_index,
+          "Mellema cooling: Generating cooling LUT[{}] {:s}", mc_species_index,
           mellema_table[mc_species_index].Name);
 
 

@@ -1,5 +1,5 @@
 /// \file MPv10.cpp
-/// \author Maggie Celeste Goulden
+/// \authors Arun Mathew, Jonathan Mackey, Maggie Celeste Goulden
 /// \date 2018.10
 ///
 /// Description:
@@ -19,22 +19,20 @@
 ///
 
 
-
 // ##################################################################
+// Note:
+// When iterating over elements, we use the integer variable 'elem'
+// as the iterator in loops.
+// When iterating over ions, we use 'i' as the iterator in loops.
+// When referring to neutral atoms and ions collectively, we use the
+// term 'species', and variable 's' as the iterator in loops.
+// When working with energy bins, we use the variable 'b' as the
+// iterator in the loop.
+//
 // List of Abbreviations used.
 // LUT - Look Up Table
 // CLV  - Correct Local Vector
 // CIR - collisional ionisation and recombination
-// ******************************************************************
-
-
-
-// ##################################################################
-// Note:
-// When referring to element, we use variable 'elem' in loops
-// When referring to ions, we use 'i' in loops
-// When referring to neutral atoms + ions, we use 'species' and
-// variable 's' in loops
 // ******************************************************************
 
 
@@ -51,8 +49,6 @@
 #ifndef NDEBUG
 #endif  // NDEBUG
 
-
-
 using namespace std;
 
 //#define MPv10_CIE_TEST
@@ -64,8 +60,8 @@ using namespace std;
 // This is a good value for MPv3 (see Mackey,2012,A&A,539,A147)
 // Will have to do some tests for MPv10...
 
-#define DTFRAC 0.25
-
+//#define DTFRAC 0.25
+#define DTFRAC 0.1
 
 // GET ERROR TOLERANCES #################################################
 void MPv10::get_error_tolerances(
@@ -80,11 +76,10 @@ void MPv10::get_error_tolerances(
                                          ///< E=2.07e-12, so say 1e-17?
   return;
 }
-// END OF GET ERROR TOLERANCES
 
 
 
-// GET PROBLEM SIZE  ########################################
+// GET PROBLEM SIZE  ######################################################
 void MPv10::get_problem_size(
     int *n_eqn,  ///< number of equations
     int *n_para  ///< number of parameters in user_data vector.
@@ -94,7 +89,6 @@ void MPv10::get_problem_size(
   *n_para = N_extradata;
   return;
 }
-// END OF GET PROBLEM SIZE  ########################################
 
 
 
@@ -111,48 +105,45 @@ MPv10::MPv10(
     ) :
     microphysics_base(nv, ntr, tracers, ephys, rsrcs),
     coll_ionise_recomb(),
-    // mellema_cooling(),
-    chianti_cooling(), ndim(nd), eos_gamma(g), coord_sys(csys), T_min(1e1),
-    T_max(1e9), Num_temps(300), Num_ne(100), ne_min(1.0), ne_max(1.0e6)
-
-//  , photo_xsections()  // photo_xsections(&Emin[0],&Emax[0],Nbins)
+#ifdef MELLEMA
+    mellema_cooling(),
+#elif defined CHIANTI
+    chianti_cooling(),
+#else
+#error "must define MELLEMA or CHIANTI"
+#endif
+    ndim(nd), eos_gamma(g), coord_sys(csys), T_min(1e1), T_max(1e9),
+    Num_temps(300), Num_ne(100), ne_min(1.0), ne_max(1.0e6),
+    stellar_atmosphere_models(), multi_ion_photo_xsections(), photoionisation()
 {
 
-  spdlog::info("Setting up microphysics MPv10 module");
   spdlog::debug(
-      "MPv10: Setting up tracer variables assuming tracers are last {} "
-      "variables in primitive vector",
+      "MPv10: Setting up tracer variables, assuming tracers"
+      " are last {} variables in primitive vector",
       ntracer);
-  spdlog::debug(
-      "MPv10: Tracers variables {} ",
-      std::vector<string>(tracers, tracers + ntr));
 
-  // IONISATION AND RECOMBINATION **************************************
-  // This function will generate all necessary indices for MPv10 module.
+  // INVOKING MPV10 TRACER SPECIES CATALOGER *****************************
   tracer_species_cataloger(nv, ntr, tracers);
-
-  spdlog::debug("MPv10: Total {} variables in the primitive vector", N_prim);
-  spdlog::debug("MPv10: MPv10 tracer list {}", MPv10_tracer_list);
+  // This function will generate following indices for MPv10 module.
+  spdlog::debug("MPv10: Sorted tracer list {}", MPv10_tracer_list);
   spdlog::debug("MPv10: Element's primitive index {}", elem_prim_index);
   spdlog::debug("MPv10: Element's atomic mass {}", elem_atomic_mass);
   spdlog::debug("MPv10: MPv10 ion list {}", MPv10_ion_list);
-  spdlog::debug("MPv10: ion's element index {}", ions_tracer_elem);
-  spdlog::debug(
-      "MPv10: ion's string - primitive index map {}", ions_primindex_map);
-  spdlog::debug("MPv10: ions primitive index {}", ions_prim_index);
-  spdlog::debug("MPv10: ions local index {}", ions_local_index);
-  spdlog::debug("MPv10: Number of species in local vector {}", N_sp);
-  spdlog::debug("MPv10: Number of species by elements {}", N_sp_by_elem);
+  spdlog::debug("MPv10: Ion's element index {}", ions_tracer_elem);
+  spdlog::debug("MPv10: Ion-string prim-index map {}", ions_primindex_map);
+  spdlog::debug("MPv10: Ion's primitive index {}", ions_prim_index);
+  spdlog::debug("MPv10: Ion's local index {}", ions_local_index);
   spdlog::debug("MPv10: Number of ions by elements {}", N_ions_by_elem);
-  spdlog::debug("MPv10: ion's electron numbers {}", ions_electron_num);
-  spdlog::debug("MPv10: minus ions local index {}", minus_ions_local_index);
-  spdlog::debug("MPv10: ci tracer list = {}", ci_tracer_list);
-  spdlog::debug("MPv10: ci tracer elements = {}", ci_tracer_elem);
-  spdlog::debug("MPv10: recomb tracer list = {}", recomb_tracer_list);
-  spdlog::debug("MPv10: recomb tracer elements = {}", recomb_tracer_elem);
+  spdlog::debug("MPv10: Number of species by elements {}", N_species_by_elem);
+  spdlog::debug("MPv10: Ion's electron numbers {}", ions_electron_num);
+  spdlog::debug("MPv10: Minus ions local index {}", minus_ions_local_index);
+  spdlog::debug("MPv10: Colli tracer list = {}", ci_tracer_list);
+  spdlog::debug("MPv10: Colli tracer elements = {}", ci_tracer_elem);
+  spdlog::debug("MPv10: Recomb tracer list = {}", recomb_tracer_list);
+  spdlog::debug("MPv10: Recomb tracer elements = {}", recomb_tracer_elem);
 
 
-  // lOOKUP TABLE SETTINGS *********************************************
+  // SETTING UP LOOKUP TABLE VARIABLES ***********************************
   // Setting up step size for log temperature (T) and log electron number
   // density (ne). This step size is used to generate look up tables. The same
   // is used to calculate temperature index and electron number density index to
@@ -173,7 +164,7 @@ MPv10::MPv10(
     ne_table[i] = pow(10, log10(ne_min) + i * delta_logne);
   }
 
-  // IONISATION AND RECOMBINATION *********************************************
+  // COLLISIONAL IONISATION AND RECOMBINATION ****************************
   // setting up collisional ionisation
   setup_collisional_ionisation(ci_tracer_list);
   // Generating collisional ionisation rate lookup tables
@@ -184,74 +175,78 @@ MPv10::MPv10(
   generate_recombination_LUT(T_table);
 
 #ifdef MPv10_DEBUG
-  mkdir("MPV10_coll-recom_tables", 0777);
-  // PRINT TO FILE COLLISIONAL AND RECOMBINATION TABLES ***********************
+  mkdir("MPV10-Tables", 0777);
+  mkdir("MPV10-Tables/coll-recom-tables", 0777);
+  // PRINT TO FILE COLLISIONAL AND RECOMBINATION TABLES
+  spdlog::debug("MPv10: writting collisional ionisation rate table into file");
+  std::string ci_info =
+      "#FILE: Generated by PION - MPv10 Module\n"
+      "#DATA DESCRIPTION: Collisional ionisation rate table for the collisional-tracer species.";
   print_CIR_LUT(
-      T_table, collisional_rate_table, collisional_slope_table,
-      "coll-recom_tables/coll-ionise-rate");
+      ci_tracer_list, ci_info, T_table, collisional_rate_table,
+      collisional_slope_table,
+      "MPV10-Tables/coll-recom-tables/coll-ionise-rate");
+  spdlog::debug("MPv10: writting recombination rate table into txt file");
+  std::string recomb_info =
+      "#FILE: Generated by PION - MPv10 Module\n"
+      "#DATA DESCRIPTION: Recombination rate table for the recombination-tracer species.";
   print_CIR_LUT(
-      T_table, recombination_rate_table, recombination_slope_table,
-      "coll-recom_tables/recomb-rate");
+      recomb_tracer_list, recomb_info, T_table, recombination_rate_table,
+      recombination_slope_table, "MPV10-Tables/coll-recom-tables/recomb-rate");
 #endif
 
-  /*
-  // MELLEMA COOLING FUNCTION *************************************************
+#ifdef MELLEMA
+  // MELLEMA COOLING FUNCTION *********************************************
   setup_mellema_cooling(MPv10_tracer_list);
-  spdlog::debug("mc species locator = {}", mc_tracer_locator);
+  spdlog::debug(
+      "MPv10: Mellema cooling species locator = {}", mc_tracer_locator);
   generate_mellema_table(T_table, ne_table);
-  */
-
-  // CHIANTI COOLING FUNCTION *************************************************
+#elif defined CHIANTI
+  // CHIANTI COOLING FUNCTION ********************************************
   setup_chianti_cooling(MPv10_tracer_list);
-  spdlog::debug("chianti species locator = {}", chianti_tracer_locator);
+  spdlog::debug("MPv10: chianti species locator = {}", chianti_tracer_locator);
   generate_chianti_table(T_table, ne_table);
+#endif
 
 #ifdef MPv10_DEBUG
-  mkdir("MPV10_cooling_tables", 0777);
-  // PRINT MELLEMA COOLING TABLES ********************************************
-  print_1D_vector(T_table, "logT", "cooling_tables/chianti_rate");
-  print_1D_vector(ne_table, "logne", "cooling_tables/chianti_rate");
+#ifdef MELLEMA
+  mkdir("MPV10-LUTs/cooling-tables", 0777);
+  mkdir("MPV10-LUTs/cooling-tables/mellema", 0777);
+  spdlog::debug(
+      "MPv10: writting Mellema cooling look up tables into txt files");
+  std::string cooling_table_info;
 
-  // print resized chianti cooling rate table to files
-  // print the log10 of actual rate
-  spdlog::debug("Writting mellema cooling look up tables into files");
-  int chianti_species_index = 0;
-  int location;
-  for (int i = 0; i < MPv10_tracer_list.size(); i++) {
-    for (int j = 0; j < MPv10_tracer_list[i].size(); j++) {
-      location = chianti_tracer_locator[i][j];  // database location
-      spdlog::debug(
-          "Writting LUT({}) as Mellema-{}", MPv10_tracer_list[i][j],
-          chianti_table[chianti_species_index].Name);
-      print_2D_vector(
-          chianti_table[chianti_species_index].rate, MPv10_tracer_list[i][j],
-          "cooling_tables/chianti_rates");
-      chianti_species_index++;
-    }
-  }
-
-  /*
-  // PRINT MELLEMA COOLING TABLES ********************************************
-  //print log10 values.
-  print_1D_vector(T_table, "logT", "cooling_tables/mellema_rate");
-  print_1D_vector(ne_table, "logne", "cooling_tables/mellema_rate");
-
-  // print resized mellema cooling rate table to files
-  // print the log10 of actual rate
-  spdlog::debug("Writting mellema cooling look up tables into files");
-  int mc_species_index = 0;
+  int species_index = 0;
   int location;
   for (int i = 0; i < MPv10_tracer_list.size(); i++) {
     for (int j = 0; j < MPv10_tracer_list[i].size(); j++) {
       location = mc_tracer_locator[i][j];  // database location
-      spdlog::debug("Writting LUT({}) as Mellema-{}",
-                    MPv10_tracer_list[i][j],
-  mellema_table[mc_species_index].Name); print_2D_vector(
-  mellema_table[mc_species_index].rate, MPv10_tracer_list[i][j],
-  "cooling_tables/mellema_rates"); mc_species_index++;
+      print_cooling_table(
+          ne_table, T_table, mellema_table[species_index].rate,
+          MPv10_tracer_list[i][j],
+          "MPV10-LUTs/cooling-tables/mellema/mellema_rates");
+      species_index++;
     }
   }
-  */
+#elif defined CHIANTI
+  mkdir("MPV10-Tables/cooling-tables", 0777);
+  mkdir("MPV10-Tables/cooling-tables/chianti", 0777);
+  spdlog::debug("MPv10: writting Chianti cooling lookup tables into txt files");
+  std::string cooling_table_info;
+
+  int species_index = 0;
+  int location;
+  for (int i = 0; i < MPv10_tracer_list.size(); i++) {
+    for (int j = 0; j < MPv10_tracer_list[i].size(); j++) {
+      location = chianti_tracer_locator[i][j];  // database location
+      print_cooling_table(
+          ne_table, T_table, chianti_table[species_index].rate,
+          MPv10_tracer_list[i][j],
+          "MPV10-Tables/cooling-tables/chianti/chianti_rates");
+      species_index++;
+    }
+  }
+#endif
 #endif
 
 
@@ -266,50 +261,127 @@ MPv10::MPv10(
       << "# Column-1: Temperature (K), Other columns: Cooling function (erg cm^3/s).\n";
 #endif
 
-  // INITIALIZING IMPORTANT VARIABLES AND ARRAY ************************
+
+  // INITIALIZING IMPORTANT VARIABLES AND VECTORS ************************
   // resizing element number density vector
   elem_number_density.resize(N_elements);
   // resizing the corrector vector
   corrector.resize(N_prim, 1.0);
-  // --- Set up local variables
+  // Set up local variables
   setup_local_vectors();
+  // Set gamma - 1 from EOS gamma
   gamma_minus_one = eos_gamma - 1.0;
+  // Set tolerance
   Min_NeutralFrac = MPv10_ABSTOL;
   Max_NeutralFrac = 1.0 - MPv10_ABSTOL;
 
 
-  // CVODE SOLVER *****************************************************
+
+  // INITIALIZING CVODE SOLVER *******************************************
   // Initialise the CVODES solver memory etc.
   setup_cvode_solver_without_Jacobian();
 
 
-  // Set flags for whether we have radiation sources *******************
-  N_rad_src = 0;
-  for (int isrc = 0; isrc < RS->Nsources; isrc++) {
-    if (RS->sources[isrc].type == RT_SRC_SINGLE
-        && RS->sources[isrc].effect == RT_EFFECT_MFION) {
-      N_rad_src++;
-      rt_data.resize(N_rad_src);
-      spdlog::debug("RT_data size {}", rt_data.size());
-      int err = set_multifreq_source_properties(
-          &RS->sources[isrc], rt_data[N_rad_src - 1].strength);
-      if (err) {
-        spdlog::error("{}: {}", "multifreq photoionisation setup MPv10", err);
-        exit_pion(1);
+
+  // PHOTO-IONIZATION AND PHOTO-HEATING **********************************
+  if (EP->phot_ionisation) {
+
+    // Setup stellar atmosphere models for stellar luminosity spectrum
+    setup_stellar_atmosphere_models(ebins, N_ebins, photo_emax);
+    // This will set up the following
+    spdlog::debug("MPv10: Energy bins {}", ebins);
+    spdlog::debug("MPv10: Number of energy bins {}", N_ebins);
+    spdlog::debug("MPv10: Maximum photo-ionisation energy {} eV", photo_emax);
+
+    // Invoking photo-ionisation species cataloger
+    photo_species_cataloger();
+    // This will generate the following indexing
+    spdlog::debug("MPv10: Photo tracer list {}", photo_tracer_list);
+    spdlog::debug("MPv10: Number of photo species {}", N_photo_species);
+    spdlog::debug("MPv10: Photo prim index {}", photo_prim_index);
+    spdlog::debug("MPv10: Photo tracer elements {}", photo_tracer_elem);
+    spdlog::debug("MPv10: Photo tracer charge {}", photo_tracer_charge);
+    spdlog::debug("MPv10: Photo ions local index {}", photo_ions_local_index);
+    spdlog::debug(
+        "MPv10: Photo species higher ion local index {}",
+        photo_species_higher_ion_local_index);
+
+    // Setup photo-ionisation x-section module: multi_ion_photo_xsection class.
+    // This will determine the appropriate size for the x-section and bin
+    // fraction tables. Additionally, it will return the photo tracer species'
+    // ionisation threshold vector.
+    photo_tracer_Eth = setup_photo_xsections(photo_tracer_list);
+    spdlog::debug("MPv10: ionisation threshold {}", photo_tracer_Eth);
+
+    // Generating mean cross-section and bin fraction table for the energy bins
+    generate_ebin_mean_xsection(ebins);
+
+#ifdef MPv10_DEBUG
+    mkdir("MPV10-Tables/photo-tables", 0777);
+    // print to file photo-ionisation cross-section tables
+    spdlog::debug("MPv10: writting photo cross-section table into file");
+    const std::string xsection_info = "Mean photo-ionization cross-section"
+                                      " for the photo-tracer species.";
+    print_to_file_photoionisation(
+        xsection_info, photo_tracer_list, ebins, photo_xsection_table,
+        "MPV10-Tables/photo-tables/mean-photo-xsection");
+
+    // print to file bin weight tables
+    spdlog::debug("MPv10: writting bin weight table into file");
+    const std::string weight_info = "Bin weight for the photo-tracer species.";
+    print_to_file_photoionisation(
+        weight_info, photo_tracer_list, ebins, bin_weight_table,
+        "MPV10-Tables/photo-tables/bin-weights");
+#endif
+
+    // Identify the radiation sources
+    // generate corresponding stellar luminosity per bin, and
+    // create corresponding tables for photoionization rates
+    // and photoheating rates.
+    N_rsrc = 0;
+    for (int q = 0; q < RS->Nsources; q++) {
+
+      if (RS->sources[q].type == RT_SRC_SINGLE) {
+        N_rsrc++;
+        // IMPO: proceed if they are ionising sources.
+
+        // IMPO: why the following line ?
+        rt_data.resize(N_rsrc);  // setting the size of the vector rt_data
+        // spdlog::debug("RT_data size {}", rt_data.size());
+
+        // Generate the energy flux in different energy bin for the given
+        // radiation source.
+        int err = generate_bin_luminosity(
+            RS->sources[q].effect, RS->sources[q].Tstar, RS->sources[q].Rstar,
+            RS->sources[q].strength, bin_luminosity);
+        if (err) {
+          spdlog::error(
+              "Attempt to generate stellar spectrum for source-id: {} "
+              "failed {}",
+              RS->sources[q].id, bin_luminosity);
+          exit(1);
+        }
       }
     }
-  }
-  spdlog::debug("MPv10: got {} radiation sources", N_rad_src);
+    spdlog::debug("MPv10: {} radiation source(s) detected", N_rsrc);
 
-  // CONSTRUCTOR END MESSAGE  *****************************************
+
+    // Setup photo-ionisation module: photoionisation
+    setup_photoionisation(
+        ebins, N_photo_species, photo_xsection_table, bin_weight_table,
+        bin_luminosity, photo_tracer_Eth);
+
+
+  }  // end of photo-ionisation section
+
+
+  // CONSTRUCTOR END MESSAGE **********************************************
   spdlog::debug("MPv10: Constructor finished and returning");
 }
-// END OF CONSTRUCTOR ##########################################################
 
 
 
-// ##################################################################
-
+// #######################################################################
 void MPv10::setup_local_vectors()
 {
   //
@@ -328,7 +400,6 @@ void MPv10::setup_local_vectors()
   E_index = N_sp;
   return;
 }
-// ##################################################################
 
 
 
@@ -339,7 +410,6 @@ MPv10::~MPv10()
   N_VDestroy_Serial(y_in);
   N_VDestroy_Serial(y_out);
 }
-// END OF MPV10 DESTRUCTOR ##################################################
 
 
 
@@ -349,10 +419,15 @@ void MPv10::tracer_species_cataloger(
 {
 
   // Beginning of cataloging tracers
-  spdlog::info("MPv10: Cataloging microphysics tracers");
+  spdlog::info("Cataloging microphysics tracers");
+
+  spdlog::debug(
+      "MPv10: Tracers variables {} ",
+      std::vector<string>(tracers, tracers + N_tracers));
+
 
   // Make a copy of tracer list
-  string tracer_list_replica[N_tracers];
+  tracer_list_replica.resize(N_tracers);
   for (int s = 0; s < N_tracers; s++)
     tracer_list_replica[s] = tracers[s];
 
@@ -378,11 +453,12 @@ void MPv10::tracer_species_cataloger(
       MPv10_tracer_list.resize(N_elements);
       MPv10_tracer_list[s].push_back(tracer_list_replica[s]);
       // Atomic masses of elements in the tracer list.
-      elem_atomic_mass.push_back(get_atomic_mass(tracer_list_replica[s]));
+      elem_atomic_mass.push_back(
+          atomic_physics_data.get_atomic_mass(tracer_list_replica[s]));
       // No of ions in each element
-      N_sp_by_elem.resize(N_elements, 0);  // rename this ***
+      N_ions_by_elem.resize(N_elements, 0);  // initializing
       // No of species in each element
-      N_ions_by_elem.resize(N_elements, 1);  // rename this ***
+      N_species_by_elem.resize(N_elements, 1);  // initializing
     }
   }
   // End of tracer loop for identifying neutral specie*************************
@@ -417,7 +493,8 @@ void MPv10::tracer_species_cataloger(
         // Map ion string in MPv10_ion_list to their primitive index.
         ions_primindex_map[tracer_list_replica[s]] = first_tracer_index + s;
         // Number of electron contributed by each ion.
-        ions_electron_num.push_back(get_electron_num(tracer_list_replica[s]));
+        ions_electron_num.push_back(
+            atomic_physics_data.get_electron_num(tracer_list_replica[s]));
         // Position of ions in the primitive vector.
         ions_prim_index.push_back(first_tracer_index + s);
         // Position of ions in the local vector.
@@ -425,9 +502,9 @@ void MPv10::tracer_species_cataloger(
         // Increment the counter when ion of the same element is found.
         ion_count++;
         // No of ions each element
-        N_sp_by_elem[e]++;
-        // No of species in each element
         N_ions_by_elem[e]++;
+        // No of species in each element
+        N_species_by_elem[e]++;
       }
     }
   }
@@ -441,7 +518,8 @@ void MPv10::tracer_species_cataloger(
     if (i != 0
         && get_element_name(MPv10_ion_list[i])
                == get_element_name(MPv10_ion_list[i - 1])) {
-      if (get_charge(MPv10_ion_list[i]) > get_charge(MPv10_ion_list[i - 1])) {
+      if (atomic_physics_data.get_charge(MPv10_ion_list[i])
+          > atomic_physics_data.get_charge(MPv10_ion_list[i - 1])) {
         // spdlog::debug("{}: lesser ion exist {}", MPv10_ion_list[i],
         // MPv10_ion_list[i-1]);
         minus_ions_local_index.push_back(i - 1);
@@ -454,16 +532,27 @@ void MPv10::tracer_species_cataloger(
   }
   // End of recording lesser ions local index ********************************
 
-  spdlog::debug("MPv10: Read {} elements and {} Species", N_elements, N_sp);
+  spdlog::debug(
+      "MPv10: Found {} elements and {} ions in primitive vector", N_elements,
+      N_sp);
 
-  // Make species list to generate LUTs *************************************
+  // Make species list and resize species number density vector **************
+  // Collisional ionisation tracer list to generate LUTs
+  // Photoionisation tracer list to generate LUTs
+  // Recombination to generate LUTs
+  // resizing species_number_density 2D-vector
+
+  species_number_density.resize(MPv10_tracer_list.size());  // resizing
   for (int e = 0; e < MPv10_tracer_list.size(); e++) {
+    species_number_density[e].resize(MPv10_tracer_list[e].size());  // resizing
     for (int i = 0; i < MPv10_tracer_list[e].size(); i++) {
 
-      // Make collisional ionisation tracer list
+      // Make collisional/photo ionisation tracer list
       if (i < MPv10_tracer_list[e].size() - 1) {
         ci_tracer_list.push_back(MPv10_tracer_list[e][i]);
+        // photo_tracer_list.push_back(MPv10_tracer_list[e][i]);
         ci_tracer_elem.push_back(e);
+        // photo_tracer_elem.push_back(e);
       }
 
       // Make recombination tracer list
@@ -473,9 +562,83 @@ void MPv10::tracer_species_cataloger(
       }
     }
   }
-  // End of making species list to generate LUTs ****************************
+  // End of making species list and resizing species number density **********
 }
-// END OF TRACER SPECIES CATALOGER ###########################################
+
+
+
+// PHOTO-IONISATION SPECIES CATALOGER #####################################
+void MPv10::photo_species_cataloger()
+{
+  spdlog::info("Cataloging photo-ionisation tracers");
+
+  N_photo_species = 0;
+  for (int e = 0; e < MPv10_tracer_list.size(); e++) {
+    for (int i = 0; i < MPv10_tracer_list[e].size(); i++) {
+
+      // Make photo ionisation tracer list
+      if (i < MPv10_tracer_list[e].size() - 1) {
+        // if the ionisation energy is less than the maximum photon energy,
+        // then the tracer is qualified photo species
+        if (atomic_physics_data.get_ionisation_energy(MPv10_tracer_list[e][i])
+            < photo_emax) {
+          // record the photo tracer species in a vector
+          photo_tracer_list.push_back(MPv10_tracer_list[e][i]);
+          // record photo species's element
+          photo_tracer_elem.push_back(e);
+          // count number of photo species
+          N_photo_species++;
+
+          // find the photo tracer position in primitive vector
+          auto it = std::find(
+              tracer_list_replica.begin(), tracer_list_replica.end(),
+              MPv10_tracer_list[e][i]);
+          if (it != tracer_list_replica.end()) {
+            int position = static_cast<int>(
+                std::distance(tracer_list_replica.begin(), it));
+            // record photo species primitive index
+            // this could be done by adding the position to first tracer index
+            photo_prim_index.push_back(first_tracer_index + position);
+            // record the charge of photo species
+            photo_tracer_charge.push_back(i);
+
+            // find the photo ion's local index and record -1 otherwise
+            if (i == 0) {
+              // As neutral species are not present in the local vector,
+              // record -1 to indicate 'not found'
+              photo_ions_local_index.push_back(-1);
+            }
+            // else, the local index is obtained by subtracting N_elements
+            // from the position of the photo species
+            else
+              photo_ions_local_index.push_back(position - N_elements);
+          }
+        }  // End of qualified photo  species
+      }
+    }  // loop over ions of the specific element
+  }    // loop over elements in the tracer list
+
+  // Find the index of next ionised state of photo species in the
+  // local vector
+  for (int s = 0; s < N_photo_species; s++) {
+    std::string element_name =
+        atomic_physics_data.get_element_name(photo_tracer_list[s]);
+    int charge = atomic_physics_data.get_charge(photo_tracer_list[s]);
+
+    // search for the next higher ionised state of the ion in the
+    // MPv10_ion_list.
+    // Instead of 's', we use 'j' for the species iteration in this loop.
+    for (int j = 0; j < N_sp; j++) {
+      if (atomic_physics_data.get_element_name(MPv10_ion_list[j])
+              == element_name
+          && atomic_physics_data.get_charge(MPv10_ion_list[j]) == charge + 1) {
+        photo_species_higher_ion_local_index.push_back(j);
+        break;
+      }
+      // IMPO: what if the next higher ion do not exist in the tracer list.
+    }
+  }
+}
 
 
 
@@ -488,7 +651,7 @@ double MPv10::get_n_elec(const pion_flt *P  ///< primitive state vector array.
   int species_counter = 0;
   double ne;
   for (int elem = 0; elem < N_elements; elem++) {  // loop over every element
-    int N_elem_species    = N_sp_by_elem[elem];
+    int N_elem_species    = N_ions_by_elem[elem];
     double X_elem_density = P[first_tracer_index + elem];
 
     // loop over every species in THIS element
@@ -506,7 +669,6 @@ double MPv10::get_n_elec(const pion_flt *P  ///< primitive state vector array.
   }
   return 10.0;
 }
-// END OF GET ELECTRON NUMBER DENSITY #########################################
 
 
 
@@ -536,7 +698,6 @@ double MPv10::get_n_ion(
     return elem_number_density * ion_fraction;
   }
 }
-// END OF GET ION NUMBER DENSITY ##############################################
 
 
 // ##################################################################
@@ -546,7 +707,6 @@ double MPv10::get_X_H()
   exit_pion(1);
   return 0.0;
 }
-// ##################################################################
 
 
 
@@ -559,7 +719,6 @@ int MPv10::Tr(const string s)
   else
     return ions_primindex_map[s];
 }
-// ##################################################################
 
 
 
@@ -574,7 +733,6 @@ double MPv10::get_temperature(
   return gamma_minus_one * E
          / (pconst.kB() * get_ntot(y_ion_frac, elem_number_density));
 }
-// END OF GET TEMPERATURE ####################################################
 
 
 
@@ -591,7 +749,7 @@ double MPv10::get_ntot(
   pion_flt n_tot      = 0;
 
   for (int e = 0; e < N_elements; e++) {  // loop over every element
-    int N_elem_species = N_sp_by_elem[e];
+    int N_elem_species = N_ions_by_elem[e];
     // neutral frac, got by subtracting off the ion fractions in the next loop.
     pion_flt neutral_frac = 1;
 
@@ -599,10 +757,7 @@ double MPv10::get_ntot(
     for (int s = 0; s < N_elem_species; s++) {
       pion_flt number_density =
           element_number_density[e] * y_ion_frac[species_counter];
-      int N_electrons =
-          ions_electron_num[species_counter];  // corr: y_ion_num_elem ->
-                                               // ions_electron_num
-
+      int N_electrons = ions_electron_num[species_counter];
       // add on number of particles got by electrons + ionised atom
       n_tot += (1 + N_electrons) * number_density;
 
@@ -613,8 +768,81 @@ double MPv10::get_ntot(
   }
   return n_tot;
 }
-// END OF GET TOTAL NUMBER DENSITY
-// ##################################################
+
+
+// ##################################################################
+// GET OPTICAL DEPTH
+// Calculate the optical depth of the current cell for individual energy bins
+void MPv10::get_dtau(
+    const rad_source *,    ///< pointer to radiation source struct
+    const pion_flt ds,     // ds, thickness of the cell
+    const pion_flt *p_in,  // input primitive vector
+    pion_flt *dtau_vec     // output dtau vector
+)
+{
+  // spdlog::info("get_dtau: starting");
+  // 1. Calculating the neutral mass fraction for the current cell
+  std::vector<double> neutral_mass_fraction(0);
+  double neutral_fraction;
+  int sct = 0;
+  for (int s = 0; s < photo_tracer_list.size(); ++s) {
+    neutral_fraction = 0.0;
+    if (photo_tracer_charge[s] == 0) {
+      // initial value
+      neutral_fraction = p_in[photo_prim_index[s]];
+      // substracting the corresponding ion fraction of the same element
+      for (int i = 0; i < N_ions_by_elem[photo_tracer_elem[s]]; i++) {
+        neutral_fraction -= p_in[ions_prim_index[sct]];
+        sct++;
+      }
+      // if (neutral_fraction < 0.0) {
+      //  spdlog::error("***nfrac! s {}, frac {}",s, neutral_fraction);
+      //}
+      neutral_mass_fraction.push_back(max(0.0, neutral_fraction));
+    }
+  }
+
+  // 2. Calculate optical depth through cell for each photon energy bin.
+  double species_mass_fraction;  // mass fraction of a specific species
+  double bin_optical_depth;      // cell optical depth in a specific energy bin
+  int neu_species_counter;       // counter for neutral species
+
+  for (int bin = 0; bin < N_ebins; bin++) {
+    // loop over energy bin
+    // calculate optical depth in bin-th energy bin
+    bin_optical_depth   = 0.0;
+    neu_species_counter = 0;
+
+    // loop over photo species
+    for (int s = 0; s < photo_tracer_list.size(); s++) {
+      // mass fraction of each photo species
+      species_mass_fraction = 0.0;
+      // if the photo species is neutral
+      if (photo_tracer_charge[s] == 0) {
+        species_mass_fraction = neutral_mass_fraction[neu_species_counter];
+        neu_species_counter++;
+      }
+      // if the photo species is ionised
+      else {
+        species_mass_fraction = p_in[photo_prim_index[s]];
+      }
+
+      // equation: X_{species} sigma_{species, bin} / atomic_mass_{species}
+      bin_optical_depth += species_mass_fraction * photo_xsection_table[s][bin]
+                           * bin_weight_table[s][bin]
+                           / elem_atomic_mass[photo_tracer_elem[s]];
+      // spdlog::info("get_dtau: smf {}, psx {}, bwt {}, am"
+      //            "{}",species_mass_fraction, photo_xsection_table[s][bin],
+      // bin_weight_table[s][bin],  elem_atomic_mass[photo_tracer_elem[s]]);
+
+    }                                    // end of species loop
+    bin_optical_depth *= p_in[RO] * ds;  // equation: * rho * ds
+    // spdlog::info("get_dtau: bin {}, bin_optical_depth {}", bin,
+    // bin_optical_depth);
+    dtau_vec[bin] = bin_optical_depth;
+  }  // end of loop over energy bin
+  // spdlog::info("get_dtau: ending");
+}
 
 
 
@@ -626,7 +854,6 @@ int MPv10::convert_prim2local(
     int function_flag  /// < flag to say which function called this function
 )
 {
-
   // function flag 1 -> Set_Temp()
   // function flag 2 -> TimeUpdateMP_RTnew()
   // function flag 3 -> timescales_RT()
@@ -635,8 +862,7 @@ int MPv10::convert_prim2local(
   if (p_in[PG] > 1.0) exit_pion(0);
 
   // make sure that p_in[] is a self-consistent state:
-  sCMA(corrector, p_in);
-
+  // sCMA(corrector, p_in);
 
   // ==============================================================
   //  Set elemental number density from the current primitive vector
@@ -645,8 +871,7 @@ int MPv10::convert_prim2local(
     elem_number_density[i] =
         p_in[RO]
         * (p_in[elem_prim_index[i]] * corrector[elem_prim_index[i]]
-           / elem_atomic_mass[i]);  // CORR: X_elem_atomic_mass ->
-                                    // elem_atomic_mass.
+           / elem_atomic_mass[i]);
   }
   // **************************************************************
 
@@ -661,49 +886,34 @@ int MPv10::convert_prim2local(
   int species_counter = 0;
   // loop over every element
   for (int e = 0; e < N_elements; e++) {
-    int N_elem_species =
-        N_sp_by_elem[e];  // CORR N_species_by_elem -> N_sp_by_elem
+    int N_elem_species = N_ions_by_elem[e];
     // loop over every species in this element
     for (int s = 0; s < N_elem_species; s++) {
 
-      p_local[ions_local_index[species_counter]] =  // CORR: y_ion_index_local
-                                                    // -> ions_local_index
-          p_in[ions_prim_index[species_counter]]    // CORR: y_ion_index_prim ->
-                                                    // ions_prim_index
-          * corrector[ions_prim_index[species_counter]]  // CORR:
-                                                         // y_ion_index_prim ->
-                                                         // ions_prim_index
-          / p_in[elem_prim_index[e]];  // CORR: X_mass_frac_index ->
-                                       // elem_prim_index
+      p_local[ions_local_index[species_counter]] =
+          p_in[ions_prim_index[species_counter]]
+          * corrector[ions_prim_index[species_counter]]
+          / p_in[elem_prim_index[e]];
 
-      p_local[ions_local_index[species_counter]] =  // CORR: y_ion_index_local
-                                                    // -> ions_local_index
-          min(1.0,
-              p_local[ions_local_index[species_counter]]);  // CORR:
-                                                            // y_ion_index_local
-                                                            // ->
-                                                            // ions_local_index
+      p_local[ions_local_index[species_counter]] =
+          min(1.0, p_local[ions_local_index[species_counter]]);
 
-      p_local[ions_local_index[species_counter]] =  // CORR: y_ion_index_local
-                                                    // -> ions_local_index
-          max(0.0,
-              p_local[ions_local_index[species_counter]]);  // CORR:
-                                                            // y_ion_index_local
-                                                            // ->
-                                                            // ions_local_index
-
+      p_local[ions_local_index[species_counter]] =
+          max(0.0, p_local[ions_local_index[species_counter]]);
       species_counter++;
     }
   }
   // **************************************************************
 
-
   // ==============================================================
   // Set internal energy density in local vector.
   // ==============================================================
   p_local[E_index] = p_in[PG] / (gamma_minus_one);
+  if (!isfinite(p_local[E_index])) {
+    spdlog::error("mpv10: input pressure is not finite: {}", p_in[PG]);
+    exit_pion(4);
+  }
   // **************************************************************
-
 
 #ifdef MPv10_DEBUG
   /*
@@ -724,11 +934,8 @@ int MPv10::convert_prim2local(
    */
 #endif  // MPv10_DEBUG
 
-
-
   return 0;
 }
-// END OF CONVERT PRIMITIVE VECTOR TO LOCAL VECTOR #############################
 
 
 
@@ -751,102 +958,46 @@ int MPv10::convert_local2prim(
   //
   p_out[PG] = p_local[E_index] * (gamma_minus_one);
   std::vector<double> y_ion_frac;
-  y_ion_frac.resize(N_sp);  // CORR N_species -> N_sp
+  y_ion_frac.resize(N_sp);
 
 
   int species_counter = 0;
   for (int e = 0; e < N_elements; e++) {  // loop over every element
-    int N_elem_species =
-        N_sp_by_elem[e];  // CORR N_species_by_elem -> N_sp_by_elem
+    int N_elem_species = N_ions_by_elem[e];
     for (int s = 0; s < N_elem_species;
          s++) {  // loop over every species in THIS element
-      p_out[ions_prim_index[species_counter]] =  // CORR: y_ion_index_prim ->
-                                                 // ions_prim_index
-          p_local[ions_local_index[species_counter]]  // CORR: y_ion_index_local
-                                                      // -> ions_local_index
-          * p_in[elem_prim_index[e]];  // CORR: X_mass_frac_index ->
-                                       // elem_prim_index
-      y_ion_frac[species_counter] =
-          p_local[ions_local_index[species_counter]];  // CORR:
-                                                       // y_ion_index_local ->
-                                                       // ions_local_index
+
+      p_out[ions_prim_index[species_counter]] =
+          p_local[ions_local_index[species_counter]] * p_in[elem_prim_index[e]];
+
+      y_ion_frac[species_counter] = p_local[ions_local_index[species_counter]];
       species_counter++;
     }
   }
 
   // Set mass fraction tracers to be within the required range (not too close
   // to zero or 1)
+  /*
+    species_counter = 0;
+    for (int e = 0; e < N_elements; e++) {  // loop over every element
+      int N_elem_species        = N_ions_by_elem[e];
+      p_out[elem_prim_index[e]] = max(
+          0.0,
+          min(1.0, static_cast<double>(p_out[elem_prim_index[e]])));
 
-  species_counter = 0;
-  for (int e = 0; e < N_elements; e++) {  // loop over every element
-    int N_elem_species =
-        N_sp_by_elem[e];  // CORR N_species_by_elem -> N_sp_by_elem
-    p_out[elem_prim_index[e]] =
-        max(  // CORR: X_mass_frac_index -> elem_prim_index
+      for (int s = 0; s < N_elem_species;
+           s++) {  // loop over every species in THIS element
+
+
+        p_out[ions_prim_index[species_counter]] = max(
             Min_NeutralFrac,
-            min(Max_NeutralFrac,
-                static_cast<double>(
-                    p_out[elem_prim_index[e]])));  // CORR: X_mass_frac_index ->
-                                                   // elem_prim_index
-
-    for (int s = 0; s < N_elem_species;
-         s++) {  // loop over every species in THIS element
-
-#ifdef MPv10_DEBUG
-      // Introducing sense checks -- make sure value is positive, less than 1
-      if (static_cast<double>(
-              p_out[ions_prim_index[species_counter]])  // CORR:
-                                                        // y_ion_index_prim ->
-                                                        // ions_prim_index
-          < (-2 * MPv10_ABSTOL)) {
-        spdlog::debug(
-            "convert_local2prim: {} mass fraction goes negative here. \n [",
-            function_flag);
-        for (int v = 0; v < N_prim; v++) {
-          spdlog::debug("{}, ", p_out[v]);
-        }
-        spdlog::debug("]");
-        print_flag = 1;
+            min(static_cast<double>(p_out[elem_prim_index[e]]) *
+    Max_NeutralFrac,
+                static_cast<double>(p_out[ions_prim_index[species_counter]])));
+        species_counter++;
       }
-
-      else if (
-          static_cast<double>(
-              p_out[ions_prim_index[species_counter]])  // CORR:
-                                                        // y_ion_index_prim ->
-                                                        // ions_prim_index
-          > (1 + MPv10_ABSTOL)
-                * static_cast<double>(
-                    p_out[elem_prim_index[e]])) {  // CORR: X_mass_frac_index ->
-                                                   // elem_prim_index
-        spdlog::debug(
-            "convert_local2prim: {} mass frac too large for species {}: X = {}\nPrim vector: \n [",
-            function_flag, s,
-            p_out[ions_prim_index[species_counter]]);  // CORR: y_ion_index_prim
-                                                       // -> ions_prim_index
-        for (int v = 0; v < N_prim; v++) {
-          spdlog::debug("{}, ", p_out[v]);
-        }
-        spdlog::debug("]");
-        print_flag = 1;
-      }
-#endif
-
-      p_out[ions_prim_index[species_counter]] = max(  // CORR: y_ion_index_prim
-                                                      // -> ions_prim_index
-          Min_NeutralFrac,
-          min(static_cast<double>(
-                  p_out[elem_prim_index[e]])  // CORR: X_mass_frac_index ->
-                                              // elem_prim_index
-                  * Max_NeutralFrac,
-              static_cast<double>(
-                  p_out[ions_prim_index
-                            [species_counter]])));  // CORR:
-                                                    // y_ion_index_prim
-                                                    // ->
-                                                    // ions_prim_index
-      species_counter++;
     }
-  }
+  */
 
   // Set output pressure to be within required temperature range (use the
   // possibly corrected x(H+) from p_out[]).
@@ -872,13 +1023,9 @@ int MPv10::convert_local2prim(
         "T={}, obtained from nH={}, eint={}, ...  limiting to T={}", T, mpv_nH,
         p_local[E_index], EP->MinTemperature);
   }
-  p_out[PG] = p_local[E_index] * (gamma_minus_one);
-
-
 
   return 0;
 }
-// END OF CONVERT LOCAL VECTOR TO PRIMITIVE VECTOR #############################
 
 
 
@@ -887,15 +1034,14 @@ int MPv10::convert_local2prim(
 void MPv10::set_y_ion_frac(
     const std::vector<double> &p_local, std::vector<double> &y_ion_frac)
 {
-  for (int s = 0; s < N_sp; s++) {  // CORR N_species -> N_sp
+  for (int s = 0; s < N_sp; s++) {
     y_ion_frac[s] = p_local[s];
     // Set y_ion_frac within physically acceptable range.
-    y_ion_frac[s] = max(1e-20, y_ion_frac[s]);
-    y_ion_frac[s] = min(1.0, y_ion_frac[s]);
+    y_ion_frac[s] = max(MPv10_ABSTOL, y_ion_frac[s]);
+    y_ion_frac[s] = min(1.0 - MPv10_ABSTOL, y_ion_frac[s]);
   }
   return;
 }
-// END OF SET LOCAL ION FRACTIONS ##############################################
 
 
 
@@ -910,18 +1056,18 @@ void MPv10::set_y_neutral_frac(
   for (int elem = 0; elem < N_elements; elem++) {
     y_neutral_frac[elem] = 1.0;
     // loop over every species in this element
-    for (int s = 0; s < N_sp_by_elem[elem];
-         s++) {  // CORR N_species_by_elem -> N_sp_by_elem
+    for (int s = 0; s < N_ions_by_elem[elem]; s++) {
       y_neutral_frac[elem] -= y_ion_frac[sct];
+      // spdlog::info("y-ion-frac: {:12.9e}, y-n-frac
+      // {:12.3e}",y_ion_frac[sct],y_neutral_frac[elem]);
       sct++;
     }
     // Ensure the neutral frac is within the acceptable range
-    y_neutral_frac[elem] = max(1.0e-20, y_neutral_frac[elem]);
-    y_neutral_frac[elem] = min(1.0, y_neutral_frac[elem]);
+    y_neutral_frac[elem] = max(MPv10_ABSTOL, y_neutral_frac[elem]);
+    y_neutral_frac[elem] = min(1.0 - MPv10_ABSTOL, y_neutral_frac[elem]);
   }
   return;
 }
-// END OF LOCAL NEUTRAL FRACTIONS ##############################################
 
 
 
@@ -929,35 +1075,31 @@ void MPv10::set_y_neutral_frac(
 // SET ELECTRON NUMBER DENSITY
 void MPv10::set_ne(const std::vector<double> &y_ion_frac, double &ne)
 {
-
-
   // Calculate electron number density
   int sct = 0;
   // loop over every element
   for (int elem = 0; elem < N_elements; elem++) {
     // loop over every species in THIS element
-    for (int s = 0; s < N_sp_by_elem[elem];
-         s++) {  // CORR N_species_by_elem -> N_sp_by_elem
-      ne += ions_electron_num[sct] * elem_number_density[elem]
-            * y_ion_frac[sct];  // CORR y_ion_num_elec -> ions_electron_num
+    for (int s = 0; s < N_ions_by_elem[elem]; s++) {
+      ne +=
+          ions_electron_num[sct] * elem_number_density[elem] * y_ion_frac[sct];
       sct++;
     }
   }
   // Ensure electron number density is not negative.
   if (ne < 0.0) {
-    spdlog::info("Warning: Negative ne = {}, resetting to {}", ne, 0.0);
-    ne = max(0.0, ne);
+    spdlog::info(
+        "Warning: Negative ne = {:12.3e}, resetting to {:12.3e}", ne, 1.0e-10);
+    ne = max(1.0e-10, ne);
   }
 
   return;
 }
-// END OF SET ELECTRON NUMBER DENSITY ##########################################
 
 
 
 // #############################################################################
 // SET LOCAL VARIABLES
-
 // Set local variables local ion fraction (y_ion_frac), neutral fraction
 // (y_neutral_frac), electron number density.
 void MPv10::set_localvariables(
@@ -977,14 +1119,10 @@ void MPv10::set_localvariables(
 
   return;
 }
-// END OF CONVERT LOCAL VECTOR TO PRIMITIVE VECTOR #############################
 
 
 
 // ##################################################################
-// ##################################################################
-
-
 double MPv10::Temperature(
     const pion_flt *pv,  ///< primitive vector
     const double         ///< eos gamma
@@ -1003,18 +1141,15 @@ double MPv10::Temperature(
   std::vector<double> p_local;
   p_local.resize(N_local);
   std::vector<double> y_ion_frac;
-  y_ion_frac.resize(N_sp);  // CORR N_species -> N_sp
+  y_ion_frac.resize(N_sp);
 
   convert_prim2local(pv, p_local, 4);
 
   int species_counter = 0;
   for (int e = 0; e < N_elements; e++) {  // loop over every element
-    int N_elem_species =
-        N_sp_by_elem[e];  // CORR N_species_by_elem -> N_sp_by_elem
+    int N_elem_species = N_ions_by_elem[e];
     // loop over every species in THIS element
     for (int s = 0; s < N_elem_species; s++) {
-      // CORR: y_ion_index_prim -> ions_prim_index
-      // CORR: X_mass_frac_index -> elem_prim_index
       y_ion_frac[species_counter] =
           pv[ions_prim_index[species_counter]] / pv[elem_prim_index[e]];
       species_counter++;
@@ -1025,7 +1160,6 @@ double MPv10::Temperature(
 
 
 
-// ##################################################################
 // ##################################################################
 int MPv10::Set_Temp(
     pion_flt *p_pv,  ///< primitive vector.
@@ -1048,24 +1182,21 @@ int MPv10::Set_Temp(
   std::vector<double> p_local;
   p_local.resize(N_local);
   std::vector<double> y_ion_frac;
-  y_ion_frac.resize(N_sp);  // CORR N_species -> N_sp
+  y_ion_frac.resize(N_sp);
 
   int err = convert_prim2local(p_pv, p_local, 1);
 
   // Determine y_ion_frac from the primitive vector
   int species_counter = 0;
-  for (int e = 0; e < N_elements; e++) {   // loop over every element
-    int N_elem_species = N_sp_by_elem[e];  // CORR N_species -> N_sp
+  for (int e = 0; e < N_elements; e++) {  // loop over every element
+    int N_elem_species = N_ions_by_elem[e];
     // loop over every species in THIS element
-    // CORR: y_ion_index_prim -> ions_prim_index
-    // CORR: X_mass_frac_index -> elem_prim_index
     for (int s = 0; s < N_elem_species; s++) {
       y_ion_frac[species_counter] =
           p_pv[ions_prim_index[species_counter]] / p_pv[elem_prim_index[e]];
       species_counter++;
     }
   }
-
 
   // Determine internal energy using get_ntot
   p_local[E_index] = get_ntot(y_ion_frac, elem_number_density) * pconst.kB() * T
@@ -1077,7 +1208,6 @@ int MPv10::Set_Temp(
   err += convert_local2prim(p_local, p_pv, p_pv, 1);
   return err;
 }
-// ##################################################################
 
 
 
@@ -1110,7 +1240,7 @@ int MPv10::TimeUpdateMP_RTnew(
     const pion_flt *p_in,  ///< Primitive Vector to be updated.
     const int,             ///< unused.
     const std::vector<struct rt_source_data> &,  ///< unused.
-    const int,                                   ///< unused.
+    const int N_ion,  ///< number of ionising radiation sources.
     std::vector<struct rt_source_data> &ion_src,
     ///< list of ionising src column densities and source properties.
     pion_flt *p_out,      ///< Destination Vector for updated values
@@ -1121,91 +1251,85 @@ int MPv10::TimeUpdateMP_RTnew(
     double *random_stuff  ///< final temperature (debugging).
 )
 {
-
   int err = 0;
-  std::vector<double> P;
-  P.resize(N_local);
-
-  err = convert_prim2local(p_in, P, 2);
+  std::vector<double> p_local(N_local, 0.0);
+  err = convert_prim2local(p_in, p_local, 2);
   if (err) {
     spdlog::error("{}: {}", "Bad input state to MPv10::TimeUpdateMP()", err);
     exit_pion(1);
   }
 
-  correct_localvector(P, 1);
+  err = correct_localvector(p_local, 1);
+  if (err) {
+    spdlog::error("Bad input vector to TimeUpdateMP_RTnew");
+    exit(1);
+  }
 
-  setup_radiation_source_parameters(p_in, P, ion_src);
+  // issue is here, local vector P and NV_Ith_S(y_in, v) are different
+
+  // setup_radiation_source_parameters(p_in, P, ion_src);
+  setup_radiation_source_parameters(N_ion, ion_src);
 
   // Populates CVODE vector with initial conditions (input)
-  for (int v = 0; v < N_local; v++)
-    NV_Ith_S(y_in, v) = P[v];
+  for (int v = 0; v < N_local; v++) {
+    NV_Ith_S(y_in, v) = p_local[v];
+    // spdlog::info("v {} y_in {}", v, NV_Ith_S(y_in, v));
+  }
 
-
+  //============
   // Calculate y-dot[] to see if anything is changing significantly over dt
   // Here y_out is y_dot calculated from the ydot function.
-  double maxdelta = 0.0;
-  err             = ydot(0, y_in, y_out, 0);
+  // err = ydot(0, y_in, y_out, 0);
+  // if (err) {
+  //  spdlog::error(
+  //      "{}: {}", "dYdt() returned an error in MPv10::TimeUpdateMP_RTnew()",
+  //      err);
+  //  exit(1);
+  //}
+  //============
+
+  err = integrate_cvode_step(y_in, 0, 0.0, dt, y_out);
   if (err) {
     spdlog::error(
-        "{}: {}", "dYdt() returned an error in MPv10::TimeUpdateMP_RTnew()",
-        err);
-    exit_pion(1);
-  }
-
-  // Here y_out is y_dot calculating maxdelta.
-  for (int v = 0; v < N_local; v++) {
-    maxdelta = max(maxdelta, fabs(NV_Ith_S(y_out, v) * dt / NV_Ith_S(y_in, v)));
-  }
-
-  // Now if nothing is changing much, just to a forward Euler integration.
-  // Here y_out on the RHS is y_dot, which is over-written by y_out
-  // calculated using euler integration.
-  if (maxdelta < EULER_CUTOFF) {
-    // cout <<"maxdelta="<<maxdelta<<", Doing euler integration...\n";
-    for (int v = 0; v < N_local; v++) {
-      NV_Ith_S(y_out, v) = NV_Ith_S(y_in, v) + dt * NV_Ith_S(y_out, v);
-    }
-  }
-  //
-  // Otherwise do the implicit CVODE integration.
-  // Here y_out (which is y_dot) is input, and the output is over-written onto
-  // y_out by integrate_cvode_step.
-  else {
-    // cout <<"maxdelta="<<maxdelta<<", Doing CVODE integration...\n";
-    err = integrate_cvode_step(y_in, 0, 0.0, dt, y_out);
-    if (err) {
-      spdlog::error(
-          "{}: {}", "integration failed: MPv10::TimeUpdateMP_RTnew()", err);
-      exit_pion(1);
-    }
+        "integration failed: MPv10::TimeUpdateMP_RTnew() error {}", err);
+    for (int v = 0; v < N_local; v++)
+      p_local[v] = NV_Ith_S(y_in, v);
+    spdlog::error("y_in: {}", p_local);
+    for (int v = 0; v < N_local; v++)
+      p_local[v] = NV_Ith_S(y_out, v);
+    spdlog::error("y_out: {}", p_local);
+    exit(1);
   }
 
   //
   // Now put the result into p_out[] and return.
   //
   for (int v = 0; v < N_local; v++)
-    P[v] = NV_Ith_S(y_out, v);
+    p_local[v] = NV_Ith_S(y_out, v);
 
-  correct_localvector(P, 2);
+  err = correct_localvector(p_local, 2);
+  if (err) {
+    spdlog::error("bad output vector from TimeUpdateMP_RTnew");
+    exit(2);
+  }
+  err = convert_local2prim(p_local, p_in, p_out, 2);
 
-  err = convert_local2prim(P, p_in, p_out, 2);
 
 #ifdef TEST_INF
   for (int v = 0; v < N_prim; v++) {
     if (!isfinite(p_in[v]) || !isfinite(p_out[v])) {
       spdlog::debug("NAN in MPv3 update: {}", v);
-      spdlog::debug("Pin  : {}", p_in);
-      spdlog::debug("Pout : {}", p_out);
-      spdlog::debug("Ploc  : {}", P);
+      spdlog::debug("Pin  : {}", std::vector<double>(p_in, p_in + N_prim));
+      spdlog::debug("Pout : {}", std::vector<double>(p_out, p_out + N_prim));
+      spdlog::debug("Ploc  : {}", p_local);
       // spdlog::error("{}: {}", "NAN in MPv3",P[2]);
-      return 1;
+      exit_pion(v);
     }
   }
 #endif
 
   return err;
 }
-// END OF TIME UPDATE MP RT NEW #####################################
 
 
 
@@ -1218,54 +1342,87 @@ int MPv10::correct_localvector(
   // function_flag 1 -> towards begining of TimeUpdateMP_RTnew
   // function_flag 2 -> towards the end of TimeUpdateMP_RTnew
   // function_flag 3 -> timescales_RT
+  // function_flag 4 -> ydot
 
+  int flag = 0;
 
-  // ==============================================================
-  // Check if y_ion_frac is within the acceptable range
-  std::vector<double> y_ion_frac;
-  y_ion_frac.resize(N_sp);
+  // *********************************************************************
+  // Check if y_ion_fracs are within the acceptable range
+  std::vector<double> y_ion_frac(N_sp);
 
   for (int i = 0; i < N_sp; i++) {  // loop over ions in p_local
     y_ion_frac[i] = p_local[i];
     // Set y_ion_frac within physically acceptable range.
-    if (y_ion_frac[i] < 0.0) {
-      if (y_ion_frac[i] < -MPv10_ABSTOL) {
-        spdlog::warn(
-            "MPv10::CLV flag:{} - Negative ion fraction for vector index ={}, {}"
-            ", resetting to {}",
-            function_flag, i, y_ion_frac[i], MPv10_ABSTOL);
-      }
-      // resetting
-      y_ion_frac[i] = MPv10_ABSTOL;
+    if (y_ion_frac[i] < MPv10_ABSTOL) {
+      // spdlog::warn("correct localvec {}: negative ion frac [{}] = {:12.3e}",
+      //              function_flag,i,y_ion_frac[i]);
+      y_ion_frac[i] = MPv10_ABSTOL;  // resetting
     }
+    if (y_ion_frac[i] > 1.0 - MPv10_ABSTOL) {
+      // spdlog::warn("correct localvec {}: too large ion frac [{}] by
+      // {:12.3e}",
+      //              function_flag,i,y_ion_frac[i]-1);
+      y_ion_frac[i] = 1.0 - MPv10_ABSTOL;  // resetting
+    }
+  }
+  // *********************************************************************
 
-    if (y_ion_frac[i] > 1.0) {
-      if (y_ion_frac[i] > 1.0 + MPv10_RELTOL) {
+
+  // *********************************************************************
+  // Scaling the y_ion_frac if the total elemental fraction exceed 1.
+
+  // 1. Calculating total ion fraction for each element.
+  std::vector<double> y_total_ion_frac(N_elements, 0.0);
+  int local_index = 0;
+  for (int elem = 0; elem < N_elements; elem++) {
+    for (int i = 0; i < N_ions_by_elem[elem]; i++) {
+      y_total_ion_frac[elem] += y_ion_frac[local_index];
+      local_index++;
+    }
+  }
+
+  // 2. Rescale the y_ion_frac if total ion fraction is > 1
+  local_index = 0;
+  for (int elem = 0; elem < N_elements; elem++) {
+    // spdlog::info("correct localvec {}: checking el {}",function_flag, elem);
+    if (1.0 - y_total_ion_frac[elem] < MPv10_ABSTOL) {
+      // if total ion fraction is nearly one or more than one,
+      // the neutral fraction must be minumum (say, MPv10_ABSTOL)
+      if (y_total_ion_frac[elem] - 1.0 > 1.0e4 * MPv10_RELTOL
+          && function_flag != 4) {
         spdlog::warn(
-            "MPv10::CLV flag: {} - Ion fraction >1 for vector index = {}, {}"
-            ", resetting to {}",
-            function_flag, i, y_ion_frac[i], 1.0);
+            "correct localvec {}: too many ions! el {}, y-1 = {:12.3e}",
+            function_flag, elem, y_total_ion_frac[elem] - 1);
       }
-      // resetting
-      y_ion_frac[i] = 1.0;
-      // exit_pion(0);
+      // double total_fraction = y_total_ion_frac[elem] + 1.0e-30;
+      for (int i = 0; i < N_ions_by_elem[elem]; i++) {
+        y_ion_frac[local_index] /=
+            y_total_ion_frac[elem] + MPv10_ABSTOL;  // total_fraction;
+        local_index++;
+      }
+    }
+    else {
+      local_index += N_ions_by_elem[elem];
     }
   }
   // **************************************************************
 
+  // **************************************************************
   // Feeding the corrected y_ion_frac back in to p_local
   for (int i = 0; i < N_sp; i++)
     p_local[i] = y_ion_frac[i];
+  // **************************************************************
 
-  // ==============================================================
+  // **************************************************************
   // Check for negative pressure
   // Note: This shouldn't happen, so we output a warning) and set to
   // 10K if we find it.
   if (p_local[E_index] <= 0.0) {
-    spdlog::warn(
-        "MPv10::CLV flag: {} - Negative pressure input: e = {}, "
-        "setting to {} K",
-        function_flag, p_local[E_index], EP->MinTemperature);
+    if (function_flag != 4)
+      spdlog::warn(
+          "MPv10::CLV flag: {} - Negative pressure input: e = {}, "
+          "setting to {} K",
+          function_flag, p_local[E_index], EP->MinTemperature);
 
     // reset the internal energy (requires using y_ion_frac in get_ntot)
     p_local[E_index] = get_ntot(y_ion_frac, elem_number_density) * pconst.kB()
@@ -1274,15 +1431,16 @@ int MPv10::correct_localvector(
   // **************************************************************
 
 
-  // ==============================================================
-  // if the temperature is below 10 K, set it back to 10 K by set the internal
-  // energy accordingly
+  // **************************************************************
+  // if the temperature is below Minimum Temperature, set it back to
+  // Minimum Temperature by set the internal energy accordingly
   double T = get_temperature(y_ion_frac, elem_number_density, p_local[E_index]);
 
-  if (T < EP->MinTemperature) {
-    spdlog::warn(
-        "MPv10::CLV flag: {} - Temperature = {} K, below T_MIN = {} K",
-        function_flag, T, EP->MinTemperature);
+  if (T < 0.95 * EP->MinTemperature) {
+    if (function_flag != 4)
+      spdlog::warn(
+          "MPv10::CLV flag: {} - Temperature = {} K, below T_MIN = {} K",
+          function_flag, T, EP->MinTemperature);
 
     // Resetting the internal energy with Minimum Temperature
     p_local[E_index] = get_ntot(y_ion_frac, elem_number_density) * pconst.kB()
@@ -1290,10 +1448,10 @@ int MPv10::correct_localvector(
   }
   // **************************************************************
 
-
-  return 0;
+  return flag;
 }
 // END OF CORRECT LOCAL VECTOR ######################################
+
 
 
 // ##################################################################
@@ -1315,7 +1473,7 @@ double MPv10::timescales(
   temp.clear();
   return tmin;
 }
-// ##################################################################
+
 
 
 // TIME SCALE RT ###########################################################
@@ -1337,12 +1495,14 @@ double MPv10::timescales_RT(
 )
 {
 
+  // spdlog::info("got past blockage 0");
   // Note: Minimum value of micro-physics trace variables in the primitive
   // vector is set to 1e-12.
   int err = 0;
   std::vector<double> p_local;
-  p_local.resize(N_local);
+  p_local.resize(N_local, 0.0);
 
+  // First convert to local variables.
   err = convert_prim2local(p_in, p_local, 3);
   if (err) {
     spdlog::error("{}: {}", "Bad input state to MPv10::timescales_RT()", err);
@@ -1350,12 +1510,25 @@ double MPv10::timescales_RT(
   }
 
   // correct local vector
-  correct_localvector(p_local, 3);
+  err = correct_localvector(p_local, 3);
+  // spdlog::debug("after correcting - p_local = {}", p_local);
+  if (err) {
+    spdlog::error("bad input vector to timescales_RT");
+    exit_pion(1);
+  }
 
   // v runs over all ions and internal energy
-  for (int v = 0; v < N_local; v++)
+  for (int v = 0; v < N_local; v++) {
     NV_Ith_S(y_in, v) = p_local[v];
+  }
 
+  //
+  // Next set the radiation properties of the current cell.
+  //
+  setup_radiation_source_parameters(N_ion, ion_src);
+  // spdlog::info("got past blockage 1");
+  // spdlog::info("p_in {}",p_local);
+  // spdlog::info("E = {}",p_local[E_index]);
 
   // Now calculate y-dot[]...
   // ydot function returns RHS of ydot equation. Here y_out is RHS of ydot.
@@ -1365,9 +1538,11 @@ double MPv10::timescales_RT(
         "{}: {}", "dYdt() returned an error in MPv10::timescales_RT()", err);
     exit_pion(1);
   }
+  // spdlog::info("got past blockage 2");
 
   double tt = Temperature(p_in, 0);
   // spdlog::info("{:12.6e}  {:12.6e}", tt, NV_Ith_S(y_out,E_index));
+  // spdlog::info("got past blockage 3");
 
   //
   // And finally get the smallest timescale over which things are varying.
@@ -1385,33 +1560,36 @@ double MPv10::timescales_RT(
   //
 
   std::vector<double> Y_dot;
-  Y_dot.resize(N_local);
+  Y_dot.resize(N_local, 0.0);
   // Since y_out is ydot.
   for (int v = 0; v < N_local; v++)
     Y_dot[v] = NV_Ith_S(y_out, v);
+  // spdlog::info("got past blockage 4");
 
   for (int v = 0; v < N_equations; v++) {
     // t = min(t, DTFRAC / (fabs(NV_Ith_S(y_out, v)) + TINYVALUE));
     t = min(t, DTFRAC / (fabs(Y_dot[v]) + TINYVALUE));
-    if (t < 1e5) {
-      cout << "limit by dx: dt=" << t << "\n";
-      for (int v = 0; v < N_local; v++)
-        cout << "p_local[" << v << "]= " << p_local[v] << ",  ";
-      cout << "\n";
-      for (int v = 0; v < N_local; v++)
-        cout << "y_out[" << v << "]= " << Y_dot[v] << ",  ";
-      cout << "\n";
-      //   spdlog::debug("MPv3:: EP and RS: {}\t{}", fmt::ptr(EP),
-      //   fmt::ptr(RS));
-    }
+    /*
+        if (t < 1e5) {
+          cout << "limit by dx: dt=" << t << "\n";
+          for (int v = 0; v < N_local; v++)
+            cout << "p_local[" << v << "]= " << p_local[v] << ",  ";
+          cout << "\n";
+          for (int v = 0; v < N_local; v++)
+            cout << "y_out[" << v << "]= " << Y_dot[v] << ",  ";
+          cout << "\n";
+          //   spdlog::debug("MPv3:: EP and RS: {}\t{}", fmt::ptr(EP),
+          //   fmt::ptr(RS));
+        }
+    */
   }
+  // spdlog::info("got past blockage N");
 
   return t;
 }
 
 
 
-// ##################################################################
 // ##################################################################
 void MPv10::sCMA(
     std::vector<double> &corrector,  ///< input corrector vector
@@ -1432,43 +1610,33 @@ void MPv10::sCMA(
 
   // Calculate all-element correction
   for (int e = 0; e < N_elements; e++) {  // loop over every element
-    int N_elem_species =
-        N_sp_by_elem[e];  // CORR N_species_by_elem -> N_sp_by_elem
-    total_mass_frac +=
-        p_in[elem_prim_index[e]];  // CORR: X_mass_frac_index -> elem_prim_index
+    int N_elem_species = N_ions_by_elem[e];
+    total_mass_frac += p_in[elem_prim_index[e]];
   }
   double e_correction = 1.0 / total_mass_frac;
   species_counter     = 0;
   // apply all-element correction, calculate species correction, apply species
   // correction
   for (int e = 0; e < N_elements; e++) {  // loop over every element
-    int N_elem_species =
-        N_sp_by_elem[e];  // CORR N_species_by_elem -> N_sp_by_elem
-    corrector[elem_prim_index[e]] =
-        e_correction;  // correct THIS element //CORR: X_mass_frac_index ->
-                       // elem_prim_index
+    int N_elem_species            = N_ions_by_elem[e];
+    corrector[elem_prim_index[e]] = e_correction;
     // Calculate all-species-pr-element correction, if needed, i.e.
     double s_frac = 0;
 
     for (int s = 0; s < N_elem_species; s++) {
-      s_frac +=
-          p_in[ions_prim_index[species_counter]];  // CORR: y_ion_index_prim ->
-                                                   // ions_prim_index
+      s_frac += p_in[ions_prim_index[species_counter]];
       species_counter++;
     }
 
     if (s_frac
-        > ((p_in[elem_prim_index[e]] * e_correction)
-           - Min_NeutralFrac)) {  // CORR: X_mass_frac_index -> elem_prim_index
+        > ((p_in[elem_prim_index[e]] * e_correction) - Min_NeutralFrac)) {
       print_flagg = 1;
       double s_correction =
-          ((p_in[elem_prim_index[e]] * e_correction)
-           - Min_NeutralFrac)  // CORR: X_mass_frac_index -> elem_prim_index
+          ((p_in[elem_prim_index[e]] * e_correction) - Min_NeutralFrac)
           / s_frac;
       int inner_species_counter = (species_counter - N_elem_species);
       for (int s = 0; s < N_elem_species; s++) {
-        corrector[ions_prim_index[inner_species_counter]] =
-            s_correction;  // CORR: y_ion_index_prim -> ions_prim_index
+        corrector[ions_prim_index[inner_species_counter]] = s_correction;
       }
     }
   }
@@ -1477,7 +1645,7 @@ void MPv10::sCMA(
 
 
 
-// ##################################################################
+// #######################################################################
 // YDOT FUNCTION
 // This function calculate the RHS of ydot equations.
 int MPv10::ydot(
@@ -1488,45 +1656,52 @@ int MPv10::ydot(
 )
 {
 
-  //========================================================
-  // Determine ne, y_ion_frac and neutral fraction from the current local vector
+  // *********************************************************************
+  // SECTION: DETERMINIE THE FOLLOWING FROM THE CURRENT LOCAL VECTOR
+  // 1. ne (electron number density)
+  // 2. y_ion_frac (ion fractions in the local vector)
+  // 3. neutral fraction (neutral fractions in the local vector)
   std::vector<double> y_ion_frac;
-  y_ion_frac.resize(N_sp);  // CORR N_species -> N_sp
+  y_ion_frac.resize(N_sp, 0.0);
   std::vector<double> y_neutral_frac;
-  y_neutral_frac.resize(N_elements);
+  y_neutral_frac.resize(N_elements, 0.0);
   double ne = 0.0;
 
   std::vector<double> p_local;
-  p_local.resize(N_local);
+  p_local.resize(N_local, 0.0);
   // make a copy of y_now into p_local
-  for (int v = 0; v < N_local; v++)
+  for (int v = 0; v < N_local; v++) {
     p_local[v] = NV_Ith_S(y_now, v);
+    // spdlog::info("v {} ynow {}", v, NV_Ith_S(y_now, v));
+  }
 
+  correct_localvector(p_local, 4);
   // Set local quantities: y_ion_frac, y_neutral_frac and ne
   set_localvariables(p_local, y_ion_frac, y_neutral_frac, ne);
-  // TODO: set species number density
-  // set_species_number_density(y_ion_frac, y_neutral_frac,
-  // species_number_density);
+  // *********************************************************************
+
 
 #ifdef MPv10_CIE_TEST
   // Restricting ne value not less than 1e-4 to perform CIE test.
-  // CORR: Remove this line, this line is unphysical.
-  ne = max(1e-4, ne);
+  ne = max(1e-2, ne);
 #endif
 
-  // Get internal energy from the current local vector (y_now)
-  double E_in = NV_Ith_S(y_now, E_index);
-
   // Initialise all elements of ydot vector to zero.
-  for (int v = 0; v < N_equations; v++)
+  for (int v = 0; v < N_equations; v++) {
     NV_Ith_S(y_dot, v) = 0.0;
+  }
+
+
+  // Initializing Edot to zero
+  double Edot = 0.0;
+
+  // Get internal energy from the current local vector (y_now)
+  // double E_in = NV_Ith_S(y_now, E_index);
+  double E_in = p_local[E_index];
 
   // Calculate temperature from E_in, y_ion_frac and number density.
   double T = get_temperature(y_ion_frac, elem_number_density, E_in);
   // cout<< "ydot: " << "ne = " << ne << " | "<< "T = " << T << " | " <<endl;
-
-  // Initializing Edot to zero
-  double Edot = 0.0;
 
   // Restricting temperature within T_min and T_max
   if (T > T_max)
@@ -1534,9 +1709,45 @@ int MPv10::ydot(
   else if (T < T_min)
     T = T_min;
 
+  // spdlog::info("y: {} : {}",y_ion_frac, y_neutral_frac);
 
-  // SECTION: Collisional Ionisation *******************************************
+  // *********************************************************************
+  // SECTION: SPECIES NUMBER DENSITY
+  int ion_index = 0;
+  for (int i = 0; i < MPv10_tracer_list.size(); i++) {
+    double excess_elem_frac = 0.0;
+    std::vector<double> species_frac;
+    for (int j = 0; j < MPv10_tracer_list[i].size(); j++) {
+      // Calculating the current number density of neutral atoms.
+      if (j == 0) {
+        species_number_density[i][j] =
+            y_neutral_frac[i] * elem_number_density[i];
+        excess_elem_frac += y_neutral_frac[i];
+        species_frac.push_back(y_neutral_frac[i]);
+      }
+      // Calculating the current number density of ions.
+      else {
+        species_number_density[i][j] =
+            y_ion_frac[ion_index] * elem_number_density[i];
+        excess_elem_frac += y_ion_frac[ion_index];
+        species_frac.push_back(y_ion_frac[ion_index]);
+        ion_index++;
+      }
+    }
+    if (fabs(excess_elem_frac - 1.0) > 1e-7) {
+      spdlog::error(
+          "species counting is wrong {}: species {}, \n\t\t values {}",
+          excess_elem_frac, MPv10_tracer_list[i], species_frac);
+      if (fabs(excess_elem_frac - 1.0) > 1e-5) {
+        exit(1);
+      }
+    }
+  }
+  // END OF SECTION: SPECIES NUMBER DENSITY ******************************
 
+
+
+  // SECTION: Collisional Ionisation *************************************
   // Calculating RHS terms corresponding to collisional ionisation for
   // species in ci_tracer_list. These terms are calculated only once and
   // attached at relevant ydot equations.
@@ -1551,31 +1762,28 @@ int MPv10::ydot(
 
   for (int s = 0; s < ci_tracer_list.size(); s++)  // loop over ci species
   {
-    // corr y_im1_index_tables with ci tracer list index
     ci_rate = collisional_ionisation_rate(s, T);
 
     if (minus_ions_local_index[s] != -1) {
       // if the less ionised species is not neutral
-      this_y_dot = ci_rate * NV_Ith_S(y_now, minus_ions_local_index[s])
-                   * ne;  // corr: y_im1_index_local -> minus_ions_local_index
+      // this_y_dot = ci_rate * NV_Ith_S(y_now, minus_ions_local_index[s]) * ne;
+      this_y_dot = ci_rate * p_local[minus_ions_local_index[s]] * ne;
       NV_Ith_S(y_dot, minus_ions_local_index[s]) -= this_y_dot;
     }
     else {
-      // if the less ionised species IS neutral
+      // if the less ionised species is neutral
       this_y_dot = ci_rate * y_neutral_frac[ci_tracer_elem[s]] * ne;
     }
 
-    NV_Ith_S(y_dot, ions_local_index[s]) +=
-        this_y_dot;  // corr: y_ion_index_local -> ions_local_index
+    NV_Ith_S(y_dot, ions_local_index[s]) += this_y_dot;
 
     // Cooling due to collisional ionisation of this species.
     Edot -= ci_ion_pot[s] * this_y_dot * elem_number_density[ci_tracer_elem[s]];
   }
-  // END OF SECTION: Collisional Ionisation ************************************
+  // END OF SECTION: Collisional Ionisation ******************************
 
 
-  // SECTION: Recombination (Radiative + Dielectronic) *************************
-
+  // SECTION: Recombination (Radiative + Dielectronic) *******************
   // RHS terms corresponding to Recombination (R) are calculated for
   // all species. In this case, for specie s, the term rec_rate(s)y(s)ne is
   // substrated for ydot(s-1) and the same terms is added for the ydot(s),
@@ -1584,35 +1792,120 @@ int MPv10::ydot(
 
   double recomb_rate = 0.0;
   this_y_dot         = 0.0;
+  // std::vector<double> temp_rr(recomb_tracer_list.size());  //DEBUG
 
-  for (int s = 0; s < recomb_tracer_list.size();
-       s++)  // loop over recomb species
-  {
+  for (int s = 0; s < recomb_tracer_list.size(); s++) {
     recomb_rate = recombination_rate(s, T);
+    // spdlog::info("rec: {}, i={}, i-1={}", s, ions_local_index[s],
+    //              minus_ions_local_index[s]);
 
-    this_y_dot = recomb_rate * NV_Ith_S(y_now, ions_local_index[s])
-                 * ne;  // CORR: y_ion_index_local -> ions_local_index
+    // this_y_dot = recomb_rate * NV_Ith_S(y_now, ions_local_index[s]) * ne;
+    this_y_dot = recomb_rate * p_local[ions_local_index[s]] * ne;
 
     // Subtract this term to the current species equation
-    NV_Ith_S(y_dot, ions_local_index[s]) -=
-        this_y_dot;  // CORR: y_ion_index_local -> ions_local_index
+    NV_Ith_S(y_dot, ions_local_index[s]) -= this_y_dot;
     // add this term to less ionised species equation provided it
     // is not neutral species
     if (minus_ions_local_index[s] != -1)
-      NV_Ith_S(y_dot, minus_ions_local_index[s]) +=
-          this_y_dot;  // corr: y_im1_index_local -> minus_ions_local_index
+      NV_Ith_S(y_dot, minus_ions_local_index[s]) += this_y_dot;
 
-    // Heating due to recombination of this species.
+    // Cooling due to recombination of this species.
     Edot -= (3. / 2.) * T * pconst.kB() * this_y_dot
             * elem_number_density[recomb_tracer_elem[s]];
+    // if (T>1e6)
+    //  spdlog::info("rec-rate {:12.3e} , y {:12.9e}, ne {:12.3e}, cooling
+    //  {:12.3e}", this_y_dot, NV_Ith_S(y_now, ions_local_index[s]), ne,(3.
+    //  / 2.) * T * pconst.kB() * this_y_dot *
+    //  elem_number_density[recomb_tracer_elem[s]]);
+    // temp_rr[s] = this_y_dot;
   }
-  // END OF SECTION: Recombination *********************************************
+  // spdlog::info("rr: {}", temp_rr);
+  // END OF SECTION: Recombination **************************************
 
 
-  // SECTION: Mellema cooling function *****************************************
+  // SECTION: Photoionisation *******************************************
+  if (EP->phot_ionisation) {
+    // Calculating RHS terms corresponding to photoionisation for species in
+    // photo_tracer_list. These terms are calculated only once and attached
+    // at relevant ydot equations.
+    //
+    // For example, for species s, if ion, the term pi_rate(s)y(s) is
+    // subtracted for ydot(s) while the same terms is added for the
+    // ydot(s+1) equation.
+    // Whereas if the species s is neutral, then pi_rate(s)y(s) is added to
+    // ydot(s+1) equation.
+    int elem_index             = 0;
+    int charge_index           = 0;
+    this_y_dot                 = 0.0;
+    double pi_rate             = 0.0;
+    double species_num_density = 0.0;
+    double element_num_density = 0.0;
 
-  // Edot source term associated with mellema Cooling is calculated in this
-  // Section.
+    // std::vector<double> temp_pir(N_photo_species);  //DEBUG
+
+    for (int s = 0; s < N_photo_species; s++)  // loop over pi species
+    {
+      // get element and charge index
+      elem_index          = photo_tracer_elem[s];    // element index
+      charge_index        = photo_tracer_charge[s];  // charge index
+      species_num_density = species_number_density[elem_index][charge_index];
+      element_num_density = elem_number_density[elem_index];
+      // if (T>1.0e6)
+      //  spdlog::info("{} {:8.3e} {:8.3e}",
+      //  MPv10_tracer_list[elem_index][charge_index], species_num_density,
+      //  element_num_density);
+
+      // get photo-ionisation rate for the species s
+      pi_rate =
+          photoionisation_rate(s, species_num_density, element_num_density);
+
+      // spdlog::info("index ={}, n_s ={}, pi_rate = {}", s,
+      // species_num_density, pi_rate);
+
+      // if the species is neutral
+      if (photo_ions_local_index[s] == -1) {
+        // add pi_s * y^{neu}_s to the first ionised state
+        this_y_dot = pi_rate;
+        // if (T>1e6)
+        //  spdlog::info("index ={}, photo_species_higher_ion_local_index[s] =
+        //  {}, {:12.3e}", s,
+        //  photo_species_higher_ion_local_index[s],this_y_dot);
+        NV_Ith_S(y_dot, photo_species_higher_ion_local_index[s]) += this_y_dot;
+      }
+      // otherwise
+      else {
+        this_y_dot = pi_rate;
+        // if (T>1e6)
+        //  spdlog::info("index ={}, photo_ions_local_index[s] = {}, {:12.3e}",
+        //  s, photo_ions_local_index[s],this_y_dot);
+
+        NV_Ith_S(y_dot, photo_ions_local_index[s]) -= this_y_dot;
+        // IMPO: what if the next higher ion do not exist in the tracer list,
+        // then we should skip next line.
+        // spdlog::info("index ={}, photo_species_higher_ion_local_index[s] =
+        // {}", s, photo_species_higher_ion_local_index[s]);
+        NV_Ith_S(y_dot, photo_species_higher_ion_local_index[s]) += this_y_dot;
+      }
+      // Heating due to photo-ionisation of this species.
+
+      Edot += photoheating_rate(s, species_num_density);
+
+      // temp_pir[s] = pi_rate;
+      // spdlog::info("{}",MPv10_tracer_list[elem_index][charge_index]);
+      // if (MPv10_tracer_list[elem_index][charge_index] == "H")
+      //  spdlog::info("{} {:8.3e} {:8.3e} {:8.3e} {:8.3e}",
+      //    MPv10_tracer_list[elem_index][charge_index], pi_rate,
+      //    number_density, photoheating_rate(s, number_density) / (pi_rate *
+      //    number_density * pconst.eV()), T);
+    }
+    // spdlog::info("pir: {}",temp_pir);
+  }
+  // END OF SECTION: Photoionisation *************************************
+
+
+
+  // SECTION: Cooling Function ********************************************
+  // Edot source term associated with Cooling is calculated in this Section.
   double Lambda         = 0.0;
   double L              = 0.0;
   double number_density = 0.0;
@@ -1622,25 +1915,21 @@ int MPv10::ydot(
   mc_outfile << T << "  ";
 #endif
 
-  int sct           = 0;
   int species_index = 0;
   for (int i = 0; i < MPv10_tracer_list.size(); i++) {
     for (int j = 0; j < MPv10_tracer_list[i].size(); j++) {
-      // Calculating the current number density of neutral atoms.
-      if (j == 0) {
-        number_density = y_neutral_frac[i] * elem_number_density[i];
-      }
-      // Calculating the current number density of ions.
-      else {
-        number_density = y_ion_frac[sct] * elem_number_density[i];
-        sct++;
-      }
-
+      number_density = species_number_density[i][j];
+#ifdef MELLEMA
       // mellema cooling rate
-      // L = mellema_cooling_rate(species_index, T, ne);
+      L = mellema_cooling_rate(species_index, T, ne);
+#elif defined CHIANTI
       // chianti cooling rate
       L = chianti_cooling_rate(species_index, T, ne);
+#endif
       Lambda += ne * number_density * L;
+      // if (L*number_density > 1.0e-22)
+      //  spdlog::info("{} {}  {:8.3e} {:8.3e} {:8.3e}",
+      //    MPv10_tracer_list[i][j], species_index, L*number_density, T, ne);
       species_index++;
 
 #ifdef MPv10_CIE_COOLING
@@ -1653,10 +1942,10 @@ int MPv10::ydot(
   mc_outfile << "\n";
   mc_outfile.close();
 #endif
-
   Edot -= Lambda;
-  // END OF SECTION: Mellema Cooling ******************************************
+  // END OF SECTION: Cooling Function **************************************
 
+  // spdlog::debug("Edot = {}", Edot);
 
   //
   // We want to limit cooling as we approach the minimum temperature, so we
@@ -1666,13 +1955,22 @@ int MPv10::ydot(
     Edot = min(0.0, (Edot) * (T - EP->MinTemperature) / EP->MinTemperature);
   }
 
-
   if (!EP->update_erg) Edot = 0.0;
   NV_Ith_S(y_dot, E_index) = Edot;
 
+  for (int v = 0; v < N_sp; v++) {
+    if (y_ion_frac[v] < MPv10_ABSTOL && NV_Ith_S(y_dot, v) < 0.0)
+      NV_Ith_S(y_dot, v) = 0.0;
+    if (y_ion_frac[v] > 1.0 - MPv10_ABSTOL && NV_Ith_S(y_dot, v) > 0.0)
+      NV_Ith_S(y_dot, v) = 0.0;
+  }
+
+  // for (int v = 0; v < N_local; v++) p_local[v] = NV_Ith_S(y_dot, v);
+  // spdlog::info("ydot: {}",p_local);
+
   return 0;
 }
-// END OF YDOT FUNCTION ########################################################
+// END OF YDOT FUNCTION ####################################################
 
 
 
@@ -1691,11 +1989,10 @@ double MPv10::collisional_ionisation_rate(
 
   return rate;
 }
-// END OF GET COLLISIONAL IONISATION RATE FROM LUT #############################
 
 
 
-// GET RECOMBINATION RATE ####################################################
+// GET RECOMBINATION RATE ###################################################
 double MPv10::recombination_rate(
     const int species_index,  // species identifier
     const double T            // temperature
@@ -1710,10 +2007,34 @@ double MPv10::recombination_rate(
 
   return rate;
 }
-// END OF GET RECOMBINATION RATE ############################################
+
+// GET PHOTO-IONISATION RATE  ###############################################
+double MPv10::photoionisation_rate(
+    const int species_index,           // photo species index (first index)
+    const double species_num_density,  // species number density
+    const double element_num_density   // species element number density
+)
+{
+  // spdlog::info("index = {}, n_H = {}, n_s = {}", species_index,
+  // element_num_density, species_num_density);
+  return calculate_photoionisation_rate(
+      species_index, species_num_density, element_num_density, vshell, ds,
+      tau_bins);
+}
+
+// GET PHOTO-HEATING RATE  ###############################################
+double MPv10::photoheating_rate(
+    const int species_index,          // photo species index (first index)
+    const double species_num_density  // species number density
+)
+{
+  return calculate_photoheating_rate(
+      species_index, species_num_density, vshell, ds, tau_bins);
+}
 
 
 
+#ifdef MELLEMA
 // GET MELLEMA COOLING RATE #################################################
 double MPv10::mellema_cooling_rate(
     const int location,  // species identifier (database location)
@@ -1755,16 +2076,16 @@ double MPv10::mellema_cooling_rate(
   double L = 0.0;
   // Calculating cooling from the LookUp Table (LUT) with the location of
   // each Ion and atom in the database.
-  /*
   L = mellema_table[location].rate[T_index][ne_index]
-          + dT * mellema_table[location].T_rateslope[T_index][ne_index]
-          + dne * mellema_table[location].ne_rateslope[T_index][ne_index];
-  */
+      + dT * mellema_table[location].T_rateslope[T_index][ne_index]
+      + dne * mellema_table[location].ne_rateslope[T_index][ne_index];
   return L;
 }
-// END OF GET MELLEMA COOLING RATE ############################################
+#endif
 
-// GET CHIANTI COOLING RATE #################################################
+
+#ifdef CHIANTI
+// GET CHIANTI COOLING RATE ###################################################
 double MPv10::chianti_cooling_rate(
     const int location,  // species identifier (database location)
     double T,            // Temperature
@@ -1773,7 +2094,7 @@ double MPv10::chianti_cooling_rate(
 {
 
   // 1. Set up log10(T) and log10(ne) indices to access LUT.
-  // A conditional statement is added to access the Mellema Cooling table only
+  // A conditional statement is added to access the chinati cooling table only
   // if ne and T range lie within the table in the database of
   // Mellema_/// rate.cpp
 
@@ -1781,11 +2102,11 @@ double MPv10::chianti_cooling_rate(
   if (T < T_min) T = T_min;
   if (ne < ne_min) ne = ne_min;
 
-  // Note: Since the Mellema cooling rates are given in log scales,
+  // Note: Since the chianti cooling rates are given in log scales,
   // i.e, L(Log T, Log ne), we calculate the differential change dLog_T
   // (step) and dLog_ne along with their indices. Delta_Log_T and
   // Delta_Log_ne is a constant step size calculated in the
-  // Mellema_cooling_rate.cpp
+  // chianti_cooling_rate.cpp
 
   // Get temperature vector index
   int T_index = int((log10(T) - log10(T_min)) / delta_logT);
@@ -1801,7 +2122,7 @@ double MPv10::chianti_cooling_rate(
   // << endl; cout<<"ne= "<<ne<< ", "<<"ne_index= "<<ne_Index<<", "<<"ne=
   // "<<Vec_ne[ne_Index] << endl;
 
-  // Calculating Mellema Cooling Rate.
+  // Calculating chianti cooling rate.
   double L = 0.0;
   // Calculating cooling from the LookUp Table (LUT) with the location of
   // each Ion and atom in the database.
@@ -1811,166 +2132,61 @@ double MPv10::chianti_cooling_rate(
 
   return L;
 }
-// END OF GET MELLEMA COOLING RATE ############################################
-
-// #############################################################################
-// ***************************** END OF MPv10 **********************************
-// #############################################################################
+#endif
 
 
-
-// #############################################################################
-// UNUSED FUNCTIONS
-
-
-// ##################################################################
+// SET RADIATION SOURCE PARAMETERS ############################################
 void MPv10::setup_radiation_source_parameters(
-    const pion_flt *p_in,  ///< primitive input state vector.
-    vector<double> &P,     ///< local input state vector (x_in,E_int)
-    std::vector<struct rt_source_data> &ion_src
+    // const pion_flt *p_in,  ///< primitive input state vector.
+    // vector<double> &P,     ///< local input state vector (x_in,E_int)
+    const int N_ion,
+    const std::vector<struct rt_source_data> &ion_src
     ///< list of ionising src column densities and source properties.
 )
 {
-  for (unsigned int v = 0; v < ion_src.size(); v++)
-    rt_data[v] = ion_src[v];
 
-  // struct rt_source_data {
-  //  double Vshell;   ///< Shell volume for discrete
-  //  photo-ionisation/-heating rates. double dS;       ///< Path length
-  //  through cell. double strength[MAX_TAU]; ///< Luminosity (or flux if
-  //  source at infinity). double Column[MAX_TAU];  ///< integral of
-  //  quantities along LOS to near edge of cell. double DelCol[MAX_TAU];  ///<
-  //  integral of quantities along LOS through cell. int id;   ///< source id.
-  //  int type; ///< diffuse-radiation or a real source. short unsigned int
-  //  NTau; ///< Number of LOS quantities traced for the source.
-  //};
+  if (ion_src.size() != static_cast<unsigned int>(N_ion)) {
+    spdlog::error(
+        "{}: {}",
+        "Timescales: N_ionising_srcs doesn't match vector size in MP3",
+        ion_src.size());
+    exit(1);
+  }
 
-  // we want to use these data in ydot to loop over each radiation
-  // source, and calculate the ionization rate (using the photon-
-  // conserving formula) for each species.
-  // - Strength = erg/s/bin luminosity of source.
-  // - Column = Tau to edge of cell
-  // - DelCol = dTau through cell (we'll re-calculate this in ydot)
-  // - Vshell and dS are obvious from Mellema et al. paper.
+  // necessary? size of energy bin in parameter file should match the
+  // energy bin hardcoded
 
-  return;
+  // proceed if there are any ionizing sources present.
+  if (N_ion > 0) {
+    // IMPO: this is hard coded for a single source.
+    // path length through the current cell
+    ds = ion_src[0].dS;
+    // shell volume in the current cell
+    vshell = ion_src[0].Vshell;
+    // optical depth in each energy bin at the edge of the cell
+    tau_bins.resize(N_ebins, 0.0);
+    for (int b = 0; b < N_ebins; b++)
+      tau_bins[b] = ion_src[0].Column[b];
+  }
+  // spdlog::debug("ds {:12.6e}, Vsh {:12.6e}, col {}", ds, vshell, tau_bins);
 }
 
 
 
-// ##################################################################
-void MPv10::get_dtau(
-    const pion_flt ds,     ///< ds, thickness of the cell
-    const pion_flt *p_in,  ///< input primitive vector
-    pion_flt *dtau_vec     ///< output dtau vector
-)
-{
-  // get optical depth through cell for each photon energy range.
-  return;
-  /*  for (int bin = 0; bin < get_nbins(); bin++) {
-      double dtau         = 0;  // sum dtau across all species within this bin
-      int species_counter = 0;
-
-      for (int e = 0; e < N_elements; e++) {  // loop over every element
-        int N_elem_species = N_species_by_elem[e];
-
-        for (int s = 0; s < N_elem_species; s++) {  // loop over every species
-          double n_s =
-              p_in[RO]
-              * (p_in[y_ion_index_prim[species_counter]] /
-    X_elem_atomic_mass[e]); double xsec =
-    y_ion_xsections[species_counter][bin]; dtau += n_s * xsec * ds;
-          species_counter++;
-        }
-      }
-      dtau_vec[bin] = dtau;
-    }
-    return;
-    */
-}
+// ############################################################################
+// ***************************** END OF MPv10 *********************************
+// ############################################################################
 
 
 
-// ##################################################################
-int MPv10::set_multifreq_source_properties(
-    // int tempin,
-    // double *output
-    const struct rad_src_info *rsi,  ///< source data
-    double *output  ///< O/P source luminosity per energy bin (erg/s/bin).
-)
-{
-  if (rsi->effect != RT_EFFECT_MFION) {
-    spdlog::error("{}: {}", "Wrong source type for id", rsi->id);
-    exit_pion(1);
-  }
-  // Create empty table to store temperature / flux values -- nb There are 65
-  // temperatures recorded for logg=4
-  double flux_table[65][12];
-  double temps[65];
+// ############################################################################
+//  DEBUG  FUNCTIONS
 
-  // Grid of fluxes from Castelli, compiled into one text file of fractional
-  // luminosity / bin in a separate python script Original data from:
-  // http://www.oact.inaf.it/castelli/castelli/grids/gridp00k2odfnew/fp00k2tab.html
-  FILE *pf = fopen("./source/microphysics/castelli.txt", "r");
-
-  /*
-  fscanf(pf, "%*[^\n]");  // Read and discard first line, as it's just a header
-  for (int i = 0; i < 65; i++) {  // Loop over remaining lines to populate table
-    fscanf(pf, "%lf", &temps[i]);  // record first entry, i.e. temperature
-
-    for (int j = 0; j < 12;
-         j++) {  // record every other column as an entry in the flux table
-      fscanf(pf, "\t%lf", &flux_table[i][j]);
-    }
-    fscanf(pf, "\n");  // progress to next line...
-  }
-  */
-  // To interpolate, first find which temperatures our star's temperature lies
-  // between Start by finding the first T in temps greater than our star's temp,
-  // i.e. upper value to interpolate from
-  int i = 0;
-  while (rsi->Tstar > temps[i] && i < 65)
-    i++;
-
-  double Tlower = temps[i - 1];
-  double Tupper = temps[i];
-
-  // Then linearly interpolate between flux bins above / below to determine flux
-  // bins for the given temperature
-  for (int j = 0; j < 12; j++) {
-    output[j] =
-        flux_table[i - 1][j] * (1 - (rsi->Tstar - Tlower) / (Tupper - Tlower))
-        + flux_table[i][j] * (1 - (Tupper - rsi->Tstar) / (Tupper - Tlower));
-    // multiply by the total luminosity to have output in erg/s/bin:
-    output[j] = output[j] * rsi->strength;
-    spdlog::debug("Output[{}] = {}", j, output[j]);
-  }
-
-  // TODO: \Maggie{I think this is now done -- need to verify, though!}
-  // Now we need to figure out how to get the luminosity of the star
-  // in each frequency bin, in erg/s/bin.
-  // * rsi->strength gives the luminosity of the star in erg/s
-  // * rsi->Tstar    gives the effective temperature of the star.
-  // * rsi->Rstar    gives the Radius of the star.
-  // If the star were a blackbody, then this would be enough to
-  // calculate the luminosity in each bin, if we have the bin ranges
-  // set (which we do).  Unfortunately a BB is a bad approximation.
-  // Maybe it is the best we can do for now.
-  //
-  // We want to add the luminosity in each bin to the array "str".
-  return 0;
-}
-
-
-
-// #############################################################################
-// ************************** DEBUG  FUNCTIONS *********************************
-// #############################################################################
-
-
-// #########################################################################
+// ############################################################################
 // Print collisional ionisation and recombination LUT to file
 void MPv10::print_CIR_LUT(
+    const std::vector<string> &tracer_list,
+    const std::string info,
     const std::vector<double> &X,
     const std::vector<std::vector<double> > &Fx,
     const std::vector<std::vector<double> > &Fx_slope,
@@ -1978,9 +2194,22 @@ void MPv10::print_CIR_LUT(
 {
 
   std::ofstream outfile(filename + ".txt");
-  outfile
-      << "# MPv10-" + filename
-             + ": column-1 = Temperature(K), other columns = Rates(cm^3/s) \n";
+  outfile << info + "\n";
+  // Column names
+  outfile << "#ATTRIBUTE LABEL: Temperature";
+  for (int j = 0; j < tracer_list.size(); j++) {
+    outfile << "\t" << tracer_list[j];
+  }
+  outfile << "\n";
+  // column units
+  outfile << "#UNIT: K";
+  for (int j = 0; j < tracer_list.size(); j++) {
+    outfile << "\t"
+            << "cm^3/s";
+  }
+  outfile << "\n";
+  outfile << "#DATA: \n";
+
   if (!outfile.is_open()) {
     spdlog::error("MPv10 {} : {}", "couldn't open outfile", 1);
     exit_pion(1);
@@ -1993,9 +2222,8 @@ void MPv10::print_CIR_LUT(
   double x_max      = X.back();
   double delta_logx = log10(X[1]) - log10(X[0]);
 
-
   // Make a new set of X array, call it X_new
-  int N_points = 500;  // No of new x-points, set it to 500
+  int N_points = 200;  // No of new x-points, set it to 200
   double delta = (log10(x_max) - log10(x_min)) / (N_points - 1);
   std::vector<double> X_new;
   for (int i = 0; i < N_points; i++) {
@@ -2003,125 +2231,119 @@ void MPv10::print_CIR_LUT(
     X_new.push_back(pow(10.0, logx_new));
   }
 
-
   for (int k = 0; k < X_new.size(); k++) {
     int x_index = int((log10(X_new[k]) - log10(x_min)) / delta_logx);
     double dx   = X_new[k] - X[x_index];
     outfile << X_new[k];
-
     for (int i = 0; i < Fx.size(); i++) {
       outfile << "  " << Fx[i][x_index] + dx * Fx_slope[i][x_index];
     }
-
     outfile << "\n";
   }
 }
-// End of print collisional ionisation and recombination LUT to file
-//*************************************************************************
+
+// ############################################################################
+// Use the following function to print photo-ionisation mean cross-section
+// and bin_fraction to a txt file
+void MPv10::print_to_file_photoionisation(
+    const std::string info,
+    const std::vector<string> &species_list,
+    const std::vector<std::vector<double> > &X,
+    const std::vector<std::vector<double> > &Fx,
+    const std::string filename)
+{
+  std::ofstream outfile(filename + ".txt");
+  if (!outfile.is_open()) {
+    spdlog::error("MPv10 {} : {}", "couldn't open outfile", 1);
+    exit(1);
+  }
+
+  outfile << "#FILE: Generated by PION - MPv10 Module \n";
+  outfile << "#DATA DESCRIPTION: " + info + "\n";
+  // Column names
+  outfile << "#ATTRIBUTE LABEL: Bin_Min\tBin_Max";
+  for (int j = 0; j < species_list.size(); j++) {
+    outfile << "\t" << species_list[j];
+  }
+  outfile << "\n";
+  // column units
+  outfile << "#UNIT: eV\teV";
+  size_t found = info.find("cross-section");
+  if (found != std::string::npos) {
+    for (int j = 0; j < species_list.size(); j++)
+      outfile << "\t"
+              << "cm^2";
+  }
+  else {
+    for (int j = 0; j < species_list.size(); j++)
+      outfile << "\t"
+              << "1";
+  }
+  outfile << "\n";
 
 
-// #########################################################################
-// Print 2D vector to file
-void MPv10::print_2D_vector(
-    std::vector<std::vector<double> > &vector,
+  outfile.setf(ios_base::scientific);
+  outfile.precision(4);
+  outfile << "#DATA: \n";
+  for (int k = 0; k < X.size(); k++) {
+    outfile << X[k][0] << "\t" << X[k][1];
+    for (int j = 0; j < Fx.size(); j++) {
+      outfile << "\t" << Fx[j][k];
+    }
+    outfile << "\n";
+  }
+}
+
+// ###########################################################################
+// Print cooling tables to file
+void MPv10::print_cooling_table(
+    std::vector<double> &logne,  // log10(ne)
+    std::vector<double> &logT,   // log10(T)
+    std::vector<std::vector<double> > &cooling_rate,
     const std::string ion_name,
     std::string filename)
 {
-  filename = filename + "_" + ion_name + ".txt";
-  ofstream file;
-  file.open(filename);
 
-  for (size_t j = 0; j < vector.size(); j++) {
-    for (size_t k = 0; k < vector[j].size(); k++) {
-      // output is log10 of actual value.
-      file << log10(vector[j][k]);
-      if (k == vector[j].size() - 1) {
-        file << endl;
+  std::ofstream outfile(filename + "_" + ion_name + ".txt");
+  if (!outfile.is_open()) {
+    spdlog::error("MPv10 {} : {}", "couldn't open outfile", 1);
+    exit(1);
+  }
+
+  outfile << "#FILE: Generated by PION - MPv10 Module \n";
+  outfile << "#DATA DESCRIPTION: " + ion_name + " cooling rate table\n";
+  outfile << "#ATTRIBUTE LABEL: Temperature";  // Column names
+
+  for (int j = 0; j < logne.size(); j++) {
+    outfile << "\t"
+            << "Rate";
+  }
+  outfile << endl;
+  outfile << "#UNIT: K";
+  for (int j = 0; j < logne.size(); j++) {
+    outfile << "\t"
+            << "ergs cm^3/s";
+  }
+  outfile << endl;
+
+  outfile << "#DATA: \n";
+  outfile << "#Log(ne): ";
+  for (int j = 0; j < logne.size(); j++) {
+    outfile << "\t" << log10(logne[j]);
+  }
+  outfile << endl;
+
+  for (size_t j = 0; j < cooling_rate.size(); j++) {
+    outfile << log10(logT[j]) << ",";
+    for (size_t k = 0; k < cooling_rate[j].size(); k++) {
+      outfile << log10(cooling_rate[j][k]);
+      if (k == cooling_rate[j].size() - 1) {
+        outfile << endl;
       }
       else
-        file << ",";
+        outfile << ",";
     }
   }
 
-  file.close();
+  outfile.close();
 }
-// End of print 2D vector to file
-//*************************************************************************
-
-
-// #########################################################################
-// Print 1D vector to file
-void MPv10::print_1D_vector(
-    std::vector<double> &vector,
-    const std::string variable_name,
-    std::string filename)
-{
-  filename = filename + "_" + variable_name + ".txt";
-  ofstream file;
-  file.open(filename);
-
-  for (size_t i = 0; i < vector.size(); i++) {
-    // output is log10 of actual value.
-    file << log10(vector[i]);
-    if (i == vector.size() - 1) {
-      break;
-    }
-    else
-      file << endl;
-  }
-
-  file.close();
-}
-// End of print 1D vector to file
-//*************************************************************************
-
-
-
-/*
-//###########################################################################
-// Print mellema cooling rates to files.
-void MPv10::print_to_file_MC_rate(
-        int DBLocation  // DataBase Location of the Ion.
-        ) {
-
-std::vector<double> logT_points;
-logT_points.resize(81);
-for (int i = 0; i < 81; i++)
-  logT_points[i] =  1.0 + 0.1 * i;
-
-std::vector<double> logne_points;
-logne_points.resize(13);
-for (int i = 0; i < 13; i++)
-  logne_points[i] =  0.5 * i;
-
-
-
-std::vector <std::vector<double>> Mellema_Rate;
-// Our Original Mellema cooling tabale has the follwing size.
-Mellema_Rate.resize(81);
-for (int i = 0; i < 81; i++)
-  Mellema_Rate[i].resize(13);
-
-
-double T;
-double ne;
-
-cout << "Species Name = " << LUT[DBLocation].Name << endl;
-
-for (int i = 0; i < 81; i++) {
-  for (int j = 0; j < 13; j++) {
-    T = pow(10, 1.0 + 0.1 * i);
-    ne = pow(10, 0.5 * j);
-    //cout << "T = " << T << " | " << "ne = " << ne << endl;
-    Mellema_Rate[i][j] = mellema_cooling_rate(DBLocation, T, ne);
-  }
-}
-
-print_2D_vector(Mellema_Rate, LUT[DBLocation].Name,"Mellema_Rate");
-print_1D_vector(logT_points, "logT", "Mellema_Rate");
-print_1D_vector(logne_points, "logne", "Mellema_Rate");
-
-}
-// End of Print mellema cooling rates to files *******************************
-
-*/

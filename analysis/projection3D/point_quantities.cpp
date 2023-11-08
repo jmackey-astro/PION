@@ -135,7 +135,7 @@ double point_quantities::get_point_temperature(
 )
 {
   double val = 0.0;
-  int ct     = 0;
+  // int ct     = 0;
   //
   // If microphysics is set up, then use MP->Temperature() to get the
   // temperature.  Otherwise assume a pure Hydrogen gas.
@@ -153,7 +153,7 @@ double point_quantities::get_point_temperature(
         //  rep.printVec("pos",pt->ngb[v]->pos, 3);
         //  //rep.printVec("img",pt->ngb[v]->Ph, SimPM.ndim);
         //}
-        ct++;
+        // ct++;
       }
     }
     // if (ct>0) val /= static_cast<double>(ct);

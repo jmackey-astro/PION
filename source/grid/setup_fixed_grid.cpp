@@ -42,7 +42,10 @@
 #include "microphysics/MPv3.h"
 #endif
 
+#ifdef PION_MPV10
 #include "microphysics/MPv10.h"
+#endif
+
 #include "microphysics/MPv5.h"
 #include "microphysics/MPv6.h"
 #include "microphysics/MPv7.h"
@@ -487,21 +490,21 @@ int setup_fixed_grid::setup_microphysics(
         }
         break;
 
-#ifdef MPV10
+#ifdef PION_MPV10
       case 10:
         spdlog::info("setting up MPv10 module");
         MP = new MPv10(
             SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer,
             SimPM.tracers, &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
         if (!MP) {
-          spdlog::error("{}: {}", "microphysics init", fmt::ptr(MP));
+          spdlog::error("microphysics init {}", fmt::ptr(MP));
           exit_pion(1);
         }
         break;
 #endif
 
       default:
-        spdlog::error("{}: {}", "unhandled microphysics type", SimPM.chem_code);
+        spdlog::error("unhandled microphysics type: {}", SimPM.chem_code);
         exit_pion(1);
         break;
     }
@@ -618,8 +621,7 @@ int setup_fixed_grid::setup_raytracing(
       int s = grid->RT->Add_Source(&(SimPM.RS.sources[isrc]));
       spdlog::debug("Adding IONISING or UV single-source with id: {}", s);
 
-      if (SimPM.RS.sources[isrc].effect == RT_EFFECT_PION_MONO
-          || SimPM.RS.sources[isrc].effect == RT_EFFECT_MFION)
+      if (SimPM.RS.sources[isrc].effect >= RT_EFFECT_PION_MONO)
         ion_count++;
       else
         uv_count++;

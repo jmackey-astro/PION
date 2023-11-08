@@ -169,6 +169,9 @@ int image_io::close_image_file(const string f)
   if (ff) {
     err += fits_close_file(ff, &status);
     ff = 0;
+    if (err) {
+      spdlog::warn("fits_close_file returned error: {}", err);
+    }
   }
 
   if (fvtk) {

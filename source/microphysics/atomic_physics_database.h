@@ -64,6 +64,12 @@ public:
   double get_ionisation_potential(const std::string  ///< species name
   );
 
+  /** \brief Returns the ionisation potential of the species in the units of
+   * eV.
+   **/
+  double get_ionisation_energy(const std::string  ///< species name
+  );
+
   // PRIVATE METHODS AND VARIABLES *************************
 private:
   /** \brief  Atomic physics data of the following species: H, H1+, He, He1+,
@@ -90,6 +96,11 @@ private:
   /// Map species_datatype to the species (species symbol)
   std::map<std::string, species_datatype> species_attributes;
 };
+
+/** \brief global instance of class, defined in
+ * atomic_physics_database.cpp.
+ * **/
+extern class atomic_physics_database atomic_physics_data;
 // END OF ATOMIC PHYSICS DATABASE CLASS ####################################
 
 #endif  // PION_ATOMIC_PHYSICS_DATABASE_H

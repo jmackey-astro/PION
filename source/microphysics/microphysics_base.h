@@ -272,6 +272,7 @@ public:
       pion_flt *           ///< output dtau vector
   )
   {
+    spdlog::error("Base get_dtau!");
     return;
   }
 

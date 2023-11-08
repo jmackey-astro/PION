@@ -263,24 +263,8 @@ void raytracer_USC_infinity::add_source_to_list(
   //
   rs->s = src;
 
-  // rs->pos=0; rs->ipos=0;
-  // rs->pos  = mem.myalloc(rs->pos, ndim);
-  // rs->ipos = mem.myalloc(rs->ipos,ndim);
-  // for (int i=0; i<ndim; i++) rs->pos[i] = src->position[i];
   for (int i = 0; i < ndim; i++)
     rs->ipos[i] = -100;  // ipos not needed here.
-
-  // rs->id          = src->id;
-  // rs->strength    = src->strength;
-  // rs->type        = src->type;
-  // rs->at_infinity = (src->at_infinity>0) ? true : false;
-  // if (!rs->at_infinity) {
-  //  spdlog::error("{}: {}", "Source is not at infinity",src->id);
-  //}
-  // rs->effect      = src->effect;
-  // rs->opacity_src = src->opacity_src;
-  // rs->opacity_var = src->opacity_var;
-  // rs->update      = src->update;
 
   //
   // Set the source-dependent parts of the rt_source_data struct.
@@ -491,24 +475,6 @@ void raytracer_USC_infinity::update_RT_source_properties(
 
   src->data.strength[0] = rs->strength;
 
-  // src->s->id = rs->id;
-  // src->s->type = rs->type;
-  // src->s->update = rs->update;
-  // src->s->at_infinity = rs->at_infinity;
-  // src->s->effect = rs->effect;
-  // src->s->NTau = rs->NTau;
-  // src->s->opacity_src = rs->opacity_src;
-  // src->s->opacity_var = rs->opacity_var;
-  // src->s->EvoFile = rs->EvoFile;
-
-  // the following lines moved to setup_fixed_grid.cpp function because
-  // the mpptr is not multithreaded/threadprivate.
-  // int err = 0;
-  // if (src->s->effect == RT_EFFECT_MFION) {
-  //  err += mpptr->set_multifreq_source_properties(src->s, src->data.strength);
-  //  if (err) spdlog::error("{}: {}", "update_evolving_RT_sources()", rs->id);
-  //}
-
   return;
 }
 
@@ -601,13 +567,11 @@ void raytracer_USC_infinity::Print_SourceList()
 {
   vector<rad_source>::iterator i;
   for (i = SourceList.begin(); i != SourceList.end(); ++i) {
-    spdlog::info("Source {} at position [", (*i).s->id);
-    spdlog::info("{}", (*i).s->pos[0]);
-    for (int j = 1; j < ndim; ++j)
-      spdlog::info(", {}", (*i).s->pos[j]);
-    spdlog::info("] has strength {}", (*i).s->strength);
+    spdlog::debug(
+        "Source {} at position {} has strength {}", (*i).s->id, (*i).s->pos,
+        (*i).s->strength);
     if ((*i).sc != 0)
-      spdlog::info(
+      spdlog::debug(
           " and cell id {} on grid? (Y=1,N=0) {}", (*i).sc->id,
           (*i).src_on_grid);
   }
@@ -1024,6 +988,26 @@ int raytracer_USC_infinity::ProcessCell(
       exit_pion(20);
       break;
   }
+
+#ifdef RT_TESTING
+  for (unsigned short int iT = 0; iT < source->s->NTau; iT++) {
+    if (cell_col[iT] < 0.0) {
+      spdlog::error("negative cell col[{}] = {}", iT, cell_col[iT]);
+      spdlog::error(
+          "cell_col {}",
+          std::vector<double>(cell_col, cell_col + source->s->NTau));
+      CI.print_cell(c);
+      exit(1);
+    }
+    if (col2cell[iT] < 0.0) {
+      spdlog::error("negative col2cell[{}] = {}", iT, col2cell[iT]);
+      CI.print_cell(c);
+      exit(2);
+    }
+  }
+#endif
+
+
   CI.set_cell_col(c, source->s->id, cell_col);
 
   if (source->s->opacity_src == RT_OPACITY_HALPHA) {
@@ -1315,10 +1299,9 @@ void raytracer_USC::Print_SourceList()
 {
   vector<rad_source>::iterator i;
   for (i = SourceList.begin(); i != SourceList.end(); ++i) {
-    spdlog::debug("Source {} at position [", (*i).s->id, (*i).s->pos[0]);
-    for (int j = 0; j < ndim; ++j)
-      spdlog::debug(", {}}", (*i).s->pos[j]);
-    spdlog::debug("] has strength {}", (*i).s->strength);
+    spdlog::debug(
+        "Source {} at position {} has strength {}", (*i).s->id, (*i).s->pos,
+        (*i).s->strength);
 #ifdef RT_TESTING
     if ((*i).sc != 0)
       spdlog::debug(

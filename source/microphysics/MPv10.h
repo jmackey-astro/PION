@@ -41,25 +41,32 @@
 #include "cvode_integrator.h"
 #include "microphysics_base.h"
 #include "sim_params.h"
-//#include "mellema_cooling.h"
-#include "atomic_physics_database.h"
+
+/// Choose the cooling function
+//#define MELLEMA
+#define CHIANTI
+
+#ifdef MELLEMA
+#include "mellema_cooling.h"
+#elif defined CHIANTI
 #include "chianti_cooling.h"
+#endif
+
+#include "atomic_physics_database.h"
 #include "coll_ionise_recomb.h"
 //#include "photo_xsections.h"
+#include "multi_ion_photo_xsections.h"
+#include "photoionisation.h"
+#include "stellar_atmosphere_models.h"
 #include <fstream>
 #include <sys/stat.h>
 
-/// this is the max change in x or E which is integrated with Euler integration.
-/// A larger change will be integrated with backward-differencing and Newton
-/// iteration, which is more accurate, stable, but expensive.
-#define EULER_CUTOFF 0.05
-
-
 #define MPv10_RELTOL                                                           \
-  1.0e-04  ///< relative-error tolerance (actual error can be larger).
-#define MPv10_ABSTOL 1.0e-12  ///< minimum neutral fraction I care.
-#define MPv10_MINERG 1.0e-17  ///< Minimum internal energy density I care.
+  1.0e-6  ///< relative-error tolerance (actual error can be larger).
+#define MPv10_ABSTOL 1.0e-14  ///< minimum neutral fraction I care.
+#define MPv10_MINERG 1.0e-20  ///< Minimum internal energy density I care.
 
+/*
 /// Assign an int to each species.
 enum species_1 {
   NONE = -1,  ///< For if we want to specify no ion.
@@ -93,6 +100,7 @@ enum species_1 {
   O_7p = 27,
   O_8p = 28
 };
+*/
 
 
 // establishes the ion_struct structure, which contains things like ionisation
@@ -104,11 +112,11 @@ struct ion_struct {
       el;                   ///< Name of ion's element.
   struct ion_struct *iip1,  ///< pointer to higher stage ion, if present.
       *iim1;                ///< pointer to lower stage ion, if present.
-  double ion_pot;    ///< Ionisation energy of ion to next ionisation stage, in
-                     ///< ergs.
-  int charge;        ///< Charge of ion in units of the electron charge.
-  enum species_1 i;  ///< ion id number.
-  int g_stat;        ///< statistical weight of this ion (H0=2,H1+=1,etc.)
+  double ion_pot;  ///< Ionisation energy of ion to next ionisation stage, in
+                   ///< ergs.
+  int charge;      ///< Charge of ion in units of the electron charge.
+  // enum species_1 i;  ///< ion id number.
+  int g_stat;  ///< statistical weight of this ion (H0=2,H1+=1,etc.)
 };
 
 
@@ -123,10 +131,14 @@ class MPv10 :
     public microphysics_base,
     public cvode_solver,
     public coll_ionise_recomb,
-    // public mellema_cooling
-    public chianti_cooling
-//    public photo_xsections
-{
+#ifdef MELLEMA
+    public mellema_cooling,
+#elif defined CHIANTI
+    public chianti_cooling,
+#endif
+    public stellar_atmosphere_models,
+    public multi_ion_photo_xsections,
+    public photoionisation {
 public:
   // ****** CONSTRUCTOR ******
   MPv10(
@@ -146,6 +158,10 @@ public:
   // ****** CATALOGER ******
   ///< MPv10 species tracer list.
   std::vector<vector<string> > MPv10_tracer_list;
+
+  ///< replica
+  std::vector<string> tracer_list_replica;
+
   ///< MPv10 ion list.
   std::vector<string> MPv10_ion_list;
 
@@ -164,9 +180,9 @@ public:
   ///< Vector to record position of ions in the local vector.
   std::vector<int> ions_local_index;
   ///< Vector to record number of ionic states in tracer elements.
-  std::vector<int> N_sp_by_elem;
-  ///< Vector to record number of species (neutral and ion )in tracer elements.
   std::vector<int> N_ions_by_elem;
+  ///< Vector to record number of species (neutral and ion )in tracer elements.
+  std::vector<int> N_species_by_elem;
   ///< Vector to record number of electron contributed by each ion.
   std::vector<int> ions_electron_num;
   ///< No of species in local y vector
@@ -201,6 +217,7 @@ public:
   std::vector<double> ne_table;  ///< electron number density table
 
 
+
   const double T_min;
   const double T_max;
   const int Num_temps;  // NB this needs to be const so can initialise arrays
@@ -225,18 +242,24 @@ public:
       const int,    // Species identifier
       const double  // Temperature
   );
+
+#ifdef MELLEMA
   /// Fucntion to return mellema colling rate.
   virtual double mellema_cooling_rate(
       const int,     //  species identifier
       const double,  // Temperature
       const double   // ne
   );
+#endif
+
+#ifdef CHIANTI
   /// Fucntion to return chianti colling rate.
   virtual double chianti_cooling_rate(
       const int,     //  species identifier
       const double,  // Temperature
       const double   // ne
   );
+#endif
 
 
 protected:
@@ -318,7 +341,7 @@ protected:
   ///
   /// Function for updating vectors according to species found in tracer list.
   ///
-  // s pecies_tracer_initialise
+  // species_tracer_initialise
 
   ///
   /// A primitive vector is input, and lots of optional extra data in
@@ -372,6 +395,7 @@ protected:
       double *       ///< any returned data (final temperature?).
   );
 
+  /*
   ///
   /// Set the properties of a multifrequency ionising radiation source.
   ///
@@ -381,6 +405,7 @@ protected:
       const struct rad_src_info *,  ///< source data
       double *  ///< O/P source strength in different energy bins.
   );
+   */
 
   ///
   /// Returns the gas temperature.  This is only needed for data output, so
@@ -505,6 +530,19 @@ protected:
       const pion_flt *  ///< primitive state vector.
   );
 
+  ///
+  /// Calculates the change in optical depth over the cell
+  /// for use in the Raytracing module
+  ///
+  virtual void get_dtau(
+      const rad_source *,  ///< pointer to radiation source struct
+      const pion_flt,      ///< ds, thickness of the cell
+      const pion_flt
+          *,      ///< input primitive vector from grid cell (length nv_prim)
+      pion_flt *  ///< output dtau vector
+  );
+
+
   // ###########################################################################
   // ###########################################################################
 
@@ -610,19 +648,6 @@ protected:
 
 
 
-  ///
-  /// Calculates the change in optical depth over the cell
-  /// for use in the Raytracing module
-  ///
-  virtual void get_dtau(
-      const pion_flt,  ///< ds, thickness of the cell
-      const pion_flt
-          *,      ///< input primitive vector from grid cell (length nv_prim)
-      pion_flt *  ///< output dtau vector
-  );
-
-
-
   //
   // Any data which can be calculated/set at the start of the simulation
   // can be defined here.
@@ -660,37 +685,78 @@ protected:
 
 
   /// ===========================================================================
-  ///  unknown variables
+  ///  Photo-ionisation
   /// ===========================================================================
 
+  std::vector<std::vector<double> > ebins;
+  int N_ebins;
+  double photo_emax;
 
-  int N_diff_srcs,   ///< No diffuse sources --> 0, otherwise --> 1
-      N_ion_srcs,    ///< No ionising sources --> 0, otherwise --> 1
-      ion_src_type;  ///< Either RT_EFFECT_MFION or RT_EFFECT_PION_MONO.
+protected:
+  /// Function will generate indexing necessary for photo-ionisation tracers
+  void photo_species_cataloger();
+
+  ///< record only the photo-ionisation species from the tracer list
+  std::vector<string> photo_tracer_list;
+  ///< number of photo-ionisation species
+  int N_photo_species;
+  ///< Record which element the photo species belong to.
+  std::vector<int> photo_tracer_elem;
+  ///< Record the primitive index of the photo species
+  std::vector<int> photo_prim_index;
+  ///< Record the electric charge of the photo species
+  std::vector<int> photo_tracer_charge;
+  ///< Record the local index of the photo ion species
+  std::vector<int> photo_ions_local_index;
+  ///< Record the higher ionised state local index of the photo species
+  std::vector<int> photo_species_higher_ion_local_index;
+  ///< Record the ionisation threshold of photo species
+  std::vector<double> photo_tracer_Eth;
+  /// luminosity in each energy bin (ergs/s/bins)
+  std::vector<double> bin_luminosity;
 
   /// For each cell, ydot() needs to know the local radiation field.  This
   /// function takes all of the input radiation sources and calculates what
   /// ydot() needs to know for both heating and ionisation sources.
   ///
   void setup_radiation_source_parameters(
-      const pion_flt *,  ///< primitive input state vector.
-      vector<double> &,  ///< local input state vector (x_in,E_int)
-      std::vector<struct rt_source_data> &
-      ///< list of ionising src column densities and source properties.
+      // const pion_flt *,  ///< primitive input state vector.
+      // vector<double> &,  ///< local input state vector (x_in,E_int)
+      const int,  ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data>
+          &  ///< list of ionising src column densities and source properties.
   );
+
+  double ds     = 0.0;           ///< Path length through the current cell
+  double vshell = 0.0;           ///< Shell volume in the current cell
+  std::vector<double> tau_bins;  ///< Optical depth in each energy bin
+
+  /// variable recording species number density for MPv10 tracer list
+  std::vector<std::vector<double> > species_number_density;
+
+
+  /// Function to return photo-ionisation rate.
+  double photoionisation_rate(
+      const int,     // Species identifier
+      const double,  // Species number density
+      const double   // Species element number density
+  );
+
+  /// Function to return photo-heating rate.
+  double photoheating_rate(
+      const int,    // Species identifier
+      const double  // Species number density
+  );
+
+
+  // int N_ion_srcs;    ///< No ionising sources --> 0, otherwise --> 1
+  // int ion_src_type;  ///< Either RT_EFFECT_MFION or RT_EFFECT_PION_MONO.
+
 
   // Constant data in the cell, received from cell data.
   double mpv_nH;  ///< total hydrogen number density at current cell.
-  int N_rad_src;  ///< number of radiation sources to include.
+  int N_rsrc;     ///< number of radiation sources to include.
   std::vector<struct rt_source_data> rt_data;  ///< data on radiation sources.
-
-  /*double Emax[15] = {13.6*1e-3, 14.5*1e-3, 24.4*1e-3,
-  24.58741*1e-3, 29.6*1e-3, 47.5*1e-3, 47.9*1e-3, 54.41778*1e-3,
-  64.5*1e-3, 77.5*1e-3, 97.9*1e-3, 392.1*1e-3, 490.0*1e-3, 552.1*1e-3,
-  667.0*1e-3};//bin edges correspond to ionisation energies double Emin[15] =
-  {11.3*1e-3, 13.6*1e-3, 14.5*1e-3, 24.4*1e-3, 24.58741*1e-3,
-  29.6*1e-3, 47.5*1e-3, 47.9*1e-3, 54.41778*1e-3, 64.5*1e-3,
-  77.5*1e-3, 97.9*1e-3, 392.1*1e-3, 490.0*1e-3, 552.1*1e-3}; int Nbins = 15;*/
 
 
   /// index matching photo_ion xsection to ion in local vector
@@ -706,6 +772,8 @@ protected:
   /// different set of T points in the range T_min<T<T_max using already
   /// setup rate and slope lookup table.
   void print_CIR_LUT(
+      const std::vector<string> &,  // tracer list
+      const std::string info,
       const std::vector<double> &,  // T table
       // rate table
       const std::vector<std::vector<double> > &,
@@ -714,18 +782,24 @@ protected:
       // which rate (collisional or recombination )
       const std::string filename);
 
-  /// Print 2D vector to a file
-  void print_2D_vector(
-      std::vector<std::vector<double> > &,  // Vector to be written
-      const std::string,                    // Name of the ion
-      std::string                           // Base name/file path
+  /// ??
+  /// ???
+  /// ???
+  void print_to_file_photoionisation(
+      const std::string info,
+      const std::vector<string> &,                // photo tracer list
+      const std::vector<std::vector<double> > &,  // energy bins
+      const std::vector<std::vector<double> > &,  // mean cross-section
+      const std::string filename                  // filename
   );
 
-  /// Write 1D vector to a file
-  void print_1D_vector(
-      std::vector<double> &,  // Vector to be written
-      const std::string,      // Name of the variable
-      std::string             // Base name/file path
+  /// Print cooling rate look up tables to a file
+  void print_cooling_table(
+      std::vector<double> &,                // log10(ne)
+      std::vector<double> &,                // log10(T)
+      std::vector<std::vector<double> > &,  // Cooling rate
+      const std::string,                    // Name of the ion
+      std::string                           // file path
   );
 };
 #endif  // MPv10_H

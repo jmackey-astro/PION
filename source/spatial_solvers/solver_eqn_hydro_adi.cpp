@@ -371,6 +371,7 @@ int FV_solver_Hydro_Euler::dU_Cell(
     const double dt                      // cell TimeStep, dt.
 )
 {
+  if (!c.isdomain) return 0;
   // This calculates -dF/dx
   // utemp is overwritten, so don't need to initialize
   int err = DivStateVectorComponent(c, grid, d, eq_nvar, fn, fp, utemp);
@@ -401,6 +402,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
     const double           // Cell timestep dt.
 )
 {
+  if (!c.isdomain) return 0;
   //
   // First convert from Primitive to Conserved Variables
   //

@@ -1,0 +1,73 @@
+#####################################
+title HII_region
+#####################################
+set punch prefix "HII_region"
+# set the temperature of the central star
+blackbody, temperature = 39000 K
+# set the total luminosity of the central star
+luminosity total = 39.2256 # log(Ltot)- ergs/s
+# set the inner and outer radius of the neubula
+radius = 17.45 19.6435
+# setting the hydrogen density at the illuminated face of the cloud 
+hden = 2.0 # find the correct value
+# this is a sphere with large covering factor
+sphere 
+# set the default abundances of H II region
+abundances H II region no grains
+# reset the following abundance value with the data from Haworth 2015.
+#element abundance helium -1.07
+#element abundance carbon -3.66
+#element abundance nitrogen -4.40
+#element abundance oxygen -3.48
+#element abundance neon -4.30
+#element abundance sulphur -5.05
+# all other relevent elements take the default HII region values
+# moreover, the following elements are off
+element helium off
+element carbon off
+element nitrogen off
+element oxygen off
+element neon off
+element sulphur off
+element silicon off
+element iron off
+element lithium off
+element magnesium off
+element argon off
+element beryllium off
+element boron off
+element fluorine off
+element sodium off
+element aluminium off
+element phosphrous off
+element chlorine off
+element potasium off
+element calcium off
+element scandium off
+element titanium off
+element vanadium off
+element chromium off
+element manganese off
+element cobalt off
+element nickel off
+element copper off
+element zinc off
+# setting no grain or molecules
+no molecules
+# set ionisation tolerance
+Set ionization tolerance 0.01
+#
+iterate
+# same the following
+save last element hydrogen ".ele_H"
+save last element helium ".ele_He"
+save last element carbon ".ele_C"
+save last element nitrogen ".ele_N"
+save last element oxygen ".ele_O"
+save last element neon ".ele_Ne"
+save last element sulphur ".ele_S"
+save last element silicon ".ele_Si"
+save last element iron ".ele_Fe"
+save transmitted continuum last file=".tcon"
+save last overview last file=".ovr"
+save optical depths ".optdep"

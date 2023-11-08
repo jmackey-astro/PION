@@ -11,7 +11,7 @@
 
 // ##################################################################
 // Constructor
-coll_ionise_recomb::coll_ionise_recomb() : atomic_physics_database()
+coll_ionise_recomb::coll_ionise_recomb()
 
 {
   collisional_ionisation_database();
@@ -42,7 +42,8 @@ void coll_ionise_recomb::setup_collisional_ionisation(
 
   // ionisation potential of species in ci_tracer_list
   for (int s = 0; s < ci_tracer_list.size(); s++)
-    ci_ion_pot.push_back(get_ionisation_potential(ci_tracer_list[s]));
+    ci_ion_pot.push_back(
+        atomic_physics_data.get_ionisation_potential(ci_tracer_list[s]));
 
   // make a copy of ci_tracer_list for this class.
   ci_species_list = ci_tracer_list;
@@ -73,7 +74,7 @@ void coll_ionise_recomb::setup_recombination(
 void coll_ionise_recomb::generate_collisional_ionisation_LUT(
     const std::vector<double> &T_table)
 {
-  spdlog::info("Setting up collisional ionisation LUTs");
+  spdlog::info("Generating collisional ionisation LUTs");
   // Generate collisional ionisation rate table for all species
   // in the species list.
   // loop over ci species list
@@ -104,7 +105,7 @@ void coll_ionise_recomb::generate_collisional_ionisation_LUT(
 void coll_ionise_recomb::generate_recombination_LUT(
     const std::vector<double> &T_table)
 {
-  spdlog::info("Setting up recombination LUTs");
+  spdlog::info("Generating recombination LUTs");
   // Generate recombination rate table for all species in the species
   // list.
   for (int s = 0; s < recombination_rate_table.size(); s++) {
@@ -138,7 +139,7 @@ double coll_ionise_recomb::get_collisional_ionisation_rate(
   double k_B  = pconst.kB();  // Boltzmann constant.
   double U    = 0.0;
   double rate = 0.0;
-  U           = get_ionisation_potential(species) / k_B / T;
+  U           = atomic_physics_data.get_ionisation_potential(species) / k_B / T;
   rate        = coll_ionise_parameters[species].A
          * (1. + coll_ionise_parameters[species].P * sqrt(U))
          * exp(coll_ionise_parameters[species].K * log(U) - U)
@@ -158,13 +159,30 @@ double coll_ionise_recomb::get_recombination_rate(
 
   // Calculating di-electronic recombination rate:
   for (int i = 0; i < 9; i++) {
+    // spdlog::info("recomb {} {} {} {}
+    // {}",i,species,recomb_parameters[species].C_coefs[i],recomb_parameters[species].E_coefs[i],T);
     rate += recomb_parameters[species].C_coefs[i]
             * exp(-recomb_parameters[species].E_coefs[i] / T);
   }
 
   rate *= pow(T, -1.5);
 
-  // Calculating radiative recombination rate
+  // Calculating the Case B radiative recombination rate for H1+.
+  if (species == "H1+") {
+#ifdef HYDROGEN_CASE_B
+    // The Case B radiative recombination coefficient for the hydrogen ion is
+    // determined using the fitting formula and parameters from
+    // Seager, Sara et al., ApJS, 128, 407, 2000
+    // (https://dx.doi.org/10.1086/313388).
+    double T4                 = T * pow(10, -4.0);
+    double H_recom_rate_caseB = pow(10, -13.0) * 4.309 * pow(T4, -0.6166)
+                                / (1.0 + 0.6703 * pow(T4, 0.53));
+    rate += H_recom_rate_caseB;
+    return rate;
+#endif
+  }
+
+  // Calculating radiative recombination rate all other ions.
   double B_new = recomb_parameters[species].B;
   if (recomb_parameters[species].C > 0.0) {
     B_new = recomb_parameters[species].B
@@ -627,7 +645,7 @@ void coll_ionise_recomb::recombination_database()
       2.773E+07,
       0.0,
       0.0,
-      {1.426E-03, 3.046E-02, 8.373E-04, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {1.426E-03, 3.046E-02, 8.373E-04, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
       {3.116E+06, 4.075E+06, 5.749E+06, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
 
   recomb_parameters["C6+"] = recomb_datatype{
@@ -1011,7 +1029,7 @@ void coll_ionise_recomb::recombination_database()
       8.514E+07,
       0.1646,
       1.084E+06,
-      {1.422E-04, 9.474E-03, 1.650E-030, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {1.422E-04, 9.474E-03, 1.650E-030, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
       {7.685E+05, 1.208E+06, 1.839E+06, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
 
   recomb_parameters["Si5+"] = recomb_datatype{

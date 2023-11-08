@@ -1018,7 +1018,7 @@ void image::add_cells_to_pixels()
   // Checking to make sure that all pixels have cells in them, and
   // that we are not double counting cells, or missing some of them.
   //
-  long int ct = 0;
+  // long int ct = 0;
   for (int v = 0; v < im_npixels; v++) {
     if (pix[v].ncells <= 0) {
       // spdlog::debug("s_xmax_img : {}", s_xmax_img);
@@ -1026,7 +1026,7 @@ void image::add_cells_to_pixels()
       spdlog::error("Some pixels have no cells in them {}", v);
       exit(1);
     }
-    ct += pix[v].ncells;
+    // ct += pix[v].ncells;
   }
 
   // if (ct != SimPM.Ncell)

@@ -6,6 +6,7 @@
 
 #ifndef PION_COLL_IONISE_RECOMB_H
 #define PION_COLL_IONISE_RECOMB_H
+
 #ifdef SPDLOG_FWD
 #include <spdlog/fwd.h>
 #endif
@@ -16,6 +17,11 @@
 #include "atomic_physics_database.h"
 #include "constants.h"
 #include <map>
+
+#define HYDROGEN_CASE_B
+
+/// Switch to use case B radiative recombination rate for H1+
+//#define HYDROGEN_CASE_B
 
 /**
  * \brief Struct to hold fit parameters of collisional ionisation rate
@@ -55,7 +61,7 @@ struct recomb_datatype {
  * and set up using setup functions with the preferred species list to
  * generate the corresponding look-up tables.
  **/
-class coll_ionise_recomb : public atomic_physics_database {
+class coll_ionise_recomb : virtual public atomic_physics_database {
   // PUBLIC METHODS AND VARIABLE ***********************
 public:
   /** \brief Constructor: Setup both collisional and recombination database. **/

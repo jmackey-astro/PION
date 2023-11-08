@@ -30,6 +30,7 @@
 #endif
 #include <spdlog/spdlog.h>
 /* prevent clang-format reordering */
+#include <fmt/ranges.h>
 
 using namespace std;
 
@@ -378,6 +379,12 @@ int cvode_solver::integrate_cvode_step(
 
       for (int v = 0; v < n_eq; v++)
         NV_Ith_S(Y_Input, v) = NV_Ith_S(Y_Output, v);
+
+      // TESTING DEBUGGING
+      // std::vector<double> P(n_eq);
+      // for (int v = 0; v < n_eq; v++) P[v] = NV_Ith_S(Y_Output, v);
+      // spdlog::info("yout step[{}] = {}", step_ct, P);
+
       t_now = t_temp;
       dt *= 1.5;
       dt = min(dt, tf - t_now);

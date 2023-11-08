@@ -467,6 +467,7 @@ int time_integrator::calc_RT_microphysics_dU(
             for (int v = SimPM.ftr; v < SimPM.nvar; v++) {
               if (c->P[v] < 0.0 || c->P[v] > 1.0) {
                 spdlog::error("time-int-MP: bad input ion frac: {}", c->P);
+                exit_pion(v);
               }
             }
 #endif
@@ -488,6 +489,7 @@ int time_integrator::calc_RT_microphysics_dU(
                 CI.print_cell(*c);
                 spdlog::error(
                     "{}: {}", "NAN/INF in calc_RT_microphysics_dU()", v);
+                exit_pion(v);
               }
             }
 #endif
@@ -1192,7 +1194,7 @@ int time_integrator::dynamics_dU_column(
 
 #ifdef TEST_INF
     for (int v = 0; v < SimPM.nvar; v++) {
-      if (!isfinite(cpt->dU[v])) {
+      if (!isfinite(cpt->dU[v]) && cpt->isdomain) {
         spdlog::error("Flux l : {}", *Fr_prev);
         spdlog::error("Flux r : {}", *Fr_this);
         spdlog::error("Edge l : {}", edgeL);

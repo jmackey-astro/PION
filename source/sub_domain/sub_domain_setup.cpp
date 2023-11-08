@@ -218,7 +218,7 @@ int Sub_domain::decomposeDomain(
     vector<int> &&pbc          ///< boolean array of whether each face has pbc
 )
 {
-  periodic = move(pbc);
+  periodic = std::move(pbc);
 #ifndef NDEBUG
   spdlog::debug("periodic : {}", periodic);
 #endif
@@ -230,7 +230,7 @@ int Sub_domain::decomposeDomain(
    * held value
    */
   vector<float> ratios(begin(level.Range), begin(level.Range) + m_ndim);
-  calculate_process_topology(move(ratios));
+  calculate_process_topology(std::move(ratios));
 
   /* TODO: reordering of ranks is temporarily disabled so old communicator works
    */
@@ -260,7 +260,7 @@ int Sub_domain::decomposeDomain(
     vector<int> &&pbc  ///< boolean array of whether each face has pbc
 )
 {
-  periodic = move(pbc);
+  periodic = std::move(pbc);
 #ifndef NDEBUG
   spdlog::debug("periodic : {}", periodic);
 #endif
@@ -279,7 +279,7 @@ int Sub_domain::decomposeDomain(
    * held value
    */
   vector<float> ratios(begin(level.Range), begin(level.Range) + m_ndim);
-  calculate_process_topology(move(ratios));
+  calculate_process_topology(std::move(ratios));
 
   /* TODO: reordering of ranks is temporarily disabled so old communicator works
    */

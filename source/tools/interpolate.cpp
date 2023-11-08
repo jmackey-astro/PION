@@ -63,7 +63,7 @@ void interpolate_arrays::spline(
   vector<double> vy(y, y + n);
   using boost::math::interpolators::makima;
   class makima<vector<double> > *data =
-      new makima<std::vector<double> >(move(vx), move(vy), yp1, ypn);
+      new makima<std::vector<double> >(std::move(vx), std::move(vy), yp1, ypn);
   id = slist.size();
   slist.push_back(data);
 
@@ -110,7 +110,7 @@ void interpolate_arrays::spline_vec(
 {
   using boost::math::interpolators::makima;
   class makima<vector<double> > *data =
-      new makima<std::vector<double> >(move(x), move(y));
+      new makima<std::vector<double> >(std::move(x), std::move(y));
 
   id = slist.size();
   slist.push_back(data);

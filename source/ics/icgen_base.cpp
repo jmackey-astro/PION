@@ -145,11 +145,13 @@ int ICsetup_base::equilibrate_MP(
     class SimParams &SimPM)
 {
 
-  if (!mp || !gg || !rp)
-    spdlog::error(
-        "{}: {}", "microphysics or grid not initialised.", fmt::ptr(mp));
-  spdlog::debug("Init left  vec : {}", gg->FirstPt()->P);
-  spdlog::debug("Init right vec : {}", gg->LastPt()->P);
+  if (!mp || !gg || !rp) {
+    spdlog::error("microphysics or grid not initialised");
+    exit(1);
+  }
+
+  // spdlog::debug("Init left  vec : {}", gg->FirstPt()->P);
+  // spdlog::debug("Init right vec : {}", gg->LastPt()->P);
 
   string seek = "InitIons";
   string s    = rp->find_parameter(seek);
