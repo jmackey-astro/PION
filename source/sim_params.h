@@ -182,12 +182,12 @@ struct stellarwind_params {
   double xi;
 
 #ifdef ANALYTIC_ORBITS
-  double eccentricity;    ///< eccentricity of the orbit
-  double OrbPeriod;       ///< orbital period (input in years, stored in s)
-  double PeriastronX;     ///< (x_com - x_star) at t=0 at periastron (cm)
-  double PeriastronY;     ///< (y_com - y_star) at t=0 at periastron (cm)
-#endif                    // ANALYTIC_ORBITS
-  pion_flt tr[MAX_NVAR];  ///< tracer values in wind at Rstar.
+  double eccentricity;  ///< eccentricity of the orbit
+  double OrbPeriod;     ///< orbital period (input in years, stored in s)
+  double PeriastronX;   ///< (x_com - x_star) at t=0 at periastron (cm)
+  double PeriastronY;   ///< (y_com - y_star) at t=0 at periastron (cm)
+#endif                  // ANALYTIC_ORBITS
+  std::array<double, MAX_NVAR> tr;  ///< tracer values in wind at Rstar.
   int id;            ///< if we have multiple sources, this identifies them.
   int type;          ///< what type of stellar wind?  see stellar_wind.h
   int moving_star;   ///< is the star moving? 1=yes, 0=no

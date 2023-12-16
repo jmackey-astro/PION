@@ -140,7 +140,7 @@ RT_Tstar____0    37500.0  # Stellar effective temperature.
 RT_src_type_0    1  # 1=single src, 2=diffuse-radiation.
 RT_at_infty_0    0  # 0=no, 1=yes.
 RT_update___0    2  # 1=C2Ray update, 2=New update.
-RT_effect___0    3  # 1=UV heating, 2=mono-photoionisation, 3=multi-photoion
+RT_effect___0    5  # 1=UV heating, 2=mono-photoionisation, 3=multi-photoion
 RT_Tau_src__0    10  # 1=total column, 2=nH*(1-y_i), 3=nH*(y_i) 10=call-MP
 RT_Tau_var__0    0  # opacity variably y_i (this is its index in tracers)
 RT_EVO_FILE_0    NOFILE

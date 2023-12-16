@@ -92,6 +92,7 @@ stellar_wind::stellar_wind(
 
   for (int v = 0; v < nt; v++)
     tracers.push_back(tr[v]);
+  // spdlog::info("SWBC tracers: {}",tracers);
 }
 
 
@@ -171,6 +172,7 @@ int stellar_wind::add_source(
   }
   ws->Hplus = hplus;
   if (hplus >= 0) ws->iHplus = hplus - nvar + ntracer;
+  // spdlog::warn("SWBC: hplus {} {} {}",hplus,ws->Hplus, ws->iHplus);
 
   ws->cells_added = false;
   if (!ws->wcells.empty())
@@ -639,7 +641,7 @@ void stellar_wind::set_wind_cell_tracers(
 )
 {
   // set H+ tracer value based on stellar temperature.
-  /*
+#ifndef PION_MPV10
   // Here we need some new code to set tracer values based on Saha equation
   if (ws.Hplus >= 0) {
     if (ws.pars->Tstar < 1.0e4)
@@ -650,11 +652,12 @@ void stellar_wind::set_wind_cell_tracers(
       ws.pars->tr[ws.iHplus] =
           1.0e-10 + (ws.pars->Tstar - 1.0e4) * (1.0 - 1.0e-10) / 0.5e4;
   }
-  */
+#endif
   // update tracers: should be set already.
   for (int v = 0; v < ntracer; v++)
     wc.p[ftr + v] = ws.pars->tr[v];
-
+  spdlog::info(
+      "id: {}, nt: {} tracers: {}", ws.pars->id, ntracer, ws.pars->tr[0]);
   return;
 }
 

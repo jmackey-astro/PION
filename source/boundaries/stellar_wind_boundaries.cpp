@@ -216,6 +216,7 @@ int stellar_wind_bc::BC_assign_STWIND(
           SWP.params[isw]->PeriastronY);
 #endif
 #endif
+      spdlog::info("adding source {}, tracer= {}", isw, SWP.params[isw]->tr[0]);
     }
     else if (SWP.params[isw]->evolving_wind_file == "NOFILE") {
       // star is not evolving, but also not type==0, so must be rotating

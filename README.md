@@ -88,7 +88,7 @@ Option | Effect
 `-DPION_MPV10=...`                | Set to `ON` to build the multi-ion module (experimental) (default `OFF`).
 `-DON_KAROLINA=...`               | Set to `ON` if building on karolina.it4i.cz (default `OFF`).
 `-DINTEL=...`                     | Set to `ON` only if using Intel compilers (default `OFF`).
-`-DLOG_ALL_PROCS=...`             | Set to `ON` only for debugging to enable logging from all MPI processes (default is `OFF` ==> only rank 0)`
+`-DLOG_ALL_PROCS=...`             | Set to `ON` only for debugging to enable logging from all MPI processes (default is `OFF` ==> only rank 0)
 
 
 #### Dependency Helpers
@@ -96,11 +96,11 @@ Option | Effect
 Option | Effect
 ------ | ------
 `-DSUNDIALS_DIR=...` | Instruct CMake to search the provided path for the Sundials library.
-`-DSILO_DIR=...` | Instruct CMake to search the provided path for the Silo library.
-`-DFITS_DIR=...` | Instruct CMake to search the provided path for the Fits library.
-`-Dspdlog_DIR=...` | Instruct CMake to search the provided path for the Spdlog library.
+`-DSILO_DIR=...`     | Instruct CMake to search the provided path for the Silo library.
+`-DFITS_DIR=...`     | Instruct CMake to search the provided path for the Fits library.
+`-Dspdlog_DIR=...`   | Instruct CMake to search the provided path for the Spdlog library.
 `-DREADLINE_DIR=...` | Instruct CMake to search the provided path for the Readline library.
-`-DBOOST_ROOT=...` | Instruct CMake to search the provided path for the Boost library.
+`-DBOOST_ROOT=...`   | Instruct CMake to search the provided path for the Boost library.
 
 #### Setting installation directories
 

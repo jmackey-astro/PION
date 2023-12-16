@@ -788,11 +788,11 @@ int DataIOBase::read_simulation_parameters(
   //
   if (SWP.Nsources > 0) {
     if (!have_setup_windsrc) set_windsrc_params();
-    if (windsrc.empty())
+    if (windsrc.empty()) {
       spdlog::error(
-          "{}: {}",
-          "wind-src parameter list is empty -- make sure it populates itself!!",
-          0);
+          "wind-src parameter list is empty -- make sure it populates itself!!");
+      exit_pion(1);
+    }
     //
     // Now read each property for each wind source and add the source
     // Need to read from disk to temp variables first.
@@ -955,7 +955,7 @@ int DataIOBase::read_simulation_parameters(
       nm << "WIND_" << isw << "_type";
       if ((*iter)->name.compare(nm.str()) != 0) {
         spdlog::error(
-            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            "Stellar wind parameters not ordered as expected! {}",
             (*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&wind->type));
@@ -969,13 +969,19 @@ int DataIOBase::read_simulation_parameters(
       nm << "WIND_" << isw << "_trcr";
       if ((*iter)->name.compare(nm.str()) != 0) {
         spdlog::error(
-            "{}: {}", "Stellar wind parameters not ordered as expected!",
+            "Stellar wind parameters not ordered as expected: {}",
             (*iter)->name);
       }
-      (*iter)->set_ptr(static_cast<void *>(wind->tr));
+      (*iter)->set_ptr(static_cast<void *>(wind->tr.data()));
+      // spdlog::info("1 tracers for src {}, vals = {} :
+      // {}",isw,wind->tr[0],wind->tr);
       err = read_header_param(*iter);
-      if (err)
-        spdlog::error("{}: {}", "Error reading parameter", (*iter)->name);
+      // spdlog::info("2 tracers for src {}, vals = {} :
+      // {}",isw,wind->tr[0],wind->tr);
+      if (err) {
+        spdlog::error("Error reading parameter {}", (*iter)->name);
+        exit_pion(err);
+      }
       //
       // zero extra variables to avoid uninitialised data...
       // tracers are stored in the first ntracer values of array.
@@ -983,7 +989,8 @@ int DataIOBase::read_simulation_parameters(
       for (int v = SimPM.ntracer; v < MAX_NVAR; v++)
         wind->tr[v] = 0.0;
       ++iter;
-      // cout<<nm<<"\n";
+      // spdlog::info("3 tracers for src {}, vals = {} :
+      // {}",isw,wind->tr[0],wind->tr);
 
       //
       // New stuff for evolving winds: data-file, time-offset,
@@ -2062,7 +2069,7 @@ int DataIOBase::write_simulation_parameters(
             "{}: {}", "Stellar wind parameters not ordered as expected!",
             (*iter)->name);
       }
-      (*iter)->set_ptr(static_cast<void *>(SWP.params[isw]->tr));
+      (*iter)->set_ptr(static_cast<void *>(SWP.params[isw]->tr.data()));
       for (int v = SimPM.ntracer; v < MAX_NVAR; v++) {
         SWP.params[isw]->tr[v] = 0.0;
       }
