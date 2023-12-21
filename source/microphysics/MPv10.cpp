@@ -61,7 +61,7 @@ using namespace std;
 // Will have to do some tests for MPv10...
 
 //#define DTFRAC 0.25
-#define DTFRAC 0.1
+#define DTFRAC 0.01
 
 // GET ERROR TOLERANCES #################################################
 void MPv10::get_error_tolerances(
@@ -1748,78 +1748,85 @@ int MPv10::ydot(
 
 
   // SECTION: Collisional Ionisation *************************************
-  // Calculating RHS terms corresponding to collisional ionisation for
-  // species in ci_tracer_list. These terms are calculated only once and
-  // attached at relevant ydot equations.
-  //
-  // For example, for species s, if ion, the term ci_rate(s)y(s)ne is subtracted
-  // for ydot(s) while the same terms is added for the ydot(s+1) equation,
-  // provided the specie s+1 exist. Whereas if the species s is neutral, then
-  // only addition is performed.
+  if (EP->coll_ionisation) {
+    // Calculating RHS terms corresponding to collisional ionisation for
+    // species in ci_tracer_list. These terms are calculated only once and
+    // attached at relevant ydot equations.
+    //
+    // For example, for species s, if ion, the term ci_rate(s)y(s)ne is
+    // subtracted for ydot(s) while the same terms is added for the ydot(s+1)
+    // equation, provided the specie s+1 exist. Whereas if the species s is
+    // neutral, then only addition is performed.
 
-  double ci_rate    = 0.0;
-  double this_y_dot = 0.0;
+    double ci_rate    = 0.0;
+    double this_y_dot = 0.0;
 
-  for (int s = 0; s < ci_tracer_list.size(); s++)  // loop over ci species
-  {
-    ci_rate = collisional_ionisation_rate(s, T);
+    for (int s = 0; s < ci_tracer_list.size(); s++)  // loop over ci species
+    {
+      ci_rate = collisional_ionisation_rate(s, T);
 
-    if (minus_ions_local_index[s] != -1) {
-      // if the less ionised species is not neutral
-      // this_y_dot = ci_rate * NV_Ith_S(y_now, minus_ions_local_index[s]) * ne;
-      this_y_dot = ci_rate * p_local[minus_ions_local_index[s]] * ne;
-      NV_Ith_S(y_dot, minus_ions_local_index[s]) -= this_y_dot;
+      if (minus_ions_local_index[s] != -1) {
+        // if the less ionised species is not neutral
+        // this_y_dot = ci_rate * NV_Ith_S(y_now, minus_ions_local_index[s]) *
+        // ne;
+        this_y_dot = ci_rate * p_local[minus_ions_local_index[s]] * ne;
+        NV_Ith_S(y_dot, minus_ions_local_index[s]) -= this_y_dot;
+      }
+      else {
+        // if the less ionised species is neutral
+        this_y_dot = ci_rate * y_neutral_frac[ci_tracer_elem[s]] * ne;
+      }
+
+      NV_Ith_S(y_dot, ions_local_index[s]) += this_y_dot;
+
+      // Cooling due to collisional ionisation of this species.
+      Edot -=
+          ci_ion_pot[s] * this_y_dot * elem_number_density[ci_tracer_elem[s]];
     }
-    else {
-      // if the less ionised species is neutral
-      this_y_dot = ci_rate * y_neutral_frac[ci_tracer_elem[s]] * ne;
-    }
-
-    NV_Ith_S(y_dot, ions_local_index[s]) += this_y_dot;
-
-    // Cooling due to collisional ionisation of this species.
-    Edot -= ci_ion_pot[s] * this_y_dot * elem_number_density[ci_tracer_elem[s]];
   }
   // END OF SECTION: Collisional Ionisation ******************************
 
 
   // SECTION: Recombination (Radiative + Dielectronic) *******************
-  // RHS terms corresponding to Recombination (R) are calculated for
-  // all species. In this case, for specie s, the term rec_rate(s)y(s)ne is
-  // substrated for ydot(s-1) and the same terms is added for the ydot(s),
-  // provided species s is a ion of same element. Whereas
-  // if the species s is neutral, then only addition performed.
+  if (EP->recombination) {
+    // RHS terms corresponding to Recombination (R) are calculated for
+    // all species. In this case, for specie s, the term rec_rate(s)y(s)ne is
+    // substrated for ydot(s-1) and the same terms is added for the ydot(s),
+    // provided species s is a ion of same element. Whereas
+    // if the species s is neutral, then only addition performed.
 
-  double recomb_rate = 0.0;
-  this_y_dot         = 0.0;
-  // std::vector<double> temp_rr(recomb_tracer_list.size());  //DEBUG
+    double recomb_rate = 0.0;
+    double this_y_dot  = 0.0;
+    // std::vector<double> temp_rr(recomb_tracer_list.size());  //DEBUG
 
-  for (int s = 0; s < recomb_tracer_list.size(); s++) {
-    recomb_rate = recombination_rate(s, T);
-    // spdlog::info("rec: {}, i={}, i-1={}", s, ions_local_index[s],
-    //              minus_ions_local_index[s]);
+    for (int s = 0; s < recomb_tracer_list.size(); s++) {
+      recomb_rate = recombination_rate(s, T);
+      // spdlog::info("rec: {}, i={}, i-1={}", s, ions_local_index[s],
+      //              minus_ions_local_index[s]);
 
-    // this_y_dot = recomb_rate * NV_Ith_S(y_now, ions_local_index[s]) * ne;
-    this_y_dot = recomb_rate * p_local[ions_local_index[s]] * ne;
+      // this_y_dot = recomb_rate * NV_Ith_S(y_now, ions_local_index[s]) * ne;
+      this_y_dot = recomb_rate * p_local[ions_local_index[s]] * ne;
 
-    // Subtract this term to the current species equation
-    NV_Ith_S(y_dot, ions_local_index[s]) -= this_y_dot;
-    // add this term to less ionised species equation provided it
-    // is not neutral species
-    if (minus_ions_local_index[s] != -1)
-      NV_Ith_S(y_dot, minus_ions_local_index[s]) += this_y_dot;
+      // Subtract this term to the current species equation
+      NV_Ith_S(y_dot, ions_local_index[s]) -= this_y_dot;
+      // add this term to less ionised species equation provided it
+      // is not neutral species
+      if (minus_ions_local_index[s] != -1)
+        NV_Ith_S(y_dot, minus_ions_local_index[s]) += this_y_dot;
 
-    // Cooling due to recombination of this species.
-    Edot -= (3. / 2.) * T * pconst.kB() * this_y_dot
-            * elem_number_density[recomb_tracer_elem[s]];
-    // if (T>1e6)
-    //  spdlog::info("rec-rate {:12.3e} , y {:12.9e}, ne {:12.3e}, cooling
-    //  {:12.3e}", this_y_dot, NV_Ith_S(y_now, ions_local_index[s]), ne,(3.
-    //  / 2.) * T * pconst.kB() * this_y_dot *
-    //  elem_number_density[recomb_tracer_elem[s]]);
-    // temp_rr[s] = this_y_dot;
+      // Cooling due to recombination of this species.
+      Edot -= (3. / 2.) * T * pconst.kB() * this_y_dot
+              * elem_number_density[recomb_tracer_elem[s]];
+      // if (T>1e6)
+      //  spdlog::info("rec-rate {:12.3e} , y {:12.9e}, ne {:12.3e}, cooling
+      //  {:12.3e}", this_y_dot, NV_Ith_S(y_now, ions_local_index[s]), ne,(3.
+      //  / 2.) * T * pconst.kB() * this_y_dot *
+      //  elem_number_density[recomb_tracer_elem[s]]);
+      // temp_rr[s] = this_y_dot;
+    }
+    // spdlog::info("rr: {}", temp_rr);
   }
-  // spdlog::info("rr: {}", temp_rr);
+
   // END OF SECTION: Recombination **************************************
 
 
@@ -1836,7 +1843,7 @@ int MPv10::ydot(
     // ydot(s+1) equation.
     int elem_index             = 0;
     int charge_index           = 0;
-    this_y_dot                 = 0.0;
+    double this_y_dot          = 0.0;
     double pi_rate             = 0.0;
     double species_num_density = 0.0;
     double element_num_density = 0.0;

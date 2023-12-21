@@ -119,6 +119,7 @@ SimParams::SimParams()
   EP.chemistry         = 0;
   EP.coll_ionisation   = 0;
   EP.phot_ionisation   = 0;
+  EP.recombination     = 0;
   EP.rad_recombination = 0;
   EP.update_erg        = 1;      ///< this is effectively a boolean value.
   EP.MP_timestep_limit = false;  ///< by default only use hydro limit.
@@ -1335,6 +1336,11 @@ int SimParams::read_extra_physics()
     EP.phot_ionisation = atoi(a.c_str());
   else
     EP.phot_ionisation = 0;
+
+  if ((a = rp.find_parameter("EP_recombination")) != "")
+    EP.recombination = atoi(a.c_str());
+  else
+    EP.recombination = 0;
 
   if ((a = rp.find_parameter("EP_rad_recombination")) != "")
     EP.rad_recombination = atoi(a.c_str());

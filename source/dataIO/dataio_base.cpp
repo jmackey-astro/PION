@@ -271,6 +271,10 @@ void DataIOBase::set_params(
   p            = p026;
   p->critical  = true;
   params.push_back(p);
+  pm_int *prec = new pm_int("EP_recombination", &SimPM.EP.recombination);
+  p            = prec;
+  p->critical  = true;
+  params.push_back(p);
   pm_int *p027 =
       new pm_int("EP_rad_recombination", &SimPM.EP.rad_recombination);
   p           = p027;

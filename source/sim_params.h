@@ -56,11 +56,12 @@ struct which_physics {
   int chemistry;
   /// collisional ionisation (1=yes,0=no).
   int coll_ionisation;
+  /// radiative + dielectronic recombination (1=yes,0=no).
+  int recombination;
   /// radiative recombination (1=yes,0=no).
   int rad_recombination;
   /// if we have photo-ionisation (with or w/o raytracing) (1=yes,0=no).
   int phot_ionisation;
-
   /// if we are using thermal conduction (1=yes, 0=no)
   int sat_thermal_cond;
   /// the value of the TC scaling (1.0=0.33*Spitzer)

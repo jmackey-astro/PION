@@ -72,6 +72,8 @@ private:
   stellar_model_datatype atlas_ckp00_g45;  ///< O3V STAR
   stellar_model_datatype powr_mw_wc;       ///< WC
   stellar_model_datatype powr_mw_wne;      ///< WNE
+  stellar_model_datatype blackbody;        ///< BLACKBODY
+
   // add models here
 
 

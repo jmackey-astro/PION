@@ -381,9 +381,10 @@ enum direction {
 #define RT_EFFECT_MFION 5       ///< multifrequency photoion source.
 #define RT_EFFECT_HHE_MFQ                                                      \
   6  ///< Frank&Mellema H+He p-ion scheme (not fully implemented)
-#define RT_EFFECT_MP10_ATLAS_O3V 7  ///< ATLAS models
-#define RT_EFFECT_MP10_POWR_WC 8    ///< POWR WC models
-#define RT_EFFECT_MP10_POWR_WNE 9   ///< POWR WNE models
+#define RT_EFFECT_MP10_ATLAS_O3V 7   ///< ATLAS models
+#define RT_EFFECT_MP10_POWR_WC 8     ///< POWR WC models
+#define RT_EFFECT_MP10_POWR_WNE 9    ///< POWR WNE models
+#define RT_EFFECT_MP10_BLACKBODY 10  ///< BLACKBODY
 
 //
 // Source of opacity
